@@ -98,6 +98,18 @@ impl PanelViews {
         true
     }
 
+    #[cfg(test)]
+    pub(crate) fn selected_tab(&self, panel_id: &str) -> Option<&'static str> {
+        let definition = oteryn_client::panel_catalog::panel(panel_id)?;
+        let draft = self.drafts.get(panel_id)?;
+        let index = match panel_id {
+            "cyclopedia" => *draft.choices.get("cyclopedia.page")?,
+            "social" => draft.tab,
+            _ => return None,
+        };
+        definition.tabs.get(index).map(|tab| tab.id)
+    }
+
     /// Returns false for panels drawn by the existing live HUD/help/shortcut renderer.
     pub fn show(&mut self, ui: &mut egui::Ui, id: &str, english: bool, state: &GameState) -> bool {
         if !matches!(
@@ -229,6 +241,109 @@ fn flag(ui: &mut egui::Ui, draft: &mut Draft, key: &'static str, english: bool, 
     ui.checkbox(draft.flags.entry(key).or_default(), tr(english, label));
 }
 
+fn unavailable_controls<R>(
+    ui: &mut egui::Ui,
+    key: &'static str,
+    english: bool,
+    reason: Label,
+    add_contents: impl FnOnce(&mut egui::Ui) -> R,
+) -> R {
+    let response = ui.add_enabled_ui(false, |ui| {
+        #[cfg(test)]
+        ui.ctx().data_mut(|data| {
+            data.insert_temp(
+                egui::Id::new(("panel-unavailable-control", key)),
+                ui.is_enabled(),
+            );
+        });
+        add_contents(ui)
+    });
+    response
+        .response
+        .on_disabled_hover_text(tr(english, reason));
+    response.inner
+}
+
+fn unavailable_text(
+    ui: &mut egui::Ui,
+    draft: &Draft,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    reason: Label,
+) {
+    let mut value = draft.texts.get(key).cloned().unwrap_or_default();
+    unavailable_controls(ui, key, english, reason, |ui| {
+        ui.label(tr(english, label));
+        ui.add(
+            egui::TextEdit::singleline(&mut value)
+                .char_limit(96)
+                .desired_width(ui.available_width()),
+        );
+    });
+}
+
+fn unavailable_choice(
+    ui: &mut egui::Ui,
+    draft: &Draft,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    choices: &[Label],
+    reason: Label,
+) {
+    if choices.is_empty() {
+        return;
+    }
+    let mut selected = draft
+        .choices
+        .get(key)
+        .copied()
+        .unwrap_or_default()
+        .min(choices.len() - 1);
+    unavailable_controls(ui, key, english, reason, |ui| {
+        egui::ComboBox::from_id_salt(key)
+            .width(ui.available_width())
+            .truncate()
+            .selected_text(format!(
+                "{}: {}",
+                tr(english, label),
+                tr(english, choices[selected])
+            ))
+            .show_ui(ui, |ui| {
+                for (index, choice) in choices.iter().enumerate() {
+                    ui.selectable_value(&mut selected, index, tr(english, *choice));
+                }
+            });
+    });
+}
+
+fn unavailable_flag(
+    ui: &mut egui::Ui,
+    draft: &Draft,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    reason: Label,
+) {
+    let mut value = draft.flags.get(key).copied().unwrap_or_default();
+    unavailable_controls(ui, key, english, reason, |ui| {
+        ui.checkbox(&mut value, tr(english, label));
+    });
+}
+
+fn unavailable_action(
+    ui: &mut egui::Ui,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    reason: Label,
+) {
+    unavailable_controls(ui, key, english, reason, |ui| {
+        let _ = ui.button(tr(english, label));
+    });
+}
+
 fn action(ui: &mut egui::Ui, english: bool, label: Label) {
     ui.add_enabled(false, egui::Button::new(tr(english, label)))
         .on_disabled_hover_text(tr(
@@ -238,6 +353,16 @@ fn action(ui: &mut egui::Ui, english: bool, label: Label) {
                 "This action is currently unavailable.",
             ),
         ));
+}
+
+fn unavailable_view(ui: &mut egui::Ui, english: bool) {
+    ui.weak(tr(
+        english,
+        (
+            "Potwierdzono tylko nazwę tej karty; jej zawartość i zachowanie nie zostały ustalone na podstawie materiału referencyjnego.",
+            "Only this tab's identity is established; its contents and behavior have not been established from reference evidence.",
+        ),
+    ));
 }
 
 fn values(ui: &mut egui::Ui, key: &str, english: bool, labels: &[Label]) {
@@ -330,6 +455,32 @@ fn item_slot(
     state: &GameState,
 ) {
     let chosen = draft.items.entry(key).or_default();
+    item_slot_control(ui, chosen, key, english, label, state);
+}
+
+fn unavailable_item_slot(
+    ui: &mut egui::Ui,
+    draft: &Draft,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    state: &GameState,
+    reason: Label,
+) {
+    let mut chosen = draft.items.get(key).copied().flatten();
+    unavailable_controls(ui, key, english, reason, |ui| {
+        item_slot_control(ui, &mut chosen, key, english, label, state);
+    });
+}
+
+fn item_slot_control(
+    ui: &mut egui::Ui,
+    chosen: &mut Option<u64>,
+    key: &'static str,
+    english: bool,
+    label: Label,
+    state: &GameState,
+) {
     let inventory = state.inventory.as_ref();
     let items: Vec<_> = inventory
         .into_iter()
@@ -912,22 +1063,28 @@ fn tasks(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
 #[rustfmt::skip]
 fn social(ui: &mut egui::Ui, d: &mut Draft, en: bool, party: bool) {
     if party {
-        choice(ui,d,"party.sort",en,("Sortuj członków","Sort members"),&[("Nazwa","Name"),("Rola","Role")]);
+        let reason = ("Kontrolka jest niedostępna, ponieważ klient nie ma odbiorcy poleceń drużyny ani projekcji listy członków.","This control is unavailable because no party-command consumer or member-list projection is connected.");
+        unavailable_choice(ui,d,"party.sort",en,("Sortuj członków","Sort members"),&[("Nazwa","Name"),("Rola","Role")],reason);
         table(ui,"party.members",en,&[("Członek","Member"),("Rola","Role"),("Stan","Status")]);
-        text(ui,d,"party.invite",en,("Postać do zaproszenia","Character to invite"));
+        unavailable_text(ui,d,"party.invite",en,("Postać do zaproszenia","Character to invite"),reason);
         ui.horizontal_wrapped(|ui| { action(ui,en,("Zaproś","Invite")); action(ui,en,("Przekaż przywództwo","Transfer leadership")); action(ui,en,("Opuść drużynę","Leave party")); }); return;
     }
-    tabs(ui,d,en,&[("Znajdź drużynę","Find team"),("Utwórz drużynę","Assemble team"),("Znajomi","Friends"),("Zaproszenia","Invitations"),("Wyszukaj konto","Account search")]);
-    if d.tab<2 {
-        text(ui,d,"social.activity",en,("Aktywność","Activity")); text(ui,d,"social.world",en,("Świat","World"));
-        text(ui,d,"social.minimum",en,("Minimalny poziom","Minimum level")); text(ui,d,"social.maximum",en,("Maksymalny poziom","Maximum level"));
-        choice(ui,d,"social.vocation",en,("Profesja","Vocation"),VOCATIONS);
-        if d.tab==0 { table(ui,"social.teams",en,&[("Drużyna","Team"),("Aktywność","Activity"),("Członkowie","Members")]); action(ui,en,("Dołącz do drużyny","Join team")); }
-        else { text(ui,d,"social.teamname",en,("Nazwa drużyny","Team name")); text(ui,d,"social.description",en,("Opis i wymagania","Description and requirements")); action(ui,en,("Opublikuj drużynę","Publish team")); }
+    tabs(ui,d,en,&[("Utwórz drużynę","Assemble Team"),("Odznaki","Badges"),("Lista znajomych","Friend List"),("Ustawienia znajomych","Friends Config"),("Zaproszenia znajomych","Friends Invitations"),("Wyszukiwanie znajomych","Friends Search"),("Dołącz do drużyny","Join Team")]);
+    if d.tab == 6 {
+        ui.weak(tr(en,("Filtry są niedostępne bez danych konta i statusu Premium.","Filters are unavailable without account data and Premium status.")));
+        ui.add_enabled_ui(false, |ui| {
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(egui::Id::new("social-finder-form-enabled"), ui.is_enabled())
+            });
+            text(ui,d,"social.activity",en,("Aktywność","Activity")); text(ui,d,"social.world",en,("Świat","World"));
+            text(ui,d,"social.minimum",en,("Minimalny poziom","Minimum level")); text(ui,d,"social.maximum",en,("Maksymalny poziom","Maximum level"));
+            choice(ui,d,"social.vocation",en,("Profesja","Vocation"),VOCATIONS);
+            table(ui,"social.teams",en,&[("Drużyna","Team"),("Aktywność","Activity"),("Członkowie","Members")]);
+            action(ui,en,("Dołącz do drużyny","Join Team"));
+        });
     } else {
-        text(ui,d,"social.account",en,("Nazwa konta lub postaci","Account or character name"));
-        table(ui,"social.accounts",en,&[("Konto","Account"),("Stan","Status"),("Odznaki","Badges")]);
-        ui.horizontal_wrapped(|ui| { action(ui,en,("Dodaj znajomego","Add friend")); action(ui,en,("Akceptuj zaproszenie","Accept invitation")); action(ui,en,("Odrzuć zaproszenie","Decline invitation")); });
+        unavailable_view(ui, en);
     }
 }
 
@@ -963,21 +1120,38 @@ fn boss_slots(ui: &mut egui::Ui, en: bool) {
 
 #[rustfmt::skip]
 fn tracker(ui: &mut egui::Ui, d: &mut Draft, en: bool, id: &str) -> Option<Route> {
-    text(ui,d,"tracker.search",en,("Wyszukaj śledzony wpis","Search tracked entry"));
+    let reason = ("Kontrolka jest niedostępna, ponieważ klient nie otrzymuje danych śledzonych wpisów ani poleceń ich modyfikacji.","This control is unavailable because tracked-entry data and mutation commands are not connected.");
+    unavailable_text(ui,d,"tracker.search",en,("Wyszukaj śledzony wpis","Search tracked entry"),reason);
     ui.menu_button(tr(en,("Opcje śledzenia","Tracking options")),|ui| {
-        flag(ui,d,"tracker.completed",en,("Pokaż ukończone","Show completed entries"));
-        if id=="quest-tracker" { flag(ui,d,"tracker.add",en,("Automatycznie dodawaj nowe zadania","Automatically add new quests")); flag(ui,d,"tracker.remove",en,("Automatycznie usuwaj ukończone","Automatically remove completed quests")); }
-        action(ui,en,("Usuń wybrany wpis","Remove selected entry")); action(ui,en,("Usuń wszystkie wpisy","Remove all entries")); action(ui,en,("Usuń ukończone","Remove completed entries"));
+        unavailable_flag(ui,d,"tracker.completed",en,("Pokaż ukończone","Show completed entries"),reason);
+        if id=="quest-tracker" { unavailable_flag(ui,d,"tracker.add",en,("Automatycznie dodawaj nowe zadania","Automatically add new quests"),reason); unavailable_flag(ui,d,"tracker.remove",en,("Automatycznie usuwaj ukończone","Automatically remove completed quests"),reason); }
+        unavailable_action(ui,"tracker.remove-selected",en,("Usuń wybrany wpis","Remove selected entry"),reason); unavailable_action(ui,"tracker.remove-all",en,("Usuń wszystkie wpisy","Remove all entries"),reason); unavailable_action(ui,"tracker.remove-completed",en,("Usuń ukończone","Remove completed entries"),reason);
     });
     table(ui,"tracker.list",en,&[("Wpis","Entry"),("Postęp","Progress"),("Stan","Status")]);
     progress(ui,en,("Postęp wybranego wpisu","Selected-entry progress"));
-    let (label,target,page) = match id {
-        "quest-tracker" => (("Otwórz dziennik zadań","Open quest log"),"quest-log",None),
-        "bestiary-tracker" => (("Otwórz bestiariusz","Open Bestiary"),"cyclopedia",Some(4)),
-        "bosstiary-tracker" => (("Otwórz bestiariusz bossów","Open Bosstiary"),"cyclopedia",Some(6)),
-        _ => (("Otwórz łowy","Open Prey"),"prey",None),
+    let Some((label,(target,page))) = tracker_destination(id) else {
+        if id == "kill-tracker" { unavailable_action(ui,"kill-tracker.open-prey",en,("Otwórz łowy","Open Prey"),("Przejście jest niedostępne, ponieważ powiązanie śledzenia zabójstw z łowami nie zostało potwierdzone w materiale referencyjnym.","This route is unavailable because a Kill Tracker to Prey relationship is not established by reference evidence.")); }
+        return None;
     };
     ui.button(tr(en,label)).clicked().then_some((target,page))
+}
+
+fn tracker_destination(id: &str) -> Option<(Label, Route)> {
+    match id {
+        "quest-tracker" => Some((
+            ("Otwórz dziennik zadań", "Open quest log"),
+            ("quest-log", None),
+        )),
+        "bestiary-tracker" => Some((
+            ("Otwórz bestiariusz", "Open Bestiary"),
+            ("cyclopedia", Some(4)),
+        )),
+        "bosstiary-tracker" => Some((
+            ("Otwórz bestiariusz bossów", "Open Bosstiary"),
+            ("cyclopedia", Some(6)),
+        )),
+        _ => None,
+    }
 }
 
 #[rustfmt::skip]
@@ -993,9 +1167,10 @@ fn proficiency(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
 
 #[rustfmt::skip]
 fn imbuements(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
-    item_slot(ui,d,"imbuements.item",en,("Przedmiot ekwipunku","Equipment item"),state);
+    let reason = ("Kontrolka jest niedostępna, ponieważ klient nie otrzymuje projekcji nasyceń dla wybranego przedmiotu.","This control is unavailable because no selected-item imbuement projection is received.");
+    unavailable_item_slot(ui,d,"imbuements.item",en,("Przedmiot ekwipunku","Equipment item"),state,reason);
     table(ui,"imbuements.slots",en,&[("Slot nasycenia","Imbuement slot"),("Efekt","Effect"),("Pozostały czas","Time remaining")]);
-    flag(ui,d,"imbuements.inactive",en,("Pokaż nieaktywne nasycenia","Show inactive imbuements"));
+    unavailable_flag(ui,d,"imbuements.inactive",en,("Pokaż nieaktywne nasycenia","Show inactive imbuements"),reason);
     details(ui,"imbuements.details",en,("Szczegóły wybranego efektu","Selected-effect details"));
 }
 
@@ -1013,9 +1188,13 @@ fn analytics(ui: &mut egui::Ui, d: &mut Draft, en: bool) -> bool {
     choice(ui,d,"analytics.kind",en,("Analizator","Analyzer"),&labels);
     let kind=d.choices["analytics.kind"];
     ui.menu_button(tr(en,("Widok i dane","View and data")),|ui| {
-        for (key,label) in [("analytics.session",("Wartości sesji","Session values")),("analytics.hour",("Wartości na godzinę","Per-hour values")),("analytics.graph",("Wykres","Graph")),("analytics.gauge",("Wskaźnik","Gauge"))] { flag(ui,d,key,en,label); }
-        if kind==3 || kind==4 { flag(ui,d,"analytics.types",en,("Rodzaje obrażeń","Damage types")); flag(ui,d,"analytics.sources",en,("Źródła obrażeń","Damage sources")); }
-        if kind==5 { flag(ui,d,"analytics.rawxp",en,("Surowe doświadczenie","Raw experience")); }
+        let reason = ("Kontrolka jest niedostępna, ponieważ odpowiadająca jej projekcja analityczna nie została zaimplementowana.","This control is unavailable because its analytics projection is not implemented.");
+        unavailable_flag(ui,d,"analytics.session",en,("Wartości sesji","Session values"),reason);
+        unavailable_flag(ui,d,"analytics.hour",en,("Wartości na godzinę","Per-hour values"),reason);
+        flag(ui,d,"analytics.graph",en,("Wykres","Graph"));
+        flag(ui,d,"analytics.gauge",en,("Wskaźnik","Gauge"));
+        if kind==3 || kind==4 { unavailable_flag(ui,d,"analytics.types",en,("Rodzaje obrażeń","Damage types"),reason); unavailable_flag(ui,d,"analytics.sources",en,("Źródła obrażeń","Damage sources"),reason); }
+        if kind==5 { unavailable_flag(ui,d,"analytics.rawxp",en,("Surowe doświadczenie","Raw experience"),reason); }
         action(ui,en,("Wyzeruj dane","Reset data")); action(ui,en,("Wyzeruj rekord","Reset all-time high")); action(ui,en,("Kopiuj wyniki","Copy results"));
     });
     match kind {
@@ -1025,7 +1204,7 @@ fn analytics(ui: &mut egui::Ui, d: &mut Draft, en: bool) -> bool {
         5 => { values(ui,"analytics.xp",en,&[("Zdobyte doświadczenie","Experience gained"),("Doświadczenie na godzinę","XP per hour")]); progress(ui,en,("Postęp do poziomu","Next-level progress")); }
         6 => { table(ui,"analytics.drops",en,&[("Śledzony przedmiot","Tracked item"),("Zdobycze","Drops")]); open_items = ui.button(tr(en,("Dodaj śledzoną zdobycz","Add tracked drop"))).clicked(); }
         7 => { values(ui,"analytics.party",en,&[("Czas polowania","Hunt duration"),("Wycena łupów","Loot-price mode")]); table(ui,"analytics.party.members",en,&[("Członek","Member"),("Łupy","Loot"),("Zużycie","Supply"),("Bilans","Balance")]); }
-        8 => { choice(ui,d,"analytics.boss.sort",en,("Sortuj","Sort"),&[("Odnowienie","Cooldown"),("Nazwa","Name")]); table(ui,"analytics.bosses",en,&[("Boss","Boss"),("Odnowienie","Cooldown")]); }
+        8 => { unavailable_choice(ui,d,"analytics.boss.sort",en,("Sortuj","Sort"),&[("Odnowienie","Cooldown"),("Nazwa","Name")],("Sortowanie jest niedostępne, ponieważ klient nie otrzymuje wpisów odnowienia bossów.","Sorting is unavailable because boss-cooldown entries are not received.")); table(ui,"analytics.bosses",en,&[("Boss","Boss"),("Odnowienie","Cooldown")]); }
         _ => { values(ui,"analytics.hunt",en,&[("Czas polowania","Hunt duration"),("Doświadczenie","Experience"),("Łupy","Loot"),("Zużycie","Supply"),("Bilans","Balance")]); }
     }
     if *d.flags.get("analytics.graph").unwrap_or(&false) { ui.group(|ui| { ui.label(tr(en,("Wykres sesji","Session graph"))); ui.add_space(45.0); ui.label("—"); }); }
@@ -1386,6 +1565,32 @@ fn item_summary(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
 #[cfg(test)]
 mod tests {
     use super::{LocalPresets, PanelViews};
+    use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    fn unavailable_control_enabled(context: &egui::Context, key: &'static str) -> Option<bool> {
+        context.data(|data| data.get_temp(egui::Id::new(("panel-unavailable-control", key))))
+    }
+
+    fn render_panel(
+        context: &egui::Context,
+        size: egui::Vec2,
+        views: &mut PanelViews,
+        id: &'static str,
+        state: &oteryn_client::play::GameState,
+    ) -> egui::FullOutput {
+        let mut output = egui::FullOutput::default();
+        for _ in 0..2 {
+            output = frame(context, size, vec![], |context| {
+                egui::Window::new(("dedicated-panel-test", id))
+                    .fixed_size(size - egui::vec2(80.0, 80.0))
+                    .show(context, |ui| {
+                        assert!(views.show(ui, id, true, state));
+                    });
+            })
+            .1;
+        }
+        output
+    }
 
     #[test]
     fn stable_panel_tabs_select_exact_dedicated_drafts() {
@@ -1402,11 +1607,13 @@ mod tests {
             assert_eq!(views.drafts["cyclopedia"].choices["cyclopedia.page"], index);
         }
         for (id, index) in [
-            ("finder", 0),
-            ("assemble", 1),
+            ("assemble", 0),
+            ("badges", 1),
             ("friends", 2),
-            ("invitations", 3),
-            ("search", 4),
+            ("friends-config", 3),
+            ("invitations", 4),
+            ("search", 5),
+            ("finder", 6),
         ] {
             assert!(views.select_tab("social", id));
             assert_eq!(views.drafts["social"].tab, index);
@@ -1418,6 +1625,343 @@ mod tests {
             views.drafts["cyclopedia"].choices["cyclopedia.page"],
             before
         );
+    }
+
+    #[test]
+    fn social_shows_exact_routes_without_exposing_unimplemented_behavior()
+    -> Result<(), &'static str> {
+        let context = egui::Context::default();
+        let size = egui::vec2(1800.0, 700.0);
+        let mut views = PanelViews::default();
+        let state = oteryn_client::play::GameState::default();
+        assert!(views.select_tab("social", "finder"));
+        let draw = |context: &egui::Context, views: &mut PanelViews| {
+            egui::Window::new("Social test")
+                .fixed_size([1700.0, 620.0])
+                .show(context, |ui| {
+                    assert!(views.show(ui, "social", true, &state));
+                });
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..2 {
+            output = frame(&context, size, vec![], |context| draw(context, &mut views)).1;
+        }
+        for label in [
+            "Assemble Team",
+            "Badges",
+            "Friend List",
+            "Friends Config",
+            "Friends Invitations",
+            "Friends Search",
+            "Join Team",
+            "Filters are unavailable without account data and Premium status.",
+            "Activity",
+            "World",
+            "Minimum level",
+            "Maximum level",
+            "Vocation: All",
+        ] {
+            assert!(
+                button_position(&output, size, label).is_some(),
+                "missing {label}"
+            );
+        }
+        assert_eq!(
+            context.data(|data| {
+                data.get_temp::<bool>(egui::Id::new("social-finder-form-enabled"))
+            }),
+            Some(false)
+        );
+
+        for tab in ["assemble", "badges"] {
+            assert!(views.select_tab("social", tab));
+            output = frame(&context, size, vec![], |context| draw(context, &mut views)).1;
+            assert!(
+                button_position(
+                    &output,
+                    size,
+                    "Only this tab's identity is established; its contents and behavior have not been established from reference evidence."
+                )
+                .is_some(),
+                "{tab} must remain identity-only"
+            );
+        }
+        for speculative in [
+            "Account or character name",
+            "Add friend",
+            "Accept invitation",
+            "Decline invitation",
+        ] {
+            assert!(button_position(&output, size, speculative).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn unavailable_party_imbuement_and_kill_tracker_controls_preserve_drafts()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(1100.0, 820.0);
+        let state = oteryn_client::play::GameState::default();
+
+        let context = egui::Context::default();
+        let mut party = PanelViews::default();
+        {
+            let draft = party.drafts.entry("party".to_owned()).or_default();
+            draft.choices.insert("party.sort", 1);
+            draft.texts.insert("party.invite", "Alice".to_owned());
+        }
+        let before_party_choices = party.drafts["party"].choices.clone();
+        let before_party_texts = party.drafts["party"].texts.clone();
+        render_panel(&context, size, &mut party, "party", &state);
+        assert_eq!(
+            unavailable_control_enabled(&context, "party.sort"),
+            Some(false)
+        );
+        assert_eq!(
+            unavailable_control_enabled(&context, "party.invite"),
+            Some(false)
+        );
+        assert_eq!(party.drafts["party"].choices, before_party_choices);
+        assert_eq!(party.drafts["party"].texts, before_party_texts);
+
+        let context = egui::Context::default();
+        let mut imbuements = PanelViews::default();
+        {
+            let draft = imbuements
+                .drafts
+                .entry("imbuement-tracker".to_owned())
+                .or_default();
+            draft.items.insert("imbuements.item", Some(77));
+            draft.flags.insert("imbuements.inactive", true);
+        }
+        let before_items = imbuements.drafts["imbuement-tracker"].items.clone();
+        let before_flags = imbuements.drafts["imbuement-tracker"].flags.clone();
+        render_panel(&context, size, &mut imbuements, "imbuement-tracker", &state);
+        assert_eq!(
+            unavailable_control_enabled(&context, "imbuements.item"),
+            Some(false)
+        );
+        assert_eq!(
+            unavailable_control_enabled(&context, "imbuements.inactive"),
+            Some(false)
+        );
+        assert_eq!(imbuements.drafts["imbuement-tracker"].items, before_items);
+        assert_eq!(imbuements.drafts["imbuement-tracker"].flags, before_flags);
+
+        let context = egui::Context::default();
+        let mut tracker = PanelViews::default();
+        {
+            let draft = tracker.drafts.entry("kill-tracker".to_owned()).or_default();
+            draft.texts.insert("tracker.search", "dragon".to_owned());
+            draft.flags.insert("tracker.completed", true);
+        }
+        let before_texts = tracker.drafts["kill-tracker"].texts.clone();
+        let before_flags = tracker.drafts["kill-tracker"].flags.clone();
+        let output = render_panel(&context, size, &mut tracker, "kill-tracker", &state);
+        assert_eq!(
+            unavailable_control_enabled(&context, "tracker.search"),
+            Some(false)
+        );
+        assert_eq!(
+            unavailable_control_enabled(&context, "kill-tracker.open-prey"),
+            Some(false)
+        );
+        let open_prey = button_position(&output, size, "Open Prey")
+            .ok_or("disabled Kill Tracker route is clipped")?;
+        click(&context, size, open_prey, |context| {
+            egui::Window::new(("dedicated-panel-test", "kill-tracker"))
+                .fixed_size(size - egui::vec2(80.0, 80.0))
+                .show(context, |ui| {
+                    assert!(tracker.show(ui, "kill-tracker", true, &state));
+                });
+        });
+        assert_eq!(tracker.take_navigation(), None);
+        assert_eq!(tracker.drafts["kill-tracker"].texts, before_texts);
+        assert_eq!(tracker.drafts["kill-tracker"].flags, before_flags);
+        Ok(())
+    }
+
+    #[test]
+    fn tracker_disclosure_keeps_reference_options_visible_but_unavailable()
+    -> Result<(), &'static str> {
+        let context = egui::Context::default();
+        let size = egui::vec2(1100.0, 820.0);
+        let state = oteryn_client::play::GameState::default();
+        let mut views = PanelViews::default();
+        {
+            let draft = views.drafts.entry("quest-tracker".to_owned()).or_default();
+            draft.texts.insert("tracker.search", "quest".to_owned());
+            draft.flags.insert("tracker.completed", true);
+            draft.flags.insert("tracker.add", false);
+            draft.flags.insert("tracker.remove", true);
+        }
+        let before_texts = views.drafts["quest-tracker"].texts.clone();
+        let before_flags = views.drafts["quest-tracker"].flags.clone();
+        let output = render_panel(&context, size, &mut views, "quest-tracker", &state);
+        let options = button_position(&output, size, "Tracking options")
+            .ok_or("Tracking options disclosure is clipped")?;
+        click(&context, size, options, |context| {
+            egui::Window::new(("dedicated-panel-test", "quest-tracker"))
+                .fixed_size(size - egui::vec2(80.0, 80.0))
+                .show(context, |ui| {
+                    assert!(views.show(ui, "quest-tracker", true, &state));
+                });
+        });
+        let popup = frame(&context, size, vec![], |context| {
+            egui::Window::new(("dedicated-panel-test", "quest-tracker"))
+                .fixed_size(size - egui::vec2(80.0, 80.0))
+                .show(context, |ui| {
+                    assert!(views.show(ui, "quest-tracker", true, &state));
+                });
+        })
+        .1;
+        for (key, label) in [
+            ("tracker.completed", "Show completed entries"),
+            ("tracker.add", "Automatically add new quests"),
+            ("tracker.remove", "Automatically remove completed quests"),
+            ("tracker.remove-selected", "Remove selected entry"),
+            ("tracker.remove-all", "Remove all entries"),
+            ("tracker.remove-completed", "Remove completed entries"),
+        ] {
+            assert_eq!(
+                unavailable_control_enabled(&context, key),
+                Some(false),
+                "{key}"
+            );
+            assert!(
+                button_position(&popup, size, label).is_some(),
+                "missing {label}"
+            );
+        }
+        assert_eq!(views.drafts["quest-tracker"].texts, before_texts);
+        assert_eq!(views.drafts["quest-tracker"].flags, before_flags);
+        Ok(())
+    }
+
+    #[test]
+    fn supported_tracker_routes_keep_only_established_destinations() {
+        assert_eq!(
+            super::tracker_destination("quest-tracker"),
+            Some((
+                ("Otwórz dziennik zadań", "Open quest log"),
+                ("quest-log", None)
+            ))
+        );
+        assert_eq!(
+            super::tracker_destination("bestiary-tracker"),
+            Some((
+                ("Otwórz bestiariusz", "Open Bestiary"),
+                ("cyclopedia", Some(4))
+            ))
+        );
+        assert_eq!(
+            super::tracker_destination("bosstiary-tracker"),
+            Some((
+                ("Otwórz bestiariusz bossów", "Open Bosstiary"),
+                ("cyclopedia", Some(6))
+            ))
+        );
+        assert_eq!(super::tracker_destination("kill-tracker"), None);
+    }
+
+    #[test]
+    fn analytics_disables_unconsumed_selectors_and_keeps_rendered_views_live()
+    -> Result<(), &'static str> {
+        let context = egui::Context::default();
+        let size = egui::vec2(1100.0, 900.0);
+        let state = oteryn_client::play::GameState::default();
+        let mut views = PanelViews::default();
+        {
+            let draft = views.drafts.entry("analytics".to_owned()).or_default();
+            draft.choices.insert("analytics.kind", 3);
+            draft.choices.insert("analytics.boss.sort", 1);
+            for (key, value) in [
+                ("analytics.session", true),
+                ("analytics.hour", false),
+                ("analytics.graph", true),
+                ("analytics.gauge", true),
+                ("analytics.types", false),
+                ("analytics.sources", true),
+                ("analytics.rawxp", true),
+            ] {
+                draft.flags.insert(key, value);
+            }
+        }
+        let before_choices = views.drafts["analytics"].choices.clone();
+        let before_flags = views.drafts["analytics"].flags.clone();
+        let output = render_panel(&context, size, &mut views, "analytics", &state);
+        assert!(button_position(&output, size, "Session graph").is_some());
+        assert!(button_position(&output, size, "Analyzer gauge").is_some());
+
+        let menu = button_position(&output, size, "View and data")
+            .ok_or("analytics view menu is clipped")?;
+        click(&context, size, menu, |context| {
+            egui::Window::new(("dedicated-panel-test", "analytics"))
+                .fixed_size(size - egui::vec2(80.0, 80.0))
+                .show(context, |ui| {
+                    assert!(views.show(ui, "analytics", true, &state));
+                });
+        });
+        for key in [
+            "analytics.session",
+            "analytics.hour",
+            "analytics.types",
+            "analytics.sources",
+        ] {
+            assert_eq!(
+                unavailable_control_enabled(&context, key),
+                Some(false),
+                "{key}"
+            );
+        }
+        assert_eq!(views.drafts["analytics"].choices, before_choices);
+        assert_eq!(views.drafts["analytics"].flags, before_flags);
+
+        views
+            .drafts
+            .get_mut("analytics")
+            .ok_or("missing analytics draft")?
+            .choices
+            .insert("analytics.kind", 5);
+        frame(&context, size, vec![], |context| {
+            egui::Window::new(("dedicated-panel-test", "analytics"))
+                .fixed_size(size - egui::vec2(80.0, 80.0))
+                .show(context, |ui| {
+                    assert!(views.show(ui, "analytics", true, &state));
+                });
+        });
+        assert_eq!(
+            unavailable_control_enabled(&context, "analytics.rawxp"),
+            Some(false)
+        );
+
+        views
+            .drafts
+            .get_mut("analytics")
+            .ok_or("missing analytics draft")?
+            .choices
+            .insert("analytics.kind", 8);
+        let before_boss_sort = views.drafts["analytics"].choices["analytics.boss.sort"];
+        render_panel(&context, size, &mut views, "analytics", &state);
+        assert_eq!(
+            unavailable_control_enabled(&context, "analytics.boss.sort"),
+            Some(false)
+        );
+        assert_eq!(
+            views.drafts["analytics"].choices["analytics.boss.sort"],
+            before_boss_sort
+        );
+
+        let draft = views
+            .drafts
+            .get_mut("analytics")
+            .ok_or("missing analytics draft")?;
+        draft.flags.insert("analytics.graph", false);
+        draft.flags.insert("analytics.gauge", false);
+        let output = render_panel(&context, size, &mut views, "analytics", &state);
+        assert!(button_position(&output, size, "Session graph").is_none());
+        assert!(button_position(&output, size, "Analyzer gauge").is_none());
+        Ok(())
     }
 
     #[test]

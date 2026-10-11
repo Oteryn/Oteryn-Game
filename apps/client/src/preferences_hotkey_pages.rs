@@ -770,9 +770,18 @@ enum BindingTarget {
     },
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum BindingCandidateStatus {
+    Available,
+    OverwritesExisting,
+    Invalid,
+}
+
+const CONFIRM_LABEL: &str = "Ok";
+const BINDING_CELL_WIDTH: f32 = 120.0;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum NewAction {
-    Choose,
     Spell,
     Object,
     Text,
@@ -886,34 +895,8 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         let show_invalid_name = !edit.name.trim().is_empty() && !valid_name;
         let mut close_editor = false;
         egui::Modal::new(egui::Id::new("hotkey-profile-editor")).show(ui.ctx(), |ui| {
-            ui.heading(match edit.operation {
-                ProfileOperation::Add => {
-                    if en {
-                        "Add Hotkey Preset"
-                    } else {
-                        "Dodaj profil skrótów"
-                    }
-                }
-                ProfileOperation::Copy => {
-                    if en {
-                        "Copy Hotkey Preset"
-                    } else {
-                        "Kopiuj profil skrótów"
-                    }
-                }
-                ProfileOperation::Rename => {
-                    if en {
-                        "Rename Hotkey Preset"
-                    } else {
-                        "Zmień nazwę profilu skrótów"
-                    }
-                }
-            });
-            ui.label(if en {
-                "Profile name:"
-            } else {
-                "Nazwa profilu:"
-            });
+            ui.heading(profile_editor_title(edit.operation, en));
+            ui.label(profile_editor_prompt(edit.operation, en));
             ui.add(egui::TextEdit::singleline(&mut edit.name).char_limit(48));
             if show_invalid_name {
                 ui.colored_label(
@@ -927,7 +910,7 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
             }
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(valid_name, egui::Button::new("OK"))
+                    .add_enabled(valid_name, egui::Button::new(CONFIRM_LABEL))
                     .clicked()
                 {
                     apply_profile_edit(draft, edit);
@@ -1141,12 +1124,7 @@ fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
                     continue;
                 };
                 for slot in 0..ACTION_BAR_SLOTS {
-                    let label = format!(
-                        "{} Action Bar: Action Button {}.{:02}",
-                        edge(row),
-                        row + 1,
-                        slot + 1
-                    );
+                    let label = action_bar_label(row, slot);
                     if !matches_search(&state.search_applied, &label) {
                         continue;
                     }
@@ -1159,36 +1137,24 @@ fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
                     } else {
                         (&preferences.shortcuts, &preferences.secondary_shortcuts)
                     };
-                    binding_button(
-                        ui,
-                        primary[slot].map(slot_to_binding),
-                        BindingTarget::ActionBar {
-                            row,
-                            slot,
-                            chat_on: state.chat_on,
-                            second: false,
-                        },
-                        &label,
-                        en,
-                        &mut state.binding_editor,
-                    );
-                    binding_button(
-                        ui,
-                        secondary[slot].map(slot_to_binding),
-                        BindingTarget::ActionBar {
-                            row,
-                            slot,
-                            chat_on: state.chat_on,
-                            second: true,
-                        },
-                        &label,
-                        en,
-                        &mut state.binding_editor,
-                    );
+                    action_bar_binding(ui, primary[slot].map(slot_to_binding), en);
+                    action_bar_binding(ui, secondary[slot].map(slot_to_binding), en);
                     ui.end_row();
                 }
             }
         });
+}
+
+fn action_bar_binding(
+    ui: &mut egui::Ui,
+    value: Option<ShortcutBinding>,
+    en: bool,
+) -> egui::Response {
+    binding_cell(ui, value, false).on_disabled_hover_text(if en {
+        "Editing requires an authoritative live action-bar assignment source."
+    } else {
+        "Edycja wymaga wiarygodnego źródła przypisań paska akcji z bieżącej sesji."
+    })
 }
 
 fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
@@ -1252,56 +1218,56 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
     if let Some(index) = remove {
         profile.custom.remove(index);
     }
-    if ui
-        .button(if en { "New Action" } else { "Nowa czynność" })
-        .clicked()
-    {
-        state.new_action = Some(NewAction::Choose);
-    }
-    match state.new_action {
-        Some(NewAction::Choose) => choose_new_action(ui, en, state),
-        Some(kind) => edit_new_action(ui, profile, en, state, kind),
-        None => {}
+    new_action_menu(ui, en, state);
+    if let Some(kind) = state.new_action {
+        edit_new_action(ui, profile, en, state, kind);
     }
 }
 
-fn choose_new_action(ui: &mut egui::Ui, en: bool, state: &mut State) {
-    egui::Modal::new(egui::Id::new("custom-action-choose")).show(ui.ctx(), |ui| {
-        ui.heading(if en { "New Action" } else { "Nowa czynność" });
-        ui.horizontal(|ui| {
-            for (kind, pl, english, available) in [
-                (NewAction::Spell, "Przypisz czar", "Assign Spell", false),
-                (
-                    NewAction::Object,
-                    "Przypisz przedmiot",
-                    "Assign Object",
-                    false,
-                ),
-                (NewAction::Text, "Przypisz tekst", "Assign Text", true),
-            ] {
-                if ui
-                    .add_enabled(available, egui::Button::new(if en { english } else { pl }))
-                    .on_hover_text(if available {
-                        if en {
-                            "Text actions are routed to the real chat composer."
-                        } else {
-                            "Akcje tekstowe trafiają do rzeczywistego pola czatu."
-                        }
-                    } else if en {
-                        "Requires an authoritative live spell or inventory picker."
-                    } else {
-                        "Wymaga autorytatywnego katalogu czarów lub ekwipunku sesji."
-                    })
-                    .clicked()
-                {
-                    state.new_action = Some(kind);
-                }
+fn new_action_menu(ui: &mut egui::Ui, en: bool, state: &mut State) -> egui::Response {
+    ui.menu_button(if en { "New Action" } else { "Nowa czynność" }, |ui| {
+        for (kind, pl, english) in [
+            (NewAction::Spell, "Przypisz czar", "Assign Spell"),
+            (NewAction::Object, "Przypisz przedmiot", "Assign Object"),
+            (NewAction::Text, "Przypisz tekst", "Assign Text"),
+        ] {
+            let available = new_action_available(kind);
+            let response = ui
+                .add_enabled(available, egui::Button::new(if en { english } else { pl }))
+                .on_hover_text(new_action_availability_hint(kind, en));
+            if response.clicked() {
+                state.new_action = Some(kind);
+                ui.close();
             }
-            if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
-                state.new_action = None;
-            }
-        });
-    });
+        }
+    })
+    .response
+}
+
+fn new_action_available(kind: NewAction) -> bool {
+    // The live client currently has neither an admitted spell catalogue nor an item-use
+    // consumer. An inventory projection alone does not turn a persisted definition number
+    // into an executable object hotkey, so those entry points must remain non-interactive.
+    matches!(kind, NewAction::Text)
+}
+
+fn new_action_availability_hint(kind: NewAction, en: bool) -> &'static str {
+    match (kind, en) {
+        (NewAction::Spell, true) => {
+            "Requires an authoritative live spell catalogue and spell-action consumer."
+        }
+        (NewAction::Spell, false) => {
+            "Wymaga autorytatywnego katalogu czarów sesji i obsługi użycia czaru."
+        }
+        (NewAction::Object, true) => {
+            "Requires an authoritative live inventory selection and item-use consumer."
+        }
+        (NewAction::Object, false) => {
+            "Wymaga autorytatywnego wyboru z ekwipunku sesji i obsługi użycia przedmiotu."
+        }
+        (NewAction::Text, true) => "Text actions are routed to the real chat composer.",
+        (NewAction::Text, false) => "Akcje tekstowe trafiają do rzeczywistego pola czatu.",
+    }
 }
 
 fn edit_new_action(
@@ -1315,7 +1281,6 @@ fn edit_new_action(
         NewAction::Spell => ("Przypisz czar", "Assign Spell"),
         NewAction::Object => ("Przypisz przedmiot", "Assign Object"),
         NewAction::Text => ("Przypisz tekst", "Assign Text"),
-        NewAction::Choose => return,
     };
     egui::Modal::new(egui::Id::new("custom-action-editor")).show(ui.ctx(), |ui| {
         ui.heading(if en { title.1 } else { title.0 });
@@ -1390,6 +1355,7 @@ fn edit_new_action(
                 }
             }
             NewAction::Text => {
+                ui.label(new_text_label(en));
                 ui.add(
                     egui::TextEdit::singleline(&mut state.new_text)
                         .char_limit(256)
@@ -1404,7 +1370,6 @@ fn edit_new_action(
                     },
                 );
             }
-            NewAction::Choose => {}
         }
         let valid = new_action_valid(state, kind);
         ui.horizontal(|ui| {
@@ -1428,6 +1393,10 @@ fn edit_new_action(
     });
 }
 
+fn new_text_label(en: bool) -> &'static str {
+    if en { "Text:" } else { "Tekst:" }
+}
+
 fn new_action_valid(state: &State, kind: NewAction) -> bool {
     match kind {
         NewAction::Spell => !state.spell_key.trim().is_empty(),
@@ -1435,8 +1404,7 @@ fn new_action_valid(state: &State, kind: NewAction) -> bool {
             .object_definition
             .parse::<u32>()
             .is_ok_and(|definition| definition != 0),
-        NewAction::Text => !state.new_text.is_empty(),
-        NewAction::Choose => false,
+        NewAction::Text => !state.new_text.trim().is_empty(),
     }
 }
 
@@ -1460,7 +1428,6 @@ fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewActio
             text: std::mem::take(&mut state.new_text),
             send_automatically: state.send_automatically,
         },
-        NewAction::Choose => return,
     };
     profile.custom.push(CustomHotkey {
         action,
@@ -1482,11 +1449,10 @@ fn binding_button(
     value: Option<ShortcutBinding>,
     target: BindingTarget,
     action: &str,
-    en: bool,
+    _en: bool,
     editor: &mut Option<BindingEditor>,
-) {
-    let response =
-        ui.button(value.map_or_else(|| if en { "None".into() } else { "Brak".into() }, chord));
+) -> egui::Response {
+    let response = binding_cell(ui, value, true);
     if response.clicked() {
         *editor = Some(BindingEditor {
             target,
@@ -1494,6 +1460,7 @@ fn binding_button(
             captured: value,
         });
     }
+    response
 }
 
 fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
@@ -1539,45 +1506,52 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
             });
         }
     }
-    let valid = binding_candidate_valid(draft, &editor.target, editor.captured);
+    let candidate_status = binding_candidate_status(draft, &editor.target, editor.captured);
     egui::Modal::new(egui::Id::new("hotkey-binding-editor")).show(ui.ctx(), |ui| {
-        ui.heading(if en { "Set Hotkey" } else { "Ustaw skrót" });
-        ui.label(&editor.action);
-        ui.weak(if editor.target.chat_on() {
-            if en {
-                "Chat Mode On"
-            } else {
-                "Tryb czatu włączony"
-            }
-        } else if en {
-            "Chat Mode Off"
-        } else {
-            "Tryb czatu wyłączony"
-        });
+        ui.heading(binding_editor_title(&editor.action, en));
+        ui.weak(binding_editor_mode(editor.target.chat_on(), en));
         ui.add_space(6.0);
-        ui.label(if en {
-            "Press a key…"
-        } else {
-            "Naciśnij klawisz…"
-        });
-        ui.strong(
-            editor
-                .captured
-                .map_or_else(|| if en { "None".into() } else { "Brak".into() }, chord),
-        );
-        if !valid && editor.captured.is_some() {
-            ui.colored_label(
-                ui.visuals().error_fg_color,
-                if en {
-                    "This key conflicts with another action or is reserved."
-                } else {
-                    "Ten klawisz koliduje z inną czynnością lub jest zarezerwowany."
-                },
-            );
+        ui.strong(binding_cell_label(editor.captured));
+        ui.label(binding_editor_instruction(&editor.action, en));
+        if editor.target.is_movement() {
+            ui.label(if en {
+                "This action must be bound to a single key."
+            } else {
+                "Ta czynność musi być przypisana do pojedynczego klawisza."
+            });
+        }
+        match candidate_status {
+            BindingCandidateStatus::OverwritesExisting => {
+                ui.colored_label(
+                    ui.visuals().error_fg_color,
+                    if en {
+                        "This hotkey is already in use and will be overwritten."
+                    } else {
+                        "Ten skrót jest już używany i zostanie nadpisany."
+                    },
+                );
+            }
+            BindingCandidateStatus::Invalid if editor.captured.is_some() => {
+                ui.colored_label(
+                    ui.visuals().error_fg_color,
+                    if en {
+                        "This hotkey is invalid or reserved."
+                    } else {
+                        "Ten skrót jest nieprawidłowy lub zarezerwowany."
+                    },
+                );
+            }
+            BindingCandidateStatus::Available | BindingCandidateStatus::Invalid => {}
         }
         ui.horizontal(|ui| {
-            if ui.add_enabled(valid, egui::Button::new("OK")).clicked() {
-                let _ = set_binding(draft, &editor.target, editor.captured);
+            if ui
+                .add_enabled(
+                    candidate_status != BindingCandidateStatus::Invalid,
+                    egui::Button::new(CONFIRM_LABEL),
+                )
+                .clicked()
+            {
+                let _ = apply_binding_candidate(draft, &editor.target, editor.captured);
                 close = true;
             }
             if ui.button(if en { "Clear" } else { "Wyczyść" }).clicked() {
@@ -1612,15 +1586,165 @@ impl BindingTarget {
             }
         )
     }
+
+    fn is_movement(&self) -> bool {
+        matches!(
+            self,
+            Self::General {
+                action,
+                ..
+            } if is_movement_action(action)
+        )
+    }
 }
 
-fn binding_candidate_valid(
+fn binding_candidate_status(
     draft: &ClientSettings,
     target: &BindingTarget,
     value: Option<ShortcutBinding>,
+) -> BindingCandidateStatus {
+    prepare_binding_candidate(draft, target, value).0
+}
+
+fn apply_binding_candidate(
+    draft: &mut ClientSettings,
+    target: &BindingTarget,
+    value: Option<ShortcutBinding>,
 ) -> bool {
+    let (_, candidate) = prepare_binding_candidate(draft, target, value);
+    let Some(candidate) = candidate else {
+        return false;
+    };
+    *draft = candidate;
+    true
+}
+
+fn prepare_binding_candidate(
+    draft: &ClientSettings,
+    target: &BindingTarget,
+    value: Option<ShortcutBinding>,
+) -> (BindingCandidateStatus, Option<ClientSettings>) {
     let mut candidate = draft.clone();
-    set_binding(&mut candidate, target, value) && candidate.validate_hotkey_draft().is_ok()
+    if set_binding(&mut candidate, target, value) && candidate.validate_hotkey_draft().is_ok() {
+        return (BindingCandidateStatus::Available, Some(candidate));
+    }
+
+    let Some(value) = value else {
+        return (BindingCandidateStatus::Invalid, None);
+    };
+    let mut candidate = draft.clone();
+    if clear_binding_conflicts(&mut candidate, target.chat_on(), value)
+        && set_binding(&mut candidate, target, Some(value))
+        && candidate.validate_hotkey_draft().is_ok()
+    {
+        return (BindingCandidateStatus::OverwritesExisting, Some(candidate));
+    }
+    (BindingCandidateStatus::Invalid, None)
+}
+
+fn clear_binding_conflicts(
+    draft: &mut ClientSettings,
+    chat_on: bool,
+    value: ShortcutBinding,
+) -> bool {
+    let mut cleared = false;
+    {
+        let Some(profile) = draft.hotkeys.active_mut() else {
+            return false;
+        };
+        let map = if chat_on {
+            &mut profile.general_chat_on
+        } else {
+            &mut profile.general_chat_off
+        };
+        let mut newly_empty = Vec::new();
+        for (action, pair) in map.iter_mut() {
+            if clear_pair_binding(pair, value) {
+                cleared = true;
+                if *pair == HotkeyPair::default() && !keep_empty_general_pair(action) {
+                    newly_empty.push(action.clone());
+                }
+            }
+        }
+        for action in newly_empty {
+            map.remove(&action);
+        }
+
+        if !chat_on && !has_binding_modifiers(value) {
+            for (action, key) in [
+                "movement.north",
+                "movement.east",
+                "movement.south",
+                "movement.west",
+            ]
+            .into_iter()
+            .zip(draft.movement_keys)
+            {
+                if key == value.key && !map.contains_key(action) {
+                    map.insert(action.into(), HotkeyPair::default());
+                    cleared = true;
+                }
+            }
+        }
+
+        for action in &mut profile.custom {
+            let pair = if chat_on {
+                &mut action.chat_on
+            } else {
+                &mut action.chat_off
+            };
+            cleared |= clear_pair_binding(pair, value);
+        }
+    }
+
+    let slot = binding_to_slot(value);
+    for row in 0..ACTION_BAR_ROWS {
+        let Some(mut preferences) = draft.action_bar.row(row) else {
+            continue;
+        };
+        let (primary, secondary) = if chat_on {
+            (
+                &mut preferences.chat_on_shortcuts,
+                &mut preferences.chat_on_secondary_shortcuts,
+            )
+        } else {
+            (
+                &mut preferences.shortcuts,
+                &mut preferences.secondary_shortcuts,
+            )
+        };
+        let mut row_changed = false;
+        for shortcut in primary.iter_mut().chain(secondary.iter_mut()) {
+            if *shortcut == Some(slot) {
+                *shortcut = None;
+                row_changed = true;
+            }
+        }
+        if row_changed {
+            cleared = true;
+            let _ = draft.action_bar.set_row(row, preferences);
+        }
+    }
+    cleared
+}
+
+fn clear_pair_binding(pair: &mut HotkeyPair, value: ShortcutBinding) -> bool {
+    let mut cleared = false;
+    for binding in [&mut pair.first, &mut pair.second] {
+        if *binding == Some(value) {
+            *binding = None;
+            cleared = true;
+        }
+    }
+    cleared
+}
+
+fn has_binding_modifiers(value: ShortcutBinding) -> bool {
+    value.ctrl || value.alt || value.shift || value.meta
+}
+
+fn keep_empty_general_pair(action: &str) -> bool {
+    is_movement_action(action) || action == "chat.send"
 }
 
 fn set_binding(
@@ -1648,10 +1772,7 @@ fn set_binding(
             } else {
                 pair.first = value;
             }
-            if pair == HotkeyPair::default()
-                && !is_movement_action(action)
-                && *action != "chat.send"
-            {
+            if pair == HotkeyPair::default() && !keep_empty_general_pair(action) {
                 map.remove(*action);
             } else {
                 map.insert((*action).into(), pair);
@@ -1798,25 +1919,83 @@ fn egui_key_to_hid(key: egui::Key) -> Option<u16> {
     })
 }
 
-fn unavailable_binding(ui: &mut egui::Ui, value: Option<ShortcutBinding>, en: bool) {
-    ui.add_enabled(
-        false,
-        egui::Button::new(value.map_or_else(
-            || {
-                if en {
-                    "Unavailable".into()
-                } else {
-                    "Niedostępne".into()
-                }
-            },
-            chord,
-        )),
-    )
-    .on_hover_text(if en {
+fn unavailable_binding(
+    ui: &mut egui::Ui,
+    value: Option<ShortcutBinding>,
+    en: bool,
+) -> egui::Response {
+    binding_cell(ui, value, false).on_disabled_hover_text(if en {
         "This action has no client consumer yet."
     } else {
         "Ta czynność nie ma jeszcze obsługi w kliencie."
-    });
+    })
+}
+
+fn binding_cell(
+    ui: &mut egui::Ui,
+    value: Option<ShortcutBinding>,
+    enabled: bool,
+) -> egui::Response {
+    let size = egui::vec2(BINDING_CELL_WIDTH, ui.spacing().interact_size.y);
+    ui.add_enabled_ui(enabled, |ui| {
+        ui.add_sized(size, egui::Button::new(binding_cell_label(value)))
+    })
+    .inner
+}
+
+fn binding_cell_label(value: Option<ShortcutBinding>) -> String {
+    value.map_or_else(String::new, chord)
+}
+
+fn binding_editor_title(action: &str, en: bool) -> String {
+    if en {
+        format!("Edit Hotkey for \"{action}\"")
+    } else {
+        format!("Edytuj skrót dla „{action}”")
+    }
+}
+
+fn binding_editor_mode(chat_on: bool, en: bool) -> &'static str {
+    match (en, chat_on) {
+        (true, true) => "Mode: \"Chat On\"",
+        (true, false) => "Mode: \"Chat Off\"",
+        (false, true) => "Tryb: „Czat włączony”",
+        (false, false) => "Tryb: „Czat wyłączony”",
+    }
+}
+
+fn binding_editor_instruction(action: &str, en: bool) -> String {
+    if en {
+        format!(
+            "Click \"Ok\" to assign the hotkey. Click \"Clear\" to remove the hotkey from \"{action}\"."
+        )
+    } else {
+        format!(
+            "Kliknij „Ok”, aby przypisać skrót. Kliknij „Wyczyść”, aby usunąć skrót z „{action}”."
+        )
+    }
+}
+
+fn profile_editor_title(operation: ProfileOperation, en: bool) -> &'static str {
+    match (en, operation) {
+        (true, ProfileOperation::Add) => "Add hotkey preset",
+        (true, ProfileOperation::Copy) => "Copy hotkey preset",
+        (true, ProfileOperation::Rename) => "Rename hotkey preset",
+        (false, ProfileOperation::Add) => "Dodaj profil skrótów",
+        (false, ProfileOperation::Copy) => "Kopiuj profil skrótów",
+        (false, ProfileOperation::Rename) => "Zmień nazwę profilu skrótów",
+    }
+}
+
+fn profile_editor_prompt(operation: ProfileOperation, en: bool) -> &'static str {
+    match (en, operation) {
+        (true, ProfileOperation::Add | ProfileOperation::Copy) => {
+            "Enter a name for the new preset:"
+        }
+        (true, ProfileOperation::Rename) => "Enter a new name for the preset:",
+        (false, ProfileOperation::Add | ProfileOperation::Copy) => "Podaj nazwę nowego profilu:",
+        (false, ProfileOperation::Rename) => "Podaj nową nazwę profilu:",
+    }
 }
 
 fn matches_search(search: &str, label: &str) -> bool {
@@ -1830,6 +2009,16 @@ fn edge(row: usize) -> &'static str {
         _ => "Right",
     }
 }
+
+fn action_bar_label(row: usize, slot: usize) -> String {
+    format!(
+        "{} Action Bar: Action Button {}.{:02}",
+        edge(row),
+        row + 1,
+        slot + 1
+    )
+}
+
 fn key_name(key: u16) -> String {
     match key {
         4..=29 => char::from_u32(u32::from(b'A') + u32::from(key - 4))
@@ -2016,7 +2205,7 @@ mod tests {
     }
 
     #[test]
-    fn every_custom_action_path_creates_a_valid_typed_action()
+    fn legacy_typed_custom_actions_remain_valid_and_round_trippable()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut profile = HotkeyProfile::default();
         let mut state = State {
@@ -2061,7 +2250,87 @@ mod tests {
     }
 
     #[test]
-    fn binding_editor_keeps_chat_contexts_and_rejects_conflicts() -> Result<(), &'static str> {
+    fn text_action_rejects_whitespace_only_input() {
+        let mut state = State {
+            new_text: " \t  ".into(),
+            ..State::default()
+        };
+        assert!(!new_action_valid(&state, NewAction::Text));
+        state.new_text = " hello ".into();
+        assert!(new_action_valid(&state, NewAction::Text));
+    }
+
+    #[test]
+    fn new_action_is_an_anchored_menu_and_only_text_is_actionable() {
+        fn frame(
+            context: &egui::Context,
+            state: &mut State,
+            input: egui::RawInput,
+        ) -> (egui::Rect, Vec<String>) {
+            let mut button = egui::Rect::NOTHING;
+            let mut output = context.run_ui(input, |ui| {
+                button = new_action_menu(ui, true, state).rect;
+            });
+            let text = output
+                .shapes
+                .iter()
+                .filter_map(|shape| match &shape.shape {
+                    egui::epaint::Shape::Text(text) => Some(text.galley.job.text.clone()),
+                    _ => None,
+                })
+                .collect();
+            output.textures_delta.clear();
+            (button, text)
+        }
+
+        let context = egui::Context::default();
+        let mut state = State::default();
+        let (button, _) = frame(&context, &mut state, egui::RawInput::default());
+        assert!(button.is_positive());
+        let pointer = |pressed| egui::RawInput {
+            events: vec![
+                egui::Event::PointerMoved(button.center()),
+                egui::Event::PointerButton {
+                    pos: button.center(),
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+            ..Default::default()
+        };
+        frame(&context, &mut state, pointer(true));
+        let (_, mut text) = frame(&context, &mut state, pointer(false));
+        let (_, next_text) = frame(&context, &mut state, egui::RawInput::default());
+        text.extend(next_text);
+
+        assert!(egui::Popup::is_any_open(&context));
+        for label in ["Assign Spell", "Assign Object", "Assign Text"] {
+            assert!(text.iter().any(|visible| visible == label), "{label}");
+        }
+        assert!(!new_action_available(NewAction::Spell));
+        assert!(!new_action_available(NewAction::Object));
+        assert!(new_action_available(NewAction::Text));
+        assert!(state.new_action.is_none());
+    }
+
+    #[test]
+    fn assign_text_editor_uses_the_reference_field_label() {
+        assert_eq!(new_text_label(true), "Text:");
+        assert_eq!(new_text_label(false), "Tekst:");
+        assert_eq!(
+            new_action_availability_hint(NewAction::Object, true),
+            "Requires an authoritative live inventory selection and item-use consumer."
+        );
+        assert_eq!(
+            new_action_availability_hint(NewAction::Spell, true),
+            "Requires an authoritative live spell catalogue and spell-action consumer."
+        );
+    }
+
+    #[test]
+    fn binding_editor_keeps_chat_contexts_and_overwrites_conflicts_atomically()
+    -> Result<(), &'static str> {
         let mut settings = ClientSettings::default();
         let original_chat_on = settings
             .hotkeys
@@ -2082,6 +2351,12 @@ mod tests {
             second: false,
         };
         assert!(set_binding(&mut settings, &options_off, Some(first)));
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .insert("explicit.clear".into(), HotkeyPair::default());
         let profile = settings.hotkeys.active().ok_or("default profile")?;
         assert_eq!(
             profile.general_chat_off["client.options"].first,
@@ -2099,17 +2374,354 @@ mod tests {
             chat_on: true,
             second: false,
         };
-        assert!(!binding_candidate_valid(
-            &settings,
+        assert_eq!(
+            binding_candidate_status(&settings, &fullscreen_off, Some(first)),
+            BindingCandidateStatus::OverwritesExisting
+        );
+        assert_eq!(
+            binding_candidate_status(&settings, &fullscreen_on, Some(first)),
+            BindingCandidateStatus::Available
+        );
+        assert!(apply_binding_candidate(
+            &mut settings,
             &fullscreen_off,
             Some(first)
         ));
-        assert!(binding_candidate_valid(
-            &settings,
-            &fullscreen_on,
+        let profile = settings.hotkeys.active().ok_or("default profile")?;
+        assert!(!profile.general_chat_off.contains_key("client.options"));
+        assert!(profile.general_chat_off.contains_key("explicit.clear"));
+        assert_eq!(
+            profile.general_chat_off["client.fullscreen"].first,
             Some(first)
-        ));
+        );
+        assert_eq!(profile.general_chat_on, original_chat_on);
+        assert!(settings.validate_hotkey_draft().is_ok());
         Ok(())
+    }
+
+    #[test]
+    fn conflict_overwrite_spans_action_bar_and_custom_but_not_chat_contexts()
+    -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        let binding = ShortcutBinding {
+            key: 69,
+            ctrl: true,
+            alt: true,
+            shift: true,
+            meta: false,
+        };
+        let action_bar_off = BindingTarget::ActionBar {
+            row: 8,
+            slot: 49,
+            chat_on: false,
+            second: true,
+        };
+        assert!(set_binding(&mut settings, &action_bar_off, Some(binding)));
+        assert!(settings.validate_hotkey_draft().is_ok());
+
+        let general_off = BindingTarget::General {
+            action: "client.options",
+            chat_on: false,
+            second: false,
+        };
+        assert_eq!(
+            binding_candidate_status(&settings, &general_off, Some(binding)),
+            BindingCandidateStatus::OverwritesExisting
+        );
+        assert!(apply_binding_candidate(
+            &mut settings,
+            &general_off,
+            Some(binding)
+        ));
+        assert_eq!(
+            settings
+                .action_bar
+                .row(8)
+                .ok_or("row 9")?
+                .secondary_shortcuts[49],
+            None
+        );
+
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .custom
+            .push(CustomHotkey {
+                action: CustomHotkeyAction::Text {
+                    text: "hello".into(),
+                    send_automatically: false,
+                },
+                chat_on: HotkeyPair {
+                    first: Some(binding),
+                    second: None,
+                },
+                chat_off: HotkeyPair::default(),
+            });
+        assert!(settings.validate_hotkey_draft().is_ok());
+
+        let action_bar_on = BindingTarget::ActionBar {
+            row: 8,
+            slot: 49,
+            chat_on: true,
+            second: false,
+        };
+        assert_eq!(
+            binding_candidate_status(&settings, &action_bar_on, Some(binding)),
+            BindingCandidateStatus::OverwritesExisting
+        );
+        assert!(apply_binding_candidate(
+            &mut settings,
+            &action_bar_on,
+            Some(binding)
+        ));
+        let profile = settings.hotkeys.active().ok_or("default profile")?;
+        assert_eq!(profile.custom[0].chat_on.first, None);
+        assert_eq!(
+            profile.general_chat_off["client.options"].first,
+            Some(binding)
+        );
+        assert_eq!(
+            settings.action_bar.row(8).ok_or("row 9")?.chat_on_shortcuts[49].map(slot_to_binding),
+            Some(binding)
+        );
+        assert!(settings.validate_hotkey_draft().is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn conflict_overwrite_is_scoped_to_the_active_profile() -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        let binding = ShortcutBinding {
+            key: 68,
+            ctrl: true,
+            alt: true,
+            shift: false,
+            meta: false,
+        };
+        let mut other = HotkeyProfile {
+            name: "Other".into(),
+            ..HotkeyProfile::default()
+        };
+        other.general_chat_off.insert(
+            "client.options".into(),
+            HotkeyPair {
+                first: Some(binding),
+                second: None,
+            },
+        );
+        settings.hotkeys.profiles.push(other);
+        assert!(settings.validate_hotkey_draft().is_ok());
+
+        let active_target = BindingTarget::General {
+            action: "client.previous_profile",
+            chat_on: false,
+            second: false,
+        };
+        assert_eq!(
+            binding_candidate_status(&settings, &active_target, Some(binding)),
+            BindingCandidateStatus::Available
+        );
+        assert!(apply_binding_candidate(
+            &mut settings,
+            &active_target,
+            Some(binding)
+        ));
+        assert_eq!(
+            settings.hotkeys.profiles[1].general_chat_off["client.options"].first,
+            Some(binding)
+        );
+        assert!(settings.validate_hotkey_draft().is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn overwrite_materializes_a_clear_for_a_legacy_movement_fallback() -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .clear();
+        assert!(settings.validate_hotkey_draft().is_ok());
+        let north = ShortcutBinding {
+            key: settings.movement_keys[0],
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        let target = BindingTarget::General {
+            action: "client.options",
+            chat_on: false,
+            second: false,
+        };
+        assert_eq!(
+            binding_candidate_status(&settings, &target, Some(north)),
+            BindingCandidateStatus::OverwritesExisting
+        );
+        assert!(apply_binding_candidate(&mut settings, &target, Some(north)));
+        let profile = settings.hotkeys.active().ok_or("default profile")?;
+        assert_eq!(
+            profile.general_chat_off["movement.north"],
+            HotkeyPair::default()
+        );
+        assert_eq!(
+            profile.general_chat_off["client.options"].first,
+            Some(north)
+        );
+        assert!(settings.validate_hotkey_draft().is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn empty_table_bindings_are_visually_blank() {
+        assert_eq!(binding_cell_label(None), "");
+        assert_eq!(
+            binding_cell_label(Some(ShortcutBinding {
+                key: 4,
+                ctrl: true,
+                alt: false,
+                shift: false,
+                meta: false,
+            })),
+            "Ctrl+A"
+        );
+    }
+
+    #[test]
+    fn blank_and_unavailable_binding_cells_keep_a_full_stable_hit_target() {
+        let context = egui::Context::default();
+        let mut editor = None;
+        let mut editable = egui::Rect::NOTHING;
+        let mut unavailable = egui::Rect::NOTHING;
+        let mut editable_enabled = false;
+        let mut unavailable_enabled = true;
+        let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+            let response = binding_button(
+                ui,
+                None,
+                BindingTarget::General {
+                    action: "client.options",
+                    chat_on: false,
+                    second: false,
+                },
+                "Options",
+                true,
+                &mut editor,
+            );
+            editable = response.rect;
+            editable_enabled = response.enabled();
+            let response = unavailable_binding(ui, None, true);
+            unavailable = response.rect;
+            unavailable_enabled = response.enabled();
+        });
+        output.textures_delta.clear();
+
+        assert_eq!(editable.width(), BINDING_CELL_WIDTH);
+        assert_eq!(unavailable.width(), BINDING_CELL_WIDTH);
+        assert_eq!(editable.size(), unavailable.size());
+        assert!(editable_enabled);
+        assert!(!unavailable_enabled);
+        assert!(editor.is_none());
+    }
+
+    #[test]
+    fn action_bar_inventory_keeps_all_nine_by_fifty_saved_rows() {
+        let labels = (0..ACTION_BAR_ROWS)
+            .flat_map(|row| (0..ACTION_BAR_SLOTS).map(move |slot| action_bar_label(row, slot)))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(labels.len(), ACTION_BAR_ROWS * ACTION_BAR_SLOTS);
+        assert!(labels.contains("Bottom Action Bar: Action Button 1.01"));
+        assert!(labels.contains("Right Action Bar: Action Button 9.50"));
+    }
+
+    #[test]
+    fn action_bar_page_disables_both_binding_cells_without_changing_saved_values() {
+        let context = egui::Context::default();
+        let binding = ShortcutBinding {
+            key: 69,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        let mut first_enabled = true;
+        let mut second_enabled = true;
+        let mut rendered = Vec::new();
+        let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+            let first = action_bar_binding(ui, Some(binding), true);
+            let second = action_bar_binding(ui, None, true);
+            first_enabled = first.enabled();
+            second_enabled = second.enabled();
+        });
+        rendered.extend(output.shapes.iter().filter_map(|shape| match &shape.shape {
+            egui::epaint::Shape::Text(text) => Some(text.galley.job.text.clone()),
+            _ => None,
+        }));
+        output.textures_delta.clear();
+        assert!(!first_enabled);
+        assert!(!second_enabled);
+        assert!(rendered.iter().any(|text| text == "Ctrl+F12"));
+
+        let mut settings = ClientSettings::default();
+        settings.action_bar.extra_rows[7].secondary_shortcuts[49] = Some(binding_to_slot(binding));
+        let before = settings.clone();
+        let mut state = State {
+            search_applied: action_bar_label(8, 49),
+            ..State::default()
+        };
+        let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+            action_bars(ui, &mut settings, true, &mut state);
+        });
+        output.textures_delta.clear();
+        assert_eq!(settings, before);
+        assert!(state.binding_editor.is_none());
+    }
+
+    #[test]
+    fn binding_editor_uses_the_reference_english_copy() {
+        let action = "Movement: Go East";
+        assert_eq!(
+            binding_editor_title(action, true),
+            "Edit Hotkey for \"Movement: Go East\""
+        );
+        assert_eq!(binding_editor_mode(false, true), "Mode: \"Chat Off\"");
+        assert_eq!(
+            binding_editor_instruction(action, true),
+            "Click \"Ok\" to assign the hotkey. Click \"Clear\" to remove the hotkey from \"Movement: Go East\"."
+        );
+        assert_eq!(CONFIRM_LABEL, "Ok");
+    }
+
+    #[test]
+    fn profile_editors_use_the_reference_english_copy() {
+        assert_eq!(
+            profile_editor_title(ProfileOperation::Add, true),
+            "Add hotkey preset"
+        );
+        assert_eq!(
+            profile_editor_prompt(ProfileOperation::Add, true),
+            "Enter a name for the new preset:"
+        );
+        assert_eq!(
+            profile_editor_title(ProfileOperation::Copy, true),
+            "Copy hotkey preset"
+        );
+        assert_eq!(
+            profile_editor_prompt(ProfileOperation::Copy, true),
+            "Enter a name for the new preset:"
+        );
+        assert_eq!(
+            profile_editor_title(ProfileOperation::Rename, true),
+            "Rename hotkey preset"
+        );
+        assert_eq!(
+            profile_editor_prompt(ProfileOperation::Rename, true),
+            "Enter a new name for the preset:"
+        );
+        assert_eq!(CONFIRM_LABEL, "Ok");
     }
 
     #[test]
@@ -2286,16 +2898,22 @@ mod tests {
             shift: false,
             meta: false,
         };
-        assert!(!binding_candidate_valid(
-            &settings,
+        let unchanged = settings.clone();
+        assert_eq!(
+            binding_candidate_status(&settings, &movement, Some(modified)),
+            BindingCandidateStatus::Invalid
+        );
+        assert!(!apply_binding_candidate(
+            &mut settings,
             &movement,
             Some(modified)
         ));
+        assert_eq!(settings, unchanged);
 
         let stop = BindingTarget::General {
             action: "client.stop",
             chat_on: false,
-            second: false,
+            second: true,
         };
         let options = BindingTarget::General {
             action: "client.options",
@@ -2309,8 +2927,30 @@ mod tests {
             shift: false,
             meta: false,
         };
-        assert!(binding_candidate_valid(&settings, &stop, Some(escape)));
-        assert!(!binding_candidate_valid(&settings, &options, Some(escape)));
+        assert_eq!(
+            binding_candidate_status(&settings, &stop, Some(escape)),
+            BindingCandidateStatus::OverwritesExisting
+        );
+        assert!(apply_binding_candidate(&mut settings, &stop, Some(escape)));
+        let stop_pair = settings
+            .hotkeys
+            .active()
+            .ok_or("default profile")?
+            .general_chat_off["client.stop"];
+        assert_eq!(stop_pair.first, None);
+        assert_eq!(stop_pair.second, Some(escape));
+
+        let unchanged = settings.clone();
+        assert_eq!(
+            binding_candidate_status(&settings, &options, Some(escape)),
+            BindingCandidateStatus::Invalid
+        );
+        assert!(!apply_binding_candidate(
+            &mut settings,
+            &options,
+            Some(escape)
+        ));
+        assert_eq!(settings, unchanged);
         Ok(())
     }
 }

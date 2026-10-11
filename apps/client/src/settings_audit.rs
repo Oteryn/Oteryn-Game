@@ -124,15 +124,15 @@ pub const REFERENCE_SETTINGS_PAGES: [ReferenceSettingsPage; 20] = [
     page("action_hotkeys", "Bottom Action Bar: Action Button 1.01"),
     page("custom_hotkeys", "New Action"),
     page("interface", "Highlight Mouse Target"),
-    page("hud", "Special conditions · 35"),
+    page("hud", "Show HUD for Own Character"),
     page("console", "Show Info Messages"),
     page("game_window", "Show Textual Effects"),
     page("action_bars", "Show Bottom Action Bars:"),
-    page("shortcuts", "Displayed Shortcuts:"),
+    page("shortcuts", "Displayed Shortcuts"),
     page("graphics", "Graphics Engine:"),
-    page("effects", "Lighting"),
+    page("effects", "Show Light Effects"),
     page("sound", "Sound Device:"),
-    page("battle_sounds", "Own Battle Sounds"),
+    page("battle_sounds", "Own Battle Sounds: —"),
     page("ui_sounds", "UI Volume: —"),
     page("miscellaneous", "Ask Before Buying Products"),
     page("gameplay", "Allow All to Inspect Me"),
@@ -683,7 +683,7 @@ impl NativeSettingsAudit {
             marker_visible: output_has_visible_text(output, reference.marker, scroll.inner_rect),
             footer: AuditFooterEvidence {
                 reset: output_has_visible_text(output, "Reset", viewport),
-                ok: output_has_visible_text(output, "OK", viewport),
+                ok: output_has_visible_text(output, "Ok", viewport),
                 apply: output_has_visible_text(output, "Apply", viewport),
                 cancel: output_has_visible_text(output, "Cancel", viewport),
             },
@@ -1477,7 +1477,7 @@ mod tests {
                 reference.id,
                 reference.marker,
             );
-            for label in ["Reset", "OK", "Apply", "Cancel"] {
+            for label in ["Reset", "Ok", "Apply", "Cancel"] {
                 assert!(
                     output_has_visible_text(&output, label, context.content_rect()),
                     "{} is missing fixed-footer control {label:?}",

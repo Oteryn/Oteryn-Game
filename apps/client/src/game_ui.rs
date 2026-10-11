@@ -1,6 +1,6 @@
 //! In-world UI consumes session projections; it never invents character state.
 use egui::{Color32, RichText};
-use oteryn_client::action_bar::{ActionBar, ActionBarCommand, ActionBarOutcome};
+use oteryn_client::action_bar::{ACTION_BAR_ROWS, ActionBar, ActionBarCommand, ActionBarOutcome};
 use oteryn_client::layout::{HUD_CHAT_HEIGHT, HUD_MARGIN, HUD_SIDEBAR_WIDTH, HUD_TOP_HEIGHT};
 use oteryn_client::minimap::{LoadedMinimap, MINIMAP_SIDE, MinimapZoom};
 use oteryn_client::{
@@ -82,6 +82,16 @@ fn ambient_overlay_alpha(settings: &ClientSettings) -> Option<u8> {
         .map(|ambient| (((100 - ambient.clamp(0, 100)) as f32 / 100.0) * 190.0).round() as u8)
 }
 
+fn settings_with_panel_shortcuts(
+    pending: Option<ClientSettings>,
+    current: &ClientSettings,
+    shortcuts: Vec<String>,
+) -> ClientSettings {
+    let mut next = pending.unwrap_or_else(|| current.clone());
+    next.panel_shortcuts = shortcuts;
+    next
+}
+
 #[derive(Default)]
 pub struct GameUi {
     character_name: Option<String>,
@@ -125,6 +135,15 @@ fn panel_hotkey_destination(action: &str) -> Option<PanelHotkeyDestination> {
         "window.battle" => PanelHotkeyDestination::Toggle("battle"),
         "window.skills" => PanelHotkeyDestination::Toggle("skills"),
         "window.spell_list" => PanelHotkeyDestination::Toggle("spells"),
+        "window.analytics_selector" => PanelHotkeyDestination::Toggle("analytics"),
+        "window.bestiary_tracker" => PanelHotkeyDestination::Toggle("bestiary-tracker"),
+        "window.bosstiary_tracker" => PanelHotkeyDestination::Toggle("bosstiary-tracker"),
+        "window.imbuement_tracker" => PanelHotkeyDestination::Toggle("imbuement-tracker"),
+        "window.kill_tracker" => PanelHotkeyDestination::Toggle("kill-tracker"),
+        "window.party" => PanelHotkeyDestination::Toggle("party"),
+        "window.player_guide" => PanelHotkeyDestination::Toggle("player-guide"),
+        "window.quest_tracker" => PanelHotkeyDestination::Toggle("quest-tracker"),
+        "dialog.compendium" => PanelHotkeyDestination::Open("compendium"),
         "dialog.quest_log" => PanelHotkeyDestination::Open("quest-log"),
         "dialog.prey" => PanelHotkeyDestination::Open("prey"),
         "dialog.cyclopedia.bestiary" => PanelHotkeyDestination::OpenTab("cyclopedia", "bestiary"),
@@ -135,6 +154,17 @@ fn panel_hotkey_destination(action: &str) -> Option<PanelHotkeyDestination> {
             PanelHotkeyDestination::OpenTab("cyclopedia", "archive")
         }
         "dialog.cyclopedia.map" => PanelHotkeyDestination::OpenTab("cyclopedia", "map"),
+        "dialog.social.assemble_team" => PanelHotkeyDestination::OpenTab("social", "assemble"),
+        "dialog.social.badges" => PanelHotkeyDestination::OpenTab("social", "badges"),
+        "dialog.social.friend_list" => PanelHotkeyDestination::OpenTab("social", "friends"),
+        "dialog.social.friends_config" => {
+            PanelHotkeyDestination::OpenTab("social", "friends-config")
+        }
+        "dialog.social.friend_invitations" => {
+            PanelHotkeyDestination::OpenTab("social", "invitations")
+        }
+        "dialog.social.friend_search" => PanelHotkeyDestination::OpenTab("social", "search"),
+        "dialog.social.join_team" => PanelHotkeyDestination::OpenTab("social", "finder"),
         "dialog.exaltation_forge" => PanelHotkeyDestination::Open("forge"),
         "dialog.reward_wall" => PanelHotkeyDestination::Open("reward-wall"),
         "dialog.task_board" => PanelHotkeyDestination::Open("task-board"),
@@ -356,6 +386,7 @@ impl GameUi {
     pub fn take_preferences(&mut self) -> Option<ClientSettings> {
         self.preferences_changes.take()
     }
+
     pub fn route_chat_hotkey(
         &mut self,
         action: &str,
@@ -483,6 +514,22 @@ impl GameUi {
         }
     }
 
+    pub(crate) fn route_settings_action(
+        &mut self,
+        action: crate::settings_ui::SettingsRuntimeAction,
+    ) -> bool {
+        match action {
+            crate::settings_ui::SettingsRuntimeAction::OpenCompendium => {
+                self.panels.open("compendium")
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_panel_open(&self, id: &str) -> bool {
+        self.panels.is_open(id)
+    }
+
     pub fn route_minimap_hotkey(&mut self, action: &str) -> bool {
         match action {
             "minimap.zoom_out" => self.minimap_zoom = (self.minimap_zoom + 1).min(2),
@@ -497,10 +544,10 @@ impl GameUi {
         true
     }
     pub fn clear_action_row(&mut self, row: usize, settings: &ClientSettings) {
-        if self
+        let cleared = self
             .bar(settings)
-            .is_none_or(|bar| bar.clear_row(row).is_err())
-        {
+            .is_some_and(|bar| bar.row_has_assignments(row) && bar.clear_row(row).is_ok());
+        if !cleared {
             self.notice = Some(
                 if settings.english {
                     "This action row is locked or unavailable."
@@ -510,6 +557,15 @@ impl GameUi {
                 .into(),
             );
         }
+    }
+
+    #[must_use]
+    pub fn action_bar_rows_with_assignments(&self) -> [bool; ACTION_BAR_ROWS] {
+        std::array::from_fn(|row| {
+            self.action_bar
+                .as_ref()
+                .is_some_and(|bar| bar.row_has_assignments(row))
+        })
     }
     fn bar(&mut self, settings: &ClientSettings) -> Option<&mut ActionBar> {
         let fallback_movement_keys = settings
@@ -706,13 +762,26 @@ impl GameUi {
             );
         }
         let chat_context = self.chat_hotkey_context();
-        let commands = self.bar(settings).map_or_else(Vec::new, |bar| {
-            // Keep both activation and the visible shortcut labels in sync
-            // even when the console toggle changed without a native key event.
-            let _ = bar.set_input_context(chat_context, !hud_enabled);
-            // Available spells need an authoritative catalogue projection.
-            crate::action_bar_ui::show(ctx, bar, &state, &[], settings, body, hud_enabled)
-        });
+        let (commands, lock_change) = self.bar(settings).map_or_else(
+            || (Vec::new(), None),
+            |bar| {
+                // Keep both activation and the visible shortcut labels in sync
+                // even when the console toggle changed without a native key event.
+                let _ = bar.set_input_context(chat_context, !hud_enabled);
+                // Available spells need an authoritative catalogue projection.
+                let commands =
+                    crate::action_bar_ui::show(ctx, bar, &state, &[], settings, body, hud_enabled);
+                (commands, bar.take_assignments_lock_change())
+            },
+        );
+        if let Some(locked) = lock_change {
+            let mut preferences = self
+                .preferences_changes
+                .take()
+                .unwrap_or_else(|| settings.clone());
+            preferences.action_bar.set_assignments_locked(locked);
+            self.preferences_changes = Some(preferences);
+        }
         for command in commands {
             if !link.send_action(command) {
                 self.notice = Some(action_busy(en).into());
@@ -966,19 +1035,7 @@ impl GameUi {
                         )));
                         let Some(chat) = &state.chat else {
                             ui.horizontal_wrapped(|ui| {
-                                for (index, label) in [
-                                    tr("Lokalny", "Local"),
-                                    "World",
-                                    "English",
-                                    "Help",
-                                    "Advertising",
-                                    tr("Prywatny", "Private"),
-                                ]
-                                .iter()
-                                .enumerate()
-                                {
-                                    ui.selectable_value(&mut self.channel, index, *label);
-                                }
+                                chat_channel_tabs(ui, &mut self.channel, en, false);
                             });
                             ui.separator();
                             ui.allocate_ui(
@@ -1010,19 +1067,7 @@ impl GameUi {
                             return;
                         };
                         ui.horizontal_wrapped(|ui| {
-                            for (index, label) in [
-                                tr("Lokalny", "Local"),
-                                "World",
-                                "English",
-                                "Help",
-                                "Advertising",
-                                tr("Prywatny", "Private"),
-                            ]
-                            .iter()
-                            .enumerate()
-                            {
-                                ui.selectable_value(&mut self.channel, index, *label);
-                            }
+                            chat_channel_tabs(ui, &mut self.channel, en, true);
                             let contents = chat_contents(chat, self.channel, en);
                             ui.menu_button("▾", |ui| {
                                 ui.checkbox(
@@ -1196,9 +1241,11 @@ impl GameUi {
             let _ = link.send_chat(intent);
         }
         if let Some(shortcuts) = self.panels.take_shortcuts() {
-            let mut next = settings.clone();
-            next.panel_shortcuts = shortcuts;
-            self.preferences_changes = Some(next);
+            self.preferences_changes = Some(settings_with_panel_shortcuts(
+                self.preferences_changes.take(),
+                settings,
+                shortcuts,
+            ));
         }
         open_settings
     }
@@ -1250,6 +1297,33 @@ fn cycle_chat_channel(current: usize, rooms: oteryn_session::ChatRoomSet, forwar
         current.checked_sub(1).unwrap_or(available.len() - 1)
     };
     available[next]
+}
+
+fn chat_channel_tabs(ui: &mut egui::Ui, channel: &mut usize, english: bool, available: bool) {
+    let labels = if english {
+        [
+            "Local",
+            "World",
+            "English",
+            "Help",
+            "Advertising",
+            "Private",
+        ]
+    } else {
+        [
+            "Lokalny",
+            "World",
+            "English",
+            "Help",
+            "Advertising",
+            "Prywatny",
+        ]
+    };
+    ui.add_enabled_ui(available, |ui| {
+        for (index, label) in labels.into_iter().enumerate() {
+            ui.selectable_value(channel, index, label);
+        }
+    });
 }
 
 fn chat_contents(chat: &oteryn_session::ChatLog, channel: usize, english: bool) -> String {
@@ -1683,9 +1757,9 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::{
-        ChatMode, PanelHotkeyDestination, ambient_overlay_alpha, chat_line_text,
+        ChatMode, PanelHotkeyDestination, ambient_overlay_alpha, chat_channel_tabs, chat_line_text,
         custom_text_action_available, cycle_chat_channel, export_chat_contents_to, item_button,
-        panel_hotkey_destination, show_window_recovery,
+        panel_hotkey_destination, settings_with_panel_shortcuts, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
@@ -1701,6 +1775,53 @@ mod tests {
         assert_eq!(cycle_chat_channel(0, rooms, false), 5);
         assert_eq!(cycle_chat_channel(5, rooms, false), 3);
         assert_eq!(cycle_chat_channel(2, rooms, true), 1);
+    }
+
+    #[test]
+    fn unavailable_chat_tabs_keep_the_visible_selection_but_cannot_change_it()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(420.0, 90.0);
+        let mut channel = 0;
+        let mut output = egui::FullOutput::default();
+        for _ in 0..2 {
+            output = frame(&ctx, size, Vec::new(), |ctx| {
+                egui::Window::new("unavailable-chat-tabs").show(ctx, |ui| {
+                    ui.horizontal_wrapped(|ui| chat_channel_tabs(ui, &mut channel, true, false));
+                });
+            })
+            .1;
+        }
+        let world = button_position(&output, size, "World").ok_or("World chat tab")?;
+        click(&ctx, size, world, |ctx| {
+            egui::Window::new("unavailable-chat-tabs").show(ctx, |ui| {
+                ui.horizontal_wrapped(|ui| chat_channel_tabs(ui, &mut channel, true, false));
+            });
+        });
+        assert_eq!(
+            channel, 0,
+            "an unavailable session must not accept tab input"
+        );
+
+        for _ in 0..2 {
+            output = frame(&ctx, size, Vec::new(), |ctx| {
+                egui::Window::new("unavailable-chat-tabs").show(ctx, |ui| {
+                    ui.horizontal_wrapped(|ui| chat_channel_tabs(ui, &mut channel, true, true));
+                });
+            })
+            .1;
+        }
+        let world = button_position(&output, size, "World").ok_or("enabled World chat tab")?;
+        click(&ctx, size, world, |ctx| {
+            egui::Window::new("unavailable-chat-tabs").show(ctx, |ui| {
+                ui.horizontal_wrapped(|ui| chat_channel_tabs(ui, &mut channel, true, true));
+            });
+        });
+        assert_eq!(
+            channel, 1,
+            "the same tab must remain interactive with chat state"
+        );
+        Ok(())
     }
 
     #[test]
@@ -1751,6 +1872,10 @@ mod tests {
             panel_hotkey_destination("dialog.quest_log"),
             Some(PanelHotkeyDestination::Open("quest-log"))
         );
+        assert_eq!(
+            panel_hotkey_destination("dialog.compendium"),
+            Some(PanelHotkeyDestination::Open("compendium"))
+        );
         for (action, tab) in [
             ("dialog.cyclopedia.map", "map"),
             ("dialog.cyclopedia.items", "items"),
@@ -1776,7 +1901,104 @@ mod tests {
                 Some(PanelHotkeyDestination::Open(panel))
             );
         }
-        assert_eq!(panel_hotkey_destination("dialog.lenshelp"), None);
+        for (action, tab) in [
+            ("dialog.social.assemble_team", "assemble"),
+            ("dialog.social.badges", "badges"),
+            ("dialog.social.friend_list", "friends"),
+            ("dialog.social.friends_config", "friends-config"),
+            ("dialog.social.friend_invitations", "invitations"),
+            ("dialog.social.friend_search", "search"),
+            ("dialog.social.join_team", "finder"),
+        ] {
+            assert_eq!(
+                panel_hotkey_destination(action),
+                Some(PanelHotkeyDestination::OpenTab("social", tab))
+            );
+        }
+        for (action, panel) in [
+            ("window.analytics_selector", "analytics"),
+            ("window.bestiary_tracker", "bestiary-tracker"),
+            ("window.bosstiary_tracker", "bosstiary-tracker"),
+            ("window.imbuement_tracker", "imbuement-tracker"),
+            ("window.kill_tracker", "kill-tracker"),
+            ("window.party", "party"),
+            ("window.player_guide", "player-guide"),
+            ("window.quest_tracker", "quest-tracker"),
+        ] {
+            assert_eq!(
+                panel_hotkey_destination(action),
+                Some(PanelHotkeyDestination::Toggle(panel))
+            );
+        }
+        for unsupported in [
+            "dialog.lenshelp",
+            "dialog.manage_containers",
+            "window.battle.secondary",
+            "window.boss_cooldowns",
+            "window.damage_input_analyser",
+            "window.drop_tracker",
+            "window.hunting_analyser",
+            "window.impact_analyser",
+            "window.loot_analyser",
+            "window.party_hunt_analyser",
+            "window.supply_analyser",
+            "window.xp_analyser",
+        ] {
+            assert_eq!(panel_hotkey_destination(unsupported), None, "{unsupported}");
+        }
+    }
+
+    #[test]
+    fn panel_hotkeys_apply_real_toggle_open_and_social_tab_state() {
+        let mut ui = super::GameUi::default();
+        for (action, panel) in [
+            ("window.analytics_selector", "analytics"),
+            ("window.bestiary_tracker", "bestiary-tracker"),
+            ("window.bosstiary_tracker", "bosstiary-tracker"),
+            ("window.imbuement_tracker", "imbuement-tracker"),
+            ("window.kill_tracker", "kill-tracker"),
+            ("window.party", "party"),
+            ("window.player_guide", "player-guide"),
+            ("window.quest_tracker", "quest-tracker"),
+        ] {
+            assert!(ui.route_panel_hotkey(action));
+            assert!(ui.panels.is_open(panel), "{action}");
+            assert!(ui.route_panel_hotkey(action));
+            assert!(!ui.panels.is_open(panel), "{action}");
+        }
+
+        assert!(ui.route_panel_hotkey("dialog.compendium"));
+        assert!(ui.panels.is_open("compendium"));
+        assert!(ui.route_panel_hotkey("dialog.compendium"));
+        assert!(ui.panels.is_open("compendium"));
+
+        for (action, tab) in [
+            ("dialog.social.assemble_team", "assemble"),
+            ("dialog.social.badges", "badges"),
+            ("dialog.social.friend_list", "friends"),
+            ("dialog.social.friends_config", "friends-config"),
+            ("dialog.social.friend_invitations", "invitations"),
+            ("dialog.social.friend_search", "search"),
+            ("dialog.social.join_team", "finder"),
+        ] {
+            assert!(ui.route_panel_hotkey(action));
+            assert!(ui.panels.is_open("social"), "{action}");
+            assert_eq!(ui.panels.selected_tab("social"), Some(tab), "{action}");
+            assert!(ui.route_panel_hotkey(action));
+            assert!(ui.panels.is_open("social"), "{action}");
+            assert_eq!(ui.panels.selected_tab("social"), Some(tab), "{action}");
+        }
+    }
+
+    #[test]
+    fn settings_compendium_action_opens_the_existing_panel_idempotently() {
+        let mut ui = super::GameUi::default();
+        for _ in 0..2 {
+            assert!(
+                ui.route_settings_action(crate::settings_ui::SettingsRuntimeAction::OpenCompendium)
+            );
+            assert!(ui.panels.is_open("compendium"));
+        }
     }
 
     #[test]
@@ -2181,6 +2403,59 @@ mod tests {
             oteryn_client::settings_catalog::FutureValue::Int(100),
         );
         assert_eq!(ambient_overlay_alpha(&settings), Some(0));
+    }
+
+    #[test]
+    fn panel_shortcut_save_preserves_a_pending_action_bar_lock_change() {
+        let current = oteryn_client::settings::ClientSettings::default();
+        let mut pending = current.clone();
+        pending.action_bar.set_assignments_locked(true);
+
+        let merged = settings_with_panel_shortcuts(
+            Some(pending),
+            &current,
+            vec!["skills".into(), "battle".into()],
+        );
+
+        assert!(merged.action_bar.assignments_locked());
+        assert_eq!(merged.panel_shortcuts, ["skills", "battle"]);
+    }
+
+    #[test]
+    fn action_bar_clear_availability_tracks_assignments_per_row()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_client::action_bar::{
+            ACTION_BAR_ROWS, ACTION_BAR_SLOTS, ActionBarCommand, SlotAssignment,
+        };
+
+        let settings = oteryn_client::settings::ClientSettings::default();
+        let mut ui = super::GameUi::default();
+        assert_eq!(
+            ui.action_bar_rows_with_assignments(),
+            [false; ACTION_BAR_ROWS]
+        );
+
+        let assignment = SlotAssignment {
+            label: "Help".into(),
+            command: ActionBarCommand::Chat(oteryn_session::ChatIntent::OpenRoom(
+                oteryn_session::ChatRoom::Help,
+            )),
+        };
+        let bar = ui
+            .bar(&settings)
+            .ok_or_else(|| std::io::Error::other("action bar unavailable"))?;
+        bar.assign(2 * ACTION_BAR_SLOTS + 4, Some(assignment.clone()))?;
+        bar.assign(7 * ACTION_BAR_SLOTS, Some(assignment))?;
+
+        let mut expected = [false; ACTION_BAR_ROWS];
+        expected[2] = true;
+        expected[7] = true;
+        assert_eq!(ui.action_bar_rows_with_assignments(), expected);
+
+        ui.clear_action_row(2, &settings);
+        expected[2] = false;
+        assert_eq!(ui.action_bar_rows_with_assignments(), expected);
+        Ok(())
     }
 
     #[test]

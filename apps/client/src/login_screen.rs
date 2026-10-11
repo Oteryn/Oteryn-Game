@@ -326,7 +326,8 @@ impl LoginScreen {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
-        self.settings.set_action_bar_available(false);
+        self.settings
+            .set_action_bar_rows_available([false; oteryn_client::action_bar::ACTION_BAR_ROWS]);
         self.paint_background(ctx);
         self.toolbar(ctx);
         let width = match self.screen {
@@ -461,7 +462,7 @@ impl LoginScreen {
                     )
                     .clicked()
                 {
-                    self.settings.open = true;
+                    self.settings.open_options();
                 }
             });
         egui::Area::new(egui::Id::new("quit-button"))

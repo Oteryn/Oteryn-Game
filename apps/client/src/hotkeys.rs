@@ -199,13 +199,29 @@ pub fn general_action_supported(action: &str) -> bool {
             | "dialog.cyclopedia.items"
             | "dialog.cyclopedia.magical_archive"
             | "dialog.cyclopedia.map"
+            | "dialog.compendium"
             | "dialog.exaltation_forge"
             | "dialog.prey"
             | "dialog.quest_log"
             | "dialog.reward_wall"
+            | "dialog.social.assemble_team"
+            | "dialog.social.badges"
+            | "dialog.social.friend_list"
+            | "dialog.social.friends_config"
+            | "dialog.social.friend_invitations"
+            | "dialog.social.friend_search"
+            | "dialog.social.join_team"
             | "dialog.task_board"
             | "dialog.weapon_proficiency"
             | "dialog.wheel_of_destiny"
+            | "window.analytics_selector"
+            | "window.bestiary_tracker"
+            | "window.bosstiary_tracker"
+            | "window.imbuement_tracker"
+            | "window.kill_tracker"
+            | "window.party"
+            | "window.player_guide"
+            | "window.quest_tracker"
             | "window.vip"
             | "window.battle"
             | "window.skills"
@@ -738,7 +754,8 @@ fn validate_custom(actions: &[CustomHotkey]) -> io::Result<()> {
         }
         match &action.action {
             CustomHotkeyAction::Text { text, .. } => {
-                if text.is_empty() || text.len() > 256 || text.chars().any(char::is_control) {
+                if text.trim().is_empty() || text.len() > 256 || text.chars().any(char::is_control)
+                {
                     return Err(invalid());
                 }
             }
@@ -1168,6 +1185,128 @@ window.vip=19:C,-"#
     }
 
     #[test]
+    fn existing_panel_navigation_actions_resolve_in_both_chat_contexts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for action in [
+            "dialog.compendium",
+            "dialog.social.assemble_team",
+            "dialog.social.badges",
+            "dialog.social.friend_list",
+            "dialog.social.friends_config",
+            "dialog.social.friend_invitations",
+            "dialog.social.friend_search",
+            "dialog.social.join_team",
+            "window.analytics_selector",
+            "window.bestiary_tracker",
+            "window.bosstiary_tracker",
+            "window.imbuement_tracker",
+            "window.kill_tracker",
+            "window.party",
+            "window.player_guide",
+            "window.quest_tracker",
+        ] {
+            assert!(general_action_supported(action));
+            let mut preferences = HotkeyPreferences::default();
+            let profile = preferences.active_mut().ok_or("default profile")?;
+            profile.general_chat_off.clear();
+            profile.general_chat_on.clear();
+            let pair = HotkeyPair {
+                first: Some(binding(30, true)),
+                second: None,
+            };
+            profile.general_chat_off.insert(action.into(), pair);
+            profile.general_chat_on.insert(action.into(), pair);
+
+            for chat_on in [false, true] {
+                assert_eq!(
+                    preferences.resolve(&[pressed(30, true)?], chat_on),
+                    vec![ResolvedHotkey::General(action.into())]
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn adjacent_actions_without_exact_local_destinations_stay_unsupported()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for action in [
+            "dialog.manage_containers",
+            "window.battle.secondary",
+            "window.boss_cooldowns",
+            "window.damage_input_analyser",
+            "window.drop_tracker",
+            "window.hunting_analyser",
+            "window.impact_analyser",
+            "window.loot_analyser",
+            "window.party_hunt_analyser",
+            "window.supply_analyser",
+            "window.xp_analyser",
+        ] {
+            assert!(!general_action_supported(action), "{action}");
+            let mut preferences = HotkeyPreferences::default();
+            let profile = preferences.active_mut().ok_or("default profile")?;
+            profile.general_chat_off.clear();
+            profile.general_chat_on.clear();
+            let pair = HotkeyPair {
+                first: Some(binding(30, true)),
+                second: None,
+            };
+            profile.general_chat_off.insert(action.into(), pair);
+            profile.general_chat_on.insert(action.into(), pair);
+            for chat_on in [false, true] {
+                assert!(
+                    preferences
+                        .resolve(&[pressed(30, true)?], chat_on)
+                        .is_empty(),
+                    "{action}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn audited_actions_without_behavioral_consumers_remain_unsupported() {
+        for action in [
+            "chat.loot",
+            "chat.npc",
+            "chat.server",
+            "chat.server_messages",
+            "chat.text.copy",
+            "chat.text.select_all",
+            "client.bug_report",
+            "client.change_character",
+            "client.clear_message",
+            "client.ignore",
+            "client.logout",
+            "client.mount",
+            "client.names",
+            "combat.chase",
+            "combat.secure",
+            "container.manual_sort",
+            "dialog.customise_character",
+            "dialog.exiva_options",
+            "dialog.lenshelp",
+            "gameplay.exiva_allow_all",
+            "loot.nearby_corpses",
+            "minimap.floor_down",
+            "minimap.floor_up",
+            "movement.north_east",
+            "movement.north_west",
+            "movement.south_east",
+            "movement.south_west",
+            "pvp.dove",
+            "pvp.red_fist",
+            "pvp.white_hand",
+            "pvp.yellow_hand",
+            "sound.toggle",
+        ] {
+            assert!(!general_action_supported(action), "{action}");
+        }
+    }
+
+    #[test]
     fn movement_repeats_but_one_shot_and_custom_hotkeys_do_not()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut preferences = HotkeyPreferences::default();
@@ -1207,6 +1346,28 @@ window.vip=19:C,-"#
                 .resolve(&[repeated(30, Modifiers::NONE)?], false)
                 .is_empty()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn custom_text_validation_rejects_whitespace_only_commands() -> Result<(), &'static str> {
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.custom.push(CustomHotkey {
+            action: CustomHotkeyAction::Text {
+                text: "   \t".into(),
+                send_automatically: true,
+            },
+            chat_on: HotkeyPair::default(),
+            chat_off: HotkeyPair::default(),
+        });
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_err());
+        preferences.active_mut().ok_or("default profile")?.custom[0].action =
+            CustomHotkeyAction::Text {
+                text: " hello ".into(),
+                send_automatically: true,
+            };
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_ok());
         Ok(())
     }
 

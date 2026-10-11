@@ -364,7 +364,7 @@ impl Application {
             if action == "client.options" {
                 claimed = true;
                 if let Some(ui) = self.game_ui.as_mut() {
-                    ui.settings.open = !ui.settings.open;
+                    ui.settings.toggle_options();
                 }
                 continue;
             }
@@ -775,7 +775,7 @@ impl ApplicationHandler for Application {
                 ) =>
             {
                 if let Some(ui) = self.login.as_mut() {
-                    ui.settings.open = !ui.settings.open;
+                    ui.settings.toggle_options();
                 }
             }
             WindowEvent::CloseRequested => {
@@ -955,15 +955,21 @@ impl ApplicationHandler for Application {
                             )
                         });
                         crate::client_chrome::backdrop(ui.ctx(), scene);
-                        gui.settings.set_action_bar_available(true);
+                        gui.settings.set_action_bar_rows_available(
+                            self.hud.action_bar_rows_with_assignments(),
+                        );
+                        gui.settings.set_compendium_available(true);
                         if !gui.settings.open
                             && self
                                 .hud
                                 .show(ui.ctx(), &play.link, &play.view, &self.preferences)
                         {
-                            gui.settings.open = true;
+                            gui.settings.open_options();
                         }
                         gui.settings_window(ui.ctx());
+                        while let Some(action) = gui.settings.take_runtime_action() {
+                            let _ = self.hud.route_settings_action(action);
+                        }
                         while let Some(row) = gui.settings.take_clear_action_row() {
                             self.hud.clear_action_row(row, &self.preferences);
                         }

@@ -15,25 +15,27 @@ pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str,
 }
 
 fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
-    ui.horizontal_wrapped(|ui| {
-        reference_option(
-            ui,
-            draft,
-            "controls",
-            "controls.mouse_preset",
-            ["Schemat myszy:", "Mouse Preset:"],
-            en,
-        );
-        if draft.stored_choice("controls.controls.mouse_preset") == Some("classic_controls") {
+    boxed(ui, "", |ui| {
+        ui.horizontal_wrapped(|ui| {
             reference_option(
                 ui,
                 draft,
                 "controls",
-                "controls.loot_button",
-                ["Łup:", "Loot:"],
+                "controls.mouse_preset",
+                ["Schemat myszy:", "Mouse Preset:"],
                 en,
             );
-        }
+            if draft.stored_choice("controls.controls.mouse_preset") == Some("classic_controls") {
+                reference_option(
+                    ui,
+                    draft,
+                    "controls",
+                    "controls.loot_button",
+                    ["Łup:", "Loot:"],
+                    en,
+                );
+            }
+        });
     });
     boxed(ui, "", |ui| {
         reference_option(
@@ -42,12 +44,11 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             "controls",
             "controls.default_key_delay",
             [
-                "Domyślne opóźnienie klawiatury",
+                "Używaj domyślnego opóźnienia klawiatury",
                 "Use Default Keyboard Delay",
             ],
             en,
         );
-        // The capture shows 250ms, but does not establish supported bounds/defaults.
         let custom = matches!(
             draft
                 .future_preferences
@@ -55,14 +56,35 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             Some(FutureValue::Bool(false))
         );
         ui.add_enabled_ui(custom, |ui| {
-            reference_option(
-                ui,
-                draft,
-                "controls",
-                "controls.key_delay_ms",
-                ["Opóźnienie klawiatury (ms):", "Keyboard Delay (ms):"],
-                en,
-            );
+            let selected = draft.stored_int("controls.controls.key_delay_ms");
+            let mut delay = selected.unwrap_or(0);
+            let value = selected.map_or_else(|| "—".to_owned(), |delay| format!("{delay} ms"));
+            let response = ui
+                .horizontal(|ui| {
+                    ui.label(if en {
+                        format!("Keyboard Delay: {value}")
+                    } else {
+                        format!("Opóźnienie klawiatury: {value}")
+                    });
+                    ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
+                    ui.add_enabled(
+                        false,
+                        egui::Slider::new(&mut delay, 0..=i32::MAX).show_value(false),
+                    )
+                    .on_hover_text(if en {
+                        "Unavailable: keyboard repeat has no runtime consumer."
+                    } else {
+                        "Niedostępne: powtarzanie klawiszy nie ma obsługi wykonawczej."
+                    })
+                })
+                .inner;
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::new("controls-keyboard-delay-slider"),
+                    (response.rect, ui.clip_rect(), response.enabled()),
+                );
+            });
         });
     });
     boxed(ui, "", |ui| {
@@ -87,22 +109,24 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             "controls.face_movement",
             [
                 "Zawsze obracaj w kierunku ruchu",
-                "Always Turn Towards the Direction of Movement",
+                "Always turn towards the direction of movement",
             ],
             en,
         );
     });
-    row(
-        ui,
-        draft,
-        "controls",
-        "controls.complete_stack_ctrl",
-        [
-            "Ctrl do przeciągania całych stosów",
-            "Press CTRL to Drag Complete Stacks",
-        ],
-        en,
-    );
+    boxed(ui, "", |ui| {
+        row(
+            ui,
+            draft,
+            "controls",
+            "controls.complete_stack_ctrl",
+            [
+                "Ctrl do przeciągania całych stosów",
+                "Press CTRL to Drag Complete Stacks",
+            ],
+            en,
+        );
+    });
 }
 
 fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -165,7 +189,7 @@ fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 "interface.expiry_unused",
                 [
                     "Wygaśnięcie nieużywanych przedmiotów",
-                    "Show Expiry on Unused Items",
+                    "Show Expiry On Unused Items",
                 ],
             ),
         ] {
@@ -175,22 +199,24 @@ fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
 }
 
 fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
-    reference_option(
-        ui,
-        draft,
-        "graphics",
-        "graphics.engine",
-        ["Silnik graficzny:", "Graphics Engine:"],
-        en,
-    );
-    reference_option(
-        ui,
-        draft,
-        "graphics",
-        "graphics.antialiasing",
-        ["Wygładzanie obrazu:", "Antialiasing Mode:"],
-        en,
-    );
+    boxed(ui, "", |ui| {
+        reference_option(
+            ui,
+            draft,
+            "graphics",
+            "graphics.engine",
+            ["Silnik graficzny:", "Graphics Engine:"],
+            en,
+        );
+        reference_option(
+            ui,
+            draft,
+            "graphics",
+            "graphics.antialiasing",
+            ["Wygładzanie obrazu:", "Antialiasing Mode:"],
+            en,
+        );
+    });
     boxed(ui, "", |ui| {
         ui.checkbox(
             &mut draft.fullscreen,
@@ -248,14 +274,11 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 0.0
             }
         });
-        ui.weak(format!(
-            "{} {current_fps:.0}",
-            if en {
-                "Current Frame Rate:"
-            } else {
-                "Aktualna liczba FPS:"
-            }
-        ));
+        ui.weak(if en {
+            format!("Current Frame Rate: {current_fps:.0} fps")
+        } else {
+            format!("Aktualna liczba FPS: {current_fps:.0}")
+        });
     });
 }
 
@@ -319,24 +342,16 @@ fn game_window(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     ] {
         row(ui, draft, "game_window", id, labels, en);
     }
-    boxed(
-        ui,
-        if en {
-            "Target Marking"
-        } else {
-            "Oznaczanie celu"
-        },
-        |ui| {
-            reference_option(
-                ui,
-                draft,
-                "game_window",
-                "window.target_marking",
-                ["Oznaczaj cel wizualnie:", "Mark Target Visually:"],
-                en,
-            );
-        },
-    );
+    boxed(ui, "", |ui| {
+        reference_option(
+            ui,
+            draft,
+            "game_window",
+            "window.target_marking",
+            ["Oznaczaj cel wizualnie:", "Mark Target Visually:"],
+            en,
+        );
+    });
 }
 
 fn gameplay(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -362,6 +377,214 @@ fn gameplay(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
 mod tests {
     use super::*;
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    fn render_page(
+        title: &str,
+        size: egui::Vec2,
+        draft: &mut ClientSettings,
+        page: fn(&mut egui::Ui, &mut ClientSettings, bool),
+    ) -> (egui::Context, egui::FullOutput) {
+        let ctx = egui::Context::default();
+        crate::client_chrome::install(&ctx, false);
+        let mut output = egui::FullOutput::default();
+        for _ in 0..2 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                egui::Window::new(title)
+                    .fixed_size(size - egui::vec2(40.0, 40.0))
+                    .show(ctx, |ui| page(ui, draft, true));
+            })
+            .1;
+        }
+        (ctx, output)
+    }
+
+    fn rendered_texts(output: &egui::FullOutput) -> Vec<&str> {
+        fn collect<'a>(shape: &'a egui::Shape, texts: &mut Vec<&'a str>) {
+            match shape {
+                egui::Shape::Text(text) => texts.push(text.galley.job.text.as_str()),
+                egui::Shape::Vec(shapes) => {
+                    for shape in shapes {
+                        collect(shape, texts);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let mut texts = Vec::new();
+        for shape in &output.shapes {
+            collect(&shape.shape, &mut texts);
+        }
+        texts
+    }
+
+    fn bordered_groups(output: &egui::FullOutput) -> Vec<egui::Rect> {
+        fn collect(shape: &egui::Shape, groups: &mut Vec<egui::Rect>) {
+            match shape {
+                egui::Shape::Rect(rect) => {
+                    let [red, green, blue, alpha] = rect.stroke.color.to_srgba_unmultiplied();
+                    if rect.stroke.width == 1.0
+                        && alpha > 0
+                        && red.abs_diff(58) <= 4
+                        && green.abs_diff(61) <= 4
+                        && blue.abs_diff(61) <= 4
+                    {
+                        groups.push(rect.rect);
+                    }
+                }
+                egui::Shape::Vec(shapes) => {
+                    for shape in shapes {
+                        collect(shape, groups);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let mut groups = Vec::new();
+        for shape in &output.shapes {
+            collect(&shape.shape, &mut groups);
+        }
+        groups
+    }
+
+    fn group_containing(output: &egui::FullOutput, points: &[egui::Pos2]) -> Option<egui::Rect> {
+        bordered_groups(output)
+            .into_iter()
+            .filter(|rect| points.iter().all(|point| rect.contains(*point)))
+            .min_by(|left, right| left.area().total_cmp(&right.area()))
+    }
+
+    #[test]
+    fn reference_display_pages_use_the_observed_english_content() -> Result<(), &'static str> {
+        let size = egui::vec2(760.0, 900.0);
+        let mut controls_draft = ClientSettings::default();
+        controls_draft.future_preferences.extend([
+            (
+                "controls.controls.default_key_delay".into(),
+                FutureValue::Bool(false),
+            ),
+            (
+                "controls.controls.key_delay_ms".into(),
+                FutureValue::Int(347),
+            ),
+        ]);
+        let (controls_ctx, controls_output) =
+            render_page("controls-content", size, &mut controls_draft, controls);
+        for label in [
+            "Use Default Keyboard Delay",
+            "Keyboard Delay: 347 ms",
+            "Always turn towards the direction of movement",
+        ] {
+            assert!(
+                button_position(&controls_output, size, label).is_some(),
+                "missing {label}"
+            );
+        }
+        assert!(
+            button_position(
+                &controls_output,
+                size,
+                "Always Turn Towards the Direction of Movement"
+            )
+            .is_none()
+        );
+        assert!(
+            button_position(
+                &controls_output,
+                size,
+                "Always turn towards the Direction of Movement"
+            )
+            .is_none()
+        );
+        let texts = rendered_texts(&controls_output);
+        assert_eq!(
+            texts.iter().filter(|text| text.contains("347")).count(),
+            1,
+            "the keyboard-delay value must not be repeated by the disabled slider"
+        );
+        let (slider, clip, enabled) = controls_ctx
+            .data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect, bool)>(egui::Id::new(
+                    "controls-keyboard-delay-slider",
+                ))
+            })
+            .ok_or("keyboard-delay slider geometry")?;
+        assert!(
+            !enabled,
+            "the unconsumed keyboard-delay slider must be disabled"
+        );
+        assert!(clip.contains_rect(slider));
+        assert!(slider.width() >= 45.0, "keyboard-delay slider collapsed");
+
+        let mouse =
+            button_position(&controls_output, size, "Mouse Preset:").ok_or("mouse-preset label")?;
+        let complete_stack =
+            button_position(&controls_output, size, "Press CTRL to Drag Complete Stacks")
+                .ok_or("complete-stack label")?;
+        let mouse_group =
+            group_containing(&controls_output, &[mouse]).ok_or("mouse-preset border")?;
+        let stack_group =
+            group_containing(&controls_output, &[complete_stack]).ok_or("complete-stack border")?;
+        assert_ne!(
+            mouse_group, stack_group,
+            "captured groups must remain distinct"
+        );
+
+        let mut unknown_delay = ClientSettings::default();
+        let (_, unknown_output) =
+            render_page("controls-unknown-delay", size, &mut unknown_delay, controls);
+        assert!(button_position(&unknown_output, size, "Keyboard Delay: —").is_some());
+        assert!(button_position(&unknown_output, size, "Keyboard Delay: 0 ms").is_none());
+
+        let mut interface_draft = ClientSettings::default();
+        let (_, interface_output) =
+            render_page("interface-content", size, &mut interface_draft, interface);
+        assert!(button_position(&interface_output, size, "Show Expiry On Unused Items").is_some());
+        assert!(button_position(&interface_output, size, "Show Expiry on Unused Items").is_none());
+
+        let mut game_window_draft = ClientSettings::default();
+        let (_, game_window_output) = render_page(
+            "game-window-content",
+            size,
+            &mut game_window_draft,
+            game_window,
+        );
+        assert!(button_position(&game_window_output, size, "Mark Target Visually:").is_some());
+        assert!(button_position(&game_window_output, size, "Target Marking").is_none());
+        let target = button_position(&game_window_output, size, "Mark Target Visually:")
+            .ok_or("target-marking label")?;
+        assert!(
+            group_containing(&game_window_output, &[target]).is_some(),
+            "target-marking selector must remain in its captured border"
+        );
+
+        let mut graphics_draft = ClientSettings::default();
+        let (_, graphics_output) =
+            render_page("graphics-content", size, &mut graphics_draft, graphics);
+        let engine = button_position(&graphics_output, size, "Graphics Engine:")
+            .ok_or("graphics-engine label")?;
+        let antialiasing = button_position(&graphics_output, size, "Antialiasing Mode:")
+            .ok_or("antialiasing label")?;
+        assert!(
+            group_containing(&graphics_output, &[engine, antialiasing]).is_some(),
+            "graphics engine and antialiasing must share the captured border"
+        );
+        let frame_rate = rendered_texts(&graphics_output)
+            .into_iter()
+            .find(|text| text.starts_with("Current Frame Rate: "))
+            .ok_or("current frame-rate readout")?;
+        assert!(frame_rate.ends_with(" fps"), "{frame_rate}");
+        assert!(
+            frame_rate
+                .trim_start_matches("Current Frame Rate: ")
+                .trim_end_matches(" fps")
+                .parse::<u32>()
+                .is_ok(),
+            "{frame_rate}"
+        );
+        Ok(())
+    }
 
     #[test]
     fn frame_switch_restores_144_after_save_load_without_altering_committed_settings()

@@ -428,7 +428,7 @@ pub const REFERENCE_SETTINGS_SECTION_IDS: [&str; 20] = [
 #[rustfmt::skip]
 pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     section!("basic", "Podstawowe", "Basic Options", [
-        p!("basic.advanced", "Pokaż opcje zaawansowane", "Show advanced options", Toggle, "settings discovery"),
+        s!("basic.advanced", "Pokaż opcje zaawansowane", "Show Advanced Options", Toggle, "settings discovery"),
         r!("basic.click_walk", "Chodzenie kliknięciem", "Click to walk", Toggle, "click_to_walk"),
         r!("basic.ui_scale", "Skala interfejsu", "Interface scale", Decimal { min: 0.8, max: 1.8 }, "ui_scale"),
     ]),
@@ -437,16 +437,16 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("controls.turn_shift", "Obracanie: Shift", "Turn: Shift", Toggle, "movement actions"),
         p!("controls.turn_alt", "Obracanie: Alt", "Turn: Alt", Toggle, "movement actions"),
         p!("controls.complete_stack_ctrl", "Ctrl do przenoszenia całych stosów", "Press CTRL to Drag Complete Stacks", Toggle, "item-move amount intent"),
-        p!("controls.mouse_preset", "Schemat sterowania myszą", "Mouse control preset", Choice(MOUSE_PRESETS), "input router"),
-        p!("controls.loot_button", "Przycisk łupienia", "Loot button", Choice(CLASSIC_LOOT_BUTTONS), "input router"),
+        p!("controls.mouse_preset", "Schemat myszy", "Mouse Preset", Choice(MOUSE_PRESETS), "input router"),
+        p!("controls.loot_button", "Łup", "Loot", Choice(CLASSIC_LOOT_BUTTONS), "input router"),
         r!("controls.movement", "Klawisze kierunków", "Movement keys", Binding, "movement_keys"),
         q!("controls.rotation", "Modyfikator obracania postaci", "Turn modifier", Binding, "movement actions"),
         q!("controls.held_keys", "Działanie przytrzymanych klawiszy", "Held-key behavior", UNKNOWN_CHOICES, "input router"),
         q!("controls.drag_modifier", "Modyfikator przeciągania", "Drag modifier", Binding, "inventory commands"),
-        n!("controls.face_movement", "Zwracaj postać w kierunku ruchu", "Face movement direction", Toggle, "movement presentation", "alwaysTurnTowardsMoveDirection"),
-        n!("controls.default_key_delay", "Używaj domyślnego opóźnienia klawiatury", "Use default keyboard delay", Toggle, "input repeat policy", "keyboardDelayUseDefault"),
+        n!("controls.face_movement", "Zawsze obracaj w kierunku ruchu", "Always turn towards the direction of movement", Toggle, "movement presentation", "alwaysTurnTowardsMoveDirection"),
+        n!("controls.default_key_delay", "Używaj domyślnego opóźnienia klawiatury", "Use Default Keyboard Delay", Toggle, "input repeat policy", "keyboardDelayUseDefault"),
         // Nonnegative i32 is the local draft bound; the reference's supported delay range is unknown.
-        n!("controls.key_delay_ms", "Własne opóźnienie klawiatury (ms)", "Custom keyboard delay (ms)", Integer { min: 0, max: i32::MAX }, "input repeat policy", "keyboardDelayMs"),
+        n!("controls.key_delay_ms", "Opóźnienie klawiatury", "Keyboard Delay", Integer { min: 0, max: i32::MAX }, "input repeat policy", "keyboardDelayMs"),
         n!("controls.drag_all", "Domyślnie przenoś cały stos", "Move whole stack by default", Toggle, "item-move amount intent", "dragAndDropDefaultActionIsMoveAll"),
     ]),
     section!("general_hotkeys", "Skróty ogólne", "General Hotkeys", [
@@ -477,7 +477,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("interface.link_copy_warning", "Ostrzeżenie przy kopiowaniu linku", "Show Link Copy Warning", Toggle, "safe clipboard UI"),
         p!("interface.expiry_inventory", "Wygaśnięcie w ekwipunku", "Show Expiry in Inventory", Toggle, "item expiry projection"),
         p!("interface.expiry_containers", "Wygaśnięcie w pojemnikach", "Show Expiry in Containers", Toggle, "item expiry projection"),
-        p!("interface.expiry_unused", "Wygaśnięcie nieużywanych przedmiotów", "Show Expiry on Unused Items", Toggle, "item expiry projection"),
+        p!("interface.expiry_unused", "Wygaśnięcie nieużywanych przedmiotów", "Show Expiry On Unused Items", Toggle, "item expiry projection"),
         p!("interface.colourise_loot_value", "Koloruj wartość łupu", "Colourise Loot Value", Choice(LOOT_COLOUR), "item value presentation"),
         r!("interface.english", "Interfejs po angielsku", "English interface", Toggle, "english"),
         r!("interface.contrast", "Wyższy kontrast paneli", "Higher panel contrast", Toggle, "high_contrast"),
@@ -611,23 +611,23 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("window.fit", "Dopasowanie obszaru gry", "Game viewport fit", UNKNOWN_CHOICES, "scene layout"),
         q!("window.top_pane", "Panel nad obszarem gry", "Top game pane", Toggle, "scene layout"),
         q!("window.bottom_pane", "Panel pod obszarem gry", "Bottom game pane", Toggle, "scene layout"),
-        p!("window.private_messages", "Prywatne wiadomości nad grą", "Private messages over game", Toggle, "chat overlays"),
-        p!("window.general_messages", "Komunikaty nad grą", "General messages over game", Toggle, "session overlays"),
-        p!("window.own_spells", "Własne efekty zaklęć", "Own spell effects", Toggle, "effect projection"),
-        p!("window.other_spells", "Efekty zaklęć innych", "Other spell effects", Toggle, "effect projection"),
-        p!("window.hotkey_notices", "Komunikaty skrótów", "Hotkey messages", Toggle, "action feedback"),
-        p!("window.loot_notices", "Komunikaty o łupach", "Loot messages", Toggle, "loot events"),
-        p!("window.loot_highlight", "Wyróżnianie łupów", "Loot highlighting", Toggle, "loot projection"),
-        p!("window.training", "Postęp treningu", "Training progress", Toggle, "training events"),
-        p!("window.combat_frame", "Ramka walki", "Combat frame", Toggle, "combat projection"),
-        p!("window.pvp_frame", "Ramka PvP", "PvP frame", Toggle, "PvP projection"),
-        p!("window.attack_animation", "Animacja ataku", "Attack animation", Toggle, "combat presentation"),
-        p!("window.banner", "Baner gry", "Game banner", Toggle, "scene presentation"),
+        p!("window.private_messages", "Wiadomości prywatne", "Show Private Messages", Toggle, "chat overlays"),
+        p!("window.general_messages", "Wiadomości", "Show Messages", Toggle, "session overlays"),
+        p!("window.own_spells", "Zaklęcia", "Show Spells", Toggle, "effect projection"),
+        p!("window.other_spells", "Zaklęcia innych", "Show Spells of Others", Toggle, "effect projection"),
+        p!("window.hotkey_notices", "Komunikaty użycia skrótów", "Show Hotkey Usage Notifications", Toggle, "action feedback"),
+        p!("window.loot_notices", "Komunikaty łupów", "Show Loot Messages", Toggle, "loot events"),
+        p!("window.loot_highlight", "Wyróżnianie łupów", "Show Loot Highlighting", Toggle, "loot projection"),
+        p!("window.training", "Postęp treningu offline", "Show Offline Training Progress", Toggle, "training events"),
+        p!("window.combat_frame", "Ramki walki", "Show Combat Frames", Toggle, "combat projection"),
+        p!("window.pvp_frame", "Ramki PvP", "Show PvP Frames", Toggle, "PvP projection"),
+        p!("window.attack_animation", "Animacja ataku wręcz", "Show Melee Attack Animation", Toggle, "combat presentation"),
+        p!("window.banner", "Baner informacyjny", "Show Info Banner", Toggle, "scene presentation"),
         p!("window.target_frame", "Ramka celu", "Target frame", Toggle, "target projection"),
         p!("window.target_highlight", "Wyróżnianie celu", "Target highlight", Toggle, "target projection"),
         n!("window.potion_notices", "Komunikaty mikstur", "Potion messages", Toggle, "item-use notices", "gameWindowShowPotionMessages"),
-        n!("window.store_notices", "Komunikaty sklepu", "Store messages", Toggle, "commercial notices", "gameWindowShowStoreMessages"),
-        n!("window.boosted_creatures", "Komunikaty wzmocnionych stworzeń", "Boosted-creature messages", Toggle, "world notices", "gameWindowShowBoostedCreatureMessages"),
+        n!("window.store_notices", "Powiadomienia sklepu w walce", "Show Store Notifications in Combat", Toggle, "commercial notices", "gameWindowShowStoreMessages"),
+        n!("window.boosted_creatures", "Wzmocnione stworzenie", "Show Boosted Creature", Toggle, "world notices", "gameWindowShowBoostedCreatureMessages"),
     ]),
     section!("action_bars", "Paski akcji", "Action Bars", [
         i!("bars.bottom_rows", "Dolne paski akcji", "Bottom action rows", Integer { min: 0, max: 3 }, "action_bottom_rows"),
@@ -635,11 +635,11 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         i!("bars.right_rows", "Prawe paski akcji", "Right action rows", Integer { min: 0, max: 3 }, "action_right_rows"),
         q!("bars.locked", "Zablokuj układ pasków", "Lock action bars", Toggle, "action bar layout"),
         s!("bars.labels", "Etykiety skrótów", "Hotkey labels", Toggle, "action-bar renderer"),
-        s!("bars.item_amounts", "Liczba przedmiotów", "Item amounts", Toggle, "action-bar renderer"),
+        p!("bars.item_amounts", "Liczba przedmiotów", "Item amounts", Toggle, "action-bar assignment source"),
         p!("bars.spell_parameters", "Parametry zaklęć", "Spell parameters", Toggle, "spell actions"),
         p!("bars.graphic_cooldown", "Graficzny czas odnowienia", "Graphical cooldown", Toggle, "cooldown projection"),
         p!("bars.numeric_cooldown", "Liczbowy czas odnowienia", "Numeric cooldown", Toggle, "cooldown projection"),
-        s!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action-bar renderer"),
+        p!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action-bar assignment source"),
         p!("bars.auto_spells", "Dodawaj nowe zaklęcia", "Automatically add new spells", Toggle, "spell catalogue"),
         p!("bars.clear_row", "Wyczyść wybrany pasek", "Clear selected row", Action, "action bar layout"),
         i!("bars.bottom_visible", "Pokaż dolne paski", "Show bottom bars", Toggle, "action_bottom_enabled"),
@@ -672,9 +672,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("graphics.vsync", "Synchronizacja pionowa", "VSync", Toggle, "vsync"),
         r!("graphics.fps", "Limit FPS (0: bez limitu)", "FPS limit (0: unlimited)", Integer { min: 0, max: 200 }, "fps"),
         r!("graphics.background_fps", "Limit FPS w tle", "Background FPS limit", Integer { min: 5, max: 60 }, "background_fps"),
-        p!("graphics.engine", "Obsługiwany silnik graficzny", "Supported graphics engine", UNKNOWN_CHOICES, "renderer capabilities"),
-        p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing", Choice(ANTIALIASING), "renderer capabilities"),
-        p!("graphics.integer_scale", "Skalowanie całkowite", "Integer scaling", Toggle, "scene viewport"),
+        p!("graphics.engine", "Silnik graficzny", "Graphics Engine", UNKNOWN_CHOICES, "renderer capabilities"),
+        p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing Mode", Choice(ANTIALIASING), "renderer capabilities"),
+        p!("graphics.integer_scale", "Skalowanie całkowite", "Scale Using Only Integral Multiples", Toggle, "scene viewport"),
         q!("graphics.monitor", "Monitor", "Monitor", UNKNOWN_CHOICES, "window integration"),
         qs!("graphics.fps_indicator", "Wskaźnik FPS", "FPS indicator", Toggle, "frame diagnostics overlay"),
         q!("graphics.latency_indicator", "Wskaźnik opóźnienia", "Latency indicator", Toggle, "session diagnostics"),
@@ -750,8 +750,8 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     ]),
     section!("gameplay", "Rozgrywka", "Gameplay", [
         p!("gameplay.inspect_permission", "Pozwól wszystkim oglądać postać", "Allow All to Inspect Me", Toggle, "inspection authority"),
-        p!("gameplay.cancel_chase", "Przerywaj pościg przy ruchu", "Cancel chase on movement", Toggle, "combat commands"),
-        p!("gameplay.nearby_corpses", "Łupienie pobliskich ciał", "Loot nearby corpses", Toggle, "accepted loot commands"),
+        p!("gameplay.cancel_chase", "Automatycznie przerywaj pościg", "Auto Chase Off", Toggle, "combat commands"),
+        p!("gameplay.nearby_corpses", "Łupienie pobliskich ciał", "Quick Loot Nearby Corpses", Toggle, "accepted loot commands"),
     ]),
     section!("screenshots", "Zrzuty ekranu", "Screenshots", [
         p!("auto", "Automatyczne zrzuty", "Enable Auto Screenshots", Toggle, "capture event pipeline"),
@@ -973,6 +973,45 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn reference_display_catalog_copy_matches_the_observed_labels() -> Result<(), &'static str> {
+        for (section_id, option_id, exact_label) in [
+            ("controls", "controls.mouse_preset", "Mouse Preset"),
+            ("controls", "controls.loot_button", "Loot"),
+            ("controls", "controls.face_movement", "Always turn towards the direction of movement"),
+            ("controls", "controls.default_key_delay", "Use Default Keyboard Delay"),
+            ("controls", "controls.key_delay_ms", "Keyboard Delay"),
+            ("interface", "interface.expiry_unused", "Show Expiry On Unused Items"),
+            ("game_window", "window.private_messages", "Show Private Messages"),
+            ("game_window", "window.general_messages", "Show Messages"),
+            ("game_window", "window.own_spells", "Show Spells"),
+            ("game_window", "window.other_spells", "Show Spells of Others"),
+            ("game_window", "window.hotkey_notices", "Show Hotkey Usage Notifications"),
+            ("game_window", "window.loot_notices", "Show Loot Messages"),
+            ("game_window", "window.loot_highlight", "Show Loot Highlighting"),
+            ("game_window", "window.boosted_creatures", "Show Boosted Creature"),
+            ("game_window", "window.training", "Show Offline Training Progress"),
+            ("game_window", "window.store_notices", "Show Store Notifications in Combat"),
+            ("game_window", "window.combat_frame", "Show Combat Frames"),
+            ("game_window", "window.pvp_frame", "Show PvP Frames"),
+            ("game_window", "window.attack_animation", "Show Melee Attack Animation"),
+            ("game_window", "window.banner", "Show Info Banner"),
+            ("graphics", "graphics.engine", "Graphics Engine"),
+            ("graphics", "graphics.antialiasing", "Antialiasing Mode"),
+            ("graphics", "graphics.integer_scale", "Scale Using Only Integral Multiples"),
+            ("gameplay", "gameplay.cancel_chase", "Auto Chase Off"),
+            ("gameplay", "gameplay.nearby_corpses", "Quick Loot Nearby Corpses"),
+        ] {
+            let label = SETTINGS_SECTIONS
+                .iter()
+                .find(|section| section.id == section_id)
+                .and_then(|section| section.options.iter().find(|option| option.id == option_id))
+                .map(|option| option.en)
+                .ok_or("reference display option")?;
+            assert_eq!(label, exact_label, "stale catalog alias for {option_id}");
+        }
+        Ok(())
+    }
+    #[test]
     fn names_only_controls_have_inventory_provenance_and_exclude_credentials() -> Result<(), Box<dyn std::error::Error>> {
         #[derive(serde::Deserialize)]
         struct Inventory { options: Vec<String> }
@@ -1015,6 +1054,31 @@ mod tests {
     }
 
     #[test]
+    fn assignment_dependent_action_bar_controls_wait_for_a_production_source()
+    -> Result<(), &'static str> {
+        let section = SETTINGS_SECTIONS
+            .iter()
+            .find(|section| section.id == "action_bars")
+            .ok_or("action bars")?;
+        for id in ["bars.item_amounts", "bars.tooltips"] {
+            let key = format!("action_bars.{id}");
+            assert_eq!(runtime_consumer(&key), None, "{key}");
+            let option = section
+                .options
+                .iter()
+                .find(|option| option.id == id)
+                .ok_or("assignment-dependent action-bar control")?;
+            assert!(matches!(
+                option.implementation,
+                Implementation::Pending {
+                    consumer: "action-bar assignment source"
+                }
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn runtime_enabled_catalogue_is_an_explicit_audited_allowlist() {
         use std::collections::BTreeMap;
 
@@ -1029,9 +1093,8 @@ mod tests {
             })
             .collect();
         let expected_stored: BTreeMap<_, _> = [
-            ("action_bars.bars.item_amounts", "action-bar renderer"),
             ("action_bars.bars.labels", "action-bar renderer"),
-            ("action_bars.bars.tooltips", "action-bar renderer"),
+            ("basic.basic.advanced", "settings discovery"),
             ("console.console.font_size", "chat text renderer"),
             ("effects.effects.ambient_light", "scene lighting overlay"),
             ("effects.effects.lighting", "scene lighting overlay"),

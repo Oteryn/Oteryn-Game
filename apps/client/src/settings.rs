@@ -1455,7 +1455,8 @@ mod tests {
         settings.panel_shortcuts = ShortcutOrder::default().saved_ids();
         settings.save(&path)?;
         let restored = ClientSettings::load(&path)?;
-        assert_eq!(restored.panel_shortcuts.len(), 11);
+        assert_eq!(restored.panel_shortcuts.len(), 10);
+        assert!(!restored.panel_shortcuts.iter().any(|id| id == "help"));
         assert!(restored.english);
         fs::remove_file(path)?;
         Ok(())

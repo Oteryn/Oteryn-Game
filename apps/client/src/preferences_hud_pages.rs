@@ -1,5 +1,5 @@
 //! HUD, confirmation and capture page compositions. Server state is never fabricated.
-use super::{HelpAction, PageState, boxed, percent, reference_option, retained_children, row};
+use super::{HelpAction, PageState, percent, reference_option, retained_children, row};
 use oteryn_client::settings::ClientSettings;
 use oteryn_client::settings_catalog::FutureValue;
 
@@ -82,6 +82,10 @@ const SCREENSHOT_EVENTS_RIGHT: &[(&str, [&str; 2])] = &[
     ("gift_of_life", ["Dar życia", "Gift of Life Triggered"]),
 ];
 
+const CONDITION_ROW_HEIGHT: f32 = 16.5;
+const CONDITION_VIEWPORT_HEIGHT: f32 = 100.0;
+const CONDITION_REORDER_SIZE: f32 = 20.0;
+
 pub(super) fn show(
     ui: &mut egui::Ui,
     draft: &mut ClientSettings,
@@ -98,112 +102,111 @@ pub(super) fn show(
     true
 }
 
-fn hud_card(
-    ui: &mut egui::Ui,
-    draft: &mut ClientSettings,
-    id: &str,
-    labels: [&str; 2],
-    en: bool,
-    body: impl FnOnce(&mut egui::Ui, &mut ClientSettings),
-) {
-    egui::Frame::new()
-        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
-        .corner_radius(4.0)
-        .show(ui, |ui| {
-            ui.set_width(ui.available_width());
-            egui::Frame::new()
-                .fill(egui::Color32::from_rgba_unmultiplied(35, 39, 42, 160))
-                .inner_margin(egui::Margin::symmetric(12, 3))
-                .show(ui, |ui| {
-                    ui.set_width(ui.available_width());
-                    reference_option(ui, draft, "hud", id, labels, en);
-                });
-            egui::Frame::new()
-                .inner_margin(egui::Margin::symmetric(12, 6))
-                .show(ui, |ui| {
-                    ui.set_width(ui.available_width());
-                    body(ui, draft);
-                });
-        });
-    ui.add_space(5.0);
-}
-
 fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     let tr = |pl, en_| if en { en_ } else { pl };
-    ui.columns(2, |columns| {
-        hud_card(
-            &mut columns[0],
-            draft,
-            "hud.player_enabled",
-            ["Pokaż HUD własnej postaci", "Show HUD for Own Character"],
-            en,
-            |ui, draft| {
-                ui.add_enabled_ui(enabled(draft, "hud.player_enabled"), |ui| {
-                    ui.columns(2, |cols| {
-                        for (column, id, labels) in [
-                            (0, "hud.resource_bars", ["Paski zasobów", "Show Bars"]),
-                            (1, "hud.owner_name", ["Nazwa", "Show Name"]),
-                            (0, "hud.owner_health", ["Zdrowie", "Show Health"]),
-                            (1, "hud.owner_mana", ["Mana", "Show Mana"]),
-                            (0, "show_harmony", ["Harmonia", "Show Harmony"]),
-                            (1, "hud.marks", ["Znaczniki", "Show Marks"]),
+    hud_boxed(ui, "hud-master-frame", |ui| {
+        let columns = ui.scope(|ui| {
+            ui.spacing_mut().item_spacing.y = 1.0;
+            ui.spacing_mut().interact_size.y = 16.0;
+            ui.spacing_mut().button_padding.y = 0.0;
+            ui.columns(2, |columns| {
+                let ui = &mut columns[0];
+                hud_master_row(
+                    ui,
+                    draft,
+                    "hud.player_enabled",
+                    ["Pokaż HUD własnej postaci", "Show HUD for Own Character"],
+                    [
+                        "Pokaż lub ukryj elementy HUD własnej postaci.",
+                        "Show or hide HUD elements for your own character.",
+                    ],
+                    en,
+                );
+                ui.indent("own-hud-children", |ui| {
+                    ui.add_enabled_ui(enabled(draft, "hud.player_enabled"), |ui| {
+                        for (id, labels) in [
+                            ("hud.resource_bars", ["Pokaż paski", "Show Bars"]),
+                            ("hud.owner_name", ["Pokaż nazwę", "Show Name"]),
+                            ("hud.owner_health", ["Pokaż zdrowie", "Show Health"]),
+                            ("hud.owner_mana", ["Pokaż manę", "Show Mana"]),
+                            ("show_harmony", ["Pokaż harmonię", "Show Harmony"]),
                         ] {
-                            reference_option(&mut cols[column], draft, "hud", id, labels, en);
+                            reference_option(ui, draft, "hud", id, labels, en);
                         }
-                    });
-                    ui.add_enabled_ui(enabled(draft, "show_harmony"), |ui| {
-                        ui.indent("harmony-position", |ui| harmony_position(ui, draft, en));
+                        ui.add_enabled_ui(enabled(draft, "show_harmony"), |ui| {
+                            ui.indent("harmony-position", |ui| harmony_position(ui, draft, en));
+                        });
+                        reference_option(
+                            ui,
+                            draft,
+                            "hud",
+                            "hud.marks",
+                            ["Pokaż znaczniki", "Show Marks"],
+                            en,
+                        );
                     });
                 });
-            },
-        );
-        hud_card(
-            &mut columns[1],
-            draft,
-            "hud.creatures_enabled",
-            ["Pokaż HUD innych stworzeń", "Show HUD for Other Creatures"],
-            en,
-            |ui, draft| {
-                ui.add_enabled_ui(enabled(draft, "hud.creatures_enabled"), |ui| {
-                    ui.columns(2, |cols| {
-                        for (column, id, labels) in [
-                            (0, "hud.other_names", ["Nazwa", "Show Name"]),
-                            (1, "hud.other_health", ["Zdrowie", "Show Health"]),
-                            (0, "other_marks", ["Znaczniki", "Show Marks"]),
-                            (1, "hud.npc_icons", ["Ikony NPC", "Show NPC Icons"]),
+
+                let ui = &mut columns[1];
+                hud_master_row(
+                    ui,
+                    draft,
+                    "hud.creatures_enabled",
+                    ["Pokaż HUD innych stworzeń", "Show HUD for Other Creatures"],
+                    [
+                        "Pokaż lub ukryj elementy HUD innych stworzeń.",
+                        "Show or hide HUD elements for other creatures.",
+                    ],
+                    en,
+                );
+                ui.indent("other-hud-children", |ui| {
+                    ui.add_enabled_ui(enabled(draft, "hud.creatures_enabled"), |ui| {
+                        for (id, labels) in [
+                            ("hud.other_names", ["Pokaż nazwę", "Show Name"]),
+                            ("hud.other_health", ["Pokaż zdrowie", "Show Health"]),
+                            ("other_marks", ["Pokaż znaczniki", "Show Marks"]),
+                            ("hud.npc_icons", ["Pokaż ikony NPC", "Show NPC Icons"]),
                         ] {
-                            reference_option(&mut cols[column], draft, "hud", id, labels, en);
+                            reference_option(ui, draft, "hud", id, labels, en);
                         }
                     });
                 });
-                ui.add_space(8.0);
-                ui.weak(tr(
-                    "Postacie, potwory i NPC widoczne na ekranie.",
-                    "Characters, monsters and NPCs on screen.",
-                ));
-            },
+            });
+        });
+        let columns_rect = columns.response.rect;
+        let divider_x = columns_rect.center().x;
+        ui.painter().vline(
+            divider_x,
+            columns_rect.y_range(),
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)),
         );
+        #[cfg(test)]
+        ui.ctx().data_mut(|data| {
+            data.insert_temp(
+                egui::Id::new("hud-columns-divider"),
+                (divider_x, columns_rect),
+            )
+        });
     });
-    hud_card(
-        ui,
-        draft,
-        "hud.arcs",
-        ["Łuki zasobów", "Resource arcs"],
-        en,
-        |ui, draft| {
-            let active = enabled(draft, "hud.arcs") || enabled(draft, "conditions_hud_enabled");
-            ui.add_enabled_ui(active, |ui| {
-                ui.columns(3, |cols| {
-                    reference_option(
-                        &mut cols[0],
-                        draft,
-                        "hud",
-                        "arc_size_preset",
-                        ["Rozmiar", "Size"],
-                        en,
-                    );
+    hud_boxed(ui, "hud-arcs-frame", |ui| {
+        ui.spacing_mut().item_spacing.y = 1.0;
+        ui.spacing_mut().interact_size.y = 16.0;
+        ui.spacing_mut().button_padding.y = 0.0;
+        reference_option(
+            ui,
+            draft,
+            "hud",
+            "hud.arcs",
+            ["Pokaż łuki", "Show Arcs"],
+            en,
+        );
+        let active = enabled(draft, "hud.arcs");
+        ui.add_enabled_ui(active, |ui| {
+            ui.columns(2, |cols| {
+                reference_option(&mut cols[0], draft, "hud", "arc_size_preset", ["", ""], en);
+                cols[1].vertical(|ui| {
                     percent(
-                        &mut cols[1],
+                        ui,
                         draft,
                         "hud",
                         "hud.arc_distance",
@@ -211,7 +214,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         en,
                     );
                     percent(
-                        &mut cols[2],
+                        ui,
                         draft,
                         "hud",
                         "hud.arc_opacity",
@@ -220,12 +223,17 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                     );
                 });
             });
-        },
-    );
-    boxed(
-        ui,
-        tr("Stany specjalne · 35", "Special conditions · 35"),
-        |ui| {
+        });
+    });
+    let condition_frame = egui::Frame::new()
+        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
+        .corner_radius(4.0)
+        .inner_margin(egui::Margin::symmetric(12, 5))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.spacing_mut().item_spacing.y = 0.0;
+            ui.spacing_mut().interact_size.y = 16.0;
+            ui.spacing_mut().button_padding.y = 0.0;
             let selection_id = egui::Id::new("selected-hud-condition");
             let mut selected = ui
                 .ctx()
@@ -245,6 +253,15 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 }
             }
             let mut order: Vec<String> = unique.into_iter().map(str::to_owned).collect();
+            let order_supported =
+                oteryn_client::settings_catalog::runtime_consumer("hud.condition_order").is_some();
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::new("hud-condition-selection-enabled"),
+                    order_supported,
+                )
+            });
             let table_width = (ui.available_width() - 44.0).max(100.0);
             let col_width = table_width * 0.25;
             let row = |ui: &mut egui::Ui,
@@ -252,72 +269,96 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                        draft: &mut ClientSettings,
                        id: Option<&str>,
                        selected: &mut String| {
-                ui.horizontal(|ui| {
-                    ui.allocate_ui_with_layout(
-                        egui::vec2(table_width * 0.5 - 16.0, 28.0),
+                let response = ui
+                    .allocate_ui_with_layout(
+                        egui::vec2(table_width, CONDITION_ROW_HEIGHT),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
-                            ui.set_min_width(table_width * 0.5 - 16.0);
-                            if let Some(id) = id {
-                                let icon = condition_icon(ui, id, label);
-                                if icon.clicked()
-                                    || ui.selectable_label(selected == id, label).clicked()
-                                {
-                                    *selected = id.into();
-                                }
-                            } else {
-                                ui.label(label);
+                            ui.spacing_mut().item_spacing.y = 0.0;
+                            ui.spacing_mut().button_padding.y = 0.0;
+                            ui.allocate_ui_with_layout(
+                                egui::vec2(table_width * 0.5 - 16.0, CONDITION_ROW_HEIGHT),
+                                egui::Layout::left_to_right(egui::Align::Center),
+                                |ui| {
+                                    ui.set_min_width(table_width * 0.5 - 16.0);
+                                    if let Some(id) = id {
+                                        ui.add_enabled_ui(order_supported, |ui| {
+                                            let icon = condition_icon(ui, id, label);
+                                            if icon.clicked()
+                                                || ui
+                                                    .selectable_label(selected == id, label)
+                                                    .clicked()
+                                            {
+                                                *selected = id.into();
+                                            }
+                                        })
+                                        .response
+                                        .on_disabled_hover_text(tr(
+                                            "Niedostępne bez projekcji stanów HUD",
+                                            "Unavailable without a HUD condition projection",
+                                        ));
+                                    } else {
+                                        ui.label(label);
+                                    }
+                                },
+                            );
+                            for where_ in ["hud", "bar"] {
+                                ui.allocate_ui_with_layout(
+                                    egui::vec2(col_width - 8.0, CONDITION_ROW_HEIGHT),
+                                    egui::Layout::left_to_right(egui::Align::Center),
+                                    |ui| {
+                                        ui.set_min_width(col_width - 8.0);
+                                        if let Some(id) = id {
+                                            ui.add_enabled_ui(
+                                                enabled(
+                                                    draft,
+                                                    &format!("conditions_{where_}_enabled"),
+                                                ),
+                                                |ui| {
+                                                    reference_option(
+                                                        ui,
+                                                        draft,
+                                                        "hud",
+                                                        &format!("condition_{id}_{where_}"),
+                                                        ["", ""],
+                                                        en,
+                                                    );
+                                                },
+                                            );
+                                        } else {
+                                            condition_header_toggle(ui, draft, where_, en);
+                                        }
+                                    },
+                                );
                             }
                         },
-                    );
-                    for where_ in ["hud", "bar"] {
-                        ui.allocate_ui_with_layout(
-                            egui::vec2(col_width - 8.0, 28.0),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| {
-                                ui.set_min_width(col_width - 8.0);
-                                if let Some(id) = id {
-                                    ui.add_enabled_ui(
-                                        enabled(draft, &format!("conditions_{where_}_enabled")),
-                                        |ui| {
-                                            reference_option(
-                                                ui,
-                                                draft,
-                                                "hud",
-                                                &format!("condition_{id}_{where_}"),
-                                                ["", ""],
-                                                en,
-                                            );
-                                        },
-                                    );
-                                } else {
-                                    reference_option(
-                                        ui,
-                                        draft,
-                                        "hud",
-                                        &format!("conditions_{where_}_enabled"),
-                                        if where_ == "hud" {
-                                            ["Na HUD", "In HUD"]
-                                        } else {
-                                            ["Na pasku", "In bar"]
-                                        },
-                                        en,
-                                    );
-                                }
-                            },
-                        );
-                    }
+                    )
+                    .response;
+                #[cfg(test)]
+                ui.ctx().data_mut(|data| {
+                    data.insert_temp(
+                        egui::Id::new(("hud-condition-row", id.unwrap_or("header"))),
+                        (response.rect, ui.clip_rect()),
+                    )
                 });
             };
-            row(ui, tr("Stan", "Condition"), draft, None, &mut selected);
+            row(
+                ui,
+                tr("Stan specjalny", "Special Condition"),
+                draft,
+                None,
+                &mut selected,
+            );
             ui.horizontal_top(|ui| {
                 crate::settings_audit::show_bounded_vertical(
                     ui,
                     "hud-conditions",
-                    180.0,
+                    CONDITION_VIEWPORT_HEIGHT,
                     Some(table_width),
                     |ui| {
+                        ui.spacing_mut().item_spacing.y = 0.0;
                         ui.vertical(|ui| {
+                            ui.spacing_mut().item_spacing.y = 0.0;
                             ui.set_width(table_width);
                             for (index, id) in order.iter().enumerate() {
                                 if let Some((_, labels)) =
@@ -327,7 +368,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                                         ui.painter().rect_filled(
                                             egui::Rect::from_min_size(
                                                 ui.cursor().min,
-                                                egui::vec2(table_width, 34.0),
+                                                egui::vec2(table_width, CONDITION_ROW_HEIGHT),
                                             ),
                                             0.0,
                                             ui.visuals().faint_bg_color,
@@ -346,11 +387,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                     },
                 );
                 ui.vertical(|ui| {
-                    ui.add_space(45.0);
                     let index = order.iter().position(|id| id == &selected).unwrap_or(0);
-                    let order_supported =
-                        oteryn_client::settings_catalog::runtime_consumer("hud.condition_order")
-                            .is_some();
                     for (label, target, allowed) in [
                         ("↑", index.saturating_sub(1), index > 0),
                         (
@@ -361,7 +398,10 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                     ] {
                         let response = ui.add_enabled(
                             allowed && order_supported,
-                            egui::Button::new("").min_size(egui::vec2(30.0, 30.0)),
+                            egui::Button::new("").min_size(egui::vec2(
+                                CONDITION_REORDER_SIZE,
+                                CONDITION_REORDER_SIZE,
+                            )),
                         );
                         #[cfg(test)]
                         ui.ctx().data_mut(|d| {
@@ -405,28 +445,138 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 });
             });
             ui.ctx().data_mut(|d| d.insert_temp(selection_id, selected));
-        },
+        });
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(
+            egui::Id::new("hud-condition-frame"),
+            condition_frame.response.rect,
+        )
+    });
+    hud_status_row(
+        ui,
+        draft,
+        "custom_status_bars",
+        [
+            "Konfigurowalne paski stanu",
+            "Show Customisable Status Bars",
+        ],
+        en,
     );
-    ui.columns(2, |cols| {
+    hud_status_row(
+        ui,
+        draft,
+        "status_bars",
+        ["Paski stanu", "Show Status Bars"],
+        en,
+    );
+}
+
+fn hud_boxed(ui: &mut egui::Ui, test_id: &'static str, body: impl FnOnce(&mut egui::Ui)) {
+    let frame = egui::Frame::new()
+        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
+        .corner_radius(4.0)
+        .inner_margin(egui::Margin::symmetric(12, 5))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            body(ui);
+        });
+    #[cfg(test)]
+    ui.ctx()
+        .data_mut(|data| data.insert_temp(egui::Id::new(test_id), frame.response.rect));
+}
+
+fn condition_header_toggle(ui: &mut egui::Ui, draft: &mut ClientSettings, where_: &str, en: bool) {
+    let labels = if where_ == "hud" {
+        ["Pokaż w HUD", "Show in HUD"]
+    } else {
+        ["Pokaż na pasku", "Show in Bar"]
+    };
+    ui.horizontal(|ui| {
+        ui.label(labels[usize::from(en)]);
         reference_option(
-            &mut cols[0],
+            ui,
             draft,
             "hud",
-            "custom_status_bars",
-            [
-                "Konfigurowalne paski stanu",
-                "Show Customisable Status Bars",
-            ],
+            &format!("conditions_{where_}_enabled"),
+            ["", ""],
             en,
         );
-        reference_option(
-            &mut cols[1],
-            draft,
-            "hud",
-            "status_bars",
-            ["Paski stanu", "Show Status Bars"],
-            en,
-        );
+    });
+}
+
+fn hud_master_row(
+    ui: &mut egui::Ui,
+    draft: &mut ClientSettings,
+    id: &'static str,
+    labels: [&str; 2],
+    info: [&str; 2],
+    en: bool,
+) {
+    let row = ui.horizontal(|ui| {
+        reference_option(ui, draft, "hud", id, labels, en);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            info_glyph(ui, egui::Id::new(("hud-master-info", id)), info, en);
+        });
+    });
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(egui::Id::new(("hud-master-row", id)), row.response.rect)
+    });
+}
+
+fn info_glyph(ui: &mut egui::Ui, id: egui::Id, labels: [&str; 2], en: bool) {
+    let response = ui
+        .allocate_response(egui::vec2(18.0, 18.0), egui::Sense::hover())
+        .on_hover_text(labels[usize::from(en)]);
+    let color = ui.visuals().weak_text_color();
+    ui.painter()
+        .circle_stroke(response.rect.center(), 7.0, egui::Stroke::new(1.0, color));
+    ui.painter().text(
+        response.rect.center(),
+        egui::Align2::CENTER_CENTER,
+        "i",
+        egui::FontId::proportional(11.0),
+        color,
+    );
+    #[cfg(test)]
+    ui.ctx()
+        .data_mut(|data| data.insert_temp(id, (response.rect, labels[usize::from(en)].to_owned())));
+}
+
+fn hud_status_row(
+    ui: &mut egui::Ui,
+    draft: &mut ClientSettings,
+    id: &'static str,
+    labels: [&str; 2],
+    en: bool,
+) {
+    let _row = egui::Frame::new()
+        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
+        .corner_radius(4.0)
+        .inner_margin(egui::Margin::symmetric(12, 4))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.spacing_mut().interact_size.y = 16.0;
+            ui.spacing_mut().button_padding.y = 0.0;
+            ui.horizontal(|ui| {
+                reference_option(ui, draft, "hud", id, labels, en);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    info_glyph(
+                        ui,
+                        egui::Id::new(("hud-status-info", id)),
+                        [
+                            "Niedostępne bez projekcji aktora i pasków stanu.",
+                            "Unavailable without an actor/status-bar projection.",
+                        ],
+                        en,
+                    );
+                });
+            });
+        });
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(egui::Id::new(("hud-status-row", id)), _row.response.rect)
     });
 }
 
@@ -466,7 +616,7 @@ fn harmony_position(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
 }
 
 fn condition_icon(ui: &mut egui::Ui, id: &str, label: &str) -> egui::Response {
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), egui::Sense::click());
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::click());
     let painter = ui.painter();
     let frame = rect.shrink(1.0);
     painter.rect_filled(frame, 2.0, egui::Color32::from_rgb(31, 34, 35));
@@ -621,51 +771,36 @@ fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
         ),
         (
             "capture.backlog",
-            ["Bufor ostatnich 5 sekund", "Keep Backlog of Last 5 Seconds"],
+            [
+                "Zachowaj historię zrzutów z ostatnich 5 sekund",
+                "Keep Backlog of the Screenshots of the Last 5 Seconds",
+            ],
         ),
         ("auto", ["Automatyczne zrzuty", "Enable Auto Screenshots"]),
     ] {
         row(ui, draft, "screenshots", id, labels, en);
     }
-    boxed(
+    ui.label(if en {
+        "Select all events that should trigger auto screenshots:"
+    } else {
+        "Wybierz wszystkie zdarzenia, które powinny wywołać automatyczny zrzut ekranu:"
+    });
+    retained_children(
         ui,
-        if en {
-            "Capture Events"
-        } else {
-            "Zdarzenia do zapisu"
-        },
+        draft.stored_bool("screenshots.auto") == Some(true),
+        "screenshot-automatic-events",
         |ui| {
-            retained_children(
-                ui,
-                draft.stored_bool("screenshots.auto") == Some(true),
-                "screenshot-automatic-events",
-                |ui| {
-                    ui.columns(2, |columns| {
-                        for (id, labels) in SCREENSHOT_EVENTS_LEFT {
-                            reference_option(
-                                &mut columns[0],
-                                draft,
-                                "screenshots",
-                                id,
-                                *labels,
-                                en,
-                            );
-                        }
-                        for (id, labels) in SCREENSHOT_EVENTS_RIGHT {
-                            reference_option(
-                                &mut columns[1],
-                                draft,
-                                "screenshots",
-                                id,
-                                *labels,
-                                en,
-                            );
-                        }
-                    });
-                },
-            );
+            ui.columns(2, |columns| {
+                for (id, labels) in SCREENSHOT_EVENTS_LEFT {
+                    reference_option(&mut columns[0], draft, "screenshots", id, *labels, en);
+                }
+                for (id, labels) in SCREENSHOT_EVENTS_RIGHT {
+                    reference_option(&mut columns[1], draft, "screenshots", id, *labels, en);
+                }
+            });
         },
     );
+    ui.add_space(8.0);
     if ui
         .button(if en {
             "Open Screenshot Folder"
@@ -686,7 +821,10 @@ fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::preferences_browser::test_support::{button_position, click, frame};
+    use crate::preferences_browser::{
+        PreferencesBrowser,
+        test_support::{button_position, click, frame, scroll_geometry},
+    };
 
     #[test]
     fn hud_uses_reference_masters_radio_harmony_and_all_condition_icons() -> Result<(), &'static str>
@@ -716,6 +854,10 @@ mod tests {
                 [
                     "Show HUD for Own Character",
                     "Show HUD for Other Creatures",
+                    "Show Arcs",
+                    "Special Condition",
+                    "Show in HUD",
+                    "Show in Bar",
                     "next to Health Arc",
                     "next to Mana Arc",
                 ]
@@ -723,6 +865,10 @@ mod tests {
                 [
                     "Pokaż HUD własnej postaci",
                     "Pokaż HUD innych stworzeń",
+                    "Pokaż łuki",
+                    "Stan specjalny",
+                    "Pokaż w HUD",
+                    "Pokaż na pasku",
                     "obok łuku zdrowia",
                     "obok łuku many",
                 ]
@@ -732,17 +878,30 @@ mod tests {
                     "missing {label}"
                 );
             }
-            for stale in ["Own character", "Other creatures", "Harmony beside"] {
+            for stale in [
+                "Own character",
+                "Other creatures",
+                "Harmony beside",
+                "Resource arcs",
+                "Special conditions · 35",
+                "Condition",
+                "In HUD",
+                "In bar",
+            ] {
                 assert!(
                     button_position(&output, size, stale).is_none(),
                     "stale {stale}"
                 );
             }
-            assert!(
-                !draft
-                    .future_preferences
-                    .contains_key("hud.harmony_position")
-            );
+            let toggle = |key: &str| {
+                ctx.data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        key,
+                    )))
+                    .map(|(rect, _)| rect)
+                })
+            };
             let radio = |id: &'static str| {
                 ctx.data(|data| {
                     data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
@@ -751,6 +910,204 @@ mod tests {
                     )))
                 })
             };
+            let own_order = [
+                toggle("hud.hud.player_enabled").ok_or("own HUD master")?,
+                toggle("hud.hud.resource_bars").ok_or("own bars")?,
+                toggle("hud.hud.owner_name").ok_or("own name")?,
+                toggle("hud.hud.owner_health").ok_or("own health")?,
+                toggle("hud.hud.owner_mana").ok_or("own mana")?,
+                toggle("hud.show_harmony").ok_or("own harmony")?,
+                radio("health").ok_or("health radio")?.0,
+                radio("mana").ok_or("mana radio")?.0,
+                toggle("hud.hud.marks").ok_or("own marks")?,
+            ];
+            assert!(
+                own_order
+                    .windows(2)
+                    .all(|pair| pair[0].center().y < pair[1].center().y),
+                "own-character HUD controls must follow the captured vertical order"
+            );
+            let other_order = [
+                toggle("hud.hud.creatures_enabled").ok_or("other HUD master")?,
+                toggle("hud.hud.other_names").ok_or("other name")?,
+                toggle("hud.hud.other_health").ok_or("other health")?,
+                toggle("hud.other_marks").ok_or("other marks")?,
+                toggle("hud.hud.npc_icons").ok_or("NPC icons")?,
+            ];
+            assert!(
+                other_order
+                    .windows(2)
+                    .all(|pair| pair[0].center().y < pair[1].center().y),
+                "other-creature HUD controls must follow the captured vertical order"
+            );
+            assert!(
+                own_order[0].center().x < other_order[0].center().x,
+                "the own and other creature groups must share one two-column frame"
+            );
+            assert!(
+                own_order[1].left() >= own_order[0].left() + 10.0,
+                "own-character children must be indented under their master"
+            );
+            assert!(
+                other_order[1].left() >= other_order[0].left() + 10.0,
+                "other-creature children must be indented under their master"
+            );
+            let (divider_x, columns_rect) = ctx
+                .data(|data| {
+                    data.get_temp::<(f32, egui::Rect)>(egui::Id::new("hud-columns-divider"))
+                })
+                .ok_or("HUD column divider")?;
+            assert!((divider_x - columns_rect.center().x).abs() <= 0.5);
+            assert!(own_order[0].center().x < divider_x);
+            assert!(other_order[0].center().x > divider_x);
+            assert!(columns_rect.top() <= own_order[0].top());
+            assert!(columns_rect.bottom() >= own_order.last().ok_or("own last")?.bottom());
+            for id in ["hud.player_enabled", "hud.creatures_enabled"] {
+                let row = ctx
+                    .data(|data| data.get_temp::<egui::Rect>(egui::Id::new(("hud-master-row", id))))
+                    .ok_or("HUD master row")?;
+                let (info, tooltip) = ctx
+                    .data(|data| {
+                        data.get_temp::<(egui::Rect, String)>(egui::Id::new((
+                            "hud-master-info",
+                            id,
+                        )))
+                    })
+                    .ok_or("HUD master info glyph")?;
+                assert!(row.contains_rect(info));
+                assert!(
+                    info.center().x > row.center().x,
+                    "HUD master info glyph must remain on the right"
+                );
+                let expected = match (en, id) {
+                    (true, "hud.player_enabled") => {
+                        "Show or hide HUD elements for your own character."
+                    }
+                    (true, _) => "Show or hide HUD elements for other creatures.",
+                    (false, "hud.player_enabled") => {
+                        "Pokaż lub ukryj elementy HUD własnej postaci."
+                    }
+                    (false, _) => "Pokaż lub ukryj elementy HUD innych stworzeń.",
+                };
+                assert_eq!(tooltip, expected);
+            }
+            assert!(
+                toggle("hud.custom_status_bars")
+                    .ok_or("custom status bars")?
+                    .center()
+                    .y
+                    < toggle("hud.status_bars").ok_or("status bars")?.center().y,
+                "status-bar controls must remain vertically ordered"
+            );
+            let custom_row = ctx
+                .data(|data| {
+                    data.get_temp::<egui::Rect>(egui::Id::new((
+                        "hud-status-row",
+                        "custom_status_bars",
+                    )))
+                })
+                .ok_or("custom status row")?;
+            let status_row = ctx
+                .data(|data| {
+                    data.get_temp::<egui::Rect>(egui::Id::new(("hud-status-row", "status_bars")))
+                })
+                .ok_or("status row")?;
+            assert!(custom_row.bottom() < status_row.top());
+            assert!(custom_row.width() > 900.0, "status row is not full-width");
+            assert!((custom_row.width() - status_row.width()).abs() <= 1.0);
+            for (id, row_rect) in [
+                ("custom_status_bars", custom_row),
+                ("status_bars", status_row),
+            ] {
+                let (info, tooltip) = ctx
+                    .data(|data| {
+                        data.get_temp::<(egui::Rect, String)>(egui::Id::new((
+                            "hud-status-info",
+                            id,
+                        )))
+                    })
+                    .ok_or("status info glyph")?;
+                assert!(row_rect.contains_rect(info));
+                assert!(
+                    info.center().x > row_rect.center().x,
+                    "status info glyph must remain on the right"
+                );
+                assert_eq!(
+                    tooltip,
+                    if en {
+                        "Unavailable without an actor/status-bar projection."
+                    } else {
+                        "Niedostępne bez projekcji aktora i pasków stanu."
+                    }
+                );
+            }
+            for (where_, label) in if en {
+                [("hud", "Show in HUD"), ("bar", "Show in Bar")]
+            } else {
+                [("hud", "Pokaż w HUD"), ("bar", "Pokaż na pasku")]
+            } {
+                let label = button_position(&output, size, label).ok_or("condition header")?;
+                let toggle = toggle(&format!("hud.conditions_{where_}_enabled"))
+                    .ok_or("condition header toggle")?;
+                assert!(
+                    label.x < toggle.center().x,
+                    "condition header checkbox must follow its label"
+                );
+            }
+            let poison = ctx
+                .data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "condition-icon",
+                        "poison",
+                    )))
+                })
+                .ok_or("poison icon")?
+                .0;
+            let condition_frame = ctx
+                .data(|data| data.get_temp::<egui::Rect>(egui::Id::new("hud-condition-frame")))
+                .ok_or("condition frame")?;
+            assert!(
+                (126.0..=133.0).contains(&condition_frame.height()),
+                "condition header and viewport must retain the captured compact height: {condition_frame:?}"
+            );
+            let condition_row = |id: &'static str| {
+                ctx.data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "hud-condition-row",
+                        id,
+                    )))
+                })
+            };
+            let (header, _) = condition_row("header").ok_or("condition header geometry")?;
+            let (poison_row, condition_clip) =
+                condition_row("poison").ok_or("poison row geometry")?;
+            let (burning_row, _) = condition_row("burning").ok_or("burning row geometry")?;
+            assert!((16.0..=17.0).contains(&header.height()), "{header:?}");
+            assert!(
+                (16.0..=17.0).contains(&poison_row.height()),
+                "{poison_row:?}"
+            );
+            assert!(
+                (16.0..=17.0).contains(&(burning_row.top() - poison_row.top())),
+                "condition rows must use the captured compact pitch"
+            );
+            assert!(
+                (99.0..=101.0).contains(&condition_clip.height()),
+                "condition list must expose the captured six-row viewport: {condition_clip:?}"
+            );
+            let up = ctx
+                .data(|data| data.get_temp::<egui::Rect>(egui::Id::new(("condition-order", "↑"))))
+                .ok_or("up order control")?;
+            assert_eq!(up.size(), egui::vec2(20.0, 20.0));
+            assert!(
+                (poison.center().y - up.center().y).abs() <= 3.0,
+                "first order control must align with the first condition row"
+            );
+            assert!(
+                !draft
+                    .future_preferences
+                    .contains_key("hud.harmony_position")
+            );
             let (mana, clip) = radio("mana").ok_or("mana radio")?;
             assert!(clip.contains_rect(mana));
             click(&ctx, size, mana.center(), |ctx| draw(ctx, &mut draft));
@@ -777,14 +1134,24 @@ mod tests {
                     )))
                 })
                 .ok_or("powerless icon")?;
-            assert!(clip.contains_rect(powerless));
+            assert!(
+                clip.contains_rect(powerless),
+                "sixth condition row must remain inside the compact viewport: {poison:?} {powerless:?} {clip:?}"
+            );
+            assert_eq!(
+                ctx.data(|data| {
+                    data.get_temp::<bool>(egui::Id::new("hud-condition-selection-enabled"))
+                }),
+                Some(false)
+            );
             click(&ctx, size, powerless.center(), |ctx| draw(ctx, &mut draft));
             assert_eq!(
                 ctx.data(|data| {
                     data.get_temp::<String>(egui::Id::new("selected-hud-condition"))
                 })
                 .as_deref(),
-                Some("powerless")
+                Some("poison"),
+                "unavailable condition rows must not advertise a selectable no-op"
             );
             for (id, _) in CONDITIONS {
                 let (rect, _) = ctx
@@ -795,7 +1162,7 @@ mod tests {
                         )))
                     })
                     .ok_or("condition icon")?;
-                assert_eq!(rect.size(), egui::vec2(18.0, 18.0), "{id}");
+                assert_eq!(rect.size(), egui::vec2(16.0, 16.0), "{id}");
             }
         }
         Ok(())
@@ -851,6 +1218,61 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn arc_children_depend_only_on_show_arcs() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 700.0);
+        let mut draft = ClientSettings::default();
+        draft
+            .future_preferences
+            .insert("hud.conditions_hud_enabled".into(), FutureValue::Bool(true));
+        draft
+            .future_preferences
+            .insert("hud.hud.arcs".into(), FutureValue::Bool(false));
+        let draw = |ctx: &egui::Context, draft: &mut ClientSettings| {
+            egui::Window::new("HUD arc dependency")
+                .fixed_size([850.0, 650.0])
+                .show(ctx, |ui| {
+                    show(ui, draft, "hud", true, &mut PageState::default());
+                });
+        };
+        for _ in 0..3 {
+            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
+        }
+        let choice_enabled = || {
+            ctx.data(|data| {
+                data.get_temp::<(bool, String, Vec<String>)>(egui::Id::new((
+                    "preference-choice",
+                    "hud.arc_size_preset",
+                )))
+                .map(|state| state.0)
+            })
+        };
+        let percent_enabled = |key: &'static str| {
+            ctx.data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect, bool, bool)>(egui::Id::new((
+                    "preference-percent",
+                    key,
+                )))
+                .map(|state| state.3)
+            })
+        };
+        assert_eq!(choice_enabled(), Some(false));
+        assert_eq!(percent_enabled("hud.hud.arc_distance"), Some(false));
+        assert_eq!(percent_enabled("hud.hud.arc_opacity"), Some(false));
+
+        draft
+            .future_preferences
+            .insert("hud.hud.arcs".into(), FutureValue::Bool(true));
+        for _ in 0..2 {
+            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
+        }
+        assert_eq!(choice_enabled(), Some(true));
+        assert_eq!(percent_enabled("hud.hud.arc_distance"), Some(true));
+        assert_eq!(percent_enabled("hud.hud.arc_opacity"), Some(true));
         Ok(())
     }
 
@@ -914,6 +1336,150 @@ mod tests {
     }
 
     #[test]
+    fn nested_condition_scroll_reaches_hungry_without_moving_the_fixed_footer()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        ctx.set_theme(egui::Theme::Dark);
+        crate::client_chrome::install(&ctx, false);
+        let size = egui::vec2(900.0, 620.0);
+        let mut browser = PreferencesBrowser::new();
+        assert!(browser.open_section("hud"));
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let draw =
+            |ctx: &egui::Context, browser: &mut PreferencesBrowser, draft: &mut ClientSettings| {
+                browser.show(ctx, draft, None)
+            };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..30 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                draw(ctx, &mut browser, &mut draft)
+            })
+            .1;
+        }
+        for footer in ["Reset", "Cancel", "Apply", "Ok"] {
+            assert!(
+                button_position(&output, size, footer).is_some(),
+                "fixed footer control is not reachable: {footer}"
+            );
+        }
+        assert!(button_position(&output, size, "Hungry").is_none());
+        let (body, _) = scroll_geometry(&ctx, "all-preferences-body-geometry")
+            .ok_or("settings body geometry")?;
+        let master_frame = ctx
+            .data(|data| data.get_temp::<egui::Rect>(egui::Id::new("hud-master-frame")))
+            .ok_or("HUD master frame")?;
+        let arcs_frame = ctx
+            .data(|data| data.get_temp::<egui::Rect>(egui::Id::new("hud-arcs-frame")))
+            .ok_or("HUD arcs frame")?;
+        let conditions_frame = ctx
+            .data(|data| data.get_temp::<egui::Rect>(egui::Id::new("hud-condition-frame")))
+            .ok_or("HUD conditions frame")?;
+        let condition_clip = ctx
+            .data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                    "condition-icon",
+                    "poison",
+                )))
+            })
+            .ok_or("condition viewport")?
+            .1;
+        assert!(
+            (99.0..=101.0).contains(&condition_clip.height()),
+            "condition viewport is not the captured compact height: {condition_clip:?}"
+        );
+        for (key, label) in [
+            ("hud.custom_status_bars", "Show Customisable Status Bars"),
+            ("hud.status_bars", "Show Status Bars"),
+        ] {
+            let id = key.strip_prefix("hud.").ok_or("status key")?;
+            let (rect, clip) = ctx
+                .data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        key,
+                    )))
+                })
+                .ok_or("status toggle")?;
+            let row_rect = ctx
+                .data(|data| data.get_temp::<egui::Rect>(egui::Id::new(("hud-status-row", id))))
+                .ok_or("status row")?;
+            assert!(
+                clip.contains_rect(row_rect) && body.contains_rect(row_rect),
+                "status row must be visible without scrolling: {key} row={row_rect:?} clip={clip:?} master={master_frame:?} arcs={arcs_frame:?} conditions={conditions_frame:?}"
+            );
+            assert!(row_rect.contains_rect(rect));
+            assert!(
+                button_position(&output, size, label).is_some(),
+                "initial status label is clipped: {label}"
+            );
+        }
+
+        let hungry_visible = |ctx: &egui::Context| {
+            ctx.data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                    "condition-icon",
+                    "hungry",
+                )))
+                .is_some_and(|(rect, clip)| clip.contains_rect(rect))
+            })
+        };
+        assert!(!hungry_visible(&ctx));
+        let pointer = condition_clip.center();
+        for _ in 0..12 {
+            output = frame(
+                &ctx,
+                size,
+                vec![
+                    egui::Event::PointerMoved(pointer),
+                    egui::Event::MouseWheel {
+                        unit: egui::MouseWheelUnit::Point,
+                        delta: egui::vec2(0.0, -220.0),
+                        phase: egui::TouchPhase::Move,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+                |ctx| draw(ctx, &mut browser, &mut draft),
+            )
+            .1;
+            for _ in 0..6 {
+                output = frame(&ctx, size, vec![], |ctx| {
+                    draw(ctx, &mut browser, &mut draft)
+                })
+                .1;
+            }
+            if hungry_visible(&ctx) && button_position(&output, size, "Hungry").is_some() {
+                break;
+            }
+        }
+        assert!(hungry_visible(&ctx), "Hungry remained clipped");
+        assert!(button_position(&output, size, "Hungry").is_some());
+        for key in ["hud.custom_status_bars", "hud.status_bars"] {
+            let (rect, clip) = ctx
+                .data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        key,
+                    )))
+                })
+                .ok_or("status toggle after nested scroll")?;
+            assert!(
+                clip.contains_rect(rect),
+                "inner condition scroll moved the fixed status row: {key}"
+            );
+        }
+        for footer in ["Reset", "Cancel", "Apply", "Ok"] {
+            assert!(
+                button_position(&output, size, footer).is_some(),
+                "fixed footer control moved or clipped: {footer}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn automatic_screenshot_master_gates_all_seventeen_retained_triggers() {
         assert_eq!(
             SCREENSHOT_EVENTS_LEFT.len() + SCREENSHOT_EVENTS_RIGHT.len(),
@@ -943,8 +1509,18 @@ mod tests {
                 .fixed_size([700.0, 660.0])
                 .show(ctx, |ui| screenshots(ui, draft, true, state));
         };
+        let mut output = egui::FullOutput::default();
         for _ in 0..2 {
-            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft, &mut state));
+            output = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft, &mut state)).1;
+        }
+        for label in [
+            "Keep Backlog of the Screenshots of the Last 5 Seconds",
+            "Select all events that should trigger auto screenshots:",
+        ] {
+            assert!(button_position(&output, size, label).is_some(), "{label}");
+        }
+        for stale in ["Keep Backlog of Last 5 Seconds", "Capture Events"] {
+            assert!(button_position(&output, size, stale).is_none(), "{stale}");
         }
         assert_eq!(
             ctx.data(|data| {

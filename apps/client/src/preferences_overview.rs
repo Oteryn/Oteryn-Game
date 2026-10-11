@@ -290,7 +290,7 @@ mod tests {
                     .1;
                 }
                 assert_eq!(draft.future_preferences, original);
-                let save = button_position(&output, size, "OK").ok_or("Save is clipped")?;
+                let save = button_position(&output, size, "Ok").ok_or("Save is clipped")?;
                 let action = click(&ctx, size, save, |ctx| browser.show(ctx, &mut draft, None));
                 assert!(matches!(action, PreferenceAction::Ok));
                 let output = frame(&ctx, size, Vec::new(), |ctx| {

@@ -2,8 +2,10 @@
 
 use crate::{
     preferences_browser::{
-        PreferencesBrowser,
-        test_support::{button_position_in_rect, frame, reveal_in_rect, scroll_geometry},
+        PreferenceAction, PreferencesBrowser,
+        test_support::{
+            button_position, button_position_in_rect, click, frame, reveal_in_rect, scroll_geometry,
+        },
     },
     settings_audit::REFERENCE_SETTINGS_PAGES,
 };
@@ -28,25 +30,25 @@ const fn page(id: &'static str, labels: &'static [&'static str]) -> PageContract
 #[rustfmt::skip]
 const PAGE_CONTRACTS: [PageContract; 20] = [
     page("basic", &["Gameplay", "Mouse Preset:", "Allow All to Inspect Me", "Sound"]),
-    page("controls", &["Mouse Preset:", "Use Default Keyboard Delay", "To Rotate Your Character Hold:", "Press CTRL to Drag Complete Stacks"]),
+    page("controls", &["Mouse Preset:", "To Rotate Your Character Hold:", "Always turn towards the direction of movement", "Press CTRL to Drag Complete Stacks"]),
     page("general_hotkeys", &["Auto-Switch Hotkey Preset", "Chat Mode On", "Chat Mode Off", "Type to search for a hotkey:"]),
     page("action_hotkeys", &["Bottom Action Bar: Action Button 1.01", "Bottom Action Bar: Action Button 1.02", "First Key", "Second Key"]),
     page("custom_hotkeys", &["New Action", "Auto-Switch Hotkey Preset", "Chat Mode On", "Action"]),
-    page("interface", &["Highlight Mouse Target", "Use Native Mouse Cursor", "Colourise Loot Value:", "Show Expiry in Inventory"]),
-    page("hud", &["Show HUD for Own Character", "Show HUD for Other Creatures", "Resource arcs", "Special conditions · 35"]),
-    page("console", &["Show Info Messages", "Open New Tabs When Receiving Private Messages", "Show Timestamps", "Text Size"]),
+    page("interface", &["Highlight Mouse Target", "Use Native Mouse Cursor", "Colourise Loot Value:", "Show Expiry in Inventory", "Show Expiry On Unused Items"]),
+    page("hud", &["Show HUD for Own Character", "Show HUD for Other Creatures", "Show Arcs", "Distance: —", "Opacity: —", "Special Condition", "Show in HUD", "Show in Bar", "Show Customisable Status Bars", "Show Status Bars"]),
+    page("console", &["Show Info Messages", "Open New Tabs When Receiving Private Messages", "Show Timestamps", "Show Levels"]),
     page("game_window", &["Show Textual Effects", "Show Hotkey Usage Notifications", "Show Loot Messages", "Mark Target Visually:"]),
     page("action_bars", &["Show Bottom Action Bars:", "Show Assigned Hotkey for Action Button", "Show Action Button Tooltip", "Clear Bottom Action Bars:"]),
-    page("shortcuts", &["Displayed Shortcuts:", "Available Shortcuts:", "Skills", "Party List"]),
-    page("graphics", &["Graphics Engine:", "Antialiasing Mode:", "No Frame Rate Limit", "Current Frame Rate: 60"]),
-    page("effects", &["Lighting", "Show Light Effects", "Ambient Light: —", "Opacity of Spell Effects"]),
-    page("sound", &["Sound Device:", "Master Volume: —", "Food and Beverages", "Event Volume: —"]),
-    page("battle_sounds", &["Own Battle Sounds", "Other Players", "Creatures", "Attacks and Spells"]),
-    page("ui_sounds", &["UI Volume: —", "UI Interactions", "Console Messages", "System Announcements"]),
+    page("shortcuts", &["Displayed Shortcuts", "Available Shortcuts", "Skills", "Party List"]),
+    page("graphics", &["Graphics Engine:", "Antialiasing Mode:", "No Frame Rate Limit", "Current Frame Rate: 60 fps"]),
+    page("effects", &["Show Light Effects", "Ambient Light: —", "Opacity of Spell Effects", "Other Players' Effects: —"]),
+    page("sound", &["Sound Device:", "Master Volume: —", "Anthem", "Food and Beverages", "Event Volume: —"]),
+    page("battle_sounds", &["Own Battle Sounds: —", "Other Players: —", "Creatures: —", "Attacks and Spells"]),
+    page("ui_sounds", &["UI Volume: —", "UI interactions", "VIP login/logout", "Console Messages", "System Announcements"]),
     page("miscellaneous", &["Ask Before Buying Products", "Ask Before Stowing Container Content", "Stay Logged In for Session", "Optimise Connection Stability"]),
     page("gameplay", &["Allow All to Inspect Me", "Auto Chase Off", "Quick Loot Nearby Corpses"]),
-    page("screenshots", &["Only Capture Game Window", "Enable Auto Screenshots", "Capture Events", "Open Screenshot Folder"]),
-    page("help", &["Client Help", "Compendium", "Export All Options", "Reset All Options"]),
+    page("screenshots", &["Only Capture Game Window", "Keep Backlog of the Screenshots of the Last 5 Seconds", "Enable Auto Screenshots", "Select all events that should trigger auto screenshots:", "Open Screenshot Folder"]),
+    page("help", &["Client Help", "Compendium", "Rule Violations", "Manual", "FAQ", "Info", "Export All Options", "Export Minimap", "Import Options/Minimap", "Reset All Options"]),
 ];
 
 struct ChoiceContract {
@@ -116,7 +118,12 @@ fn all_compiled_pages_match_the_english_semantic_contract_without_render_mutatio
     );
     for (reference, contract) in REFERENCE_SETTINGS_PAGES.iter().zip(PAGE_CONTRACTS.iter()) {
         assert_eq!(reference.id, contract.id);
-        assert!(contract.labels.contains(&reference.marker));
+        assert!(
+            contract.labels.contains(&reference.marker),
+            "{} contract omits audit marker {:?}",
+            contract.id,
+            reference.marker
+        );
         assert!(contract.labels.len() >= 3);
 
         let context = context();
@@ -274,6 +281,19 @@ fn button_disabled(output: &FullOutput, label: &str) -> Option<bool> {
         })
 }
 
+fn checkbox_disabled(output: &FullOutput, label: &str) -> Option<bool> {
+    output
+        .platform_output
+        .accesskit_update
+        .as_ref()?
+        .nodes
+        .iter()
+        .find_map(|(_, node)| {
+            (node.role() == Role::CheckBox && node.label() == Some(label))
+                .then(|| node.is_disabled())
+        })
+}
+
 fn button_y(output: &FullOutput, label: &str) -> Option<f64> {
     output
         .platform_output
@@ -292,6 +312,7 @@ fn button_y(output: &FullOutput, label: &str) -> Option<f64> {
 fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result<(), &'static str> {
     let context = context();
     let mut browser = PreferencesBrowser::new();
+    browser.set_compendium_available(true);
     assert!(browser.open_section("help"));
     let mut draft = ClientSettings {
         english: true,
@@ -300,28 +321,29 @@ fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result
     let output = settle(&context, &mut browser, &mut draft);
     for label in [
         "Client Help",
-        "Compendium",
         "Rule Violations",
         "Manual",
         "FAQ",
         "Export Minimap",
-        "Import Minimap",
+        "Import Options/Minimap",
     ] {
         assert_eq!(button_disabled(&output, label), Some(true), "{label}");
     }
     for label in [
+        "Compendium",
         "Info",
         "Export All Options",
-        "Import Options",
         "Reset All Options",
     ] {
         assert_eq!(button_disabled(&output, label), Some(false), "{label}");
     }
+    for stale in ["Import Options", "Import Minimap"] {
+        assert_eq!(button_disabled(&output, stale), None, "stale {stale}");
+    }
     let local_data_order = [
         "Export All Options",
         "Export Minimap",
-        "Import Options",
-        "Import Minimap",
+        "Import Options/Minimap",
         "Reset All Options",
     ]
     .map(|label| button_y(&output, label).ok_or("missing local-data action"))
@@ -330,6 +352,50 @@ fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result
     assert!(
         local_data_order.windows(2).all(|pair| pair[0] < pair[1]),
         "help local-data actions differ from the observed reference order"
+    );
+
+    let compendium =
+        button_position(&output, SIZE, "Compendium").ok_or("missing Compendium action")?;
+    let action = click(&context, SIZE, compendium, |context| {
+        browser.show(context, &mut draft, None)
+    });
+    assert!(
+        matches!(action, PreferenceAction::OpenCompendium),
+        "Compendium must dispatch its explicit local-panel action"
+    );
+
+    let output = settle(&context, &mut browser, &mut draft);
+    let import = button_position(&output, SIZE, "Import Options/Minimap")
+        .ok_or("missing combined import action")?;
+    let action = click(&context, SIZE, import, |context| {
+        browser.show(context, &mut draft, None)
+    });
+    assert!(
+        matches!(action, PreferenceAction::None),
+        "the combined action must remain disabled until options and minimap import both work"
+    );
+    Ok(())
+}
+
+#[test]
+fn assignment_dependent_action_bar_tooltips_stay_disabled_without_a_source()
+-> Result<(), &'static str> {
+    let context = context();
+    let mut browser = PreferencesBrowser::new();
+    assert!(browser.open_section("action_bars"));
+    let mut draft = ClientSettings {
+        english: true,
+        ..Default::default()
+    };
+    let output = settle(&context, &mut browser, &mut draft);
+    assert_eq!(
+        checkbox_disabled(&output, "Show Action Button Tooltip"),
+        Some(true)
+    );
+    assert!(
+        !draft
+            .future_preferences
+            .contains_key("action_bars.bars.tooltips")
     );
     Ok(())
 }

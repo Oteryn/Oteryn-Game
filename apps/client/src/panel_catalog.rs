@@ -140,7 +140,7 @@ pub const PANELS: &[PanelDefinition] = &[
         &[f!("name","Nazwa","Name",Value), f!("formula","Formuła","Formula",Value), f!("vocation","Profesja","Vocation",Status), f!("group","Grupa","Group",Status), f!("level","Wymagany poziom","Required level",Value), f!("mana","Koszt many","Mana cost",Value), f!("cooldown","Odnowienie","Cooldown",Duration), f!("details","Opis czaru","Spell details",Details)], &[]),
     p!("vip", "Lista VIP", "VIP List", Contacts, true, ObservedPanel, None,
         &[f!("name","Imię","Name",Value), f!("status","Dostępność","Online status",Status), f!("group","Grupa","Group",Status)], &[]),
-    p!("help", "Pomoc", "Lenshelp", Documents, true, ObservedShortcut, None,
+    p!("help", "Pomoc", "Lenshelp", Documents, false, ObservedShortcut, None,
         &[f!("controls","Sterowanie","Controls",Details), f!("connection","Połączenie","Connection",Details), f!("support","Wsparcie","Support",Details)], &[]),
     p!("quest-log", "Dziennik zadań", "Quest Log", QuestTree, true, ObservedPanel, Some(16),
         &[f!("quest","Zadanie","Quest",Value), f!("mission","Misja","Mission",Value), f!("state","Stan","State",Status), f!("description","Opis","Description",Details), f!("tracked","Śledzenie","Tracking",Status)], &[]),
@@ -152,7 +152,7 @@ pub const PANELS: &[PanelDefinition] = &[
     p!("highscores", "Rankingi", "Highscores", Ranking, true, ObservedPanel, None,
         &[f!("rank","Miejsce","Rank",Value), f!("name","Postać","Character",Value), f!("vocation","Profesja","Vocation",Status), f!("world","Świat","World",Status), f!("score","Wynik kategorii","Category score",Value)], &[]),
     p!("player-guide", "Poradnik gracza", "Player Guide", Documents, true, ObservedShortcut, None,
-        &[f!("content","Poradnik","Guide",Details)], &[t!("start","Pierwsze kroki","Getting started",ProductLayout), t!("account","Konto","Account",ProductLayout), t!("controls","Sterowanie","Controls",ProductLayout), t!("world","Świat gry","Game world",ProductLayout)]),
+        &[f!("content","Poradnik","Guide",Details)], &[t!("basics","Podstawy","Basics",ObservedPanel), t!("combat","Walka","Combat",ObservedPanel), t!("hunting","Polowanie","Hunting",ObservedPanel)]),
     p!("shortcuts", "Zarządzaj skrótami", "Manage Shortcuts", Shortcuts, true, ObservedPanel, None,
         &[f!("displayed","Wyświetlane skróty","Displayed shortcuts",Table), f!("available","Dostępne skróty","Available shortcuts",Table), f!("order","Kolejność","Order",Value)], &[]),
     p!("party", "Drużyna", "Party List", Party, false, ObservedPanel, None,
@@ -187,7 +187,7 @@ pub const PANELS: &[PanelDefinition] = &[
     p!("forge", "Kuźnia egzaltacji", "Exaltation Forge", Forge, false, ObservedPanel, None,
         &[f!("source","Przedmiot źródłowy","Source item",Value), f!("destination","Przedmiot docelowy","Destination item",Value), f!("resources","Wymagane zasoby","Required resources",Table), f!("chance","Szansa powodzenia","Success chance",Value), f!("tier-loss","Ochrona poziomu","Tier-loss mitigation",Details), f!("convergence","Konwergencja","Convergence",Status)], &[t!("fusion","Fuzja","Fusion",ObservedPanel), t!("transfer","Przeniesienie","Transfer",ObservedPanel), t!("conversion","Konwersja","Conversion",ObservedPanel), t!("history","Historia","History",ObservedPanel)]),
     p!("social", "Społeczność", "Social", TeamFinder, false, ObservedPanel, None,
-        &[f!("team","Drużyna","Team",Value), f!("activity","Aktywność","Activity",Value), f!("members","Członkowie","Members",Table), f!("requirements","Wymagania udziału","Participation requirements",Details)], &[t!("finder","Wyszukaj drużynę","Find a team",ObservedPanel), t!("assemble","Utwórz drużynę","Assemble a team",ObservedPanel), t!("friends","Znajomi","Friends",NamesOnly), t!("invitations","Zaproszenia","Invitations",NamesOnly), t!("search","Wyszukaj konto","Account search",NamesOnly)]),
+        &[f!("team","Drużyna","Team",Value), f!("activity","Aktywność","Activity",Value), f!("members","Członkowie","Members",Table), f!("requirements","Wymagania udziału","Participation requirements",Details)], &[t!("assemble","Utwórz drużynę","Assemble Team",NamesOnly), t!("badges","Odznaki","Badges",NamesOnly), t!("friends","Lista znajomych","Friend List",NamesOnly), t!("friends-config","Ustawienia znajomych","Friends Config",NamesOnly), t!("invitations","Zaproszenia znajomych","Friends Invitations",NamesOnly), t!("search","Wyszukiwanie znajomych","Friends Search",NamesOnly), t!("finder","Dołącz do drużyny","Join Team",ObservedPanel)]),
     p!("task-board", "Tablica zleceń", "Task Board", TaskBoard, false, ObservedPanel, None,
         &[f!("difficulty","Trudność","Difficulty",Status), f!("candidate","Zlecenie","Task",Value), f!("progress","Postęp","Progress",Progress), f!("reward","Nagroda","Reward",Details), f!("preferred","Preferowane zlecenia","Preferred tasks",Table), f!("talisman","Talizman zleceń","Bounty talisman",Details)], &[t!("bounty","Zlecenia łowieckie","Bounty Tasks",ObservedPanel), t!("weekly","Zadania tygodniowe","Weekly Tasks",ObservedPanel), t!("shop","Sklep zleceń","Hunting Task Shop",ObservedPanel)]),
 ];
@@ -197,8 +197,10 @@ pub fn panel(id: &str) -> Option<&'static PanelDefinition> {
     PANELS.iter().find(|panel| panel.id == id)
 }
 
-/// Local displayed order. The catalogue order is Oteryn's default; reference evidence
-/// establishes the original eleven's membership, not their precise physical arrangement.
+/// Local displayed order. The ten entries marked visible are an Oteryn-authored default;
+/// the observed reference list is account configuration and does not establish a
+/// factory default. Lenshelp has no verified local destination, so it is accepted
+/// only from an existing saved order. Saved membership and order always take precedence.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ShortcutOrder {
     ids: Vec<&'static str>,
@@ -325,7 +327,7 @@ pub fn fields_for_tab(panel_id: &str, tab_id: &str) -> &'static [PanelField] {
         ("forge", "history") | ("reward-wall", "history") => &[f!("history","Historia operacji","Operation history",Table)],
         ("task-board", "weekly") => &[f!("difficulty","Trudność","Difficulty",Status), f!("kills","Zadania za zabójstwa","Kill tasks",Progress), f!("deliveries","Zadania za dostawy","Delivery tasks",Progress), f!("rewards","Nagrody","Rewards",Details)],
         ("task-board", "shop") => &[f!("offers","Stroje, dodatki i wierzchowce","Outfits, addons and mounts",Table), f!("cost","Koszt","Cost",Value), f!("availability","Dostępność oferty","Offer availability",Status)],
-        ("social", "friends") | ("social", "invitations") | ("social", "search") => &[f!("account","Konto","Account",Value), f!("status","Stan","Status",Status), f!("details","Szczegóły","Details",Details)],
+        ("social", "badges") | ("social", "friends") | ("social", "friends-config") | ("social", "invitations") | ("social", "search") => &[],
         _ => panel(panel_id).map_or(&[], |panel| panel.fields),
     }
 }
@@ -377,11 +379,11 @@ mod tests {
     }
 
     #[test]
-    fn audited_shortcuts_have_unique_bounded_stable_identifiers_and_original_defaults() {
+    fn audited_shortcuts_have_unique_bounded_stable_identifiers_and_local_defaults() {
         assert_eq!(PANELS.len(), 28);
         assert_eq!(
             PANELS.iter().filter(|panel| panel.default_visible).count(),
-            11
+            10
         );
         let mut ids = BTreeSet::new();
         for definition in PANELS {
@@ -411,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn observed_analytics_routes_and_names_only_controls_keep_distinct_provenance() {
+    fn observed_routes_and_names_only_controls_keep_distinct_provenance() {
         let analytics = panel("analytics").map(|panel| panel.tabs);
         assert_eq!(analytics.map(<[PanelTab]>::len), Some(9));
         let names_only = panel("social").map(|panel| {
@@ -421,10 +423,43 @@ mod tests {
                 .filter(|tab| tab.evidence == Evidence::NamesOnly)
                 .count()
         });
-        assert_eq!(names_only, Some(3));
+        assert_eq!(names_only, Some(6));
         assert_eq!(
             panel("help").map(|panel| panel.evidence),
             Some(Evidence::ObservedShortcut)
+        );
+    }
+
+    #[test]
+    fn player_guide_and_social_expose_the_exact_observed_tab_identities() {
+        let tabs = |id| {
+            panel(id).map(|definition| {
+                definition
+                    .tabs
+                    .iter()
+                    .map(|tab| (tab.id, tab.english))
+                    .collect::<Vec<_>>()
+            })
+        };
+        assert_eq!(
+            tabs("player-guide"),
+            Some(vec![
+                ("basics", "Basics"),
+                ("combat", "Combat"),
+                ("hunting", "Hunting"),
+            ])
+        );
+        assert_eq!(
+            tabs("social"),
+            Some(vec![
+                ("assemble", "Assemble Team"),
+                ("badges", "Badges"),
+                ("friends", "Friend List"),
+                ("friends-config", "Friends Config"),
+                ("invitations", "Friends Invitations"),
+                ("search", "Friends Search"),
+                ("finder", "Join Team"),
+            ])
         );
     }
 
@@ -456,7 +491,6 @@ mod tests {
                 "battle",
                 "spells",
                 "vip",
-                "help",
                 "quest-log",
                 "compendium",
                 "cyclopedia",
@@ -464,6 +498,11 @@ mod tests {
                 "player-guide",
                 "shortcuts"
             ]
+        );
+        assert!(!ShortcutOrder::default().contains("help"));
+        assert_eq!(
+            ShortcutOrder::from_saved(&["skills".into(), "help".into()])?.ids(),
+            ["skills", "help"]
         );
         Ok(())
     }

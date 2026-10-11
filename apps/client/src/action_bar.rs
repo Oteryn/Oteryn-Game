@@ -12,7 +12,7 @@ use oteryn_session::{
     CastOutcome, ChatIntent, ChatOutcome, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcomeResult, Session, SessionError, SessionStream, SpellTarget, UseOutcome,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, ser::SerializeStruct};
 use std::{collections::BTreeSet, io, num::NonZeroU32};
 
 /// The reference client exposes fifty independently bindable positions per row.
@@ -61,7 +61,7 @@ impl SlotShortcut {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ActionBarPreferences {
     pub visible: bool,
@@ -202,7 +202,53 @@ impl Default for ActionBarPreferences {
     }
 }
 
+impl Serialize for ActionBarPreferences {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Older builds persisted one lock bit per row. Preserve that wire shape, but
+        // converge every successful save on the reference client's single global lock.
+        // OR is fail-safe for an inconsistent legacy file: no formerly protected row
+        // becomes editable merely because another row happened to be unlocked.
+        let locked = self.assignments_locked();
+        let mut extra_rows = self.extra_rows;
+        for row in &mut extra_rows {
+            row.locked = locked;
+        }
+        let mut state = serializer.serialize_struct("ActionBarPreferences", 8)?;
+        state.serialize_field("visible", &self.visible)?;
+        state.serialize_field("locked", &locked)?;
+        state.serialize_field("shortcuts", self.shortcuts.as_slice())?;
+        state.serialize_field("secondary_shortcuts", self.secondary_shortcuts.as_slice())?;
+        state.serialize_field("chat_on_shortcuts", self.chat_on_shortcuts.as_slice())?;
+        state.serialize_field(
+            "chat_on_secondary_shortcuts",
+            self.chat_on_secondary_shortcuts.as_slice(),
+        )?;
+        state.serialize_field("extra_rows", &extra_rows)?;
+        state.serialize_field("edge_enabled", &self.edge_enabled)?;
+        state.end()
+    }
+}
+
 impl ActionBarPreferences {
+    /// The reference client has one assignment lock shared by all nine rows.
+    /// Legacy per-row state is interpreted conservatively until the next save.
+    #[must_use]
+    pub fn assignments_locked(&self) -> bool {
+        self.locked || self.extra_rows.iter().any(|row| row.locked)
+    }
+
+    /// Update the compatibility fields together so every visible lock control
+    /// represents the same effective state.
+    pub fn set_assignments_locked(&mut self, locked: bool) {
+        self.locked = locked;
+        for row in &mut self.extra_rows {
+            row.locked = locked;
+        }
+    }
+
     /// Version-one clients shipped number-row defaults for the first twelve
     /// buttons. Upgrade only that exact untouched primary sequence.
     pub(crate) fn migrate_v1_default_shortcuts(&mut self) -> bool {
@@ -271,33 +317,42 @@ impl ActionBarPreferences {
 
     #[must_use]
     pub fn row(&self, row: usize) -> Option<ActionRowPreferences> {
+        let locked = self.assignments_locked();
         if row == 0 {
             Some(ActionRowPreferences {
                 visible: self.visible,
-                locked: self.locked,
+                locked,
                 shortcuts: self.shortcuts,
                 secondary_shortcuts: self.secondary_shortcuts,
                 chat_on_shortcuts: self.chat_on_shortcuts,
                 chat_on_secondary_shortcuts: self.chat_on_secondary_shortcuts,
             })
         } else {
-            self.extra_rows.get(row - 1).copied()
+            self.extra_rows
+                .get(row - 1)
+                .copied()
+                .map(|mut preferences| {
+                    preferences.locked = locked;
+                    preferences
+                })
         }
     }
 
     pub fn set_row(&mut self, row: usize, preferences: ActionRowPreferences) -> io::Result<()> {
         if row == 0 {
             self.visible = preferences.visible;
-            self.locked = preferences.locked;
             self.shortcuts = preferences.shortcuts;
             self.secondary_shortcuts = preferences.secondary_shortcuts;
             self.chat_on_shortcuts = preferences.chat_on_shortcuts;
             self.chat_on_secondary_shortcuts = preferences.chat_on_secondary_shortcuts;
         } else {
-            *self.extra_rows.get_mut(row - 1).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row")
-            })? = preferences;
+            let destination = self
+                .extra_rows
+                .get_mut(row - 1)
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row"))?;
+            *destination = preferences;
         }
+        self.set_assignments_locked(preferences.locked);
         Ok(())
     }
 
@@ -427,6 +482,7 @@ pub struct ActionBar {
     text_active: bool,
     modal_active: bool,
     focused: bool,
+    pending_lock_change: Option<bool>,
 }
 
 impl ActionBar {
@@ -497,6 +553,7 @@ impl ActionBar {
             text_active: false,
             modal_active: false,
             focused: true,
+            pending_lock_change: None,
         })
     }
 
@@ -508,6 +565,31 @@ impl ActionBar {
     #[must_use]
     pub fn assignment(&self, slot: usize) -> Option<&SlotAssignment> {
         self.assignments.get(slot).and_then(Option::as_ref)
+    }
+
+    /// Whether the admitted session currently has anything whose placement can
+    /// be protected by the assignment lock. The production shell intentionally
+    /// starts empty until an authoritative session-backed source supplies an
+    /// assignment.
+    #[must_use]
+    pub fn has_assignments(&self) -> bool {
+        self.assignments.iter().any(Option::is_some)
+    }
+
+    /// Whether one specific reference row currently contains a session-backed
+    /// action that an explicit Clear command could remove.
+    #[must_use]
+    pub fn row_has_assignments(&self, row: usize) -> bool {
+        let Some(start) = row.checked_mul(ACTION_BAR_SLOTS) else {
+            return false;
+        };
+        let Some(assignments) = self
+            .assignments
+            .get(start..start.saturating_add(ACTION_BAR_SLOTS))
+        else {
+            return false;
+        };
+        assignments.iter().any(Option::is_some)
     }
 
     pub fn assign(&mut self, slot: usize, assignment: Option<SlotAssignment>) -> io::Result<()> {
@@ -536,17 +618,65 @@ impl ActionBar {
         slot: usize,
         assignment: Option<SlotAssignment>,
     ) -> io::Result<()> {
-        let row = self
-            .preferences
-            .row(slot / ACTION_BAR_SLOTS)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action slot"))?;
-        if row.locked {
+        if self.assignments.get(slot).is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action slot",
+            ));
+        }
+        if self.preferences.assignments_locked() {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "Action row is locked",
+                "Action bars are locked",
             ));
         }
         self.assign(slot, assignment)
+    }
+
+    /// Move an occupied pointer-drag source into an empty slot, or swap it with
+    /// an occupied destination. The operation is atomic and uses only the current
+    /// session's assignments; no transient handle is persisted.
+    pub fn move_or_swap_from_drop(&mut self, source: usize, destination: usize) -> io::Result<()> {
+        if source >= TOTAL_ACTION_BAR_SLOTS || destination >= TOTAL_ACTION_BAR_SLOTS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action slot",
+            ));
+        }
+        if self.preferences.assignments_locked() {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Action bars are locked",
+            ));
+        }
+        if self.assignments[source].is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Empty action slot cannot be dragged",
+            ));
+        }
+        if source != destination {
+            self.assignments.swap(source, destination);
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn assignments_locked(&self) -> bool {
+        self.preferences.assignments_locked()
+    }
+
+    /// Called by any of the edge lock controls. The shell consumes the pending
+    /// value after the frame and commits it through the normal settings save path.
+    pub fn set_assignments_locked(&mut self, locked: bool) {
+        if self.preferences.assignments_locked() != locked {
+            self.preferences.set_assignments_locked(locked);
+            self.pending_lock_change = Some(locked);
+        }
+    }
+
+    pub fn take_assignments_lock_change(&mut self) -> Option<bool> {
+        self.pending_lock_change.take()
     }
 
     /// Explicit bulk clear is a Settings action, so it is not a pointer drop and
@@ -619,8 +749,9 @@ impl ActionBar {
         self.route_with_match(events).0
     }
 
-    /// Route commands and report whether a configured shortcut claimed this
-    /// press, even when the session has no assignment for its slot yet.
+    /// Route commands and report whether an executable slot assignment claimed
+    /// this press. A persisted shortcut for an empty runtime slot must remain
+    /// available to the general-hotkey router instead of swallowing the input.
     pub fn route_with_match(
         &mut self,
         events: &[NormalizedInputEvent],
@@ -701,11 +832,11 @@ impl ActionBar {
                 });
             }
         }
-        let matched = !slots.is_empty();
         let commands = slots
             .into_iter()
             .filter_map(|slot| self.activate(slot))
-            .collect();
+            .collect::<Vec<_>>();
+        let matched = !commands.is_empty();
         (commands, matched)
     }
 
@@ -810,12 +941,23 @@ mod tests {
     }
 
     #[test]
-    fn configured_shortcut_claims_a_press_before_its_session_assignment_exists()
+    fn configured_shortcut_does_not_claim_a_press_before_its_session_assignment_exists()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut bar = ActionBar::new(ActionBarPreferences::default(), &[82, 79, 81, 80])?;
         let (commands, matched) = bar.route_with_match(&[event(ButtonState::Pressed, false)?]);
-        assert!(matched);
+        assert!(!matched);
         assert!(commands.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn assigned_shortcut_claims_a_press_with_its_executable_command()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let expected = bar.assignment(0).ok_or("assigned fixture")?.command.clone();
+        let (commands, matched) = bar.route_with_match(&[event(ButtonState::Pressed, false)?]);
+        assert!(matched);
+        assert_eq!(commands, vec![expected]);
         Ok(())
     }
 
@@ -1071,9 +1213,11 @@ mod tests {
         assert_eq!(bar.assignment(4 * ACTION_BAR_SLOTS), assignment.as_ref());
         assert!(!preferences.row_is_visible(ACTION_BAR_ROWS));
         assert!(!preferences.row_is_visible(usize::MAX));
+        let mut normalized = preferences.clone();
+        normalized.set_assignments_locked(true);
         assert_eq!(
             serde_json::from_slice::<ActionBarPreferences>(&serde_json::to_vec(&preferences)?)?,
-            preferences
+            normalized
         );
         for invalid in [
             serde_json::json!([true, false]),
@@ -1221,7 +1365,8 @@ mod tests {
     }
 
     #[test]
-    fn rows_lock_independently_and_session_reset_clears_all_assignments() -> io::Result<()> {
+    fn legacy_row_lock_becomes_global_without_blocking_activation_or_explicit_clear()
+    -> io::Result<()> {
         let mut bar = assigned_bar()?;
         let assignment = bar.assignment(0).cloned();
         bar.assign(TOTAL_ACTION_BAR_SLOTS - 1, assignment.clone())?;
@@ -1231,6 +1376,11 @@ mod tests {
         preferences.extra_rows[7].locked = true;
         bar.reconfigure(preferences, &[])?;
         assert_eq!(bar.preferences().visible_rows(), [0, 0, 1]);
+        assert!(bar.assignments_locked());
+        assert!(
+            (0..ACTION_BAR_ROWS)
+                .all(|row| bar.preferences().row(row).is_some_and(|row| row.locked))
+        );
         assert!(bar.activate(0).is_some()); // Hidden means rendering only.
         assert!(bar.activate(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
         assert_eq!(
@@ -1242,6 +1392,16 @@ mod tests {
         assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
         bar.clear_row(ACTION_BAR_ROWS - 1)?;
         assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_none());
+        assert_eq!(
+            bar.assign_from_drop(0, None)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        bar.set_assignments_locked(false);
+        assert_eq!(bar.take_assignments_lock_change(), Some(false));
+        assert!(!bar.assignments_locked());
+        assert!(bar.preferences().extra_rows.iter().all(|row| !row.locked));
         bar.assign_from_drop(0, assignment)?;
         assert!(bar.assignment(0).is_some());
         bar.clear_row(0)?;
@@ -1250,7 +1410,75 @@ mod tests {
         assert!(bar.assign_from_drop(TOTAL_ACTION_BAR_SLOTS, None).is_err());
         bar.reset_session()?;
         assert!((0..TOTAL_ACTION_BAR_SLOTS).all(|slot| bar.assignment(slot).is_none()));
-        assert!(bar.preferences().extra_rows[7].locked);
+        assert!(!bar.preferences().extra_rows[7].locked);
+        Ok(())
+    }
+
+    #[test]
+    fn pointer_drop_moves_into_empty_slots_swaps_occupied_slots_and_is_atomic_when_locked()
+    -> io::Result<()> {
+        let mut bar = assigned_bar()?;
+        assert!(bar.has_assignments());
+        let help = bar
+            .assignment(0)
+            .cloned()
+            .ok_or_else(|| io::Error::other("assigned fixture is empty"))?;
+        let world = SlotAssignment {
+            label: "World".into(),
+            command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)),
+        };
+        bar.assign(ACTION_BAR_SLOTS, Some(world.clone()))?;
+
+        bar.move_or_swap_from_drop(0, 1)?;
+        assert!(bar.assignment(0).is_none());
+        assert_eq!(bar.assignment(1), Some(&help));
+        bar.move_or_swap_from_drop(1, ACTION_BAR_SLOTS)?;
+        assert_eq!(bar.assignment(1), Some(&world));
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+        bar.move_or_swap_from_drop(ACTION_BAR_SLOTS, ACTION_BAR_SLOTS)?;
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+
+        let before = bar.assignments.clone();
+        assert_eq!(
+            bar.move_or_swap_from_drop(0, 2)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::InvalidInput)
+        );
+        assert_eq!(bar.assignments, before);
+        bar.set_assignments_locked(true);
+        assert_eq!(bar.take_assignments_lock_change(), Some(true));
+        assert_eq!(
+            bar.move_or_swap_from_drop(1, 2)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        assert_eq!(bar.assignments, before);
+        assert!(bar.activate(1).is_some());
+        bar.clear_row(0)?;
+        assert!((0..ACTION_BAR_SLOTS).all(|slot| bar.assignment(slot).is_none()));
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+        assert!(bar.has_assignments());
+        bar.clear_row(1)?;
+        assert!(!bar.has_assignments());
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_per_row_locks_serialize_as_one_fail_safe_global_lock()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut json = serde_json::to_value(ActionBarPreferences::default())?;
+        json["locked"] = serde_json::Value::Bool(false);
+        json["extra_rows"][4]["locked"] = serde_json::Value::Bool(true);
+        let legacy: ActionBarPreferences = serde_json::from_value(json)?;
+        assert!(!legacy.locked);
+        assert!(legacy.assignments_locked());
+        assert!((0..ACTION_BAR_ROWS).all(|row| legacy.row(row).is_some_and(|row| row.locked)));
+
+        let migrated: ActionBarPreferences = serde_json::from_slice(&serde_json::to_vec(&legacy)?)?;
+        assert!(migrated.locked);
+        assert!(migrated.extra_rows.iter().all(|row| row.locked));
         Ok(())
     }
 

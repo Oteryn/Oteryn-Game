@@ -28,6 +28,42 @@ const ASSIGNMENT_CATEGORY_LABELS: [[&str; 2]; 6] = [
     ["Skrót klawiszowy", "Hotkey"],
 ];
 
+const ACTION_BARS_UNLOCKED_TOOLTIP: &str = "Action Bars Unlocked: You can assign actions to or switch actions on action buttons by \"drag&drop\".";
+const ACTION_BARS_LOCKED_TOOLTIP: &str = "Action Bars Locked: You cannot assign actions to or switch actions on action buttons by \"drag&drop\".";
+const ACTION_BARS_UNAVAILABLE_TOOLTIP: [&str; 2] = [
+    "Blokada jest niedostępna, dopóki bieżąca sesja nie ma co najmniej jednego przypisania na pasku akcji.",
+    "Locking is unavailable until the current session has at least one action-bar assignment.",
+];
+const SETTINGS_LOCK_UNAVAILABLE_TOOLTIP: [&str; 2] = [
+    "Blokada jest niedostępna w ustawieniach bez danych o przypisaniach bieżącej sesji.",
+    "Locking is unavailable in Settings without the current session assignment state.",
+];
+const EMPTY_ACTION_SLOT_UNAVAILABLE_TOOLTIP: [&str; 2] = [
+    "Puste pole jest niedostępne, ponieważ bieżąca sesja nie udostępnia czaru do przypisania ani odblokowanej czynności do przeciągnięcia.",
+    "This empty slot is unavailable because the current session provides neither an assignable spell nor an unlocked action to drop here.",
+];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ActionSlotDrag(usize);
+
+fn is_trailing_lock_row(preferences: &ActionBarPreferences, row: usize) -> bool {
+    if row >= ACTION_BAR_ROWS || !preferences.row_is_visible(row) {
+        return false;
+    }
+    let group = row / 3;
+    (row + 1..(group + 1) * 3).all(|candidate| !preferences.row_is_visible(candidate))
+}
+
+fn action_slot_enabled(
+    row_enabled: bool,
+    assigned: bool,
+    spells_available: bool,
+    assignments_available: bool,
+    assignments_locked: bool,
+) -> bool {
+    row_enabled && (assigned || spells_available || (assignments_available && !assignments_locked))
+}
+
 pub fn show(
     ctx: &egui::Context,
     bar: &mut ActionBar,
@@ -53,8 +89,12 @@ pub fn show(
     let show_tooltips = settings
         .stored_bool("action_bars.bars.tooltips")
         .unwrap_or(true);
+    let primary_released =
+        ctx.input(|input| input.pointer.button_released(egui::PointerButton::Primary));
+    let lock_available = bar.has_assignments() || bar.assignments_locked();
     let mut shown = [0_usize; 3];
     let mut commands = Vec::new();
+    let mut requested_lock = None;
     for row in 0..ACTION_BAR_ROWS {
         let Some(preferences) = bar
             .preferences()
@@ -69,6 +109,7 @@ pub fn show(
         let group = row / 3;
         let index = shown[group] as f32;
         shown[group] += 1;
+        let trailing_lock = is_trailing_lock_row(bar.preferences(), row);
         let vertical = edge != ActionBarEdge::Bottom;
         let top = body.bottom() - f32::from(bottom) * ACTION_ROW_HEIGHT;
         let (pos, size) = match edge {
@@ -116,13 +157,10 @@ pub fn show(
                     .fill(ui.visuals().panel_fill)
                     .show(ui, |ui| {
                         let name = row_label(row, english);
+                        let row_has_assignments = bar.row_has_assignments(row);
                         let header = ui.label(
                             RichText::new(if vertical {
-                                format!(
-                                    "{}{}",
-                                    row % 3 + 1,
-                                    if preferences.locked { " 🔒" } else { "" }
-                                )
+                                (row % 3 + 1).to_string()
                             } else {
                                 name
                             })
@@ -131,22 +169,24 @@ pub fn show(
                         if !enabled {
                             egui::Popup::close_id(ctx, egui::Popup::default_response_id(&header));
                         }
-                        header.context_menu(|ui| {
-                            if ui
-                                .add_enabled(
-                                    enabled,
-                                    egui::Button::new(if english {
-                                        "Clear row assignments"
-                                    } else {
-                                        "Wyczyść przypisania rzędu"
-                                    }),
-                                )
-                                .clicked()
-                            {
-                                let _ = bar.clear_row(row);
-                                ui.close();
-                            }
-                        });
+                        if row_has_assignments {
+                            header.context_menu(|ui| {
+                                if ui
+                                    .add_enabled(
+                                        enabled,
+                                        egui::Button::new(if english {
+                                            "Clear row assignments"
+                                        } else {
+                                            "Wyczyść przypisania rzędu"
+                                        }),
+                                    )
+                                    .clicked()
+                                {
+                                    let _ = bar.clear_row(row);
+                                    ui.close();
+                                }
+                            });
+                        }
                         let width = if vertical {
                             ACTION_COLUMN_WIDTH - 4.0
                         } else {
@@ -155,6 +195,7 @@ pub fn show(
                         let mut slots = |ui: &mut egui::Ui| {
                             for index in 0..ACTION_BAR_SLOTS {
                                 let slot = row * ACTION_BAR_SLOTS + index;
+                                let assigned = bar.assignment(slot).is_some();
                                 let (label, available) = bar.assignment(slot).map_or_else(
                                     || ("—".into(), false),
                                     |a| assignment_label(a, state, english, show_item_amounts),
@@ -164,9 +205,40 @@ pub fn show(
                                     index,
                                     bar.chat_context_active(),
                                 );
-                                let mut response =
-                                    ui.add_sized([width, 24.0], egui::Button::new(""));
-                                if show_tooltips {
+                                let slot_enabled = action_slot_enabled(
+                                    enabled,
+                                    assigned,
+                                    !spells.is_empty(),
+                                    lock_available,
+                                    bar.assignments_locked(),
+                                );
+                                let drag_enabled = enabled && assigned && !bar.assignments_locked();
+                                let drop_enabled = enabled
+                                    && lock_available
+                                    && !bar.assignments_locked();
+                                let sense = if drag_enabled {
+                                    egui::Sense::click_and_drag()
+                                } else if assigned || !spells.is_empty() {
+                                    egui::Sense::click()
+                                } else {
+                                    // A live empty slot is only a drop surface. It must not
+                                    // advertise a direct click that has no consumer.
+                                    egui::Sense::hover()
+                                };
+                                let mut response = ui
+                                    .add_enabled_ui(slot_enabled, |ui| {
+                                        ui.add_sized(
+                                            [width, 24.0],
+                                            egui::Button::new("").sense(sense),
+                                        )
+                                    })
+                                    .inner;
+                                if enabled && !slot_enabled {
+                                    response = response.on_disabled_hover_text(
+                                        EMPTY_ACTION_SLOT_UNAVAILABLE_TOOLTIP
+                                            [usize::from(english)],
+                                    );
+                                } else if show_tooltips {
                                     response = response.on_hover_text(format!(
                                         "{} · {}\n{label}\n{shortcut}",
                                         row_label(row, english),
@@ -190,6 +262,33 @@ pub fn show(
                                     &label,
                                     if show_shortcuts { &shortcut } else { "" },
                                 );
+                                if drag_enabled
+                                    && response.drag_started_by(egui::PointerButton::Primary)
+                                {
+                                    egui::DragAndDrop::set_payload(ctx, ActionSlotDrag(slot));
+                                }
+                                let dropped = if drop_enabled && primary_released {
+                                    response
+                                        .dnd_release_payload::<ActionSlotDrag>()
+                                        .map(|source| source.0)
+                                } else {
+                                    None
+                                };
+                                if response.dnd_hover_payload::<ActionSlotDrag>().is_some_and(
+                                    |source| {
+                                        drop_enabled && source.0 != slot
+                                    },
+                                ) {
+                                    ui.painter().rect_stroke(
+                                        response.rect.shrink(1.0),
+                                        0.0,
+                                        ui.visuals().widgets.active.bg_stroke,
+                                        egui::StrokeKind::Inside,
+                                    );
+                                }
+                                if let Some(source) = dropped {
+                                    let _ = bar.move_or_swap_from_drop(source, slot);
+                                }
                                 if enabled
                                     && available
                                     && response.clicked()
@@ -197,36 +296,88 @@ pub fn show(
                                 {
                                     commands.push(command);
                                 }
-                                if !enabled {
+                                if !response.enabled() {
                                     egui::Popup::close_id(
                                         ctx,
                                         egui::Popup::default_response_id(&response),
                                     );
                                 }
-                                response.context_menu(|ui| {
-                                    ui.add_enabled_ui(enabled, |ui| {
-                                        assign_menu(ui, bar, slot, spells, english)
+                                if assigned || !spells.is_empty() {
+                                    response.context_menu(|ui| {
+                                        ui.add_enabled_ui(enabled, |ui| {
+                                            assign_menu(ui, bar, slot, spells, english)
+                                        });
                                     });
-                                });
+                                }
                             }
                         };
                         if vertical {
+                            let lock_height = if trailing_lock {
+                                24.0 + ui.spacing().item_spacing.y
+                            } else {
+                                0.0
+                            };
                             egui::ScrollArea::vertical()
                                 .id_salt(("action-row-scroll", row))
-                                .max_height((size.y - 16.0).max(1.0))
-                                .show(ui, slots);
-                        } else {
-                            egui::ScrollArea::horizontal()
-                                .id_salt(("action-row-scroll", row))
-                                .scroll_bar_visibility(
-                                    egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                                .max_height((ui.available_height() - lock_height).max(1.0))
+                                .show(ui, &mut slots);
+                            if trailing_lock
+                                && edge_lock_control(
+                                    ui,
+                                    preferences.locked,
+                                    width,
+                                    enabled,
+                                    lock_available,
+                                    english,
                                 )
-                                .show(ui, |ui| {
-                                    ui.horizontal(&mut slots);
-                                });
+                                .clicked()
+                            {
+                                requested_lock = Some(!preferences.locked);
+                            }
+                        } else {
+                            let lock_width = if trailing_lock {
+                                width + ui.spacing().item_spacing.x
+                            } else {
+                                0.0
+                            };
+                            let scroll_width = (ui.available_width() - lock_width).max(1.0);
+                            ui.horizontal(|ui| {
+                                ui.allocate_ui_with_layout(
+                                    egui::vec2(scroll_width, ui.available_height()),
+                                    egui::Layout::top_down(egui::Align::Min),
+                                    |ui| {
+                                        ui.set_width(scroll_width);
+                                        egui::ScrollArea::horizontal()
+                                            .id_salt(("action-row-scroll", row))
+                                            .max_width(scroll_width)
+                                            .scroll_bar_visibility(
+                                                egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                                            )
+                                            .show(ui, |ui| {
+                                                ui.horizontal(&mut slots);
+                                            });
+                                    },
+                                );
+                                if trailing_lock
+                                    && edge_lock_control(
+                                        ui,
+                                        preferences.locked,
+                                        width,
+                                        enabled,
+                                        lock_available,
+                                        english,
+                                    )
+                                    .clicked()
+                                {
+                                    requested_lock = Some(!preferences.locked);
+                                }
+                            });
                         }
                     });
             });
+    }
+    if let Some(locked) = requested_lock {
+        bar.set_assignments_locked(locked);
     }
     commands
 }
@@ -381,7 +532,13 @@ fn assign_menu(
         );
     }
     ui.separator();
-    if ui.button(tr("Wyczyść pole", "Clear slot")).clicked() {
+    if ui
+        .add_enabled(
+            bar.assignment(slot).is_some(),
+            egui::Button::new(tr("Wyczyść pole", "Clear slot")),
+        )
+        .clicked()
+    {
         let _ = bar.assign(slot, None);
         ui.close();
     }
@@ -392,23 +549,46 @@ fn unavailable_assignment_category(ui: &mut egui::Ui, label: &str, reason: &str)
         .on_disabled_hover_text(reason);
 }
 
+fn lock_tooltip(locked: bool) -> &'static str {
+    if locked {
+        ACTION_BARS_LOCKED_TOOLTIP
+    } else {
+        ACTION_BARS_UNLOCKED_TOOLTIP
+    }
+}
+
+fn edge_lock_control(
+    ui: &mut egui::Ui,
+    locked: bool,
+    width: f32,
+    enabled: bool,
+    assignments_available: bool,
+    english: bool,
+) -> egui::Response {
+    let response = ui.add_enabled(
+        enabled && assignments_available,
+        egui::Button::new(if locked { "🔒" } else { "🔓" }).min_size(egui::vec2(width, 24.0)),
+    );
+    if assignments_available {
+        response.on_hover_text(lock_tooltip(locked))
+    } else {
+        response.on_disabled_hover_text(ACTION_BARS_UNAVAILABLE_TOOLTIP[usize::from(english)])
+    }
+}
+
 fn lock_assignment_control(ui: &mut egui::Ui, locked: &mut bool, english: bool) -> egui::Response {
     ui.add_enabled(
         false,
         egui::Checkbox::new(
             locked,
             if english {
-                "Lock assignments"
+                "Lock action bars"
             } else {
-                "Zablokuj przypisania"
+                "Zablokuj paski akcji"
             },
         ),
     )
-    .on_disabled_hover_text(if english {
-        "Unavailable until pointer drag/drop assignment is implemented."
-    } else {
-        "Niedostępne do czasu wdrożenia przypisywania przez przeciąganie."
-    })
+    .on_disabled_hover_text(SETTINGS_LOCK_UNAVAILABLE_TOOLTIP[usize::from(english)])
 }
 
 pub fn preferences_editor(
@@ -418,6 +598,10 @@ pub fn preferences_editor(
 ) {
     let tr = |pl, en| if english { en } else { pl };
     ui.small(tr("Ukrycie rzędu nie wyłącza jego skrótów. Przypisania przedmiotów i czarów są czyszczone po zmianie sesji.", "Hidden rows keep shortcuts active. Item and spell assignments are cleared on admission changes."));
+    let mut locked = preferences.assignments_locked();
+    if lock_assignment_control(ui, &mut locked, english).changed() {
+        preferences.set_assignments_locked(locked);
+    }
     for row in 0..ACTION_BAR_ROWS {
         let Some(mut draft) = preferences.row(row) else {
             continue;
@@ -426,50 +610,55 @@ pub fn preferences_editor(
             ui.collapsing(row_label(row, english), |ui| {
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut draft.visible, tr("Widoczny", "Visible"));
-                    lock_assignment_control(ui, &mut draft.locked, english);
                 });
-                for (slot, shortcut) in draft.shortcuts.iter_mut().enumerate() {
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{}", slot + 1));
-                        egui::ComboBox::from_id_salt(("key", slot))
-                            .selected_text(
-                                shortcut.map_or_else(
+                ui.add_enabled_ui(false, |ui| {
+                    for (slot, shortcut) in draft.shortcuts.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            ui.label(format!("{}", slot + 1));
+                            egui::ComboBox::from_id_salt(("key", slot))
+                                .selected_text(shortcut.map_or_else(
                                     || tr("Brak", "None").into(),
                                     |s| key_label(s.key),
-                                ),
-                            )
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(shortcut, None, tr("Brak", "None"));
-                                for key in (4..=39).chain(42..=57).chain(58..=66).chain(68..=82) {
-                                    let choice = Some(SlotShortcut {
-                                        key,
-                                        modifiers: shortcut.map_or(0, |s| s.modifiers),
-                                    });
-                                    ui.selectable_value(shortcut, choice, key_label(key));
-                                }
-                            });
-                        if let Some(shortcut) = shortcut {
-                            for (label, bit) in
-                                [("Shift", 1), ("Ctrl", 2), ("Alt", 4), ("Super", 8)]
-                            {
-                                let mut active = shortcut.modifiers & bit != 0;
-                                if ui.checkbox(&mut active, label).changed() {
-                                    if active {
-                                        shortcut.modifiers |= bit;
-                                    } else {
-                                        shortcut.modifiers &= !bit;
+                                ))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(shortcut, None, tr("Brak", "None"));
+                                    for key in (4..=39).chain(42..=57).chain(58..=66).chain(68..=82)
+                                    {
+                                        let choice = Some(SlotShortcut {
+                                            key,
+                                            modifiers: shortcut.map_or(0, |s| s.modifiers),
+                                        });
+                                        ui.selectable_value(shortcut, choice, key_label(key));
+                                    }
+                                });
+                            if let Some(shortcut) = shortcut {
+                                for (label, bit) in
+                                    [("Shift", 1), ("Ctrl", 2), ("Alt", 4), ("Super", 8)]
+                                {
+                                    let mut active = shortcut.modifiers & bit != 0;
+                                    if ui.checkbox(&mut active, label).changed() {
+                                        if active {
+                                            shortcut.modifiers |= bit;
+                                        } else {
+                                            shortcut.modifiers &= !bit;
+                                        }
                                     }
                                 }
                             }
-                        }
-                    });
-                }
-                if ui
-                    .button(tr("Usuń skróty rzędu", "Clear row shortcuts"))
-                    .clicked()
-                {
-                    draft.shortcuts.fill(None);
-                }
+                        });
+                    }
+                    if ui
+                        .button(tr("Usuń skróty rzędu", "Clear row shortcuts"))
+                        .clicked()
+                    {
+                        draft.shortcuts.fill(None);
+                    }
+                })
+                .response
+                .on_disabled_hover_text(tr(
+                    "Edycja wymaga wiarygodnego źródła przypisań paska akcji z bieżącej sesji.",
+                    "Editing requires an authoritative live action-bar assignment source.",
+                ));
             });
         });
         let _ = preferences.set_row(row, draft);
@@ -912,11 +1101,138 @@ mod tests {
     }
 
     #[test]
-    fn save_only_lock_control_is_disabled_and_preserves_imported_state() {
+    fn every_nonempty_edge_has_exactly_one_trailing_lock_and_never_more_than_three() {
+        for visible_mask in 0_u16..(1 << ACTION_BAR_ROWS) {
+            for edge_mask in 0_u8..8 {
+                let mut preferences = ActionBarPreferences {
+                    visible: visible_mask & 1 != 0,
+                    edge_enabled: std::array::from_fn(|edge| edge_mask & (1 << edge) != 0),
+                    ..Default::default()
+                };
+                for row in 1..ACTION_BAR_ROWS {
+                    preferences.extra_rows[row - 1].visible = visible_mask & (1 << row) != 0;
+                }
+                let controls = (0..ACTION_BAR_ROWS)
+                    .filter(|row| is_trailing_lock_row(&preferences, *row))
+                    .collect::<Vec<_>>();
+                let expected = (0..3)
+                    .filter(|edge| {
+                        (*edge * 3..*edge * 3 + 3).any(|row| preferences.row_is_visible(row))
+                    })
+                    .count();
+                assert_eq!(controls.len(), expected);
+                assert!(controls.len() <= 3);
+                for row in controls {
+                    let group_end = (row / 3 + 1) * 3;
+                    assert!(
+                        (row + 1..group_end)
+                            .all(|candidate| !preferences.row_is_visible(candidate))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn edge_locks_are_visible_without_scrolling_and_emit_one_global_change()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.extra_rows[2].visible = true;
+        preferences.extra_rows[5].visible = true;
+        let mut bar = ActionBar::new(preferences, &[])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+        let ctx = egui::Context::default();
+        let screen = egui::vec2(800.0, 600.0);
+        let body = Rect::from_min_size(egui::pos2(100.0, 80.0), egui::vec2(600.0, 400.0));
+        let settings = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let draw = |bar: &mut ActionBar, events| {
+            ctx.begin_pass(egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, screen)),
+                events,
+                ..Default::default()
+            });
+            let commands = show(&ctx, bar, &GameState::default(), &[], &settings, body, true);
+            let mut output = ctx.end_pass();
+            output.textures_delta.clear();
+            (commands, output)
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = draw(&mut bar, Vec::new()).1;
+        }
+        let visible_locks = |output: &egui::FullOutput, glyph: &str| {
+            output
+                .shapes
+                .iter()
+                .filter_map(|shape| match &shape.shape {
+                    egui::epaint::Shape::Text(text) if text.galley.job.text == glyph => {
+                        let bounds = text.visual_bounding_rect();
+                        (shape.clip_rect.contains_rect(bounds) && body.contains_rect(bounds))
+                            .then_some(bounds.center())
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        let unlocked = visible_locks(&output, "🔓");
+        assert_eq!(unlocked.len(), 3);
+        let bottom = unlocked
+            .into_iter()
+            .max_by(|left, right| left.y.total_cmp(&right.y))
+            .ok_or("bottom lock was not painted")?;
+        let pointer = |pressed| {
+            vec![
+                egui::Event::PointerMoved(bottom),
+                egui::Event::PointerButton {
+                    pos: bottom,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]
+        };
+        assert!(draw(&mut bar, pointer(true)).0.is_empty());
+        let commands = draw(&mut bar, pointer(false)).0;
+        assert!(commands.is_empty());
+        assert!(bar.assignments_locked());
+        assert_eq!(bar.take_assignments_lock_change(), Some(true));
+        let output = draw(&mut bar, Vec::new()).1;
+        assert_eq!(visible_locks(&output, "🔒").len(), 3);
+
+        bar.clear_row(0)?;
+        assert!(!bar.has_assignments());
+        let output = draw(&mut bar, Vec::new()).1;
+        assert_eq!(visible_locks(&output, "🔒").len(), 3);
+        assert!(draw(&mut bar, pointer(true)).0.is_empty());
+        assert!(draw(&mut bar, pointer(false)).0.is_empty());
+        assert!(!bar.assignments_locked());
+        assert_eq!(bar.take_assignments_lock_change(), Some(false));
+        Ok(())
+    }
+
+    #[test]
+    fn lock_controls_are_disabled_without_runtime_assignments_and_keep_reference_tooltips() {
+        assert_eq!(
+            lock_tooltip(false),
+            "Action Bars Unlocked: You can assign actions to or switch actions on action buttons by \"drag&drop\"."
+        );
+        assert_eq!(
+            lock_tooltip(true),
+            "Action Bars Locked: You cannot assign actions to or switch actions on action buttons by \"drag&drop\"."
+        );
         for initial in [false, true] {
             let ctx = egui::Context::default();
             let mut locked = initial;
-            let mut enabled = true;
+            let mut enabled = false;
             let mut output = ctx.run_ui(Default::default(), |ui| {
                 enabled = lock_assignment_control(ui, &mut locked, true).enabled();
             });
@@ -924,6 +1240,265 @@ mod tests {
             assert!(!enabled);
             assert_eq!(locked, initial);
         }
+
+        let ctx = egui::Context::default();
+        let mut disabled = true;
+        let mut enabled = false;
+        let mut output = ctx.run_ui(Default::default(), |ui| {
+            disabled = edge_lock_control(ui, false, 48.0, true, false, true).enabled();
+            enabled = edge_lock_control(ui, false, 48.0, true, true, true).enabled();
+        });
+        output.textures_delta.clear();
+        assert!(!disabled);
+        assert!(enabled);
+        assert_eq!(
+            ACTION_BARS_UNAVAILABLE_TOOLTIP[1],
+            "Locking is unavailable until the current session has at least one action-bar assignment."
+        );
+        assert_eq!(
+            SETTINGS_LOCK_UNAVAILABLE_TOOLTIP[1],
+            "Locking is unavailable in Settings without the current session assignment state."
+        );
+    }
+
+    #[test]
+    fn empty_live_slots_enable_only_for_a_real_assignment_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        assert!(!action_slot_enabled(true, false, false, false, false));
+        assert!(action_slot_enabled(true, true, false, true, true));
+        assert!(action_slot_enabled(true, false, true, false, true));
+        assert!(action_slot_enabled(true, false, false, true, false));
+        assert!(!action_slot_enabled(true, false, false, true, true));
+        assert!(!action_slot_enabled(false, true, true, true, false));
+
+        let render = |bar: &mut ActionBar, spells: &[AvailableSpell]| {
+            let ctx = egui::Context::default();
+            ctx.enable_accesskit();
+            let screen = egui::vec2(800.0, 600.0);
+            let body = Rect::from_min_size(egui::pos2(100.0, 80.0), egui::vec2(600.0, 400.0));
+            let settings = ClientSettings {
+                english: true,
+                ..Default::default()
+            };
+            let mut output = egui::FullOutput::default();
+            for _ in 0..2 {
+                ctx.begin_pass(egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, screen)),
+                    ..Default::default()
+                });
+                let _ = show(
+                    &ctx,
+                    bar,
+                    &GameState::default(),
+                    spells,
+                    &settings,
+                    body,
+                    true,
+                );
+                output = ctx.end_pass();
+                output.textures_delta.clear();
+            }
+            output
+        };
+        let slot_disabled = |output: &egui::FullOutput, label: &str| {
+            output
+                .platform_output
+                .accesskit_update
+                .as_ref()
+                .and_then(|update| {
+                    update.nodes.iter().find_map(|(_, node)| {
+                        (node.role() == egui::accesskit::Role::Button
+                            && node.label() == Some(label))
+                        .then(|| node.is_disabled())
+                    })
+                })
+        };
+
+        let mut empty = ActionBar::new(ActionBarPreferences::default(), &[])?;
+        let output = render(&mut empty, &[]);
+        assert_eq!(slot_disabled(&output, "Bottom 1 · 1: —, F1"), Some(true));
+
+        let spell = AvailableSpell {
+            label: "Exura".into(),
+            spell: NonZeroU32::new(1).ok_or("spell id must be nonzero")?,
+            target: SpellTarget::None,
+            aim_at_target: false,
+        };
+        let output = render(&mut empty, &[spell]);
+        assert_eq!(slot_disabled(&output, "Bottom 1 · 1: —, F1"), Some(false));
+
+        let mut assigned = ActionBar::new(ActionBarPreferences::default(), &[])?;
+        assigned.assign(
+            0,
+            Some(SlotAssignment {
+                label: "SOURCE".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+        let output = render(&mut assigned, &[]);
+        assert_eq!(
+            slot_disabled(&output, "Bottom 1 · 1: SOURCE, F1"),
+            Some(false)
+        );
+        assert_eq!(
+            slot_disabled(&output, "Bottom 1 · 2: —, F2"),
+            Some(false),
+            "an unlocked assignment makes empty slots real drop targets"
+        );
+
+        assigned.set_assignments_locked(true);
+        let output = render(&mut assigned, &[]);
+        assert_eq!(
+            slot_disabled(&output, "Bottom 1 · 1: SOURCE, F1"),
+            Some(false),
+            "an assigned slot still activates and exposes its context menu"
+        );
+        assert_eq!(
+            slot_disabled(&output, "Bottom 1 · 2: —, F2"),
+            Some(true),
+            "locking removes the empty slot's only live interaction"
+        );
+        assert_eq!(
+            EMPTY_ACTION_SLOT_UNAVAILABLE_TOOLTIP[1],
+            "This empty slot is unavailable because the current session provides neither an assignable spell nor an unlocked action to drop here."
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn only_primary_pointer_drag_moves_or_swaps_and_secondary_keeps_the_context_menu()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = ActionBar::new(ActionBarPreferences::default(), &[])?;
+        let source = SlotAssignment {
+            label: "SOURCE".into(),
+            command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+        };
+        let target = SlotAssignment {
+            label: "TARGET".into(),
+            command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)),
+        };
+        bar.assign(0, Some(source.clone()))?;
+        bar.assign(1, Some(target.clone()))?;
+        let ctx = egui::Context::default();
+        let screen = egui::vec2(800.0, 600.0);
+        let body = Rect::from_min_size(egui::pos2(100.0, 80.0), egui::vec2(600.0, 400.0));
+        let settings = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let draw = |bar: &mut ActionBar, events| {
+            ctx.begin_pass(egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, screen)),
+                events,
+                ..Default::default()
+            });
+            let commands = show(&ctx, bar, &GameState::default(), &[], &settings, body, true);
+            let mut output = ctx.end_pass();
+            output.textures_delta.clear();
+            (commands, output)
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = draw(&mut bar, Vec::new()).1;
+        }
+        let text_center = |output: &egui::FullOutput, expected: &str| {
+            output.shapes.iter().find_map(|shape| match &shape.shape {
+                egui::epaint::Shape::Text(text) if text.galley.job.text == expected => {
+                    Some(text.visual_bounding_rect().center())
+                }
+                _ => None,
+            })
+        };
+        let source_pos = text_center(&output, "SOURCE").ok_or("source slot was not painted")?;
+        let target_pos = text_center(&output, "TARGET").ok_or("target slot was not painted")?;
+        let pointer = |pos, button, pressed| {
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]
+        };
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Primary, true),
+        );
+        draw(&mut bar, vec![egui::Event::PointerMoved(target_pos)]);
+        draw(
+            &mut bar,
+            pointer(target_pos, egui::PointerButton::Primary, false),
+        );
+        assert_eq!(bar.assignment(0), Some(&target));
+        assert_eq!(bar.assignment(1), Some(&source));
+
+        let before = [bar.assignment(0).cloned(), bar.assignment(1).cloned()];
+        draw(&mut bar, Vec::new());
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Secondary, true),
+        );
+        draw(&mut bar, vec![egui::Event::PointerMoved(target_pos)]);
+        draw(
+            &mut bar,
+            pointer(target_pos, egui::PointerButton::Secondary, false),
+        );
+        assert_eq!(
+            [bar.assignment(0).cloned(), bar.assignment(1).cloned()],
+            before
+        );
+        assert!(!egui::Popup::is_any_open(&ctx));
+
+        draw(&mut bar, Vec::new());
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Secondary, true),
+        );
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Secondary, false),
+        );
+        assert!(egui::Popup::is_any_open(&ctx));
+        assert_eq!(
+            [bar.assignment(0).cloned(), bar.assignment(1).cloned()],
+            before
+        );
+        egui::Popup::close_all(&ctx);
+
+        bar.set_assignments_locked(true);
+        draw(&mut bar, Vec::new());
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Primary, true),
+        );
+        draw(&mut bar, vec![egui::Event::PointerMoved(target_pos)]);
+        draw(
+            &mut bar,
+            pointer(target_pos, egui::PointerButton::Primary, false),
+        );
+        assert_eq!(
+            [bar.assignment(0).cloned(), bar.assignment(1).cloned()],
+            before
+        );
+
+        bar.set_assignments_locked(false);
+        let moving = bar.assignment(0).cloned().ok_or("missing drag source")?;
+        bar.assign(1, None)?;
+        draw(&mut bar, Vec::new());
+        draw(
+            &mut bar,
+            pointer(source_pos, egui::PointerButton::Primary, true),
+        );
+        draw(&mut bar, vec![egui::Event::PointerMoved(target_pos)]);
+        draw(
+            &mut bar,
+            pointer(target_pos, egui::PointerButton::Primary, false),
+        );
+        assert_eq!(bar.assignment(0), None);
+        assert_eq!(bar.assignment(1), Some(&moving));
+        Ok(())
     }
 
     #[test]

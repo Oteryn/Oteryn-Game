@@ -1,5 +1,5 @@
 use egui::{Align2, RichText};
-use oteryn_client::settings::ClientSettings;
+use oteryn_client::{action_bar::ACTION_BAR_ROWS, settings::ClientSettings};
 
 pub(crate) fn screenshot_directory() -> Option<std::path::PathBuf> {
     ClientSettings::path().and_then(|path| screenshot_directory_for(&path))
@@ -101,6 +101,11 @@ pub(crate) const fn prelogin_settings_hotkey(
     !consumed && login_present && pressed && !repeat && f10
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SettingsRuntimeAction {
+    OpenCompendium,
+}
+
 pub struct SettingsPanel {
     pub current: ClientSettings,
     draft: ClientSettings,
@@ -109,9 +114,27 @@ pub struct SettingsPanel {
     tab: usize,
     message: Option<String>,
     browser: crate::preferences_browser::PreferencesBrowser,
+    runtime_action: Option<SettingsRuntimeAction>,
 }
 
 impl SettingsPanel {
+    /// Open the ordinary Options entry point without retaining a temporary
+    /// direct-route navigation mode from an earlier hotkey.
+    pub fn open_options(&mut self) {
+        self.browser.clear_transient_route();
+        self.browser.open = true;
+        self.open = true;
+    }
+
+    /// Toggle the ordinary Options entry point. Hiding the window is not an
+    /// implicit Cancel: the draft remains intact until the user explicitly
+    /// applies or discards it.
+    pub fn toggle_options(&mut self) {
+        self.browser.clear_transient_route();
+        self.browser.open = true;
+        self.open = !self.open;
+    }
+
     pub fn open_complete_section(&mut self, id: &str) -> bool {
         if !self.browser.open_section(id) {
             return false;
@@ -120,11 +143,17 @@ impl SettingsPanel {
         true
     }
 
-    pub fn set_action_bar_available(&mut self, available: bool) {
-        self.browser.set_action_bar_available(available);
+    pub fn set_action_bar_rows_available(&mut self, available: [bool; ACTION_BAR_ROWS]) {
+        self.browser.set_action_bar_rows_available(available);
+    }
+    pub fn set_compendium_available(&mut self, available: bool) {
+        self.browser.set_compendium_available(available);
     }
     pub fn take_clear_action_row(&mut self) -> Option<usize> {
         self.browser.take_clear_action_row()
+    }
+    pub(crate) fn take_runtime_action(&mut self) -> Option<SettingsRuntimeAction> {
+        self.runtime_action.take()
     }
     pub fn replace_current(&mut self, settings: ClientSettings) {
         self.draft = settings.clone();
@@ -151,11 +180,14 @@ impl SettingsPanel {
             tab: 0,
             message,
             browser: crate::preferences_browser::PreferencesBrowser::new(),
+            runtime_action: None,
         }
     }
 
     /// Creates a settings panel without reading or writing the user preference path.
     pub fn for_settings_audit(current: ClientSettings) -> Self {
+        let mut browser = crate::preferences_browser::PreferencesBrowser::new();
+        browser.set_compendium_available(true);
         Self {
             draft: current.clone(),
             current,
@@ -163,7 +195,8 @@ impl SettingsPanel {
             applied: false,
             tab: 0,
             message: None,
-            browser: crate::preferences_browser::PreferencesBrowser::new(),
+            browser,
+            runtime_action: None,
         }
     }
 
@@ -203,6 +236,7 @@ impl SettingsPanel {
                     if !self.browser.open {
                         self.open = false;
                         self.browser.open = true;
+                        self.browser.clear_transient_route();
                         self.draft = self.current.clone();
                     }
                 }
@@ -212,13 +246,18 @@ impl SettingsPanel {
                     self.draft = self.current.clone();
                     self.open = false;
                     self.message = None;
+                    self.browser.clear_transient_route();
                 }
                 PreferenceAction::Defaults => {
                     self.draft = ClientSettings::default();
                     self.message = None;
                 }
+                PreferenceAction::OpenCompendium => {
+                    self.open = false;
+                    self.browser.clear_transient_route();
+                    self.runtime_action = Some(SettingsRuntimeAction::OpenCompendium);
+                }
                 PreferenceAction::ExportOptions => self.export_options(),
-                PreferenceAction::ImportOptions => self.import_options(),
                 PreferenceAction::ResetOptions => {
                     self.draft = ClientSettings::default();
                     self.message = Some(if en {
@@ -256,11 +295,16 @@ impl SettingsPanel {
                 match footer_action {
                     PreferenceAction::Ok => self.save_preferences(true),
                     PreferenceAction::Apply => self.save_preferences(false),
-                    PreferenceAction::Cancel => { self.draft = self.current.clone(); self.open = false; self.message = None; }
+                    PreferenceAction::Cancel => {
+                        self.draft = self.current.clone();
+                        self.open = false;
+                        self.message = None;
+                        self.browser.clear_transient_route();
+                    }
                     PreferenceAction::None
                     | PreferenceAction::Defaults
+                    | PreferenceAction::OpenCompendium
                     | PreferenceAction::ExportOptions
-                    | PreferenceAction::ImportOptions
                     | PreferenceAction::ResetOptions
                     | PreferenceAction::OpenScreenshotFolder => {}
                 }
@@ -274,7 +318,10 @@ impl SettingsPanel {
                 ui.set_width(body_width);
                 let compact = body_width < 520.0;
                 ui.label(RichText::new(tr("OTERYN • USTAWIENIA KLIENTA", "OTERYN • CLIENT PREFERENCES")).strong());
-                if ui.button(tr("Wszystkie ustawienia", "All preferences")).clicked() { self.browser.open = true; }
+                if ui.button(tr("Wszystkie ustawienia", "All preferences")).clicked() {
+                    self.browser.clear_transient_route();
+                    self.browser.open = true;
+                }
                 ui.separator();
                 if compact {
                     egui::ComboBox::from_id_salt("quick-preferences-category").width(body_width).truncate()
@@ -396,7 +443,7 @@ impl SettingsPanel {
                                 ui.separator();
                                 ui.heading(tr("Paski akcji", "Action bars"));
                                 crate::action_bar_ui::preferences_editor(ui, &mut self.draft.action_bar, en);
-                                ui.small(tr("Prawy przycisk na polu paska pozwala przypisać akcję. Przypisania przedmiotów i czarów dotyczą bieżącej sesji.", "Right-click an action slot to assign it. Item and spell assignments belong to the current session."));
+                                ui.small(tr("Widoczność rzędów działa. Edycja skrótów i przypisań wymaga wiarygodnego źródła akcji z bieżącej sesji.", "Row visibility works. Editing shortcuts and assignments requires an authoritative live session action source."));
                             }
                             3 => {
                                 ui.heading(tr("Dźwięk", "Audio"));
@@ -492,32 +539,6 @@ impl SettingsPanel {
         });
     }
 
-    fn import_options(&mut self) {
-        let result = Self::options_export_path()
-            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
-            .and_then(|path| self.import_options_from(&path));
-        match result {
-            Ok(()) => {
-                self.message = Some(
-                    if self.draft.english {
-                        "Options imported. Select Apply or OK to activate them."
-                    } else {
-                        "Zaimportowano ustawienia. Wybierz Zastosuj lub OK, aby je aktywować."
-                    }
-                    .into(),
-                );
-            }
-            Err(_) => {
-                self.message = Some(if self.draft.english {
-                    "Options were not imported. The export file is missing or invalid."
-                } else {
-                    "Nie zaimportowano ustawień. Plik eksportu nie istnieje lub jest nieprawidłowy."
-                }
-                .into());
-            }
-        }
-    }
-
     fn export_options_to(&self, path: &std::path::Path) -> std::io::Result<()> {
         self.draft.save(path)
     }
@@ -529,7 +550,7 @@ impl SettingsPanel {
 
     fn finish_save(&mut self, result: std::io::Result<()>, close_after_save: bool) {
         match result {
-            Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); if close_after_save { self.open = false; self.message = None; } }
+            Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); if close_after_save { self.open = false; self.message = None; self.browser.clear_transient_route(); } }
             Err(_) => self.message = Some(if self.current.english { "Not saved. Check distinct movement keys, action shortcuts and preferences directory access." } else { "Nie zapisano. Sprawdź klawisze kierunków, skróty akcji i dostęp do folderu ustawień." }.into()),
         }
     }
@@ -595,6 +616,93 @@ mod tests {
     }
 
     #[test]
+    fn help_compendium_dispatches_through_settings_without_applying_the_draft()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("help"));
+
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        for label in ["Client Help", "Import Options/Minimap"] {
+            let position =
+                button_position(&output, size, label).ok_or("disabled Help action visible")?;
+            let _ = click(&ctx, size, position, |ctx| panel.show(ctx, None, None));
+            assert_eq!(panel.take_runtime_action(), None, "{label}");
+        }
+
+        panel.draft.fullscreen = !current.fullscreen;
+        let unsaved = panel.draft.clone();
+        panel.message = Some("unsaved draft".into());
+        let compendium =
+            button_position(&output, size, "Compendium").ok_or("Compendium action visible")?;
+        let _ = click(&ctx, size, compendium, |ctx| panel.show(ctx, None, None));
+        let action = panel
+            .take_runtime_action()
+            .ok_or("Compendium runtime action")?;
+        assert_eq!(action, SettingsRuntimeAction::OpenCompendium);
+        assert_eq!(panel.take_runtime_action(), None);
+        assert_eq!(panel.draft, unsaved);
+        assert_eq!(panel.current, current);
+        assert!(!panel.open);
+        assert_eq!(panel.message.as_deref(), Some("unsaved draft"));
+        assert!(!panel.applied);
+
+        let mut game = crate::game_ui::GameUi::default();
+        assert!(game.route_settings_action(action));
+        assert!(game.is_panel_open("compendium"));
+        Ok(())
+    }
+
+    #[test]
+    fn help_compendium_is_disabled_without_an_in_game_destination() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel {
+            current: current.clone(),
+            draft: current,
+            open: false,
+            applied: true,
+            tab: 0,
+            message: None,
+            browser: PreferencesBrowser::new(),
+            runtime_action: None,
+        };
+        assert!(panel.open_complete_section("help"));
+
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        let (_, _, enabled) = ctx
+            .data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect, bool)>(egui::Id::new((
+                    "help-action-row",
+                    "compendium",
+                )))
+            })
+            .ok_or("Compendium row geometry")?;
+        assert!(!enabled);
+        let compendium =
+            button_position(&output, size, "Compendium").ok_or("Compendium row visible")?;
+        let _ = click(&ctx, size, compendium, |ctx| panel.show(ctx, None, None));
+        assert!(panel.open);
+        assert_eq!(panel.take_runtime_action(), None);
+        Ok(())
+    }
+
+    #[test]
     fn ok_closes_only_after_save_success_while_apply_remains_open() {
         for close_after_save in [false, true] {
             let current = ClientSettings::default();
@@ -609,6 +717,7 @@ mod tests {
                 tab: 0,
                 message: None,
                 browser: PreferencesBrowser::default(),
+                runtime_action: None,
             };
             // Exercise completion of a failed/successful save without touching global preferences.
             panel.finish_save(Err(std::io::Error::other("write failed")), close_after_save);
@@ -644,6 +753,7 @@ mod tests {
                     tab: 0,
                     message: None,
                     browser: PreferencesBrowser::default(),
+                    runtime_action: None,
                 };
                 // In particular Controls is taller than the dialog. Its own options
                 // scrollbar must absorb that height without moving the whole body.
@@ -693,6 +803,7 @@ mod tests {
             tab: 0,
             message: None,
             browser: PreferencesBrowser::default(),
+            runtime_action: None,
         };
         panel.export_options_to(&path)?;
         panel.draft = current.clone();
@@ -724,6 +835,7 @@ mod tests {
                 tab: 2,
                 message: None,
                 browser: PreferencesBrowser::default(),
+                runtime_action: None,
             };
 
             // Start from a valid non-default single-key change so persistence must
@@ -932,6 +1044,7 @@ mod tests {
                     tab: 2,
                     message: Some("A long error must not hide Apply or Cancel. ".repeat(40)),
                     browser: PreferencesBrowser::default(),
+                    runtime_action: None,
                 };
                 let mut output = egui::FullOutput::default();
                 for _ in 0..4 {

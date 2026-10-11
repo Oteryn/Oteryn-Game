@@ -73,9 +73,16 @@ impl ClientPanels {
         let Some(definition) = panel(id) else {
             return false;
         };
-        if !definition.tabs.iter().any(|candidate| candidate.id == tab)
-            || !self.views.select_tab(definition.id, tab)
-        {
+        let Some(index) = definition
+            .tabs
+            .iter()
+            .position(|candidate| candidate.id == tab)
+        else {
+            return false;
+        };
+        if definition.id == "player-guide" {
+            self.contents.entry(definition.id).or_default().tab = index;
+        } else if !self.views.select_tab(definition.id, tab) {
             return false;
         }
         self.open.insert(definition.id);
@@ -83,8 +90,18 @@ impl ClientPanels {
     }
 
     #[cfg(test)]
-    fn is_open(&self, id: &str) -> bool {
+    pub(crate) fn is_open(&self, id: &str) -> bool {
         self.open.contains(id)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn selected_tab(&self, id: &str) -> Option<&'static str> {
+        if id == "player-guide" {
+            let definition = panel(id)?;
+            let index = self.contents.get(id)?.tab;
+            return definition.tabs.get(index).map(|tab| tab.id);
+        }
+        self.views.selected_tab(id)
     }
 
     pub fn shortcuts(&mut self, ui: &mut egui::Ui, english: bool) {
@@ -148,7 +165,7 @@ impl ClientPanels {
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         if ui.button(tr("Wszystkie", "All")).clicked() {
-                            self.pinned = ShortcutOrder::all();
+                            self.pinned = all_local_shortcuts();
                             self.dirty = true;
                         }
                         if ui.button(tr("Domyślne", "Defaults")).clicked() {
@@ -255,7 +272,10 @@ impl ClientPanels {
                                     }
                                     ui.label(definition.label(english));
                                     if ui
-                                        .button(tr("Dodaj", "Add"))
+                                        .add_enabled(
+                                            has_local_destination(definition.id),
+                                            egui::Button::new(tr("Dodaj", "Add")),
+                                        )
                                         .on_hover_text(tr(
                                             "Dodaj skrót na końcu paska",
                                             "Append shortcut to the bar",
@@ -324,8 +344,14 @@ impl ClientPanels {
 
 /// Lenshelp is an observed shortcut identity, but retained evidence does not
 /// establish that it opens the local Documents/help composition.
-fn has_local_destination(id: &str) -> bool {
+pub(crate) fn has_local_destination(id: &str) -> bool {
     id != "help"
+}
+
+fn all_local_shortcuts() -> ShortcutOrder {
+    let mut all = ShortcutOrder::all();
+    all.set_visible("help", false);
+    all
 }
 
 enum ShortcutChange {
@@ -535,6 +561,10 @@ fn panel_content(
 fn document(ui: &mut egui::Ui, id: &str, tab: Option<&str>, english: bool) {
     let tr = |pl, en| if english { en } else { pl };
     let text = match (id, tab) {
+        ("player-guide", Some("basics" | "combat" | "hunting")) => tr(
+            "Ta część Poradnika gracza jest obecnie niedostępna.",
+            "This Player Guide section is currently unavailable.",
+        ),
         (_, Some("account")) => tr(
             "Wybierz konto i postać na ekranie logowania. Dane świata i dostępność postaci pochodzą z Platformy Oteryn.",
             "Choose your account and character on the sign-in screen. World information and character availability come from Oteryn Platform.",
@@ -830,6 +860,9 @@ mod tests {
         assert!(!panels.toggle("help"));
         assert!(!panels.open("help"));
         assert!(!panels.is_open("help"));
+        let all = all_local_shortcuts();
+        assert!(!all.contains("help"));
+        assert!(all.ids().iter().all(|id| has_local_destination(id)));
     }
 
     #[test]
@@ -844,6 +877,11 @@ mod tests {
         assert!(panels.is_open("cyclopedia"));
         assert!(!panels.open_tab("cyclopedia", "not-a-tab"));
         assert!(panels.is_open("cyclopedia"));
+        assert!(panels.open_tab("player-guide", "hunting"));
+        assert!(panels.is_open("player-guide"));
+        assert_eq!(panels.selected_tab("player-guide"), Some("hunting"));
+        assert!(!panels.open_tab("player-guide", "not-a-tab"));
+        assert_eq!(panels.selected_tab("player-guide"), Some("hunting"));
         assert!(!panels.open_tab("not-a-panel", "map"));
     }
 }
