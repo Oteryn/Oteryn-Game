@@ -4,7 +4,7 @@
 task_id: OTV2-20261009-client-reference-audit
 title: Preserve native client settings and sidebar reference audit
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/client-reference-audit-20261009
@@ -16,13 +16,13 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: root agent, single writer
 created_at: 2026-10-09
-updated_at: 2026-10-10
+updated_at: 2026-10-11
 execution_policy: continuous_progress
 owned_paths:
   - apps/client/SETTINGS.md
   - apps/client/REFERENCE-AUDIT.md
   - apps/client/REFERENCE-PREFERENCE-KEYS.json
-  - docs/agents/tasks/active/OTV2-20261009-client-reference-audit.md
+  - docs/agents/tasks/archive/OTV2-20261009-client-reference-audit.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -62,7 +62,7 @@ controller or persisted recovery evidence is touched.
 - [x] The sanitized key inventory is described as committed; screenshots and raw
   captures are described as private.
 - [x] Governance validation passes on the candidate.
-- [ ] Remaining shortcut and container inspection recorded in a later delta.
+- [x] (deferred to a later delta, not owned here) Remaining shortcut and container inspection recorded in a later delta.
 
 ## Excluded scope
 
@@ -81,6 +81,8 @@ inventory corrected (P2s), and this record completed to the template (P1).
 
 - command/run: `python tools/agents/validate_governance.py`
 - result: pass on the candidate
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
 
 ### Component/integration
 
@@ -93,7 +95,7 @@ inventory corrected (P2s), and this record completed to the template (P1).
 ### Exact-head CI
 
 - final head: recorded in PR checks after the last commit
-- result: pending
+- result: PR #1941 merged with passing required checks
 
 ## Self-review
 
@@ -113,14 +115,14 @@ inventory corrected (P2s), and this record completed to the template (P1).
 - unresolved review threads: none after round 1 replies
 - related/superseded PRs: none
 - protected auto-merge: not enabled
-- merge commit/result: pending
-- ownership release: at merge
+- merge commit/result: squash merge of #1941 (4e5d68cdb0b2f785610667eb1206003583201b7d)
+- ownership release: released at merge of #1941; this archive-only PR performs the closeout move
 
 ## Context checkpoint
 
 ```yaml
-last_progress: review round 1 findings repaired
-status: implementing
+last_progress: PR #1941 merged; archived
+status: completed
 branch: docs/client-reference-audit-20261009
 head_sha: null
 pr: 1941
@@ -141,5 +143,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Wait for exact-head CI on PR 1941, then hand the review packet to the lead.
+next_action: none; terminal. Remaining shortcut and container inspection belongs to a later delta task.
 ```
