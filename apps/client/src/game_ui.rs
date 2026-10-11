@@ -719,28 +719,21 @@ impl GameUi {
                 (rect.bottom() - chat_height).max(rect.top() + HUD_TOP_HEIGHT + 1.0),
             ),
         );
-        let usable_scene = oteryn_client::layout::GameViewport::fit_with_action_rows(
-            rect.width(),
-            rect.height(),
-            1.0,
-            settings.show_chat,
-            settings.action_bar.visible_rows(),
-        )
-        .is_some();
-        if !usable_scene {
+        let pixels_per_point = ctx.pixels_per_point();
+        let viewport = oteryn_client::layout::GameViewport::for_settings(
+            rect.width() * pixels_per_point,
+            rect.height() * pixels_per_point,
+            pixels_per_point,
+            settings,
+        );
+        if viewport.is_none() {
             // Oversized underlying HUD Areas must not occlude the recovery button.
             return show_window_recovery(ctx, en);
         }
-        if let Some(viewport) = oteryn_client::layout::GameViewport::fit_with_action_rows(
-            rect.width(),
-            rect.height(),
-            1.0,
-            settings.show_chat,
-            settings.action_bar.visible_rows(),
-        ) {
+        if let Some(viewport) = viewport {
             let scene = egui::Rect::from_min_size(
-                egui::pos2(viewport.x, viewport.y),
-                egui::vec2(viewport.width, viewport.height),
+                egui::pos2(viewport.x, viewport.y) / pixels_per_point,
+                egui::vec2(viewport.width, viewport.height) / pixels_per_point,
             );
             scene_setting_overlays(ctx, scene, view, settings);
             crate::actor_hud::show(

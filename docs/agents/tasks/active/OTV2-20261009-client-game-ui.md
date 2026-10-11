@@ -86,7 +86,16 @@ must not be claimed as complete.
 
 ## Acceptance evidence and next actions
 
-The current committed client tree passes 190 client-library, 158 native-binary
+Native Windows scissor rounding was repaired in `08495a50`; the exact SHA passed
+MSVC tests/strict Clippy and the DX12 release page audit (20 pages, 78 captures,
+all markers/footer buttons and no overflow/draft mutation). Private captures are
+under `C:\Users\barte\Downloads\oteryn-settings-audit-08495a50`.
+The current AUTHORING batch adds actual integral sprite scaling with a shared
+physical transform for rendering, picking, HUD overlays and screenshot crops.
+Its UI-to-renderer regression covers 125% DPI; validate and publish this successor
+then repeat native qualification before recording acceptance for it.
+
+The current client tree passes 191 client-library, 159 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA
@@ -108,7 +117,7 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
   because the accepted movement wire has only four cardinal directions; the FPS
   toggle does not yet supply the label's lag indicator.
 - Mouse preset/loot semantics, most Console and Game Window filters, graphics
-  engine/AA/integer scaling, non-ambient effects, all audio families,
+  engine/AA, non-ambient effects, all audio families,
   Misc/Gameplay options and automatic screenshots remain pending.
 - Action-bar production assignment sourcing remains absent; Clear/profile-remove
   confirmation semantics and edge-master behavior are not reference-proven.

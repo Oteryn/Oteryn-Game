@@ -86,6 +86,36 @@ const CHOICE_CONTRACTS: &[ChoiceContract] = &[
     choice("sound", "sound.sound.device", false, &[]),
 ];
 
+#[test]
+fn integral_scaling_control_changes_the_real_viewport() -> Result<(), &'static str> {
+    let context = context();
+    let mut browser = PreferencesBrowser::new();
+    assert!(browser.open_section("graphics"));
+    let mut draft = ClientSettings {
+        english: true,
+        ..Default::default()
+    };
+    let before = oteryn_client::layout::GameViewport::for_settings(1125.0, 775.0, 1.25, &draft)
+        .ok_or("initial viewport")?;
+    let output = settle(&context, &mut browser, &mut draft);
+    let label = "Scale Using Only Integral Multiples";
+    assert_eq!(checkbox_disabled(&output, label), Some(false));
+    let position = button_position(&output, SIZE, label).ok_or("integral scaling checkbox")?;
+    click(&context, SIZE, position, |context| {
+        browser.show(context, &mut draft, None)
+    });
+    assert_eq!(
+        draft.stored_bool("graphics.graphics.integer_scale"),
+        Some(true)
+    );
+    let after = oteryn_client::layout::GameViewport::for_settings(1125.0, 775.0, 1.25, &draft)
+        .ok_or("integral viewport")?;
+    assert!(after.width < before.width && after.height < before.height);
+    assert_eq!(after.width % 480.0, 0.0);
+    assert_eq!(after.height % 352.0, 0.0);
+    Ok(())
+}
+
 fn context() -> egui::Context {
     let context = egui::Context::default();
     context.set_theme(egui::Theme::Dark);

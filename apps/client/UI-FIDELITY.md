@@ -28,7 +28,7 @@ implemented.
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Partial | Three masters and nine independent 50-slot rows drive the live layout; visible stored hotkey labels affect that renderer. Global lock migration, a single trailing lock per nonempty edge group, clear and primary-button move/swap primitives are tested against in-memory session assignments. Production still has no authoritative spell/object assignment source, so an admitted client starts empty; assignment menus, binding/item-amount/tooltip controls, clear controls and both lock surfaces remain disabled. Those primitives are not counted as reachable behavior. |
 | Shortcuts | Yes, two lists | Add/remove/order edits for destinations with real local compositions affect draft only; Apply updates the live registry and Cancel discards. Clean profiles and Defaults omit Lenshelp; a Lenshelp entry retained from an existing profile remains visible and removable but disabled, and cannot be added while its destination is unverified. |
-| Graphics | Yes | Fullscreen/VSync, the observed integer 1–200 limit, retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Engine/AA controls stay disabled pending verified platform capabilities |
+| Graphics | Yes | Fullscreen/VSync, the observed integer 1–200 limit, retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Integral-multiple scaling now fits whole physical multiples of the 32-pixel sprite cells and shares its transform with picking, HUD and renderer capture; windows smaller than one native scene expose the existing recovery UI. Engine/AA controls stay disabled pending verified platform capabilities |
 | Effects | Yes, lighting + opacity groups | The Light master gates its retained Ambient, Level Separator and combined Clouds & Indoor children; ambient intensity drives the bounded scene overlay. Level separation, the combined attenuation row and spell-effect controls stay disabled pending projections/renderers |
 | Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; all controls are disabled because no audio backend/content exists |
 | Battle Sounds | Yes, own/others/creatures | Nested spell categories are present but disabled because no mixer/events exist |
@@ -59,18 +59,24 @@ implemented.
   driven outer scroll reaches every row; ordinary UI keeps the bounded nested
   scrolls. Full marker visibility, horizontal fit, file type, decoded dimensions
   and recomputed SHA-256 are fail-closed. Its implementation is compiled, but a
-  fresh run against this candidate remains required before publication evidence
-  can be recorded.
+  fresh run against each changed client candidate remains required before
+  publication evidence can be recorded. Native scissor bounds use egui-wgpu's
+  physical-pixel rounding, including the observed 125%-DPI marker case; an actual
+  one-pixel glyph cut still fails the regression.
 - PL/EN composition tests render the dedicated page families without mutating a
   default draft merely by opening them.
-- Rust 1.94 locked client tests and strict all-target Clippy pass on Linux. The
-  current environment has the Windows GNU Rust target but not
-  `x86_64-w64-mingw32-gcc`; the locked cross-target check therefore stops in
-  `aws-lc-sys` before compiling the Windows-only shell. Native Windows CI remains
-  required for that composition.
-- This is compiled reachability and behavior evidence, not a native Windows
-  screenshot comparison. Native visual acceptance and every row whose consumer
-  remains pending are still open and must not be reported as 1:1 complete.
+- Exact commit `08495a500fdc92653a31be398dfcb1863f60ef86` passed native
+  Windows MSVC locked tests and strict all-target Clippy, followed by a DX12
+  release audit: 20 pages, 78 captures, no missing markers/footer buttons,
+  horizontal overflow or render-time draft mutations. Private output is
+  `C:\Users\barte\Downloads\oteryn-settings-audit-08495a50`.
+  First/last captures for all 20 pages were visually inspected from the repaired
+  diagnostic run before the exact committed run. Later client changes require
+  fresh native qualification; this evidence does not qualify their behavior.
+- This establishes native compiled-page reachability, not exhaustive reference
+  comparison or working behavior for disabled rows. Native live-session visual
+  acceptance and every row whose consumer remains pending are still open and
+  must not be reported as 1:1 complete.
 
 ## Required evidence per page/panel
 

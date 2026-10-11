@@ -13,6 +13,42 @@ pub struct GameViewport {
 }
 
 impl GameViewport {
+    /// Fit using the applied settings, in physical pixels, for both drawing
+    /// and pointer picking. Integral scaling counts the atlas's 32-pixel cells,
+    /// not the scene's internal 48-pixel coordinates.
+    #[must_use]
+    pub fn for_settings(
+        width: f32,
+        height: f32,
+        pixels_per_point: f32,
+        settings: &crate::settings::ClientSettings,
+    ) -> Option<Self> {
+        let mut viewport = Self::fit_with_action_rows(
+            width,
+            height,
+            pixels_per_point,
+            settings.show_chat,
+            settings.action_bar.visible_rows(),
+        )?;
+        if settings.stored_bool("graphics.graphics.integer_scale") == Some(true) {
+            let native_width = (crate::scene::SCENE_COLUMNS * oteryn_client_assets::CELL_PX) as f32;
+            let native_height = (crate::scene::SCENE_ROWS * oteryn_client_assets::CELL_PX) as f32;
+            let multiple = (viewport.width / native_width)
+                .min(viewport.height / native_height)
+                .floor();
+            if multiple < 1.0 {
+                return None;
+            }
+            let width = native_width * multiple;
+            let height = native_height * multiple;
+            viewport.x = (viewport.x + (viewport.width - width) / 2.0).round();
+            viewport.y = (viewport.y + (viewport.height - height) / 2.0).round();
+            viewport.width = width;
+            viewport.height = height;
+        }
+        Some(viewport)
+    }
+
     #[must_use]
     pub fn fit(width: f32, height: f32, pixels_per_point: f32, chat: bool) -> Option<Self> {
         Self::fit_with_actions(width, height, pixels_per_point, chat, false)
@@ -103,6 +139,53 @@ impl GameViewport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn integral_scaling_preserves_physical_sprite_pixels_and_picking() -> Result<(), &'static str> {
+        let mut settings = crate::settings::ClientSettings::default();
+        settings.future_preferences.insert(
+            "graphics.graphics.integer_scale".into(),
+            crate::settings_catalog::FutureValue::Bool(true),
+        );
+        for (width, height, dpi) in [
+            (900.0, 620.0, 1.0),
+            (1125.0, 775.0, 1.25),
+            (1920.0, 1080.0, 1.5),
+        ] {
+            let view = GameViewport::for_settings(width, height, dpi, &settings)
+                .ok_or("usable integral scene")?;
+            let sprite_scale =
+                view.width / (crate::scene::SCENE_COLUMNS * oteryn_client_assets::CELL_PX) as f32;
+            assert_eq!(sprite_scale.fract(), 0.0);
+            assert!(sprite_scale >= 1.0);
+            assert_eq!(view.x.fract(), 0.0);
+            assert_eq!(view.y.fract(), 0.0);
+            let center = view
+                .scene_point(
+                    f64::from(view.x + view.width / 2.0),
+                    f64::from(view.y + view.height / 2.0),
+                )
+                .ok_or("center remains pickable")?;
+            assert_eq!(center, (360.0, 264.0));
+            assert!(
+                view.scene_point(f64::from(view.x - 1.0), f64::from(view.y))
+                    .is_none()
+            );
+        }
+        assert!(GameViewport::for_settings(400.0, 300.0, 1.0, &settings).is_none());
+        settings.future_preferences.clear();
+        assert_eq!(
+            GameViewport::for_settings(900.0, 620.0, 1.0, &settings),
+            GameViewport::fit_with_action_rows(
+                900.0,
+                620.0,
+                1.0,
+                settings.show_chat,
+                settings.action_bar.visible_rows()
+            ),
+        );
+        Ok(())
+    }
 
     #[test]
     fn picking_matches_rendered_scene_across_resize_and_ui_scale()

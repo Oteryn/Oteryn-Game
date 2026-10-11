@@ -266,12 +266,11 @@ impl Application {
         }
         let viewport = self.window.as_ref().and_then(|window| {
             let size = window.inner_size();
-            oteryn_client::layout::GameViewport::fit_with_action_rows(
+            oteryn_client::layout::GameViewport::for_settings(
                 size.width as f32,
                 size.height as f32,
                 window.scale_factor() as f32 * self.preferences.ui_scale,
-                self.preferences.show_chat,
-                self.preferences.action_bar.visible_rows(),
+                &self.preferences,
             )
         });
         if viewport.is_none() {
@@ -924,12 +923,11 @@ impl ApplicationHandler for Application {
                     let input = state.take_egui_input(window);
                     let context = gui.context.clone();
                     let size = window.inner_size();
-                    let viewport = oteryn_client::layout::GameViewport::fit_with_action_rows(
+                    let viewport = oteryn_client::layout::GameViewport::for_settings(
                         size.width as f32,
                         size.height as f32,
                         window.scale_factor() as f32 * self.preferences.ui_scale,
-                        self.preferences.show_chat,
-                        self.preferences.action_bar.visible_rows(),
+                        &self.preferences,
                     );
                     if renderer
                         .set_scene_viewport(viewport.map(|viewport| {
@@ -941,17 +939,17 @@ impl ApplicationHandler for Application {
                         return;
                     }
                     let output = context.run_ui(input, |ui| {
-                        let scene = oteryn_client::layout::GameViewport::fit_with_action_rows(
-                            ui.ctx().content_rect().width(),
-                            ui.ctx().content_rect().height(),
-                            1.0,
-                            self.preferences.show_chat,
-                            self.preferences.action_bar.visible_rows(),
+                        let pixels_per_point = ui.ctx().pixels_per_point();
+                        let scene = oteryn_client::layout::GameViewport::for_settings(
+                            ui.ctx().content_rect().width() * pixels_per_point,
+                            ui.ctx().content_rect().height() * pixels_per_point,
+                            pixels_per_point,
+                            &self.preferences,
                         )
                         .map(|view| {
                             egui::Rect::from_min_size(
-                                egui::pos2(view.x, view.y),
-                                egui::vec2(view.width, view.height),
+                                egui::pos2(view.x, view.y) / pixels_per_point,
+                                egui::vec2(view.width, view.height) / pixels_per_point,
                             )
                         });
                         crate::client_chrome::backdrop(ui.ctx(), scene);
