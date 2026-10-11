@@ -1492,6 +1492,22 @@ pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX: usize = 131_072;
 /// creature bite ledger (`CREATURE_BITE_LEDGER_MAX`, held equal by a test) and the melee owner,
 /// one entry per slot, are bounded by the same value.
 pub(crate) const CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX: usize = 262_144;
+/// `CREATUREAI0-RL-08`: monster summon entries per creature (CREATURE-AI-0 §10; content
+/// validation refuses more than 8 entries and 16 summons per creature).
+pub(crate) const CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX: usize = 8;
+/// `CREATUREAI0-RL-07`: defence Ability proposals per creature (8 of the 24 per think).
+pub(crate) const CREATUREAI0_DEFENCES_PER_CREATURE_MAX: usize = 8;
+/// SPAWN-CEILINGS-1 (Codex 4242954089): the replay memos of the native summon owner, one per
+/// live summoner and summon entry. Memos of dead parents are dropped before an insert, so the
+/// table holds at most `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-08` entries; it replaces
+/// the D57 envelope of 64 creatures times 8.
+pub(crate) const NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX: usize =
+    CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX;
+/// SPAWN-CEILINGS-1 (Codex 4242954089): the replay memos keyed by a live creature and one of its
+/// defence entries (the defence summon owner and the creature self-heal ledger), at most
+/// `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-07` defences; it replaces 64 times 8.
+pub(crate) const CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX: usize =
+    CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * CREATUREAI0_DEFENCES_PER_CREATURE_MAX;
 /// SPAWN-CEILINGS-1 (Codex 4242245064): carrier slots an activation leaves free for player
 /// admission, the D128 design target of 500 concurrent players per Channel. The pre-production
 /// carrier holds 131,072 actors (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`), as many as
@@ -9973,8 +9989,9 @@ impl ChannelRuntimeV1 {
             .iter()
             .any(|e| e.actor == actor && e.ability == registration.ability)
         {
-            if ledger.entries.len() >= 64 * 8
-                || ledger.entries.iter().filter(|e| e.actor == actor).count() >= 8
+            if ledger.entries.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX
+                || ledger.entries.iter().filter(|e| e.actor == actor).count()
+                    >= CREATUREAI0_DEFENCES_PER_CREATURE_MAX
             {
                 return Err(CarrierError::AllocationFailed);
             }
@@ -10486,18 +10503,14 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        if self
-            .carrier
-            .slots
-            .iter()
-            .filter(|s| matches!(s, Slot::CreatureOccupied { health: 1.., .. }))
-            .count()
-            >= 64
+        // `CREATUREAI0-RL-04` (Codex 4242954089), the bound `admit_creature` enforces, checked
+        // before anything is written; it replaces the D57 envelope of 64 live creatures. Every
+        // link names a distinct child that holds a slot until its removal drops the link, so
+        // the links are bounded by the same value.
+        if self.carrier.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
+            || self.carrier.native_summons.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
             || !self.native_summon_cell_free(at)
         {
-            return Err(CarrierError::CapacityExceeded);
-        }
-        if self.carrier.native_summons.len() >= 64 {
             return Err(CarrierError::CapacityExceeded);
         }
         self.carrier
@@ -10809,8 +10822,10 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
-        let mut dead = [None; 64];
-        let mut count = 0;
+        // Every dead child is retired, however many summoners there are (Codex 4242954089): the
+        // old fixed array of 64 refused the whole retirement, and with it every summon admission,
+        // once a 65th child was dead. The list holds links, bounded by `CREATUREAI0-RL-04`.
+        let mut dead = Vec::new();
         for link in &self.carrier.native_summons {
             let index = self
                 .carrier
@@ -10819,14 +10834,13 @@ impl ChannelRuntimeV1 {
                 &self.carrier.slots[index],
                 Slot::CreatureOccupied { health: 0, .. }
             ) {
-                if count == 64 {
-                    return Err(CarrierError::CapacityExceeded);
-                }
-                dead[count] = Some(link.child);
-                count += 1;
+                dead.try_reserve(1)
+                    .map_err(|_| CarrierError::AllocationFailed)?;
+                dead.push(link.child);
             }
         }
-        for child in dead.into_iter().flatten() {
+        let count = dead.len();
+        for child in dead {
             self.carrier
                 .project_native_summon_death_inner(&self.continuity, child)?;
             self.carrier.remove(&self.continuity, child.0)?;
@@ -14625,13 +14639,9 @@ impl ChannelRuntimeV1 {
             Some(false) => return Err(E::RefusedMap),
             Some(true) => {}
         }
-        if self
-            .carrier
-            .slots
-            .iter()
-            .filter(|s| matches!(s, Slot::CreatureOccupied { health: 1.., .. }))
-            .count()
-            >= 64
+        // `CREATUREAI0-RL-04` (Codex 4242954089), as for native summons: it replaces the D57
+        // envelope of 64 live creatures.
+        if self.carrier.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
             || !self.native_summon_cell_free(at)
         {
             return Err(E::Native(CarrierError::CapacityExceeded));

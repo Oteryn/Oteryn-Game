@@ -33,6 +33,10 @@ owned_paths:
   - apps/game-server/src/ai_think/channel_owner.rs
   - apps/game-server/src/gameplay_transport/attack.rs
   - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
+  # Scope extension directed by the control plane (Codex P1 4242954089 on #1984): the native
+  # and defence summon owners keep the same D57 64 x 8 memo ceiling that this task lifts in
+  # the carrier's summon admission. No other open PR touched this file when it was added.
+  - apps/game-server/src/monster_summon.rs
 public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
 external_repositories: []
@@ -104,6 +108,15 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   every floor pair, and 41 players over 800 rats wake the same creatures as wakes in turn,
   read each rat once and examine only the rats in their boxes. The registry no longer lists
   the creature bite ledger among the 64-entry D57 ledgers (Codex 4242808147).
+- Summons past the D57 envelope (Codex 4242954089): native summon and masterless encounter
+  admission check `CREATUREAI0-RL-04` (the occupied count `admit_creature` uses) in place of
+  64 live creatures; the native summon links are bounded by RL-04 (one per child actor);
+  `retire_native_summons` retires every dead child instead of refusing at the 65th. The native
+  summon owner's memos are bounded by RL-04 creatures times the 8 entries of
+  `CREATUREAI0-RL-08`, and the defence summon owner's and the creature self-heal ledger's by
+  RL-04 times the 8 defences of `CREATUREAI0-RL-07`, in place of 64 x 8. `CREATUREAI0-RL-08` is
+  registered. Tested: 100 summoners each summon, retire their 100 dead children in one call and
+  summon again; 100 defence summoners each summon.
 
 ## Implementation / findings
 
@@ -207,9 +220,14 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     registry row says so.
   - Not changed: the 64-entry caps of the test-only monster lanes (`MonsterCombatLane`,
     `MonsterThinkLane`: `AI01_CREATURES_PER_SCOPE`, smelly encounter, source encounter seven,
-    delayed damage spell, threshold heal, summon and area-heal memos, callback spawn, bone
-    encounters, smelly cheese 16 × 4) are not on the production path; they move with the lane
-    wiring task. FIFO retention rings (`MAX_RETAINED_CORPSE_PROJECTIONS`, native summon
+    delayed damage spell, threshold heal, area-heal memos, bone encounters, smelly cheese
+    16 × 4) are not on the production path; they move with the lane wiring task. Correction
+    (Codex 4242954089): the summon memos and the callback spawn are served by the carrier's
+    own `admit_native_summon` and `admit_native_encounter_masterless`, which kept a 64
+    live-creature refusal; those, the summon memos, the summon retirement and the
+    self-heal ledger's 64 x 8 now follow RL-04, RL-07 and RL-08 (see Acceptance). The native
+    summon death ring (64) evicts, never refuses: a lookup of an evicted death fails closed
+    without corpse or reward. FIFO retention rings (`MAX_RETAINED_CORPSE_PROJECTIONS`, native summon
     deaths, 64) evict, never refuse. `KILLRW-RL-01`, `COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX`
     and `COMBAT01_CORPSES_PER_SCOPE` (64) are registered limits of their own contracts (owner
     question in the report).
@@ -261,6 +279,12 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     oteryn-game-server --no-run --locked` pass (before the bound test's carrier capacity
     fix, which the clippy and test runs then covered); `cargo test -p oteryn-game-server --lib
     --locked` pass (2,758 passed, 0 failed, 28 ignored)
+  - Summon round (Codex 4242954089), on the PC before the push, in the same private checkout
+    of main 9080588d plus this branch's delta (apps and registry diff hash equal to the pushed
+    head's): `cargo fmt --all -- --check` pass; `cargo clippy -p oteryn-game-server
+    --all-targets --locked -- -D warnings` pass; `cargo test -p oteryn-game-server --no-run
+    --locked` pass; `cargo test -p oteryn-game-server --lib --locked` pass (2,760 passed, 0
+    failed, 28 ignored); governance validation and `tools/agents/tests` pass
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 
