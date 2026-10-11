@@ -112,7 +112,7 @@ pub(crate) enum CarrierError {
     /// than the one already memoized for this committed death.
     RewardPrincipalConflict,
     /// AI-2 (§4.3/§4.9): a `SpawnDefinition`'s population/placement-cells violates its own or
-    /// the registered AI01-SPAWN-* bound.
+    /// the registered `CREATUREAI0-RL-03` points-per-source bound.
     InvalidSpawnDefinition,
     /// CREATURE-AI-1 §1.2 `PROFILE_MISSING`: a creature admitted to thinking without a
     /// behaviour profile. Never defaulted.
@@ -1425,7 +1425,9 @@ struct ChannelActorCarrier {
     /// was pending here rather than reusing or duplicating it (D52).
     death_reward_occurrences: Vec<DeathRewardOccurrence>,
     /// AI-2 (§4.3, D116): realized spawn sources and their per-cell live/
-    /// pending/retry state for this carrier's ownership generation.
+    /// pending/retry state for this carrier's ownership generation. Kept in strictly
+    /// ascending source order, so a source is found by binary search (`spawn_index`) and
+    /// the iteration order is the canonical (source, point ordinal) order.
     spawns: Vec<SpawnRealization>,
     native_summons: Vec<NativeSummonLink>,
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
@@ -1466,25 +1468,39 @@ struct DeathRewardOccurrence {
     occurrence: [u8; 16],
 }
 
-// AI-2 (GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.3, §4.9, D115/D116):
-// spawn realization and respawn. `RESOURCE_LIMITS_REGISTRY.json`'s AI01-SPAWN-* rows are the
-// source of truth for these ceilings; the constants below must equal the registered values.
+// AI-2 (GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.3, §4.9, D115/D116) and
+// SPAWN-1a (CREATURE-AI-0 §6.2, §6.3): spawn realization and respawn.
+// `RESOURCE_LIMITS_REGISTRY.json` is the source of truth for these ceilings; each constant
+// below equals the registered value of the row it names.
 
-/// AI01-SPAWN-SOURCES-PER-SCOPE (AI-RL-11).
+/// `CREATUREAI0-RL-02`: spawn sources realized in one Channel (CREATURE-AI-0 §10; it replaces
+/// `AI01-SPAWN-SOURCES-PER-SCOPE` 16). Source ordinals `0..65,536` fit [`SpawnSourceId`].
+pub(crate) const CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX: usize = 65_536;
+/// `CREATUREAI0-RL-03`: points of one spawn source, one creature and one declared cell each
+/// (it replaces `AI01-SPAWN-POPULATION` 4 and `AI01-SPAWN-PLACEMENT-CELLS` 4). Point ordinals
+/// `0..64` fit [`spawn::SpawnPoint`].
+pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX: usize = 64;
+/// `CREATUREAI0-RL-01`: spawn points, and so spawned creatures, in one Channel. This, not the
+/// product of the two rows above, bounds the carrier's spawn state and spawned population; it
+/// equals `CREATUREAI0-RL-12` (one pending respawn occurrence per point).
+pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX: usize = 131_072;
+
+/// `AI01-SPAWN-SOURCES-PER-SCOPE` and `AI01-SPAWN-POPULATION` (AI-RL-11, D57): the first
+/// slice's 16 sources × 4 creatures = 64-creature envelope. Spawn realization no longer reads
+/// them (CREATURE-AI-0 §10 replaced them by the `CREATUREAI0_SPAWN_*` rows above); they stay
+/// only as the fixed 64 the D3/D4 ledgers were sized against (`MAX_RETAINED_CORPSE_PROJECTIONS`,
+/// the creature bite ledger, the smelly cheese ledger).
 pub(crate) const AI01_SPAWN_SOURCES_PER_SCOPE_MAX: usize = 16;
-/// AI01-SPAWN-POPULATION (AI-RL-11): live or pending creatures per source.
+/// See [`AI01_SPAWN_SOURCES_PER_SCOPE_MAX`].
 pub(crate) const AI01_SPAWN_POPULATION_MAX: usize = 4;
-/// AI01-SPAWN-PLACEMENT-CELLS (AI-RL-12): declared cells per source, one per creature.
-pub(crate) const AI01_SPAWN_PLACEMENT_CELLS_MAX: usize = 4;
 /// AI01-SPAWN-OCCUPANCY-RETRIES (AI-RL-13): retries per creature per respawn window.
 pub(crate) const AI01_SPAWN_OCCUPANCY_RETRIES_MAX: u8 = 3;
 
 /// Bounded FIFO retention for `corpse_projections`/`death_reward_occurrences`, which
-/// deliberately outlive their actor's removed slot (lost-response replay). Matches the D57
-/// envelope's total creature count (`AI01_SPAWN_SOURCES_PER_SCOPE_MAX *
-/// AI01_SPAWN_POPULATION_MAX`), generously beyond D116's 2-creature content: eviction is a
-/// defensive bound against unbounded growth over a long-lived Channel's respawn cycles, not a
-/// dimension this slice's tests are expected to reach.
+/// deliberately outlive their actor's removed slot (lost-response replay): the fixed D57
+/// envelope of 64 (16 × 4, both factors constant), not the spawn ceilings, so it does not grow
+/// with them. Eviction is a defensive bound against unbounded growth over a long-lived
+/// Channel's respawn cycles.
 const MAX_RETAINED_CORPSE_PROJECTIONS: usize =
     AI01_SPAWN_SOURCES_PER_SCOPE_MAX * AI01_SPAWN_POPULATION_MAX;
 
@@ -1498,10 +1514,10 @@ pub(crate) struct SpawnSourceId(pub(crate) u16);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SpawnDefinition {
     /// §4.3: "one placement cell per creature" -- exactly `population` cells, never more
-    /// (`placement_cells.len() == population <= AI01_SPAWN_PLACEMENT_CELLS_MAX`). Placement
-    /// never searches beyond these.
+    /// (`placement_cells.len() == population <= CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX`).
+    /// Placement never searches beyond these.
     placement_cells: Vec<LocalPosition>,
-    /// `1..=AI01_SPAWN_POPULATION_MAX`, and exactly `placement_cells.len()`.
+    /// `1..=CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX`, and exactly `placement_cells.len()`.
     population: usize,
     /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
     respawn_delay_micros: u64,
@@ -1524,7 +1540,9 @@ impl SpawnDefinition {
         creature_target_identity: String,
         creature_initial_health: i64,
     ) -> Result<Self, CarrierError> {
-        if placement_cells.is_empty() || placement_cells.len() > AI01_SPAWN_PLACEMENT_CELLS_MAX {
+        if placement_cells.is_empty()
+            || placement_cells.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX
+        {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
         // §4.3: "one declared cell per creature" -- a mismatch either way (fewer cells than
@@ -1532,7 +1550,7 @@ impl SpawnDefinition {
         // `resolve_respawn_timer` can never respawn more than the declared population.
         if population == 0
             || population != placement_cells.len()
-            || population > AI01_SPAWN_POPULATION_MAX
+            || population > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX
         {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
@@ -1587,6 +1605,27 @@ impl SpawnDefinition {
             blockable: self.blockable,
         }
     }
+}
+
+/// CREATURE-AI-0 §10: checks one activation against the registered spawn ceilings before
+/// anything is reserved or admitted, and returns its total point count. More than
+/// `CREATUREAI0-RL-02` sources or more than `CREATUREAI0-RL-01` points refuses with
+/// `CapacityExceeded`; `CREATUREAI0-RL-03` is already enforced per source by
+/// [`SpawnDefinition::new`]. The work is one pass over the sources.
+fn spawn_points_within_ceilings(definitions: &[SpawnDefinition]) -> Result<usize, CarrierError> {
+    if definitions.len() > CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
+        return Err(CarrierError::CapacityExceeded);
+    }
+    let mut total = 0usize;
+    for definition in definitions {
+        total = total
+            .checked_add(definition.placement_cells.len())
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        if total > CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX {
+            return Err(CarrierError::CapacityExceeded);
+        }
+    }
+    Ok(total)
 }
 
 /// SPAWN-1a: one activated spawn source as the carrier reads it: placement cells in order,
@@ -2610,7 +2649,20 @@ impl ChannelRuntimeV1 {
         if !self.carrier.spawns.is_empty() {
             return Err(CarrierError::DuplicateSpawnSource);
         }
+        // Every ceiling and the slot capacity are checked once, before anything is reserved
+        // or admitted; the whole activation is then staged under one snapshot, so the work
+        // is linear in the points, not in sources × slots.
+        let total_points = spawn_points_within_ceilings(&definitions)?;
+        let context = self.pinned_position_context();
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        self.carrier.validate_position_context(context)?;
+        if self.carrier.free_slot_count() < total_points {
+            return Err(CarrierError::CapacityExceeded);
+        }
         let mut points = Vec::new();
+        points
+            .try_reserve_exact(total_points)
+            .map_err(|_| CarrierError::AllocationFailed)?;
         for (source, definition) in definitions.iter().enumerate() {
             let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
             for ordinal in 0..definition.placement_cells.len() {
@@ -2618,7 +2670,6 @@ impl ChannelRuntimeV1 {
                 points.push(spawn::SpawnPoint { source, ordinal });
             }
         }
-        let context = self.pinned_position_context();
         let slots_before = self.carrier.slots.clone();
         let free_before = self.carrier.free_head;
         let occupied_before = self.carrier.occupied.clone();
@@ -2633,7 +2684,7 @@ impl ChannelRuntimeV1 {
                     else {
                         continue;
                     };
-                    self.carrier.realize_spawn(
+                    self.carrier.admit_spawn_source(
                         &self.continuity,
                         SpawnSourceId(point.source),
                         definition,
@@ -2695,7 +2746,8 @@ impl ChannelRuntimeV1 {
         true
     }
 
-    /// The live creature of each realized spawn point, in canonical point order.
+    /// The live creature of each realized spawn point, in canonical point order (the realized
+    /// sources are kept ascending and their cells in ordinal order, so no sort is needed).
     pub(crate) fn spawn_point_creatures(
         &self,
     ) -> Vec<(
@@ -2732,7 +2784,7 @@ impl ChannelRuntimeV1 {
                 ));
             }
         }
-        points.sort_by_key(|(point, _, _)| *point);
+        debug_assert!(points.windows(2).all(|pair| pair[0].0 < pair[1].0));
         points
     }
 
@@ -2762,13 +2814,30 @@ impl ChannelRuntimeV1 {
         if self.carrier.spawns.is_empty() {
             return Ok(report);
         }
-        let points = self.spawn_point_creatures();
-        for (point, _, live) in &points {
-            if live.is_none() && self.spawn_schedule.pending(*point).is_none() {
-                let timing = self.spawn_timing(*point)?;
-                self.spawn_schedule
-                    .creature_gone(*point, timing, now_micros)
-                    .map_err(|_| CarrierError::CapacityExceeded)?;
+        // Gone detection walks the realized points in place, already in canonical order
+        // (sources ascending, cells by ordinal): no per-drive allocation or sort, one
+        // generation-exact liveness read per point. It is still O(spawn points) per drive, and
+        // `RespawnSchedule::due` scans the pending occurrences; event-driven gone detection
+        // needs a death hook outside this file (SPAWN-CEILINGS-1 task record).
+        for spawn in &self.carrier.spawns {
+            let timing = spawn.definition.timing();
+            for (index, state) in spawn.cells.iter().enumerate() {
+                if state
+                    .live
+                    .is_some_and(|actor| self.carrier.creature_alive(&self.continuity, actor))
+                {
+                    continue;
+                }
+                let ordinal = u8::try_from(index).map_err(|_| CarrierError::CapacityExceeded)?;
+                let point = spawn::SpawnPoint {
+                    source: spawn.source.0,
+                    ordinal,
+                };
+                if self.spawn_schedule.pending(point).is_none() {
+                    self.spawn_schedule
+                        .creature_gone(point, timing, now_micros)
+                        .map_err(|_| CarrierError::CapacityExceeded)?;
+                }
             }
         }
         let context = self.pinned_position_context();
@@ -2828,9 +2897,8 @@ impl ChannelRuntimeV1 {
         point: spawn::SpawnPoint,
     ) -> Result<&SpawnRealization, CarrierError> {
         self.carrier
-            .spawns
-            .iter()
-            .find(|spawn| spawn.source.0 == point.source)
+            .spawn_index(SpawnSourceId(point.source))
+            .map(|index| &self.carrier.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)
     }
 
@@ -3636,13 +3704,13 @@ impl ChannelActorCarrier {
     ) -> Result<ActorState, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
-        let (generation, actor, removed_creature) = match &self.slots[index] {
+        let (generation, actor) = match &self.slots[index] {
             Slot::Occupied {
                 generation, actor, ..
-            } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor, false),
-            Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation, actor, ..
-            } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor, true),
+            } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor),
             Slot::NpcOccupied { .. } => return Err(CarrierError::PlanConflict),
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
@@ -3693,23 +3761,14 @@ impl ChannelActorCarrier {
         self.unindex_occupied(free_index);
         // A2: the slot's bound lease and fence go with it.
         self.attackers.retain(|entry| entry.index != index);
-        if removed_creature {
-            // A retained corpse projection / reward occurrence deliberately outlives this slot
-            // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
-            // administrative removal, `projection_failures_preserve_retry_and_lost_response_idempotency`).
-            // `project_committed_lethal_inner`/`reward_occurrence_inner` bound those collections
-            // with FIFO eviction instead. Only this actor's *live spawn-cell occupancy* is
-            // cleared here, so a respawn's occupancy check does not see a removed actor as still
-            // present.
-            let removed_actor = ExactActorRef(actor_ref);
-            for spawn in &mut self.spawns {
-                for cell in &mut spawn.cells {
-                    if cell.live == Some(removed_actor) {
-                        cell.live = None;
-                    }
-                }
-            }
-        }
+        // A retained corpse projection / reward occurrence deliberately outlives this slot
+        // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
+        // administrative removal, `projection_failures_preserve_retry_and_lost_response_idempotency`).
+        // `project_committed_lethal_inner`/`reward_occurrence_inner` bound those collections
+        // with FIFO eviction instead. A spawn cell that names this creature is not scanned for
+        // here (SPAWN-CEILINGS-1: that would cost every removal O(spawn points)); every reader
+        // of `SpawnCellState::live` checks the exact generation (`creature_alive`, `remove`),
+        // so the stale reference reads as gone.
         Ok(actor)
     }
 
@@ -4666,7 +4725,8 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::MovementCreatureUnavailable);
         }
-        // Restore every store administrative removal touches, including current-main spawn and attacker ownership.
+        // Restore every store administrative removal touches, including attacker ownership
+        // (removal no longer writes the spawn cells, so they need no snapshot).
         let summon_rollback = if separated_summons.iter().any(Option::is_some) {
             Some((
                 self.slots.clone(),
@@ -4675,7 +4735,6 @@ impl ChannelActorCarrier {
                 self.native_summons.clone(),
                 self.native_summon_deaths,
                 self.native_summon_death_cursor,
-                self.spawns.clone(),
                 self.attackers.clone(),
             ))
         } else {
@@ -4710,8 +4769,7 @@ impl ChannelActorCarrier {
             _ => unreachable!("validated occupied slot"),
         }
         if let Err(error) = self.remove_separated_summons(continuity, separated_summons) {
-            if let Some((slots, free, occupied, links, deaths, cursor, spawns, attackers)) =
-                summon_rollback
+            if let Some((slots, free, occupied, links, deaths, cursor, attackers)) = summon_rollback
             {
                 self.slots = slots;
                 self.free_head = free;
@@ -4719,7 +4777,6 @@ impl ChannelActorCarrier {
                 self.native_summons = links;
                 self.native_summon_deaths = deaths;
                 self.native_summon_death_cursor = cursor;
-                self.spawns = spawns;
                 self.attackers = attackers;
             }
             return Err(error);
@@ -5055,20 +5112,36 @@ impl ChannelActorCarrier {
 
     // AI-2 (§4.3, §4.9, D116): spawn realization and respawn.
 
-    /// §4.3: realizes one spawn source at Channel activation: admits one creature per declared
-    /// placement cell, up to `definition.population`, each with a fresh actor-local
-    /// generation. Every fallible check (duplicate source, the registered
-    /// `AI01-SPAWN-SOURCES-PER-SCOPE` ceiling, general slot capacity) precedes any admission
-    /// (GAME-AI-01 §6: over budget means zero mutation).
-    /// Every fallible check that does not itself mutate `self` (continuity, the position
-    /// context, duplicate source, the registered source/population ceilings, general
-    /// capacity) precedes any admission. Admission itself is staged: `self.slots`/
-    /// `self.free_head` are snapshotted first, and a failure partway through the population
-    /// (for example `ActorGenerationExhausted`, the one documented exception that still
-    /// mutates a single slot on failure, `admit_inner`) rolls the complete realization back
-    /// to that snapshot before returning the error, so a retry never accumulates untracked,
-    /// unpositioned creatures (GAME-AI-01 §6: over budget means zero mutation, applied here
-    /// to any per-creature failure, not only capacity).
+    /// The index of `source` in `self.spawns`, which is kept in strictly ascending source
+    /// order: a binary search, not a scan of every realized source.
+    fn spawn_index(&self, source: SpawnSourceId) -> Option<usize> {
+        self.spawns
+            .binary_search_by_key(&source.0, |spawn| spawn.source.0)
+            .ok()
+    }
+
+    /// Reusable vacant slots: the most creatures this carrier can still admit.
+    fn free_slot_count(&self) -> usize {
+        self.slots
+            .iter()
+            .filter(|slot| matches!(slot, Slot::VacantReusable { .. }))
+            .count()
+    }
+
+    /// §4.3: realizes one spawn source outside an activation batch: admits one creature per
+    /// declared placement cell, each with a fresh actor-local generation. Every fallible check
+    /// that does not itself mutate `self` (continuity, the position context, duplicate source,
+    /// the registered `CREATUREAI0-RL-02` source and `CREATUREAI0-RL-01` point ceilings,
+    /// general capacity) precedes any admission. Admission itself is staged: `self.slots`/
+    /// `self.free_head`/`self.occupied` are snapshotted first, and a failure partway through
+    /// the population (for example `ActorGenerationExhausted`, the one documented exception
+    /// that still mutates a single slot on failure, `admit_inner`) rolls the complete
+    /// realization back to that snapshot before returning the error, so a retry never
+    /// accumulates untracked, unpositioned creatures (GAME-AI-01 §6: over budget means zero
+    /// mutation, applied here to any per-creature failure, not only capacity).
+    ///
+    /// Activation realizes its sources through `admit_spawn_source` under one snapshot
+    /// instead; this per-source snapshot is for the single-source paths only.
     fn realize_spawn(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -5078,60 +5151,89 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         self.validate_current_continuity(continuity)?;
         self.validate_position_context(position_context)?;
-        if self.spawns.iter().any(|spawn| spawn.source == source) {
+        if self.spawn_index(source).is_some() {
             return Err(CarrierError::DuplicateSpawnSource);
         }
-        if self.spawns.len() >= AI01_SPAWN_SOURCES_PER_SCOPE_MAX {
+        if self.spawns.len() >= CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
             return Err(CarrierError::CapacityExceeded);
         }
-        let free_slots = self
-            .slots
+        let realized_points = self
+            .spawns
             .iter()
-            .filter(|slot| matches!(slot, Slot::VacantReusable { .. }))
-            .count();
-        if free_slots < definition.population {
+            .try_fold(0usize, |sum, spawn| sum.checked_add(spawn.cells.len()))
+            .and_then(|sum| sum.checked_add(definition.placement_cells.len()))
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        if realized_points > CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX {
             return Err(CarrierError::CapacityExceeded);
         }
-        let target_identity = definition.creature_target_identity.clone();
-        let initial_health = definition.creature_initial_health;
-
+        if self.free_slot_count() < definition.population {
+            return Err(CarrierError::CapacityExceeded);
+        }
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
         let occupied_before = self.occupied.clone();
-        let mut cells = Vec::with_capacity(definition.placement_cells.len());
+        if let Err(error) =
+            self.admit_spawn_source(continuity, source, definition, position_context)
+        {
+            self.slots = slots_before;
+            self.free_head = free_head_before;
+            self.occupied = occupied_before;
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Admits and positions one creature per declared cell of `definition` and records the
+    /// source at its ordered place in `self.spawns`. It is not staged: the caller has already
+    /// checked continuity, the position context, the registered ceilings and slot capacity,
+    /// holds the snapshot, and restores it on any error. A duplicate source or a source past
+    /// `CREATUREAI0-RL-02` still refuses before any admission.
+    fn admit_spawn_source(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        source: SpawnSourceId,
+        definition: SpawnDefinition,
+        position_context: PreProductionPositionContext,
+    ) -> Result<(), CarrierError> {
+        let insert_at = match self
+            .spawns
+            .binary_search_by_key(&source.0, |spawn| spawn.source.0)
+        {
+            Ok(_) => return Err(CarrierError::DuplicateSpawnSource),
+            Err(insert_at) => insert_at,
+        };
+        if self.spawns.len() >= CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let mut cells = Vec::new();
+        cells
+            .try_reserve_exact(definition.placement_cells.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        self.spawns
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
         for cell in &definition.placement_cells {
-            let actor = match self.admit_creature(
+            let actor = self.admit_creature(
                 continuity,
                 ActorState(0),
-                &target_identity,
-                initial_health,
-            ) {
-                Ok(actor) => actor,
-                Err(error) => {
-                    self.slots = slots_before;
-                    self.free_head = free_head_before;
-                    self.occupied = occupied_before;
-                    return Err(error);
-                }
-            };
-            if let Err(error) = self.initialize_position(continuity, actor, position_context, *cell)
-            {
-                self.slots = slots_before;
-                self.free_head = free_head_before;
-                self.occupied = occupied_before;
-                return Err(error);
-            }
+                &definition.creature_target_identity,
+                definition.creature_initial_health,
+            )?;
+            self.initialize_position(continuity, actor, position_context, *cell)?;
             cells.push(SpawnCellState {
                 live: Some(ExactActorRef(actor)),
                 attempt: 0,
                 successor: 0,
             });
         }
-        self.spawns.push(SpawnRealization {
-            source,
-            definition,
-            cells,
-        });
+        self.spawns.insert(
+            insert_at,
+            SpawnRealization {
+                source,
+                definition,
+                cells,
+            },
+        );
         Ok(())
     }
 
@@ -5164,12 +5266,16 @@ impl ChannelActorCarrier {
         })
     }
 
-    /// True when `actor` is still this carrier's live creature (`health > 0`).
+    /// True when `actor`, at its exact actor-local generation, is still this carrier's live
+    /// creature (`health > 0`). A spawn cell may still name a removed creature (removal does
+    /// not scan the spawn cells); the generation check keeps that stale reference from reading
+    /// as the slot's later occupant.
     fn creature_alive(&self, continuity: &NamespaceContinuityGuard, actor: ExactActorRef) -> bool {
         self.validate_ref(continuity, actor.0).is_ok_and(|index| {
             matches!(
                 self.slots[index],
-                Slot::CreatureOccupied { health: 1.., .. }
+                Slot::CreatureOccupied { generation, health: 1.., .. }
+                    if generation == actor.0.actor_local_generation.0
             )
         })
     }
@@ -5195,9 +5301,8 @@ impl ChannelActorCarrier {
         cell_index: usize,
     ) -> Result<SpawnCellState, CarrierError> {
         let spawn = self
-            .spawns
-            .iter()
-            .find(|spawn| spawn.source == source)
+            .spawn_index(source)
+            .map(|index| &self.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)?;
         spawn
             .cells
@@ -5209,10 +5314,8 @@ impl ChannelActorCarrier {
     /// This spawn source's content-declared definition (respawn delay, occupancy retry
     /// interval), for the caller to compute the next occurrence's `due` deadline.
     fn spawn_definition(&self, source: SpawnSourceId) -> Result<&SpawnDefinition, CarrierError> {
-        self.spawns
-            .iter()
-            .find(|spawn| spawn.source == source)
-            .map(|spawn| &spawn.definition)
+        self.spawn_index(source)
+            .map(|index| &self.spawns[index].definition)
             .ok_or(CarrierError::UnknownSpawnSource)
     }
 
@@ -5238,9 +5341,7 @@ impl ChannelActorCarrier {
         self.validate_current_continuity(continuity)?;
         self.validate_position_context(position_context)?;
         let spawn_index = self
-            .spawns
-            .iter()
-            .position(|spawn| spawn.source == source)
+            .spawn_index(source)
             .ok_or(CarrierError::UnknownSpawnSource)?;
         let cell = *self.spawns[spawn_index]
             .definition
@@ -6823,7 +6924,7 @@ mod tests {
             "oteryn:creature/rat".to_string(),
             20,
         )
-        .expect("D116 definition is within every AI01-SPAWN-* bound")
+        .expect("D116 definition is within every registered spawn bound")
     }
 
     // SPAWN-1a: activation realization and the §6.3 respawn drive on the composed runtime.
@@ -7232,62 +7333,275 @@ mod tests {
             .expect("a valid context still realizes the spawn afterward");
     }
 
+    /// A one-source definition with `points` cells on one row, starting at x = `first_x`.
+    fn row_definition(first_x: i32, points: usize) -> SpawnDefinition {
+        let cells = (0..points)
+            .map(|offset| (first_x + i32::try_from(offset).expect("small"), 0, 7))
+            .collect::<Vec<_>>();
+        SpawnDefinition::new(
+            cells,
+            points,
+            60_000_000,
+            5_000_000,
+            "oteryn:creature/rat".to_string(),
+            20,
+        )
+        .expect("within CREATUREAI0-RL-03")
+    }
+
+    /// `CREATUREAI0-RL-03`: 64 points (one cell and one creature each) per source pass and
+    /// 65 refuse, whether counted by cells or by population.
     #[test]
-    fn spawn_population_max_accepted_max_plus_one_rejected() {
-        assert!(
+    fn spawn_points_per_source_max_accepted_max_plus_one_rejected() {
+        assert_eq!(CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX, 64);
+        let cells = |count: usize| {
+            (0..count)
+                .map(|x| (i32::try_from(x).expect("small"), 0, 0))
+                .collect::<Vec<(i32, i32, i16)>>()
+        };
+        let definition = |cells, population| {
             SpawnDefinition::new(
-                vec![(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0)],
-                AI01_SPAWN_POPULATION_MAX,
+                cells,
+                population,
                 60_000_000,
                 5_000_000,
                 "oteryn:creature/rat".to_string(),
                 20,
             )
-            .is_ok()
+        };
+        let max = CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        assert!(definition(cells(max), max).is_ok());
+        assert_eq!(
+            definition(cells(max + 1), max + 1),
+            Err(CarrierError::InvalidSpawnDefinition)
         );
         assert_eq!(
-            SpawnDefinition::new(
-                vec![(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0)],
-                AI01_SPAWN_POPULATION_MAX + 1,
-                60_000_000,
-                5_000_000,
-                "oteryn:creature/rat".to_string(),
-                20,
-            ),
+            definition(cells(max), max + 1),
             Err(CarrierError::InvalidSpawnDefinition)
+        );
+        assert_eq!(
+            definition(cells(max + 1), max),
+            Err(CarrierError::InvalidSpawnDefinition)
+        );
+        // The former first-slice bound (4) no longer limits a source.
+        let mut runtime = runtime(max);
+        assert_eq!(
+            runtime.realize_spawn_definitions(vec![row_definition(0, max)]),
+            Ok(max)
+        );
+        assert_eq!(runtime.spawn_point_creatures().len(), max);
+    }
+
+    /// `CREATUREAI0-RL-01`: the channel ceiling on spawn points is checked as a sum, not as
+    /// the product of the per-source and source-count rows. 131,072 points pass; one more
+    /// refuses; so does more than `CREATUREAI0-RL-02` sources, whatever their points.
+    #[test]
+    fn spawn_points_per_channel_ceiling_is_exact() {
+        assert_eq!(CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX, 131_072);
+        let max = CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX;
+        let per_source = CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        let mut definitions = (0..max / per_source)
+            .map(|_| row_definition(0, per_source))
+            .collect::<Vec<_>>();
+        assert_eq!(spawn_points_within_ceilings(&definitions), Ok(max));
+        definitions.push(row_definition(0, 1));
+        assert_eq!(
+            spawn_points_within_ceilings(&definitions),
+            Err(CarrierError::CapacityExceeded)
+        );
+        let one_point_sources =
+            vec![row_definition(0, 1); CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX];
+        assert_eq!(
+            spawn_points_within_ceilings(&one_point_sources),
+            Ok(CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX)
+        );
+        let mut over_sources = one_point_sources;
+        over_sources.push(row_definition(0, 1));
+        assert_eq!(
+            spawn_points_within_ceilings(&over_sources),
+            Err(CarrierError::CapacityExceeded)
+        );
+
+        // At the runtime, one point over refuses before any admission or reservation, even
+        // with free slots to spare.
+        let mut runtime = runtime(8);
+        let slots_before = runtime.carrier.slots.clone();
+        assert_eq!(
+            runtime.realize_spawn_definitions(definitions),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(runtime.carrier.slots, slots_before);
+        assert!(runtime.carrier.spawns.is_empty());
+        assert!(runtime.carrier.occupied.is_empty());
+    }
+
+    /// `CREATUREAI0-RL-02` at the runtime: 65,536 one-point sources realize in canonical
+    /// order (the former 16-source ceiling no longer refuses readiness); 65,537 refuse with
+    /// nothing admitted.
+    #[test]
+    fn spawn_sources_per_channel_max_accepted_max_plus_one_rejected() {
+        assert_eq!(CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX, 65_536);
+        let max = CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX;
+        let sources = |count: usize| {
+            (0..count)
+                .map(|index| row_definition(i32::try_from(index % 256).expect("small"), 1))
+                .collect::<Vec<_>>()
+        };
+
+        let mut over = runtime(max + 1);
+        let slots_before = over.carrier.slots.clone();
+        assert_eq!(
+            over.realize_spawn_definitions(sources(max + 1)),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(over.carrier.slots, slots_before);
+        assert!(over.carrier.spawns.is_empty());
+        assert!(over.carrier.occupied.is_empty());
+        drop(over);
+
+        let mut runtime = runtime(max);
+        assert_eq!(runtime.realize_spawn_definitions(sources(max)), Ok(max));
+        assert_eq!(runtime.carrier.spawns.len(), max);
+        assert!(
+            runtime
+                .carrier
+                .spawns
+                .windows(2)
+                .all(|pair| pair[0].source.0 < pair[1].source.0)
+        );
+        let last = SpawnSourceId(u16::MAX);
+        assert!(runtime.carrier.spawn_cell_state(last, 0).is_ok());
+        // Every source ordinal is taken: a further single source is a duplicate, and nothing
+        // changes.
+        let context = runtime.pinned_position_context();
+        assert_eq!(
+            runtime
+                .carrier
+                .realize_spawn(&runtime.continuity, last, row_definition(0, 1), context),
+            Err(CarrierError::DuplicateSpawnSource)
+        );
+        assert_eq!(runtime.carrier.spawns.len(), max);
+    }
+
+    /// The single-source path enforces `CREATUREAI0-RL-01` against the points already
+    /// realized: up to the ceiling passes, one past it refuses with no admission.
+    #[test]
+    fn single_spawn_source_respects_the_channel_point_ceiling() {
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        let per_source = CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        // Bookkeeping-only sources stand for already realized points; their cells name no
+        // creature, so no slot is spent on them.
+        let filler = |source: u16, points: usize| SpawnRealization {
+            source: SpawnSourceId(source),
+            definition: row_definition(0, points),
+            cells: vec![
+                SpawnCellState {
+                    live: None,
+                    attempt: 0,
+                    successor: 0,
+                };
+                points
+            ],
+        };
+        let full_sources = CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX / per_source;
+        carrier.spawns = (0..full_sources - 1)
+            .map(|source| filler(u16::try_from(source).expect("small"), per_source))
+            .collect();
+        carrier.spawns.push(filler(
+            u16::try_from(full_sources - 1).expect("small"),
+            per_source - 1,
+        ));
+        let next = SpawnSourceId(u16::try_from(full_sources).expect("small"));
+        carrier
+            .realize_spawn(&continuity, next, row_definition(0, 1), context)
+            .expect("exactly CREATUREAI0-RL-01 points");
+        let slots_before = carrier.slots.clone();
+        let spawns_before = carrier.spawns.len();
+        assert_eq!(
+            carrier.realize_spawn(
+                &continuity,
+                SpawnSourceId(next.0 + 1),
+                row_definition(1, 1),
+                context
+            ),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(carrier.slots, slots_before);
+        assert_eq!(carrier.spawns.len(), spawns_before);
+    }
+
+    /// Sources realized out of order still land in ascending order, and every lookup finds
+    /// them by binary search.
+    #[test]
+    fn spawn_sources_stay_ordered_for_lookup() {
+        let (continuity, mut carrier) = carrier(8);
+        let context = spawn_position_context(&continuity);
+        for (source, x) in [(7_u16, 0), (2, 1), (40_000, 2), (3, 3)] {
+            carrier
+                .realize_spawn(
+                    &continuity,
+                    SpawnSourceId(source),
+                    row_definition(x, 1),
+                    context,
+                )
+                .expect("realizes");
+        }
+        let order = carrier
+            .spawns
+            .iter()
+            .map(|spawn| spawn.source.0)
+            .collect::<Vec<_>>();
+        assert_eq!(order, [2, 3, 7, 40_000]);
+        for source in [2_u16, 3, 7, 40_000] {
+            assert!(carrier.spawn_cell_state(SpawnSourceId(source), 0).is_ok());
+        }
+        assert!(matches!(
+            carrier.spawn_cell_state(SpawnSourceId(4), 0),
+            Err(CarrierError::UnknownSpawnSource)
+        ));
+        assert_eq!(
+            carrier.realize_spawn(&continuity, SpawnSourceId(7), row_definition(4, 1), context),
+            Err(CarrierError::DuplicateSpawnSource)
         );
     }
 
+    /// Removal no longer scans the spawn cells, so a cell can keep naming a removed creature.
+    /// That stale reference never reads as the slot's later occupant, and the respawn's
+    /// best-effort removal of it never removes that occupant.
     #[test]
-    fn spawn_placement_cells_max_accepted_max_plus_one_rejected() {
-        let max_cells: Vec<(i32, i32, i16)> = (0..AI01_SPAWN_PLACEMENT_CELLS_MAX as i32)
-            .map(|x| (x, 0, 0))
-            .collect();
-        assert!(
-            SpawnDefinition::new(
-                max_cells,
-                AI01_SPAWN_PLACEMENT_CELLS_MAX,
-                60_000_000,
-                5_000_000,
-                "oteryn:creature/rat".to_string(),
-                20,
-            )
-            .is_ok()
+    fn a_removed_spawned_creature_reads_as_gone_after_its_slot_is_reused() {
+        let (continuity, mut carrier) = carrier(1);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(0), row_definition(0, 1), context)
+            .expect("realizes");
+        let stale = carrier
+            .spawn_cell_state(SpawnSourceId(0), 0)
+            .expect("cell tracked")
+            .live
+            .expect("live rat");
+        carrier.remove(&continuity, stale.0).expect("removed");
+        let occupant = ExactActorRef(
+            carrier
+                .admit_creature(&continuity, ActorState(0), "oteryn:creature/rat", 20)
+                .expect("the slot is reused"),
         );
-        let over_cells: Vec<(i32, i32, i16)> = (0..=AI01_SPAWN_PLACEMENT_CELLS_MAX as i32)
-            .map(|x| (x, 0, 0))
-            .collect();
+        assert_eq!(occupant.0.actor_local_id, stale.0.actor_local_id);
         assert_eq!(
-            SpawnDefinition::new(
-                over_cells,
-                AI01_SPAWN_PLACEMENT_CELLS_MAX + 1,
-                60_000_000,
-                5_000_000,
-                "oteryn:creature/rat".to_string(),
-                20,
-            ),
-            Err(CarrierError::InvalidSpawnDefinition)
+            carrier
+                .spawn_cell_state(SpawnSourceId(0), 0)
+                .expect("cell tracked")
+                .live,
+            Some(stale)
         );
+        assert!(!carrier.creature_alive(&continuity, stale));
+        assert!(carrier.creature_alive(&continuity, occupant));
+        assert!(matches!(
+            carrier.remove(&continuity, stale.0),
+            Err(CarrierError::StaleActorGeneration)
+        ));
+        assert!(carrier.creature_alive(&continuity, occupant));
     }
 
     #[test]
@@ -7331,42 +7645,6 @@ mod tests {
             )
             .is_ok(),
             "an exact population/cell-count match is accepted"
-        );
-    }
-
-    #[test]
-    fn spawn_sources_per_scope_max_accepted_max_plus_one_rejected() {
-        let (continuity, mut carrier) = carrier(AI01_SPAWN_SOURCES_PER_SCOPE_MAX + 1);
-        let context = spawn_position_context(&continuity);
-        let one_cell = |seed: i32| {
-            SpawnDefinition::new(
-                vec![(seed, 0, 0)],
-                1,
-                60_000_000,
-                5_000_000,
-                "oteryn:creature/rat".to_string(),
-                20,
-            )
-            .expect("valid one-cell definition")
-        };
-        for index in 0..AI01_SPAWN_SOURCES_PER_SCOPE_MAX {
-            carrier
-                .realize_spawn(
-                    &continuity,
-                    SpawnSourceId(index as u16),
-                    one_cell(index as i32),
-                    context,
-                )
-                .expect("within the registered ceiling");
-        }
-        assert_eq!(
-            carrier.realize_spawn(
-                &continuity,
-                SpawnSourceId(AI01_SPAWN_SOURCES_PER_SCOPE_MAX as u16),
-                one_cell(AI01_SPAWN_SOURCES_PER_SCOPE_MAX as i32),
-                context,
-            ),
-            Err(CarrierError::CapacityExceeded)
         );
     }
 

@@ -1287,7 +1287,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-02 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns. The 16 x 4 = 64 product stays only as the fixed D57 envelope of the 64-entry ledgers sized against it (retained corpse projections, the creature bite ledger, the smelly cheese ledger)."
     },
     {
       "id": "AI01-SPAWN-POPULATION",
@@ -1306,7 +1307,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-03 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns. The 16 x 4 = 64 product stays only as the fixed D57 envelope of the 64-entry ledgers sized against it (retained corpse projections, the creature bite ledger, the smelly cheese ledger)."
     },
     {
       "id": "AI01-SPAWN-PLACEMENT-CELLS",
@@ -1325,7 +1327,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-03 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns."
     },
     {
       "id": "AI01-SPAWN-OCCUPANCY-RETRIES",
@@ -8951,12 +8954,13 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 131072,
       "id": "CREATUREAI0-RL-01",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Spawn points of one World map in the spawn family of a bundle",
       "unit": "points"
@@ -8975,12 +8979,13 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 65536,
       "id": "CREATUREAI0-RL-02",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Spawn sources of one World map in the spawn family of a bundle",
       "unit": "sources"
@@ -8999,12 +9004,13 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 64,
       "id": "CREATUREAI0-RL-03",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Points of one spawn source",
       "unit": "points"
