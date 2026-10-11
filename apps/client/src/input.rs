@@ -35,6 +35,11 @@ impl MovementRepeat {
     pub fn reconcile(&mut self, events: &[NormalizedInputEvent]) {
         for event in events {
             match event {
+                // Cardinal movement bindings are unmodified physical keys.
+                // A changed chord cannot inherit a repeat admitted earlier.
+                NormalizedInputEvent::Key { modifiers, .. } if *modifiers != Modifiers::NONE => {
+                    self.clear()
+                }
                 NormalizedInputEvent::Key {
                     code,
                     state: ButtonState::Released,
@@ -479,6 +484,14 @@ mod tests {
         assert_eq!(repeat.poll(now + Duration::from_secs(14), delay), None);
         repeat.pressed(north, StepDir::North, now);
         repeat.reconcile(&[NormalizedInputEvent::DeviceLost]);
+        assert_eq!(repeat.deadline(delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        repeat.reconcile(&[NormalizedInputEvent::Key {
+            code: KeyCode::new(224)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(oteryn_input_actions::Modifier::Control),
+            repeat: false,
+        }]);
         assert_eq!(repeat.deadline(delay), None);
         repeat.pressed(north, StepDir::North, now);
         assert_eq!(repeat.poll(now, Duration::ZERO), None);

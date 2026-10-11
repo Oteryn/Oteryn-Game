@@ -70,7 +70,9 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                     ui.add(egui::Slider::new(&mut delay, 0..=1000).show_value(false))
                 })
                 .inner;
-            if response.changed() {
+            if response.changed()
+                || selected.is_none() && (response.clicked() || response.drag_stopped())
+            {
                 draft.future_preferences.insert(
                     "controls.controls.key_delay_ms".into(),
                     FutureValue::Int(delay),
@@ -414,6 +416,43 @@ mod tests {
             collect(&shape.shape, &mut texts);
         }
         texts
+    }
+
+    #[test]
+    fn explicitly_choosing_zero_delay_does_not_leave_the_value_unknown() -> Result<(), &'static str>
+    {
+        let size = egui::vec2(760.0, 900.0);
+        let mut draft = ClientSettings::default();
+        draft.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(false),
+        );
+        let (ctx, _) = render_page("choose-zero-delay", size, &mut draft, controls);
+        assert_eq!(draft.stored_int("controls.controls.key_delay_ms"), None);
+        let slider = ctx
+            .data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect, bool)>(egui::Id::new(
+                    "controls-keyboard-delay-slider",
+                ))
+                .map(|(rect, _, _)| rect)
+            })
+            .ok_or("delay slider")?;
+        click(
+            &ctx,
+            size,
+            egui::pos2(slider.left() + 1.0, slider.center().y),
+            |ctx| {
+                egui::Window::new("choose-zero-delay")
+                    .fixed_size(size - egui::vec2(40.0, 40.0))
+                    .show(ctx, |ui| controls(ui, &mut draft, true));
+            },
+        );
+        assert_eq!(draft.stored_int("controls.controls.key_delay_ms"), Some(0));
+        assert_eq!(
+            draft.movement_repeat_delay(),
+            Some(std::time::Duration::ZERO)
+        );
+        Ok(())
     }
 
     fn bordered_groups(output: &egui::FullOutput) -> Vec<egui::Rect> {

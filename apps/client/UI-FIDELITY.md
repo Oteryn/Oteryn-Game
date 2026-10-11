@@ -78,7 +78,12 @@ implemented.
   Its DX12 release audit again passed 20 pages/78 captures with no invalid page;
   the changed Graphics page was visually inspected. Private manifest SHA-256:
   `b0bcedda748b9622147e63000a33057dac9736fe7378beb165f7acf8826db460`.
-  The keyboard-repeat successor is a separate candidate requiring new evidence.
+  Keyboard-repeat head `5bf89893125d74d133edd687c13f034b2c2a41b8` then passed
+  native MSVC tests (192 library/163 binary/5 launcher), strict Clippy and the
+  20-page/78-capture DX12 audit. The changed Controls page was visually inspected.
+  Private manifest SHA-256:
+  `a6b2866c47a4a84e9442e7a406520fd220520312e46824bbdfb4819443e200e0`.
+  The modifier-cancellation/explicit-zero repair requires fresh qualification.
 - This establishes native compiled-page reachability, not exhaustive reference
   comparison or working behavior for disabled rows. Native live-session visual
   acceptance and every row whose consumer remains pending are still open and
