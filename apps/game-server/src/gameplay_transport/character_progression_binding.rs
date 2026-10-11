@@ -75,8 +75,9 @@ enum Round<const N: usize> {
 /// `policy_for` forms the World's pinned policy with the Character root's profile, ruleset and
 /// content revisions (`None`: the content forms no policy for them). `fence` reads the session's
 /// current gameplay fence: `Ok(None)` when the session is proven terminal, `Err` when a read
-/// failed. The request is formed once, from the first interpretation read, and every round sends
-/// it unchanged, so a round whose initialization committed with its acknowledgement lost is
+/// failed. The request is formed once, from the profile, ruleset and content revisions stored on
+/// the fenced Character's own root (never the newest global interpretation, which may have
+/// advanced since the Character was created), and every round sends it unchanged, so a round whose initialization committed with its acknowledgement lost is
 /// reconciled by the next round's `AlreadyInitialized`.
 pub(crate) async fn bind_character_progression<const N: usize, P, F, Fut>(
     durable: ProgressionDurable<'_, '_, '_>,
@@ -94,10 +95,17 @@ where
         if round > 1 {
             tokio::time::sleep(rounds.backoff).await;
         }
+        let current_fence = match fence().await {
+            Ok(Some(current_fence)) => current_fence,
+            Ok(None) => {
+                return ProgressionBinding::Unbound(ProgressionUnbound::InitializationUnavailable);
+            }
+            Err(()) => continue,
+        };
         if request.is_none() {
             let Ok(interpretation) = durable
                 .root
-                .read_current_character_interpretation(durable.character)
+                .read_character_root_interpretation(durable.character, current_fence.character_id)
                 .await
             else {
                 continue;
@@ -116,7 +124,7 @@ where
         let Some(current) = request.as_ref() else {
             continue;
         };
-        match bind_round(&durable, current, &mut fence).await {
+        match bind_round(&durable, current, current_fence).await {
             Round::Decided(binding) => return binding,
             Round::Retry => {}
         }
@@ -124,23 +132,14 @@ where
     ProgressionBinding::Unbound(ProgressionUnbound::InitializationUnavailable)
 }
 
-/// One round: the fence and the row are read in the same round, and the initializer runs only
+/// One round: `fence` was read in this round, before the row, and the initializer runs only
 /// for a missing row at root revision 1.
-async fn bind_round<const N: usize, F, Fut>(
+async fn bind_round<const N: usize>(
     durable: &ProgressionDurable<'_, '_, '_>,
     request: &ProgressionInitializationRequest<N>,
-    fence: &mut F,
-) -> Round<N>
-where
-    F: FnMut() -> Fut,
-    Fut: Future<Output = Result<Option<CurrentCharacterGameplayFence>, ()>>,
-{
-    use ProgressionUnbound::{ContextMismatch, InitializationUnavailable, StaleRevision};
-    let fence = match fence().await {
-        Ok(Some(fence)) => fence,
-        Ok(None) => return Round::Decided(ProgressionBinding::Unbound(InitializationUnavailable)),
-        Err(()) => return Round::Retry,
-    };
+    fence: CurrentCharacterGameplayFence,
+) -> Round<N> {
+    use ProgressionUnbound::{ContextMismatch, StaleRevision};
     let row = match durable
         .root
         .read_character_progression(durable.character, fence.character_id)

@@ -305,6 +305,61 @@ fn unbindable_rows_and_missing_rows_past_revision_one_decide_without_a_write() -
     })
 }
 
+/// The binding is formed from the Character root's stored revisions (§1.3): a global
+/// interpretation configured after the Character was created does not reach an existing
+/// Character's binding, so its matching row still binds.
+#[test]
+fn a_global_interpretation_advanced_after_creation_still_binds_the_root() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = Harness::create(admin, "prog_admit_advanced", false).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let (binding, calls) = bind(&harness, &authority, pinned, 1, Vec::new()).await;
+            let bound = policy("profile-1", "ruleset-1", "content-1");
+            assert_eq!(binding, ProgressionBinding::Bound(Box::new(bound.clone())));
+            assert_eq!(calls, 1);
+
+            sqlx::query(
+                "INSERT INTO game_character_interpretations VALUES \
+                 (2,'profile-2','ruleset-2','content-2','starter-2',2)",
+            )
+            .execute(&harness.pool)
+            .await?;
+            let read = std::cell::RefCell::new(Vec::new());
+            let (binding, calls) = bind(
+                &harness,
+                &authority,
+                |profile: &str, ruleset: &str, content: &str| {
+                    read.borrow_mut()
+                        .push([profile, ruleset, content].map(str::to_owned));
+                    pinned(profile, ruleset, content)
+                },
+                1,
+                Vec::new(),
+            )
+            .await;
+            assert_eq!(
+                read.into_inner(),
+                vec![["profile-1", "ruleset-1", "content-1"].map(str::to_owned)]
+            );
+            assert_eq!(binding, ProgressionBinding::Bound(Box::new(bound)));
+            assert_eq!(calls, 0);
+            assert_eq!(row(&harness.pool).await?.as_deref(), Some(INITIALIZED));
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
 /// Every round sends the identical request: a failed round is retried, a lost acknowledgement
 /// is reconciled by the committed row, and rounds that all fail leave no row and a later
 /// admission initializes it.
