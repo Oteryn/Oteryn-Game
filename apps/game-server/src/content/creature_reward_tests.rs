@@ -295,10 +295,10 @@ fn reasons_have_stable_names() {
     }
 }
 
-/// CP D929: the production pin's rat row refuses while its table names cheese
-/// `i3607`, which is not materializable (OTV2-20261007-d3-8-cheese).
+/// CP D929: the production pin's rat row settles now that its table's cheese
+/// `i3607` is admitted and materializable (OTV2-20261007-d3-8-cheese).
 #[test]
-fn the_production_rat_row_refuses_its_inadmissible_cheese() {
+fn the_production_rat_row_settles_with_its_admitted_cheese() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let creatures: CreatureProfilesDocument = serde_json::from_slice(
         &std::fs::read(root.join("content/creatures/definitions/spell-native-profiles.json"))
@@ -309,8 +309,7 @@ fn the_production_rat_row_refuses_its_inadmissible_cheese() {
         std::fs::read(root.join("tools/content-schema/native-gameplay/loot-tables.json")).unwrap();
     let section = LootTablesSection::decode(&bytes, &creatures).expect("production loot section");
     let table = CreatureRewardTable::build(&creatures, &section, &HashMap::new());
-    assert_eq!(
-        reason(&table, "oteryn:creature.rat"),
-        NoSettlementReason::LootItemInadmissible
-    );
+    table
+        .row("oteryn:creature.rat")
+        .expect("production rat row settles");
 }

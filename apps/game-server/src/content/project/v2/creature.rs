@@ -1285,11 +1285,11 @@ fn condition(
     }
     match &value.damage_over_time {
         Some(ProjectV2DamageOverTime::Fixed { ticks, .. }) => {
-            if ticks.is_empty()
+            let invalid = ticks.is_empty()
                 || ticks
                     .iter()
-                    .any(|tick| tick.count == 0 || tick.interval_ms == 0 || tick.amount == 0)
-            {
+                    .any(|tick| tick.count == 0 || tick.interval_ms == 0 || tick.amount == 0);
+            if invalid {
                 return Err(ProjectError::InvalidProject(
                     "v2 fixed damage ticks must be positive",
                 ));
@@ -1302,11 +1302,11 @@ fn condition(
             initial_tick_amount,
             ..
         }) => {
-            if *total_maximum == 0
+            let invalid = *total_maximum == 0
                 || total_minimum > total_maximum
                 || *tick_interval_ms == 0
-                || *initial_tick_amount == Some(0)
-            {
+                || *initial_tick_amount == Some(0);
+            if invalid {
                 return Err(ProjectError::InvalidProject(
                     "v2 decreasing damage schedule is invalid",
                 ));

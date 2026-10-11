@@ -89,6 +89,13 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   bite ledger and the melee owner never refuse a live issuer (tested with 300 issuers);
   the monster pass has no channel-wide `AI01-ACTIVE-ACTORS` gate and swings at most
   `CREATUREAI0-RL-05` targeting monsters per pass, round robin (tested with 300 monsters).
+- Merge with main (CREATURE-MOVE-1): the swing window keeps the targeting filter and the
+  RL-05 budget and swings from each creature's post-step position. The respawn drive's
+  admission also checks `CREATUREAI0-RL-04` once the dead creature has left (Codex
+  4242715014), and a refused admission costs its `SPAWNCEIL-RL-01` step, so one window retries
+  it at most 32 times (Codex 4242715016). Neither has a dedicated test: the first needs a
+  262,144-actor carrier with a pending respawn, and the second needs a carrier with no free
+  slot during a due admission.
 
 ## Implementation / findings
 
@@ -233,6 +240,12 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     `ability_engine` shim and the postgres targets). The PC's WSL VM restarted during `cargo
     test --no-run`, so the test run is left to CI; earlier attempts found and fixed the
     `ability_engine` shim mismatch and a `assertions_on_constants` lint
+  - Merge with main 3fd270f3 plus Codex 4242715014 and 4242715016, on the PC before the push,
+    in a private checkout that reproduces the merge (apps tree hash equal to the pushed merge
+    commit's): `cargo fmt --all -- --check` pass; `cargo clippy -p oteryn-game-server
+    --all-targets --locked -- -D warnings` pass; `cargo test -p oteryn-game-server --no-run
+    --locked` pass; `cargo test -p oteryn-game-server --lib --locked` pass (2,756 passed, 0
+    failed, 28 ignored); governance validation and `tools/agents/tests` pass
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 

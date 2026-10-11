@@ -143,18 +143,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .collect::<Vec<_>>();
-        // CREATURE-MOVE-1 owns the production step and its wire; until it merges no step is
-        // admitted here, as before.
+        // CREATURE-MOVE-1: a think's one cardinal step (chase, flee or wander within the spawn
+        // radius) is committed here when its destination is a walkable, open, ordinary cell.
+        // Lock order: runtime, spell states, attack, then the door runtime (read only).
+        // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
+        let doors = self.door.lock().await.collision_cells().clone();
+        let cells = room.movement_cells();
         let _ = melee_owner.creature_ai.run_due_thinks(
             &mut runtime,
             now.get(),
             &GameplayDecisionRoot::from_bytes(content.source_digest()),
             &revisions,
             &candidates,
-            |_| false,
+            |destination| creature_cell_admissible(cells, &doors, destination),
         );
         // §2.1: only a monster whose think holds a target swings, in census order from the
-        // cursor and at most `CREATUREAI0-RL-05` per pass.
+        // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
+        // and is perceived at, its new cell.
         let swinging = monsters
             .iter()
             .filter(|(actor, ..)| {
@@ -164,10 +169,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .and_then(|state| state.target())
                     .is_some()
             })
+            .map(|(actor, position, _)| {
+                (
+                    *actor,
+                    runtime.read_actor_position(*actor).unwrap_or(*position),
+                )
+            })
             .collect::<Vec<_>>();
         let (cursor, count) = swing_window(swinging.len(), states.monster_ai_cursor);
         for offset in 0..count {
-            let (actor, position, _) = &**swinging[(cursor + offset) % swinging.len()];
+            let (actor, position) = &swinging[(cursor + offset) % swinging.len()];
             let Some(monster) = qualified_melee(&runtime, content, *actor) else {
                 continue;
             };
@@ -340,6 +351,66 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
         cursor % len,
         len.min(crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW),
     )
+}
+
+/// CREATURE-MOVE-1 (CREATURE-AI-0 §5.3, R2): whether a creature may step onto `cell`. It is a
+/// Walkable cell of the qualified room, no door cell (open or closed) covers it, and it is neither a
+/// protection-zone nor a floor-change tile. A creature never opens a door and never changes
+/// floors by a step. The check reads only; the step is committed by the Channel owner.
+///
+/// LIMIT (CREATURE-MOVE-1c): durable ground items and fields (Magic Wall, Wild Growth) are not
+/// consulted here. No SQL, spell lane or durable-item snapshot enters the AI pass; the step uses
+/// only what the Movement owner holds in memory. CREATURE-MOVE-1c adds an in-memory blocking
+/// overlay owned by the Movement owner, revalidated atomically at the step commit.
+fn creature_cell_admissible(
+    cells: &crate::content::NativeEntryMovementCells,
+    doors: &std::collections::BTreeSet<LogicalCell>,
+    cell: MovementLocalPosition,
+) -> bool {
+    let target = LogicalCell {
+        x: cell.x,
+        y: cell.y,
+        z: i32::from(cell.floor),
+    };
+    let tile = match cells.spell_tiles().lookup(cells.scope(), target) {
+        Ok(tile) => Some((tile.flags().protection_zone, tile.flags().floor_change)),
+        // The accepted entry room (`native_entry_room.json`, the spawned-rat room) qualifies no
+        // tile document, so every lookup is `Unknown`. Its Movement owner admits a player step on
+        // terrain and doors alone ("accepted entry movement", `field_step_ingress`): the room
+        // has no protection-zone or floor-change tile. A creature step follows the same rule.
+        Err(crate::content::SpellTileLookupError::Unknown) if accepted_entry_movement(cells) => {
+            Some((false, false))
+        }
+        // Unknown cells of a tile-qualified map, an absent tile or another scope refuse.
+        Err(_) => None,
+    };
+    cell_open(
+        cells.index().lookup(cells.scope(), target) == Ok(crate::content::CollisionClass::Walkable),
+        doors.contains(&target),
+        tile,
+    )
+}
+
+/// Whether `cells` move by the accepted entry movement: the entry-room collision index (not a
+/// source world, not a bundle) outside the source profile. Its tiles are qualified from the room's
+/// own optional tile document, so `Unknown` there means only "no document"; a source-qualified
+/// map's `Unknown` names a genuinely unknown cell and a bundle's lookup is another scope.
+fn accepted_entry_movement(cells: &crate::content::NativeEntryMovementCells) -> bool {
+    matches!(
+        cells.index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
+    ) && !crate::movement::source_floor_change::is_source_profile(cells)
+}
+
+/// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
+/// `None` when the tile facts are unknown, which refuses (fail closed, like the think pass).
+const fn cell_open(walkable: bool, door: bool, tile: Option<(bool, bool)>) -> bool {
+    match tile {
+        Some((protection_zone, floor_change)) => {
+            walkable && !door && !protection_zone && !floor_change
+        }
+        None => false,
+    }
 }
 
 /// A present dead actor still has an observable vitals state until respawn. It must
@@ -577,6 +648,274 @@ mod tests {
         assert_eq!(
             swing_window(len, cursor + count),
             (CREATUREAI0_THINKS_PER_WINDOW, CREATUREAI0_THINKS_PER_WINDOW)
+        );
+    }
+
+    /// CREATURE-MOVE-1: a creature steps only onto an open walkable ordinary cell.
+    #[test]
+    fn creature_steps_are_admitted_only_onto_open_walkable_cells() {
+        assert!(cell_open(true, false, Some((false, false))));
+        assert!(!cell_open(false, false, Some((false, false))), "blocked");
+        assert!(!cell_open(true, true, Some((false, false))), "closed door");
+        // `doors` holds every door cell, open or closed, so an open doorway is refused too: a
+        // creature standing there would not count in the door-close occupancy.
+        assert!(
+            !cell_open(true, true, Some((false, false))),
+            "open door cell (CREATURE-DOOR-1)"
+        );
+        assert!(
+            !cell_open(true, false, Some((true, false))),
+            "protection zone"
+        );
+        assert!(!cell_open(true, false, Some((false, true))), "floor change");
+        assert!(!cell_open(true, false, None), "unknown tile facts");
+    }
+
+    /// CREATURE-MOVE-1: a cell outside the qualified room is refused whatever the doors say.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_cell_outside_the_room_is_refused() {
+        use crate::foundation::WorldId;
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let outside = MovementLocalPosition {
+            x: 100_000,
+            y: 0,
+            floor: 0,
+        };
+        assert!(!creature_cell_admissible(
+            room.movement_cells(),
+            &std::collections::BTreeSet::new(),
+            outside
+        ));
+    }
+
+    /// The accepted entry room's real cells and its real door runtime, bound as `node/serve.rs`
+    /// binds it at activation.
+    #[allow(clippy::expect_used)]
+    fn entry_room_and_door(
+        world: crate::foundation::WorldId,
+        channel: crate::foundation::ChannelId,
+    ) -> (
+        QualifiedNativeEntryRoom,
+        crate::world_runtime::LocalObjectRuntime,
+    ) {
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let door_content = room.door().clone();
+        let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+        let generation = crate::foundation::ScopeOwnershipGeneration::new(1).expect("generation");
+        let fence = crate::world_runtime::ScopeContentGenerationFence::for_activation(
+            scope,
+            generation,
+            crate::world_runtime::ReferenceContentGeneration::from_content(&door_content)
+                .expect("door content generation"),
+        );
+        let door =
+            crate::world_runtime::bind_native_entry_door(&door_content, &fence, scope, generation)
+                .expect("door runtime");
+        (room, door)
+    }
+
+    fn cell(x: i32, y: i32) -> MovementLocalPosition {
+        MovementLocalPosition { x, y, floor: 0 }
+    }
+
+    /// CREATURE-MOVE-1 (Codex 4242014304): the accepted entry room qualifies no tile document, so
+    /// every tile lookup is `Unknown`; its ordinary Walkable cells still admit a creature step,
+    /// while its Blocked cell, its door cell (closed or open) and cells outside it refuse.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn the_accepted_entry_room_admits_creature_steps_onto_its_ordinary_cells() {
+        use crate::foundation::{ChannelId, WorldId};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let (room, mut door) = entry_room_and_door(world, channel);
+        let cells = room.movement_cells();
+        assert!(accepted_entry_movement(cells));
+        let east = LogicalCell { x: 1, y: 0, z: 0 };
+        assert_eq!(
+            cells.spell_tiles().lookup(cells.scope(), east).err(),
+            Some(crate::content::SpellTileLookupError::Unknown),
+            "the accepted entry room carries no tile document"
+        );
+        let closed = door.collision_cells().clone();
+        assert_eq!(
+            closed.iter().copied().collect::<Vec<_>>(),
+            vec![LogicalCell { x: 1, y: -1, z: 0 }],
+            "the entry door cell"
+        );
+        for (x, y) in [(0, 0), (1, 0), (2, 0), (2, -1)] {
+            assert!(
+                creature_cell_admissible(cells, &closed, cell(x, y)),
+                "ordinary cell ({x}, {y})"
+            );
+        }
+        assert!(
+            !creature_cell_admissible(cells, &closed, cell(0, -1)),
+            "Blocked"
+        );
+        assert!(
+            !creature_cell_admissible(cells, &closed, cell(1, -1)),
+            "closed door"
+        );
+        assert!(
+            !creature_cell_admissible(cells, &closed, cell(3, 0)),
+            "outside"
+        );
+        // Opening the door leaves its collision footprint, the set the AI pass reads, unchanged.
+        assert!(matches!(
+            door.attempt_use(0, &std::collections::BTreeSet::new()),
+            Ok(crate::world_runtime::LocalObjectUseOutcome::Committed { .. })
+        ));
+        let open = door.collision_cells().clone();
+        assert_eq!(open, closed);
+        assert!(
+            !creature_cell_admissible(cells, &open, cell(1, -1)),
+            "open door cell (CREATURE-DOOR-1)"
+        );
+        // Without the door set the doorway is ordinary Walkable terrain: the door set alone
+        // refuses it.
+        assert!(creature_cell_admissible(
+            cells,
+            &std::collections::BTreeSet::new(),
+            cell(1, -1)
+        ));
+    }
+
+    /// CREATURE-MOVE-1 (Codex 4242014304): in the accepted entry room the spawned rats, thinking
+    /// with the room's own rat behaviour, commit a real chase step through `run_due_thinks`: the
+    /// den rat steps west onto the east cell; the den-north rat's chase step is the door cell and
+    /// is refused, so it stays.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_spawned_rat_commits_a_chase_step_in_the_accepted_entry_room() {
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let (room, door) = entry_room_and_door(world, channel);
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let source = room.spawn_source().expect("D116 spawn source");
+        assert_eq!(
+            runtime.realize_activation_spawns(vec![source.activation_facts()]),
+            Ok(2)
+        );
+        let rat_at = |runtime: &ChannelRuntimeV1, at: MovementLocalPosition| {
+            runtime
+                .spawn_point_creatures()
+                .into_iter()
+                .find_map(|(_, _, live)| {
+                    live.filter(|rat| {
+                        runtime
+                            .read_actor_position(*rat)
+                            .is_ok_and(|p| p.position() == at)
+                    })
+                })
+                .expect("a spawned rat on the cell")
+        };
+        let den = rat_at(&runtime, cell(2, 0));
+        let den_north = rat_at(&runtime, cell(2, -1));
+        let session =
+            GameSessionId::decode(&[1, 0, 0, 0, 0, 4, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4])
+                .expect("session");
+        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+        let player = runtime.commit_fresh_session(reservation).expect("player");
+        runtime
+            .initialize_pinned_test_position(player, cell(0, 0))
+            .expect("player on the entry start");
+
+        // The room's own hostile rat behaviour, its swing cleared as the AI pass clears it.
+        let room_source: serde_json::Value =
+            serde_json::from_slice(crate::content::NATIVE_ENTRY_ROOM_SOURCE).expect("room source");
+        let profile = room_source["authoring_profiles"]
+            .as_array()
+            .expect("authoring profiles")
+            .iter()
+            .find(|profile| profile["target"]["key"] == "oteryn:behavior/rat-hostile")
+            .expect("rat behaviour");
+        let mut behavior: ProjectV2BehaviorAuthoring =
+            serde_json::from_value(profile["data"]["profile"].clone()).expect("behaviour");
+        behavior.attacks.clear();
+        behavior.defenses.clear();
+        let mut table = crate::ai_think::CreatureAiTable::default();
+        for rat in [den, den_north] {
+            table
+                .admit_creature(
+                    &runtime,
+                    rat,
+                    Some(&behavior),
+                    &std::collections::BTreeMap::new(),
+                    0,
+                )
+                .expect("admitted");
+        }
+        let candidates = [TargetCandidate {
+            actor: player,
+            position: cell(0, 0),
+            eligible: true,
+            invisible: false,
+            health: 0,
+            damage: 0,
+        }];
+        let revisions = crate::ability::RevisionSet::new(
+            "ruleset:ai-v1",
+            "content:test",
+            "world:ai-v1",
+            "formula:source-melee-baseline",
+            "simulation:v1",
+        )
+        .expect("revisions");
+        let doors = door.collision_cells().clone();
+        let cells = room.movement_cells();
+        let reports = table.run_due_thinks(
+            &mut runtime,
+            0,
+            &GameplayDecisionRoot::from_bytes([9; 32]),
+            &revisions,
+            &candidates,
+            |destination| creature_cell_admissible(cells, &doors, destination),
+        );
+        assert_eq!(reports.len(), 2, "both rats thought");
+        let step = |rat| {
+            reports
+                .iter()
+                .find(|(actor, _)| *actor == rat)
+                .and_then(|(_, report)| report.step)
+                .map(|step| step.destination)
+        };
+        assert_eq!(step(den), Some(cell(1, 0)), "chase step west");
+        assert_eq!(step(den_north), None, "the chase step is the door cell");
+        assert_eq!(
+            runtime
+                .read_actor_position(den)
+                .expect("den rat")
+                .position(),
+            cell(1, 0),
+            "the step was committed"
+        );
+        assert_eq!(
+            runtime
+                .read_actor_position(den_north)
+                .expect("den-north rat")
+                .position(),
+            cell(2, -1)
         );
     }
 

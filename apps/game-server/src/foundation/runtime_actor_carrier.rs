@@ -3159,12 +3159,22 @@ impl ChannelRuntimeV1 {
                     };
                     let occupied = self.carrier.cell_occupied(context, local);
                     if !occupied {
-                        let actor = self.carrier.respawn_into_free_cell(
+                        let actor = match self.carrier.respawn_into_free_cell(
                             &self.continuity,
                             SpawnSourceId(point.source),
                             usize::from(point.ordinal),
                             context,
-                        )?;
+                        ) {
+                            Ok(actor) => actor,
+                            Err(error) => {
+                                // Codex 4242715016: a refused admission costs its step, so the
+                                // drives of one window retry it at most `SPAWNCEIL-RL-01` times.
+                                if let Some(drive_window) = self.spawn_drive_window.as_mut() {
+                                    drive_window.steps_left -= 1;
+                                }
+                                return Err(error);
+                            }
+                        };
                         self.bind_spawned_creature_policy(actor);
                         report.admitted.push(actor);
                     }
@@ -5888,9 +5898,9 @@ impl ChannelActorCarrier {
     /// occupied index) and one admission. Every refusal it can foresee (continuity, context,
     /// source, cell, the creature's health and identity, the identity's allocation) precedes the
     /// first mutation. The dead creature's removal is best effort, as in the timer resolution;
-    /// after it only the protected generation exhaustion of the freed slot (#541) can refuse,
-    /// and that slot is retired either way. A refused position initialization removes the new
-    /// creature again.
+    /// after it only the creature ceiling `CREATUREAI0-RL-04` and the protected generation
+    /// exhaustion of the freed slot (#541) can refuse, and that slot is retired either way. A
+    /// refused position initialization removes the new creature again.
     fn respawn_into_free_cell(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -5923,6 +5933,11 @@ impl ChannelActorCarrier {
         if let Some(dead_actor) = dead_actor {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
+        }
+        // `CREATUREAI0-RL-04` (Codex 4242715014), as `admit_creature` checks it, counted after
+        // the dead creature has left.
+        if self.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
+            return Err(CarrierError::CapacityExceeded);
         }
         let actor = self.admit_inner(
             continuity,

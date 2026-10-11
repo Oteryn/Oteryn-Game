@@ -67,7 +67,7 @@ jobs:
         run: test -z "$(git status --short --untracked-files=all)"
 
   # `store_census.py --check`/`--self-check` and `convert_store.py` itself need a pinned
-  # Canary/Crystal engine checkout that is not available to this repository's CI
+  # reference-engine checkout that is not available to this repository's CI
   # (no network fetch of third-party engine sources here); like the Item package's
   # population census, they are run locally by whoever touches the converter/census
   # and their results are the committed `samples/store-census-*.json` files.

@@ -37,6 +37,6 @@ receipt="$(docker run --rm -e APP_ENV=preproduction -e DB_CONNECTION=sqlite \
 
 echo "native topology receipt: $receipt"
 cd "$REPO_ROOT"
-OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo test --locked -p oteryn-game-server \
+OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo +1.95.0 test --locked -p oteryn-game-server \
   --test content_native_entry_room -- --include-ignored
 echo "NATIVE_ENTRY_ROOM_RESULT=PASS"

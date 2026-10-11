@@ -58,7 +58,7 @@ pub(crate) fn offsets(
             if l == 0 || l > 64 || s > 64 {
                 return Err(GeometryError::Bounds);
             }
-            let cols = if s == 0 { 1 } else { ((l - l % s) / s) * 2 + 1 };
+            let cols = l.checked_div(s).map_or(1, |quotient| quotient * 2 + 1);
             if cols > 129 {
                 return Err(GeometryError::Bounds);
             }
