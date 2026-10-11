@@ -437,11 +437,11 @@
   ],
   "counts": {
     "quests": 236,
-    "stages": 1475,
-    "non_dialogue_stages": 1225,
+    "stages": 1471,
+    "non_dialogue_stages": 1220,
     "exact_stage_target_refs": 617,
     "encounter_outcome_seams": 25,
-    "reward_intents": 508,
+    "reward_intents": 509,
     "exact_reward_refs": 372,
     "explicit_non_identity_reward_intents": 15
   },
@@ -459,7 +459,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/67/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "9f52fa6ff27c3ea5c861ae890cc04e43322385e282497e0dd8db8dbb6fdf6d56"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -1215,7 +1215,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/68/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "b24aa1544732ad6307e4d89d22ae126716420eea40ee0d63d053e50271169ce3"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -2653,7 +2653,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/69/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "e6f81a0c9089fd841f7e8c420eb7ea0f672932228539990fb04ae2663346ebe8"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -3828,7 +3828,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/70/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "1b360f2057dd307e39ee8bee009ce353716ed7bcb05dbd08d12ee998b51fac54"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -6573,7 +6573,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/71/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "2d2e7fdfe9ba496731cabc14d6f7664642a170842baf4199cd5be9a1c0474447"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -7873,7 +7873,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/72/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "35f773b6d1b7730c16f0c2e44a72d68e2b61801ac1a63d2e0325fedc91b3846c"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -16418,7 +16418,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/73/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "b44ce786cbf5b5a22e19ef4a2cf4c5fe88f01983d0e686fd39a5d8556ace2a6b"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -20104,7 +20104,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/74/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "df07fae7dde4d7c1a1bc7c412869c3cbe3fc3b56ab0814a3048895ba5fe7a154"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -23701,7 +23701,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/75/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "5ced964411db391d94c586ec50857e6f30f6dbd9a36d317cb39538136fa7ee15"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -31905,7 +31905,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/76/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "0434c3941d01f8801007c80ecae2ce5ff23c9b2688d818fbf3ce68235f54325a"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -32043,7 +32043,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/77/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "a25fc75fa13a531bf03707dc51726aa52dcde9661c7a802fde7c605391e50111"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -40114,7 +40114,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/78/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "aa54a7d07dc3cc54a039f6c8f486d9348da12dde4023d98eba2ff34c26740542"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -51501,7 +51501,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/0/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "e4cc48b29e8c812eb9a5829b5f9111dd5e6d91efa82b5b4148ffb116053f9802"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -51653,7 +51653,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/1/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f6029536304ec078b2c1d9131f5dc3d5d70070c432ae2af04c560628e42c7444"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -52719,7 +52719,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/2/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "381076bcb55140c3d8fbd8bdbc800272f68c2ebcb878738e839b404281b5aa15"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -53116,7 +53116,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/3/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "8d24a93073d06b58d62dcc9092815142a37f1bac4156845dd44a1800765313d3"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -53439,7 +53439,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/4/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "28b00429cb18e6ce0bcb33484c02f875f6560fd1406678622f747024a437d26f"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -53569,7 +53569,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/5/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "11ef94a9f860f844bf4be754cb9339d5a53550cb0cb16fea343c7e3f87b1214a"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -54038,25 +54038,25 @@
         "revision": "quest-r1"
       },
       "wiki_title": "Soul War Quest",
-      "recipe_sha256": "d73a77dbd2f1512d818df9d9a828ffbd224b06a31eb37d80e21febab084a76a5",
-      "projected_stages_sha256": "55a660d1f926c4e429a3b4506b109950ef7d57bb87531412ce70684c8069b44d",
+      "recipe_sha256": "d4b55eec9568b1e2440857c82c4efb184bf67609fdf0d8fb54988414f33d5257",
+      "projected_stages_sha256": "47c4a0e5a7c8a8ab6fd99abd542ea16e87ea8093bd10a45ffbab281116413f0d",
       "typed_progress_source": "content/quests/missions/quest-state-completion-candidate.json",
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/6/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
-        "record_sha256": "3b60f2d755ba210307d78ca1af45530a47ea1775f37a15fba1a1ccaf4e7dd1bb"
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
+        "record_sha256": "8a560ed4a838a686860d610c1859a0f2e77433804d52ff009f6a294692e4fe74"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
       "stages": [
         {
           "stage_key": "s1",
-          "kind": "explore",
+          "kind": "talk",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "targets": [
             {
-              "target": "Soul War entrance",
+              "target": "Flickering Soul",
               "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
               "refs": [],
               "match_count": 0
@@ -54064,8 +54064,7 @@
           ],
           "consumer_seams": [],
           "unresolved": [
-            "AREA_LABEL_OR_POSITION_IS_NOT_QUEST_TRIGGER_BOUNDARY",
-            "NATIVE_AREA_ENTRY_CONSUMER_BINDING_PENDING",
+            "DIALOGUE_LANE_OWNS_TALK_BINDING",
             "ONE_OR_MORE_EXACT_TARGET_IDENTITIES_UNRESOLVED"
           ],
           "runtime_admitted": false
@@ -54073,9 +54072,165 @@
         {
           "stage_key": "s2",
           "kind": "kill",
-          "count": 1,
+          "count": 5,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "targets": [
+            {
+              "target": "Goshnar's Malice",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_malice",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Malice",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/152",
+                  "record_sha256": "1e2da6cd403563937540d43d404b6374e3d48a950bf97f779e4b8b7717f10f18",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_malice",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_malice",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Greed",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_greed",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Greed",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/150",
+                  "record_sha256": "60245146092bc737e8f105586cac52e79e9165dfb2019b200e530631c18b1c47",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_greed",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_greed",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Spite",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_spite",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Spite",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/156",
+                  "record_sha256": "e2ca90d8017f897290f333d0d450b81bb62e5407ff0a15301f011de9e39f37d9",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_spite",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_spite",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Cruelty",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_cruelty",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Cruelty",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/149",
+                  "record_sha256": "32337de8839e40d39caa2e35e8730a6b807eeee1fbf07095a3b400e406894b82",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_cruelty",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_cruelty",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
             {
               "target": "Goshnar's Hatred",
               "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
@@ -54124,214 +54279,6 @@
         },
         {
           "stage_key": "s3",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Spite",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_spite",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Spite",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/156",
-                  "record_sha256": "e2ca90d8017f897290f333d0d450b81bb62e5407ff0a15301f011de9e39f37d9",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_spite",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_spite",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s4",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Greed",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_greed",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Greed",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/150",
-                  "record_sha256": "60245146092bc737e8f105586cac52e79e9165dfb2019b200e530631c18b1c47",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_greed",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_greed",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s5",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Malice",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_malice",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Malice",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/152",
-                  "record_sha256": "1e2da6cd403563937540d43d404b6374e3d48a950bf97f779e4b8b7717f10f18",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_malice",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_malice",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s6",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Cruelty",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_cruelty",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Cruelty",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/149",
-                  "record_sha256": "32337de8839e40d39caa2e35e8730a6b807eeee1fbf07095a3b400e406894b82",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_cruelty",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_cruelty",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s7",
           "kind": "explore",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -54352,7 +54299,7 @@
           "runtime_admitted": false
         },
         {
-          "stage_key": "s8",
+          "stage_key": "s4",
           "kind": "kill",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -54372,7 +54319,7 @@
           "runtime_admitted": false
         },
         {
-          "stage_key": "s9",
+          "stage_key": "s5",
           "kind": "complete",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -54381,7 +54328,7 @@
             {
               "kind": "EXISTING_CHOSEN_STAGE_GRAPH",
               "incoming_stage_keys": [
-                "s8"
+                "s4"
               ],
               "next_stage_keys": [],
               "status": "CHOSEN_SOURCE_GRAPH_INTENT_ONLY",
@@ -54394,9 +54341,10 @@
           "runtime_admitted": false,
           "terminal_intent": {
             "raw_targets": [
+              "Flickering Soul",
               "Soul War reward chest"
             ],
-            "objective": "Wejdź do pokoju nagród i zatwierdź jeden wybrany grant.",
+            "objective": "Report the Megalomania victory to Flickering Soul for the Revenant Outfit and claim exactly one random final Soul War item.",
             "canonical_mapping_attempted": false,
             "runtime_admitted": false
           }
@@ -54405,11 +54353,29 @@
       "reward_intents": [
         {
           "reward_index": 0,
+          "kind": "outfit",
+          "count": 1,
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "mapping": {
+            "target": "Revenant Outfit",
+            "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
+            "refs": [],
+            "match_count": 0
+          },
+          "unresolved": [
+            "NATIVE_REWARD_DELIVERY_CONSUMER_BINDING_PENDING",
+            "REWARD_EXACT_IDENTITY_UNRESOLVED",
+            "BASE_OUTFIT_OR_ADDON_DELIVERY_REQUIRES_EXPLICIT_NATIVE_POLICY"
+          ],
+          "runtime_admitted": false
+        },
+        {
+          "reward_index": 1,
           "kind": "item",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "mapping": {
-            "target": "Soul Mender",
+            "target": "One random item from the Crystal Soul War finalRewards pool",
             "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
             "refs": [],
             "match_count": 0
@@ -54437,7 +54403,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/7/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "cf2c299ee4432f87e615e6e8c0114ee5933da4d43bad4ff535d5932167db1d50"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -55130,7 +55096,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/9/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "e156a1865cd296b716ff7b7264ce0aa24856219c98a94dd077cd54e6f58664e4"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -55292,7 +55258,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/10/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "14fabe9e297a81478e7bca9525f7cf1d87e448ca289c86301feadcfcc79a2e75"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -55609,7 +55575,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/11/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "98a2c48333b3d8a12b5b3310edfccad99f9cd4befe6fb82dba2bfb6d20452fd9"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -56016,7 +55982,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/12/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "a2eaa8ec1fd6930a70d5df86da22a416f797e4206cd2209889fd32e65ad1ff9b"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -56172,7 +56138,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/79/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "912f5311f00b7986c1e170a53b4cd79a706392a67acaa17ffa991c66e926a59c"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -56544,7 +56510,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/13/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "e2456f35cb84dc3df4d3a355599dd8e5718875d615ebd0d72c89b2dcdd2eae19"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -56745,7 +56711,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/14/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "cf5aa6e4d15a6bfea7494ade863c9a51fd453e1aecfd1a71ab85b39e3a549a90"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -56945,7 +56911,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/15/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "080d573f1e85f8b53005d5089716dcea2ab827d1df49adcd41c143870b22fc96"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -57682,7 +57648,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/17/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "3429b151e530bcc719c05a9a072b91593e949544709f00b39e853cc2767f0368"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -57924,7 +57890,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/18/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "223e6f67e98be498ad8b8a6d055b2c9fc8bf0719849ebe2da994fd01c66f1b9f"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -58400,7 +58366,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/19/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "d50cdff5eeb7eb9e9f3fed97fbd3f72ea8bd0c0a4aaab9b6d2d111e87405efb0"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -58583,7 +58549,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/20/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "b751c02ed9701f63558670d98bb09e60be5b1a9358cb2891b83d4b65b76db70e"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -58809,7 +58775,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/21/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "026e7df4dd44c0d1d7097c4e57a063eebc9ed32baca7dd717a706c65e8aa9eeb"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -59102,7 +59068,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/22/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "2673cc8723e1658ca35b26d957274220e0a4b71b1fc5b6670348d3ec94af4b5c"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -59435,7 +59401,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/23/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "09bb3f67413b3b320a6cda576af4b44bb6f913c523f661a5d20cb4ef4051f303"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -59700,7 +59666,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/24/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "cc116721c7248dc81bd25f972fcf8becfdfc9fe6d8792d8beb427fe9a3eb83eb"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -60100,7 +60066,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/25/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "7e6cb35f830141bbd63a12d99e1a6ed252b8556a55bd6f41d0f8e51da87d4490"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -60416,7 +60382,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/26/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "89407d2517c0346b38a3fb50f2e4f8d2b6d64135bac3c1defc692968466dc9c1"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -60705,7 +60671,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/27/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "61df52d494c301a1e8a4423b9f0318d7d0aac55defd855399273eda9b9439d2d"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -61060,7 +61026,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/28/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "709f023eba4b288d6316e39ba232c21537e3ade4342dd7d04b92e84b2fced03d"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -61527,7 +61493,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/29/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "130b556f4767a559c9e136963b8afe1701625f2c51e69c14b4bbf4fabf2ba90d"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -61833,7 +61799,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/30/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "65a0288fbbac460123002f5fd4cae7f3a210121bb711b64b1ec971253ee07ed9"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -62100,7 +62066,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/31/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f85232c74326d7f720dfa76c1fe06f3d743a54b663fd99b943ef2f7e92b0394b"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -62265,7 +62231,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/32/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "19df2e6681581ee0998c919c35a0e88637ff8be9b6201e700b980cefc163bfd4"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -62550,7 +62516,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/33/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "3f3a824782e718088ad012e737e42cf4236e9bcf704b82d8c337555e4adb982b"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -62875,7 +62841,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/80/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "761860e42961855dd26c047db6e7844c6ca6d2fa20f28d87a46d968f9ea784e1"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -63168,7 +63134,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/35/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "558c0a7d1e3bb20925106db644de8e67ce25f70f9a8ba4fad1781be20abe2988"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -63668,7 +63634,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/36/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "02b56ec957550aa0da0daf63d0a2c554f2bcc08887de0d72904543f84e8d7aa6"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -64028,7 +63994,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/37/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "37fc045b5820b9aa4ca41bcb23779d7f3adb0707fcf813ee661fbb318ddde656"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -64260,7 +64226,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/38/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "9b4dba916f6aaf42bfa16dc5dda838ec76e934e826b46bec7f71209c03e200c9"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -64591,7 +64557,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/81/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "8b82ada84ba459e977b73ba3f23a4a717da715fb9b5ab6312c4ea0c485508c10"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -64827,7 +64793,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/39/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "6b2cc4ba4d471e47f17519a8d8edce8341cfb68f15aa7a5ae6dfcfb4d0813710"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -65282,7 +65248,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/40/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "22a75c8887cefc845423ebacf2d455d4bb77c14ff16df1a1f98acb88c98cf33e"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -65641,7 +65607,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/41/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "343d7cc42800b3dc109fd4f99b67c0a43e9afa7b3822c35c734a4faf9e842722"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -65890,7 +65856,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/42/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "d7c024d800429e9388f614c7f8c074a843e37705076651785792fe99d5b8b8d5"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -66040,7 +66006,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/43/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "6dcfa93e6190c15aabb220b838cb399347694708b7c249b443cb394d0d36730d"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -66316,7 +66282,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/44/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f0d9cc0b458aaf34fb9463856319af39b7d8153a531c74a4648b856387ecbb36"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -66569,7 +66535,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/45/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "713cb6172862175415ce8dd8172975c5062b07eed2ed23a294dab4122ccae015"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -66845,7 +66811,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/46/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "06f093c7987adbd183448793b84492c8f3d181deb3ce4b68cac6dfa717f986f9"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -66998,7 +66964,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/47/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f6a207cb0287e87ff94053ae656b218ad103cd55a4c42097519415933d786c72"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -67214,7 +67180,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/48/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "74c28d5b73715bbd5cf5f89ecb9fbf8d25bcc5492d1e0df3f5d81d29d4b07e21"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -67421,7 +67387,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/49/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "2e1782a2239804d5ba6ccb2f9cbd42b717ff98bc7f7bb537828f410299e51363"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -67643,7 +67609,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/50/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "dd07a20a452e149093044af1b9f3a4d40fa378ab0cc9677aec3bfa9a939c3701"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -67927,7 +67893,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/51/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f480e9527285d42b796942936ee1c75e536e0a21b7876adb38d91b283d627254"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -68310,7 +68276,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/52/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "0e3bc8f7624831bed9e351dc50b221505308e06ab3c0049358d98a40f9f7d579"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -69234,7 +69200,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/53/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "acaec45dd3a8a2f5e7c1fc6e025c2b6db10cdf30f42d8dc0a8ed649810ab088b"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -69605,7 +69571,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/54/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "4b9250e00ab40a8e766a7cc92202cdd0e87cca436885f193e12c28bfaf5e8913"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -69913,7 +69879,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/55/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "65436d944927066b4ba8e9ace7d686e9dce035c44c1a7656cdd7fbf0da03a37f"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -70285,7 +70251,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/56/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "9df0110a243335d6e05638fe13434eb2d28fcff108aefaa22443040578b28928"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -70610,7 +70576,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/82/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "08d1cc1c64506d2f60959e702dcc7b017bc8e28929686d0bcded87e4f31adaaa"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -71173,7 +71139,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/57/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "d682041740b2cde5b98512a6227bea8eada7527bee5a7926f676ade63528df31"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -71396,7 +71362,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/58/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f838c423bbdd2640e3f6a3be5f2940d1482885d63e71d9502cde00959b50c50e"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -71645,7 +71611,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/59/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "0bd9ba8f10095c163e07f234785a29f93ac73f14d001c8e2199b206099088281"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -71870,7 +71836,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/60/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "2bd075649179e7e133bc2ae00db9bdaf28a0ec335bc5565dfc223c8d2e730604"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -72484,7 +72450,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/61/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "a17cc55c2029edf37627a3e64beb51be46ebcaf3ba1993514047300b9497f9a9"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -72867,7 +72833,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/62/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "664c55f6086be863f1994d9c790aa271e4101d89f0ae89618dcb756cde9b75e6"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -73237,7 +73203,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/63/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "6812e1327d1930fd254bf35c1e1341b1818412b4b984f25c863b7a3ce2c8ac0d"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -73525,7 +73491,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/64/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f631616451535001718abe24f9c75b9b3c7076f067c7818c4e7b5efc7b36fef0"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -73834,7 +73800,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/83/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "5faf16f6895aa6cb8363ffd583089fa46f0983c4105e44bc651917f0c1c1d407"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -74433,7 +74399,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/65/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "f21c8254c3c4759aea87005d6a0f002278f7493b1b928ec999189cc801f7ecda"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
@@ -74833,7 +74799,7 @@
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/66/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
         "record_sha256": "364c930ca4a89dcaa64dc3955ed499abd91cbccd87710c19c01433de55c367db"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",

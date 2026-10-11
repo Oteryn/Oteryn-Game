@@ -90,9 +90,9 @@ def build(roots,repo_root=None,corpus_manifest=None):
  if len(lookup)!=len(records):raise ValueError('Duplicate donor file identity')
  questlinks=[];quest_inputs=[]
  if repo_root:
-  index_path='content/quests/definitions/index.json';index_blob=(repo_root/index_path).read_bytes();quest_inputs.append({'path':index_path,'sha256':sha(index_blob)});idx=json.loads(index_blob)
+  index_path='content/quests/definitions/index.json';index_blob=(repo_root/index_path).read_bytes().replace(b'\r\n',b'\n');quest_inputs.append({'path':index_path,'sha256':sha(index_blob)});idx=json.loads(index_blob)
   for shard in idx['shards']:
-   shard_blob=(repo_root/shard).read_bytes();quest_inputs.append({'path':shard,'sha256':sha(shard_blob)})
+   shard_blob=(repo_root/shard).read_bytes().replace(b'\r\n',b'\n');quest_inputs.append({'path':shard,'sha256':sha(shard_blob)})
    for rec in json.loads(shard_blob)['records']:
     d=rec['definition'];refs=[]
     for track in d.get('source_data',{}).get('progress',[]):
@@ -102,7 +102,8 @@ def build(roots,repo_root=None,corpus_manifest=None):
        record=lookup.get((occ['source'],occ['revision'],occ['path']));refs.append({'progress_key':track['key'],'source':occ['source'],'revision':occ['revision'],'path':occ['path'],'line':occ['line'],'expected_blob_sha256':occ['blob_sha256'],'byte_exact_capture_present':bool(record and record['blob_sha256']==occ['blob_sha256']),'callback_semantics_complete':False})
     questlinks.append({'quest':d['identity'],'source_npc_occurrence_refs':refs,'canonical_NPC_family_binding':'NOT_ADMITTED_DIFFERENT_DONOR_REVISIONS'})
   for descriptor in quest_inputs:
-   if sha((repo_root/descriptor['path']).read_bytes())!=descriptor['sha256']:raise ValueError('Quest input moved during capture: '+descriptor['path'])
+   current=(repo_root/descriptor['path']).read_bytes().replace(b'\r\n',b'\n')
+   if sha(current)!=descriptor['sha256']:raise ValueError('Quest input moved during capture: '+descriptor['path'])
  summary={'files':len(records),'bytes':sum(r['byte_count'] for r in records),'by_source':dict(collections.Counter(r['source'] for r in records)),'roles':dict(collections.Counter(r['closure_role'] for r in records)),'raw_byte_capture_complete_for_selected_files':True,'semantic_callback_completion_certified':False,'computed_include_closure_certified':False,'quest_definitions_audited':len(questlinks),'quest_npc_occurrence_refs':sum(len(q['source_npc_occurrence_refs']) for q in questlinks),'quest_npc_occurrence_refs_missing_capture':sum(not r['byte_exact_capture_present'] for q in questlinks for r in q['source_npc_occurrence_refs'])}
  return {'schema':SCHEMA,'scope':'Lossless donor reference capture; not native translation or complete dynamic include closure','donor_pins':{s:{'repository':p[0],'revision':p[1]} for s,p in PINS.items()},'summary':summary,'files':records,'annotation_blobs':annotation_blobs,'quest_links':questlinks,'quest_inputs':quest_inputs}
 def main():

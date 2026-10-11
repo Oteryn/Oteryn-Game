@@ -1,0 +1,220 @@
+{
+  "encounter": "crystal:encounter/goshnars_cruelty_crystal",
+  "classification": "SOURCE_BACKED_OTERYN_RECONSTRUCTION",
+  "covers": {
+    "SoulWarBossesDeath": [
+      "canary:creature/goshnar_s_cruelty"
+    ],
+    "GoshnarsCrueltyBuff": [
+      "canary:creature/goshnar_s_cruelty"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/lib/quests/soul_war.lua",
+      "blob_sha1": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "blob_sha1": "468e6a312e446b328771641f2feb7878f101e8b8"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+      "blob_sha1": "8622ed190a2da9030ce1eb111029581d88a0d922"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "blob_sha1": "7a73979930a0cdc17950fab7075334322f4cb128"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "Cruelty defense grows by 2 on a 15 second source cadence when Greedy Maw is not refreshed.",
+      "destination": "/encounter/state/timers"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153
+      ],
+      "status": "mapped",
+      "resolution": "After the initial 15 seconds the boss invokes the defense-growth helper; the Greedy Eye is removed when Cruelty disappears.",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        860,
+        861,
+        862,
+        863,
+        864,
+        865,
+        866,
+        867,
+        868,
+        869,
+        870,
+        871,
+        872,
+        873,
+        874,
+        875,
+        876,
+        877,
+        878,
+        879,
+        880,
+        881,
+        882,
+        883,
+        884,
+        885,
+        886,
+        887,
+        888,
+        889,
+        890,
+        891,
+        892,
+        893,
+        894,
+        895,
+        896,
+        897,
+        898,
+        899,
+        900,
+        901,
+        902,
+        903,
+        904,
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Using Some Mortal Essence on Greedy Maw has a per-player 30 second cooldown, pushes the shared defense deadline by 15 seconds, consumes the item and conditionally reduces current defense by 2; a player-targeted world-object action/cooldown is outside Encounter v1."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1089,
+        1090,
+        1091,
+        1092,
+        1093,
+        1094,
+        1095,
+        1096,
+        1097,
+        1098,
+        1099,
+        1100,
+        1101,
+        1102,
+        1103
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "GoshnarsCrueltyBuff scales incoming player damage from the shared defense-drain value. Encounter v1 has no damage multiplier sourced dynamically from a counter/KV value."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        107
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The custom 'cruelty transform elemental' ability casts every 7 seconds at 50% chance; its native transformation behavior remains a dedicated Ability/engine gap."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        64
+      ],
+      "status": "mapped",
+      "resolution": "A Greedy Eye owns the direction-bound 'greedy eye beam' creature ability; the beam stays in Creature/Ability authoring rather than being duplicated as an encounter rule.",
+      "destination": "/encounter/participants/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118
+      ],
+      "status": "mapped",
+      "resolution": "SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while quest taint/progress remains in Quest state.",
+      "destination": "/encounter/rules/2"
+    }
+  ],
+  "outcome_evidence": []
+}

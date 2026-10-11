@@ -251,6 +251,8 @@ def expected_files(root, include_registration=False):
     records.extend(authored_records(root))
     from quest_donor_attachment import attach as attach_donor_data
     records = attach_donor_data(root, records)
+    from quest_soul_war_followup import apply as apply_soul_war_followup
+    records, _ = apply_soul_war_followup(root, records)
     files, shards = {}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -329,6 +331,11 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/quest_recipe_refinements.py',
             'tools/content-schema/quest-authoring/quest_recipe_followup.py',
             'tools/content-schema/quest-authoring/samples/recipe-followup/corrections.json',
+            'tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json',
+            'tools/content-schema/quest-authoring/soul_war_reconstruction.py',
+            'tools/content-schema/quest-authoring/quest_soul_war_followup.py',
+            'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json',
+            'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/capture.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/receipt.json',
@@ -438,7 +445,7 @@ def main():
                 differences.append(relative)
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding='utf-8')
+            path.write_bytes(text.encode('utf-8'))
     if differences:
         parser.exit(1, 'Quest tree differences: ' + ', '.join(differences) + '\n')
     if args.source_packet:
@@ -448,7 +455,7 @@ def main():
                 parser.exit(1, 'Quest source packet differs from current inputs\n')
         else:
             args.source_packet.parent.mkdir(parents=True, exist_ok=True)
-            args.source_packet.write_text(packet, encoding='utf-8')
+            args.source_packet.write_bytes(packet.encode('utf-8'))
     print(f'Quest tree: {len(files)-4} shards; check={args.check}; family registries regenerated')
 
 

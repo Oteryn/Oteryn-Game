@@ -1,0 +1,179 @@
+{
+  "encounter": "crystal:encounter/claustrophobic_inferno_raid_3_crystal",
+  "classification": "SOURCE_BACKED_OTERYN_RECONSTRUCTION",
+  "covers": {
+    "ClaustrophobicInfernoRaid": [
+      "canary:creature/brachiodemon",
+      "canary:creature/infernal_demon",
+      "canary:creature/infernal_phantom"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/lib/quests/soul_war.lua",
+      "blob_sha1": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/moveevent-claustrophobic-inferno-raid.lua",
+      "blob_sha1": "39f3e156051d8a7fa0344a0a2a4448b56014f70c"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258
+      ],
+      "status": "mapped",
+      "resolution": "Raid 3 zone, sand-timer tiles and every concrete Brachiodemon/Infernal Demon/Infernal Phantom spawn coordinate are pinned as anchors.",
+      "destination": "/encounter/anchors"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        259,
+        260,
+        261
+      ],
+      "status": "mapped",
+      "resolution": "Crystal summer-update sets spawnTime=20 seconds, surviveTime=120 seconds and timeToKick=5 seconds.",
+      "destination": "/encounter/state/timers"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "status": "mapped",
+      "resolution": "The donor creates six stages (120/20), each spawning all three configured monster groups after a 3 second warning; the core models waves at t=3,23,43,63,83,103 seconds.",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "On reset Crystal removes monsters, waits 5 seconds, refreshes the zone and removes players. Encounter v1 has no delayed players-in-area removal/kick action."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Raid start is a sand-timer MoveEvent with direction filtering and a 10 second post-reset cooldown. This belongs to interaction/world entry ownership, not the encounter core."
+    }
+  ],
+  "outcome_evidence": []
+}
