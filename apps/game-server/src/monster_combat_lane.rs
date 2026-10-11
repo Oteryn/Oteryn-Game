@@ -6800,12 +6800,15 @@ mod native_ability_coverage {
         }
         all
     }
+    /// Known set of authored attacks with no source constructor (`UnsupportedShape`): the exact
+    /// count is pinned. Any new authored attack that is not qualified, or any fix that qualifies
+    /// one of them, changes the histogram and must update this baseline in the same change.
     #[test]
-    #[ignore]
-    fn explore() {
+    fn authored_monster_attacks_have_a_runtime_source_or_are_in_the_pinned_gap_set() {
         let all = load();
         let creatures: Vec<_> = all.iter().filter(|(k, _)| k.0 == "Creature").collect();
         let mut stats: BTreeMap<String, usize> = BTreeMap::new();
+        let mut gaps: Vec<String> = Vec::new();
         for (ck, ce) in creatures {
             let mut seen = BTreeSet::new();
             let mut todo = vec![ck.clone()];
@@ -6854,11 +6857,25 @@ mod native_ability_coverage {
                 } else {
                     SpellSource::from_native(&cref, i, &records, &profiles, [0; 32]).map(|_| ())
                 };
+                if r.is_err() {
+                    gaps.push(format!("{} #{} {} {:?}", cref.key, i, a.ability.key, r));
+                }
                 *stats
                     .entry(format!("{}:{:?}", if melee { "melee" } else { "spell" }, r))
                     .or_default() += 1;
             }
         }
+        gaps.sort();
+        eprintln!("GAPS {}\n{}", gaps.len(), gaps.join("\n"));
         eprintln!("COVERAGE {stats:?}");
+        let expected: BTreeMap<String, usize> = [
+            ("melee:Ok(())", 1689),
+            ("spell:Err(UnsupportedShape)", 116),
+            ("spell:Ok(())", 4198),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_owned(), v))
+        .collect();
+        assert_eq!(stats, expected);
     }
 }
