@@ -75,3 +75,41 @@ ordinary line-wheel steps, held-arrow timing and positive-volume Battle/UI filte
 gates. It uses upstream egui sliders with a bounded Oteryn adapter, not copied QML
 or a dependency fork. Pixel/trackpad wheel equivalence and full native interactive
 comparison remain pending; these changes do not establish audio playback.
+
+## Graphics continuation: scaling and lighting
+
+Offline `MapWindowPane.qml` inspection (SHA-256
+`7163aabd502d60d768e6f0219201a7307216df9e58838cc81118ace62ed927e0`)
+establishes these additional contracts:
+
+- Lines 78–89 floor integral maximum height, then retain a half-native minimum.
+  Oteryn now retains that half-size scene when it fits the real available
+  rectangle; smaller windows still use recovery instead of overlapping the HUD.
+  Rendering, picking, HUD and screenshot cropping use the same viewport.
+- Lines 119–134 request resampling only when scale differs from one. None uses
+  unsmoothed sampling; Antialiasing requests smooth sampling. Smooth Retro requests
+  an intermediate ceil(scale)-multiple texture only when enlarging.
+- Lines 347–374 expose a live, clamped, non-mipmapped scene texture and the
+  intermediate dimensions. This is scene-image resampling, not evidence for
+  enabling geometric MSAA or linearly filtering each sprite's atlas independently.
+  Lines 286–345 select the whole worldmap or its uncached multiplicative lightmap
+  blend as the resampling source; the blend is explicitly layer-enabled so that
+  Smooth Retro also works with lighting. HUD overlays are outside that source.
+  Oteryn AA stays unavailable until that path is implemented
+  and verified; a saved AA selection is not rendering acceptance.
+
+Pinned OTClient `mapview.cpp` lines 498–529 and 743–752 use framebuffer smoothing
+and a fixed 2x Smooth Retro buffer, unlike the original's ceil(scale) intermediate.
+`lightview.cpp` uses a multiplicative per-tile RGB light texture, actual source
+position/intensity/colour and shade-reset boundaries; `mapview.cpp` lines 577–582
+combine minimum ambient intensity with actual map light. These are reusable
+implementation references, not proof that Oteryn's constant ambient overlay is
+equivalent. Light sources, floor shading and environment projections are still
+absent; no light algorithm or server event is fabricated.
+
+The stock Ubuntu Qt Shader Baker 6.4.2 was unpacked privately without installation
+(package SHA-256 `c3822831b75e36b0a0fc23a13f2bda03b64eafcef073ba91371da7dff420fcbc`).
+It rejects all four recovered QSB packages as serialization version 9, despite
+returning process exit zero. No decoded shader or reflection acceptance follows
+from that exit status. A compatible upstream Qt tool is required; do not invent
+a QSB parser or modify the version header to force an old decoder.

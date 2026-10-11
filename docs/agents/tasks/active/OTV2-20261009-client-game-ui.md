@@ -87,15 +87,10 @@ must not be claimed as complete.
 
 ## Acceptance evidence and next actions
 
-Current continuation adds the installed-original slider arrow/key/line-wheel
-semantics through a small adapter over upstream egui, plus the positive group-
-volume gates in Battle/UI Sounds. The repeating-arrow source was read offline:
-350 ms delay followed by 60 ms intervals, click modifiers only on release and
-unmodified repeats. Unsupported audio remains disabled; pixel-wheel/trackpad
-equivalence and native interactive parity are not claimed. Existing strict
-geometry tests caught HUD overflow/height regressions during authoring; repair
-must keep the original geometry gates, not relax them. Fresh local and exact-SHA
-MSVC/DX12 qualification are required before recording this successor's acceptance.
+Slider/volume semantics and private source hashes are in UI-REFERENCE-EXTRACTED.md;
+the following exact-head evidence supersedes the authoring checkpoint. Pixel-wheel,
+native interactive parity and playback remain unqualified. Keep strict geometry
+gates and qualify every new client head independently.
 
 Slider/volume source head `e69413380a2e44aa763b603844fd60fb7d7d6ed8` passed
 Linux tests (194/169/5), strict Clippy, formatting and governance checks including
@@ -112,14 +107,19 @@ remaining source-derived Interface dependencies and real graphics/audio runtime
 capabilities/consumers. Do not repeat completed source inventory or count disabled
 audio as playback. Qualify any new client source head independently.
 
-Installed-original extraction now precedes further guesswork. Independently
-written evidence is in `apps/client/UI-REFERENCE-EXTRACTED.md`: actual 15.33 QML
-contracts, source digests, resource/audio/spell counts and explicit backend gaps.
-Original source, artwork, sounds and account data are not published. The current
-bounded repair corrects FPS editable minimum, delay warning thresholds, Off
-markers and anthem/item-volume child dependencies. It preserves legacy values
-and keeps audio disabled without a real consumer. New native qualification is
-required; earlier exact-head evidence cannot qualify this successor.
+Graphics continuation read the actual MapWindowPane scale/AA handlers and pinned
+OTClient framebuffer/light consumers. Details and source hash are retained in
+UI-REFERENCE-EXTRACTED.md. The bounded repair retains a half-native viewport when
+integral scaling cannot fit 1x, matching the original minimum without HUD overflow.
+Tests must verify each tile's pointer transform at half-size and 125% DPI. Native
+exact-head qualification remains required. AA needs whole-scene resampling, not
+atlas filtering/MSAA; lighting lacks real source/environment projections. Stock
+Qt qsb 6.4.2 rejects QSB serialization v9 (with exit zero): compatible upstream
+decoding remains pending, not a reason to invent a parser or enable controls.
+
+Use installed-original evidence before implementation. Original source, assets
+and account data are never published. UI-REFERENCE-EXTRACTED.md retains the QML
+contracts, source digests, resource counts and backend gaps.
 
 Source-contract repair `993ec2c4a19aab5099e8b82dff9d8a1ece753e75` was published
 through the guarded exact-candidate path. Recovery bundle:

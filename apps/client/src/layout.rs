@@ -15,7 +15,8 @@ pub struct GameViewport {
 impl GameViewport {
     /// Fit using the applied settings, in physical pixels, for both drawing
     /// and pointer picking. Integral scaling counts the atlas's 32-pixel cells,
-    /// not the scene's internal 48-pixel coordinates.
+    /// not the scene's internal 48-pixel coordinates. The reference retains a
+    /// half-size minimum when no whole multiple fits.
     #[must_use]
     pub fn for_settings(
         width: f32,
@@ -33,12 +34,15 @@ impl GameViewport {
         if settings.stored_bool("graphics.graphics.integer_scale") == Some(true) {
             let native_width = (crate::scene::SCENE_COLUMNS * oteryn_client_assets::CELL_PX) as f32;
             let native_height = (crate::scene::SCENE_ROWS * oteryn_client_assets::CELL_PX) as f32;
-            let multiple = (viewport.width / native_width)
-                .min(viewport.height / native_height)
-                .floor();
-            if multiple < 1.0 {
+            let available_scale =
+                (viewport.width / native_width).min(viewport.height / native_height);
+            // MapWindowPane's maximum-height calculation floors whole multiples,
+            // then applies its half-native minimum. Do not let that minimum
+            // overflow Oteryn's actual available scene rectangle.
+            if available_scale < 0.5 {
                 return None;
             }
+            let multiple = available_scale.floor().max(0.5);
             let width = native_width * multiple;
             let height = native_height * multiple;
             viewport.x = (viewport.x + (viewport.width - width) / 2.0).round();
@@ -172,7 +176,7 @@ mod tests {
                     .is_none()
             );
         }
-        assert!(GameViewport::for_settings(400.0, 300.0, 1.0, &settings).is_none());
+        assert!(GameViewport::for_settings(390.0, 300.0, 1.0, &settings).is_none());
         settings.future_preferences.clear();
         assert_eq!(
             GameViewport::for_settings(900.0, 620.0, 1.0, &settings),
@@ -184,6 +188,54 @@ mod tests {
                 settings.action_bar.visible_rows()
             ),
         );
+        Ok(())
+    }
+
+    #[test]
+    fn integral_scaling_retains_the_reference_half_size_minimum() -> Result<(), &'static str> {
+        let mut settings = crate::settings::ClientSettings::default();
+        settings.future_preferences.insert(
+            "graphics.graphics.integer_scale".into(),
+            crate::settings_catalog::FutureValue::Bool(true),
+        );
+        for (width, height, dpi) in [(404.0, 370.0, 1.0), (452.0, 420.0, 1.25)] {
+            let available = GameViewport::fit_with_action_rows(
+                width,
+                height,
+                dpi,
+                settings.show_chat,
+                settings.action_bar.visible_rows(),
+            )
+            .ok_or("available viewport")?;
+            let view = GameViewport::for_settings(width, height, dpi, &settings)
+                .ok_or("half-native viewport")?;
+            assert_eq!((view.width, view.height), (240.0, 176.0));
+            assert_eq!((view.x.fract(), view.y.fract()), (0.0, 0.0));
+            assert!(view.x >= available.x - 0.5 && view.y >= available.y - 0.5);
+            assert!(view.x + view.width <= available.x + available.width + 0.5);
+            assert!(view.y + view.height <= available.y + available.height + 0.5);
+            let tile_px = 16.0;
+            for row in 0..crate::scene::SCENE_ROWS {
+                for column in 0..crate::scene::SCENE_COLUMNS {
+                    let point = view
+                        .scene_point(
+                            f64::from(view.x + (column as f32 + 0.5) * tile_px),
+                            f64::from(view.y + (row as f32 + 0.5) * tile_px),
+                        )
+                        .ok_or("rendered tile remains pickable")?;
+                    assert_eq!(
+                        point,
+                        (
+                            (f64::from(column) + 0.5) * 48.0,
+                            (f64::from(row) + 0.5) * 48.0
+                        )
+                    );
+                }
+            }
+        }
+        // Insufficient height or width must still use the recovery UI.
+        assert!(GameViewport::for_settings(404.0, 359.0, 1.0, &settings).is_none());
+        assert!(GameViewport::for_settings(403.0, 370.0, 1.0, &settings).is_none());
         Ok(())
     }
 
