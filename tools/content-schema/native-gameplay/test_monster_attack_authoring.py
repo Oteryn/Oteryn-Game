@@ -33,6 +33,19 @@ class CommittedAuthoring(unittest.TestCase):
         errors = self.errors(rows=self.rows[1:])
         self.assertTrue(any(e.startswith('attack reference lacks authoring') for e in errors))
 
+    def test_corrupted_archive_pin_fails(self):
+        pin = copy.deepcopy(self.pin)
+        pin['source_archive']['sha256'] = '0' * 64
+        archive = (gen.ROOT / gen.ARCHIVE).read_bytes()
+        self.assertEqual(validator.validate(self.profiles_raw, self.rows_raw, self.pin, archive), [])
+        errors = validator.validate(self.profiles_raw, self.rows_raw, pin, archive)
+        self.assertTrue(any('archive digest' in e for e in errors))
+
+    def test_heal_effects_carry_resolved_magnitudes(self):
+        heals = [e for r in self.rows if r['status'] == 'authored' for e in r['effects'] if e['operation'] == 'heal']
+        self.assertTrue(heals)
+        self.assertTrue(all('minimum' in e and 'maximum' in e for e in heals))
+
     def test_stale_artifact_digest_fails(self):
         errors = self.errors(profiles_raw=self.profiles_raw + b' ')
         self.assertTrue(any('artifact digest' in e for e in errors))

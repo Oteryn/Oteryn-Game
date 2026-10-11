@@ -79,13 +79,13 @@ def melee_skill_maximum(formula):
 def resolve_effect(effect, formulas, schedule):
     """Return (authored effect, None) or (None, reason)."""
     operation = effect['operation']
-    if operation != 'damage':
-        # Non-damage donor effects are carried verbatim (no invented semantics).
+    if operation not in ('damage', 'heal'):
+        # Non-magnitude donor effects are carried verbatim (no invented semantics).
         verbatim = {k: v for k, v in effect.items() if k not in ('identity', 'presentation')}
         return {'donor_effect_key': effect['identity']['key'], **verbatim}, None
     formula = formulas.get(ref_key(effect['formula']))
     if formula is None:
-        return None, 'damage_formula_absent'
+        return None, f'{operation}_formula_absent'
     kind = formula['kind']
     if kind == 'range':
         minimum, maximum = formula['magnitude']['minimum'], formula['magnitude']['maximum']
@@ -103,11 +103,11 @@ def resolve_effect(effect, formulas, schedule):
         minimum = 0
         derivation = 'melee_attack_skill_formula'
     else:
-        return None, f'damage_formula_kind_unsupported:{kind}'
+        return None, f'{operation}_formula_kind_unsupported:{kind}'
     if type(minimum) is not int or type(maximum) is not int or not 0 <= minimum <= maximum <= 0xFFFFFFFF:
-        return None, 'damage_range_invalid'
+        return None, f'{operation}_range_invalid'
     result = {
-        'donor_effect_key': effect['identity']['key'], 'operation': 'damage',
+        'donor_effect_key': effect['identity']['key'], 'operation': operation,
         'damage_type': effect['damage_type'], 'minimum': minimum, 'maximum': maximum,
         'derivation': derivation, 'formula_kind': kind,
         'mitigated_by': effect.get('mitigated_by', []),

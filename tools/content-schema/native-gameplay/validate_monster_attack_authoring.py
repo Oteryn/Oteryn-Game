@@ -50,11 +50,11 @@ def check_authored(row, errors, where):
     if not row['effects']:
         errors.append(f'{where}: authored record has no effects')
     for effect in row['effects']:
-        if effect.get('operation') == 'damage':
+        if effect.get('operation') in ('damage', 'heal'):
             low, high = effect.get('minimum'), effect.get('maximum')
             if (type(low) is not int or type(high) is not int or not 0 <= low <= high <= 0xFFFFFFFF
                     or not effect.get('damage_type') or not effect.get('derivation')):
-                errors.append(f'{where}: damage effect lacks element or a valid minimum/maximum')
+                errors.append(f'{where}: damage or heal effect lacks element or a valid minimum/maximum')
     evidence = row['evidence']
     if (evidence.get('source_repository') not in REPOSITORIES or not is_hex(evidence.get('source_revision'), 40)
             or not evidence.get('source_path') or str(evidence['source_path']).startswith('/')
@@ -64,7 +64,7 @@ def check_authored(row, errors, where):
         errors.append(f'{where}: invalid donor evidence')
 
 
-def validate(profiles_raw: bytes, rows_raw: bytes, pin: dict) -> list[str]:
+def validate(profiles_raw: bytes, rows_raw: bytes, pin: dict, archive_raw: bytes | None = None) -> list[str]:
     errors = []
     profiles = json.loads(profiles_raw)
     if pin.get('schema') != gen.PIN_SCHEMA:
@@ -73,6 +73,8 @@ def validate(profiles_raw: bytes, rows_raw: bytes, pin: dict) -> list[str]:
         errors.append('pin does not match the creature profile artifact digest; regenerate the authoring')
     if pin.get('records', {}).get('sha256') != gen.sha256(rows_raw):
         errors.append('pin does not match the authoring records digest')
+    if archive_raw is not None and pin.get('source_archive', {}).get('sha256') != gen.sha256(archive_raw):
+        errors.append('pin does not match the prepared population archive digest')
     rows = [json.loads(line) for line in rows_raw.decode().splitlines()]
     keys = [r['ability']['key'] for r in rows]
     if len(set(keys)) != len(keys) or keys != sorted(keys):
@@ -118,7 +120,7 @@ def validate(profiles_raw: bytes, rows_raw: bytes, pin: dict) -> list[str]:
 
 def validate_repository(root: Path = gen.ROOT) -> list[str]:
     return validate((root / gen.PROFILES).read_bytes(), (root / gen.RECORDS).read_bytes(),
-                    json.loads((root / gen.PIN).read_bytes()))
+                    json.loads((root / gen.PIN).read_bytes()), (root / gen.ARCHIVE).read_bytes())
 
 
 def main():
