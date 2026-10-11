@@ -18,7 +18,6 @@ updated_at: 2026-10-11
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
-  - apps/game-server/src/durability/spell_item_transaction.rs
   - docs/agents/tasks/active/OTERYN-20261011-creature-move-1.md
   - docs/agents/tasks/archive/OTERYN-20261011-creature-move-1.md
 public_contracts: []
@@ -88,9 +87,8 @@ blocker: null
 next_action: independent review
 ```
 
-## Review follow-up: durable ground read (Codex P1s on #1977)
+## Review follow-up: durable ground items (Codex P1s on #1977)
 
-- `owned_paths` widened (CP decision) to `durability/spell_item_transaction.rs` for one additive `pub(crate)` batch reader, `read_tiles_batch_for_scope`: `spatial_position = ANY($3)`, no `FOR UPDATE`, same fail-closed checks as the per-cell read. Its SQL is derived from `TILE_ROWS` and a unit test pins that derivation. Existing signatures and callers are unchanged.
-- Creature steps refuse a destination holding a durable ground item with `blocks_movement`. The read runs before the Channel guards are taken, once per pass, for the cardinal neighbours of the monsters, and applies only to the scope generation it was read in. An unread cell is refused.
-- RESIDUAL: the spell lane is held for exactly one SQL round trip (the scope assertion requires the permit); it is never held across the think pass. No live-DB test compares batch to per-cell results (no Postgres in the cloud runner); the equivalence is by construction.
-- Follow-up CREATURE-MOVE-1c: the Movement-owner in-memory overlay that removes the SQL read from the creature pass.
+- LIMIT: a creature step does not consult durable ground items or fields (Magic Wall, Wild Growth). The AI pass holds no SQL, no spell-lane permit and no durable-item snapshot (player input never waits for AI work, CREATURE-AI-0 decision section 7). Steps use only what the Movement owner holds in memory: terrain, doors, protection-zone and floor-change tiles.
+- Three designs that read the SQL ground rows from the AI pass (in-lock read, lane-held read, batched read) were each rejected in review: they hold the lane across SQL, and an advisory pre-pass snapshot can be stale at the step commit. They were removed; `durability/spell_item_transaction.rs` is unchanged from main and is not an owned path.
+- Follow-up CREATURE-MOVE-1c: an in-memory blocking overlay owned by the Movement owner, revalidated atomically at the step commit.

@@ -17,16 +17,12 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
-use std::collections::BTreeMap;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
         let now = self.owner_now();
-        // The ground read takes and releases the spell lane itself; the lane is never held
-        // across the think pass below (player input never waits for AI work).
-        let (ground_generation, ground) = self.snapshot_creature_step_ground(now.get()).await;
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -155,21 +151,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order: runtime, spell states, attack, then the door runtime (read only).
         let doors = self.door.lock().await.blocking_cells().clone();
         let cells = room.movement_cells();
-        // A step is also refused onto a cell holding a durable ground item that blocks
-        // movement. The rows were read before the Channel guards were taken; they only apply to
-        // the scope generation they were read in, and a cell not read is refused.
-        let ground = if ground_generation == Some(runtime.binding().scope_generation().get()) {
-            ground
-        } else {
-            BTreeMap::new()
-        };
         let _ = melee_owner.creature_ai.run_due_thinks(
             &mut runtime,
             now.get(),
             &GameplayDecisionRoot::from_bytes(content.source_digest()),
             &revisions,
             &candidates,
-            |destination| creature_cell_admissible(cells, &doors, destination, &ground, true),
+            |destination| creature_cell_admissible(cells, &doors, destination),
         );
         // A creature that stepped swings from, and is perceived at, its new cell.
         for (actor, position, _) in &mut qualified {
@@ -338,24 +326,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 /// protection-zone nor a floor-change tile. A creature never opens a door and never changes
 /// floors by a step. The check reads only; the step is committed by the Channel owner.
 ///
-/// `ground` maps a read cell to whether a current durable ground item there blocks movement.
-/// With `require_ground` a cell absent from `ground` (not read) is refused; without it the check
-/// is the static one used to choose the cells to read.
+/// LIMIT (CREATURE-MOVE-1c): durable ground items and fields (Magic Wall, Wild Growth) are not
+/// consulted here. No SQL, spell lane or durable-item snapshot enters the AI pass; the step uses
+/// only what the Movement owner holds in memory. CREATURE-MOVE-1c adds an in-memory blocking
+/// overlay owned by the Movement owner, revalidated atomically at the step commit.
 fn creature_cell_admissible(
     cells: &crate::content::NativeEntryMovementCells,
     doors: &std::collections::BTreeSet<LogicalCell>,
     cell: MovementLocalPosition,
-    ground: &BTreeMap<(i32, i32, i16), bool>,
-    require_ground: bool,
 ) -> bool {
     let target = LogicalCell {
         x: cell.x,
         y: cell.y,
         z: i32::from(cell.floor),
-    };
-    let ground_blocked = match ground.get(&(cell.x, cell.y, cell.floor)) {
-        Some(blocked) => *blocked,
-        None => require_ground,
     };
     cell_open(
         cells.index().lookup(cells.scope(), target) == Ok(crate::content::CollisionClass::Walkable),
@@ -365,163 +348,17 @@ fn creature_cell_admissible(
             .lookup(cells.scope(), target)
             .ok()
             .map(|tile| (tile.flags().protection_zone, tile.flags().floor_change)),
-        ground_blocked,
     )
 }
 
 /// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
 /// `None` when the tile facts are unknown, which refuses (fail closed, like the think pass).
-/// `ground_blocked` is a current durable ground item with `blocks_movement` (or an unread cell).
-const fn cell_open(
-    walkable: bool,
-    door: bool,
-    tile: Option<(bool, bool)>,
-    ground_blocked: bool,
-) -> bool {
+const fn cell_open(walkable: bool, door: bool, tile: Option<(bool, bool)>) -> bool {
     match tile {
         Some((protection_zone, floor_change)) => {
-            walkable && !door && !protection_zone && !floor_change && !ground_blocked
+            walkable && !door && !protection_zone && !floor_change
         }
         None => false,
-    }
-}
-
-impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Snapshots the cardinal neighbours of the monsters under brief Channel guards, releases
-    /// them, then reads the actual current SQL ground rows of those cells in one scope-owner
-    /// transaction and maps each cell to whether any of its items blocks movement. No Channel
-    /// guard is held across the SQL. A cell is omitted when it could not be read, and the map is
-    /// empty when the pass is not due or the transaction fails. The generation is returned so
-    /// the caller applies the rows only to the scope generation they were read in.
-    async fn snapshot_creature_step_ground(
-        &self,
-        now: u64,
-    ) -> (Option<u64>, BTreeMap<(i32, i32, i16), bool>) {
-        use crate::spell::world_items_execution::SpellGroundTarget;
-        let none = (None, BTreeMap::new());
-        let (Some(room), Some(content)) = (
-            self.qualified_room,
-            self.active_generation
-                .and_then(|active| active.native_gameplay()),
-        ) else {
-            return none;
-        };
-        // Lock order (§1.2): the lane before any Channel guard. It is held only for this
-        // snapshot and the one SQL read, and dropped when this function returns; without it
-        // the steps are refused (fail closed).
-        let Some(permit) = self.spell_lane_permit().await else {
-            return none;
-        };
-        let permit = &permit;
-        let (scope, generation, targets) = {
-            let runtime = self.runtime.lock().await;
-            if self.spell_states.lock().await.next_monster_ai_pass_us > now
-                || runtime.owner_fence().is_err()
-                || content.source_digest() != runtime.content_pin().server_artifact_digest()
-            {
-                return none;
-            }
-            let Ok(census) = runtime.positioned_melee_census() else {
-                return none;
-            };
-            if census.len() > ResourceLimit::ActiveActors.maximum() {
-                return none;
-            }
-            let doors = self.door.lock().await.blocking_cells().clone();
-            let cells = room.movement_cells();
-            let mut neighbours = std::collections::BTreeSet::new();
-            for (_, position, session) in &census {
-                if session.is_some() {
-                    continue;
-                }
-                let p = position.position();
-                for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-                    let (Some(x), Some(y)) = (p.x.checked_add(dx), p.y.checked_add(dy)) else {
-                        continue;
-                    };
-                    let cell = MovementLocalPosition {
-                        x,
-                        y,
-                        floor: p.floor,
-                    };
-                    if creature_cell_admissible(cells, &doors, cell, &BTreeMap::new(), false) {
-                        neighbours.insert((cell.x, cell.y, cell.floor));
-                    }
-                }
-            }
-            let targets = neighbours
-                .iter()
-                .filter_map(|&(x, y, floor)| {
-                    SpellGroundTarget::for_native_tile_read(
-                        room,
-                        &runtime,
-                        MovementLocalPosition { x, y, floor },
-                    )
-                    .ok()
-                    .map(|target| ((x, y, floor), target))
-                })
-                .collect::<Vec<_>>();
-            (
-                crate::foundation::RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                ),
-                runtime.binding().scope_generation().get(),
-                targets,
-            )
-        };
-        if targets.is_empty() {
-            return none;
-        }
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return none;
-        };
-        let mut context = (permit, self, targets);
-        let result = pass
-            .run_with_context(&mut context, move |holder, deadline, ctx| {
-                Box::pin(async move {
-                    let (permit, owner, targets) = ctx;
-                    let unavailable = |_| crate::durability::DurabilityError::Unavailable;
-                    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-                        holder, deadline,
-                    )
-                    .await?;
-                    let authority =
-                        crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
-                            &mut tx,
-                            permit,
-                            owner.root,
-                            owner.character,
-                            owner.holder,
-                            scope,
-                            generation,
-                        )
-                        .await
-                        .map_err(unavailable)?;
-                    // One round trip for every cell; an unreadable batch leaves every cell
-                    // unread, which refuses the steps.
-                    let mut blocked = BTreeMap::new();
-                    let only_targets = targets.iter().map(|(_, t)| t.clone()).collect::<Vec<_>>();
-                    if let Ok(read) =
-                        crate::durability::spell_item_transaction::read_tiles_batch_for_scope(
-                            &mut tx,
-                            &authority,
-                            &only_targets,
-                        )
-                        .await
-                    {
-                        for ((key, _), tile) in targets.iter().zip(read) {
-                            blocked.insert(*key, tile.items.iter().any(|i| i.blocks_movement));
-                        }
-                    }
-                    tx.rollback()
-                        .await
-                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                    Ok(blocked)
-                })
-            })
-            .await;
-        (Some(generation), result.unwrap_or_default())
     }
 }
 
@@ -742,28 +579,15 @@ mod tests {
     /// CREATURE-MOVE-1: a creature steps only onto an open walkable ordinary cell.
     #[test]
     fn creature_steps_are_admitted_only_onto_open_walkable_cells() {
-        assert!(cell_open(true, false, Some((false, false)), false));
+        assert!(cell_open(true, false, Some((false, false))));
+        assert!(!cell_open(false, false, Some((false, false))), "blocked");
+        assert!(!cell_open(true, true, Some((false, false))), "closed door");
         assert!(
-            !cell_open(false, false, Some((false, false)), false),
-            "blocked"
-        );
-        assert!(
-            !cell_open(true, true, Some((false, false)), false),
-            "closed door"
-        );
-        assert!(
-            !cell_open(true, false, Some((true, false)), false),
+            !cell_open(true, false, Some((true, false))),
             "protection zone"
         );
-        assert!(
-            !cell_open(true, false, Some((false, true)), false),
-            "floor change"
-        );
-        assert!(
-            !cell_open(true, false, Some((false, false)), true),
-            "a durable ground item that blocks movement (Magic Wall, Wild Growth) or an unread cell"
-        );
-        assert!(!cell_open(true, false, None, false), "unknown tile facts");
+        assert!(!cell_open(true, false, Some((false, true))), "floor change");
+        assert!(!cell_open(true, false, None), "unknown tile facts");
     }
 
     /// CREATURE-MOVE-1: a cell outside the qualified room is refused whatever the doors say.
@@ -782,9 +606,7 @@ mod tests {
         assert!(!creature_cell_admissible(
             room.movement_cells(),
             &std::collections::BTreeSet::new(),
-            outside,
-            &BTreeMap::new(),
-            false
+            outside
         ));
     }
 
