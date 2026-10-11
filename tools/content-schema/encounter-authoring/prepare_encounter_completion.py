@@ -264,13 +264,13 @@ def prepare(canary, baseline_stage, baseline_index, output, crystal=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--canary', type=Path, required=True)
+    parser.add_argument('--reference-engine', type=Path, required=True)
     parser.add_argument('--crystal', type=Path, help='Pinned corroborating donor; default sibling crystal checkout')
     parser.add_argument('--stage', type=Path, required=True)
     parser.add_argument('--index', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    result = prepare(args.canary, args.stage, args.index, args.output, args.crystal)
+    result = prepare(args.reference_engine, args.stage, args.index, args.output, args.crystal)
     print(json.dumps({'actors': len(result['actors']), 'encounters': len(result['encounters']),
                       'schema_valid_actors': sum(r['schema_valid'] for r in result['actors'])}))
 

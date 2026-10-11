@@ -6,7 +6,7 @@ and lists every client creature Canary lacks, with the CrystalServer file that h
 crystal_batch.py reads. --check compares the names and directories with the committed sample; the family, kind and
 wiki fields of the sample are a preparation heuristic and are not recomputed here.
 
-Usage: python wiki_only_candidates.py --canary <checkout> --crystal <checkout> [--check]
+Usage: python wiki_only_candidates.py --reference-engine <checkout> --crystal <checkout> [--check]
 """
 import argparse
 import hashlib
@@ -48,7 +48,7 @@ def monster_names(checkout, revision, prefix):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--canary', required=True)
+    parser.add_argument('--reference-engine', required=True)
     parser.add_argument('--crystal', required=True)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
@@ -56,7 +56,7 @@ def main():
     for path in sorted(STATICDATA.glob('creatures-*.json')):
         digest.update(path.read_bytes())
         client += [record['name'].lower() for record in json.loads(path.read_text(encoding='utf-8'))['records']]
-    canary = monster_names(args.canary, cb.REVISION, cb.MONSTER_DIR)
+    canary = monster_names(args.reference_engine, cb.REVISION, cb.MONSTER_DIR)
     crystal = monster_names(args.crystal, crystal_batch.REVISION, 'data-global/monster')
     rows = []
     for name in sorted(set(client)):

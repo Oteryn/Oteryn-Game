@@ -961,9 +961,9 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--canary-bundles', type=Path, required=True)
+    parser.add_argument('--reference-engine-bundles', type=Path, required=True)
     parser.add_argument('--crystal-bundles', type=Path, required=True)
-    parser.add_argument('--canary-reference-bundles', type=Path, required=True,
+    parser.add_argument('--reference-engine-reference-bundles', type=Path, required=True,
                         help='reference-only convert.py output that reproduces the committed Canary census')
     parser.add_argument('--crystal-reference-bundles', type=Path, required=True,
                         help='reference-only convert.py output that reproduces the committed Crystal census')
@@ -987,7 +987,7 @@ def main() -> int:
     transcripts = TranscriptIndex(args.transcripts) if args.transcripts is not None else None
     report = json.loads(CANDIDATES.read_text())
     try:
-        packet = stage(report, args.canary_bundles, args.crystal_bundles, args.canary_reference_bundles,
+        packet = stage(report, args.reference_engine_bundles, args.crystal_bundles, args.reference_engine_reference_bundles,
                        args.crystal_reference_bundles, transcripts, args.transcripts_revision,
                        args.crystal_supplement_bundles, args.crystal_supplement_reference_bundles)
     except StageError as error:

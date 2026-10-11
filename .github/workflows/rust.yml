@@ -155,7 +155,8 @@ jobs:
     needs: lanes
     if: ${{ always() && !cancelled() && (github.event_name != 'push' || needs.lanes.result != 'success' || needs.lanes.outputs.rust != 'false' || needs.lanes.outputs.windows != 'false') }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # A cold full-workspace qualification must finish before publishing its cache.
+    timeout-minutes: 60
     steps:
       - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -189,27 +190,6 @@ jobs:
       - name: Build workspace
         run: cargo +1.95.0 build --locked --workspace --all-targets
 
-      - name: Trim incremental cache and mark its source commit
-        if: github.ref == 'refs/heads/main' && github.ref_protected
-        shell: bash
-        run: |
-          set -euo pipefail
-          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
-          find target -type d -name incremental -prune -exec rm -rf -- {} +
-          git rev-parse HEAD > target/.oteryn-cache-source-sha
-          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Save trimmed cache from protected main after a successful build
-        if: github.ref == 'refs/heads/main' && github.ref_protected
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-
       - name: Strict Clippy
         run: cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
 
@@ -221,6 +201,29 @@ jobs:
 
       - name: Smoke native game-server bootstrap
         run: cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
+
+      # PR, Merge Queue and PostgreSQL consumers share this protected-main cache.
+      # Capture Clippy/test/default-feature artifacts too, then trim incrementals.
+      - name: Trim incremental cache and mark its source commit
+        if: github.ref == 'refs/heads/main' && github.ref_protected
+        shell: bash
+        run: |
+          set -euo pipefail
+          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
+          find target -type d -name incremental -prune -exec rm -rf -- {} +
+          git rev-parse HEAD > target/.oteryn-cache-source-sha
+          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Save trimmed cache from protected main after successful qualification
+        if: github.ref == 'refs/heads/main' && github.ref_protected
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
 
   durability-postgres:
     name: Rust / Durability PostgreSQL harness
