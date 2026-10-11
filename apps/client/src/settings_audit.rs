@@ -967,10 +967,24 @@ fn output_has_visible_text(output: &egui::FullOutput, needle: &str, viewport: eg
     // validation, but never expand the shape's production clip rectangle.
     let tolerated_viewport = viewport.expand(GEOMETRY_TOLERANCE);
     output.shapes.iter().any(|clipped| {
+        // Match egui-wgpu's physical-pixel scissor rounding. At 125% DPI a
+        // logical clip edge at 224.2 is actually painted from 224.0; checking
+        // the unrounded edge incorrectly rejects a fully visible glyph.
+        let scale = output.pixels_per_point;
+        let physical_clip = egui::Rect::from_min_max(
+            egui::pos2(
+                (clipped.clip_rect.min.x * scale).round().max(0.0) / scale,
+                (clipped.clip_rect.min.y * scale).round().max(0.0) / scale,
+            ),
+            egui::pos2(
+                (clipped.clip_rect.max.x * scale).round().max(0.0) / scale,
+                (clipped.clip_rect.max.y * scale).round().max(0.0) / scale,
+            ),
+        );
         shape_has_text(
             &clipped.shape,
             needle,
-            clipped.clip_rect.intersect(tolerated_viewport),
+            physical_clip.intersect(tolerated_viewport),
         )
     })
 }
@@ -1564,6 +1578,27 @@ mod tests {
             ),
         ));
         output.shapes[shape_index].clip_rect.min.x = bounds.left() + GEOMETRY_TOLERANCE / 2.0;
+        assert!(!output_has_visible_text(
+            &output,
+            "fully-visible-marker",
+            egui::Rect::from_min_size(egui::Pos2::ZERO, size),
+        ));
+        // Reproduce the native 125%-DPI page-9 clip edge: the renderer
+        // rounds the scissor to the glyph boundary, so no pixel is lost.
+        output.pixels_per_point = 1.25;
+        let aligned_left =
+            (bounds.left() * output.pixels_per_point).floor() / output.pixels_per_point;
+        output.shapes[shape_index]
+            .shape
+            .translate(egui::vec2(aligned_left - bounds.left(), 0.0));
+        output.shapes[shape_index].clip_rect.min.x = aligned_left + 0.2;
+        assert!(output_has_visible_text(
+            &output,
+            "fully-visible-marker",
+            egui::Rect::from_min_size(egui::Pos2::ZERO, size),
+        ));
+        // A whole physical pixel clipped from the glyph still fails closed.
+        output.shapes[shape_index].clip_rect.min.x = aligned_left + 0.8;
         assert!(!output_has_visible_text(
             &output,
             "fully-visible-marker",
