@@ -30,6 +30,7 @@ owned_paths:
   - docs/agents/BUILD_TEST_MATRIX.md
   - docs/architecture/CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md
   - apps/client/installer/ci-installer.ps1
+  - apps/game-server/tests/support/postgres_target_aggregation.rs
   - docs/agents/tasks/archive/OTV2-20261011-game-ci-option-a.md
 public_contracts: [CLIENT-INSTALLER-0]
 depends_on: [1997, 1990, 2000]
@@ -134,3 +135,28 @@ review, integrate the pin through protected Merge Queue, refresh the source audi
 and integrate the source. Close out only after the real MQ aggregate (including
 Windows installer lifecycle) and protected-main readback. No #1990 branch or
 queue mutation belongs to this task.
+
+## Exact-MQ repair of PostgreSQL coverage discovery
+
+The first #2001 real MQ attempt, run 38183816141 on the composed candidate
+1b6279951d1dc29b55f98b8f91dcd9ad3d627e57, exposed a stale PG-COVERAGE-1
+workflow reference in `tests/support/postgres_target_aggregation.rs`. The
+Linux integration-rest leg ran 1,384 tests: 1,383 passed and this guard failed
+because it still discovered executed PG targets in the now compile-only
+`rust.yml`. The Windows installer lifecycle passed in the same MQ attempt.
+
+The repair changes only that guard's workflow source, explanatory comment and
+failure diagnostic to `merge-group-gate.yml`. Required aggregates, wrapper
+rules and checks that every case is executed remain intact; `--no-run` on
+protected main does not count as execution. A whole apps/crates Rust scan
+found no other `rust.yml` test-discovery references. The failed frozen
+candidate returns to AUTHORING after its actual queue run becomes terminal;
+the repaired remote head is then frozen, validated and independently reviewed
+before a new native MQ submission. The workflow approval blobs remain 55/d7.
+
+Focused native Rust qualification used the upstream rustc 1.85.1 and standard
+library release archives, each checked against its published SHA256. The
+original guard reproduced the exact MQ failure (RED), the repaired guard
+checked the real frozen repository's PostgreSQL cases (GREEN), and mutations
+removing the mandatory aggregate or adding an unexecuted standalone case
+both failed as required. These local checks do not replace the new full MQ run.
