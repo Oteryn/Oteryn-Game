@@ -104,6 +104,10 @@ def test_routing_matrix(module):
     assert result["rust"] is True and result["windows"] is True, result
     assert result["surface"] == "client", result
 
+    for path in ("apps/client/installer/ci-installer.ps1", "apps/client/installer/oteryn-client.iss"):
+        result = classify(module, [path])
+        assert result["rust"] is True and result["windows"] is True, (path, result)
+
     result = classify(module, [foundation])
     assert result["rust"] is True and result["windows"] is True, result
 

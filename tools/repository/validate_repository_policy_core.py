@@ -49,7 +49,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a38
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "a9e9fcb9e64b8f8f907f783974d6af17b9673c8b"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "22e7688cce7a19ed48d27ac1bf44bbeab8537fd0"
 EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -554,6 +554,14 @@ def main() -> int:
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
                 "$ErrorActionPreference = 'Stop'",
                 "$PSNativeCommandUseErrorActionPreference = $true",
+                "TARGET_SHA: ${{ github.event.merge_group.head_sha }}",
+                '"OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV',
+                "INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
+                "Inno Setup download SHA-256 mismatch",
+                "Inno Setup install failed with exit code",
+                r".\apps\client\installer\ci-installer.ps1",
+                "-GameCommit $env:TARGET_SHA",
+                "          if-no-files-found: error",
                 "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
                 "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",

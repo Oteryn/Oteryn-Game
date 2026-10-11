@@ -18,6 +18,7 @@ updated_at: 2026-10-11
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/merge-gate.yml
+  - .github/workflows/merge-group-gate.yml
   - .github/workflows/rust.yml
   - tools/repository/validate_repository_policy_core.py
   - tools/repository/validate_pr_gate_pg_sim.py
@@ -28,17 +29,18 @@ owned_paths:
   - docs/repository/GITHUB_GOVERNANCE.md
   - docs/agents/tasks/archive/OTV2-20261011-game-ci-option-a.md
 public_contracts: []
-depends_on: [1990, 1997]
+depends_on: [1997]
 blocks: []
 external_repositories: []
 ```
 
 ## Outcome
 
-Implementation is prepared in draft #1998. Hosted qualification, the required
-independent deep review and protected integration are pending. Archive placement
-follows the final-authoring convention; this record reaches main only if #1998
-merges. No merge/enqueue, protection or live-environment mutation was performed.
+Implementation is prepared in #1998. The owner explicitly instructed this task
+to execute review and protected integration. Hosted qualification, independent
+review of the repaired frozen heads and protected integration remain pending.
+Archive placement follows the final-authoring convention; this record reaches
+main only if #1998 merges. Queue acceptance is not terminal integration proof.
 
 The owner selected option A: fast PR checks and full composed-candidate tests in
 Merge Queue. Six full PR jobs and `full-ci` selection are removed. Exact scope,
@@ -53,28 +55,42 @@ The namespace remains readable by the surviving PR and MQ consumers; writes
 remain fenced to protected main. Compilation can still take substantial time.
 Cache contents never replace test-result evidence on the exact MQ candidate.
 
-MQ workflow bytes are unchanged by this task. #1990 owns its sharding/deduplication
-change; serialize integration and reconcile any policy/test-file overlap after
-that PR lands. Dedicated content/interop/scale workflows keep accepted coverage.
-Migrating their unique checks requires a separate mapping into MQ; no global
-claim that every specialized workflow is fast is made.
+Independent review on the original #1998 head found that its removed Windows
+PR job was the sole installer caller (review comment 4243099652). The repair
+moves the existing release-identity, hash-verified Inno Setup, unsigned installer
+lifecycle and artifact steps into the exact-candidate MQ Windows job. Identity
+is derived from `merge_group.head_sha` before the release build. The unchanged
+installer script retains installation, reinstall, concurrency and uninstall
+checks. Routing regression and policy mutation checks protect that coverage.
+
+The existing MQ Linux/PostgreSQL qualification remains intact. #1990 is not a
+dependency: its independent optimization has unresolved review findings. Any
+later integration of that PR must reconcile its MQ/policy changes with this
+accepted installer coverage. Dedicated content/interop/scale workflows retain
+their existing coverage; no global claim that every specialized workflow is fast
+is made.
 
 ## Protected approval and review packet
 
-Draft #1997 changes only the audit's approved PR-gate blob from
+#1997 separately rotates the audit's approved PR-gate blob from
 `f2a6a873901c1aa4ae674cdf5d4619427cd25e33` to
-`55bc76801a86ec2104b280b09ce39d7ea4be6d45`. No audit logic or MQ pin is changed.
-That separate rotation must merge before #1998 can satisfy protected-base audit.
-The audit intentionally rejects modifications to itself; #1997 therefore needs
-the existing explicit owner-authorized rotation procedure and independent deep
-review. Its implementation head is `3c1b811fc896a29f023edc21a2822888d5266792`.
+`55bc76801a86ec2104b280b09ce39d7ea4be6d45`, and its MQ approval from the
+unintegrated #1990 preapproval `cb48993d2f1f2aed34a472e66437e82b91f5d2c0`
+to `22e7688cce7a19ed48d27ac1bf44bbeab8537fd0` (current main MQ plus installer migration).
+No audit logic or protection rule changes. This rotation must merge before
+#1998 can satisfy the protected-base audit. The audit intentionally rejects
+self-modification; #1997 follows the existing explicit owner-authorized rotation
+procedure with independent deep review and the normal exact-candidate game-gate
+and protected Merge Queue. Owner authorization and exact frozen heads are
+recorded on coordination Issue #1622.
 
-The active programme control plane owns review dispatch. This task supplies the
-review packet rather than sending a competing paid-review trigger. Review both
-draft PRs on their live frozen heads after deterministic checks: preservation of
-exact-candidate MQ coverage, full-ci retirement, metadata cancellation/live fences,
-`--no-run` semantics, protected-main cache provenance and narrowed PG/SIM caller.
-No review result, hosted speedup or terminal integration is claimed.
+Both candidates return to AUTHORING for this material repair, then freeze their
+new published heads and rerun qualification. Prior review evidence applies only
+to its original heads; the repaired heads require fresh independent review.
+Automatic GitHub Codex review is used without duplicate paid-review triggers.
+Review preservation of exact-candidate coverage (including installer lifecycle),
+full-ci retirement, metadata cancellation/live fences, `--no-run` semantics,
+protected-main cache provenance and the narrowed PG/SIM caller.
 
 ## Validation
 
@@ -83,7 +99,7 @@ No review result, hosted speedup or terminal integration is claimed.
 - `PATH=/tmp/oteryn-ci-pwsh:$PATH python tools/repository/test_validate_pr_gate_pg_sim.py`: pass; seven placement tests plus existing MQ PG/Windows, PR routing and content-routing regressions
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: OK, 60 tests
-- `/tmp/game-ci-actionlint/actionlint -shellcheck= -pyflakes= .github/workflows/merge-gate.yml .github/workflows/rust.yml`: pass
+- `/tmp/game-ci-actionlint/actionlint -shellcheck= -pyflakes= .github/workflows/merge-gate.yml .github/workflows/merge-group-gate.yml .github/workflows/rust.yml`: pass
 - `git diff --check`: pass
 
 PowerShell 7.6.6's release archive checksum was verified against its published
@@ -92,12 +108,11 @@ Full Rust/Windows/integration execution belongs to repository CI.
 
 Final remote commit identity cannot be embedded in itself. Resolve the frozen
 candidate from #1998 metadata; rerun deterministic checks on that exact head.
-Rollback is a reviewed reversal of #1998 and its PR-gate approval pin.
+Rollback is a reviewed reversal of #1998 and both approval pins in #1997.
 
 ## Next action
 
-Control plane consumes the exact-head review packets, serializes #1990 and the
-approved-blob rotation, and qualifies #1998 through protected Merge Queue. Owner
-authorization for the concrete rotation must be recorded by the governing
-control-plane procedure. Both PRs remain drafts; integration is not authorized
-by green local checks alone.
+Qualify both repaired frozen heads, complete independent review, integrate #1997
+through the protected Merge Queue, then refresh the protected-base audit and
+integrate #1998. Close out only with the real merge-group aggregate and protected
+main readback. No #1990 mutation or queue submission belongs to this task.
