@@ -54,7 +54,7 @@ jobs:
               print(f"{name}_revision={source['revision']}")
           PY
 
-      - name: Check out the pinned Canary source
+      - name: Check out the pinned reference-engine source (B)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.pins.outputs.canary_repository }}
@@ -123,7 +123,7 @@ jobs:
 
   conversion:
     # The committed census, readiness report, verification report and starter bundles must be exactly what
-    # the tools produce from the pinned Canary and Crystal commits (SOURCES in convert_spells.py).
+    # the tools produce from the pinned reference-engine commits (SOURCES in convert_spells.py).
     name: Spell authoring / conversion reproduces committed outputs
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -157,7 +157,7 @@ jobs:
               print(f"{name}_revision={source['revision']}")
           PY
 
-      - name: Check out the pinned Canary source
+      - name: Check out the pinned reference-engine source (B)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.pins.outputs.canary_repository }}
