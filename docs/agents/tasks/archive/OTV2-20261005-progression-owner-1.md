@@ -14,7 +14,7 @@ head_sha: "exact frozen head in the FREEZE report on the PR"
 final_head_sha: "exact frozen head in the FREEZE report on the PR"
 owner: claude-code-session-01Cdzo5t7PGTD7HXJQsrUXGx
 created_at: 2026-10-08
-updated_at: 2026-10-10
+updated_at: 2026-10-11
 owned_paths:
   - apps/game-server/src/content/activation.rs
   - apps/game-server/src/combat/death_reward.rs
@@ -51,6 +51,9 @@ coordination #1622, CP decisions D607 and D968.
   binding (table width `CHARACTER_EXPERIENCE_TABLE_LEVELS` on both paths).
 - A refused session that holds a runtime actor is held at most `interval * missed_limit`, then
   closed with no frame (`hold_refused` in `connection.rs`; no dispatch arm touched).
+- The futures that hold a policy by value across awaits (the durable kill settle, the death
+  commit and the admission binding step) are pinned on the heap, so the admitted-session
+  futures stay within the seam's 8 MiB stack (`serve_accepted` 758 KB inline, 136 KB boxed).
 
 ## Excluded scope
 

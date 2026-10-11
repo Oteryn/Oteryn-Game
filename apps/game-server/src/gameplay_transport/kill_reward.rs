@@ -1001,6 +1001,20 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        Box::pin(self.settle_durably(entry, inflight_before)).await
+    }
+}
+
+impl DurableKillSettle<'_, '_, '_, '_> {
+    /// The durable settle of one entry. Its future holds the principal's progression binding,
+    /// whose policy carries the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table by
+    /// value, across the reward writes, so [`KillSettle::settle`] keeps it on the heap: inline,
+    /// it would grow every future that drains kills by several copies of that table.
+    async fn settle_durably(
+        &self,
+        entry: &PendingKillSettlement,
+        inflight_before: usize,
+    ) -> SettleReport {
         let admission = self.admission;
         // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
         // mint is a key-33 writer. `None` retries with no side effect while the lane is fenced.

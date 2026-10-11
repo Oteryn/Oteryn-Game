@@ -1113,12 +1113,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(progression) = self.progression_binding(session) else {
             return true;
         };
+        Box::pin(self.commit_death(session, &progression, death)).await
+    }
+
+    /// The durable half of [`Self::settle_death`]. The death request carries the binding's
+    /// policy, the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table, by value across
+    /// the commit, so `settle_death` keeps this future on the heap: inline, it would grow every
+    /// step future that settles a death by several copies of that table.
+    async fn commit_death(
+        &self,
+        session: GameSessionId,
+        progression: &SessionProgressionBinding,
+        death: actor_spell::PlayerDeath,
+    ) -> bool {
         let (map_revision, respawn) = {
             let runtime = self.runtime.lock().await;
             (runtime.map_revision_digest(), runtime.respawn_position())
         };
         let request = player_death_request(
-            &progression,
+            progression,
             (self.world_id, self.channel_id),
             map_revision,
             death,
@@ -1432,7 +1445,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let session = admitted.game_session_id;
-        let binding = character_progression_binding::bind_character_progression(
+        // The step holds the request, whose policy carries the whole threshold table by value,
+        // across its rounds: on the heap, so the admission future does not grow by it.
+        let binding = Box::pin(character_progression_binding::bind_character_progression(
             character_progression_binding::ProgressionDurable {
                 root: self.root,
                 character: self.character,
@@ -1444,7 +1459,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attempts: RECONCILE_ATTEMPTS,
                 backoff: RECONCILE_BACKOFF,
             },
-        )
+        ))
         .await;
         match binding {
             character_progression_binding::ProgressionBinding::Bound(policy) => {
