@@ -56,6 +56,9 @@ Trade and bank dialogue (NPC-TRADE-1, BANK-NPC-1); admitted Dialogue records (su
 book entry); a per-NPC greeting list; whisper/yell talk; boot wiring and `install_npc_talk` caller
 (no runtime NPC exists before the NPC-PLACE-1b boot follow-up of NPC-RT-1).
 
+Follow-up NPC-TALK-2: end the conversation as soon as the speaker walks out of range (today it
+ends at the speaker's next `say`).
+
 ## Acceptance criteria
 
 - [x] A greeting, topic and farewell near a placed NPC produce NPC lines heard by all in range

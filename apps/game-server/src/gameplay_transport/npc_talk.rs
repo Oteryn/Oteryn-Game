@@ -180,6 +180,7 @@ fn start<K: Copy + PartialEq>(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
 
