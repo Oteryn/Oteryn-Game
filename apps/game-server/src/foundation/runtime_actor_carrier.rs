@@ -1951,6 +1951,27 @@ impl ChannelRuntimeV1 {
         Ok(false)
     }
 
+    /// Whether `actor`'s own unresolved spell reservation relocates somebody into `cell`.
+    /// `position_occupied_by_other` skips the issuer's slot, so a world-object gate that must
+    /// not close a tile onto the issuer's pending destination asks this as well.
+    pub(crate) fn reserved_into_by_own_pending(
+        &self,
+        actor: ExactActorRef,
+        cell: MovementLocalPosition,
+    ) -> Result<bool, CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        Ok(match self.carrier.slots.get(index) {
+            Some(
+                Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. },
+            ) => spell_combat
+                .pending_owner
+                .as_ref()
+                .and_then(|reservation| reservation.destination())
+                .is_some_and(|(_, reserved)| reserved == cell),
+            _ => false,
+        })
+    }
+
     pub(crate) fn committed_player_positions(&self) -> Vec<MovementLocalPosition> {
         let context = self.pinned_position_context();
         self.carrier

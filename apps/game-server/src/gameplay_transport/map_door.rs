@@ -50,9 +50,14 @@ pub(super) fn doorway_occupied(
         y: i32::from(door.y),
         floor: i16::from(door.floor).saturating_neg(),
     };
+    // The issuer's own unresolved relocation into the doorway (Codex 4240828401): the census
+    // above skips the issuer's slot, so a later COMMIT would land it on a solid tile.
     runtime
-        .position_occupied_by_other(actor, cell)
+        .reserved_into_by_own_pending(actor, cell)
         .unwrap_or(true)
+        || runtime
+            .position_occupied_by_other(actor, cell)
+            .unwrap_or(true)
 }
 
 /// Decides one `USE` of `target` by an actor on `actor`. `occupied` says whether an actor stands

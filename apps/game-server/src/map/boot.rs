@@ -423,6 +423,17 @@ pub(crate) mod tests {
         (boxed, boxed_id): (&str, u32),
         (coin, coin_id): (&str, u32),
     ) -> (Vec<u8>, BundlePins) {
+        bundle_with_house(boxed, boxed_id, coin, coin_id, 0)
+    }
+
+    /// [`bundle_with_item_ids`] with the house marker `door_house` on the tile at x 6.
+    fn bundle_with_house(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -484,7 +495,7 @@ pub(crate) mod tests {
             x,
             y: 0,
             flags: 0,
-            house: 0,
+            house: if x == 6 { door_house } else { 0 },
             zones: Vec::new(),
             items: palettes.iter().map(|palette| entry(*palette)).collect(),
         };
@@ -928,6 +939,55 @@ pub(crate) mod tests {
             assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
             assert!(!world.enterable(DOOR_AT));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unqualified_closed_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        // The closed item must block both movement and projectiles.
+        for (solid, shoots) in [
+            (Some(false), true),
+            (Some(true), false),
+            (Some(false), false),
+        ] {
+            let world = door_world_with(|key| {
+                door_items(key).map(|mut item| {
+                    if key.ends_with("1629") {
+                        item.solid = solid;
+                        item.blocks_projectile = shoots;
+                    }
+                    item
+                })
+            })?;
+            let doors = world.facts().doors();
+            assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_a_door_on_a_house_tile_stays_out_of_the_channel_door_book()
+    -> Result<(), Box<dyn Error>> {
+        use crate::map::view::MapFacts;
+        let (bytes, load) = bundle_with_house(
+            "oteryn:item.tibia.i1629",
+            0,
+            "oteryn:item.tibia.i1000",
+            1,
+            7,
+        );
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            door_items,
+        )?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 1));
+        assert_eq!(doors.toggle(door_key(), 0, false), None);
+        assert!(!world.enterable(DOOR_AT));
+        assert!(world.facts().house_tile(DOOR_AT));
         Ok(())
     }
 }

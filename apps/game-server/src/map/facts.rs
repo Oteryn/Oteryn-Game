@@ -163,6 +163,9 @@ impl BundleFacts {
                     key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
                 let door = if dropped || bound(&item.attrs) {
                     PaletteDoor::No
+                } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
+                    // A house door belongs to the house runtime, never to the channel DoorBook.
+                    PaletteDoor::Sealed
                 } else {
                     door
                 };
@@ -340,6 +343,11 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open_key) = door::open_key(key, closed, open) else {
         return PaletteDoor::No;
     };
+    // The closed state must itself block movement and projectiles.
+    match item(key) {
+        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
+        _ => return PaletteDoor::Sealed,
+    }
     let Some(definition) = item(&open_key) else {
         return PaletteDoor::Sealed;
     };
