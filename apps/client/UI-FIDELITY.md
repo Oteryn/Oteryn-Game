@@ -255,7 +255,28 @@ or settings-lane acceptance: capability 18 stays unadvertised, and transport
 resync, streamed sprite rendering, real pointer targeting and the joint server/
 client ground-speed switch remain pending. MAP-WIRE-1 does not allocate lighting,
 weather, sound or spell/HUD projections; those controls remain unavailable.
-Earlier Windows evidence does not qualify this new source batch.
+Source head `fe3eec7283cbe61194999d9db6bde0935bd8d70f` independently passes
+MSVC client tests 204/175/5, Session tests 58 and strict all-target Clippy for
+both packages. A fresh DX12 release audit passes all 20 pages/78 captures with
+zero invalid entries at 125% DPI; every capture digest was verified. Private
+audit directory: `C:\Users\barte\Downloads\oteryn-settings-audit-fe3eec72`;
+manifest SHA-256: `eef44c25cbece3e84c51b75b624b624b8611b21e3059f3beaf30ae91cbf04ff2`.
+The owner's existing login client (PID 12896) remains responsive and unmodified.
+Recovery bundle `/workspace/oteryn-client-publication-fe3eec72.bundle`, SHA-256
+`1e86027a61e5e686928531b2452b21070225a2dc21b86fc1b105ac3596439987`.
+The same-head protected-base audit passes; this is not full repository CI or
+live MAP-CLIENT-1 acceptance. The reused codec's latest producer commit is
+`0e834533323a032893b51b9bca748d3ba8d56aa6` (MAP-CUTOVER-1b, #1916),
+and its bytes match the fetched `origin/main` codec.
+
+Existing server spell definitions, learned-cast facts, cooldown deadlines,
+condition store and presentation outbox should be reused when their owning
+transport contracts are accepted. They are not absent implementations, but the
+current client event stream does not expose their missing projections. The
+spell/condition presentation publishers are explicitly unallocated candidates,
+not active wire routes. The starter SpellBook has three spells, not the original
+reference's full catalogue. Map capability 18 does not solve these independent
+gaps or authorize activating them.
 
 ## Required evidence per page/panel
 

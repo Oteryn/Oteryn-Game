@@ -117,6 +117,13 @@ This is preparation only: capability 18 remains unadvertised. No session resync,
 streamed drawing, live targeting or ground-speed switch is claimed. Complete
 MAP-CLIENT-1 requires those consumers and the joint client/server speed switch
 under the accepted packet, followed by exact-head review and native qualification.
+Preparation source `fe3eec72` passed Linux client 205/171/5, MSVC client 204/175/5,
+Session 58 tests on each platform, strict Clippy, formatting, boundaries and
+governance/60 tests. Exact-source DX12 audit passes 20 pages/78 verified captures/
+zero invalid entries at 125% DPI. Manifest/recovery hashes are in UI-FIDELITY.md.
+The owner's PID 12896 remains responsive. Protected-base audit passes, not full
+CI. Next: complete accepted MAP-CLIENT-1 runtime consumers, retaining the joint
+speed-switch requirement and not enabling speculative light/sound projections.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
