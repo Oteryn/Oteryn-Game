@@ -6,7 +6,7 @@ title: Qualify exact same-Quest literal Item-id USE trigger candidates
 mode: MIGRATE
 status: implementing
 repository: Oteryn/Oteryn-Game
-base_branch: codex/quest-collect-claim-candidates-20261006
+base_branch: main
 base_pr: 1888
 branch: codex/quest-use-trigger-candidates-20261006-r2
 base_sha: ad74341ce0253c8b12281fc6233e1d000d1e35b8
