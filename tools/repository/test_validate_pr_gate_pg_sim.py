@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -203,7 +204,7 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
 def test_input_platform_evidence_contract_is_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     marker = "      - name: Test Windows input platform\n"
-    command = "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
+    command = "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
     assert baseline.count(marker) == baseline.count(command) == 1
     mutations = (
         baseline.replace(marker, "      - name: Optional Windows input platform\n", 1),
@@ -902,7 +903,7 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
     assert any("rust_linux" in error and "exactly match" in error for error in validate_mutated_gate(stale))
-    invocation = '              cargo +1.94.0 test --locked --workspace --test "$name"\n'
+    invocation = '              cargo +1.95.0 test --locked --workspace --test "$name"\n'
     assert baseline.count(invocation) == 1
     errors = validate_mutated_gate(baseline.replace(invocation, "", 1))
     assert any("rust_linux" in error for error in errors), errors
@@ -996,6 +997,85 @@ def test_world_bundle_lane_is_a_fail_closed_validate_dependency() -> None:
     assert "world_bundle_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}" in validate
 
 
+def assert_reachable_ci_helpers_select_installed_rust(read_text, workflows) -> set[str]:
+    """Trace repository-literal CI helper edges, including conditional modes."""
+    reference = re.compile(
+        r"(?:tools/qualification/[A-Za-z0-9_./-]+\.sh|"
+        r"apps/client/installer/[A-Za-z0-9_.-]+\.ps1)"
+    )
+    visited: set[str] = set()
+
+    def visit(path: str, caller: str) -> None:
+        if path in visited:
+            return
+        visited.add(path)
+        text = read_text(path)
+        for number, line in enumerate(text.splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            command = re.search(r"\bcargo\s+(\S+)", line)
+            if command is not None:
+                assert command.group(1) == "+1.95.0", (
+                    f"{caller} -> {path}:{number} selects {command.group(1)!r}, "
+                    "not the installed Rust 1.95.0"
+                )
+        for helper in reference.findall(text.replace("\\", "/")):
+            visit(helper, path)
+
+    for workflow in workflows:
+        for helper in reference.findall(read_text(workflow).replace("\\", "/")):
+            visit(helper, workflow)
+    return visited
+
+
+def test_active_ci_traces_helper_and_nested_helper_toolchains() -> None:
+    workflows = sorted(str(path.relative_to(ROOT))
+                       for path in (ROOT / ".github/workflows").glob("*.yml"))
+    read_text = lambda path: (ROOT / path).read_text(encoding="utf-8")
+    reached = assert_reachable_ci_helpers_select_installed_rust(read_text, workflows)
+    expected = {
+        "apps/client/installer/ci-installer.ps1",
+        "tools/qualification/native_entry_room/run.sh",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/spells/run.sh",
+        "tools/qualification/wp5_s3a/run.sh",
+        "tools/qualification/wp5_s3b/run.sh",
+    }
+    assert expected <= reached, f"active helper edges lost: {sorted(expected - reached)}"
+    assert "tools/qualification/login_local/run.sh" not in reached
+
+    # Mutate actual called helper bytes, rather than copying their implementation.
+    for helper in sorted(expected):
+        original = read_text(helper)
+        assert "+1.95.0" in original, helper
+        for replacement in ("+1.94.0", ""):
+            changed = original.replace("+1.95.0", replacement, 1)
+            def fixture(path: str) -> str:
+                return changed if path == helper else read_text(path)
+            try:
+                assert_reachable_ci_helpers_select_installed_rust(fixture, workflows)
+            except AssertionError as error:
+                assert helper in str(error), error
+            else:
+                raise AssertionError(f"accepted stale or implicit Rust in {helper}")
+
+    # A future nested helper must be checked even when it is not named by CI.
+    nested = "tools/qualification/toolchain-fixture/run.sh"
+    parent = "tools/qualification/spells/run.sh"
+    def nested_fixture(path: str) -> str:
+        if path == parent:
+            return read_text(path) + f"\nbash {nested}\n"
+        if path == nested:
+            return "cargo +1.94.0 test --locked -p fixture\n"
+        return read_text(path)
+    try:
+        assert_reachable_ci_helpers_select_installed_rust(nested_fixture, workflows)
+    except AssertionError as error:
+        assert parent in str(error) and nested in str(error), error
+    else:
+        raise AssertionError("accepted a stale Rust selection in a nested helper")
+
+
 def main() -> int:
     tests = (
         test_registered_postgres_targets_are_materially_routed,
@@ -1029,6 +1109,7 @@ def main() -> int:
         test_postgres_digest_and_invocation_are_mandatory,
         test_rust_fast_recovers_large_pr_from_exact_trees,
         test_world_bundle_lane_is_a_fail_closed_validate_dependency,
+        test_active_ci_traces_helper_and_nested_helper_toolchains,
     )
     for test in tests:
         test()

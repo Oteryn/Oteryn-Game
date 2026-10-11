@@ -410,7 +410,7 @@ impl CanonicalProjectDocuments {
         documents.insert(MANIFEST_LOCATOR.to_owned(), manifest_bytes);
         documents.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
         documents.insert(PROJECT_LOCATOR.to_owned(), write_budget.encode(&root)?);
-        let snapshot = ProjectSnapshot::new(documents.into_iter(), limits)?;
+        let snapshot = ProjectSnapshot::new(documents, limits)?;
         snapshot.parse(limits)?;
         Ok(Self {
             documents: snapshot.documents,
