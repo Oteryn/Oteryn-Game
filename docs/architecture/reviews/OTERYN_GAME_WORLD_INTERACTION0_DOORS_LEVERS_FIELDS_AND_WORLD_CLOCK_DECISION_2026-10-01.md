@@ -1,8 +1,10 @@
 # WORLD-INTERACTION-0 Doors, levers, fields and the World clock
 
 - Decision: `WORLD-INTERACTION0-DOORS-LEVERS-FIELDS-AND-CLOCK-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
-  security, persistence, combat and determinism) and protected integration.
+- Status: **ACCEPTED** by the owner on 2026-10-11 (control plane session, decision D1019), as
+  written. The acceptance covers this decision's rulings and child split; it adds no runtime
+  authority (see the authority line below). The amendments listed under "Amends" stay pending on
+  their own documents.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the `GAME-INTERACTION-01` horizon gate (`REQUIRED_FOR_ALPHA`) and gap register §12, with
   the §9 parts on pushing, floor transitions, stairs and teleports; the owner answers **6a** and

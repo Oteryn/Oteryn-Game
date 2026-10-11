@@ -49,7 +49,9 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a38
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "22e7688cce7a19ed48d27ac1bf44bbeab8537fd0"
+EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "c3bbddd196437066745b1c59731e45ded30ea906e013ca91a75665e4b65c759c"
+EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "3b5b47553a635cac8755b1d4f19fa934dd901faf9fb55a7f6ef31e1dacd819d3"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "d7cfbf90b2b81c43f92c010660f41d242a3cf840"
 EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -518,9 +520,18 @@ def main() -> int:
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
-                "cargo +1.95.0 build --locked --workspace --all-targets",
+                "      fail-fast: true\n",
+                "        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]\n",
                 "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
-                "cargo +1.95.0 test --locked --workspace",
+                "python tools/repository/test_check_duplicate_test_sources.py",
+                'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
+                "cargo +1.95.0 test --locked --workspace --lib -- content::",
+                "cargo +1.95.0 test --locked --workspace --lib -- --skip content::",
+                'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
+                'cargo +1.95.0 test --locked --workspace "${shard_args[@]}"',
+                "cargo +1.95.0 build --locked --workspace --bins --examples --benches",
+                "cargo +1.95.0 test --locked --workspace --bins",
+                "cargo +1.95.0 test --locked --workspace --doc",
                 "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness",
                 "cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke",
             ),

@@ -8,6 +8,7 @@ PINS = (
     "catalog", "source_selection", "creature_profiles", "presentation_profiles",
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
     "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
+    "loot_tables",
 )
 REQUIRED_V5_PINS = frozenset(PINS[:8]) | {"familiar_config"}
 
