@@ -1035,6 +1035,9 @@ jobs:
             rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
             rust-linux-v2-1.94.0-
 
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
 

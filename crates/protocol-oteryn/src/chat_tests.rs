@@ -368,7 +368,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
 
     let capability = only("capabilities", CAPABILITY_CHAT_V1);
     assert_eq!(capability["name"], "CHAT_V1");
-    assert_eq!(capability["offered"], false, "not offered before CHAT-1b-2");
+    assert_eq!(capability["offered"], true, "offered since CHAT-WIRE-1");
     assert_eq!(
         capability["command_types"],
         serde_json::json!([COMMAND_TYPE_CHAT_INTENT])

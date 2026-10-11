@@ -304,11 +304,21 @@ fn best(book: &SpellBook, spell: &SpellDefinition, form: Form) -> String {
 
 fn sweep(book: &SpellBook) -> BTreeMap<String, u32> {
     let mut counts = BTreeMap::new();
+    let mut shield_refusals = Vec::new();
     for i in 1..=book.source_len() {
         let index = std::num::NonZeroU32::new(u32::try_from(i).unwrap()).unwrap();
         let (spell, _active) = book.source_indexed(index).expect("indexed");
         for form in FORMS {
             let outcome = best(book, spell, form);
+            // The default owner has no Mana Shield. Keep this accepted CMS
+            // prerequisite visible instead of granting every sweep actor a shield.
+            if matches!(spell.execution, Execution::Effects(_))
+                && !spell.needs_target
+                && outcome == "TargetIllegal"
+            {
+                assert_eq!(spell.key, "candidate:spell/cancel_magic_shield");
+                shield_refusals.push((spell.key.clone(), form));
+            }
             // A spell that needs a target never casts without one. The engine refuses it with a
             // typed disposition; the wire mapping to `TargetRequired` is the dispatch layer's.
             if spell.needs_target
@@ -327,6 +337,14 @@ fn sweep(book: &SpellBook) -> BTreeMap<String, u32> {
                 .or_default() += 1;
         }
     }
+    assert_eq!(
+        shield_refusals,
+        FORMS
+            .into_iter()
+            .map(|form| ("candidate:spell/cancel_magic_shield".to_owned(), form))
+            .collect::<Vec<_>>(),
+        "exactly CMS is refused once per target form for the default no-shield owner"
+    );
     counts
 }
 
@@ -334,10 +352,13 @@ const GOLDEN: &[(&str, u32)] = &[
     ("Conjure AttackTarget Rejected", 48),
     ("Conjure None Cast", 48),
     ("Conjure Position Rejected", 48),
-    ("Effects AttackTarget Cast", 90),
-    ("Effects None Cast", 72),
+    ("Effects AttackTarget Cast", 89),
+    ("Effects AttackTarget TargetIllegal", 1),
+    ("Effects None Cast", 71),
+    ("Effects None TargetIllegal", 1),
     ("Effects None Rejected", 18),
-    ("Effects Position Cast", 90),
+    ("Effects Position Cast", 89),
+    ("Effects Position TargetIllegal", 1),
     ("Effects+target AttackTarget Cast", 34),
     ("Effects+target AttackTarget TargetIllegal", 2),
     ("Effects+target None Rejected", 36),
@@ -372,6 +393,8 @@ const GOLDEN: &[(&str, u32)] = &[
 fn whole_book_is_castable_or_refused_with_golden_counts() {
     let book = book();
     assert_eq!(book.source_len(), 246);
+    let (default_owner, _) = owner(Vocation::Sorcerer);
+    assert_eq!(default_owner.owned_conditions().mana_shield_at(1_000), None);
     let counts = sweep(&book);
     assert_eq!(
         counts.values().sum::<u32>(),
