@@ -34,14 +34,14 @@ python validate_npc.py out/canary/bundles out/crystal/bundles
 python validate_npc.py samples/bundles
 python population_census.py --bundles out/canary/bundles --index out/canary/index.json --out samples/census-canary-47dfd51f.json
 python population_census.py --bundles out/crystal/bundles --index out/crystal/index.json --out samples/census-crystal-ff7ede59.json
-python source_diff.py --canary out/canary/bundles --crystal out/crystal/bundles --out samples/source-diff-canary-47dfd51f-crystal-ff7ede59.json
+python source_diff.py --reference-engine out/canary/bundles --crystal out/crystal/bundles --out samples/source-diff-canary-47dfd51f-crystal-ff7ede59.json
 python wiki_fandom.py self-test
 python wiki_fandom.py fetch --cache out/fandom
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/canary/bundles --out samples/fandom-compare-canary-47dfd51f.json
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/crystal/bundles --out samples/fandom-compare-crystal-ff7ede59.json
 (cd ../../.. && cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$OLDPWD/out/native-map.json")
-python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --crystal-supplement out/crystal-summer/bundles --out samples/promotion-candidates-v1.json
-python validate_promotion.py samples/promotion-candidates-v1.json --snapshot out/fandom/fandom-npc-snapshot.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --item-map out/native-map.json --canary out/canary/bundles --crystal out/crystal/bundles --crystal-supplement out/crystal-summer/bundles
+python promotion_candidates.py --reference-engine out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --crystal-supplement out/crystal-summer/bundles --out samples/promotion-candidates-v1.json
+python validate_promotion.py samples/promotion-candidates-v1.json --snapshot out/fandom/fandom-npc-snapshot.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --item-map out/native-map.json --reference-engine out/canary/bundles --crystal out/crystal/bundles --crystal-supplement out/crystal-summer/bundles
 ```
 
 The Fandom snapshot (article fields only, not committed) takes about four minutes to fetch; the compare

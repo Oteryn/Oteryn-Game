@@ -261,12 +261,12 @@ def main():
     parser.add_argument('--source-root', required=True, type=Path)
     parser.add_argument('--pack', default='canary/data-otservbr-global/monster')
     parser.add_argument('--out', required=True, type=Path)
-    parser.add_argument('--canary-source', type=Path)
+    parser.add_argument('--reference-engine-source', type=Path)
     parser.add_argument('--enable-secondary-condition-omission', action='store_true')
     args = parser.parse_args()
     if args.out.exists():
         parser.error('output directory already exists; preserve earlier candidates')
-    engine = qualify_melee_skill_engine(args.canary_source) if args.canary_source else None
+    engine = qualify_melee_skill_engine(args.reference_engine_source) if args.reference_engine_source else None
     creatures, report = build(json.loads(args.creatures.read_text()), args.bundle_root, args.source_root, args.pack,
                               engine, args.enable_secondary_condition_omission)
     args.out.mkdir(parents=True)
