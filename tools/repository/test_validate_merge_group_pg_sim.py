@@ -143,7 +143,8 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
 
 
 def _postgres_cache_consumer_regressions() -> None:
-    for filename, job in (("rust.yml", "durability-postgres"), ("merge-group-gate.yml", "durability_postgres")):
+    # The PostgreSQL harness executes only in MQ; main is a cache producer.
+    for filename, job in (("merge-group-gate.yml", "durability_postgres"),):
         text = (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
         block = text.split("  " + job + ":\n", 1)[1]
         block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
