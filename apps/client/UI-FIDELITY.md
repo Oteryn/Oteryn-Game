@@ -192,7 +192,16 @@ preserve the recipient, reject unavailable/read-only contexts and verify Ctrl+A
 is bound only in the observed default Chat On map. Interface now applies the
 source-confirmed inventory OR container expiry dependency; all expiry controls
 remain disabled because no authoritative item-expiry projection exists.
-Native qualification for this source successor is required independently.
+Exact source successor `9e2d0cbcf0b9059683119609c55187c8bc11726a` passed native
+MSVC client tests (196/175/5), renderer tests (40, including DX12 pixel readback)
+and strict all-target Clippy. A fresh separate-directory DX12 release audit
+passed 20 pages/78 captures/zero invalid entries; Interface, Console and General
+Hotkeys captures 01/02 were inspected. Private audit directory:
+`C:\Users\barte\Downloads\oteryn-settings-audit-9e2d0cbc`; manifest SHA-256
+`970077ae12e479faf501a1f8b2f283032426672103be28709555a2541e2b9b45`.
+Recovery bundle `/workspace/oteryn-client-publication-9e2d0cbc.bundle`, SHA-256
+`7ec2823c9617e653f5b6fd7d1452c865496f659a4736831f3fbc1aedb45d212f`.
+The prior owner-launched client (PID 12896) remained responsive at login.
 
 The same batch corrects the Windows `egui-winit` feature selection: explicit
 `clipboard` enables the mature upstream OS backend instead of its fallback string.
@@ -203,8 +212,9 @@ resolution changes Cargo.lock. The World input pin was refreshed to
 pin-check rebuilt the unchanged 25,086,645-byte World bundle twice, retaining
 digest `f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8`.
 Linux client tests pass 197/171/5, strict Clippy, formatting and governance
-(60 tests) pass. The added native clipboard dependencies still require MSVC
-qualification before this feature is counted as accepted.
+(60 tests) and exact-candidate impact-routing regressions pass. The added
+clipboard dependencies compile under MSVC; system clipboard transfer and
+exhaustive physical input/reference parity remain unqualified.
 
 No lane is claimed 100% complete. Remaining activation requirements are:
 
