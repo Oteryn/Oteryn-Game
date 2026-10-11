@@ -4,6 +4,26 @@ Date: 2026-10-06
 Repository: `Oteryn/Oteryn-Game`
 Handoff base: `main@f6894e793c162d9d8a43578332f3a6f77d2936a3`
 
+## Durable continuation state
+
+Historical and non-authoritative; see `docs/agents/HANDOVER_LIFECYCLE.json` for expiry and supersession. Re-resolve every value below against live GitHub state before use.
+
+- Task/programme ID and mode: `MBQ-NATIVE-1` (Make Believe native/runtime integration), under canonical coordination issue `#1622`; mode: documentation-only handoff, no runtime lease held.
+- Repository and branch: `Oteryn/Oteryn-Game`, branch `docs/make-believe-native-handoff-20261006`, base `main`, handoff PR `#1900`.
+- Head: the PR head at the time of reading; this file cannot record its own commit SHA. Recorded content base is `main@f6894e793c162d9d8a43578332f3a6f77d2936a3` (above); the last pre-registry PR head was `c7f9f7fe` and the registry commit was `e5afcacd`.
+- Status: DATA complete (PR #1865 and #1877 merged); native dispatch not started; runtime stays disabled (`runtime_enabled=false`, 20 stages, all `native_dispatch_binding=null`). No terminal invocation result is recorded.
+- Owned paths: `docs/agents/evidence/OTV2-20261006-make-believe-native-handoff.md` and its entry in `docs/agents/HANDOVER_LIFECYCLE.json`. Unresolved overlaps for any later runtime work: PRs #1875 and #1876 and Soul War work touching generated Quest outputs (see Current coordination below).
+- Completed work and changed paths: only the two documentation paths above; no runtime or content file is changed.
+- Validation, tied to the recorded SHAs: the qualification results under Qualification already established apply to the qualified heads of #1865 and #1877, not to this documentation head. This PR is validated by `python tools/agents/validate_governance.py` at its live head and by exact-head CI.
+- Audit/E2E/review state: no E2E is applicable to this documentation change; Codex review threads on #1900 are tracked on the PR.
+- Dependencies, blockers and decisions: QUEST-GATE-1 -> QUEST-TRIGGER-1; NPC-TALK-1 -> NPC-QUEST-1 with Doctor Marrow reconciliation; ENC-RT-1 -> ENC-OUTCOME-1. No runtime write is allowed before a `#1622` allocation or lease.
+- Anti-stall counters and wait generation: none recorded.
+- `next_action`: fresh-read current `main`, `#1622`, and open Quest, NPC and Encounter PRs, then follow the Continuation checklist below from step 2. If no QUEST-GATE-1 lease exists, report the missing allocation on `#1622` and start no overlapping code.
+
+## Resume prompt
+
+Read trusted-base governance (`AGENTS.md`, `docs/agents/PROMPTING_HANDOVER.md`), then this handoff, then live `#1622`, PR `#1900` and CI state. Verify drift against current `main`, then execute the `next_action` above.
+
 ## Purpose
 
 This handoff freezes the current state of the Make Believe Quest work after the post-release DATA reconstruction was merged. It is intentionally documentation-only. The next work is Native/runtime integration through the already accepted Quest/NPC/Encounter owners; do not create a Make-Believe-specific quest engine or duplicate canonical identities.
