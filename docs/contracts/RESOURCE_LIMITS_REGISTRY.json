@@ -9081,9 +9081,10 @@
       ],
       "consumers": [
         "apps/game-server/src/ai/spawn.rs REALIZATIONS_PER_WINDOW_MAX: realization_windows",
-        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns"
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns (one owner turn; refuses more than one window)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::begin_activation_spawns / realize_activation_spawn_window (persisted cursor, one window per 50 ms owner window; SPAWN-CEILINGS-1)"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Registered by OTV2-20261004-spawn-1a."
+      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Game carrier tests (SPAWN-CEILINGS-1): apps/game-server/src/foundation/runtime_actor_carrier.rs activation_realizes_at_most_rl_14_points_per_owner_window / a_refused_activation_window_realizes_nothing / spawn_sources_per_channel_max_accepted_max_plus_one_rejected. Registered by OTV2-20261004-spawn-1a."
     },
     {
       "id": "CREATUREAI0-RL-05",

@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spawn-ceilings-1-20261011
-pr: null
+pr: 1984
 base_sha: 407b0f2b80034925fc2070eae308850e49ede264
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -57,6 +57,13 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
 - 131,072 points pass the channel check; 131,073 refuse at the runtime with nothing admitted, and
   the single-source path refuses one point past the ceiling.
 - No quadratic activation work and no per-removal scan of the spawn cells.
+- `CREATUREAI0-RL-14` (Codex 4242094682 on #1984): no owner window realizes more than 4,096
+  points. One owner turn (`realize_activation_spawns`) refuses a larger activation with nothing
+  admitted; `begin_activation_spawns` keeps it as a persisted cursor and
+  `realize_activation_spawn_window(now)` realizes the next `spawn::realization_windows` window,
+  at most one per 50 ms owner window, in canonical order.
+- The full respawn scan runs once per Channel owner window, not once per session drive
+  (Codex 4242094686 on #1984).
 
 ## Implementation / findings
 
@@ -69,11 +76,29 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   move rollback therefore no longer snapshots `spawns`.
 - The 16/4 constants remain only as the fixed D57 64-entry ledger envelope
   (`MAX_RETAINED_CORPSE_PROJECTIONS`, creature bite ledger, smelly cheese ledger).
-- Performance review item (the governance validator defines no marker for it): the per-drive
-  gone detection in `drive_spawn_respawns` is still O(spawn points) per drive (now in place, no
-  allocation or sort); `RespawnSchedule::due` scans every pending occurrence; `cell_occupied` is
-  O(slots) per admission. Event-driven gone detection needs a death hook in the carrier's other
-  modules and `ai/spawn.rs`, outside this task.
+- RL-14 (review round on #1984): the activation is split into owner windows by
+  `spawn::realization_windows` at point granularity (`admit_spawn_point`; a source is recorded
+  at its point 0 and may span two windows). `SpawnActivation` persists the plan, the next-window
+  cursor and the last owner window used; a second call in one owner window realizes nothing.
+  The Channel must not admit players until `remaining` is 0; the respawn drive and the
+  qualification spawn do nothing or refuse while an activation is pending. A refusal in a later
+  window removes every creature the activation admitted (by removal, which relinks the free
+  list, so owner work between windows is never undone) and a new activation may begin. The
+  one-turn path keeps its exact snapshot restore. No current caller passes more than 4,096
+  points (bundle worlds pass none until SPAWN-1b, #1981, which consumes the windowed API).
+- Spawn drive coalescing (review round on #1984): the owner calls `drive_spawn_respawns` once
+  per connected session (`tick_vitals` -> `drain_monster_melee` -> `drive_owner_spawns`, before
+  the monster-AI pass gate). The gone scan over every realized point and `RespawnSchedule::due`
+  now run once per owner window (the first drive with `now / 50 ms` past the last one), which
+  keeps the occurrences due by the window's end in a deadline-ordered queue; later drives of
+  the window pop only the occurrences whose deadline they reach, each still run at its exact
+  microsecond, and successors due inside the window are inserted in order. A death is now
+  observed at the first drive of the next owner window (up to 50 ms later than before; the
+  occurrence is still due one full delay after its observation).
+- Performance review item (the governance validator defines no marker for it): the per-window
+  scan is still O(spawn points) and `cell_occupied` is O(slots) per admission. Event-driven gone
+  detection needs a death hook in the carrier's other modules and `ai/spawn.rs`, outside this
+  task.
 - At reference scale the 64-entry corpse projection FIFO may evict before a lost-response
   replay; that is an owner question, not changed here.
 - The test-only cheese source uses `SpawnSourceId(u16::MAX)`; at 65,536 realized sources it

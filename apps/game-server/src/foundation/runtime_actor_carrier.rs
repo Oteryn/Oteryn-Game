@@ -1881,6 +1881,93 @@ pub(crate) struct ChannelRuntimeV1 {
     owner_cycle: super::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    /// SPAWN-CEILINGS-1: an activation larger than one owner window, realized one window per
+    /// owner window (`CREATUREAI0-RL-14`); `None` when no activation is in progress.
+    spawn_activation: Option<Box<SpawnActivation>>,
+    /// SPAWN-CEILINGS-1: the owner window of the last full spawn scan and the occurrences due
+    /// within it, so the scan runs once per Channel window, not once per drive.
+    spawn_drive_window: Option<SpawnDriveWindow>,
+}
+
+/// SPAWN-CEILINGS-1 (CREATURE-AI-0 §6.2, `CREATUREAI0-RL-14`): an activation in progress: its
+/// points in canonical order (source ordinal, point ordinal), split by
+/// [`spawn::realization_windows`] into owner windows of at most
+/// [`spawn::REALIZATIONS_PER_WINDOW_MAX`], and the cursor of the next window.
+#[derive(Debug)]
+struct SpawnActivation {
+    /// The definitions by source ordinal; a source's entry is taken at its point 0.
+    definitions: Vec<Option<SpawnDefinition>>,
+    /// The realization plan; a realized window is emptied.
+    windows: Vec<Vec<spawn::SpawnPoint>>,
+    /// The next window to realize: the persisted cursor.
+    next_window: usize,
+    /// Points realized so far.
+    realized_points: usize,
+    /// Points still to realize.
+    remaining_points: usize,
+    /// The owner window (`now / OWNER_WINDOW_MICROS`) that realized the last window.
+    last_window: Option<u64>,
+}
+
+impl SpawnActivation {
+    fn new(definitions: Vec<SpawnDefinition>, total_points: usize) -> Result<Self, CarrierError> {
+        let mut points = Vec::new();
+        points
+            .try_reserve_exact(total_points)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (source, definition) in definitions.iter().enumerate() {
+            let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
+            for ordinal in 0..definition.placement_cells.len() {
+                let ordinal = u8::try_from(ordinal).map_err(|_| CarrierError::CapacityExceeded)?;
+                points.push(spawn::SpawnPoint { source, ordinal });
+            }
+        }
+        let windows = spawn::realization_windows(&points);
+        let mut pending = Vec::new();
+        pending
+            .try_reserve_exact(definitions.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        pending.extend(definitions.into_iter().map(Some));
+        Ok(Self {
+            definitions: pending,
+            windows,
+            next_window: 0,
+            realized_points: 0,
+            remaining_points: total_points,
+            last_window: None,
+        })
+    }
+
+    const fn progress(&self, realized: usize) -> SpawnActivationProgress {
+        SpawnActivationProgress {
+            realized,
+            realized_total: self.realized_points,
+            remaining: self.remaining_points,
+        }
+    }
+}
+
+/// SPAWN-CEILINGS-1: what one activation window call did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct SpawnActivationProgress {
+    /// Creatures this call realized: 0 when its owner window had already realized one.
+    pub(crate) realized: usize,
+    /// Creatures the activation has realized so far.
+    pub(crate) realized_total: usize,
+    /// Points still to realize; 0 means the activation is complete.
+    pub(crate) remaining: usize,
+}
+
+/// SPAWN-CEILINGS-1: one owner window of the respawn drive. The first drive of a window scans
+/// every realized point once and takes the occurrences due by the window's end; later drives
+/// of the same window only run those occurrences as their deadlines pass.
+#[derive(Debug)]
+struct SpawnDriveWindow {
+    window: u64,
+    /// The last owner microsecond of `window`.
+    horizon: u64,
+    /// Occurrences due by `horizon`, by deadline then point.
+    due: std::collections::VecDeque<(spawn::SpawnPoint, spawn::PendingRespawn)>,
 }
 
 impl ChannelRuntimeV1 {
@@ -1962,6 +2049,8 @@ impl ChannelRuntimeV1 {
             owner_cycle: super::ScopeRuntimeFence::from_external_grant(scope_generation)
                 .with_scope(super::RuntimeScopeRefV1::channel(world_id, channel_id)),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            spawn_activation: None,
+            spawn_drive_window: None,
         })
     }
 
@@ -2549,6 +2638,9 @@ impl ChannelRuntimeV1 {
         position: MovementLocalPosition,
     ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
         self.owner_fence()?;
+        if self.spawn_activation.is_some() {
+            return Err(CarrierError::PlanConflict);
+        }
         if self.content != expected_pin {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
@@ -2624,13 +2716,71 @@ impl ChannelRuntimeV1 {
     }
 
     /// SPAWN-1a (CREATURE-AI-0 §6.2): realizes the activated spawn sources at Channel
-    /// activation, before the Channel admits players. Sources are realized in canonical order
-    /// (`spawn::realization_windows`; source ordinal `i`, point ordinal = cell
-    /// index), each creature a fresh actor-local generation with the source's authored initial
-    /// health. A creature whose definition the active Creature policy table names is bound to
-    /// that policy; otherwise it stands unbound. Any refusal realizes nothing. Returns the
-    /// number of creatures realized.
+    /// activation, before the Channel admits players, in one owner turn. Sources are realized
+    /// in canonical order (source ordinal `i`, point ordinal = cell index), each creature a
+    /// fresh actor-local generation with the source's authored initial health. A creature
+    /// whose definition the active Creature policy table names is bound to that policy;
+    /// otherwise it stands unbound. Any refusal realizes nothing. Returns the number of
+    /// creatures realized.
+    ///
+    /// One owner turn realizes at most one owner window, `CREATUREAI0-RL-14`
+    /// ([`spawn::REALIZATIONS_PER_WINDOW_MAX`] points): a larger activation refuses here with
+    /// `CapacityExceeded` and nothing realized, and runs through
+    /// [`Self::begin_activation_spawns`] and [`Self::realize_activation_spawn_window`] instead.
     pub(crate) fn realize_activation_spawns(
+        &mut self,
+        sources: Vec<ActivationSpawnFacts>,
+    ) -> Result<usize, CarrierError> {
+        let total_points = self.begin_activation_spawns(sources)?;
+        self.realize_begun_activation_in_one_turn(total_points)
+    }
+
+    #[cfg(test)]
+    fn realize_spawn_definitions(
+        &mut self,
+        definitions: Vec<SpawnDefinition>,
+    ) -> Result<usize, CarrierError> {
+        let total_points = self.begin_spawn_definitions(definitions)?;
+        self.realize_begun_activation_in_one_turn(total_points)
+    }
+
+    /// Completes the activation just begun in this owner turn, which may hold at most one
+    /// owner window of points; a larger one is dropped unadmitted and refuses
+    /// `CapacityExceeded`. The window is staged under one snapshot: a failure partway (for
+    /// example `ActorGenerationExhausted`, `admit_inner`) restores it exactly.
+    fn realize_begun_activation_in_one_turn(
+        &mut self,
+        total_points: usize,
+    ) -> Result<usize, CarrierError> {
+        if total_points > spawn::REALIZATIONS_PER_WINDOW_MAX {
+            self.spawn_activation = None;
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let slots_before = self.carrier.slots.clone();
+        let free_before = self.carrier.free_head;
+        let occupied_before = self.carrier.occupied.clone();
+        match self.realize_activation_spawn_window(0) {
+            Ok(progress) => {
+                debug_assert_eq!(progress.remaining, 0);
+                Ok(progress.realized)
+            }
+            Err(error) => {
+                self.spawn_activation = None;
+                self.carrier.slots = slots_before;
+                self.carrier.free_head = free_before;
+                self.carrier.occupied = occupied_before;
+                self.carrier.spawns.clear();
+                Err(error)
+            }
+        }
+    }
+
+    /// SPAWN-CEILINGS-1 (CREATURE-AI-0 §6.2, `CREATUREAI0-RL-14`): checks an activation of any
+    /// size up to the registered ceilings and keeps it as a persisted cursor; nothing is
+    /// admitted yet. [`Self::realize_activation_spawn_window`] then realizes one owner window
+    /// per call, and the Channel admits players only after it reports nothing remaining.
+    /// Returns the activation's total points. A refusal changes nothing.
+    pub(crate) fn begin_activation_spawns(
         &mut self,
         sources: Vec<ActivationSpawnFacts>,
     ) -> Result<usize, CarrierError> {
@@ -2638,79 +2788,130 @@ impl ChannelRuntimeV1 {
             .into_iter()
             .map(SpawnDefinition::from_activation)
             .collect::<Result<Vec<_>, _>>()?;
-        self.realize_spawn_definitions(definitions)
+        self.begin_spawn_definitions(definitions)
     }
 
-    fn realize_spawn_definitions(
+    fn begin_spawn_definitions(
         &mut self,
         definitions: Vec<SpawnDefinition>,
     ) -> Result<usize, CarrierError> {
+        let total_points = self.check_spawn_activation(&definitions)?;
+        self.spawn_activation = Some(Box::new(SpawnActivation::new(definitions, total_points)?));
+        Ok(total_points)
+    }
+
+    /// SPAWN-CEILINGS-1: realizes the next window of the activation begun by
+    /// [`Self::begin_activation_spawns`] at owner semantic time `now_micros`: the next
+    /// [`spawn::REALIZATIONS_PER_WINDOW_MAX`] points in canonical order, at most one window per
+    /// owner window ([`spawn::OWNER_WINDOW_MICROS`]). A second call in an owner
+    /// window that already realized one realizes nothing and reports `realized: 0`; the caller
+    /// calls again in a later owner window. The activation ends when `remaining` is 0.
+    ///
+    /// A refusal in any window abandons the activation and realizes nothing: the creatures of
+    /// the earlier windows are removed (their slots stay vacant at a later generation), and a
+    /// new activation may begin. With no activation in progress it refuses `PlanConflict`.
+    pub(crate) fn realize_activation_spawn_window(
+        &mut self,
+        now_micros: u64,
+    ) -> Result<SpawnActivationProgress, CarrierError> {
         self.owner_fence()?;
-        if !self.carrier.spawns.is_empty() {
+        let mut activation = self
+            .spawn_activation
+            .take()
+            .ok_or(CarrierError::PlanConflict)?;
+        let window = now_micros / spawn::OWNER_WINDOW_MICROS;
+        if activation.last_window.is_some_and(|last| window <= last) {
+            let progress = activation.progress(0);
+            self.spawn_activation = Some(activation);
+            return Ok(progress);
+        }
+        match self.realize_activation_window(&mut activation) {
+            Ok(realized) => {
+                activation.last_window = Some(window);
+                let progress = activation.progress(realized);
+                if activation.remaining_points > 0 {
+                    self.spawn_activation = Some(activation);
+                }
+                Ok(progress)
+            }
+            Err(error) => {
+                // Every creature the activation admitted is recorded in a realized source (a
+                // partly realized one included); they go with their sources. Removal relinks
+                // the free list itself, so other owner work between windows is never undone.
+                for spawn in std::mem::take(&mut self.carrier.spawns) {
+                    for actor in spawn.cells.iter().filter_map(|cell| cell.live) {
+                        let _ = self.carrier.remove(&self.continuity, actor.0);
+                    }
+                }
+                Err(error)
+            }
+        }
+    }
+
+    /// The checks every activation passes before anything is kept or admitted: the owner
+    /// fence, no realized or pending activation, every registered ceiling and the slot
+    /// capacity. Returns the total points.
+    fn check_spawn_activation(
+        &self,
+        definitions: &[SpawnDefinition],
+    ) -> Result<usize, CarrierError> {
+        self.owner_fence()?;
+        if !self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Err(CarrierError::DuplicateSpawnSource);
         }
-        // Every ceiling and the slot capacity are checked once, before anything is reserved
-        // or admitted; the whole activation is then staged under one snapshot, so the work
-        // is linear in the points, not in sources × slots.
-        let total_points = spawn_points_within_ceilings(&definitions)?;
+        // Every ceiling and the slot capacity are checked once, before anything is admitted,
+        // so the work is linear in the points, not in sources × slots.
+        let total_points = spawn_points_within_ceilings(definitions)?;
         let context = self.pinned_position_context();
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.carrier.validate_position_context(context)?;
         if self.carrier.free_slot_count() < total_points {
             return Err(CarrierError::CapacityExceeded);
         }
-        let mut points = Vec::new();
-        points
-            .try_reserve_exact(total_points)
-            .map_err(|_| CarrierError::AllocationFailed)?;
-        for (source, definition) in definitions.iter().enumerate() {
-            let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
-            for ordinal in 0..definition.placement_cells.len() {
-                let ordinal = u8::try_from(ordinal).map_err(|_| CarrierError::CapacityExceeded)?;
-                points.push(spawn::SpawnPoint { source, ordinal });
+        Ok(total_points)
+    }
+
+    /// Realizes the next owner window of `activation`'s plan: each point in canonical order
+    /// admits its creature (a source is recorded at its point 0, so a source may span two
+    /// windows). The window's creatures are then bound to their Creature policies. Returns the
+    /// creatures realized; on a refusal the caller undoes the activation.
+    fn realize_activation_window(
+        &mut self,
+        activation: &mut SpawnActivation,
+    ) -> Result<usize, CarrierError> {
+        let context = self.pinned_position_context();
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        self.carrier.validate_position_context(context)?;
+        let Some(window) = activation.windows.get_mut(activation.next_window) else {
+            return Ok(0);
+        };
+        let points = std::mem::take(window);
+        debug_assert!(points.len() <= spawn::REALIZATIONS_PER_WINDOW_MAX);
+        for point in &points {
+            let definition = if point.ordinal == 0 {
+                activation
+                    .definitions
+                    .get_mut(usize::from(point.source))
+                    .and_then(Option::take)
+            } else {
+                None
+            };
+            self.carrier
+                .admit_spawn_point(&self.continuity, *point, definition, context)?;
+        }
+        activation.next_window += 1;
+        activation.realized_points += points.len();
+        activation.remaining_points -= points.len();
+        for point in &points {
+            if let Ok(state) = self
+                .carrier
+                .spawn_cell_state(SpawnSourceId(point.source), usize::from(point.ordinal))
+                && let Some(actor) = state.live
+            {
+                self.bind_spawned_creature_policy(actor);
             }
         }
-        let slots_before = self.carrier.slots.clone();
-        let free_before = self.carrier.free_head;
-        let occupied_before = self.carrier.occupied.clone();
-        let mut definitions = definitions.into_iter().map(Some).collect::<Vec<_>>();
-        let result = (|| {
-            for window in spawn::realization_windows(&points) {
-                for point in window {
-                    // A source realizes whole, at its first point in canonical order.
-                    let Some(definition) = definitions
-                        .get_mut(usize::from(point.source))
-                        .and_then(Option::take)
-                    else {
-                        continue;
-                    };
-                    self.carrier.admit_spawn_source(
-                        &self.continuity,
-                        SpawnSourceId(point.source),
-                        definition,
-                        context,
-                    )?;
-                }
-            }
-            Ok::<(), CarrierError>(())
-        })();
-        if let Err(error) = result {
-            self.carrier.slots = slots_before;
-            self.carrier.free_head = free_before;
-            self.carrier.occupied = occupied_before;
-            self.carrier.spawns.clear();
-            return Err(error);
-        }
-        let realized = self
-            .carrier
-            .spawns
-            .iter()
-            .flat_map(|spawn| spawn.cells.iter().filter_map(|cell| cell.live))
-            .collect::<Vec<_>>();
-        for actor in &realized {
-            self.bind_spawned_creature_policy(*actor);
-        }
-        Ok(realized.len())
+        Ok(points.len())
     }
 
     /// Binds a realized creature to its active Creature policy when the table names its
@@ -2797,10 +2998,17 @@ impl ChannelRuntimeV1 {
     }
 
     /// SPAWN-1a (CREATURE-AI-0 §6.3): one respawn drive at owner time `now_micros`, run from the
-    /// Channel owner's creature pass. A point whose creature is gone (observed at this drive)
-    /// gets its one occurrence one full delay later; due occurrences then run by deadline and
-    /// point: blocked by a player's interest area (blockable points only), else the warning and
-    /// admission 4,200 ms later; an occupied cell runs the Occupied chain.
+    /// Channel owner's creature pass. A point whose creature is gone (observed at the first
+    /// drive of an owner window) gets its one occurrence one full delay later; due occurrences
+    /// then run by deadline and point: blocked by a player's interest area (blockable points
+    /// only), else the warning and admission 4,200 ms later; an occupied cell runs the Occupied
+    /// chain. Nothing runs while an activation is in progress.
+    ///
+    /// SPAWN-CEILINGS-1: the owner drives this once per connected session, so the full pass
+    /// (every realized point and every pending occurrence) is coalesced per Channel: it runs on
+    /// the first drive of each owner window ([`spawn::OWNER_WINDOW_MICROS`]) and keeps the
+    /// occurrences due by that window's end. A later drive of the same window costs only the
+    /// occurrences whose deadline it reaches, each still run at its exact deadline.
     ///
     /// `sees(observer, cell)` is the reference view (MOVE-RL-11) the owner supplies.
     pub(crate) fn drive_spawn_respawns(
@@ -2811,37 +3019,40 @@ impl ChannelRuntimeV1 {
         use spawn::{RespawnOutcome, RespawnStep};
         self.owner_fence()?;
         let mut report = SpawnDriveReport::default();
-        if self.carrier.spawns.is_empty() {
+        if self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Ok(report);
         }
-        // Gone detection walks the realized points in place, already in canonical order
-        // (sources ascending, cells by ordinal): no per-drive allocation or sort, one
-        // generation-exact liveness read per point. It is still O(spawn points) per drive, and
-        // `RespawnSchedule::due` scans the pending occurrences; event-driven gone detection
-        // needs a death hook outside this file (SPAWN-CEILINGS-1 task record).
-        for spawn in &self.carrier.spawns {
-            let timing = spawn.definition.timing();
-            for (index, state) in spawn.cells.iter().enumerate() {
-                if state
-                    .live
-                    .is_some_and(|actor| self.carrier.creature_alive(&self.continuity, actor))
-                {
-                    continue;
-                }
-                let ordinal = u8::try_from(index).map_err(|_| CarrierError::CapacityExceeded)?;
-                let point = spawn::SpawnPoint {
-                    source: spawn.source.0,
-                    ordinal,
-                };
-                if self.spawn_schedule.pending(point).is_none() {
-                    self.spawn_schedule
-                        .creature_gone(point, timing, now_micros)
-                        .map_err(|_| CarrierError::CapacityExceeded)?;
-                }
-            }
+        let window = now_micros / spawn::OWNER_WINDOW_MICROS;
+        if self
+            .spawn_drive_window
+            .as_ref()
+            .is_none_or(|current| window > current.window)
+        {
+            self.scan_spawn_points(now_micros)?;
+            let horizon = (window * spawn::OWNER_WINDOW_MICROS)
+                .saturating_add(spawn::OWNER_WINDOW_MICROS - 1);
+            self.spawn_drive_window = Some(SpawnDriveWindow {
+                window,
+                horizon,
+                due: self.spawn_schedule.due(horizon).into(),
+            });
         }
         let context = self.pinned_position_context();
-        for (point, pending) in self.spawn_schedule.due(now_micros) {
+        loop {
+            let Some(drive_window) = self.spawn_drive_window.as_ref() else {
+                break;
+            };
+            let horizon = drive_window.horizon;
+            let Some(&(point, pending)) = drive_window.due.front() else {
+                break;
+            };
+            if pending.due_micros > now_micros {
+                break;
+            }
+            if self.spawn_schedule.pending(point) != Some(pending) {
+                self.pop_spawn_drive_due();
+                continue;
+            }
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
@@ -2881,6 +3092,17 @@ impl ChannelRuntimeV1 {
                 }
             }
             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            self.pop_spawn_drive_due();
+            // A successor due within this window joins its queue in deadline order.
+            if let Some(next) = self.spawn_schedule.pending(point)
+                && next.due_micros <= horizon
+                && let Some(drive_window) = self.spawn_drive_window.as_mut()
+            {
+                let at = drive_window.due.partition_point(|(queued, due)| {
+                    (due.due_micros, *queued) < (next.due_micros, point)
+                });
+                drive_window.due.insert(at, (point, next));
+            }
             match outcome {
                 RespawnOutcome::Warned { .. } => report.warnings.push(cell),
                 RespawnOutcome::Blocked { .. } => report.blocked += 1,
@@ -2890,6 +3112,41 @@ impl ChannelRuntimeV1 {
             }
         }
         Ok(report)
+    }
+
+    fn pop_spawn_drive_due(&mut self) {
+        if let Some(drive_window) = self.spawn_drive_window.as_mut() {
+            drive_window.due.pop_front();
+        }
+    }
+
+    /// Gone detection, once per owner window: walks the realized points in place, already in
+    /// canonical order (sources ascending, cells by ordinal), with no allocation or sort and
+    /// one generation-exact liveness read per point. A gone creature's point without an
+    /// occurrence gets one, one full delay after `now_micros`.
+    fn scan_spawn_points(&mut self, now_micros: u64) -> Result<(), CarrierError> {
+        for spawn in &self.carrier.spawns {
+            let timing = spawn.definition.timing();
+            for (index, state) in spawn.cells.iter().enumerate() {
+                if state
+                    .live
+                    .is_some_and(|actor| self.carrier.creature_alive(&self.continuity, actor))
+                {
+                    continue;
+                }
+                let ordinal = u8::try_from(index).map_err(|_| CarrierError::CapacityExceeded)?;
+                let point = spawn::SpawnPoint {
+                    source: spawn.source.0,
+                    ordinal,
+                };
+                if self.spawn_schedule.pending(point).is_none() {
+                    self.spawn_schedule
+                        .creature_gone(point, timing, now_micros)
+                        .map_err(|_| CarrierError::CapacityExceeded)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn spawn_realization(
@@ -5140,8 +5397,8 @@ impl ChannelActorCarrier {
     /// accumulates untracked, unpositioned creatures (GAME-AI-01 §6: over budget means zero
     /// mutation, applied here to any per-creature failure, not only capacity).
     ///
-    /// Activation realizes its sources through `admit_spawn_source` under one snapshot
-    /// instead; this per-source snapshot is for the single-source paths only.
+    /// Activation realizes its points through `admit_spawn_point` instead; this per-source
+    /// snapshot is for the single-source paths only.
     fn realize_spawn(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -5234,6 +5491,74 @@ impl ChannelActorCarrier {
                 cells,
             },
         );
+        Ok(())
+    }
+
+    /// SPAWN-CEILINGS-1 (CREATURE-AI-0 §6.2): admits and positions the creature of one
+    /// activation point, in canonical order. Point 0 records its source (with `definition`) at
+    /// the source's ordered place in `self.spawns`; every point appends its cell state, so a
+    /// source realized across two owner windows stays recorded in between. The caller has
+    /// already checked the ceilings and slot capacity. A refusal leaves every creature it
+    /// admitted recorded in `self.spawns` for the caller's undo.
+    fn admit_spawn_point(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        point: spawn::SpawnPoint,
+        definition: Option<SpawnDefinition>,
+        position_context: PreProductionPositionContext,
+    ) -> Result<(), CarrierError> {
+        let source = SpawnSourceId(point.source);
+        if point.ordinal == 0 {
+            let definition = definition.ok_or(CarrierError::PlanConflict)?;
+            let insert_at = match self
+                .spawns
+                .binary_search_by_key(&source.0, |spawn| spawn.source.0)
+            {
+                Ok(_) => return Err(CarrierError::DuplicateSpawnSource),
+                Err(insert_at) => insert_at,
+            };
+            if self.spawns.len() >= CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
+                return Err(CarrierError::CapacityExceeded);
+            }
+            let mut cells = Vec::new();
+            cells
+                .try_reserve_exact(definition.placement_cells.len())
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            self.spawns
+                .try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            self.spawns.insert(
+                insert_at,
+                SpawnRealization {
+                    source,
+                    definition,
+                    cells,
+                },
+            );
+        }
+        let index = self
+            .spawn_index(source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        let realization = &self.spawns[index];
+        let ordinal = usize::from(point.ordinal);
+        if realization.cells.len() != ordinal {
+            return Err(CarrierError::PlanConflict);
+        }
+        let cell = *realization
+            .definition
+            .placement_cells
+            .get(ordinal)
+            .ok_or(CarrierError::PlanConflict)?;
+        let health = realization.definition.creature_initial_health;
+        let identity = realization.definition.creature_target_identity.clone();
+        let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
+        // Reserved exactly at point 0: the push never reallocates.
+        self.spawns[index].cells.push(SpawnCellState {
+            live: Some(ExactActorRef(actor)),
+            attempt: 0,
+            successor: 0,
+        });
+        self.initialize_position(continuity, actor, position_context, cell)?;
         Ok(())
     }
 
@@ -7460,7 +7785,16 @@ mod tests {
         drop(over);
 
         let mut runtime = runtime(max);
-        assert_eq!(runtime.realize_spawn_definitions(sources(max)), Ok(max));
+        // More than one owner window: one turn refuses, owner windows realize it.
+        assert_eq!(
+            runtime.realize_spawn_definitions(sources(max)),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert!(runtime.carrier.spawns.is_empty());
+        assert_eq!(
+            realize_in_owner_windows(&mut runtime, sources(max)),
+            (max, max / spawn::REALIZATIONS_PER_WINDOW_MAX)
+        );
         assert_eq!(runtime.carrier.spawns.len(), max);
         assert!(
             runtime
@@ -7481,6 +7815,217 @@ mod tests {
             Err(CarrierError::DuplicateSpawnSource)
         );
         assert_eq!(runtime.carrier.spawns.len(), max);
+    }
+
+    /// Runs a begun activation one window per owner window from owner time 0, checking that no
+    /// owner window realizes more than `CREATUREAI0-RL-14` points and that a second call in an
+    /// owner window realizes nothing. Returns the creatures realized and the windows used.
+    fn realize_in_owner_windows(
+        runtime: &mut ChannelRuntimeV1,
+        definitions: Vec<SpawnDefinition>,
+    ) -> (usize, usize) {
+        let total = runtime.begin_spawn_definitions(definitions).expect("begin");
+        let mut now = 0;
+        let mut windows = 0;
+        loop {
+            let progress = runtime
+                .realize_activation_spawn_window(now)
+                .expect("one window");
+            assert!(progress.realized <= spawn::REALIZATIONS_PER_WINDOW_MAX);
+            windows += 1;
+            if progress.remaining == 0 {
+                assert_eq!(progress.realized_total, total);
+                assert!(runtime.spawn_activation.is_none());
+                return (total, windows);
+            }
+            let again = runtime
+                .realize_activation_spawn_window(now + spawn::OWNER_WINDOW_MICROS - 1)
+                .expect("same owner window");
+            assert_eq!(again.realized, 0);
+            assert_eq!(again.remaining, progress.remaining);
+            now += spawn::OWNER_WINDOW_MICROS;
+        }
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242094682): `CREATUREAI0-RL-14` holds above one window. One
+    /// owner turn refuses an activation of more than 4,096 points with nothing realized; begun
+    /// instead, it realizes exactly the `spawn::realization_windows` plan, one window per owner
+    /// window, in canonical order, a source spanning two windows included, and the respawn
+    /// drive does nothing until it completes.
+    #[test]
+    fn activation_realizes_at_most_rl_14_points_per_owner_window() {
+        // 131 sources of 63 points: 8,253 points, windows of 4,096, 4,096 and 61; source 65
+        // has 1 point in the first window and 62 in the second.
+        let definitions = || (0..131).map(|_| row_definition(0, 63)).collect::<Vec<_>>();
+        let mut runtime = runtime(8_253);
+        let slots_before = runtime.carrier.slots.clone();
+        assert_eq!(
+            runtime.realize_spawn_definitions(definitions()),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(runtime.carrier.slots, slots_before);
+        assert!(runtime.carrier.spawns.is_empty() && runtime.spawn_activation.is_none());
+
+        assert_eq!(runtime.begin_spawn_definitions(definitions()), Ok(8_253));
+        assert_eq!(runtime.carrier.slots, slots_before, "begin admits nothing");
+        assert_eq!(
+            runtime.begin_spawn_definitions(definitions()),
+            Err(CarrierError::DuplicateSpawnSource)
+        );
+        let plan = spawn::realization_windows(
+            &(0..131_u16)
+                .flat_map(|source| {
+                    (0..63_u8).map(move |ordinal| spawn::SpawnPoint { source, ordinal })
+                })
+                .collect::<Vec<_>>(),
+        )
+        .iter()
+        .map(Vec::len)
+        .collect::<Vec<_>>();
+        assert_eq!(plan, vec![4_096, 4_096, 61]);
+
+        let first = runtime
+            .realize_activation_spawn_window(1_000)
+            .expect("first window");
+        assert_eq!((first.realized, first.remaining), (4_096, 4_157));
+        assert_eq!(runtime.spawn_point_creatures().len(), 4_096);
+        assert_eq!(runtime.carrier.spawns[65].cells.len(), 1);
+        // Nothing respawns or realizes outside the plan while the activation runs.
+        assert_eq!(
+            runtime.drive_spawn_respawns(1_000, reference_view),
+            Ok(SpawnDriveReport::default())
+        );
+        let same = runtime
+            .realize_activation_spawn_window(spawn::OWNER_WINDOW_MICROS - 1)
+            .expect("same owner window");
+        assert_eq!((same.realized, same.remaining), (0, 4_157));
+        assert_eq!(runtime.spawn_point_creatures().len(), 4_096);
+
+        let second = runtime
+            .realize_activation_spawn_window(spawn::OWNER_WINDOW_MICROS)
+            .expect("second window");
+        assert_eq!((second.realized, second.remaining), (4_096, 61));
+        assert_eq!(runtime.carrier.spawns[65].cells.len(), 63);
+        let third = runtime
+            .realize_activation_spawn_window(2 * spawn::OWNER_WINDOW_MICROS)
+            .expect("last window");
+        assert_eq!(
+            (third.realized, third.realized_total, third.remaining),
+            (61, 8_253, 0)
+        );
+        assert!(runtime.spawn_activation.is_none());
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(points.len(), 8_253);
+        assert!(points.iter().all(|(_, _, live)| live.is_some()));
+        assert!(points.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        assert_eq!(
+            runtime.realize_activation_spawn_window(3 * spawn::OWNER_WINDOW_MICROS),
+            Err(CarrierError::PlanConflict)
+        );
+    }
+
+    /// A refusal in a later activation window realizes nothing: the earlier windows'
+    /// creatures are removed, other actors admitted between windows stay, and a new
+    /// activation may begin.
+    #[test]
+    fn a_refused_activation_window_realizes_nothing() {
+        // 65 sources of 64 points: windows of 4,096 and 64.
+        let mut runtime = runtime(4_160);
+        assert_eq!(
+            runtime.begin_spawn_definitions((0..65).map(|_| row_definition(0, 64)).collect()),
+            Ok(4_160)
+        );
+        let first = runtime.realize_activation_spawn_window(0).expect("first");
+        assert_eq!(first.realized, 4_096);
+        let early = runtime.spawn_point_creatures()[0].2.expect("realized");
+        // Other owner work takes the slots the second window needs.
+        let others = (0..64)
+            .map(|_| {
+                runtime
+                    .carrier
+                    .admit_creature(&runtime.continuity, ActorState(0), "test:other", 20)
+                    .expect("other creature")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            runtime.realize_activation_spawn_window(spawn::OWNER_WINDOW_MICROS),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert!(runtime.carrier.spawns.is_empty() && runtime.spawn_activation.is_none());
+        assert!(
+            runtime
+                .carrier
+                .validate_ref(&runtime.continuity, early.0)
+                .is_err()
+        );
+        for other in others {
+            assert!(
+                runtime
+                    .carrier
+                    .validate_ref(&runtime.continuity, other)
+                    .is_ok()
+            );
+        }
+        assert_eq!(runtime.carrier.occupied.len(), 64);
+        assert_eq!(runtime.carrier.free_slot_count(), 4_096);
+        assert_eq!(
+            runtime.realize_spawn_definitions(vec![row_definition(0, 64)]),
+            Ok(64)
+        );
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242094686): the full spawn scan runs once per Channel owner
+    /// window, not once per drive. The owner drives once per connected session; a creature
+    /// that dies after a window's first drive is observed only at the next window's first
+    /// drive, however many sessions drive meanwhile, and an occurrence due inside a window
+    /// still runs at its exact deadline.
+    #[test]
+    fn the_spawn_scan_runs_once_per_owner_window_however_many_sessions_drive() {
+        let mut runtime = spawned_runtime(den_definition());
+        let point = runtime.spawn_point_creatures()[0].0;
+        assert_eq!(
+            runtime.drive_spawn_respawns(0, reference_view),
+            Ok(SpawnDriveReport::default())
+        );
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        for session_drive in 1..=256 {
+            assert_eq!(
+                runtime.drive_spawn_respawns(session_drive, reference_view),
+                Ok(SpawnDriveReport::default())
+            );
+        }
+        assert_eq!(
+            runtime.pending_respawn(point),
+            None,
+            "no rescan in the window"
+        );
+        let observed_at = spawn::OWNER_WINDOW_MICROS + 123;
+        runtime
+            .drive_spawn_respawns(observed_at, reference_view)
+            .expect("next window");
+        let due = observed_at + SPAWN_DELAY;
+        assert_eq!(
+            runtime.pending_respawn(point).map(|p| p.due_micros),
+            Some(due)
+        );
+        // The window holding the deadline: its drives before the deadline run nothing, the
+        // drive at the deadline warns.
+        let window_start = due - 123;
+        for now in window_start..due {
+            assert_eq!(
+                runtime.drive_spawn_respawns(now, reference_view),
+                Ok(SpawnDriveReport::default())
+            );
+        }
+        let warned = runtime
+            .drive_spawn_respawns(due, reference_view)
+            .expect("deadline");
+        assert_eq!(warned.warnings, vec![DEN]);
+        assert_eq!(
+            runtime.drive_spawn_respawns(due + 1, reference_view),
+            Ok(SpawnDriveReport::default())
+        );
     }
 
     /// The single-source path enforces `CREATUREAI0-RL-01` against the points already
