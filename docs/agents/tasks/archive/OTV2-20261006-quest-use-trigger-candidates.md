@@ -94,7 +94,7 @@ The future executable binding remains owned by the accepted world/use/Quest-trig
 - `python -m unittest discover -s tools/agents/tests`: 60 tests OK
 - No runtime admission or Quest transition selection.
 
-Review state: archived in the final authoring commit per the Codex P1 on this PR; remaining review state is recorded by the PR.
+Review state: PR #1901 merged without the archive move; this separate archive-only PR #1971 performs the closeout and archive move. Remaining review state is recorded by the respective PRs.
 
 ## Follow-up
 
