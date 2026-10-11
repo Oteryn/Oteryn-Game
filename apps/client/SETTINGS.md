@@ -53,10 +53,10 @@ is a separate platform path; this Windows UI does not establish Linux GUI parity
 
 ## Live reference inspection, 2026-10-08
 
-The owner provided the running Synology container `otclient-track-a-kasmvnc` as
-an interface/options reference. The inspected window was the official Tibia
+A private reference container running the official client served as the
+interface/options reference. The inspected window was the official Tibia
 client, confirmed by its executable under `CipSoft GmbH/Tibia/packages/Tibia`.
-The container name alone does not identify the running implementation as OTClient.
+The container name alone would not identify the running implementation as OTClient.
 
 Observed directly: health/mana/status bars, central game viewport, right minimap,
 equipment slots, battle list, backpack, quest/player-guide panels, action slots,
@@ -70,8 +70,7 @@ and its three hotkey pages; Interface and its five subpages; Graphics and Effect
 Sound, Battle Sounds and UI Sounds; Miscellaneous, Gameplay, Screenshots and Help.
 Together with Basic Options, these are 20 visually inspected pages. Screenshots
 were checked for the actual page content; capture filenames alone are not proof.
-The private coverage catalogue is
-`/workspace/artifacts/oteryn-reference/REFERENCE-AUDIT.md`.
+The sanitized coverage record is [REFERENCE-AUDIT.md](REFERENCE-AUDIT.md).
 
 Further discovery used **names only** from six preference sections of
 `conf/clientoptions.json`: 213 names total. No account, cookie or other preference
@@ -163,6 +162,8 @@ and audio; capture/diagnostics. Each batch must connect visible preferences to i
 real consumer and pass the completion criteria above. The current login UI and
 seven-section preferences panel are the foundation, not this complete composition.
 
-Reference screenshots and the sanitized name catalogue are private task artifacts
-under `/workspace/artifacts/oteryn-reference`; they are not bundled game assets.
+Reference screenshots and raw captures are private artifacts kept outside the
+repository. The sanitized field-name inventory is committed as
+[REFERENCE-PREFERENCE-KEYS.json](REFERENCE-PREFERENCE-KEYS.json); neither is a
+bundled game asset.
 Oteryn uses its own branding, textures and implementation.

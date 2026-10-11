@@ -30,41 +30,116 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Status: authoring, not frozen. Owner explicitly requested repository preservation
-and allowed a draft PR on 2026-10-09. No deployment, merge or database reset.
+`execution_policy: continuous_progress` applies. Documentation-only checkpoint;
+no deployment, merge or database reset. Single writer on a dedicated branch; older
+private implementation edits remain separate and must not be discarded.
 
-Canonical branch: `docs/client-reference-audit-20261009`.
-Single writer: root agent. Fresh branch allocated exclusively to this task.
-No concurrent writer or review allocation. This is a documentation-only checkpoint;
-older private implementation edits remain separate and must not be discarded.
+## Outcome
 
-## Scope
+The repository preserves a sanitized functional reference audit of the official
+client settings and sidebar, the intended Oteryn scope for each settings page, and
+a 213-name preference-field inventory. No reference assets or account values are
+published, and nothing here claims client readiness.
 
-- `apps/client/SETTINGS.md`: actual private implementation status and intended scope.
-- `apps/client/REFERENCE-AUDIT.md`: verified coverage, complete extra-shortcut list,
-  restrictions, outstanding inspection and evidence handling.
-- `apps/client/REFERENCE-PREFERENCE-KEYS.json`: 213 names only, across six sections.
-- This task packet: preservation boundary and next work.
+## Architecture and source of truth
 
-## Publication boundary
+- `DERIVED`: audit content comes from private live inspection of the official
+  client plus a read-only static catalogue sweep; raw captures stay outside the repo.
+- `PROVEN`: `REFERENCE-PREFERENCE-KEYS.json` holds field names only, six sections.
+- `UNKNOWN`: runtime behavior of unexercised menus and account-gated states.
+- No ADR or public contract is changed; implementation status in SETTINGS.md
+  describes private work and is not authority.
 
-Use the connector-compatible fresh-branch route under the pinned META publication
-policy: immediately read the live predecessor; build one complete-delta tree on
-its exact tree; create one sole-parent successor; advance only this branch with
-force=false and expected predecessor; immediately verify the live branch head.
-Do not reconstruct or publish older local implementation commits through this
-checkpoint. Draft remains open for subsequent authoring; no qualification or merge
-is implied by its creation.
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE`: documentation-only; no production mutation, authority fence,
+controller or persisted recovery evidence is touched.
+
+## Acceptance criteria
+
+- [x] Audit and settings docs contain no account-derived state, credentials or
+  private infrastructure identifiers (checked by grep and review).
+- [x] The sanitized key inventory is described as committed; screenshots and raw
+  captures are described as private.
+- [x] Governance validation passes on the candidate.
+- [ ] Remaining shortcut and container inspection recorded in a later delta.
+
+## Excluded scope
+
+No runtime, content or asset changes; no proprietary imagery; no claim that every
+panel or behavior is verified.
+
+## Implementation / findings
+
+Review round 1: account state removed from the audit (P1), infrastructure
+identifiers removed from SETTINGS.md and the publication status of the key
+inventory corrected (P2s), and this record completed to the template (P1).
 
 ## Validation
 
-Documentation checked against verified screenshots and the scoped shortcut
-inventory. Incorrectly named/stale captures are excluded. No proprietary imagery,
-credentials, account values or reference assets are included. Runtime tests do
-not apply to this documentation-only delta.
+### Focused
 
-## Next work
+- command/run: `python tools/agents/validate_governance.py`
+- result: pass on the candidate
 
-Inspect outstanding extra shortcuts and character/container controls; record
-empty/restricted states honestly; restore original shortcut layout; update audit
-coverage and draft PR with a bounded new authoring delta after live-head refresh.
+### Component/integration
+
+- `NOT_APPLICABLE`: documentation-only.
+
+### E2E
+
+- `NOT_APPLICABLE`: documentation-only.
+
+### Exact-head CI
+
+- final head: recorded in PR checks after the last commit
+- result: pending
+
+## Self-review
+
+- exact head: the PR head at review time
+- method/reviewer: implementing agent, whole-diff read for private data
+- material findings: none open
+- verdict: pass
+
+## Independent review
+
+- required: NO (documentation-only, no authority or runtime surface)
+- exact head, method/auditor, findings, verdict: `NOT_APPLICABLE`
+
+## PR and closeout
+
+- changed-file review: four owned paths only
+- unresolved review threads: none after round 1 replies
+- related/superseded PRs: none
+- protected auto-merge: not enabled
+- merge commit/result: pending
+- ownership release: at merge
+
+## Context checkpoint
+
+```yaml
+last_progress: review round 1 findings repaired
+status: implementing
+branch: docs/client-reference-audit-20261009
+head_sha: null
+pr: 1941
+final_head_sha: null
+final_head_frozen_at: null
+ci_trigger_source: null
+ci_check_generation: null
+ci_checks_for_current_head: 0
+ci_run_ids: []
+ci_job_ids: []
+runner_assignment_state: unknown
+terminal_ci_wait_started_at: null
+terminal_ci_checks_for_current_generation: 0
+unchanged_state_checks: 0
+identical_failure_retries: 0
+repair_cycles_for_current_gate: 1
+ci_recovery_actions_for_current_head: 0
+stall_warnings: 0
+owner_action_required: null
+blocker: null
+next_action: Wait for exact-head CI on PR 1941, then hand the review packet to the lead.
+```
