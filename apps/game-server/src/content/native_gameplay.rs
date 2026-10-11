@@ -2050,7 +2050,7 @@ pub(crate) mod tests {
             wrapped.expectation(),
         )
         .unwrap();
-        assert_eq!(staged.runtime_state().server_record_count(), 22);
+        assert_eq!(staged.runtime_state().server_record_count(), 23);
         assert_eq!(staged.runtime_state().client_record_count(), 6);
         assert_eq!(
             decode(&wrapped.server_artifact).unwrap().baseline,

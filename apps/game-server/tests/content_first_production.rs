@@ -149,7 +149,7 @@ fn source(cell_count: usize) -> Result<FirstProductionContentSource, ContentErro
             key: ProductionKey::new("oteryn:prod.spawn")?,
             creature_key: creature,
             behavior_key: behavior,
-            cell_key: last_cell,
+            cell_keys: vec![last_cell],
             population_limit: 1,
             recovery: SpawnRecoveryClass::CheckpointedRuntimeContinuity,
             multiplicity: MultiplicityClass::ChannelLocalSharedEligibility,
@@ -294,15 +294,66 @@ fn public_identifier_and_digest_boundaries_are_fail_closed() {
 fn public_constants_match_protected_first_production_envelope() {
     assert_eq!(FIRST_PRODUCTION_MAX_MANIFEST_FIELDS, 20);
     assert_eq!(FIRST_PRODUCTION_MAX_MANIFEST_BYTES, 9_384);
-    assert_eq!(FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES, 4_304_614);
+    assert_eq!(FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES, 4_312_850);
     assert_eq!(FIRST_PRODUCTION_MAX_CLIENT_ARTIFACT_BYTES, 34_248);
-    assert_eq!(FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES, 4_338_862);
-    assert_eq!(FIRST_PRODUCTION_MAX_DECODED_FIELDS, 8_432);
+    assert_eq!(FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES, 4_347_098);
+    assert_eq!(FIRST_PRODUCTION_MAX_DECODED_FIELDS, 8_448);
+    assert_eq!(FIRST_PRODUCTION_MAX_SECTION_BYTES, 4_303_314);
     assert_eq!(FIRST_PRODUCTION_MAX_CELLS, 1_024);
     assert_eq!(FIRST_PRODUCTION_MAX_DEFINITIONS, 1_042);
-    assert_eq!(FIRST_PRODUCTION_MAX_REFERENCES, 3_087);
-    assert_eq!(FIRST_PRODUCTION_MAX_SERVER_RECORDS, 1_043);
+    assert_eq!(FIRST_PRODUCTION_MAX_REFERENCES, 3_090);
+    assert_eq!(FIRST_PRODUCTION_MAX_SERVER_RECORDS, 1_045);
     assert_eq!(FIRST_PRODUCTION_MAX_CLIENT_RECORDS, 6);
-    assert_eq!(FIRST_PRODUCTION_MAX_SPAWN_POPULATION, 1);
-    assert_eq!(FIRST_PRODUCTION_MAX_SCOPE_POPULATION, 1);
+    assert_eq!(FIRST_PRODUCTION_MAX_SPAWN_POPULATION, 2);
+    assert_eq!(FIRST_PRODUCTION_MAX_SCOPE_POPULATION, 2);
+}
+
+fn with_population(
+    mut source: FirstProductionContentSource,
+    population: u16,
+) -> FirstProductionContentSource {
+    let placements = usize::from(population);
+    let first = source.cells.len().saturating_sub(placements);
+    source.spawns[0].population_limit = population;
+    source.spawns[0].cell_keys = source.cells[first..]
+        .iter()
+        .map(|cell| cell.key.clone())
+        .collect();
+    source
+}
+
+/// FirstProduction Amendment 04: the maximum graph with a two-placement spawn (max population,
+/// max server records, max references) stages; population 3 (max+1) is refused before lowering.
+#[test]
+fn public_amendment_04_population_maxima_are_exact() -> Result<(), ContentError> {
+    let maximum = with_population(source(FIRST_PRODUCTION_MAX_CELLS)?, 2);
+    let compiled =
+        compile_first_production(&maximum, FirstProductionCompileTarget::OrdinaryRelease)?;
+    let mut controller = ContentActivationController::new();
+    assert!(
+        controller
+            .stage_primary(
+                &compiled.server_artifact,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            )
+            .is_ok()
+    );
+
+    let over = with_population(source(3)?, 3);
+    assert!(matches!(
+        compile_first_production(&over, FirstProductionCompileTarget::OrdinaryRelease),
+        Err(ContentError::LimitExceeded {
+            resource: "first-production spawn population per spawn",
+            actual: 3,
+            limit: 2,
+        })
+    ));
+
+    let more_cells = with_population(source(FIRST_PRODUCTION_MAX_CELLS + 1)?, 2);
+    assert!(matches!(
+        compile_first_production(&more_cells, FirstProductionCompileTarget::OrdinaryRelease),
+        Err(ContentError::LimitExceeded { .. })
+    ));
+    Ok(())
 }
