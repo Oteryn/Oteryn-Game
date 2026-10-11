@@ -1074,10 +1074,15 @@ mod tests {
             parse_settings_audit_request(args(&[SETTINGS_AUDIT_ARGUMENT, "relative"])),
             Err(SettingsAuditArgumentError::OutputDirectoryMustBeAbsolute)
         );
+        let filesystem_root = std::env::current_dir()?
+            .ancestors()
+            .last()
+            .ok_or("current directory has no filesystem root")?
+            .to_path_buf();
         assert_eq!(
             parse_settings_audit_request(vec![
                 SETTINGS_AUDIT_ARGUMENT.into(),
-                PathBuf::from(std::path::MAIN_SEPARATOR_STR).into_os_string(),
+                filesystem_root.into_os_string(),
             ]),
             Err(SettingsAuditArgumentError::OutputDirectoryMustNotBeRoot)
         );
