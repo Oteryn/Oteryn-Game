@@ -66,7 +66,11 @@ is page-scoped, not global: only implemented controls use Oteryn defaults;
 unavailable intent, bindings, locks and other pages survive. Original factory
 values/profile-table resets remain unverified; those table resets stay disabled.
 Linux 209/184/5, strict Clippy, formatting, workspace boundaries and governance
-pass. Exact-source native qualification and publication evidence are pending.
+pass. Published source `a95a92dccf8deb8ae89ad75e0652dd02ba9e89e0` passes
+MSVC 208/188/5 and strict seven-package native checks; DX12 20 pages/78 hashes,
+zero invalid entries at 125% DPI, owner PID 12896 responsive. Manifest/recovery
+and inspected captures are retained in UI-FIDELITY.md. Physical keyboard/picker,
+original factory/profile Reset semantics, live bundle E2E and final CI remain open.
 
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,

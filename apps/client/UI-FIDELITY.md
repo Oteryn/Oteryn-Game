@@ -521,8 +521,21 @@ Help and wholly unavailable page resets are disabled, not counted as working.
 Original factory values and profile-table reset semantics remain unverified.
 Actual footer-click, draft/current isolation, resize and inner-dialog regressions
 are retained. Linux client 209/184/5, strict Clippy, formatting, workspace
-boundaries and governance validation/tests pass. Native exact-source qualification is pending; this is not 1:1
-completion or proof of every page's runtime consumers.
+boundaries and governance validation/tests pass. Source
+`a95a92dccf8deb8ae89ad75e0652dd02ba9e89e0` passes MSVC client 208/188/5,
+Session 72, protocol 214, dev adapter 34, harness 36, renderer 43 and assets
+2/13, plus strict seven-package all-target Clippy. Native process 36568 exits
+zero (98.25 seconds). Exact-source DX12 audit verifies 20 pages/78 capture
+hashes/zero invalid entries at 125% DPI, with owner PID 12896 responsive.
+Graphics, General Hotkeys and Help captures were inspected: footer order is
+correct and unverified table/Help page Reset remains disabled.
+Private audit `C:\Users\barte\Downloads\oteryn-settings-audit-a95a92dc`;
+manifest SHA-256 `016e6e18d3b470f3ad461bd61438f7caa1de4ca70b55edfbb1518f0f188123f0`.
+Recovery `/workspace/oteryn-client-publication-a95a92dc.bundle`, SHA-256
+`256d1f1ad4fdd669d489c0f97e27a2b33c331e226e36513043ee3b5756c21836`.
+This is not 1:1 completion, physical keyboard/picker acceptance, live bundle E2E
+or proof of every page's runtime consumers. Final independent review/full CI
+remain open; protected-base audit alone cannot establish them.
 
 ## Required evidence per page/panel
 
