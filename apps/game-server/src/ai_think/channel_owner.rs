@@ -11,8 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::behaviour_profile::{CreatureBehaviourProfile, ProfileRefusal};
 use super::targeting::{self, TargetCandidate};
 use super::{
-    CREATUREAI1_WAKE_CANDIDATES, CreatureAiState, CreatureAiTable, CreatureThinkFacts,
-    ThinkReport,
+    CREATUREAI1_WAKE_CANDIDATES, CreatureAiState, CreatureAiTable, CreatureThinkFacts, ThinkReport,
 };
 use crate::ability::RevisionSet;
 use crate::content::{
@@ -83,8 +82,12 @@ impl CreatureAiTable {
             .filter_map(|player| runtime.read_actor_position(*player).ok())
             .map(|snapshot| snapshot.position())
             .collect::<Vec<_>>();
-        self.wake_indexed(&viewers, |creature| live_position(runtime, creature), now_us)
-            .0
+        self.wake_indexed(
+            &viewers,
+            |creature| live_position(runtime, creature),
+            now_us,
+        )
+        .0
     }
 
     /// The wake of `viewers` in turn, bounded independently of the product of players and
@@ -211,10 +214,7 @@ const VIEW_FLOORS: std::ops::RangeInclusive<i16> = 0..=15;
 fn wake_view_box(
     viewer: MovementLocalPosition,
     floor: i16,
-) -> Option<(
-    std::ops::RangeInclusive<i32>,
-    std::ops::RangeInclusive<i32>,
-)> {
+) -> Option<(std::ops::RangeInclusive<i32>, std::ops::RangeInclusive<i32>)> {
     let viewable = floor == viewer.floor
         || (VIEW_FLOORS.contains(&viewer.floor) && VIEW_FLOORS.contains(&floor));
     if !viewable {
