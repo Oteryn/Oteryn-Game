@@ -138,7 +138,7 @@ def main():
     parser.add_argument('--creatures', required=True, type=Path)
     parser.add_argument('--presentations', required=True, type=Path)
     parser.add_argument('--spell-appearances', required=True, type=Path)
-    parser.add_argument('--canary-source', required=True, type=Path)
+    parser.add_argument('--reference-engine-source', required=True, type=Path)
     parser.add_argument('--bundle-root', required=True, type=Path)
     parser.add_argument('--source-root', required=True, type=Path)
     parser.add_argument('--out', required=True, type=Path)
@@ -165,7 +165,7 @@ def main():
                for r in rows if r['definition']['identity']['key'] not in selected_keys]
     creatures, melee = derive_melee(creatures, args.bundle_root, args.source_root,
                                     'canary/data-otservbr-global/monster',
-                                    melee_skill_engine=qualify_melee_skill_engine(args.canary_source),
+                                    melee_skill_engine=qualify_melee_skill_engine(args.reference_engine_source),
                                     enable_secondary_conditions=True)
     if args.crystal_fallback:
         fallback_creatures, fallback_report = derive_melee(
@@ -182,7 +182,7 @@ def main():
     if any(r[0] != 'Encounter' for r in missing_new):
         raise ValueError(f'new non-Encounter reference absent from accepted registry: {missing_new}')
     spell_appearances, added_illusions = extend_illusion_appearances(
-        creatures, presentations, rows, json.loads(args.spell_appearances.read_bytes()), args.canary_source)
+        creatures, presentations, rows, json.loads(args.spell_appearances.read_bytes()), args.reference_engine_source)
     documents = {'creature-profiles.json': creatures, 'presentation-profiles.json': presentations,
                  'spell-appearances.json': spell_appearances}
     encoded = {name: compact(doc) for name, doc in documents.items()}

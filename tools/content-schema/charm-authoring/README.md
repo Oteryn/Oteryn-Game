@@ -74,7 +74,7 @@ python charm_authoring.py content --check
 python test_charm_authoring.py
 
 # evidence refresh (network + Canary checkout at 47dfd51f; local only)
-python charm_authoring.py capture --canary <canary checkout>
+python charm_authoring.py capture --reference-engine <canary checkout>
 python charm_authoring.py build
 ```
 
@@ -101,7 +101,7 @@ python tools/content-schema/charm-authoring/test_charm_mechanics.py
 python tools/content-schema/charm-authoring/test_charm_authoring.py
 # Optional offline verification against exact pinned source trees:
 python tools/content-schema/charm-authoring/charm_mechanics.py verify-sources \
-  --canary /path/to/canary --crystal /path/to/crystal --tibiapal /path/to/TibiaPal
+  --reference-engine /path/to/canary --crystal /path/to/crystal --tibiapal /path/to/TibiaPal
 ```
 
 `check` and `validate` verify the same committed package: schema, catalogue binding, complete key/effect/hook coverage, source classes, immutable captured facts, 75 numeric comparisons, current index and deterministic derivation. `verify-sources` additionally hashes files in supplied checkout roots and independently parses their catalogue numbers. It states the verified repository count; omitted external checkout roots remain unverified. It performs no network access. The existing authoring test entry invokes the new suite so its current CI entry also covers this package.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Condition authoring: build and validate the static ConditionDefinition catalogue (COND-CONTENT-1).
 
-`capture --canary <checkout>` reads the pinned Canary checkout: it parses the `field` items of
+`capture --reference-engine <checkout>` reads the pinned Canary checkout: it parses the `field` items of
 data/items/items.xml and checks every cited line range of authored-conditions.json against its needles, and
 writes the source facts. `build` derives the catalogue from those facts, the authored rows and the
 committed monster condition Effects in content/abilities/; `build --check` diffs a rebuild against
@@ -637,7 +637,7 @@ def main() -> int:
     capture_cmd = sub.add_parser(
         "capture", help="write the Canary source facts (local checkout)"
     )
-    capture_cmd.add_argument("--canary", type=Path, required=True)
+    capture_cmd.add_argument("--reference-engine", type=Path, required=True)
     build_cmd = sub.add_parser(
         "build", help="write (or --check) the candidate catalogue"
     )
@@ -656,7 +656,7 @@ def main() -> int:
 
     if args.command == "capture":
         SOURCES.write_text(
-            json.dumps(capture(args.canary), indent=2, sort_keys=True) + "\n",
+            json.dumps(capture(args.reference_engine), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         print(f"wrote {SOURCES.relative_to(ROOT)}")

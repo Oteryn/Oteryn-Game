@@ -2,7 +2,7 @@
 
 This directory contains the schema-v1 deterministic producer/validator for `docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md`.
 
-It consumes normalized native catalogue input. It does **not** parse Canary, CrystalServer, Atlas, third-party Wiki data, legacy numeric IDs or mutable runtime state as native authority.
+It consumes normalized native catalogue input. It does **not** parse legacy-engine sources, Atlas, third-party Wiki data, legacy numeric IDs or mutable runtime state as native authority.
 
 ## Produce
 

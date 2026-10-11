@@ -21,7 +21,7 @@ use oteryn_world_bundle_compiler::bundle::{
 use oteryn_world_bundle_compiler::compile::{Input, KeyResolver, Resolution, compile};
 use oteryn_world_bundle_compiler::project::Families;
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
-use oteryn_world_bundle_compiler::spawn;
+use oteryn_world_bundle_compiler::{npc, spawn};
 use sha2::{Digest, Sha256};
 
 type TestResult = Result<(), Box<dyn StdError>>;
@@ -123,14 +123,16 @@ fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     let frame = compress(&raw)?;
     let spawn_raw = spawn::encode(&spawn::Table::default());
     let spawn_frame = compress(&spawn_raw)?;
+    let npc_raw = npc::encode(&npc::Table::default());
+    let npc_frame = compress(&npc_raw)?;
     let u32_of = |value: usize| (value as u32).to_le_bytes();
     let mut out = b"OTWB".to_vec();
-    out.extend_from_slice(&3u16.to_le_bytes());
+    out.extend_from_slice(&4u16.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(1));
     out.extend_from_slice(&json);
-    let offset = out.len() + 50 + 44;
+    let offset = out.len() + 50 + 44 + 44;
     out.extend_from_slice(&[-7i8 as u8, 0]);
     out.extend_from_slice(&0u16.to_le_bytes());
     out.extend_from_slice(&0u16.to_le_bytes());
@@ -142,11 +144,16 @@ fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     out.extend_from_slice(&u32_of(spawn_frame.len()));
     out.extend_from_slice(&u32_of(spawn_raw.len()));
     out.extend_from_slice(&Sha256::digest(&spawn_frame));
+    out.extend_from_slice(&u32_of(offset + frame.len() + spawn_frame.len()));
+    out.extend_from_slice(&u32_of(npc_frame.len()));
+    out.extend_from_slice(&u32_of(npc_raw.len()));
+    out.extend_from_slice(&Sha256::digest(&npc_frame));
     out.extend_from_slice(&frame);
     out.extend_from_slice(&spawn_frame);
+    out.extend_from_slice(&npc_frame);
     let body = out.len();
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v3\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v4\0")
         .chain_update(&out)
         .finalize()
         .into();

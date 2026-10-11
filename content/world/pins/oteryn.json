@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8",
+  "digest": "5c32d7acdb5c41552a8081edbc09b8009a9b52a1b282c254e0b7254e0a4965e7",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "d3-7-corpse-admitted-20261006-r1",
+  "content_revision": "d3-8-cheese-admitted-20261007-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "736f9f893ec199bf295c2f3755d67b2bc20b127a0aab3ee956a224fa2ed03cf9"
+  "inputs_digest": "4e253cb9fa119772507556e65e065ceb4901b38fccb6cf0b7193c4a51d2c71e7"
 }
