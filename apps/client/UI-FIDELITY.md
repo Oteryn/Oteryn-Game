@@ -343,6 +343,27 @@ changed Rust packages. This is draw composition only. GPU sprite-page uploads,
 the play-view consumer, picking and joint speed switch remain pending; capability
 18 stays unadvertised. Prior Windows evidence does not qualify this batch.
 
+Source `108d99f8239b99c6dfc807c460eca9944cba389f` subsequently passes native
+MSVC client 209/175/5, Session 62, protocol 214, dev adapter 34, harness 36,
+renderer 40 and assets 2/13 tests, plus strict all-target Clippy for all seven
+packages. The exact-source DX12 audit passes all 20 pages, 78 independently
+hashed captures and zero invalid entries at 125% DPI. Private audit directory:
+`C:\Users\barte\Downloads\oteryn-settings-audit-108d99f8`; manifest SHA-256
+`45e32a92c8c750aedf5581df9401aadfd8d006076cc313143833688837da3371`.
+Recovery bundle `/workspace/oteryn-client-publication-108d99f8.bundle`, SHA-256
+`e21387d64ca1e350ad218f04116c11e1336bdf69372c143de8132784fefdc275`.
+The owner's running client remains responsive. Same-head protected-base audit
+passes; this is not full-CI or live streamed-map qualification.
+
+The next AUTHORING batch adds bounded GPU sprite-page consumption: up to four
+ordered instance buffers, real subrect uploads and CPU backing retained across
+surface acquisition/recreation. Invalid or duplicate cell uploads fail before
+mutation, and ordinary uploads cannot overwrite the placeholder row. Static
+scene composition, AA, UI and captures retain their existing paths. A physical
+DX12 readback regression checks later-batch pixels, overwritten cells and a
+recreated texture. It requires native execution before it counts as evidence;
+the live play-view consumer is still pending and capability 18 remains off.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

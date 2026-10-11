@@ -29,9 +29,21 @@ where
 
 /// Tile and sprite batches for one frame; sprites are drawn over tiles.
 #[derive(Clone, Copy)]
-struct FrameBatches<'a> {
-    tiles: &'a TileBatch,
-    sprites: &'a SpriteBatch,
+enum FrameBatches<'a> {
+    Static {
+        tiles: &'a TileBatch,
+        sprites: &'a SpriteBatch,
+    },
+    Page(&'a crate::SpriteFrame),
+}
+
+impl FrameBatches<'_> {
+    fn draw(self, scene: &SceneGpu, pass: &mut wgpu::RenderPass<'_>) {
+        match self {
+            Self::Static { tiles, sprites } => scene.draw(pass, tiles, sprites),
+            Self::Page(frame) => scene.draw_page(pass, frame),
+        }
+    }
 }
 
 impl<T> WindowsRenderer<T>
@@ -147,7 +159,7 @@ where
     ) -> Result<(), RendererError> {
         self.render_frame(
             generation,
-            Some(FrameBatches { tiles, sprites }),
+            Some(FrameBatches::Static { tiles, sprites }),
             None,
             false,
         )
@@ -177,7 +189,7 @@ where
     ) -> Result<(), RendererError> {
         self.render_frame(
             generation,
-            Some(FrameBatches { tiles, sprites }),
+            Some(FrameBatches::Static { tiles, sprites }),
             Some((context, output)),
             false,
         )
@@ -196,11 +208,50 @@ where
     ) -> Result<CapturedFrame, RendererError> {
         self.render_frame(
             generation,
-            Some(FrameBatches { tiles, sprites }),
+            Some(FrameBatches::Static { tiles, sprites }),
             Some((context, output)),
             true,
         )?
         .ok_or(RendererError::CaptureMap)
+    }
+
+    /// Presents the existing streamed sprite page, preserving batch order and capture semantics.
+    pub fn render_sprite_frame_ui(
+        &mut self,
+        generation: ProcessGeneration,
+        frame: &crate::SpriteFrame,
+        uploads: &[crate::SpritePageUpload],
+        context: &egui::Context,
+        output: egui::FullOutput,
+        capture: bool,
+    ) -> Result<Option<CapturedFrame>, RendererError> {
+        // Retain pixels even when this acquisition reports Lost/Outdated: the next
+        // GPU scene recreation must not depend on already-consumed LRU uploads.
+        crate::resources::acquire_frame(&self.state, generation, || ())?;
+        frame
+            .validate_batches()
+            .map_err(|_| RendererError::Validation)?;
+        self.atlas
+            .as_mut()
+            .ok_or(RendererError::Validation)?
+            .apply_page_uploads(uploads)
+            .map_err(|_| RendererError::Validation)?;
+        if let Some(scene) = &self.scene {
+            for upload in uploads {
+                scene.write_cell(
+                    &self.queue,
+                    crate::AtlasPage::slot_origin(upload.slot),
+                    crate::PAGE_CELL_PX,
+                    &upload.rgba,
+                );
+            }
+        }
+        self.render_frame(
+            generation,
+            Some(FrameBatches::Page(frame)),
+            Some((context, output)),
+            capture,
+        )
     }
 
     pub fn render_ui(
@@ -332,7 +383,7 @@ where
                 })],
                 ..Default::default()
             });
-            scene.draw(&mut pass, batches.tiles, batches.sprites);
+            batches.draw(scene, &mut pass);
         }
         let ui_frame = if let Some((context, output)) = ui_output {
             let config = self
@@ -387,7 +438,7 @@ where
                 if let Some(resampler) = &self.resampler {
                     resampler.draw(&mut render_pass);
                 } else {
-                    scene.draw(&mut render_pass, batches.tiles, batches.sprites);
+                    batches.draw(scene, &mut render_pass);
                 }
             }
         }
@@ -561,17 +612,20 @@ where
                 atlas,
             ));
         }
-        if let Some(scene) = &self.scene {
-            scene.upload(
-                &self.queue,
-                if self.scene_viewport.is_some() {
-                    SurfaceSize::new(720, 528)
-                } else {
-                    self.state.size()
-                },
-                batches.tiles,
-                batches.sprites,
-            );
+        let size = if self.scene_viewport.is_some() {
+            SurfaceSize::new(720, 528)
+        } else {
+            self.state.size()
+        };
+        if let Some(scene) = &mut self.scene {
+            match batches {
+                FrameBatches::Static { tiles, sprites } => {
+                    scene.upload(&self.queue, size, tiles, sprites)
+                }
+                FrameBatches::Page(frame) => {
+                    scene.upload_page(&self.device, &self.queue, size, frame)?
+                }
+            }
         }
         Ok(())
     }

@@ -32,58 +32,17 @@ must not be claimed as complete.
 
 ## Current authoring batch — 2026-10-11
 
-- Production Settings navigation is restricted to the exact 20 observed pages
-  and order. Quick/Account/Transparency shell entries, seven catalogue-only
-  pages and Oteryn-only controls embedded in reference pages are hidden while old
-  values remain loadable.
-- Compiled semantic coverage routes those same 20 production pages, checks a
-  page-specific marker set plus targeted labels/choices/dependencies, outer-page
-  scroll reachability, Help action order and render-time non-mutation. It is not
-  yet an exhaustive per-row snapshot. A Windows-only `--settings-audit` mode
-  captures every page through the real DX12 renderer and emits a
-  geometry/readback manifest. Audit frames expand all three bounded nested lists
-  into the driven outer scroll, require full marker visibility and horizontal
-  fit, then reopen, decode and hash every capture before writing the manifest.
-- General Hotkeys contains all 120 observed English actions, exact untouched
-  Chat On/Off defaults and two chords. Real consumers cover movement, Stop All,
-  Options/Hotkeys, profiles, fullscreen/FPS, minimap zoom/pan/center, action-row
-  visibility, admitted battle targets, supported chat actions and selected real
-  panels; unsupported actions remain disabled. The official Open Options -
-  Custom Hotkeys action now opens that exact page. The key-capture modal exposes
-  only the observed OK/Clear/Cancel actions, and Assign Text exposes only
-  OK/Apply/Cancel.
-- Chat Off / Chat On / temporary Chat On* now own resolver context and composer
-  focus. Enter and Numpad Enter activate temporary chat from Off and send from
-  On; explicit On persists after send. Claimed chords are removed before egui so
-  they cannot replay into text. Chat On no longer reclaims focus from unrelated
-  text editors. Custom Text shares the same validation/send path.
-- The observed mouse preset choices and Classic-only `Loot: Right / SHIFT+Right /
-  Left` dependency are composed but disabled until an actual input consumer
-  exists.
-- The foreground FPS control uses the source-corrected integer 10–200 editable
-  range; legacy 1–9 values remain loadable and executable. No-limit
-  retains its prior numeric value across Apply/restart and the native redraw
-  scheduler consumes the enabled/disabled result.
-- Action bars have nine independent 50-slot rows and two Chat On/Off chords.
-  Global lock migration, the observed single trailing lock per nonempty edge
-  group, clear and primary-button move/swap primitives are covered against
-  in-memory session assignments. Production still has no authoritative
-  spell/object assignment source, so assignment menus, binding/item-amount/
-  tooltip controls, clear controls and both lock surfaces stay disabled and are
-  not counted as reachable behavior. The exact six observed context-category
-  labels are present and unsupported categories are disabled instead of
-  fabricated.
-- Manual screenshot hotkey captures the real renderer, optionally crops the game
-  viewport, writes lossless non-overwriting PNG and reports success/failure. The
-  17 automatic event triggers remain disabled without an event pipeline.
-- Help exposes the observed local-data order. Options export and confirmed reset
-  are real; the combined options/minimap import, minimap export and unsupported
-  support destinations stay disabled without an honest format/route.
-- Settings migration preserves legacy action rows, sound keys and prior wide FPS
-  values. Exact untouched v2 single-Stop maps upgrade to the 49/38 reference
-  matrices while customized and explicitly cleared maps stay unchanged.
-  Profile/movement edits are atomic and action-bar conflicts reserve only active
-  legacy movement fallbacks.
+The 20 observed production pages/order, semantic markers, scroll/geometry and
+non-mutation checks are implemented; DX12 audit captures and hashes each page.
+General Hotkeys retains 120 observed actions and exact untouched Chat On/Off
+defaults, two chords and real supported consumers. Unsupported actions, mouse
+presets/loot and assignment controls stay disabled. Chat On/Off/temporary focus,
+shared text sending, 10–200 editable foreground FPS with preserved legacy values,
+nine 50-slot action rows, screenshot PNG capture, options export/reset and atomic
+settings migrations are implemented in the qualified batches documented in
+UI-FIDELITY.md. Saved values alone do not establish a runtime feature. Original
+automatic screenshots, spell/object assignment sources, import/minimap formats,
+many panels and remaining engine contracts are still absent.
 
 ## Acceptance evidence and next actions
 
@@ -142,6 +101,15 @@ overlap and neighbour anchors; five tests include a real pinned sheet cell.
 Linux client 210/171/5, Session 62, renderer 39, assets 2/13 and strict Clippy pass.
 Next: actual GPU page uploads/multiple draws and the play-view consumer, not
 another assertion that preparation alone constitutes a live feature.
+
+Draw source `108d99f8` now passes MSVC seven-package strict Clippy/tests and the
+exact-source 20-page/78-capture DX12 audit; full evidence is in UI-FIDELITY.md.
+The current renderer batch adds up to four ordered GPU instance buffers, bounded
+atomic page-cell uploads and CPU backing for texture recreation. Physical DX12
+later-batch/overwrite/recreation readback is added but not yet native-qualified.
+Continue with the Session-owned full map store, bounded play mailbox and actual
+scene consumer; do not stop after renderer preparation. Capability 18 stays off
+until the accepted consumer and joint speed-switch requirements pass.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral

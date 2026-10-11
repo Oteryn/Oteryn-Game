@@ -470,6 +470,51 @@ pub const PAGE_CELL_PX: u32 = 32;
 pub const PAGE_CELLS_PER_ROW: u32 = 64;
 /// Sprite cells one page holds: 2048 x 2048 pixels of 32 x 32 cells.
 pub const PAGE_CELLS: usize = (PAGE_CELLS_PER_ROW * PAGE_CELLS_PER_ROW) as usize;
+/// The accepted worst-case map frame plus bounded actor/target cells fits four batches.
+pub const MAX_SPRITE_FRAME_BATCHES: usize = 4;
+
+pub struct SpritePageUpload {
+    pub slot: u16,
+    pub rgba: Vec<u8>,
+}
+
+impl AtlasImage {
+    /// Validate the complete update before changing the CPU recovery copy of the texture.
+    #[cfg(any(windows, test))]
+    pub(crate) fn apply_page_uploads(
+        &mut self,
+        uploads: &[SpritePageUpload],
+    ) -> Result<(), BatchError> {
+        if (self.width(), self.height()) != AtlasPage::texture_size()
+            || self.cell_px != PAGE_CELL_PX
+        {
+            return Err(BatchError::InvalidAtlas);
+        }
+        if uploads.len() > PAGE_CELLS {
+            return Err(BatchError::CapacityExceeded { max: PAGE_CELLS });
+        }
+        let mut slots = std::collections::BTreeSet::new();
+        for upload in uploads {
+            if usize::from(upload.slot) >= PAGE_CELLS
+                || !slots.insert(upload.slot)
+                || upload.rgba.len() != (PAGE_CELL_PX * PAGE_CELL_PX * 4) as usize
+            {
+                return Err(BatchError::InvalidAtlas);
+            }
+        }
+        let width = self.width() as usize;
+        let px = PAGE_CELL_PX as usize;
+        for upload in uploads {
+            let (x, y) = AtlasPage::slot_origin(upload.slot);
+            for row in 0..px {
+                let start = ((y as usize + row) * width + x as usize) * 4;
+                self.rgba[start..start + px * 4]
+                    .copy_from_slice(&upload.rgba[row * px * 4..(row + 1) * px * 4]);
+            }
+        }
+        Ok(())
+    }
+}
 
 /// One 32 x 32 sprite cell: the sprite and which cell of it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -698,6 +743,15 @@ impl SpriteFrame {
         }
     }
 
+    pub fn validate_batches(&self) -> Result<(), BatchError> {
+        if self.quads.batches().len() > MAX_SPRITE_FRAME_BATCHES {
+            return Err(BatchError::CapacityExceeded {
+                max: MAX_SPRITE_FRAME_BATCHES * MAX_BATCH_QUADS,
+            });
+        }
+        Ok(())
+    }
+
     /// Starts a frame on `page`; drops the previous frame's quads and pending uploads.
     pub fn begin(&mut self, page: &mut AtlasPage) {
         page.begin_frame();
@@ -794,6 +848,80 @@ impl SpriteFrame {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_uploads_preserve_recovery_pixels_and_fail_atomically() -> Result<(), BatchError> {
+        let (width, height) = AtlasPage::texture_size();
+        let mut atlas = AtlasImage::new(
+            PAGE_CELL_PX,
+            PAGE_CELLS_PER_ROW,
+            PAGE_CELLS_PER_ROW + 1,
+            vec![0; (width * height * 4) as usize],
+        )?;
+        atlas.apply_page_uploads(&[
+            SpritePageUpload {
+                slot: 0,
+                rgba: vec![11; 32 * 32 * 4],
+            },
+            SpritePageUpload {
+                slot: (PAGE_CELLS - 1) as u16,
+                rgba: vec![22; 32 * 32 * 4],
+            },
+        ])?;
+        assert_eq!(&atlas.rgba()[..4], &[11; 4]);
+        let (x, y) = AtlasPage::slot_origin((PAGE_CELLS - 1) as u16);
+        let last = ((y * width + x) * 4) as usize;
+        assert_eq!(&atlas.rgba()[last..last + 4], &[22; 4]);
+        let saved = atlas.clone();
+        for invalid in [
+            SpritePageUpload {
+                slot: PAGE_CELLS as u16,
+                rgba: vec![0; 32 * 32 * 4],
+            },
+            SpritePageUpload {
+                slot: 1,
+                rgba: vec![0; 32 * 32 * 4 - 1],
+            },
+            SpritePageUpload {
+                slot: 0,
+                rgba: vec![0; 32 * 32 * 4],
+            },
+        ] {
+            assert_eq!(
+                atlas.apply_page_uploads(&[
+                    SpritePageUpload {
+                        slot: 0,
+                        rgba: vec![99; 32 * 32 * 4]
+                    },
+                    invalid,
+                ]),
+                Err(BatchError::InvalidAtlas)
+            );
+            assert_eq!(atlas, saved);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sprite_frame_accepts_four_full_batches_and_refuses_a_fifth() {
+        let quad = QuadInstance {
+            position: [0.0; 2],
+            size: [1.0; 2],
+            uv: [0.0; 4],
+        };
+        let mut frame = SpriteFrame::new(16);
+        for _ in 0..MAX_SPRITE_FRAME_BATCHES * MAX_BATCH_QUADS {
+            frame.quads.push(quad);
+        }
+        assert_eq!(frame.validate_batches(), Ok(()));
+        frame.quads.push(quad);
+        assert_eq!(
+            frame.validate_batches(),
+            Err(BatchError::CapacityExceeded {
+                max: MAX_SPRITE_FRAME_BATCHES * MAX_BATCH_QUADS,
+            })
+        );
+    }
 
     fn atlas() -> Result<AtlasImage, BatchError> {
         // 4 x 2 cells of 2 px.

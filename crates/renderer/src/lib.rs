@@ -17,9 +17,9 @@ mod windows;
 
 pub use batch::{
     AtlasImage, AtlasPage, BatchError, CellKey, CellSlot, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS,
-    MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES,
-    QuadBatches, QuadInstance, SpriteBatch, SpriteFrame, TileBatch, TileCoord, TileView,
-    VERTICES_PER_QUAD, instance_bytes,
+    MAX_SPRITE_FRAME_BATCHES, MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW,
+    PlacedCell, QUAD_INSTANCE_BYTES, QuadBatches, QuadInstance, SpriteBatch, SpriteFrame,
+    SpritePageUpload, TileBatch, TileCoord, TileView, VERTICES_PER_QUAD, instance_bytes,
 };
 pub use resources::ResourceCache;
 

@@ -5,9 +5,13 @@
 //! index buffer beyond the per-instance data built in `batch.rs`.
 
 use crate::{
-    AtlasImage, MAX_BATCH_QUADS, QUAD_INSTANCE_BYTES, SpriteBatch, SurfaceSize, TileBatch,
-    VERTICES_PER_QUAD, instance_bytes,
+    AtlasImage, MAX_BATCH_QUADS, QUAD_INSTANCE_BYTES, SpriteBatch, SpriteFrame, SurfaceSize,
+    TileBatch, VERTICES_PER_QUAD, instance_bytes,
 };
+
+#[cfg(test)]
+#[path = "scene_page_tests.rs"]
+mod page_tests;
 
 const SHADER: &str = r"
 struct Screen {
@@ -71,6 +75,7 @@ pub(crate) struct SceneGpu {
     bind_group: wgpu::BindGroup,
     uniform: wgpu::Buffer,
     instances: wgpu::Buffer,
+    page_instances: Vec<wgpu::Buffer>,
     atlas_texture: wgpu::Texture,
 }
 
@@ -219,13 +224,13 @@ impl SceneGpu {
             bind_group,
             uniform,
             instances,
+            page_instances: Vec::new(),
             atlas_texture: texture,
         }
     }
 
     /// Writes one RGBA cell into the atlas texture at pixel origin `(x, y)`. The sprite page
     /// calls this for each cell that `SpriteFrame::uploads` lists before the frame draws.
-    #[allow(dead_code, reason = "wired by the sprite page owner in windows.rs")]
     pub(crate) fn write_cell(
         &self,
         queue: &wgpu::Queue,
@@ -265,6 +270,18 @@ impl SceneGpu {
         tiles: &TileBatch,
         sprites: &SpriteBatch,
     ) {
+        self.upload_screen(queue, size);
+        let tile_bytes = instance_bytes(tiles.instances());
+        let sprite_bytes = instance_bytes(sprites.instances());
+        if !tile_bytes.is_empty() {
+            queue.write_buffer(&self.instances, 0, &tile_bytes);
+        }
+        if !sprite_bytes.is_empty() {
+            queue.write_buffer(&self.instances, tile_bytes.len() as u64, &sprite_bytes);
+        }
+    }
+
+    fn upload_screen(&self, queue: &wgpu::Queue, size: SurfaceSize) {
         let mut screen = [0_u8; UNIFORM_BYTES as usize];
         for (chunk, value) in
             screen
@@ -274,13 +291,51 @@ impl SceneGpu {
             chunk.copy_from_slice(&value.to_ne_bytes());
         }
         queue.write_buffer(&self.uniform, 0, &screen);
-        let tile_bytes = instance_bytes(tiles.instances());
-        let sprite_bytes = instance_bytes(sprites.instances());
-        if !tile_bytes.is_empty() {
-            queue.write_buffer(&self.instances, 0, &tile_bytes);
+    }
+
+    pub(crate) fn upload_page(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: SurfaceSize,
+        frame: &SpriteFrame,
+    ) -> Result<(), crate::RendererError> {
+        frame
+            .validate_batches()
+            .map_err(|_| crate::RendererError::Validation)?;
+        self.upload_screen(queue, size);
+        let batches = frame.quads().batches();
+        while self.page_instances.len() < batches.len().saturating_sub(1) {
+            self.page_instances
+                .push(device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("oteryn-map-instance-batch"),
+                    size: (MAX_BATCH_QUADS * QUAD_INSTANCE_BYTES) as u64,
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                }));
         }
-        if !sprite_bytes.is_empty() {
-            queue.write_buffer(&self.instances, tile_bytes.len() as u64, &sprite_bytes);
+        for (index, batch) in batches.iter().enumerate() {
+            let buffer = if index == 0 {
+                &self.instances
+            } else {
+                &self.page_instances[index - 1]
+            };
+            queue.write_buffer(buffer, 0, &instance_bytes(batch));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn draw_page(&self, pass: &mut wgpu::RenderPass<'_>, frame: &SpriteFrame) {
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.bind_group, &[]);
+        for (index, batch) in frame.quads().batches().iter().enumerate() {
+            let buffer = if index == 0 {
+                &self.instances
+            } else {
+                &self.page_instances[index - 1]
+            };
+            pass.set_vertex_buffer(0, buffer.slice(..));
+            pass.draw(0..VERTICES_PER_QUAD, 0..batch.len() as u32);
         }
     }
 
