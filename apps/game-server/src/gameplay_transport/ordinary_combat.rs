@@ -251,8 +251,16 @@ fn modify_conditions<S: Clone>(
     source: Option<S>,
     immunities: &[crate::ability::condition::ConditionType],
     facts: &crate::ability::condition::ApplicationFacts<'_>,
+    shield_required: bool,
 ) -> Result<(), SpellCastDisposition> {
     use crate::ability::condition::{ConditionRefusal, ConditionSourceKind};
+    if shield_required
+        && effects.iter().any(|effect| {
+            matches!(effect, ResolvedEffect::RemoveCondition { condition } if condition == "manashield")
+        })
+    {
+        crate::spell::actor_conditions::require_active_mana_shield(store, facts.now)?;
+    }
     for effect in effects {
         match effect {
             ResolvedEffect::Damage { .. } | ResolvedEffect::Heal { .. } => {}
@@ -1138,6 +1146,24 @@ fn lower(
         applications.len(),
         geometry.len()
     );
+    let harmony_heal_target = if paid.harmony_gain_healing.is_some() {
+        let profile = crate::spell::actor_execution::harmony_gain_profile()?;
+        let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
+        let selected = crate::spell::native_actor_states::focus_healing_target(
+            profile,
+            party_world.caster_facts(),
+            party_world.member_facts(),
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+        Some(
+            party_world
+                .actor_for_id(selected)
+                .ok_or(SpellCastDisposition::Rejected)?
+                .0,
+        )
+    } else {
+        None
+    };
     let source_protected = runtime
         .current_player_reentry_protection(
             owned.binding().actor,
@@ -1145,6 +1171,10 @@ fn lower(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    if source_protected && harmony_heal_target.is_some_and(|target| target != owned.binding().actor)
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
     if source_protected
         && applications.iter().any(|(id, _, effects)| {
             *id != world.caster.id
@@ -1269,6 +1299,7 @@ fn lower(
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
             "capture_format":"ordinary-owner-r21","source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
             "magnitude_facts":format!("{:?}",owned.magnitude()),"selected_variant":format!("{:?}",paid.resolution.ability_variant),
+            "harmony_gained":paid.harmony_gained,"harmony_gain_healing_profile":if paid.harmony_gain_healing.is_some(){Some(crate::spell::actor_execution::harmony_gain_profile()?)}else{None},
             "source_party":party.as_ref().map(|p|format!("{:?}",p.source()))})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut delayed = Vec::new();
     let mut ordinal = 0u16;
@@ -1381,6 +1412,7 @@ fn lower(
                 Some(batch.caster),
                 &next.policy.condition_immunities,
                 &facts,
+                spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
             )?;
             if next.conditions != expected.state.conditions {
                 change = Some(OwnerCombatChange::CompanionConditions(Box::new(
@@ -1420,6 +1452,7 @@ fn lower(
                 Some(crate::spell::combat_execution::actor_atom(batch.caster)),
                 &[],
                 &facts,
+                spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
             )?;
             if next != expected {
                 change = Some(OwnerCombatChange::PlayerConditions {
@@ -1592,6 +1625,16 @@ fn lower(
         capture["ordinary_item_creations"] = json!(format!("{items:?}"));
         batch.binding = serde_json::to_vec(&capture).map_err(|_| SpellCastDisposition::Rejected)?;
     }
+    if let Some(cue) = append_harmony_gain_healing(
+        &mut batch,
+        paid.harmony_gain_healing.as_ref(),
+        harmony_heal_target,
+        ordinal,
+        delayed.len(),
+        draw,
+    )? {
+        cues.push(cue);
+    }
     #[cfg(test)]
     eprintln!(
         "SEAM_EVIDENCE ordinary_combat_lower stage=presentation_prepare cues={} applications={} magnitude_hits={}",
@@ -1620,6 +1663,51 @@ fn lower(
     })
 }
 
+/// Lower only the already selected, source-qualified gained-charge heal. The
+/// caller retains the strong party/current owner proofs; this does not resolve
+/// membership or authorize a commit.
+fn append_harmony_gain_healing(
+    batch: &mut OwnerCombatBatch,
+    healing: Option<&crate::spell::native_actor_states::HealingRollPlan>,
+    target: Option<ExactActorRef>,
+    ordinal: u16,
+    delayed_count: usize,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<Option<LocatedCueRequest>, SpellCastDisposition> {
+    let Some(healing) = healing else {
+        return Ok(None);
+    };
+    let target = target.ok_or(SpellCastDisposition::Rejected)?;
+    if batch
+        .effects
+        .len()
+        .checked_add(delayed_count)
+        .ok_or(SpellCastDisposition::Rejected)?
+        >= crate::spell::combat_batch::MAX_EFFECTS
+    {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    let profile = crate::spell::actor_execution::harmony_gain_profile()?;
+    let binding = profile["presentation"]["effect_asset_binding"]
+        .as_str()
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = healing
+        .finish_draw(draw(healing.bounds.minimum, healing.bounds.maximum))
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    batch.effects.push(OwnerCombatEffect {
+        target,
+        sub_ordinal: ordinal,
+        change: OwnerCombatChange::Heal {
+            target_atom: crate::spell::combat_execution::actor_atom(target),
+            magnitude,
+        },
+    });
+    Ok(Some(LocatedCueRequest {
+        binding: binding.into(),
+        target: CueTarget::Actor(target),
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::items_after_test_module)]
@@ -1639,6 +1727,866 @@ mod tests {
             .unwrap();
         crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"]).unwrap()
     }
+
+    #[test]
+    fn ordinary_builder_pure_policy_prepare_preserves_wheel_gate_and_gain_cap() {
+        use crate::spell::cast::CharacterCastFacts;
+        use crate::spell::{CasterState, Vocation};
+        let pos = |x| TilePosition { x, y: 0, floor: 7 };
+        let world = World {
+            origin: pos(1),
+            sight_origin: pos(0),
+            direction: Direction::East,
+            caster: ChainCreature {
+                id: 1,
+                actor: "actor:monk".into(),
+                position: pos(0),
+            },
+            creatures: vec![ChainCreature {
+                id: 2,
+                actor: "creature:target".into(),
+                position: pos(1),
+            }],
+            legal: BTreeSet::from([2]),
+            sight: BTreeSet::from([(pos(0), pos(1))]),
+            tiles: BTreeMap::new(),
+        };
+        let operational = OperationalCastFacts {
+            caster_position: pos(0),
+            target_position: Some(pos(1)),
+            target: Some(crate::spell::target::CastTarget {
+                caster: 1,
+                creature: 2,
+                actor: "creature:target".into(),
+                master: None,
+            }),
+            line_of_sight_clear: Some(true),
+            direction_available: true,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        for key in [
+            "chained_penance",
+            "double_jab",
+            "forceful_uppercut",
+            "greater_flurry_of_blows",
+            "mystic_repulse",
+            "swift_jab",
+            "thousand_fist_blows",
+        ] {
+            let spell = source(&format!("candidate:spell/{key}"));
+            assert_eq!(spell.harmony_role, Some(crate::spell::HarmonyRole::Builder));
+            let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+            for charges in [0, 4, 5] {
+                let mut state = PlayerSpellState::new(
+                    CharacterCastFacts {
+                        vocation: Vocation::Monk,
+                        level: 600,
+                        magic_level: 100,
+                        max_health: 5000,
+                        max_mana: 10000,
+                        max_soul: 100,
+                    },
+                    charges,
+                    0,
+                )
+                .unwrap();
+                state
+                    .make_playable(SemanticTimeMicros::from_micros(0))
+                    .unwrap();
+                let caster = CasterState {
+                    harmony_multiplier: state.owned_harmony_multiplier(&spell).unwrap(),
+                    vocation: Vocation::Monk,
+                    level: 600,
+                    magic_level: 100,
+                    premium: true,
+                    mana: 10000,
+                    max_mana: 10000,
+                    soul: 100,
+                    learned: BTreeSet::from([spell.key.clone()]),
+                    attack_skill: 100,
+                    attack_value: 10,
+                    attack_factor: 1.0,
+                    shielding_skill: 100,
+                    melee_weapon: true,
+                    shield_defense: Some(100),
+                };
+                let before = state.clone();
+                let mut draws = 0;
+                let result = prepare_ordinary_owner_cast_with_caster(
+                    &book,
+                    &state,
+                    &spell,
+                    &operational,
+                    SemanticTimeMicros::from_micros(1000),
+                    &caster,
+                    None,
+                    Some((
+                        &world,
+                        ChainStart {
+                            target: Some(2),
+                            attacked: None,
+                        },
+                    )),
+                    &mut |minimum, _| {
+                        draws += 1;
+                        minimum
+                    },
+                );
+                // No Wheel owner input was supplied. Preserve the real gate;
+                // do not fabricate unlock evidence to turn this into a success.
+                if spell
+                    .authored
+                    .as_ref()
+                    .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+                {
+                    assert!(
+                        matches!(&result, Err(SpellCastDisposition::Rejected)),
+                        "{key}"
+                    );
+                    assert_eq!(draws, 0, "{key}");
+                    assert_eq!(state, before, "{key}");
+                }
+                let paid = if spell
+                    .authored
+                    .as_ref()
+                    .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+                {
+                    // Explicit pure current-policy input, not a real Wheel
+                    // producer/read or owned build admission qualification.
+                    let mut unit_policy = operational.clone();
+                    unit_policy.wheel_unlocked = Some(true);
+                    prepare_ordinary_owner_cast_with_caster(
+                        &book,
+                        &state,
+                        &spell,
+                        &unit_policy,
+                        SemanticTimeMicros::from_micros(1000),
+                        &caster,
+                        None,
+                        Some((
+                            &world,
+                            ChainStart {
+                                target: Some(2),
+                                attacked: None,
+                            },
+                        )),
+                        &mut |minimum, _| minimum,
+                    )
+                    .unwrap_or_else(|e| {
+                        panic!("{key} with explicit unit policy at {charges}: {e:?}")
+                    })
+                } else {
+                    result.unwrap_or_else(|e| panic!("{key} at {charges} charges: {e:?}"))
+                };
+                let gained = u8::from(charges < 5);
+                assert_eq!(state, before);
+                assert_eq!(paid.harmony_gained, gained, "{key}");
+                assert_eq!(paid.harmony_gain_healing.is_some(), gained > 0, "{key}");
+                assert_eq!(
+                    paid.next.vitals().harmony,
+                    u32::from(charges + gained),
+                    "{key}"
+                );
+                assert_eq!(paid.next.revision(), state.revision() + 1, "{key}");
+                assert_eq!(
+                    paid.next.vitals().mana,
+                    10000 - paid.anchor.paid_mana,
+                    "{key}"
+                );
+                assert_eq!(
+                    paid.anchor.paid_mana,
+                    crate::spell::mana_cost(&spell, &caster),
+                    "{key}"
+                );
+            }
+        }
+    }
+
+    struct CmsOwnerFixture {
+        runtime: ChannelRuntimeV1,
+        states: ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        spell: SpellDefinition,
+        book: crate::spell::SpellBook,
+        before: PlayerSpellState,
+    }
+
+    fn cms_owner_fixture(shield: bool) -> CmsOwnerFixture {
+        let (mut runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(32);
+        runtime.initialize_first_entry_position(actor).unwrap();
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Sorcerer,
+                    level: 200,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 2000,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        if shield {
+            crate::spell::actor_conditions::apply_combat_change(
+                states.get_mut(&runtime, actor, session).unwrap(),
+                &OwnerCombatChange::ManaShield(crate::spell::combat_batch::ManaShieldState {
+                    capacity: 300,
+                    expires_ms: 2000,
+                }),
+                0,
+            )
+            .unwrap();
+        }
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let spell = source("candidate:spell/cancel_magic_shield");
+        assert!(spell.authored.is_some());
+        assert!(matches!(spell.execution, Execution::Effects(_)));
+        assert!(spell.premium);
+        let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+        CmsOwnerFixture {
+            runtime,
+            states,
+            actor,
+            session,
+            spell,
+            book,
+            before,
+        }
+    }
+
+    fn cms_source_prepare(
+        f: &CmsOwnerFixture,
+        now: u64,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
+        let before = f.states.get(&f.runtime, f.actor, f.session).unwrap();
+        let facts = before.character_facts();
+        // Pure entitlement input for this numerical/condition consumer test;
+        // the actual canonical source header is intact. Not premium admission proof.
+        let caster = crate::spell::CasterState {
+            harmony_multiplier: before.owned_harmony_multiplier(&f.spell).unwrap(),
+            vocation: facts.vocation,
+            level: facts.level,
+            magic_level: 0,
+            premium: true,
+            mana: before.vitals().mana,
+            max_mana: facts.max_mana,
+            soul: before.vitals().soul,
+            learned: BTreeSet::new(),
+            attack_skill: 10,
+            attack_value: 7,
+            attack_factor: 1.0,
+            shielding_skill: 10,
+            melee_weapon: false,
+            shield_defense: None,
+        };
+        let p = f.runtime.read_actor_position(f.actor).unwrap().position();
+        let operational = OperationalCastFacts {
+            caster_position: TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+            target_position: None,
+            target: None,
+            line_of_sight_clear: Some(true),
+            direction_available: false,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        prepare_ordinary_owner_cast_with_caster(
+            &f.book,
+            before,
+            &f.spell,
+            &operational,
+            SemanticTimeMicros::from_micros(now),
+            &caster,
+            None,
+            None,
+            draw,
+        )
+    }
+
+    /// Calls the actual source condition-lowering consumer used by production
+    /// lower, then returns its genuine PlayerConditions + paid batch to real owners.
+    fn cms_source_condition_batch(
+        f: &CmsOwnerFixture,
+        paid: &PaidOrdinaryCast,
+        now: u64,
+    ) -> Result<OwnerCombatBatch, SpellCastDisposition> {
+        let expected = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .owned_conditions()
+            .clone();
+        let mut next = expected.clone();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([31; 32]);
+        let facts = crate::ability::condition::ApplicationFacts {
+            now,
+            base_speed: 110,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([32; 16]),
+        };
+        modify_conditions(
+            &mut next,
+            &paid.resolution.effects,
+            Some(crate::spell::combat_execution::actor_atom(f.actor)),
+            &[],
+            &facts,
+            true,
+        )?;
+        Ok(OwnerCombatBatch {
+            caster: f.actor,
+            attacker: CharacterId::decode(&[
+                1, 0x90, 0, 0, 0, 40, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 40,
+            ])
+            .unwrap(),
+            current_lease_generation: 1,
+            command: CommandRef::new(f.session, crate::foundation::CommandId::new(1).unwrap()),
+            occurrence: AbilityOccurrence::new(
+                "spell-cast:cms-owner",
+                crate::ability::RevisionSet::new(
+                    "rules:1",
+                    "content:1",
+                    "world:1",
+                    "formula:1",
+                    "sim:1",
+                )
+                .unwrap(),
+            )
+            .unwrap()
+            .into(),
+            binding: b"{\"canonical_cms_condition_consumer\":true}".to_vec(),
+            anchor: Some(paid.anchor.clone()),
+            now_ms: now / 1000,
+            deferred: None,
+            effects: vec![OwnerCombatEffect {
+                target: f.actor,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::PlayerConditions {
+                    expected: Box::new(expected),
+                    next: Box::new(next),
+                },
+            }],
+        })
+    }
+
+    #[test]
+    fn ordinary_cms_source_prepare_requires_active_shield_before_draw_or_payment() {
+        for scenario in 0..4 {
+            let mut f = cms_owner_fixture(scenario != 0);
+            if scenario == 2 {
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            if scenario == 3 {
+                // A real condition application in the future of the cast clock.
+                crate::spell::actor_conditions::remove_condition(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    "manashield",
+                )
+                .unwrap();
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ManaShield(crate::spell::combat_batch::ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    1500,
+                )
+                .unwrap();
+            }
+            let before = f
+                .states
+                .get(&f.runtime, f.actor, f.session)
+                .unwrap()
+                .clone();
+            let mut draws = 0;
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            let result = cms_source_prepare(&f, now, &mut |minimum, _| {
+                draws += 1;
+                minimum
+            });
+            assert_eq!(
+                result.err(),
+                Some(if scenario == 3 {
+                    SpellCastDisposition::Rejected
+                } else {
+                    SpellCastDisposition::TargetIllegal
+                })
+            );
+            assert_eq!(draws, 0);
+            assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&before));
+        }
+    }
+
+    #[test]
+    fn ordinary_cms_source_lower_rechecks_current_capacity_without_owner_mutation() {
+        for scenario in 0..3 {
+            let mut f = cms_owner_fixture(true);
+            let paid =
+                cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+            if scenario == 0 {
+                crate::spell::actor_conditions::remove_condition(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    "manashield",
+                )
+                .unwrap();
+            } else if scenario == 2 {
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = f
+                .states
+                .get(&f.runtime, f.actor, f.session)
+                .unwrap()
+                .clone();
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            assert_eq!(
+                cms_source_condition_batch(&f, &paid, now).err(),
+                Some(SpellCastDisposition::TargetIllegal)
+            );
+            assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&before));
+        }
+    }
+
+    #[test]
+    fn ordinary_cms_source_removes_active_shield_pays_once_and_replays() {
+        let mut f = cms_owner_fixture(true);
+        let paid = cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+        assert_eq!(paid.anchor.paid_mana, 50);
+        let batch = cms_source_condition_batch(&f, &paid, 1_000_000).unwrap();
+        let staged = f.runtime.stage_spell_batch(&batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &batch, Some(paid.next.clone())).unwrap();
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert_eq!(after.vitals().mana, 1950);
+        assert_eq!(after.revision(), f.before.revision() + 1);
+        assert_eq!(after.owned_conditions().mana_shield_at(1_000_000), None);
+        let replay = f.runtime.stage_spell_batch(&batch).unwrap();
+        assert!(
+            !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+                .unwrap()
+                .applied
+        );
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&after));
+    }
+
+    #[test]
+    fn ordinary_cms_source_stale_condition_predecessor_rolls_back_removal_and_payment() {
+        let mut f = cms_owner_fixture(true);
+        let paid = cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+        let batch = cms_source_condition_batch(&f, &paid, 1_000_000).unwrap();
+        let staged = f.runtime.stage_spell_batch(&batch).unwrap();
+        let proof = stage_player_batch(&f.runtime, &f.states, &batch, Some(paid.next)).unwrap();
+        crate::spell::actor_conditions::apply_combat_change(
+            f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+            &OwnerCombatChange::ConsumeManaShield {
+                expected_capacity: 300,
+                amount: 1,
+            },
+            1000,
+        )
+        .unwrap();
+        let current = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert!(matches!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+            Err(Error::SnapshotChanged)
+        ));
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&current));
+        assert_eq!(current.vitals().mana, 1999);
+        assert_eq!(
+            current.owned_conditions().mana_shield_at(1_000_000),
+            Some(299)
+        );
+        assert_eq!(current.revision(), f.before.revision());
+    }
+
+    struct BuilderOwnerFixture {
+        runtime: ChannelRuntimeV1,
+        states: ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        target: ExactActorRef,
+        paid: PaidOrdinaryCast,
+        batch: OwnerCombatBatch,
+        before: PlayerSpellState,
+    }
+
+    fn builder_owner_fixture(charges: u8) -> BuilderOwnerFixture {
+        use crate::gameplay_transport::actor_spell::tests::{runtime_with_player, wound};
+        use crate::spell::cast::CharacterCastFacts;
+        use crate::spell::{CasterState, Vocation};
+        let (mut runtime, actor, session) = runtime_with_player(31);
+        runtime
+            .initialize_movement_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 10,
+                    y: 10,
+                    floor: 7,
+                },
+            )
+            .unwrap();
+        // admit_test_creature binds target_identity to this creature key, not its placement atom.
+        let target = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            })
+            .unwrap();
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: Vocation::Monk,
+                    level: 200,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 2000,
+                    max_soul: 100,
+                },
+                (charges, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        wound(&mut states, actor, session, 10);
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let spell = source("candidate:spell/swift_jab");
+        // Genuine free/no-learning source header: no premium/group/party proof is fabricated.
+        assert!(!spell.premium);
+        assert!(!spell.learning_required);
+        let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+        let caster = CasterState {
+            harmony_multiplier: crate::spell::harmony::HarmonyMultiplier::ONE,
+            vocation: Vocation::Monk,
+            level: 200,
+            magic_level: 0,
+            premium: false,
+            mana: 2000,
+            max_mana: 2000,
+            soul: 100,
+            learned: BTreeSet::new(),
+            attack_skill: 10,
+            attack_value: 7,
+            attack_factor: 1.0,
+            shielding_skill: 10,
+            melee_weapon: true,
+            shield_defense: None,
+        };
+        let position = |actor| {
+            let p = runtime.read_actor_position(actor).unwrap().position();
+            TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            }
+        };
+        let operational = OperationalCastFacts {
+            caster_position: position(actor),
+            target_position: Some(position(target)),
+            target: Some(crate::spell::target::CastTarget {
+                caster: u64::from(actor.actor_local_id()),
+                creature: u64::from(target.actor_local_id()),
+                actor: "test:creature".into(),
+                master: None,
+            }),
+            line_of_sight_clear: Some(true),
+            direction_available: true,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        let now = SemanticTimeMicros::from_micros(100_000);
+        let paid = prepare_ordinary_owner_cast_with_caster(
+            &book,
+            &before,
+            &spell,
+            &operational,
+            now,
+            &caster,
+            None,
+            None,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        let magnitude = paid
+            .resolution
+            .effects
+            .iter()
+            .find_map(|e| {
+                if let ResolvedEffect::Damage { magnitude, .. } = e {
+                    Some(*magnitude)
+                } else {
+                    None
+                }
+            })
+            .expect("genuine Swift Jab damage");
+        let occurrence = AbilityOccurrence::new(
+            "spell-cast:builder-owner",
+            crate::ability::RevisionSet::new(
+                "rules:1",
+                "content:1",
+                "world:1",
+                "formula:1",
+                "sim:1",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: CharacterId::decode(&[
+                1, 0x90, 0, 0, 0, 40, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 40,
+            ])
+            .unwrap(),
+            current_lease_generation: 1,
+            command: CommandRef::new(session, crate::foundation::CommandId::new(1).unwrap()),
+            occurrence: occurrence.into(),
+            binding: b"builder-current-owner-boundary".to_vec(),
+            anchor: Some(paid.anchor.clone()),
+            now_ms: 100,
+            deferred: None,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: "test:creature".into(),
+                    magnitude,
+                },
+            }],
+        };
+        BuilderOwnerFixture {
+            runtime,
+            states,
+            actor,
+            session,
+            target,
+            paid,
+            batch,
+            before,
+        }
+    }
+
+    fn builder_target_health(f: &BuilderOwnerFixture) -> i64 {
+        f.runtime
+            .creature_combat_facts(f.target, 100)
+            .unwrap()
+            .health
+    }
+
+    #[test]
+    fn ordinary_builder_lowered_self_heal_commits_damage_payment_harmony_once_and_replays() {
+        let mut f = builder_owner_fixture(3);
+        let original_target = builder_target_health(&f);
+        let healing = f.paid.harmony_gain_healing.as_ref().unwrap();
+        let amount = healing.finish_draw(healing.bounds.minimum).unwrap() as u32;
+        let cue = append_harmony_gain_healing(
+            &mut f.batch,
+            Some(healing),
+            Some(f.actor),
+            1,
+            0,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        assert!(cue.is_some());
+        assert_eq!(f.batch.effects.len(), 2);
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert_eq!(
+            (
+                after.vitals().health,
+                after.vitals().mana,
+                after.vitals().harmony
+            ),
+            (10 + amount, 1997, 4)
+        );
+        assert_eq!(after.revision(), f.before.revision() + 1);
+        let after_target = builder_target_health(&f);
+        assert!(after_target < original_target);
+        let replay = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        assert!(
+            !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+                .unwrap()
+                .applied
+        );
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&after));
+        assert_eq!(builder_target_health(&f), after_target);
+    }
+
+    #[test]
+    fn ordinary_builder_at_cap_lowers_no_heal_but_commits_single_damage_payment() {
+        let mut f = builder_owner_fixture(5);
+        assert_eq!(f.paid.harmony_gained, 0);
+        assert!(f.paid.harmony_gain_healing.is_none());
+        assert!(
+            append_harmony_gain_healing(&mut f.batch, None, None, 1, 0, &mut |_, _| panic!(
+                "cap must not draw a passive heal"
+            ))
+            .unwrap()
+            .is_none()
+        );
+        assert_eq!(f.batch.effects.len(), 1);
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f.states.get(&f.runtime, f.actor, f.session).unwrap();
+        assert_eq!(
+            (
+                after.vitals().health,
+                after.vitals().mana,
+                after.vitals().harmony
+            ),
+            (10, 1997, 5)
+        );
+        assert_eq!(after.revision(), f.before.revision() + 1);
+    }
+
+    #[test]
+    fn ordinary_builder_stale_player_predecessor_rolls_back_damage_heal_payment_and_harmony() {
+        let mut f = builder_owner_fixture(3);
+        let target_before = builder_target_health(&f);
+        append_harmony_gain_healing(
+            &mut f.batch,
+            f.paid.harmony_gain_healing.as_ref(),
+            Some(f.actor),
+            1,
+            0,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        f.states
+            .get_mut(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .advance_batch_revision()
+            .unwrap();
+        let current = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert!(matches!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+            Err(Error::SnapshotChanged)
+        ));
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&current));
+        assert_eq!(
+            (
+                current.vitals().health,
+                current.vitals().mana,
+                current.vitals().harmony
+            ),
+            (10, 2000, 3)
+        );
+        assert_eq!(builder_target_health(&f), target_before);
+    }
+
+    #[test]
+    fn ordinary_builder_missing_selected_heal_target_refuses_before_draw_without_batch_mutation() {
+        let mut f = builder_owner_fixture(3);
+        let before = format!("{:?}", f.batch);
+        let mut draws = 0;
+        assert!(
+            append_harmony_gain_healing(
+                &mut f.batch,
+                f.paid.harmony_gain_healing.as_ref(),
+                None,
+                1,
+                0,
+                &mut |minimum, _| {
+                    draws += 1;
+                    minimum
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(draws, 0);
+        assert_eq!(format!("{:?}", f.batch), before);
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert_eq!(builder_target_health(&f), 20);
+    }
+
     #[test]
     fn genuine_lightning_selects_and_pays_once_without_cast_time_draw_then_uses_due_stats() {
         use crate::spell::cast::CharacterCastFacts;

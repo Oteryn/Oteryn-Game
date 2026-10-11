@@ -224,6 +224,52 @@ pub(crate) struct FocusPlan {
     pub(crate) rearm_cast_cooldowns: bool,
 }
 
+/// Shared accepted provisional gained-charge healing calculation. Recipient
+/// selection remains the existing source profile, not an inferred Global policy.
+pub(crate) fn plan_harmony_gain_healing(
+    parameters: &Value,
+    gained_charges: u8,
+    level: u32,
+    serene: bool,
+    sustain_active: bool,
+) -> Result<Option<HealingRollPlan>, ActorPlanError> {
+    if gained_charges > 5 {
+        return Err(ActorPlanError::InvalidHarmony);
+    }
+    let healing = if gained_charges == 0 {
+        None
+    } else {
+        let heal = required(parameters, "harmony_gain_healing")?;
+        if text(heal, "sustain_application")? != "after_world_healing_roll"
+            || text(heal, "sustain_quantization")? != "truncate_toward_zero"
+        {
+            return Err(ActorPlanError::InvalidParameters("sustain_application"));
+        }
+        let vars = BTreeMap::from([
+            ("level", f64::from(level)),
+            ("gained_charges", f64::from(gained_charges)),
+        ]);
+        let raw = expression_bounds(required(heal, "bounds")?, &vars)?;
+        let boost = if sustain_active {
+            percent(
+                heal,
+                if serene {
+                    "serene_sustain_percent"
+                } else {
+                    "sustain_percent"
+                },
+            )?
+        } else {
+            0
+        };
+        Some(HealingRollPlan {
+            bounds: raw,
+            sustain_percent_after_draw: boost,
+        })
+    };
+    Ok(healing)
+}
+
 pub(crate) fn plan_focus(
     parameters: &Value,
     facts: FocusFacts,
@@ -253,37 +299,13 @@ pub(crate) fn plan_focus(
     };
     let serene_after = !serene_ms.is_null() || facts.serene;
     let gained_charges = 5 - facts.harmony;
-    let healing = if gained_charges == 0 {
-        None
-    } else {
-        let heal = required(parameters, "harmony_gain_healing")?;
-        if text(heal, "sustain_application")? != "after_world_healing_roll"
-            || text(heal, "sustain_quantization")? != "truncate_toward_zero"
-        {
-            return Err(ActorPlanError::InvalidParameters("sustain_application"));
-        }
-        let vars = BTreeMap::from([
-            ("level", f64::from(facts.level)),
-            ("gained_charges", f64::from(gained_charges)),
-        ]);
-        let raw = expression_bounds(required(heal, "bounds")?, &vars)?;
-        let boost = if facts.sustain_active {
-            percent(
-                heal,
-                if serene_after {
-                    "serene_sustain_percent"
-                } else {
-                    "sustain_percent"
-                },
-            )?
-        } else {
-            0
-        };
-        Some(HealingRollPlan {
-            bounds: raw,
-            sustain_percent_after_draw: boost,
-        })
-    };
+    let healing = plan_harmony_gain_healing(
+        parameters,
+        gained_charges,
+        facts.level,
+        serene_after,
+        facts.sustain_active,
+    )?;
     let filter = required(parameters, "cooldown_reset_filter")?;
     Ok(FocusPlan {
         harmony_after: 5,

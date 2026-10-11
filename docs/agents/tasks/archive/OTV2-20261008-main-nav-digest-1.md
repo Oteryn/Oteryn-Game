@@ -1,0 +1,90 @@
+# OTV2-20261008-main-nav-digest-1
+
+```yaml
+task_id: OTV2-20261008-main-nav-digest-1
+title: Re-pin the item_identity.rs navigation source digest broken on main by #1929
+mode: IMPLEMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/main-nav-digest-1-20261008
+pr: 1934
+issue: 1622
+base_sha: 340278d84f5c5406b45c634c9750e3414844bd88
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: single writer (allocated by the CP of #1622 under D955, with owner consent)
+created_at: 2026-10-08
+updated_at: 2026-10-08
+execution_policy: continuous_progress
+owned_paths:
+  - tools/content-migration/samples/navigation-seven-20261001.json
+  - tools/content-migration/samples/engine-family-navigation-265.json
+  - tools/content-migration/samples/official-rule-only-navigation-six.json
+  - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json
+  - imports/tibiawiki/facts/items-family-alias26-20261001.json
+  - tools/content-migration/item_bounded7_navigation.py
+  - tools/content-migration/item_engine_navigation.py
+  - tools/content-migration/item_navigation_source_supplement.py
+  - tools/content-migration/item_official_navigation.py
+  - content/items/taxonomy/items.json
+  - tools/content-schema/world-object-authoring/official_corpses.py
+  - tools/content-schema/world-object-authoring/qualified_world.py
+  - tools/content-schema/world-object-authoring/samples/qualified-official-corpses-15.30.json
+  - tools/content-schema/world-object-authoring/samples/qualified-world-wiki46-fixed3-15.30.json
+  - tools/content-schema/world-object-authoring/samples/census-official-corpses-15.30.json
+  - tools/content-schema/world-object-authoring/samples/census-world-wiki46-fixed3-15.30.json
+  - docs/agents/tasks/archive/OTV2-20261008-main-nav-digest-1.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome and authority
+
+Main at `340278d8` fails `Content tree / Item+Mount equivalence` with
+`NAVIGATION_SOURCE_DIGEST:apps/game-server/src/content/item_identity.rs`. #1929 changed
+that file (adding `CURRENT_SOURCE_HELD_ITEM_IDS`) without re-pinning its sha256. The
+62-id explicit appearance-only list and its `explicit_ids_sha256` are unchanged.
+
+This task changes pinned digests only; no logic, no `.github/**`, `Cargo.*` or
+`content/world/pins`.
+
+## Change
+
+- `item_identity.rs` sha256 `26941af8…` -> `0df52c39…` in the five navigation source files.
+- Hash-of-hashes cascade: the four `tools/content-migration/item_*navigation*.py` constants
+  for the changed source files, the `a12_helper` pin in the bounded7 facts file and the
+  matching bounded7 constant.
+- `content/items/taxonomy/items.json` regenerated with
+  `tools/content-migration/world_project_v2_to_tree.py`.
+- World-object qualification packets (Codex P2 on c5a134a9): the same `item_identity.rs` pin in
+  `qualified-official-corpses-15.30.json` and `qualified-world-wiki46-fixed3-15.30.json`, their
+  qualification digests in `official_corpses.py` / `qualified_world.py`, and the
+  `qualification_sha256` seal in the two census samples.
+
+## Validation
+
+Reproduced first on base: taxonomy, source-supplement and bounded7 tests failed with
+`NAVIGATION_SOURCE_DIGEST`.
+
+Candidate:
+
+- `python tools/content-migration/world_project_v2_to_tree.py` PASS
+- `python tools/content-migration/test_world_project_v2_to_tree.py` OK
+- `python tools/content-migration/test_item_taxonomy.py` OK
+- `python tools/content-migration/test_item_navigation_source_supplement.py` OK
+- `python tools/content-migration/test_item_engine_navigation.py` OK
+- `python tools/content-migration/test_item_external_family_refinement.py` OK
+- `python tools/content-migration/test_item_bounded7_navigation.py` OK
+- `python tools/content-migration/validate_world_project_v2_to_tree.py` PASS
+- `python test_world_objects.py`, `test_official_corpses.py`, `test_qualified_world.py` (world-object-authoring) OK
+- Not run locally: the Crystal catalogue drift step (`build_catalogue.py --check`), which needs the pinned Crystal checkouts; hosted CI covers it.
+- `python tools/agents/validate_governance.py` pass
+- `python -m unittest discover -s tools/agents/tests` OK
+- `python tools/repository/validate_repository_policy.py` pass
+
+Review: no independent review required (digest re-pin only, no logic). Merge: squash merge of #1934 via Merge Queue.

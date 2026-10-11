@@ -1,0 +1,941 @@
+{
+  "schema": "OTERYN_QUEST_STATE_LOWERING/v1",
+  "classification": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "family": "Quest",
+  "contract": "QUEST-STATE-1 / QUEST-LOWER-1",
+  "authoring_sources": [
+    "binding-plan.json",
+    "q1-lowering-owner-plan.md"
+  ],
+  "counts": {
+    "quests": 1,
+    "tracks": 17,
+    "transitions": 18
+  },
+  "quests": [
+    {
+      "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+      "source_quest": "SHARDS_Q1_CANDIDATE",
+      "completion": "NOT_INCLUDED_INVESTIGATIONS_ONLY",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/shards-candidate/started",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "started"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/start_route_saraki",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "start_route_saraki"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/start_route_nilavarna",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "start_route_nilavarna"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/yukti_done",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "yukti_done"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tides_started",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tides_started"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_a",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tide_marker_lagoon_a"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_b",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tide_marker_lagoon_b"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tide_marker_emerald",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tide_marker_emerald"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tides_done",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tides_done"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/plants_started",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "plants_started"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tide_veil_sample_obtained",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tide_veil_sample_obtained"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/tide_veil_refined",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "tide_veil_refined"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/whisper_reed_sample_obtained",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "whisper_reed_sample_obtained"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/whisper_reed_refined",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "whisper_reed_refined"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/plants_done",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "plants_done"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/three_clues_done",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "three_clues_done"
+        },
+        {
+          "key": "oteryn:quest-progress/shards-candidate/report_done",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 1,
+          "bounds_basis": "PROPOSED_BOOLEAN_FACT",
+          "source_key": "report_done"
+        }
+      ],
+      "transitions": [
+        {
+          "key": "oteryn:quest-transition/shards-candidate/start_saraki",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_saraki",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "start_saraki",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/start_nilavarna_alt",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_nilavarna",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "start_nilavarna_alt",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/clue_yukti_sundara",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_saraki",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/yukti_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "clue_yukti_sundara",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/clue_yukti_nipuna_alt",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_nilavarna",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/yukti_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "clue_yukti_nipuna_alt",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/tides_tarisu",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "tides_tarisu",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/tide_marker_1",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_a",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "tide_marker_1",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/tide_marker_2",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_b",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "tide_marker_2",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/tide_marker_3",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_emerald",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "tide_marker_3",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/tides_join",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_a",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_lagoon_b",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_marker_emerald",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "tides_join",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/plants_dhira",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "plants_dhira",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/plant_tide_veil",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_veil_sample_obtained",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "plant_tide_veil",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/refine_tide_veil",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_veil_sample_obtained",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_veil_refined",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "refine_tide_veil",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/plant_whisper_reed",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/whisper_reed_sample_obtained",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "plant_whisper_reed",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/refine_whisper_reed",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_started",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/whisper_reed_sample_obtained",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/whisper_reed_refined",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "refine_whisper_reed",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/plants_join",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tide_veil_refined",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/whisper_reed_refined",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "plants_join",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/three_clues_join",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/yukti_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/tides_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/plants_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/three_clues_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "three_clues_join",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/report_saraki",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/three_clues_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_saraki",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/report_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "report_saraki",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/shards-candidate/report_nilavarna_alt",
+          "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/shards-candidate/three_clues_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/start_route_nilavarna",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/shards-candidate/report_done",
+              "from_exact": true,
+              "from": {
+                "op": "EQ",
+                "value": 0
+              },
+              "effect": {
+                "op": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "source": {
+            "binding_event": "report_nilavarna_alt",
+            "qualification": "CANDIDATE_NOT_ADMITTED"
+          }
+        }
+      ]
+    }
+  ]
+}

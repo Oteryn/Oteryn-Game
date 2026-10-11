@@ -1921,7 +1921,13 @@ pub(crate) mod tests {
             .expect("death");
         assert_eq!(
             states.monk_save_values(&runtime, actor, session, now(1000)),
-            Some((3, 3_000_000))
+            Some((0, 0))
+        );
+        let (_, dead_vitals) =
+            observe_vitals(&runtime, &states, actor, session).expect("dead vitals");
+        assert_eq!(
+            (dead_vitals.health, dead_vitals.harmony, dead_vitals.serene),
+            (0, 0, false)
         );
         // Control loss detaches the dead monk; only the respawn initializes it again.
         states.detach(&runtime, actor, session);
@@ -1944,7 +1950,15 @@ pub(crate) mod tests {
     fn a_lethal_hit_without_an_occurrence_writes_nothing() {
         use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger};
 
-        let (mut runtime, mut states, actor, session, creature) = bitten_player(0x34, 8);
+        let (mut runtime, mut states, actor, session, creature) = bitten_actor(
+            0x34,
+            8,
+            CharacterCastFacts {
+                vocation: Vocation::Monk,
+                ..FACTS
+            },
+            (3, 4_000_000),
+        );
         states.mint_death = || None;
         let mut ledger = CreatureBiteLedger::default();
         assert_eq!(
@@ -1961,6 +1975,11 @@ pub(crate) mod tests {
         assert!(!states.is_dead(actor));
         let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
         assert_eq!((revision, vitals.health), (1, 8));
+        assert_eq!((vitals.harmony, vitals.serene), (3, true));
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(1000)),
+            Some((3, 3_000_000))
+        );
     }
 }
 // Reconciled source consumers: the existing ChannelSpellStates remains the only vitals/death owner.
