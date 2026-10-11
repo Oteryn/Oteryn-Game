@@ -125,6 +125,9 @@ jobs:
 
           evidence_root = 'docs/agents/evidence'
           family_prefix = gen.FINAL_FAMILY_PREFIX
+          # Literals match the `on.pull_request.paths` triggers; a moved evidence location must update both.
+          assert gen.FINAL_INDEX_PATH == 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          assert family_prefix == 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings'
           assert gen.FINAL_INDEX_PATH == f'{evidence_root}/{gen.INDEX_NAME}'
           assert family_prefix == f'{evidence_root}/{gen.FAMILY_DIR_NAME}'
           index = json.loads(regular_file(gen.FINAL_INDEX_PATH).read_bytes().decode('utf-8'))
@@ -194,6 +197,20 @@ jobs:
 
           # 5. Pinned outcome.
           assert rebuilt_index['logical_product_digest_sha256'] == expected_product
+          # Candidate-only: no promotion, at index level, per record and in the authority block.
+          for key in ('silent_drop', 'unclassified', 'native_promotions', 'executable_promotions', 'quest_runtime_promotions'):
+              assert rebuilt_index[key] == 0, f'{key} must stay 0'
+          assert rebuilt_index['closure'] == 'CANDIDATE_ONLY'
+          assert rebuilt_index['authority'] == {
+              'durable_value_authority': 'NONE', 'lua_execution': False, 'native_identity_promotion': 'NONE',
+              'quest_runtime_authority': 'NONE', 'reference_parity_claim': 'NONE', 'runtime_authority': 'NONE',
+              'storage_integer_promotion': False,
+          }, 'authority block promoted'
+          for family, records in records_by_family.items():
+              for record in records:
+                  assert record['native_binding_disposition'] == 'UNRESOLVED' and record['semantic_disposition'] == 'UNKNOWN', record['record_id']
+                  assert record['executable_eligible'] is False and record['runtime_authority'] == 'NONE', record['record_id']
+                  assert record['reference_parity_claim'] == 'NONE' and record['candidate_semantics'] == 'SOURCE_STRUCTURAL_BINDING_ONLY', record['record_id']
           assert rebuilt_index['total_occurrences'] == rebuilt_index['dispositions']['UNKNOWN'] == 6_932
           for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
               assert rebuilt_index['dispositions'][name] == 0

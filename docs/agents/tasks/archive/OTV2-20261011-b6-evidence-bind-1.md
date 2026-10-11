@@ -78,7 +78,9 @@ workflow.
 
 ### Focused
 
-- B6 offline closure check, extracted from the workflow YAML: pass (13 files, 6932 occurrences)
+- B6 offline closure check, extracted from the workflow YAML: pass (13 files, 6932 occurrences); it now also asserts
+  evidence paths against literals matching the workflow triggers, and the no-promotion invariant (index counters,
+  `closure`, `authority` block and per-record authority fields)
 - Negative cases, all rejected:
   - `producer.py` edited, both worktree-only and committed
   - a changed recorded `game_inputs` blob
@@ -89,10 +91,14 @@ workflow.
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (60 tests, OK)
 - `git diff --check`: clean
+- `python tools/repository/validate_repository_policy.py`: pass (23 files, 63 workflows)
+- `tools/repository/test_*.py` (run as scripts): 10 of 12 pass; `test_validate_merge_group_pg_sim.py` and
+  `test_validate_pr_gate_pg_sim.py` BLOCKED locally (pwsh not installed, required for WP1 native
+  failure-propagation qualification); CI covers them
 
 ### Component/integration
 
-- NOT_APPLICABLE: CI-only check.
+- NOT_APPLICABLE: CI-only check; repository-policy results are under Focused.
 
 ### E2E
 
