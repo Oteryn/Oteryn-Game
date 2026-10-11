@@ -100,14 +100,23 @@ Keyboard delay was published in `5bf89893` and passed native Windows tests
 manifest SHA-256 is
 `a6b2866c47a4a84e9442e7a406520fd220520312e46824bbdfb4819443e200e0`.
 The modifier/explicit-zero repair `597fda90` passed native Windows tests, strict
-Clippy and the DX12 audit. The current AUTHORING batch supplies the independently
+Clippy and the DX12 audit. The custom-pointer batch `5b784e60` supplies the independently
 drawn custom arrow and its Big variant, while restoring the OS pointer under
 Native and retaining specialized OS cursor semantics. The reference's Animated
 cursor is a contextual walk/use/view/container/attack/NPC/quick-loot family;
-its unavailable consumers stay disabled. Fresh native qualification remains
-required for this successor.
+its unavailable consumers stay disabled. Its MSVC/DX12 qualification chain
+completed with 20 pages/78 captures, no invalid page, manifest SHA-256
+`40cc3e17a964666a2ea8a4ea7c4ce331d988109d062f63b6cd0dd3d29316e5eb`.
 
-The current client tree passes 193 client-library, 161 native-binary
+The current AUTHORING batch adds a bounded receipt clock for accepted ChatLine
+events, genuine Console timestamp/seconds consumers and local per-tab Clear
+Window sequence cutoffs. Later identical messages survive Clear; the session
+projection and server history are never mutated. An unavailable local clock
+produces no invented timestamp. Upstream `time` 0.3.55 supplies safe platform
+local-time retrieval; Windows regressions require actual clock availability.
+The exact committed successor still needs native qualification.
+
+The current client tree passes 194 client-library, 162 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA

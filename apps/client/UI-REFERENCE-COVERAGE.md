@@ -88,7 +88,10 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
 - Chat: D records Server Log's read-only-tab/save/clear menu. Oteryn's read-only
   state now blocks the real composer, and Copy/Save consume the received chat
   projection; Save creates a bounded, non-overwriting private local snapshot.
-  Participants, player-channel/entry menus, secondary-chat routes and Clear still
+  Clear Window now hides the current tab's received lines locally; later lines,
+  including identical messages, remain visible. Timestamp options consume actual
+  client receipt-clock metadata rather than inventing server timestamps.
+  Participants, player-channel/entry menus and secondary-chat routes still
   need targeted checks; no participant data or second console is fabricated.
 - Boss difficulty, depot search, stash, market and inspection: A's semantic
   sweep identifies these extra dialogs. Their complete runtime layouts remain

@@ -99,6 +99,7 @@ pub struct GameUi {
     recipient: String,
     channel: usize,
     chat_read_only: [bool; 6],
+    chat_cleared_at: [Option<u64>; 6],
     chat_mode: ChatMode,
     chat_focus_request: Option<bool>,
     chat_composer_id: Option<egui::Id>,
@@ -1061,7 +1062,15 @@ impl GameUi {
                         };
                         ui.horizontal_wrapped(|ui| {
                             chat_channel_tabs(ui, &mut self.channel, en, true);
-                            let contents = chat_contents(chat, self.channel, en);
+                            let contents = chat_rows(
+                                chat,
+                                &state.chat_receipts,
+                                self.channel,
+                                en,
+                                settings,
+                                self.chat_cleared_at[self.channel],
+                            )
+                            .join("\n");
                             ui.menu_button("▾", |ui| {
                                 ui.checkbox(
                                     &mut self.chat_read_only[self.channel],
@@ -1080,7 +1089,22 @@ impl GameUi {
                                 if ui
                                     .add_enabled(
                                         !contents.is_empty(),
-                                        egui::Button::new(tr("Zapisz treść", "Save contents")),
+                                        egui::Button::new(tr("Wyczyść okno", "Clear Window")),
+                                    )
+                                    .clicked()
+                                {
+                                    self.chat_cleared_at[self.channel] = Some(
+                                        state
+                                            .chat_receipts
+                                            .last()
+                                            .map_or(0, |line| line.server_sequence),
+                                    );
+                                    ui.close();
+                                }
+                                if ui
+                                    .add_enabled(
+                                        !contents.is_empty(),
+                                        egui::Button::new(tr("Zapisz okno", "Save Window")),
                                     )
                                     .clicked()
                                 {
@@ -1113,16 +1137,21 @@ impl GameUi {
                             .max_height((ui.available_height() - 36.0).max(12.0))
                             .stick_to_bottom(true)
                             .show(ui, |ui| {
-                                for line in chat.lines() {
-                                    if let Some(text) = chat_line_text(line, self.channel, en) {
-                                        if let Some(size) = settings
-                                            .stored_int("console.console.font_size")
-                                            .map(|size| size.clamp(10, 32) as f32)
-                                        {
-                                            ui.label(RichText::new(text).size(size));
-                                        } else {
-                                            ui.label(text);
-                                        }
+                                for text in chat_rows(
+                                    chat,
+                                    &state.chat_receipts,
+                                    self.channel,
+                                    en,
+                                    settings,
+                                    self.chat_cleared_at[self.channel],
+                                ) {
+                                    if let Some(size) = settings
+                                        .stored_int("console.console.font_size")
+                                        .map(|size| size.clamp(10, 32) as f32)
+                                    {
+                                        ui.label(RichText::new(text).size(size));
+                                    } else {
+                                        ui.label(text);
                                     }
                                 }
                             });
@@ -1319,11 +1348,40 @@ fn chat_channel_tabs(ui: &mut egui::Ui, channel: &mut usize, english: bool, avai
     });
 }
 
-fn chat_contents(chat: &oteryn_session::ChatLog, channel: usize, english: bool) -> String {
-    chat.lines()
-        .filter_map(|line| chat_line_text(line, channel, english))
-        .collect::<Vec<_>>()
-        .join("\n")
+fn chat_rows(
+    chat: &oteryn_session::ChatLog,
+    receipts: &[oteryn_client::play::ChatReceipt],
+    channel: usize,
+    english: bool,
+    settings: &ClientSettings,
+    cleared_at: Option<u64>,
+) -> Vec<String> {
+    if receipts.is_empty() && cleared_at.is_none() {
+        // A pre-existing projection has no receipt clock; never invent one.
+        return chat
+            .lines()
+            .filter_map(|line| chat_line_text(line, channel, english))
+            .collect();
+    }
+    receipts
+        .iter()
+        .filter(|receipt| cleared_at.is_none_or(|cutoff| receipt.server_sequence > cutoff))
+        .filter_map(|receipt| {
+            let text = chat_line_text(&receipt.line, channel, english)?;
+            if settings.stored_bool("console.console.timestamps") == Some(true)
+                && let Some([hour, minute, second]) = receipt.local_time
+            {
+                return Some(
+                    if settings.stored_bool("console.console.seconds") == Some(true) {
+                        format!("{hour:02}:{minute:02}:{second:02} {text}")
+                    } else {
+                        format!("{hour:02}:{minute:02} {text}")
+                    },
+                );
+            }
+            Some(text)
+        })
+        .collect()
 }
 
 fn chat_line_text(line: &ChatLine, channel: usize, english: bool) -> Option<String> {
@@ -1751,8 +1809,8 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 mod tests {
     use super::{
         ChatMode, PanelHotkeyDestination, ambient_overlay_alpha, chat_channel_tabs, chat_line_text,
-        custom_text_action_available, cycle_chat_channel, export_chat_contents_to, item_button,
-        panel_hotkey_destination, settings_with_panel_shortcuts, show_window_recovery,
+        chat_rows, custom_text_action_available, cycle_chat_channel, export_chat_contents_to,
+        item_button, panel_hotkey_destination, settings_with_panel_shortcuts, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
@@ -2449,6 +2507,65 @@ mod tests {
         expected[2] = false;
         assert_eq!(ui.action_bar_rows_with_assignments(), expected);
         Ok(())
+    }
+
+    #[test]
+    fn chat_clock_consumes_receipt_time_and_clear_preserves_new_identical_messages() {
+        use oteryn_client::{
+            play::ChatReceipt, settings::ClientSettings, settings_catalog::FutureValue,
+        };
+        let chat = oteryn_session::ChatLog::default();
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Peer".into(),
+            text: "same".into(),
+        };
+        let receipts = vec![
+            ChatReceipt {
+                server_sequence: 41,
+                line: line.clone(),
+                local_time: Some([9, 7, 3]),
+            },
+            ChatReceipt {
+                server_sequence: 42,
+                line,
+                local_time: Some([9, 7, 4]),
+            },
+        ];
+        let mut settings = ClientSettings::default();
+        assert_eq!(
+            chat_rows(&chat, &receipts, 5, true, &settings, None),
+            ["Peer: same", "Peer: same"]
+        );
+        settings
+            .future_preferences
+            .insert("console.console.timestamps".into(), FutureValue::Bool(true));
+        assert_eq!(
+            chat_rows(&chat, &receipts, 5, true, &settings, None),
+            ["09:07 Peer: same", "09:07 Peer: same"]
+        );
+        settings
+            .future_preferences
+            .insert("console.console.seconds".into(), FutureValue::Bool(true));
+        assert_eq!(
+            chat_rows(&chat, &receipts, 5, true, &settings, Some(41)),
+            ["09:07:04 Peer: same"]
+        );
+        assert!(chat_rows(&chat, &receipts, 5, true, &settings, Some(42)).is_empty());
+        // Another tab has an independent cutoff; clearing cannot mutate receipts.
+        assert_eq!(
+            chat_rows(&chat, &receipts, 5, true, &settings, None).len(),
+            2
+        );
+        assert!(chat_rows(&chat, &receipts, 0, true, &settings, None).is_empty());
+        let unknown = [ChatReceipt {
+            server_sequence: 43,
+            line: receipts[0].line.clone(),
+            local_time: None,
+        }];
+        assert_eq!(
+            chat_rows(&chat, &unknown, 5, true, &settings, Some(42)),
+            ["Peer: same"]
+        );
     }
 
     #[test]

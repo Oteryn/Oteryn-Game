@@ -572,6 +572,7 @@ struct Mailbox {
     game: GameState,
     chat_pending: Option<oteryn_session::ChatIntent>,
     chat_result: Option<oteryn_session::ChatOutcome>,
+    chat_receipts: VecDeque<ChatReceipt>,
     action_pending: Option<crate::action_bar::ActionBarCommand>,
     action_result: Option<crate::action_bar::ActionBarOutcome>,
 }
@@ -607,6 +608,18 @@ impl Outbox {
                     mailbox.pushed.own = Some(delta.value.actor_position);
                 }
                 SessionEvent::WorldObjectOverlay(delta) => mailbox.pushed.set_marker(delta.value),
+                SessionEvent::ChatLine(delta) => {
+                    if mailbox.chat_receipts.len() == oteryn_session::MAX_CHAT_LOG_LINES {
+                        mailbox.chat_receipts.pop_front();
+                    }
+                    mailbox.chat_receipts.push_back(ChatReceipt {
+                        server_sequence: delta.server_sequence,
+                        line: delta.value,
+                        local_time: time::OffsetDateTime::now_local()
+                            .ok()
+                            .map(|now| [now.hour(), now.minute(), now.second()]),
+                    });
+                }
                 _ => {}
             }
         }
@@ -637,7 +650,17 @@ pub struct GameState {
     pub inventory: Option<oteryn_session::CharacterInventory>,
     pub container: Option<oteryn_session::OpenContainer>,
     pub chat: Option<oteryn_session::ChatLog>,
+    /// Bounded received lines with client receipt times; these are not server
+    /// timestamps or additional authoritative chat state.
+    pub chat_receipts: Vec<ChatReceipt>,
     pub entities: Vec<oteryn_session::WorldSpatialEntity>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChatReceipt {
+    pub server_sequence: u64,
+    pub line: oteryn_session::ChatLine,
+    pub local_time: Option<[u8; 3]>,
 }
 
 /// The shell's end of the session task: commands out, bounded projections in.
@@ -665,7 +688,10 @@ impl PlayLink {
 
     #[must_use]
     pub fn game_state(&self) -> GameState {
-        lock(&self.mailbox).game.clone()
+        let mailbox = lock(&self.mailbox);
+        let mut game = mailbox.game.clone();
+        game.chat_receipts = mailbox.chat_receipts.iter().cloned().collect();
+        game
     }
 
     /// One pending chat intent: repeated UI submissions cannot grow an unbounded queue.
@@ -774,6 +800,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
             inventory: self.inventory().cloned(),
             container: self.open_container().cloned(),
             chat: self.chat_log().cloned(),
+            chat_receipts: Vec::new(),
             entities: self
                 .world_entities()
                 .map(|world| world.iter().copied().collect())
@@ -925,6 +952,45 @@ mod tests {
     };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn chat_receipts_keep_identical_lines_distinct_bounded_and_read_only() {
+        let (link, _commands, outbox) = play_channel();
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Peer".into(),
+            text: "same".into(),
+        };
+        for sequence in 1..=70 {
+            outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+                server_sequence: sequence,
+                base_revision: sequence - 1,
+                new_revision: sequence,
+                value: line.clone(),
+            })]);
+        }
+        let mut displayed = link.game_state();
+        assert_eq!(
+            displayed.chat_receipts.len(),
+            oteryn_session::MAX_CHAT_LOG_LINES
+        );
+        assert_eq!(displayed.chat_receipts[0].server_sequence, 7);
+        assert_eq!(displayed.chat_receipts[63].server_sequence, 70);
+        #[cfg(windows)]
+        assert!(
+            displayed
+                .chat_receipts
+                .iter()
+                .all(|receipt| receipt.local_time.is_some())
+        );
+        assert!(
+            displayed
+                .chat_receipts
+                .iter()
+                .all(|receipt| receipt.line == line)
+        );
+        displayed.chat_receipts.clear();
+        assert_eq!(link.game_state().chat_receipts.len(), 64);
+    }
 
     #[test]
     fn chat_submission_is_bounded_and_terminal_sessions_reject_it() {
