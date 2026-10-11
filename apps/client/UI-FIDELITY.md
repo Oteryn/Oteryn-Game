@@ -278,6 +278,35 @@ not active wire routes. The starter SpellBook has three spells, not the original
 reference's full catalogue. Map capability 18 does not solve these independent
 gaps or authorize activating them.
 
+## MAP-CLIENT-1 session integration — AUTHORING
+
+The Session consumer now recognizes selected capability 18 and strictly requires
+its dependencies 4/6. The atomic join must carry map domain 17 instead of object
+domain 2, with the admitted spatial content generation. Unselected, missing,
+mixed or incorrectly typed map domains are refused. Pushed map deltas go through
+the existing generation/sequence/revision discipline and a typed event; the current
+map header/revision advance only after successful canonical decoding.
+
+A binding mismatch sends the existing fenced, unsequenced FND ResyncRequest with
+the previous applied sequence and map revision, drops retained map state/events,
+and fails the session closed. Recovery uses a fresh admission snapshot; no new
+mid-session snapshot route is invented. The added protocol encoder implements
+foundation.proto without changing its schema or registry. Four duplex-stream
+regressions cover actual admission, delta routing, dependency/domain rejection
+and the emitted resync bytes. Protocol encoder tests exercise ingress validation,
+zero/duplicate domains and the 256-domain bound. The dev adapter maps the new
+error exhaustively; the fixture harness retains its existing capability set and
+does not constitute a bundle-map E2E test.
+
+Capability 18 remains unadvertised by the production client until drawing,
+targeting and the joint speed switch are connected and qualified. Previous
+Windows evidence does not qualify these new consumer changes. Final frozen-head
+independent review remains required; this draft is still AUTHORING. Linux tests
+pass: client 205/171/5, protocol 214, Session 62, dev adapter 34 and harness 36.
+Strict all-target Clippy passes for all five packages, formatting and workspace
+boundaries pass, and governance validation/60 tests pass. Windows qualification
+is pending for this batch.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

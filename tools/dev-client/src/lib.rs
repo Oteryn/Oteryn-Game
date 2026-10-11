@@ -85,6 +85,7 @@ pub enum DevClientError {
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
+    WorldMap(oteryn_session::map_view::WorldMapWireError),
     ActorSpell(ActorSpellError),
     /// A chat intent or chat payload failed its codec.
     Chat(ChatWireError),
@@ -219,6 +220,7 @@ impl From<SessionError> for DevClientError {
             SessionError::Protocol(error) => Self::Protocol(error),
             SessionError::WorldSpatial(error) => Self::WorldSpatial(error),
             SessionError::WorldObject(error) => Self::WorldObject(error),
+            SessionError::WorldMap(error) => Self::WorldMap(error),
             SessionError::ActorSpell(error) => Self::ActorSpell(error),
             SessionError::Chat(error) => Self::Chat(error),
             SessionError::Attack(error) => Self::Attack(error),
@@ -370,6 +372,7 @@ impl fmt::Display for DevClientError {
                     "ACTOR_SPELL/ACTOR_VITALS decode failed: {error:?}"
                 )
             }
+            Self::WorldMap(error) => write!(formatter, "WORLD_MAP_VIEW decode failed: {error:?}"),
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
             }

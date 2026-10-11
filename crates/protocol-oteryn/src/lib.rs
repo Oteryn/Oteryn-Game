@@ -1049,6 +1049,37 @@ pub fn encode_liveness_ack(
     Ok(output)
 }
 
+/// Encodes the existing FND-02 resync request, without a command id or server sequence.
+/// Revisions describe only applied state; domain ids must be nonzero and unique.
+pub fn encode_resync_request(
+    connection_generation: u64,
+    last_applied_server_sequence: u64,
+    revisions: &[(u32, u64)],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if revisions.len() > MAX_STATE_DOMAINS_PER_SYNC {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut seen = BTreeSet::new();
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, last_applied_server_sequence);
+    for &(domain, revision) in revisions {
+        if domain == 0 || !seen.insert(domain) {
+            return Err(FoundationProtocolError::StateRevisionMismatch);
+        }
+        let mut entry = Vec::new();
+        push_scalar(&mut entry, 1, u64::from(domain));
+        push_scalar(&mut entry, 2, revision);
+        push_bytes(&mut payload, 2, &entry);
+    }
+    let mut output = vec![8, MessageType::ResyncRequest as u8];
+    push_scalar(&mut output, 2, connection_generation);
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
 /// Decodes a `LivenessProbe` message payload's `probe_id` (field 1; zero or absent is invalid,
 /// `foundation.proto`: "Monotonic within one connection_generation; zero is invalid"), the
 /// client-direction counterpart of `encode_liveness_probe`.
@@ -3762,6 +3793,39 @@ mod tests {
                 "payload: {payload:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn resync_encoder_uses_existing_fenced_unsequenced_request()
+    -> Result<(), FoundationProtocolError> {
+        let encoded = encode_resync_request(7, 41, &[(17, 9)])?;
+        let envelope = decode_wire_envelope(&encoded)?;
+        envelope.validate(Direction::ClientToServer, true)?;
+        assert_eq!(envelope.message_type(), MessageType::ResyncRequest);
+        assert_eq!(envelope.connection_generation(), 7);
+        assert_eq!(envelope.server_sequence(), 0);
+        assert_eq!(envelope.payload(), &[8, 41, 18, 4, 8, 17, 16, 9]);
+        let empty = encode_resync_request(7, 0, &[(17, 0)])?;
+        assert!(decode_wire_envelope(&empty).is_ok());
+        assert_eq!(
+            encode_resync_request(0, 0, &[]),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        for entries in [vec![(0, 1)], vec![(17, 1), (17, 2)]] {
+            assert_eq!(
+                encode_resync_request(7, 0, &entries),
+                Err(FoundationProtocolError::StateRevisionMismatch)
+            );
+        }
+        let maximum: Vec<_> = (1..=256).map(|id| (id, u64::MAX)).collect();
+        assert!(decode_wire_envelope(&encode_resync_request(7, u64::MAX, &maximum)?).is_ok());
+        let mut excessive = maximum;
+        excessive.push((257, 0));
+        assert_eq!(
+            encode_resync_request(7, 0, &excessive),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
         Ok(())
     }
 

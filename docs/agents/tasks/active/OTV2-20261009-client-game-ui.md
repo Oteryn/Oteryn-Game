@@ -125,6 +125,17 @@ The owner's PID 12896 remains responsive. Protected-base audit passes, not full
 CI. Next: complete accepted MAP-CLIENT-1 runtime consumers, retaining the joint
 speed-switch requirement and not enabling speculative light/sound projections.
 
+Next AUTHORING batch connects the accepted map domain to Session admission and
+typed pushed events, without advertising 18 yet. Bundle joins require domain 17
+instead of 2, validate generation and dependencies 4/6, and reject mixed object
+domains. Binding mismatch emits the existing FND ResyncRequest, invalidates map
+state and ends this unusable session; recovery requires a new admission snapshot.
+The missing protocol encoder implements the existing foundation.proto request
+only, without allocating/changing a wire type. Dev-client exhaustive error mapping
+and fixture harness builders follow the added Session types. The fixture harness
+does not advertise/test 18; bundle E2E remains pending. These consumer/public-API
+changes require independent review on the final frozen candidate.
+
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
 scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer

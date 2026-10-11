@@ -41,9 +41,10 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, EquipmentSlot, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
+use oteryn_protocol_oteryn::world_map;
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectTarget};
 /// Existing capability-18 map codecs/types, exposed without a client-to-protocol edge.
-/// Re-exporting them does not advertise the capability or activate session routing.
+/// Re-exporting them does not advertise the capability in the default client.
 pub mod map_view {
     pub use oteryn_protocol_oteryn::world_map::{
         MAX_MAP_VIEW_HANDLES, MAX_SNAPSHOT_TILES, MapDefinition, MapItem, MapOrigin, MapTile,
@@ -241,8 +242,7 @@ pub struct Admission<'a> {
     pub deadline: Duration,
 }
 
-/// `oteryn-protocol-oteryn`'s own domain codecs (state domains 1 `WORLD_SPATIAL` and 2
-/// `WORLD_OBJECT_OVERLAY`).
+/// The atomic join state: spatial visibility and either object overlay or the streamed map.
 #[derive(Debug, Clone)]
 pub struct JoinSnapshot {
     pub game_session_id: GameSessionId,
@@ -254,6 +254,9 @@ pub struct JoinSnapshot {
     /// The `WORLD_OBJECT_OVERLAY` domain revision the snapshot carried: the base every later
     /// domain-2 `StateDelta` must name.
     pub world_object_overlay_revision: u64,
+    /// Domain 17, present only when capability 18 is selected. Domain 2 is then absent.
+    pub world_map: Option<map_view::WorldMapViewSnapshot>,
+    pub world_map_revision: u64,
 }
 
 #[derive(Debug)]
@@ -269,6 +272,7 @@ pub enum SessionError {
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
+    WorldMap(map_view::WorldMapWireError),
     ActorSpell(actor_spell::ActorSpellError),
     /// A chat payload was refused by its codec.
     Chat(ChatWireError),
@@ -421,6 +425,7 @@ impl fmt::Display for SessionError {
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }
+            Self::WorldMap(error) => write!(formatter, "WORLD_MAP_VIEW decode failed: {error:?}"),
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
             }
@@ -663,6 +668,8 @@ pub enum SessionEvent {
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
+    /// Domain 17: received tile replacements, clears and the new server window header.
+    WorldMapView(AppliedDelta<map_view::WorldMapViewDelta>),
     /// Domain 3 `ACTOR_VITALS`.
     ActorVitals(AppliedDelta<ActorVitals>),
     /// Domain 10 `ACTOR_COMBAT_STATE`: the own actor's attack target, modes and in-fight flag,
@@ -688,6 +695,7 @@ impl SessionEvent {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            Self::WorldMapView(_) => world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
@@ -906,6 +914,8 @@ pub struct Session<S> {
     actor_vitals: Option<ActorVitals>,
     world_spatial: WorldSpatialObservation,
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
+    map_header: Option<map_view::MapViewHeader>,
+    map_revision: u64,
     join_snapshot: JoinSnapshot,
     unusable: bool,
     first_command_id: u64,
@@ -1011,6 +1021,16 @@ impl<S: SessionStream> Session<S> {
             return Err(SessionError::CapabilityNotRequested(capability));
         }
         let selected_capabilities = accepted_fields.selected_capabilities.clone();
+        let map_selected = selected_capabilities.contains(&world_map::CAPABILITY_WORLD_MAP_VIEW_V1);
+        if map_selected {
+            for required in world_map::CAPABILITY_WORLD_MAP_VIEW_REQUIRES {
+                if !selected_capabilities.contains(&required) {
+                    return Err(SessionError::CapabilityNotSelected {
+                        capability: required,
+                    });
+                }
+            }
+        }
 
         // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
         // them, is checked against it before being trusted.
@@ -1122,6 +1142,8 @@ impl<S: SessionStream> Session<S> {
         let mut world_spatial_observation = None;
         let mut entities = None;
         let mut world_object_overlay = None;
+        let mut world_map_snapshot = None;
+        let mut map_revision = 0;
         let mut actor_vitals = None;
         let mut combat_state = None;
         let mut combat_revision = 0;
@@ -1169,11 +1191,38 @@ impl<S: SessionStream> Session<S> {
                 (
                     world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
                     world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                ) => {
+                ) if !map_selected => {
                     world_object_overlay = Some(
                         world_object::decode_world_object_overlay_snapshot(domain.payload)?,
                     );
                     overlay_revision = domain.revision;
+                }
+                (world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, _) if map_selected => {
+                    return Err(SessionError::UnselectedDomain {
+                        domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    });
+                }
+                (
+                    world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                    world_map::SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+                ) if map_selected => {
+                    world_map_snapshot = Some(
+                        world_map::decode_world_map_snapshot(domain.payload)
+                            .map_err(SessionError::WorldMap)?,
+                    );
+                    map_revision = domain.revision;
+                }
+                (world_map::STATE_DOMAIN_WORLD_MAP_VIEW, snapshot_type) => {
+                    return Err(if map_selected {
+                        SessionError::UnregisteredSnapshotType {
+                            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                            snapshot_type,
+                        }
+                    } else {
+                        SessionError::UnselectedDomain {
+                            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                        }
+                    });
                 }
                 (
                     actor_spell::STATE_DOMAIN_ACTOR_VITALS,
@@ -1292,16 +1341,35 @@ impl<S: SessionStream> Session<S> {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        let observation = world_spatial_observation.ok_or(SessionError::MissingDomain(
+            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+        ))?;
+        if map_selected {
+            let map = world_map_snapshot
+                .as_ref()
+                .ok_or(SessionError::MissingDomain(
+                    world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                ))?;
+            if map.header.content_generation != observation.content_generation {
+                return Err(SessionError::ContentGenerationMismatch {
+                    domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                });
+            }
+        }
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
-            world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
-                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            ))?,
+            world_spatial: observation,
             world_spatial_revision: spatial_revision,
-            world_object_overlay: world_object_overlay.ok_or(SessionError::MissingDomain(
-                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            ))?,
+            world_object_overlay: if map_selected {
+                Vec::new()
+            } else {
+                world_object_overlay.ok_or(SessionError::MissingDomain(
+                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                ))?
+            },
             world_object_overlay_revision: overlay_revision,
+            world_map: world_map_snapshot,
+            world_map_revision: map_revision,
         };
         Ok(Self {
             stream,
@@ -1318,6 +1386,8 @@ impl<S: SessionStream> Session<S> {
             actor_vitals,
             world_spatial: snapshot.world_spatial,
             world_object_overlay: snapshot.world_object_overlay.clone(),
+            map_header: snapshot.world_map.as_ref().map(|map| map.header),
+            map_revision,
             join_snapshot: snapshot,
             unusable: false,
             duplicates: Vec::new(),
@@ -1533,7 +1603,9 @@ impl<S: SessionStream> Session<S> {
                 MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
-                    let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    let event = self
+                        .apply_inbound_delta(server_sequence, envelope.payload())
+                        .await?;
                     self.queue_event(event)?;
                 }
                 actual => {
@@ -1611,8 +1683,8 @@ impl<S: SessionStream> Session<S> {
 
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` (USE-WIRE-V1) for the object at
     /// `placement`, naming the overlay revision this client believes current
-    /// (`expected_revision`), and decodes its `CommandResult` and, when `Committed`, the one
-    /// `WORLD_OBJECT_OVERLAY` delta.
+    /// (`expected_revision`), and decodes its `CommandResult`. Any resulting deltas
+    /// (including map domain 17) are routed through the domain store and event queue.
     pub async fn use_object(
         &mut self,
         placement: &[u8],
@@ -1975,7 +2047,9 @@ impl<S: SessionStream> Session<S> {
                 self.read_sequenced_push("CommandResult").await?;
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
-                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                let event = self
+                    .apply_inbound_delta(server_sequence, &result_payload)
+                    .await?;
                 self.queue_event(event)?;
                 continue;
             }
@@ -2034,7 +2108,7 @@ impl<S: SessionStream> Session<S> {
             let (server_sequence, payload) = self
                 .read_sequenced("StateDelta", MessageType::StateDelta)
                 .await?;
-            let event = self.apply_state_delta(server_sequence, &payload)?;
+            let event = self.apply_inbound_delta(server_sequence, &payload).await?;
             if event.domain_id() == domain_id {
                 return Ok(event);
             }
@@ -2050,6 +2124,40 @@ impl<S: SessionStream> Session<S> {
         }
         self.events.push(event);
         Ok(())
+    }
+
+    /// A mismatched map binding requests the existing FND resync, then fails closed.
+    /// Recovery uses a fresh admission snapshot, not an invented mid-session snapshot route.
+    async fn apply_inbound_delta(
+        &mut self,
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let result = self.apply_state_delta(server_sequence, payload);
+        if matches!(result, Err(SessionError::WorldMap(_))) {
+            self.map_header = None;
+            self.join_snapshot.world_map = None;
+            self.events.clear();
+            if matches!(
+                result,
+                Err(SessionError::WorldMap(
+                    world_map::WorldMapWireError::BindingMismatch
+                ))
+            ) {
+                let frame = oteryn_protocol_oteryn::encode_resync_request(
+                    self.connection_generation,
+                    server_sequence.saturating_sub(1),
+                    &[(world_map::STATE_DOMAIN_WORLD_MAP_VIEW, self.map_revision)],
+                )?;
+                bounded(
+                    self.deadline,
+                    "map resync request",
+                    write_frame(&mut self.stream, &frame),
+                )
+                .await?;
+            }
+        }
+        result
     }
 
     /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
@@ -2073,6 +2181,36 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+                if self.is_selected(world_map::CAPABILITY_WORLD_MAP_VIEW_V1) =>
+            {
+                check_delta(
+                    &delta,
+                    world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
+                    self.map_revision,
+                )?;
+                let header = self
+                    .map_header
+                    .ok_or(SessionError::MissingDomain(domain_id))?;
+                let value = world_map::decode_world_map_delta(&header, delta.payload)
+                    .map_err(SessionError::WorldMap)?;
+                self.map_header = Some(value.header);
+                self.map_revision = new_revision;
+                Ok(SessionEvent::WorldMapView(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            world_map::STATE_DOMAIN_WORLD_MAP_VIEW => {
+                Err(SessionError::UnselectedDomain { domain_id })
+            }
+            world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY
+                if self.is_selected(world_map::CAPABILITY_WORLD_MAP_VIEW_V1) =>
+            {
+                Err(SessionError::UnselectedDomain { domain_id })
+            }
             world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY if self.entities.is_some() => {
                 check_delta(
                     &delta,
@@ -2532,6 +2670,7 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests {
     use super::*;
+    mod map_view;
     use oteryn_protocol_oteryn::world_object::{
         SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
         WorldObjectOverlayEntry as WireOverlayEntry, encode_world_object_overlay_snapshot,
@@ -4321,7 +4460,7 @@ mod tests {
     #[test]
     fn the_advertised_set_is_closed_under_the_registry_requires() {
         // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
-        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12])];
+        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12]), (18, &[4, 6])];
         for (capability, needed) in requires {
             if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
                 for need in *needed {
