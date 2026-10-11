@@ -63,6 +63,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if stopped {
                 return;
             }
+            // One owner pass is one owner turn: the world-interaction cap starts anew.
+            if let Ok(mut gate) = self.world_gate.lock() {
+                gate.begin_turn();
+            }
             if !self.ensure_source_map_initialized().await {
                 continue;
             }

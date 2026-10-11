@@ -26,7 +26,7 @@ fresh source/model qualification and review of the new pin; schema validity alon
 cannot establish donor provenance. Regeneration requires no upstream checkout or
 network access.
 
-The player-source batch contains 368 bindings: 293 `identity_only` projections and
+The player-source batch contains 375 bindings: 300 `identity_only` projections and
 75 `ordinary_data` imports. Of the ordinary imports, 45 qualify an
 `accepted_ordinary_model`; 30 import only `canonical_base` data and retain their
 missing-mechanic records. The partial imports comprise six Buzz/Scorch variants
@@ -50,7 +50,7 @@ raw/whole-controller parity false. S21 Familiar aliases and the four barrier
 projections use their existing explicit selection and Effect proofs. All 36
 retain source-scope holds; none changes a native gameplay payload.
 
-`unavailable-spells.jsonl` retains 486 records using the five classes from
+`unavailable-spells.jsonl` retains 479 records using the five classes from
 SPELL-NPC-MAP-0 §1: 249 `SOURCE_CONFLICT_KEPT`, 155 `ADAPTER_MISSING`, 27
 `RUNTIME_GAP`, 38 `EXCLUDED` and 17 `CONTRACT_GAP`. There are 108 registrations in
 both the binding and held sets: 30 partial base models, 15 party projections,
@@ -139,3 +139,32 @@ not implement the remaining advanced Wheel modifier stages or actor-state
 controllers, and does not establish every cast context or activate a server
 generation. The source holds describe the remaining model/controller differences;
 they no longer claim that the current base Wheel reader is absent.
+
+## Monster attack authoring
+
+`monster-attack-authoring.jsonl` holds one record for each distinct ability reference in the
+`attacks[]` schedules of `content/creatures/definitions/spell-native-profiles.json` (5,776
+references over 6,030 schedule entries). Until now those entries carried only the ability
+reference, interval and chance.
+
+- `authored` records export the donor ability facts: `kind`, `range_tiles`, `needs_target`,
+  `needs_direction`, optional `area` (radius, beam or matrix), and the ordered `effects`. A damage
+  effect carries `damage_type`, `minimum`, `maximum`, `mitigated_by`, any `affects` filter and its
+  `derivation` (`donor_range`, `schedule_magnitude` for `caster_magnitude` formulas, or
+  `melee_attack_skill_formula`). Non-damage effects (conditions, summons, item changes) are carried
+  verbatim without new semantics. Each record keeps the schedule it was derived for and donor
+  evidence (repository, pinned revision, source file and line, bundle digests).
+- `unavailable` records name the reason and carry no authoring: no unique donor bundle, donor
+  health differs from the profile, attack count differs, an ability with no effects, ambiguous
+  provenance or conflicting bindings of one reference. No value is filled for them.
+- Every number is donor-attested (`DONOR_ATTESTED_NOT_GLOBAL_VERIFIED`); no Global parity is claimed.
+
+`monster-attack-authoring.pin.json` binds the records to the exact profile artifact digest and to
+the prepared population archive under `docs/agents/evidence/monster-completion-final-20261002/`.
+Regenerate with `tools/content-schema/native-gameplay/build_monster_attack_authoring.py` (`--check`
+verifies the committed files). `validate_monster_attack_authoring.py` and
+`test_monster_attack_authoring.py` fail when an `attacks[]` reference lacks a record, when the
+artifact digest changes without regeneration, or when an authored record is incomplete.
+
+The native loader (`CreatureProfileRecord`, `deny_unknown_fields`) has no field for this data, so it
+is not yet embedded in `spell-native-profiles.json`; that needs the loader change tracked in #1622.

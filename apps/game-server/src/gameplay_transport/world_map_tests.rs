@@ -1483,6 +1483,7 @@ fn production_item(key: &str) -> Option<crate::map::facts::ItemDefinition> {
         solid: Some(solid),
         blocks_projectile: id == PILLAR,
         pickupable: matches!(id, COIN | BAG),
+        door: false,
     })
 }
 

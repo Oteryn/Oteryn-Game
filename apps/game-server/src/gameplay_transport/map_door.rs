@@ -27,22 +27,27 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
 const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
-/// `WORLDINT0-RL-08`: world interactions admitted per Channel per simulation tick.
-const WORLD_ACTIONS_PER_TICK: u32 = 512;
-/// The owner's simulation tick, the window the per-tick cap counts in.
-const SIMULATION_TICK: std::time::Duration = std::time::Duration::from_millis(100);
+/// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
+const WORLD_ACTIONS_PER_TURN: u32 = 512;
 
 /// The world-interaction admission gate of one Channel (`WORLD_INTERACTION0` §3.4): the
 /// `world_action` cooldown per actor, started at admission and kept after a refused act, and the
-/// per-tick cap. A refused act is `EXHAUSTED`, queues nothing and changes nothing.
+/// per-owner-turn cap. A refused act is `EXHAUSTED`, queues nothing and changes nothing.
 #[derive(Debug, Default)]
 pub(crate) struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
-    tick: u128,
+    /// Interactions admitted since the owner's current turn began ([`Self::begin_turn`]).
     admitted: u32,
 }
 
 impl WorldActionGate {
+    /// Starts a new owner turn: the Channel owner calls it once per owner pass
+    /// (`run_source_owner_cycles`), so the cap counts in the owner's own turns and not in
+    /// elapsed wall time (FND-03 defines no fixed quantum).
+    pub(crate) fn begin_turn(&mut self) {
+        self.admitted = 0;
+    }
+
     /// Admits one `USE` of `actor` at owner-clock time `now`, or refuses it.
     pub(crate) fn admit(&mut self, actor: ExactActorRef, now: std::time::Duration) -> bool {
         self.started
@@ -50,12 +55,7 @@ impl WorldActionGate {
         if self.started.iter().any(|(who, _)| *who == actor) {
             return false;
         }
-        let tick = now.as_nanos() / SIMULATION_TICK.as_nanos();
-        if tick != self.tick {
-            self.tick = tick;
-            self.admitted = 0;
-        }
-        if self.admitted >= WORLD_ACTIONS_PER_TICK {
+        if self.admitted >= WORLD_ACTIONS_PER_TURN {
             return false;
         }
         self.admitted += 1;
@@ -495,7 +495,7 @@ mod tests {
     }
 
     #[test]
-    fn the_world_action_gate_applies_the_cooldown_and_the_tick_cap() {
+    fn the_world_action_gate_applies_the_cooldown_and_the_owner_turn_cap() {
         use std::time::Duration;
         let (_runtime, actor, _) = runtime_beside_the_door();
         let ms = Duration::from_millis;
@@ -505,13 +505,15 @@ mod tests {
         assert!(!gate.admit(actor, ms(1_100)));
         assert!(!gate.admit(actor, ms(1_199)));
         assert!(gate.admit(actor, ms(1_200)));
-        // The per-tick cap: the cooldown is per actor, the cap per Channel.
+        // The per-turn cap: the cooldown is per actor, the cap per Channel. Wall time never
+        // resets it; only the owner's next turn does.
         let mut gate = WorldActionGate {
-            admitted: WORLD_ACTIONS_PER_TICK,
-            tick: Duration::from_millis(5_000).as_nanos() / SIMULATION_TICK.as_nanos(),
+            admitted: WORLD_ACTIONS_PER_TURN,
             ..WorldActionGate::default()
         };
         assert!(!gate.admit(actor, ms(5_010)));
-        assert!(gate.admit(actor, ms(5_100)));
+        assert!(!gate.admit(actor, ms(9_000)));
+        gate.begin_turn();
+        assert!(gate.admit(actor, ms(9_100)));
     }
 }

@@ -25,9 +25,10 @@ import re
 import sys
 import urllib.parse
 import urllib.request
+from decimal import Decimal
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError, validators
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
@@ -507,11 +508,53 @@ def build(sources: dict) -> tuple[dict, dict]:
     return catalogue, report
 
 
+def exact_json_numbers(value: object) -> object:
+    """Validate decimal JSON percentages exactly, without binary-float division."""
+    if isinstance(value, (float, Decimal)):
+        decimal = value if isinstance(value, Decimal) else Decimal(str(value))
+        if not decimal.is_finite():
+            raise ValueError("non-finite number is not JSON")
+        return decimal
+    if isinstance(value, list):
+        return [exact_json_numbers(item) for item in value]
+    if isinstance(value, dict):
+        return {key: exact_json_numbers(item) for key, item in value.items()}
+    return value
+
+
+def exact_multiple_of(validator, divisor, instance, schema):
+    """Check hundredths using decimal digits, independent of arithmetic context."""
+    if divisor != Decimal("0.01"):
+        yield from Draft202012Validator.VALIDATORS["multipleOf"](
+            validator, divisor, instance, schema
+        )
+        return
+    if not validator.is_type(instance, "number"):
+        return
+    decimal = instance if isinstance(instance, Decimal) else Decimal(str(instance))
+    if not decimal.is_finite():
+        yield ValidationError("non-finite number is not JSON")
+        return
+    _, digits, exponent = decimal.as_tuple()
+    fractional_digits = max(0, -exponent - 2)
+    if fractional_digits and any(digits[-fractional_digits:]):
+        yield ValidationError(f"{instance!r} is not a multiple of {divisor}")
+
+
+ExactCatalogueValidator = validators.extend(
+    Draft202012Validator, {"multipleOf": exact_multiple_of}
+)
+
+
 def validate(catalogue: dict) -> list[str]:
-    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"), parse_float=Decimal)
+    try:
+        exact_catalogue = exact_json_numbers(catalogue)
+    except ValueError as error:
+        return [str(error)]
     errors = [
         f"{'/'.join(map(str, e.absolute_path)) or '<root>'}: {e.message}"
-        for e in Draft202012Validator(schema).iter_errors(catalogue)
+        for e in ExactCatalogueValidator(schema).iter_errors(exact_catalogue)
     ]
     if errors:
         return errors
@@ -710,7 +753,9 @@ def main(argv: list[str] | None = None) -> int:
         return content_command(args.check)
     failed = False
     for path in args.files:
-        errors = validate(json.loads(path.read_text(encoding="utf-8")))
+        errors = validate(
+            json.loads(path.read_text(encoding="utf-8"), parse_float=Decimal)
+        )
         for error in errors:
             print(f"{path}: {error}", file=sys.stderr)
         failed |= bool(errors)

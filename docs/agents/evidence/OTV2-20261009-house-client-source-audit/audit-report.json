@@ -1,0 +1,87 @@
+{
+  "classification": "PROVEN",
+  "authority": "SOURCE_COMPARISON_ONLY; no runtime qualification or content promotion",
+  "capture_date": "2026-10-09",
+  "capture_method": "Owner-authorized read from running client container through Remote Desktop Commander",
+  "baseline_scope": "Historical authoring at baseline_ref, not current protected-main runtime",
+  "baseline_ref": "4cf5ff2298666069fdcf2cb821611e0d6de079ad",
+  "baseline_version": "15.30",
+  "client_version": "15.33.b21348",
+  "inputs": {
+    "staticdata": {
+      "file": "staticdata-3757e8d8ccdfd7c4df6b18c610de5e3748cd8880c94421807e9d5ffa05458fa8.dat",
+      "sha256": "3757e8d8ccdfd7c4df6b18c610de5e3748cd8880c94421807e9d5ffa05458fa8",
+      "size": 178944
+    },
+    "staticmapdata": {
+      "file": "staticmapdata-e6bc9632978dbecdfa8276cd6c7f7ad686bcdfa27a21331bb4fab20672876e20.dat",
+      "sha256": "e6bc9632978dbecdfa8276cd6c7f7ad686bcdfa27a21331bb4fab20672876e20",
+      "size": 1469263
+    }
+  },
+  "old_count": 995,
+  "new_count": 995,
+  "kind_counts": {
+    "private_house": 878,
+    "guildhall": 66,
+    "shop": 51
+  },
+  "added": [],
+  "removed": [],
+  "field_changes": [
+    {
+      "source_id": 101,
+      "name": "Targuna Cottage 1",
+      "changes": {
+        "name": {
+          "old": "Targuna Cottage 1",
+          "new": "Targuna Cottage  1"
+        }
+      }
+    },
+    {
+      "source_id": 30602,
+      "name": "Tunnel Gardens 2",
+      "changes": {
+        "name": {
+          "old": "Tunnel Gardens 2",
+          "new": "Tunnel Gardens 2 "
+        }
+      }
+    }
+  ],
+  "identical_staticdata_records": 995,
+  "identical_layout_records": 994,
+  "changed_layouts": [
+    {
+      "source_id": 55015,
+      "name": "Lakeside Mansion",
+      "new_dimensions": {
+        "width": 10,
+        "height": 18,
+        "floors": 4
+      }
+    }
+  ],
+  "towns": [
+    "Ab'Dendriel",
+    "Ankrahmun",
+    "Candia",
+    "Carlin",
+    "Darashia",
+    "Edron",
+    "Farmine",
+    "Gray Beach",
+    "Issavi",
+    "Kazordoon",
+    "Liberty Bay",
+    "Moonfall",
+    "Port Hope",
+    "Rathleton",
+    "Silvertides",
+    "Svargrond",
+    "Thais",
+    "Venore",
+    "Yalahar"
+  ]
+}

@@ -8,6 +8,16 @@ use super::{
 };
 mod replies;
 mod service;
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use replies::{NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate};
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use service::{NpcEntry, NpcServiceModel};
 #[cfg(test)]
 mod service_tests;
 
@@ -44,7 +54,8 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // the `spawns/` family adds 4 (#1759) and the spell imports 2 more (#1534).
         // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
         // each of the 11 locator lookups: 11 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+        // Combined with #1940 NPC placement content the scan exceeded 218: one more package-root sibling seen by each of the 11 locator lookups, +11 (measured).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11,
     }
 }
 
@@ -202,7 +213,7 @@ impl NpcDataCatalogue {
     pub fn records(
         &self,
     ) -> impl Iterator<Item = (&ProjectV2DefinitionRef, &ProjectV2Declaration)> {
-        self.declarations.iter().filter_map(|(reference, _)| {
+        self.declarations.keys().filter_map(|reference| {
             self.declaration(reference)
                 .map(|declaration| (reference, declaration))
         })

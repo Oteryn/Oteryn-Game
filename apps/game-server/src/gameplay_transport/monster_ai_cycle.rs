@@ -22,6 +22,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
+        let now = self.owner_now();
+        let mut runtime = self.runtime.lock().await;
+        // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
+        // before the creature think pass, whether or not melee content is active.
+        drive_owner_spawns(&mut runtime, now.get());
         let Some(room) = self.qualified_room else {
             return;
         };
@@ -31,8 +36,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        let now = self.owner_now();
-        let mut runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
             || content.source_digest() != runtime.content_pin().server_artifact_digest()
             || room.compiled().server_digest() != runtime.content_pin().server_artifact_digest()
@@ -143,16 +146,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .collect::<Vec<_>>();
-        // CREATURE-MOVE-1 owns the production step and its wire; until it merges no step is
-        // admitted here, as before.
+        // CREATURE-MOVE-1: a think's one cardinal step (chase, flee or wander within the spawn
+        // radius) is committed here when its destination is a walkable, open, ordinary cell.
+        // Lock order: runtime, spell states, attack, then the door runtime (read only).
+        // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
+        let doors = self.door.lock().await.collision_cells().clone();
+        let cells = room.movement_cells();
         let _ = melee_owner.creature_ai.run_due_thinks(
             &mut runtime,
             now.get(),
             &GameplayDecisionRoot::from_bytes(content.source_digest()),
             &revisions,
             &candidates,
-            |_| false,
+            |destination| creature_cell_admissible(cells, &doors, destination),
         );
+        // A creature that stepped swings from, and is perceived at, its new cell.
+        for (actor, position, _) in &mut qualified {
+            if let Ok(current) = runtime.read_actor_position(*actor) {
+                *position = current;
+            }
+        }
         let cursor = states.monster_ai_cursor % qualified.len();
         let count = qualified.len().min(ResourceLimit::EvaluationWork.maximum());
         for offset in 0..count {
@@ -309,6 +322,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// CREATURE-MOVE-1 (CREATURE-AI-0 §5.3, R2): whether a creature may step onto `cell`. It is a
+/// Walkable cell of the qualified room, no door cell (open or closed) covers it, and it is neither a
+/// protection-zone nor a floor-change tile. A creature never opens a door and never changes
+/// floors by a step. The check reads only; the step is committed by the Channel owner.
+///
+/// LIMIT (CREATURE-MOVE-1c): durable ground items and fields (Magic Wall, Wild Growth) are not
+/// consulted here. No SQL, spell lane or durable-item snapshot enters the AI pass; the step uses
+/// only what the Movement owner holds in memory. CREATURE-MOVE-1c adds an in-memory blocking
+/// overlay owned by the Movement owner, revalidated atomically at the step commit.
+fn creature_cell_admissible(
+    cells: &crate::content::NativeEntryMovementCells,
+    doors: &std::collections::BTreeSet<LogicalCell>,
+    cell: MovementLocalPosition,
+) -> bool {
+    let target = LogicalCell {
+        x: cell.x,
+        y: cell.y,
+        z: i32::from(cell.floor),
+    };
+    cell_open(
+        cells.index().lookup(cells.scope(), target) == Ok(crate::content::CollisionClass::Walkable),
+        doors.contains(&target),
+        cells
+            .spell_tiles()
+            .lookup(cells.scope(), target)
+            .ok()
+            .map(|tile| (tile.flags().protection_zone, tile.flags().floor_change)),
+    )
+}
+
+/// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
+/// `None` when the tile facts are unknown, which refuses (fail closed, like the think pass).
+const fn cell_open(walkable: bool, door: bool, tile: Option<(bool, bool)>) -> bool {
+    match tile {
+        Some((protection_zone, floor_change)) => {
+            walkable && !door && !protection_zone && !floor_change
+        }
+        None => false,
+    }
+}
+
 /// A present dead actor still has an observable vitals state until respawn. It must
 /// not occupy the nearest-candidate slot and prevent attacks on a living player.
 fn current_player_target<'a>(
@@ -325,6 +379,21 @@ fn current_player_target<'a>(
     }
     let state = states.get(runtime, actor, session)?;
     (state.vitals().health > 0).then_some(state)
+}
+
+/// SPAWN-1a (CREATURE-AI-0 §6.3): runs the respawn occurrences due at `now` with the MOVE-RL-11
+/// reference view. It needs no melee content. A refusal leaves the occurrences pending.
+fn drive_owner_spawns(runtime: &mut ChannelRuntimeV1, now: u64) {
+    let _ = runtime.drive_spawn_respawns(now, |observer, cell| {
+        use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+        match (
+            VisibilityPosition::new(observer.x, observer.y, observer.floor),
+            VisibilityPosition::new(cell.x, cell.y, cell.floor),
+        ) {
+            (Ok(observer), Ok(cell)) => VisibilitySettings::REFERENCE.can_see(observer, cell),
+            _ => false,
+        }
+    });
 }
 
 /// One monster the first playable melee dispatch serves: a wild hostile Creature whose bound
@@ -467,6 +536,87 @@ mod tests {
     fn position(x: i32, floor: i16) -> MovementLocalPosition {
         MovementLocalPosition { x, y: 0, floor }
     }
+    /// SPAWN-1a (Codex 4239269255): with no native gameplay manifest the fixture rats still
+    /// respawn on the owner turn; the drive reads no melee content.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_fixture_rat_respawns_without_native_gameplay_content() {
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let source = room.spawn_source().expect("D116 spawn source");
+        assert_eq!(
+            runtime.realize_activation_spawns(vec![source.activation_facts()]),
+            Ok(2)
+        );
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        drive_owner_spawns(&mut runtime, 0);
+        let due = runtime.pending_respawn(point).expect("pending").due_micros;
+        drive_owner_spawns(&mut runtime, due);
+        assert!(runtime.spawn_point_creatures()[0].2.is_none());
+        // Admission runs 4,200 ms after the warning (CREATURE-AI-0 §6.3).
+        drive_owner_spawns(&mut runtime, due + 4_200_000);
+        assert!(runtime.spawn_point_creatures()[0].2.is_some());
+    }
+
+    /// CREATURE-MOVE-1: a creature steps only onto an open walkable ordinary cell.
+    #[test]
+    fn creature_steps_are_admitted_only_onto_open_walkable_cells() {
+        assert!(cell_open(true, false, Some((false, false))));
+        assert!(!cell_open(false, false, Some((false, false))), "blocked");
+        assert!(!cell_open(true, true, Some((false, false))), "closed door");
+        // `doors` holds every door cell, open or closed, so an open doorway is refused too: a
+        // creature standing there would not count in the door-close occupancy.
+        assert!(
+            !cell_open(true, true, Some((false, false))),
+            "open door cell (CREATURE-DOOR-1)"
+        );
+        assert!(
+            !cell_open(true, false, Some((true, false))),
+            "protection zone"
+        );
+        assert!(!cell_open(true, false, Some((false, true))), "floor change");
+        assert!(!cell_open(true, false, None), "unknown tile facts");
+    }
+
+    /// CREATURE-MOVE-1: a cell outside the qualified room is refused whatever the doors say.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_cell_outside_the_room_is_refused() {
+        use crate::foundation::WorldId;
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let outside = MovementLocalPosition {
+            x: 100_000,
+            y: 0,
+            floor: 0,
+        };
+        assert!(!creature_cell_admissible(
+            room.movement_cells(),
+            &std::collections::BTreeSet::new(),
+            outside
+        ));
+    }
+
     #[test]
     fn remote_players_do_not_consume_local_perception_budget() {
         let mut targets = vec![(position(100, 7), false, false); 65];

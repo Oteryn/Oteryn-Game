@@ -17,6 +17,8 @@ pub mod boot;
 pub mod door;
 mod door_registry;
 pub mod facts;
+pub mod floor;
+mod floor_catalogue;
 pub mod overlay;
 pub mod view;
 
