@@ -34,9 +34,9 @@ nearest image sampling, Antialiasing smooth sampling, and Smooth Retro composes
 at ceil(scale) native multiples before smooth downsampling. At native size the
 extra pass is bypassed. Atlas filtering stays nearest and HUD/text stay outside
 the pass. Mode/size/format changes replace cached resources; source dimensions
-are checked against device limits. The DX12 regression reads actual rendered
-pixels to distinguish the modes. Fresh Windows qualification is required; these
-changes do not qualify full lighting, engine switching or visual 1:1 parity.
+are checked against device limits. The exact-head DX12 regression reads actual
+rendered pixels to distinguish the modes; qualification is recorded below.
+These changes do not qualify full lighting, engine switching or visual 1:1 parity.
 
 ## Page matrix
 
@@ -53,7 +53,7 @@ changes do not qualify full lighting, engine switching or visual 1:1 parity.
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Partial | Three masters and nine independent 50-slot rows drive the live layout; visible stored hotkey labels affect that renderer. Global lock migration, a single trailing lock per nonempty edge group, clear and primary-button move/swap primitives are tested against in-memory session assignments. Production still has no authoritative spell/object assignment source, so an admitted client starts empty; assignment menus, binding/item-amount/tooltip controls, clear controls and both lock surfaces remain disabled. Those primitives are not counted as reachable behavior. |
 | Shortcuts | Yes, two lists | Add/remove/order edits for destinations with real local compositions affect draft only; Apply updates the live registry and Cancel discards. Clean profiles and Defaults omit Lenshelp; a Lenshelp entry retained from an existing profile remains visible and removable but disabled, and cannot be added while its destination is unverified. |
-| Graphics | Yes | Fullscreen/VSync, the source-corrected integer 10–200 editable limit (legacy 1–9 retained), retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Integral-multiple scaling fits whole physical multiples of the 32-pixel sprite cells, with the source-confirmed half-native minimum when no whole multiple fits. Rendering, picking, HUD and capture share its transform; windows too small for that minimum expose recovery. Engine/AA controls stay disabled pending real scene-resampling and verified platform capabilities |
+| Graphics | Yes | Fullscreen/VSync, the source-corrected integer 10–200 editable limit (legacy 1–9 retained), retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Integral-multiple scaling fits whole physical multiples of the 32-pixel sprite cells, with the source-confirmed half-native minimum when no whole multiple fits. Rendering, picking, HUD and capture share its transform; windows too small for that minimum expose recovery. Windows None/Antialiasing/Smooth Retro now drive whole-scene image sampling, with a physical DX12 pixel regression. Engine selection remains disabled; original-client live image parity and full lighting composition remain pending |
 | Effects | Yes, lighting + opacity groups | The Light master gates its retained Ambient, Level Separator and combined Clouds & Indoor children; ambient intensity drives the bounded scene overlay. Level separation, the combined attenuation row and spell-effect controls stay disabled pending projections/renderers |
 | Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; all controls are disabled because no audio backend/content exists |
 | Battle Sounds | Yes, own/others/creatures | Nested spell categories are present but disabled because no mixer/events exist |
@@ -167,6 +167,21 @@ lighting, physical input or disabled rows. Exact source-head recovery bundle:
 `7ebcb54fdae881dd392d071136b4b4b2670e4545055086625991716fce6f1fd3`.
 
 ## Required evidence per page/panel
+
+AA source head `28565f4fbd1c92adc84ff2c71dddf7ad08bc3b3d` passed Linux client
+tests (196/169/5), renderer tests (39), strict Clippy, formatting and governance.
+Fresh MSVC client tests passed (195/173/5), renderer tests (40), including actual
+DX12 readback distinguishing nearest, smooth and ceil-scale Retro sampling.
+Strict Clippy and the DX12 release audit passed 20 pages/78 captures with zero
+invalid entries; changed Graphics and default Basic captures were inspected.
+Private directory: `C:\Users\barte\Downloads\oteryn-settings-audit-28565f4f`;
+manifest SHA-256 `4fdeb86cc3bdccb90fd585ca189548cec393bead78ae36e1cb80abca4c91b7b6`.
+Release binary lives in the separate `oteryn-client-ff934b4e\target-settings-aa`
+directory; the owner's running `985fe6b4` binary was not closed or overwritten.
+Recovery bundle: `/workspace/oteryn-client-publication-28565f4f.bundle`, SHA-256
+`1f6569da680a33c2dbce9885d79fbd9ec1eb4dd4070315f8df35ce6510a45bcc`.
+This proves a working sampling consumer, not complete original-client visual
+parity, real lightmap composition or every physical Apply/Cancel interaction.
 
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.

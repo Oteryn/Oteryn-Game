@@ -95,8 +95,9 @@ establishes these additional contracts:
   Lines 286–345 select the whole worldmap or its uncached multiplicative lightmap
   blend as the resampling source; the blend is explicitly layer-enabled so that
   Smooth Retro also works with lighting. HUD overlays are outside that source.
-  Oteryn AA stays unavailable until that path is implemented
-  and verified; a saved AA selection is not rendering acceptance.
+  These observations initially left Oteryn AA unavailable. Successor `28565f4f`
+  implements whole-scene resampling and has physical DX12 pixel evidence in
+  UI-FIDELITY.md; a saved selection alone is still not rendering acceptance.
 
 Pinned OTClient `mapview.cpp` lines 498–529 and 743–752 use framebuffer smoothing
 and a fixed 2x Smooth Retro buffer, unlike the original's ceil(scale) intermediate.

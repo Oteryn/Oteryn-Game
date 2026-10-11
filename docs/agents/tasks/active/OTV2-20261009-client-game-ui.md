@@ -90,10 +90,10 @@ must not be claimed as complete.
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,
 Interface/HUD, Console/Game Window, Misc/Gameplay and Screenshots/Help.
-Current bounded batch: whole-scene AA/Smooth Retro in apps/client and
-crates/renderer, using upstream wgpu rather than proprietary shaders. Require
-physical DX12 pixel readback, MSVC and all 20 page captures before acceptance.
-Keep the owner's running binary alive; use a separate release build directory.
+Whole-scene AA/Smooth Retro source head `28565f4fbd1c92adc84ff2c71dddf7ad08bc3b3d`
+passed Linux/MSVC checks, physical DX12 pixel readback and all 20 pages/78 captures.
+Full counts, manifest and recovery evidence are in UI-FIDELITY.md. The owner's
+running binary was retained; release uses a separate build directory.
 All other lanes remain pending; protocol/authority changes need owning contracts.
 
 Slider/volume semantics and private source hashes are in UI-REFERENCE-EXTRACTED.md;
@@ -115,8 +115,8 @@ integral scaling cannot fit 1x, matching the original minimum without HUD overfl
 Tests verify each tile's pointer transform at half-size and 125% DPI. Exact source
 head `985fe6b499979ac8420079a418731b1e373c8088` passed Linux 195/169/5 and MSVC
 194/173/5 tests, strict Clippy and 20-page/78-capture DX12 audit. Full manifest and
-recovery evidence are in UI-FIDELITY.md. AA needs whole-scene resampling, not
-atlas filtering/MSAA; lighting lacks real source/environment projections. Stock
+recovery evidence are in UI-FIDELITY.md. AA resampling is now implemented above;
+lighting lacks real source/environment projections. Stock
 Qt qsb 6.4.2 rejects QSB serialization v9 (with exit zero): compatible upstream
 decoding remains pending, not a reason to invent a parser or enable controls.
 
@@ -174,7 +174,7 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
   because the accepted movement wire has only four cardinal directions; the FPS
   toggle does not yet supply the label's lag indicator.
 - Mouse preset/loot semantics, most Console and Game Window filters, graphics
-  engine/AA, non-ambient effects, all audio families,
+  engine selection/AA visual parity, non-ambient effects, all audio families,
   Misc/Gameplay options and automatic screenshots remain pending.
 - Action-bar production assignment sourcing remains absent; Clear/profile-remove
   confirmation semantics and edge-master behavior are not reference-proven.
