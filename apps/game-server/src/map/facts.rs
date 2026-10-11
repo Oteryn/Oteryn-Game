@@ -18,7 +18,7 @@
 //!   open item's facts while open and its transition count is its object revision; every other
 //!   object revision is 0.
 
-use super::door::{self, DoorBook, PaletteDoor};
+use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::overlay::{AddedItem, TilePos};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
@@ -228,6 +228,46 @@ impl BundleFacts {
         &self.doors
     }
 
+    /// These facts with every door's state read once (Codex 4239177726): a map composition
+    /// reads them so that each door's appearance and its object revision come from one state,
+    /// whatever `USE` commits while it runs.
+    pub(crate) fn pinned(&self) -> PinnedFacts<'_> {
+        PinnedFacts {
+            facts: self,
+            doors: self.doors.snapshot(),
+        }
+    }
+
+    fn entry(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        doors: Option<&DoorStates>,
+    ) -> Option<EntryFacts> {
+        let key = placement_key(pos, ordinal)?;
+        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+            Ok(found) => self.placements[found].1,
+            Err(_) => Placement {
+                palette: self.unique_index(id)?,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            },
+        };
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.id != id {
+            return None;
+        }
+        let facts = EntryFacts {
+            bound: placement.bound,
+            count: u32::from(placement.count),
+            sub_type: u32::from(placement.sub_type),
+            ..entry.facts
+        };
+        Some(self.doors.facts(key, facts, doors))
+    }
+
     fn unique_index(&self, id: u32) -> Option<u32> {
         let found = self.ids.binary_search_by_key(&id, |(id, _)| *id).ok()?;
         Some(self.ids[found].1).filter(|index| *index != AMBIGUOUS)
@@ -328,27 +368,7 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 
 impl MapFacts for BundleFacts {
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
-        let key = placement_key(pos, ordinal)?;
-        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
-            Ok(found) => self.placements[found].1,
-            Err(_) => Placement {
-                palette: self.unique_index(id)?,
-                bound: false,
-                count: 1,
-                sub_type: 0,
-            },
-        };
-        let entry = self.palette.get(placement.palette as usize)?;
-        if entry.id != id {
-            return None;
-        }
-        let facts = EntryFacts {
-            bound: placement.bound,
-            count: u32::from(placement.count),
-            sub_type: u32::from(placement.sub_type),
-            ..entry.facts
-        };
-        Some(self.doors.facts(key, facts))
+        self.entry(pos, ordinal, id, None)
     }
 
     fn added_entry(&self, _item: &AddedItem) -> Option<EntryFacts> {
@@ -361,5 +381,31 @@ impl MapFacts for BundleFacts {
 
     fn object_revision(&self, placement_key: u64) -> u64 {
         self.doors.revision(placement_key)
+    }
+}
+
+/// [`BundleFacts`] with the door states of one read ([`BundleFacts::pinned`]).
+pub(crate) struct PinnedFacts<'a> {
+    facts: &'a BundleFacts,
+    doors: DoorStates,
+}
+
+impl MapFacts for PinnedFacts<'_> {
+    fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+        self.facts.entry(pos, ordinal, id, Some(&self.doors))
+    }
+
+    fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
+        self.facts.added_entry(item)
+    }
+
+    fn house_tile(&self, pos: TilePos) -> bool {
+        self.facts.house_tile(pos)
+    }
+
+    fn object_revision(&self, placement_key: u64) -> u64 {
+        self.facts
+            .doors
+            .revision_in(placement_key, Some(&self.doors))
     }
 }

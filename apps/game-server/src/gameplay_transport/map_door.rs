@@ -11,6 +11,7 @@
 use super::connection::{EarnedNotice, UseOutcome};
 use super::world_map::{MapTargetRefusal, MapViewSource, resolve_map_target};
 use super::world_object::{UseDisposition, WorldObjectTarget};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use crate::map::door::DoorUse;
 use crate::map::facts::BundleFacts;
 use crate::map::overlay::ChannelOverlay;
@@ -29,14 +30,39 @@ pub(super) fn reachable(actor: TilePos, door: TilePos) -> bool {
     actor.floor == door.floor && actor.x.abs_diff(door.x) <= 1 && actor.y.abs_diff(door.y) <= 1
 }
 
-/// Decides one `USE` of `target` by an actor on `actor`. `positions` is every committed actor
-/// position of the Channel, read under the same lock as the toggle.
+/// Whether a live actor stands on `door`: the acting actor on `actor_tile`, or any other actor
+/// the Channel's own collision census counts (Codex 4238971357, 4239177729): committed players,
+/// live creatures, placed NPCs, a companion reserved for an unresolved spawn and a pending
+/// relocation's destination. A census that cannot read a position fails closed (occupied), as
+/// movement does.
+pub(super) fn doorway_occupied(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    actor_tile: TilePos,
+    door: TilePos,
+) -> bool {
+    if door == actor_tile {
+        return true;
+    }
+    // The native floor is the runtime's legacy `z` negated.
+    let cell = MovementLocalPosition {
+        x: i32::from(door.x),
+        y: i32::from(door.y),
+        floor: i16::from(door.floor).saturating_neg(),
+    };
+    runtime
+        .position_occupied_by_other(actor, cell)
+        .unwrap_or(true)
+}
+
+/// Decides one `USE` of `target` by an actor on `actor`. `occupied` says whether an actor stands
+/// on a tile; it is read under the same lock as the toggle.
 pub(super) fn use_door(
     overlay: &ChannelOverlay,
     facts: &BundleFacts,
     content_generation: [u8; 32],
     actor: TilePos,
-    positions: &[TilePos],
+    occupied: impl FnOnce(TilePos) -> bool,
     target: &WorldObjectTarget,
 ) -> UseOutcome {
     let source = MapViewSource {
@@ -59,7 +85,7 @@ pub(super) fn use_door(
     if !reachable(actor, resolved.pos) {
         return outcome(UseDisposition::TooFar);
     }
-    let occupied = positions.contains(&resolved.pos);
+    let occupied = occupied(resolved.pos);
     match doors.toggle(resolved.placement_key, target.expected_revision, occupied) {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
         Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
@@ -102,7 +128,14 @@ mod tests {
         others: &[TilePos],
         t: &WorldObjectTarget,
     ) -> UseOutcome {
-        use_door(world.overlay(), world.facts(), GENERATION, actor, others, t)
+        use_door(
+            world.overlay(),
+            world.facts(),
+            GENERATION,
+            actor,
+            |pos| others.contains(&pos),
+            t,
+        )
     }
 
     #[test]
@@ -271,5 +304,149 @@ mod tests {
                 object_revision: 2
             }
         );
+    }
+
+    /// A Channel runtime with one player at native `(5, 0, -7)`, beside [`DOOR_AT`], and a rat
+    /// companion policy.
+    fn runtime_beside_the_door() -> (
+        ChannelRuntimeV1,
+        ExactActorRef,
+        crate::foundation::GameSessionId,
+    ) {
+        use crate::foundation::{
+            ChannelContentPin, ChannelId, CompiledCreaturePolicies, CompiledCreaturePolicy,
+            CreatureFlags, GameSessionId, NodeId, WorldId,
+        };
+        let id = |tag: u8| [1, 0x92, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&id(1)).expect("world");
+        let pin = ChannelContentPin::test(world);
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).expect("channel"),
+            NodeId::decode(&id(3)).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            pin.clone(),
+        )
+        .expect("runtime");
+        let rat = CompiledCreaturePolicy {
+            definition_key: "fixture:rat".into(),
+            definition_revision: "fixture:1".into(),
+            display_name: "fixture Rat".into(),
+            maximum_health: 20,
+            base_speed: 110,
+            outfit_look_type: 21,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: vec![],
+            armor: Some(1),
+            mitigation: None,
+            resistances: vec![],
+            damage_immunities: vec![],
+            healing_from_damage: vec![],
+            preferred_distance: Some(1),
+            reward_boss: Some(false),
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: false,
+                health_hidden: false,
+            },
+        };
+        runtime
+            .install_companion_policies(
+                CompiledCreaturePolicies::from_active_artifact(
+                    pin.server_artifact_digest(),
+                    vec![rat],
+                )
+                .expect("policies"),
+            )
+            .expect("installed");
+        let session = GameSessionId::decode(&id(4)).expect("session");
+        let reserved = runtime.reserve_fresh_session(session).expect("reserve");
+        let actor = runtime.commit_fresh_session(reserved).expect("commit");
+        runtime
+            .initialize_pinned_test_position(actor, movement(at(5)))
+            .expect("position");
+        (runtime, actor, session)
+    }
+
+    fn movement(tile: TilePos) -> MovementLocalPosition {
+        MovementLocalPosition {
+            x: i32::from(tile.x),
+            y: i32::from(tile.y),
+            floor: -i16::from(tile.floor),
+        }
+    }
+
+    /// Codex 4239177729: a companion whose spawn is reserved for an unresolved durable COMMIT
+    /// holds the doorway like a live actor, so the open door does not close on it; the census
+    /// is the carrier's own collision census, so a live creature and the acting player count too.
+    #[test]
+    fn a_reserved_companion_or_a_creature_keeps_the_open_door_open() {
+        let world = door_world().expect("world");
+        let digest = world.base().digest();
+        let key = door_key();
+        let (mut runtime, actor, session) = runtime_beside_the_door();
+        let actor_tile = at(5);
+        let go = |runtime: &ChannelRuntimeV1, revision: u64| {
+            use_door(
+                world.overlay(),
+                world.facts(),
+                GENERATION,
+                actor_tile,
+                |door| doorway_occupied(runtime, actor, actor_tile, door),
+                &target(digest, key, revision),
+            )
+            .disposition
+        };
+        assert!(!doorway_occupied(&runtime, actor, actor_tile, DOOR_AT));
+        assert!(doorway_occupied(&runtime, actor, DOOR_AT, DOOR_AT));
+        assert_eq!(go(&runtime, 0), UseDisposition::Committed);
+
+        // The companion's spawn is reserved on the open doorway: it is not visible yet, but
+        // the doorway is occupied and the door refuses to close.
+        let mut prepared = runtime
+            .prepare_companion_spawn(
+                actor,
+                session,
+                "fixture:rat",
+                movement(DOOR_AT),
+                None,
+                None,
+                0,
+                0,
+                false,
+            )
+            .expect("prepared");
+        runtime
+            .reserve_companion_spawn(&mut prepared)
+            .expect("reserved");
+        assert!(runtime.visible_entities().creatures.is_empty());
+        assert!(doorway_occupied(&runtime, actor, actor_tile, DOOR_AT));
+        assert_eq!(go(&runtime, 1), UseDisposition::Occupied);
+        assert!(world.enterable(DOOR_AT));
+
+        // Once the reservation rolls back, nobody stands there and the door closes.
+        runtime
+            .rollback_companion_spawn(&prepared)
+            .expect("rolled back");
+        assert!(!doorway_occupied(&runtime, actor, actor_tile, DOOR_AT));
+
+        // A live creature on the doorway holds it as well.
+        runtime
+            .realize_native_qualification_spawn(
+                runtime.content_pin().clone(),
+                "fixture:rat",
+                movement(DOOR_AT),
+            )
+            .expect("rat");
+        assert_eq!(go(&runtime, 1), UseDisposition::Occupied);
+        assert!(world.enterable(DOOR_AT));
     }
 }

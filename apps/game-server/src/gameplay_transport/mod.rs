@@ -2021,27 +2021,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor_tile) = native(expected.position()) else {
             return UseOutcome::rejected();
         };
-        // Every live actor keeps a doorway open: players, creatures and placed NPCs.
-        let visible = runtime.visible_entities();
-        let positions: Vec<_> = runtime
-            .committed_player_positions()
-            .into_iter()
-            .chain(
-                visible
-                    .players
-                    .iter()
-                    .chain(&visible.creatures)
-                    .chain(&visible.npcs)
-                    .map(|entry| entry.position),
-            )
-            .filter_map(native)
-            .collect();
         map_door::use_door(
             &map.overlay,
             &map.facts,
             runtime.content_pin().client_artifact_digest(),
             actor_tile,
-            &positions,
+            |door| map_door::doorway_occupied(&runtime, actor, actor_tile, door),
             target,
         )
     }
@@ -2266,9 +2251,12 @@ impl BundleMapPosition<'_> {
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
     ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
+        // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
+        // appearance and object revision in this update agree.
+        let facts = self.map.facts.pinned();
         let source = world_map::MapViewSource {
             overlay: &self.map.overlay,
-            facts: &self.map.facts,
+            facts: &facts,
             content_generation: self.content_generation,
             reset_epoch: 0,
         };

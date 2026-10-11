@@ -857,6 +857,33 @@ pub(crate) mod tests {
         Ok(())
     }
 
+    /// Codex 4239177726: a map composition reads pinned facts, so a door's appearance and its
+    /// object revision come from one state even when a `USE` commits in between.
+    #[test]
+    fn map_door_pinned_facts_pair_appearance_with_revision() -> Result<(), Box<dyn Error>> {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = door_key();
+        let pinned = world.facts().pinned();
+        assert!(world.facts().doors().toggle(key, 0, false).is_some());
+        // The live facts moved on; the pinned ones still say closed at revision 0.
+        assert_eq!(world.facts().object_revision(key), 1);
+        let live = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("live")?;
+        assert_eq!(live.appearance_id, 1630);
+        let closed = pinned.base_entry(DOOR_AT, 1, 0).ok_or("pinned")?;
+        assert_eq!(
+            (closed.appearance_id, pinned.object_revision(key)),
+            (1629, 0)
+        );
+        // A pin taken after the USE reads the open state with its revision.
+        let after = world.facts().pinned();
+        let open = after.base_entry(DOOR_AT, 1, 0).ok_or("after")?;
+        assert_eq!((open.appearance_id, after.object_revision(key)), (1630, 1));
+        let grass = crate::map::view::placement_key(DOOR_AT, 0).ok_or("grass key")?;
+        assert_eq!(after.object_revision(grass), 0);
+        Ok(())
+    }
+
     #[test]
     fn map_door_a_second_boot_starts_closed() -> Result<(), Box<dyn Error>> {
         let first = door_world()?;

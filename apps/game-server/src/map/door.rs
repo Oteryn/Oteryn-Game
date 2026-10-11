@@ -245,6 +245,11 @@ impl Door {
     }
 }
 
+/// The state of every door of a [`DoorBook`] at one read ([`DoorBook::snapshot`]), in the book's
+/// order.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct DoorStates(Vec<u64>);
+
 /// The outcome of one `USE` on a door.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DoorUse {
@@ -304,11 +309,35 @@ impl DoorBook {
     }
 
     fn find(&self, key: u64) -> Option<&Door> {
-        let found = self
-            .doors
-            .binary_search_by_key(&key, |door| door.key)
-            .ok()?;
-        Some(&self.doors[found])
+        self.position(key).map(|found| &self.doors[found])
+    }
+
+    fn position(&self, key: u64) -> Option<usize> {
+        self.doors.binary_search_by_key(&key, |door| door.key).ok()
+    }
+
+    /// Every door's state, each read once, for one map composition (Codex 4239177726): the
+    /// composition picks a door's facts and later reads its object revision, after the runtime
+    /// lock is released, so both must come from the same value or a concurrent `USE` could pair
+    /// a closed appearance with an open revision. One `u64` per door.
+    pub(crate) fn snapshot(&self) -> DoorStates {
+        DoorStates(
+            self.doors
+                .iter()
+                .map(|door| door.state.load(Ordering::Acquire))
+                .collect(),
+        )
+    }
+
+    /// The state of placement `key`: from `pinned` when given, else the live state.
+    fn state(&self, key: u64, pinned: Option<&DoorStates>) -> Option<(&Door, u64)> {
+        let found = self.position(key)?;
+        let door = &self.doors[found];
+        let state = match pinned {
+            Some(states) => *states.0.get(found)?,
+            None => door.state.load(Ordering::Acquire),
+        };
+        Some((door, state))
     }
 
     /// Whether placement `key` is a door a player can use.
@@ -318,15 +347,24 @@ impl DoorBook {
 
     /// The object revision of placement `key`: 0 for every entry that is no door.
     pub(crate) fn revision(&self, key: u64) -> u64 {
-        self.find(key)
-            .map_or(0, |door| door.state.load(Ordering::Acquire))
+        self.revision_in(key, None)
+    }
+
+    /// [`Self::revision`], read from `pinned` when given.
+    pub(crate) fn revision_in(&self, key: u64, pinned: Option<&DoorStates>) -> u64 {
+        self.state(key, pinned).map_or(0, |(_, state)| state)
     }
 
     /// `entry`, the closed facts of placement `key`, or the open item's facts while the door is
-    /// open.
-    pub(crate) fn facts(&self, key: u64, entry: EntryFacts) -> EntryFacts {
-        match self.find(key) {
-            Some(door) if door.state.load(Ordering::Acquire) % 2 == 1 => EntryFacts {
+    /// open; the door's state is read from `pinned` when given.
+    pub(crate) fn facts(
+        &self,
+        key: u64,
+        entry: EntryFacts,
+        pinned: Option<&DoorStates>,
+    ) -> EntryFacts {
+        match self.state(key, pinned) {
+            Some((door, state)) if state % 2 == 1 => EntryFacts {
                 definition: door.open.definition,
                 terrain_kind: door.open.terrain_kind,
                 appearance_id: door.open.appearance_id,
