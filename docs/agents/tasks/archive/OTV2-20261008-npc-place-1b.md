@@ -4,17 +4,17 @@
 task_id: OTV2-20261008-npc-place-1b
 title: "NPC-PLACE-1b: World Bundle v4 NPC frame, placement realization and travel destination holds"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-place-1b-20261008
 issue: 1622
-pr: PENDING
+pr: 1983
 head_sha: "exact frozen head in the PR FREEZE comment"
 final_head_sha: "exact frozen head in the PR FREEZE comment"
 owner: single writer session (control plane session_01CwP6d84eCPvpgoEuyci8Tx)
 created_at: 2026-10-08
-updated_at: 2026-10-10
+updated_at: 2026-10-11
 execution_policy: continuous_progress
 packet: "docs/architecture/reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md §3, §5, §6, §7"
 owned_paths:
@@ -53,3 +53,28 @@ depends_on: [NPC-PLACE-1, NPC-PLACE-1a]
   (the v4 bundle moves `map_revision`); `tests/map_load_base.rs`, `tests/map_overlay_channel.rs`
   and `tests/support/map_item_mint_postgres_cases.rs` for their hand-built bundle assemblers' v4
   update only (NPC row and frame, format 4, v4 digest domain), assertions unchanged.
+
+## Outcome
+
+`OTERYN_WORLD_BUNDLE/v4` carries the NPC row and frame and the manifest `npcs` block. The compiler
+admits placements for service-model NPCs only, realizes them onto enterable cells or holds them
+with a typed reason, and holds unrealizable travel destinations. The reader enforces the §14
+checks and limits, and the `oteryn` pin is rebuilt for v4 with NPC-PLACE-1a's placements. Finding
+for a separate map/runtime packet: on the real tree all 25 placements and all 195 travel routes
+are held as `BlockSolid`, because Item-family ground without a native profile resolves as solid.
+
+## Validation
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy -p oteryn-world-bundle -p oteryn-world-bundle-compiler -p oteryn-game-server -p oteryn-client --all-targets -- -D warnings`: pass
+- `cargo test -p oteryn-world-bundle -p oteryn-world-bundle-compiler`: pass
+- `cargo test -p oteryn-game-server -p oteryn-client --no-fail-fast`: pass
+- `world-bundle-compiler pin-check . <out>`: pass
+- `python3 tools/repository/validate_repository_policy.py`: pass
+- `python3 tools/repository/test_classify_pr_test_lanes.py` and the other classifier tests: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+## Review
+
+Review state on the frozen head is the control plane's; none requested by this worker.
