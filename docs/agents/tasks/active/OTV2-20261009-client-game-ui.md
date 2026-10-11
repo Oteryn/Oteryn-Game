@@ -142,17 +142,12 @@ scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer
 `5b784e60` passed their MSVC/Clippy/DX12 chains. These are not qualifications for a
 new source head. Contextual Animated cursor consumers remain unavailable.
 
-The current AUTHORING batch adds a bounded receipt clock for accepted ChatLine
-events, genuine Console timestamp/seconds consumers and local per-tab Clear
-Window sequence cutoffs. Later identical messages survive Clear; the session
-projection and server history are never mutated. An unavailable local clock
-produces no invented timestamp. Upstream `time` 0.3.55 supplies safe platform
-local-time retrieval; Windows regressions require actual clock availability.
-The exact committed successor `1b2928fb` passed native MSVC tests
-(193 library/166 binary/5 launcher), strict Clippy and the DX12 audit
-(20 pages/78 captures/no invalid page). The Console capture was visually
-inspected; private manifest SHA-256 is
-`3bfb69468bb3505fdb0a85bf535c6f781bfe267bcc4c0f7d00cf2d39452a9a3f`.
+Earlier receipt-clock/Clear head `1b2928fb` passed MSVC tests (193/166/5), strict
+Clippy and the 20-page/78-capture DX12 audit; full evidence and manifest remain in
+`apps/client/UI-FIDELITY.md`. Accepted ChatLine receipt metadata supplies genuine
+timestamps via upstream `time` 0.3.55. Clear uses local per-tab sequence cutoffs;
+later identical messages survive, server/session history is unchanged, and an
+unavailable clock never produces invented time.
 The root lockfile is a World compiler input. Its changed digest reproduced the
 red World bundle job locally; the AUTHORING repair refreshes only the pin's
 `inputs_digest`, preserving world content, identity, production=false and the
