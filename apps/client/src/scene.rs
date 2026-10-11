@@ -126,6 +126,21 @@ impl Scene {
         Ok(Some(picked))
     }
 
+    pub(crate) fn select_map_tile(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        self.target = Some(Targetable {
+            tile,
+            kind: TargetKind::Object,
+            glyph: false,
+            entity: None,
+        });
+        self.rebuild_sprites()
+    }
+
+    pub(crate) fn select_map_actor(&mut self, target: Targetable) -> Result<(), BatchError> {
+        self.target = Some(target);
+        self.rebuild_sprites()
+    }
+
     /// Turns the player to `facing`, keeping the target.
     pub fn set_facing(&mut self, facing: StepDir) -> Result<(), BatchError> {
         self.facing = facing;

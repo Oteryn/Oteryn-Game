@@ -43,6 +43,17 @@ fn map_peer(
     tail: Option<Vec<u8>>,
     resync: bool,
 ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
+    map_peer_script(selected, map, overlay, tail, resync, None)
+}
+
+fn map_peer_script(
+    selected: &'static [u32],
+    map: Option<Vec<u8>>,
+    overlay: bool,
+    tail: Option<Vec<u8>>,
+    resync: bool,
+    expected_use: Option<Vec<u8>>,
+) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let peer = tokio::spawn(async move {
         read_frame(&mut server).await?;
@@ -98,6 +109,23 @@ fn map_peer(
             );
             decode_wire_envelope(&request)?.validate(Direction::ClientToServer, true)?;
         }
+        if let Some(expected) = expected_use {
+            let frame = read_frame(&mut server).await?;
+            let command = decode_wire_envelope(&frame)?.client_command(1)?;
+            assert_eq!((command.command_id, command.command_type), (7, 2));
+            assert_eq!(command.payload, expected);
+            write_frame(
+                &mut server,
+                &encode_command_result(
+                    1,
+                    41,
+                    7,
+                    CommandStatus::Accepted,
+                    &world_object::encode_use_result(UseDisposition::Committed),
+                )?,
+            )
+            .await?;
+        }
         let mut rest = Vec::new();
         let _ = server.read_to_end(&mut rest).await;
         Ok(())
@@ -110,6 +138,70 @@ fn map_admission() -> Result<Admission<'static>, BoxError> {
         supported_capabilities: SELECTED,
         ..admission()?
     })
+}
+
+#[test]
+fn live_map_origin_selects_exact_use_payload_and_stale_target_sends_nothing() -> Result<(), BoxError>
+{
+    block_on(async {
+        use crate::map_view::MapTarget;
+        let handle = std::num::NonZeroU64::MIN;
+        for origin in [
+            MapOrigin::BaseOrdinal {
+                ordinal: 7,
+                object_revision: 23,
+            },
+            MapOrigin::Handle(handle),
+        ] {
+            let mut snapshot = world_map::decode_world_map_snapshot(&map_snapshot()?)
+                .map_err(|e| format!("{e:?}"))?;
+            snapshot.tiles[0].items[0].origin = origin;
+            let mut model =
+                crate::map_view::MapView::new(CONTENT_GENERATION).map_err(|e| format!("{e:?}"))?;
+            model
+                .replace_decoded(snapshot.clone())
+                .map_err(|e| format!("{e:?}"))?;
+            let target = model.target(at(0, 0), 0).ok_or("no map target")?;
+            let expected = match target {
+                MapTarget::Base {
+                    placement,
+                    expected_revision,
+                } => world_object::encode_use_intent(&WorldObjectTarget {
+                    placement: placement.to_vec(),
+                    expected_revision,
+                })
+                .map_err(|e| format!("{e:?}"))?,
+                MapTarget::Item(handle) => world_object::encode_use_item_intent(handle),
+            };
+            let bytes =
+                world_map::encode_world_map_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+            let (client, peer) =
+                map_peer_script(SELECTED, Some(bytes), false, None, false, Some(expected));
+            let mut session = Session::admit(client, map_admission()?).await?;
+            let stale = match target {
+                MapTarget::Base {
+                    placement,
+                    expected_revision,
+                } => MapTarget::Base {
+                    placement,
+                    expected_revision: expected_revision + 1,
+                },
+                MapTarget::Item(_) => {
+                    MapTarget::Item(std::num::NonZeroU64::new(2).ok_or("zero handle")?)
+                }
+            };
+            assert!(session.use_map_target(stale).await?.is_none());
+            let outcome = session
+                .use_map_target(target)
+                .await?
+                .ok_or("use disappeared")?;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            assert_eq!(outcome.command_id, 7); // stale input reserved no ID and emitted no frame
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
 }
 
 #[test]

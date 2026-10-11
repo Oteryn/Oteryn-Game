@@ -7,7 +7,7 @@
 
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
-use crate::map_view::MapView;
+use crate::map_view::{MapTarget, MapView};
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
 use crate::world::{START, World};
@@ -81,6 +81,7 @@ enum Input {
     Cast(NonZeroU32),
     Attack(EntityRef),
     Stop,
+    UseMap(MapTarget),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -273,6 +274,22 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        if let Some(map) = &self.map {
+            if let Some(target) = crate::input::map_actor_target(map, &self.entities, tile) {
+                self.scene.select_map_actor(target)?;
+                if let Some(entity) = target.entity {
+                    self.queue(Input::Attack(entity));
+                }
+                return Ok(());
+            }
+            if let Some(picked) = crate::input::map_pick(map, tile) {
+                self.scene.select_map_tile(tile)?;
+                if picked.target.is_none() {
+                    self.combat_line = Some("That item is out of reach");
+                }
+                return Ok(());
+            }
+        }
         match self.scene.select_tile(tile)? {
             None => self.walk.set_goal(tile),
             Some(Targetable {
@@ -280,6 +297,24 @@ impl PlayView {
                 ..
             }) => self.queue(Input::Attack(target)),
             Some(_) => {}
+        }
+        Ok(())
+    }
+
+    /// A native USE click names only the highest visible received entry.
+    pub fn use_map(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        let Some(picked) = self
+            .map
+            .as_ref()
+            .and_then(|map| crate::input::map_pick(map, tile))
+        else {
+            return Ok(());
+        };
+        self.scene.select_map_tile(tile)?;
+        if let Some(target) = picked.target {
+            self.queue(Input::UseMap(target));
+        } else {
+            self.combat_line = Some("That item is out of reach");
         }
         Ok(())
     }
@@ -298,6 +333,14 @@ impl PlayView {
             .filter(|entity| {
                 entity.position.floor == self.floor
                     && entity.kind == EntityKind::Creature
+                    && self.map.as_ref().is_none_or(|map| {
+                        crate::input::map_actor_target(
+                            map,
+                            &self.entities,
+                            TileCoord::new(entity.position.x, entity.position.y),
+                        )
+                        .is_some_and(|target| target.entity == Some(entity.entity))
+                    })
                     && self
                         .scene
                         .view()
@@ -568,6 +611,20 @@ impl PlayView {
                     .apply_pushed(&pushed)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
                 PlayEvent::Combat(report) => self.apply_combat(report),
+                PlayEvent::Used(outcome) => {
+                    self.combat_line = Some(
+                        match outcome.as_deref().map(|outcome| outcome.disposition) {
+                            Some(oteryn_session::UseDisposition::Committed) => "Item used",
+                            Some(oteryn_session::UseDisposition::StaleState) | None => {
+                                "Item is no longer available"
+                            }
+                            Some(oteryn_session::UseDisposition::TooFar) => {
+                                "That item is out of reach"
+                            }
+                            _ => "Item use refused",
+                        },
+                    )
+                }
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
@@ -578,6 +635,9 @@ impl PlayView {
                 Input::Cast(spell) => link.request_combat(CombatCommand::Cast(spell)),
                 Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
                 Input::Stop => link.request_combat(CombatCommand::Stop),
+                Input::UseMap(target) => {
+                    let _ = link.commands.send(PlayCommand::UseMap(target));
+                }
                 Input::Arrow(_) => match self
                     .send_step()
                     .map_err(|_error| PublicClass::SessionUnavailable)?
@@ -620,6 +680,7 @@ pub enum PlayEvent {
     Pushed(Pushed),
     /// The server's answer to a combat command.
     Combat(CombatReport),
+    Used(Option<Box<oteryn_session::UseOutcome>>),
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
@@ -674,6 +735,7 @@ struct Mailbox {
     last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
+    used: Option<Option<Box<oteryn_session::UseOutcome>>>,
     ended: Option<PublicClass>,
     game: GameState,
     chat_pending: Option<oteryn_session::ChatIntent>,
@@ -847,12 +909,21 @@ impl PlayLink {
         if let Some(report) = mailbox.combat.pop_front() {
             return Some(PlayEvent::Combat(report));
         }
+        if let Some(outcome) = mailbox.used.take() {
+            return Some(PlayEvent::Used(outcome));
+        }
         mailbox.ended.take().map(PlayEvent::Ended)
     }
 }
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn use_map(
+        &mut self,
+        _target: MapTarget,
+    ) -> impl Future<Output = Result<Option<oteryn_session::UseOutcome>, SessionError>> + Send {
+        async { Ok(None) }
+    }
     fn map_view(&self) -> Option<(u64, &MapView)> {
         None
     }
@@ -899,6 +970,12 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn use_map(
+        &mut self,
+        target: MapTarget,
+    ) -> Result<Option<oteryn_session::UseOutcome>, SessionError> {
+        self.use_map_target(target).await
+    }
     fn map_view(&self) -> Option<(u64, &MapView)> {
         self.world_map_view()
             .map(|map| (self.world_map_revision(), map))
@@ -1030,6 +1107,15 @@ pub async fn run_session<T: Stepper>(
             }
         }
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::UseMap(target)) => match session.use_map(target).await {
+                Ok(outcome) => {
+                    lock(&outbox.0).used = Some(outcome.map(Box::new));
+                    publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Step(direction)) => {
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
@@ -1733,7 +1819,7 @@ mod tests {
                             .map_err(|error| format!("{error:?}"))?;
                     }
                     PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
-                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) => {}
+                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) | PlayEvent::Used(_) => {}
                 }
             }
             if pushed > 4 {

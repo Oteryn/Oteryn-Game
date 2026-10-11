@@ -307,6 +307,56 @@ pub fn pick_target(tile: TileCoord, visible: &[Targetable]) -> Option<Targetable
         .copied()
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MapPick {
+    pub position: oteryn_session::ActorPosition,
+    /// `None` for a received display-only entry, not a fallback to a lower entry/floor.
+    pub target: Option<crate::map_view::MapTarget>,
+}
+
+/// Highest drawn floor and its topmost received entry; never reconstructs a hidden stack.
+#[must_use]
+pub fn map_pick(map: &crate::map_view::MapView, screen_tile: TileCoord) -> Option<MapPick> {
+    let header = map.header()?;
+    let tile = map
+        .visible_tiles()
+        .filter(|tile| {
+            crate::map_draw::projected(tile.position, header.origin) == Some(screen_tile)
+        })
+        .max_by_key(|tile| tile.position.floor)?;
+    Some(MapPick {
+        position: tile.position,
+        target: map.target(tile.position, tile.items.len().checked_sub(1)?),
+    })
+}
+
+/// Actor picking obeys the same perspective and upper-floor occlusion as map picking.
+#[must_use]
+pub fn map_actor_target(
+    map: &crate::map_view::MapView,
+    actors: &[oteryn_session::WorldSpatialEntity],
+    tile: TileCoord,
+) -> Option<Targetable> {
+    let header = map.header()?;
+    let cover = map_pick(map, tile).map(|picked| picked.position.floor);
+    let actor = actors
+        .iter()
+        .filter(|actor| {
+            actor.kind == oteryn_session::EntityKind::Creature
+                && actor.position.floor <= header.first_visible_floor
+                && cover.is_none_or(|floor| floor <= actor.position.floor)
+                && oteryn_session::map_view::in_window(header.origin, actor.position)
+                && crate::map_draw::projected(actor.position, header.origin) == Some(tile)
+        })
+        .max_by_key(|actor| actor.position.floor)?;
+    Some(Targetable {
+        tile,
+        kind: TargetKind::Entity,
+        glyph: true,
+        entity: Some(actor.entity),
+    })
+}
+
 /// The step an arrow-key press asks for. Held keys repeat, so a held arrow keeps walking.
 #[must_use]
 pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
@@ -328,12 +378,14 @@ pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
 
 /// Action id of the primary-button click in the gameplay context.
 pub const CLICK_ACTION: &str = "client.click";
+pub const USE_CLICK_ACTION: &str = "client.map-use";
 
 /// A gameplay click at a window pixel, produced only by the routed `client.click` action.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ClickAction {
     pub x: f64,
     pub y: f64,
+    pub use_item: bool,
 }
 
 /// Routes normalized platform events (from `InputPlatformAdapter`) through `InputRouter`, so a
@@ -360,15 +412,26 @@ impl MouseActions {
                 ContextDefinition::new(text.clone(), ContextKind::Text, 10),
                 ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
             ],
-            vec![Binding::new(
-                gameplay.clone(),
-                InputChord::new(
-                    Modifiers::NONE,
-                    vec![InputAtom::Mouse(MouseButton::PRIMARY)],
-                )?,
-                ActionId::new(CLICK_ACTION.to_owned())?,
-                RepeatPolicy::Ignore,
-            )],
+            vec![
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new(CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::SECONDARY)],
+                    )?,
+                    ActionId::new(USE_CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+            ],
             &[],
         )?;
         let mut router = InputRouter::new(map);
@@ -432,18 +495,26 @@ impl MouseActions {
                 _ => {}
             }
             for action in self.router.process(event) {
-                if action.action().as_str() == CLICK_ACTION
+                if matches!(action.action().as_str(), CLICK_ACTION | USE_CLICK_ACTION)
                     && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
                     && let Some((x, y)) = self.pointer
                 {
-                    clicks.push(ClickAction { x, y });
+                    clicks.push(ClickAction {
+                        x,
+                        y,
+                        use_item: action.action().as_str() == USE_CLICK_ACTION,
+                    });
                 }
             }
         }
         clicks
     }
 }
+
+#[cfg(test)]
+#[path = "input_map_tests.rs"]
+mod map_tests;
 
 #[cfg(test)]
 mod tests {
@@ -711,7 +782,14 @@ mod tests {
     fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
-        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert_eq!(
+            clicks,
+            vec![ClickAction {
+                x: 100.0,
+                y: 60.0,
+                use_item: false
+            }]
+        );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
         Ok(())
     }
@@ -785,7 +863,11 @@ mod tests {
         actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
         assert_eq!(
             actions.route(&[primary(ButtonState::Pressed)]),
-            vec![ClickAction { x: 30.0, y: 40.0 }]
+            vec![ClickAction {
+                x: 30.0,
+                y: 40.0,
+                use_item: false
+            }]
         );
         actions.route(&[
             primary(ButtonState::Released),

@@ -1724,6 +1724,30 @@ impl<S: SessionStream> Session<S> {
         self.poison_on_error(outcome)
     }
 
+    /// Uses a still-visible received map target. A departed/replaced target sends nothing.
+    pub async fn use_map_target(
+        &mut self,
+        target: map_view::MapTarget,
+    ) -> Result<Option<UseOutcome>, SessionError> {
+        self.ensure_usable()?;
+        if !self
+            .world_map_view()
+            .is_some_and(|map| map.contains_target(target))
+        {
+            return Ok(None);
+        }
+        match target {
+            map_view::MapTarget::Item(handle) => self.use_item(handle).await.map(Some),
+            map_view::MapTarget::Base {
+                placement,
+                expected_revision,
+            } => self
+                .use_object(&placement, expected_revision)
+                .await
+                .map(Some),
+        }
+    }
+
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` with the field 2 item target
     /// (capability 4), which opens a corpse. Refused before anything is sent when capability 4 is
     /// not selected. It returns at its result; the domain 11 and 9 deltas it causes go through

@@ -323,12 +323,16 @@ impl Application {
             let mut render_failed = false;
             for click in clicks
                 .into_iter()
-                .filter(|_| self.preferences.click_to_walk)
+                .filter(|click| click.use_item || self.preferences.click_to_walk)
             {
                 if let Some((x, y)) = viewport.and_then(|view| view.scene_point(click.x, click.y))
                     && let Some(tile) = click_tile(play.view.scene().view(), x, y)
                 {
-                    render_failed |= play.view.click(tile).is_err();
+                    render_failed |= if click.use_item {
+                        play.view.use_map(tile).is_err()
+                    } else {
+                        play.view.click(tile).is_err()
+                    };
                 }
             }
             if render_failed {

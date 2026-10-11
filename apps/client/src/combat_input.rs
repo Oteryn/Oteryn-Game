@@ -24,6 +24,7 @@ const PUMP_SLICE: Duration = Duration::from_millis(1);
 pub enum PlayCommand {
     Step(StepDir),
     Combat(CombatCommand),
+    UseMap(crate::map_view::MapTarget),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

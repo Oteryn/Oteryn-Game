@@ -129,6 +129,18 @@ anchor/minimap. Unbound actor visuals remain honest placeholders. Continue with
 floor-correct targets and movement/ground-speed coupling, then bundle E2E and
 exact-head independent review. Capability 18 is still not advertised.
 
+Scene source `9d43a594` passes MSVC strict Clippy/tests and verified 20-page/
+78-capture DX12 audit. Current input batch connects highest-visible-floor and
+top-received-origin picking to native secondary USE clicks and the existing wire
+encoders, with current-target revalidation on the Session task. Exact base and
+item payloads/stale no-send are duplex-tested. Full evidence is in UI-FIDELITY.md.
+Joint ground-speed activation needs an owning-contract decision: current admitted
+domains/results contain no effective actor speed or step-duration/deadline, while
+server speed depends on level, conditions and equipment. Never substitute 110 or
+switch only the server. Keep 18 off, finish safe input qualification and continue
+unblocked settings/reference work; route missing authority together with the
+existing spell/condition/light/audio/event projection gaps.
+
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
 scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer

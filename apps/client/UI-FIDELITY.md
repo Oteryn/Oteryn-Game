@@ -406,6 +406,35 @@ binding remain explicit placeholders. Floor-correct picking, movement presentati
 bundle E2E and the joint ground-speed switch remain pending; capability 18 stays
 unadvertised. Settings captures do not qualify live admission/drawing by themselves.
 
+Scene source `9d43a594b893c52098014921667f89c09031db96` passes MSVC strict
+seven-package Clippy/tests and exact-source DX12 settings audit: 20 pages, 78
+independently verified capture hashes, zero invalid entries, 125% DPI. Private
+audit `C:\Users\barte\Downloads\oteryn-settings-audit-9d43a594`; manifest SHA-256
+`40327b9c35bc88d697d5586137e0ac1c383ae4d3fa48b762d2a18173482a01a2`.
+Recovery `/workspace/oteryn-client-publication-9d43a594.bundle`, SHA-256
+`035532071ab1fa92227f52e8d6c4f421121e82b9fcc9f3ebd5bb9717ec1022ad`.
+The owner's PID 12896 remains responsive. This still does not qualify bundle E2E.
+
+Current AUTHORING adds floor/perspective-correct map picking, topmost received
+origin-only USE targets and an actual secondary-click consumer using the existing
+input router and accepted USE_INTENT encoders. A display-only top entry cannot
+fall back to an actionable lower stack/floor. Visible actors are protected from
+upper-floor picking, including battle cycling. Before sending a queued USE,
+Session rechecks that the target still names a topmost visible current entry;
+departed/replaced targets send no frame and reserve no command ID. Duplex tests
+verify exact base-key/revision and item-handle wire payloads, not just serialization.
+Input regressions cover hidden roofs, handles leaving the view and modal/focus
+suppression. This does not enable all original mouse presets or loot semantics.
+
+The joint ground-speed switch is not yet safe to activate: the accepted map
+projection carries per-tile ground speed, but admitted actor/entity/vitals and
+paced step-result codecs expose no effective actor speed or step-duration
+deadline. Production speed depends on level, conditions and equipment, not a
+constant 110. Reusing the shared checked-in speed table is correct only after
+that missing authoritative input is supplied under an accepted owning contract.
+Do not guess 110/150, allocate a new field here or change only the server source.
+Capability 18 therefore remains unadvertised; existing server pacing stays intact.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

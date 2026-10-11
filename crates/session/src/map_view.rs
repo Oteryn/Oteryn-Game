@@ -19,7 +19,7 @@ pub enum MapViewError {
 }
 
 /// A target obtained from the current map, never from its appearance or definition number.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MapTarget {
     Item(ItemHandle),
     Base {
@@ -188,6 +188,17 @@ impl MapView {
                 })
             }
         }
+    }
+
+    /// A queued input must still name a visible current entry when the session sends it.
+    #[must_use]
+    pub fn contains_target(&self, target: MapTarget) -> bool {
+        self.visible_tiles().any(|tile| {
+            tile.items
+                .len()
+                .checked_sub(1)
+                .is_some_and(|index| self.target(tile.position, index) == Some(target))
+        })
     }
 }
 
