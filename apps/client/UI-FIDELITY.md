@@ -107,6 +107,17 @@ backend; these dependency repairs are not playback acceptance.
   `3bfb69468bb3505fdb0a85bf535c6f781bfe267bcc4c0f7d00cf2d39452a9a3f`.
   The lockfile delta invalidated the World bundle input pin; the repair updates
   only that input digest and must preserve the existing bundle digest.
+- Installed-original contract repair `993ec2c4a19aab5099e8b82dff9d8a1ece753e75`
+  passed Linux locked tests (194 library/165 binary/5 launcher), strict Clippy,
+  formatting and governance checks. Native MSVC tests passed (193/169/5),
+  including the FPS legacy-retention and delay-boundary regressions. Its DX12
+  release audit passed 20 pages/78 captures with no invalid page; default-state
+  Controls/Graphics/Effects/Sound captures were visually inspected. Private
+  directory: `C:\Users\barte\Downloads\oteryn-settings-audit-993ec2c4`.
+  Manifest SHA-256:
+  `a5384dbff955c770564d1938c8ef1ee6a3183d8ab503a92ff7397a0ccdcb6197`.
+  The captures do not establish populated audio, warning-state visual parity or
+  unavailable renderer/lighting functionality.
 - This establishes native compiled-page reachability, not exhaustive reference
   comparison or working behavior for disabled rows. Native live-session visual
   acceptance and every row whose consumer remains pending are still open and

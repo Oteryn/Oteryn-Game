@@ -96,6 +96,21 @@ markers and anthem/item-volume child dependencies. It preserves legacy values
 and keeps audio disabled without a real consumer. New native qualification is
 required; earlier exact-head evidence cannot qualify this successor.
 
+Source-contract repair `993ec2c4a19aab5099e8b82dff9d8a1ece753e75` was published
+through the guarded exact-candidate path. Recovery bundle:
+`/workspace/oteryn-client-publication-993ec2c4.bundle`, SHA-256
+`885787491f248dfae27b4a77adca4a886c069f510fa01cdbaea3a137aae5be7b`.
+It passed Linux tests (194/165/5), strict Clippy and formatting; governance
+validation and all 60 governance tests passed. A fresh Windows detached checkout
+passed MSVC tests (193/169/5), strict Clippy and DX12 release audit with 20 pages,
+78 captures and zero invalid entries. Changed default-state Controls, Graphics,
+Effects and Sound captures were visually inspected. Private directory:
+`C:\Users\barte\Downloads\oteryn-settings-audit-993ec2c4`; manifest SHA-256
+`a5384dbff955c770564d1938c8ef1ee6a3183d8ab503a92ff7397a0ccdcb6197`.
+This is not warning-state visual parity or playback acceptance. Remaining
+source-derived work includes slider button/key/wheel interactions, group-volume
+gates in Battle/UI Sounds and real renderer/audio capabilities/consumers.
+
 Native Windows scissor rounding was repaired in `08495a50`; the exact SHA passed
 MSVC tests/strict Clippy and the DX12 release page audit (20 pages, 78 captures,
 all markers/footer buttons and no overflow/draft mutation). Private captures are
