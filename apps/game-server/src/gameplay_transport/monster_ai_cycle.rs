@@ -31,6 +31,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let (ground_generation, ground) = match permit.as_ref() {
+            Some(permit) => self.snapshot_creature_step_ground(permit, now.get()).await,
+            None => (None, BTreeMap::new()),
+        };
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -159,33 +163,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order: runtime, spell states, attack, then the door runtime (read only).
         let doors = self.door.lock().await.blocking_cells().clone();
         let cells = room.movement_cells();
-        // A step is also refused onto a cell holding a current durable ground item that blocks
-        // movement (Magic Wall, Wild Growth), like the player step ingress. The cardinal
-        // neighbours of the qualified monsters are read once from the actual SQL rows; a cell
-        // that could not be read is refused.
-        let mut neighbours = std::collections::BTreeSet::new();
-        for (_, position, _) in &qualified {
-            let p = position.position();
-            for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-                let (Some(x), Some(y)) = (p.x.checked_add(dx), p.y.checked_add(dy)) else {
-                    continue;
-                };
-                let cell = MovementLocalPosition {
-                    x,
-                    y,
-                    floor: p.floor,
-                };
-                if creature_cell_admissible(cells, &doors, cell, &BTreeMap::new(), false) {
-                    neighbours.insert((cell.x, cell.y, cell.floor));
-                }
-            }
-        }
-        let ground = match permit.as_ref() {
-            Some(permit) if !neighbours.is_empty() => {
-                self.read_creature_step_ground(permit, &runtime, room, &neighbours)
-                    .await
-            }
-            _ => BTreeMap::new(),
+        // A step is also refused onto a cell holding a durable ground item that blocks
+        // movement. The rows were read before the Channel guards were taken; they only apply to
+        // the scope generation they were read in, and a cell not read is refused.
+        let ground = if ground_generation == Some(runtime.binding().scope_generation().get()) {
+            ground
+        } else {
+            BTreeMap::new()
         };
         let _ = melee_owner.creature_ai.run_due_thinks(
             &mut runtime,
@@ -411,36 +395,88 @@ const fn cell_open(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Reads the actual current SQL ground rows of `cells` in one scope-owner transaction and
-    /// maps each cell to whether any of its items blocks movement. A cell is omitted when it
-    /// could not be read, and the whole map is empty when the transaction fails.
-    async fn read_creature_step_ground(
+    /// Snapshots the cardinal neighbours of the monsters under brief Channel guards, releases
+    /// them, then reads the actual current SQL ground rows of those cells in one scope-owner
+    /// transaction and maps each cell to whether any of its items blocks movement. No Channel
+    /// guard is held across the SQL. A cell is omitted when it could not be read, and the map is
+    /// empty when the pass is not due or the transaction fails. The generation is returned so
+    /// the caller applies the rows only to the scope generation they were read in.
+    async fn snapshot_creature_step_ground(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-        runtime: &ChannelRuntimeV1,
-        room: &QualifiedNativeEntryRoom,
-        cells: &std::collections::BTreeSet<(i32, i32, i16)>,
-    ) -> BTreeMap<(i32, i32, i16), bool> {
+        now: u64,
+    ) -> (Option<u64>, BTreeMap<(i32, i32, i16), bool>) {
         use crate::spell::world_items_execution::SpellGroundTarget;
-        let targets = cells
-            .iter()
-            .filter_map(|&(x, y, floor)| {
-                SpellGroundTarget::for_native_tile_read(
-                    room,
-                    runtime,
-                    MovementLocalPosition { x, y, floor },
-                )
-                .ok()
-                .map(|target| ((x, y, floor), target))
-            })
-            .collect::<Vec<_>>();
-        let scope = crate::foundation::RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
-        let generation = runtime.binding().scope_generation().get();
+        let none = (None, BTreeMap::new());
+        let (Some(room), Some(content)) = (
+            self.qualified_room,
+            self.active_generation
+                .and_then(|active| active.native_gameplay()),
+        ) else {
+            return none;
+        };
+        let (scope, generation, targets) = {
+            let runtime = self.runtime.lock().await;
+            if self.spell_states.lock().await.next_monster_ai_pass_us > now
+                || runtime.owner_fence().is_err()
+                || content.source_digest() != runtime.content_pin().server_artifact_digest()
+            {
+                return none;
+            }
+            let Ok(census) = runtime.positioned_melee_census() else {
+                return none;
+            };
+            if census.len() > ResourceLimit::ActiveActors.maximum() {
+                return none;
+            }
+            let doors = self.door.lock().await.blocking_cells().clone();
+            let cells = room.movement_cells();
+            let mut neighbours = std::collections::BTreeSet::new();
+            for (_, position, session) in &census {
+                if session.is_some() {
+                    continue;
+                }
+                let p = position.position();
+                for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
+                    let (Some(x), Some(y)) = (p.x.checked_add(dx), p.y.checked_add(dy)) else {
+                        continue;
+                    };
+                    let cell = MovementLocalPosition {
+                        x,
+                        y,
+                        floor: p.floor,
+                    };
+                    if creature_cell_admissible(cells, &doors, cell, &BTreeMap::new(), false) {
+                        neighbours.insert((cell.x, cell.y, cell.floor));
+                    }
+                }
+            }
+            let targets = neighbours
+                .iter()
+                .filter_map(|&(x, y, floor)| {
+                    SpellGroundTarget::for_native_tile_read(
+                        room,
+                        &runtime,
+                        MovementLocalPosition { x, y, floor },
+                    )
+                    .ok()
+                    .map(|target| ((x, y, floor), target))
+                })
+                .collect::<Vec<_>>();
+            (
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    runtime.binding().world_id(),
+                    runtime.binding().channel_id(),
+                ),
+                runtime.binding().scope_generation().get(),
+                targets,
+            )
+        };
+        if targets.is_empty() {
+            return none;
+        }
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return BTreeMap::new();
+            return none;
         };
         let mut context = (permit, self, targets);
         let result = pass
@@ -489,7 +525,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
-        result.unwrap_or_default()
+        (Some(generation), result.unwrap_or_default())
     }
 }
 
