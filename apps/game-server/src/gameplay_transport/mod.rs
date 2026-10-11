@@ -3370,10 +3370,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         // ARCH-PROGRESSION-SOURCE-0 §1.5: before the respawn settle and the quest session, so
         // before the session is input-eligible or writes anything that advances the root.
-        if matches!(
+        let positioned = matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        ) {
+        );
+        if positioned {
             self.admit_progression_session(&mut admitted).await;
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
@@ -3387,7 +3388,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
-        self.admit_quest_session(&admitted).await;
+        if writes_after_progression(positioned, admitted.first_entry) {
+            self.admit_quest_session(&admitted).await;
+        }
         Ok(admitted)
     }
 
@@ -4256,6 +4259,15 @@ fn admitted_respawn_consumed<E>(
     consumed: Result<Option<crate::durability::character_death::ConsumedRespawn>, E>,
 ) -> bool {
     matches!(consumed, Ok(Some(consumed)) if consumed.occurrence == placed)
+}
+
+/// ARCH-PROGRESSION-SOURCE-0 §1.5: whether the admission writers after the progression step (the
+/// quest session and its Wheel reset; the respawn settle is gated on a playable entry already)
+/// run. A positioned first entry that step left `RefusedUnavailable`, its rounds ended undecided,
+/// writes nothing more to the Character root: the decision reads only that outcome, so storage
+/// that recovers after the last round admits no writer. Any other entry keeps its quest admission.
+const fn writes_after_progression(positioned: bool, first_entry: FirstEntryOutcome) -> bool {
+    !(positioned && matches!(first_entry, FirstEntryOutcome::RefusedUnavailable))
 }
 
 /// DEATH-2b: an unsettled pending respawn refuses the admission's playable first entry, so the
@@ -5994,6 +6006,38 @@ mod tests {
                 FirstEntryOutcome::RefusedByChannel
             );
         }
+    }
+
+    /// ARCH-PROGRESSION-SOURCE-0 §1.5 (#1964 Codex P1 4243646040): a positioned admission whose
+    /// progression rounds all ended undecided runs no later admission writer, even when storage
+    /// recovers right after the last round; the gate reads only the refused outcome. A bound or
+    /// unbound-but-decided step, and entries refused before the step, keep their quest admission.
+    #[test]
+    fn an_exhausted_progression_step_admits_no_later_writer() {
+        for entry in [FirstEntryOutcome::Positioned, FirstEntryOutcome::Reconciled] {
+            assert!(writes_after_progression(true, entry));
+        }
+        // Exhausted rounds: the step left the positioned entry `RefusedUnavailable`.
+        let exhausted = FirstEntryOutcome::RefusedUnavailable;
+        assert!(!writes_after_progression(true, exhausted));
+        assert!(!matches!(
+            exhausted,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ));
+        // Entries that never reached the step are unchanged by it.
+        for entry in [
+            FirstEntryOutcome::NotApplicable,
+            FirstEntryOutcome::RefusedStaleAuthority,
+            FirstEntryOutcome::RefusedUnavailable,
+            FirstEntryOutcome::RefusedByChannel,
+        ] {
+            assert!(writes_after_progression(false, entry));
+        }
+        // An unsettled respawn after a bound step keeps the quest admission it had.
+        assert!(writes_after_progression(
+            true,
+            respawned_first_entry(FirstEntryOutcome::Positioned, false)
+        ));
     }
 
     /// DEATH-2: the durable death intent carries the occurrence, the death cell in this Channel
