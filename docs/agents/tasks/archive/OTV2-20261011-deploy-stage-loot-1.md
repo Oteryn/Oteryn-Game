@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/deploy-stage-loot-1-20261011
-pr: null
+pr: 1992
 base_sha: 4ab138b90
 head_sha: null
 final_head_sha: null
@@ -87,7 +87,7 @@ No workflow, server or content change; the workflow uses the script unchanged.
 
 ## PR and closeout
 
-- PR: null
+- PR: 1992
 - ownership release: after merge
 
 ## Context checkpoint
@@ -97,7 +97,7 @@ last_progress: fix and guard test written
 status: completed
 branch: claude/deploy-stage-loot-1-20261011
 head_sha: null
-pr: null
+pr: 1992
 final_head_sha: null
 next_action: control plane review and freeze
 ```
