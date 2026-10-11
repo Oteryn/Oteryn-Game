@@ -4,15 +4,16 @@
 task_id: OTV2-20261006-quest-use-trigger-candidates
 title: Qualify exact same-Quest literal Item-id USE trigger candidates
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 base_pr: 1888
+pr: 1901
 branch: codex/quest-use-trigger-candidates-20261006-r2
 base_sha: ad74341ce0253c8b12281fc6233e1d000d1e35b8
 owner: chatgpt-quest-completion
 created_at: 2026-10-06
-updated_at: 2026-10-06
+updated_at: 2026-10-11
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/quest-authoring/use_trigger_candidates.py
@@ -20,6 +21,7 @@ owned_paths:
   - tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json
   - tools/content-schema/quest-authoring/run_checks.py
   - docs/agents/tasks/OTV2-20261006-quest-use-trigger-candidates.md
+  - docs/agents/tasks/archive/OTV2-20261006-quest-use-trigger-candidates.md
 depends_on:
   - PR #1888
   - A12 Item identity decision
@@ -85,13 +87,17 @@ The future executable binding remains owned by the accepted world/use/Quest-trig
 
 ## Validation
 
-- `python use_trigger_candidates.py`: generated deterministic packet.
-- `python -m unittest test_use_trigger_candidates.py`: 3/3 PASS.
-- `python use_trigger_candidates.py --check`: PASS.
+- `python3 use_trigger_candidates.py --check`: pass
+- `python3 -m unittest test_use_trigger_candidates`: 4 tests OK
 - Drift check is added to Quest `run_checks.py`.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 60 tests OK
 - No runtime admission or Quest transition selection.
 
-## Next action
+Review state: archived in the final authoring commit per the Codex P1 on this PR; remaining review state is recorded by the PR.
 
-After review, use the four rows only as source-trigger evidence for QUEST-TRIGGER-1 binding.
-Continue exact placement/branch qualification without broadening numeric identity domains.
+## Follow-up
+
+Runtime binding of the four rows is owned by QUEST-TRIGGER-1, not by this task. Use the rows only as
+source-trigger evidence there, and continue exact placement/branch qualification without broadening
+numeric identity domains. This task makes no runtime admission and holds no owned paths after merge.
