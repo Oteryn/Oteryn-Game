@@ -1099,7 +1099,8 @@ fn prepare_familiar_parts(
                 force: false,
                 owned: true,
             } if created == name => {
-                if look.replace(*value).is_some() {
+                let duplicate = look.replace(*value).is_some();
+                if duplicate {
                     return Err(CompanionExecutionError::UnqualifiedProfile);
                 }
             }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from unittest.mock import patch
@@ -97,7 +98,69 @@ def commit_change(root: Path, path: str, content: str, message: str):
     return git(root, "rev-parse", "HEAD")
 
 
+def shared_cache_completion_regressions() -> None:
+    root = MODULE.parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "cache_policy_core", MODULE.with_name("validate_repository_policy_core.py")
+    )
+    assert spec is not None and spec.loader is not None
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    source = (root / ".github/workflows/rust.yml").read_text(encoding="utf-8")
+    linux = core.indented_yaml_mapping_block(source, "linux", 2)
+    assert linux is not None
+    steps = re.split(r"(?m)^      - name: ", linux)[1:]
+    names = [step.splitlines()[0] for step in steps]
+    trim = names.index("Trim incremental cache and mark its source commit")
+    save = names.index("Save trimmed cache from protected main after successful qualification")
+    for name in (
+        "Build workspace", "Strict Clippy", "Test workspace",
+        "Run synthetic harness", "Smoke native game-server bootstrap",
+    ):
+        assert names.index(name) < trim < save, name
+    assert save == len(steps) - 1
+    assert "timeout-minutes: 60\n" in linux
+    fence = "if: github.ref == 'refs/heads/main' && github.ref_protected\n"
+    assert fence in steps[trim] and fence in steps[save]
+    assert "git rev-parse HEAD > target/.oteryn-cache-source-sha" in steps[trim]
+    assert "-name incremental -prune" in steps[trim]
+    key = re.search(r"(?m)^          key: (.+)$", steps[save]).group(1)
+    prefix = key.rsplit("-", 1)[0] + "-"
+    # The producer must remain readable by every existing canonical consumer.
+    consumers = (
+        ("rust.yml", ("linux", "durability-postgres")),
+        ("merge-gate.yml", ("rust_fast", "rust_linux")),
+        ("merge-group-gate.yml", ("rust_linux", "durability_postgres")),
+    )
+    for filename, jobs in consumers:
+        text = (root / ".github/workflows" / filename).read_text(encoding="utf-8")
+        for job in jobs:
+            block = core.indented_yaml_mapping_block(text, job, 2)
+            assert block is not None
+            assert f"          key: {key}\n" in block, (filename, job)
+            assert f"            {prefix}\n" in block, (filename, job)
+        if filename != "rust.yml":
+            assert "actions/cache/save@" not in text, filename
+    assert core.validate_post_merge_rust(source) == []
+    # Removing qualification, broadening the writer or moving its publication
+    # back before qualification must still fail the reviewed workflow pin.
+    save_step = "      - name: " + steps[save]
+    early_save = source.replace(save_step, "").replace(
+        "      - name: Build workspace\n", save_step + "      - name: Build workspace\n"
+    )
+    for mutation in (
+        early_save,
+        source.replace(fence.strip(), "if: always()"),
+        source.replace("      - name: Strict Clippy\n", "      - name: Removed Clippy\n"),
+        source.replace("    timeout-minutes: 60\n", "    timeout-minutes: 45\n"),
+        source.replace("          key: " + key, "          key: incompatible-cache"),
+    ):
+        assert mutation != source
+        assert core.validate_post_merge_rust(mutation), "unsafe cache mutation accepted"
+
+
 def main() -> int:
+    shared_cache_completion_regressions()
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         git(root, "init", "-q")

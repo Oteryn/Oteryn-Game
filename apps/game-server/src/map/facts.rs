@@ -13,8 +13,12 @@
 //!   `1..=100`, else 1, and `sub_type` its charges, else 0. A placement whose compact id names both
 //!   an Item and a Terrain record keeps its palette index, because the base keeps the id alone.
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
-//!   facts and every object revision is 0.
+//!   facts.
+//! - **Doors (MAP-DOOR-1).** The only state is the [`DoorBook`]: a plain door placement shows the
+//!   open item's facts while open and its transition count is its object revision; every other
+//!   object revision is 0.
 
+use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
 use super::overlay::{AddedItem, TilePos};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
@@ -22,6 +26,7 @@ use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 /// The served definition of the Item a palette key names.
@@ -33,6 +38,9 @@ pub struct ItemDefinition {
     pub solid: Option<bool>,
     pub blocks_projectile: bool,
     pub pickupable: bool,
+    /// The content profile's `item_type` is `Door` (MAP-DOOR-1): the only thing that makes an
+    /// Item a door, whatever its appearance id.
+    pub door: bool,
 }
 
 /// Why the bundle's palette cannot be served.
@@ -56,6 +64,7 @@ struct PaletteFacts {
     id: u32,
     facts: EntryFacts,
     solid: bool,
+    door: PaletteDoor,
 }
 
 /// The per-placement facts that differ from the palette entry's.
@@ -77,6 +86,7 @@ pub struct BundleFacts {
     placements: Vec<(u64, Placement)>,
     /// Ascending.
     houses: Vec<TilePos>,
+    doors: DoorBook,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -110,6 +120,7 @@ impl BundleFacts {
             ids: unique,
             placements: Vec::new(),
             houses: Vec::new(),
+            doors: DoorBook::default(),
         })
     }
 
@@ -122,8 +133,15 @@ impl BundleFacts {
         })
     }
 
-    /// Records the placements and house tiles of one sector of `manifest`.
-    pub(crate) fn push(&mut self, manifest: &Manifest, sector: &Sector) {
+    /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
+    /// `blocked` the tiles one of whose top-level entries is a `wall` Terrain or a solid Item. A
+    /// door entry does not block here: [`DoorBook`] answers it by its current state.
+    pub(crate) fn push(
+        &mut self,
+        manifest: &Manifest,
+        sector: &Sector,
+        blocked: &mut BTreeSet<TilePos>,
+    ) {
         for tile in &sector.tiles {
             let pos = TilePos {
                 x: tile.x,
@@ -134,15 +152,44 @@ impl BundleFacts {
                 self.houses.push(pos);
             }
             let top = tile.items.iter().filter(|item| item.depth == 0);
+            let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
-                let Some(key) = u8::try_from(ordinal)
+                let door = self
+                    .palette
+                    .get(item.palette as usize)
+                    .map_or(PaletteDoor::No, |entry| entry.door);
+                let key = u8::try_from(ordinal)
                     .ok()
                     .filter(|ordinal| *ordinal <= MAX_BASE_ORDINAL)
-                    .and_then(|ordinal| placement_key(pos, ordinal))
-                else {
-                    break;
+                    .and_then(|ordinal| placement_key(pos, ordinal));
+                // A dropped teleport is a bound, non-materialized placement, never a door.
+                let dropped =
+                    key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
+                let door = if dropped || bound(&item.attrs) {
+                    PaletteDoor::No
+                } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
+                    // A house door belongs to the house runtime, never to the channel DoorBook.
+                    PaletteDoor::Sealed
+                } else {
+                    door
                 };
-                let dropped = manifest.dropped_teleports.binary_search(&key).is_ok();
+                let closed_solid = self.blocks(item.palette);
+                blocks |= closed_solid && door == PaletteDoor::No;
+                let Some(key) = key else {
+                    // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
+                    blocks |= closed_solid;
+                    continue;
+                };
+                match door {
+                    PaletteDoor::Pair { open, open_solid } => {
+                        self.doors.push(key, closed_solid, open_solid, open);
+                    }
+                    PaletteDoor::Sealed => {
+                        self.doors.push_sealed();
+                        blocks |= closed_solid;
+                    }
+                    PaletteDoor::No => {}
+                }
                 let placement = Placement {
                     palette: item.palette,
                     bound: dropped || bound(&item.attrs),
@@ -167,6 +214,9 @@ impl BundleFacts {
                     self.placements.push((key, placement));
                 }
             }
+            if blocks {
+                blocked.insert(pos);
+            }
         }
     }
 
@@ -177,6 +227,52 @@ impl BundleFacts {
         self.houses.sort_unstable();
         self.houses.dedup();
         self.houses.shrink_to_fit();
+        self.doors.finish();
+    }
+
+    /// The doors of the bundle and their current state.
+    pub fn doors(&self) -> &DoorBook {
+        &self.doors
+    }
+
+    /// These facts with every door's state read once (Codex 4239177726): a map composition
+    /// reads them so that each door's appearance and its object revision come from one state,
+    /// whatever `USE` commits while it runs.
+    pub(crate) fn pinned(&self) -> PinnedFacts<'_> {
+        PinnedFacts {
+            facts: self,
+            doors: self.doors.snapshot(),
+        }
+    }
+
+    fn entry(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        doors: Option<&DoorStates>,
+    ) -> Option<EntryFacts> {
+        let key = placement_key(pos, ordinal)?;
+        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+            Ok(found) => self.placements[found].1,
+            Err(_) => Placement {
+                palette: self.unique_index(id)?,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            },
+        };
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.id != id {
+            return None;
+        }
+        let facts = EntryFacts {
+            bound: placement.bound,
+            count: u32::from(placement.count),
+            sub_type: u32::from(placement.sub_type),
+            ..entry.facts
+        };
+        Some(self.doors.facts(key, facts, doors))
     }
 
     fn unique_index(&self, id: u32) -> Option<u32> {
@@ -233,6 +329,7 @@ fn palette_facts(
         sub_type: 0,
     };
     let mut solid = false;
+    let mut door = PaletteDoor::No;
     if entry.family == Family::Item {
         let definition = item(&entry.key)
             .filter(|definition| definition.reference == reference)
@@ -243,37 +340,67 @@ fn palette_facts(
         solid = definition
             .solid
             .unwrap_or_else(|| !walkable_floor_change(&entry.key));
+        door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
         family: entry.family,
         id: entry.id,
         facts,
         solid,
+        door,
     })
+}
+
+/// Whether the Item palette key `key` is a plain closed door (MAP-DOOR-1), and the facts of its
+/// open counterpart, which `item` must serve. The content profile decides doorhood
+/// (`item_type` Door); the Game-owned registry only pairs a door with its open item.
+fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> PaletteDoor {
+    if !item(key).is_some_and(|definition| definition.door) {
+        return PaletteDoor::No;
+    }
+    let Some(closed) = palette_appearance(key).map(u32::from) else {
+        return PaletteDoor::Sealed;
+    };
+    let Some(open) = door::open_of(closed) else {
+        return PaletteDoor::Sealed;
+    };
+    let Some(open_key) = door::open_key(key, closed, open) else {
+        return PaletteDoor::Sealed;
+    };
+    // The closed state must itself block movement and projectiles.
+    match item(key) {
+        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
+        _ => return PaletteDoor::Sealed,
+    }
+    let Some(definition) = item(&open_key) else {
+        return PaletteDoor::Sealed;
+    };
+    // Qualified facts only: an item the profile does not describe reads `solid: None` and
+    // blocks projectiles, and must not pass as a walkable open doorway.
+    if definition.solid != Some(false) || definition.blocks_projectile {
+        return PaletteDoor::Sealed;
+    }
+    PaletteDoor::Pair {
+        open: EntryFacts {
+            definition: MapDefinition::Item(definition.reference),
+            terrain_kind: None,
+            appearance_id: view::appearance_id(
+                &open_key,
+                palette_appearance(&open_key).map(u32::from),
+            ),
+            blocks_projectile: definition.blocks_projectile,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        },
+        open_solid: false,
+    }
 }
 
 impl MapFacts for BundleFacts {
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
-        let key = placement_key(pos, ordinal)?;
-        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
-            Ok(found) => self.placements[found].1,
-            Err(_) => Placement {
-                palette: self.unique_index(id)?,
-                bound: false,
-                count: 1,
-                sub_type: 0,
-            },
-        };
-        let entry = self.palette.get(placement.palette as usize)?;
-        if entry.id != id {
-            return None;
-        }
-        Some(EntryFacts {
-            bound: placement.bound,
-            count: u32::from(placement.count),
-            sub_type: u32::from(placement.sub_type),
-            ..entry.facts
-        })
+        self.entry(pos, ordinal, id, None)
     }
 
     fn added_entry(&self, _item: &AddedItem) -> Option<EntryFacts> {
@@ -284,8 +411,34 @@ impl MapFacts for BundleFacts {
         self.houses.binary_search(&pos).is_ok()
     }
 
-    fn object_revision(&self, _placement_key: u64) -> u64 {
-        0
+    fn object_revision(&self, placement_key: u64) -> u64 {
+        self.doors.revision(placement_key)
+    }
+}
+
+/// [`BundleFacts`] with the door states of one read ([`BundleFacts::pinned`]).
+pub(crate) struct PinnedFacts<'a> {
+    facts: &'a BundleFacts,
+    doors: DoorStates,
+}
+
+impl MapFacts for PinnedFacts<'_> {
+    fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+        self.facts.entry(pos, ordinal, id, Some(&self.doors))
+    }
+
+    fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
+        self.facts.added_entry(item)
+    }
+
+    fn house_tile(&self, pos: TilePos) -> bool {
+        self.facts.house_tile(pos)
+    }
+
+    fn object_revision(&self, placement_key: u64) -> u64 {
+        self.facts
+            .doors
+            .revision_in(placement_key, Some(&self.doors))
     }
 }
 
@@ -309,6 +462,7 @@ mod tests {
                 solid: None,
                 blocks_projectile: false,
                 pickupable: false,
+                door: false,
             })
         };
         palette_facts(&entry, &definition).expect("facts").solid

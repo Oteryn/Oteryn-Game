@@ -4,7 +4,7 @@ This directory owns the native Oteryn Game Server process composition root. Prot
 
 Any change that introduces or materially alters protocol, session, admission, persistence, public identifiers, fencing, multichannel authority or security semantics is high risk under root governance and requires the owning accepted contract plus genuinely independent exact-head review.
 
-Do not introduce Canary/legacy-Tibia compatibility code or an alternate login authority here.
+Do not introduce legacy-engine compatibility code or an alternate login authority here.
 
 ## Authority and recovery qualification discipline
 

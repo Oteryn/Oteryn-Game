@@ -8,6 +8,16 @@ use super::{
 };
 mod replies;
 mod service;
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use replies::{NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate};
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use service::{NpcEntry, NpcServiceModel};
 #[cfg(test)]
 mod service_tests;
 
@@ -203,7 +213,7 @@ impl NpcDataCatalogue {
     pub fn records(
         &self,
     ) -> impl Iterator<Item = (&ProjectV2DefinitionRef, &ProjectV2Declaration)> {
-        self.declarations.iter().filter_map(|(reference, _)| {
+        self.declarations.keys().filter_map(|reference| {
             self.declaration(reference)
                 .map(|declaration| (reference, declaration))
         })

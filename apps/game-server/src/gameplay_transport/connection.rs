@@ -36,7 +36,7 @@ use super::item_view::{
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
-    COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
     UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
@@ -2223,14 +2223,20 @@ where
                 },
                 encode_step_outcome(selected_capabilities.as_slice(), outcome.disposition),
             ),
-            Dispatch::Use(outcome) => (
-                if outcome.disposition == UseDisposition::Rejected {
-                    CommandStatus::Rejected
-                } else {
-                    CommandStatus::Accepted
-                },
-                encode_use_result(outcome.disposition),
-            ),
+            Dispatch::Use(outcome) => {
+                let disposition = negotiated_use_disposition(
+                    selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
+                    outcome.disposition,
+                );
+                (
+                    if disposition == UseDisposition::Rejected {
+                        CommandStatus::Rejected
+                    } else {
+                        CommandStatus::Accepted
+                    },
+                    encode_use_result(disposition),
+                )
+            }
             Dispatch::Spell(outcome) => (
                 if outcome.disposition == SpellCastDisposition::Rejected {
                     CommandStatus::Rejected
@@ -2635,6 +2641,22 @@ where
 /// The `ACTOR_VITALS` delta (domain 3, delta type 1) from the last transmitted revision to `to`, at the
 /// sequence after `sequence`; `None` on an encoding fault. The complete value
 /// may coalesce multiple actual owner changes from the last transmitted revision.
+/// Dispositions 7 to 10 exist only under capability 15 (ITEM-USE-0 §3): a session without it
+/// gets `Rejected`, the one refusal it can decode, for any of them.
+fn negotiated_use_disposition(item_use: bool, disposition: UseDisposition) -> UseDisposition {
+    match disposition {
+        UseDisposition::RequirementNotMet
+        | UseDisposition::Exhausted
+        | UseDisposition::Full
+        | UseDisposition::NoTarget
+            if !item_use =>
+        {
+            UseDisposition::Rejected
+        }
+        other => other,
+    }
+}
+
 fn vitals_delta(
     generation: u64,
     sequence: u64,
@@ -2783,6 +2805,24 @@ mod tests {
     use std::cell::{Cell, RefCell};
     use std::error::Error;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+
+    #[test]
+    fn use_dispositions_7_to_10_need_capability_15() {
+        use UseDisposition as D;
+        for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
+            assert_eq!(negotiated_use_disposition(false, d), D::Rejected);
+            assert_eq!(negotiated_use_disposition(true, d), d);
+        }
+        for d in [
+            D::Committed,
+            D::NothingToUse,
+            D::Occupied,
+            D::StaleState,
+            D::TooFar,
+        ] {
+            assert_eq!(negotiated_use_disposition(false, d), d);
+        }
+    }
 
     const CHARACTER: [u8; 16] = uuid_v7(0x11);
     const SESSION: [u8; 16] = uuid_v7(0x22);

@@ -15,7 +15,7 @@ read these files, and every Canary-derived output is `OTS_HYPOTHESIS_ONLY`.
 ```sh
 python build_schema.py
 python verify_encounter_schema.py
-python canary_encounters.py --canary <Canary checkout at 47dfd51f>
+python canary_encounters.py --reference-engine <Canary checkout at 47dfd51f>
 python validate_encounter.py samples/soul_war_taint_zones/encounter.json \
   --catalog samples/soul_war_taint_zones/catalog.json --manifest samples/soul_war_taint_zones/manifest.json
 ```
