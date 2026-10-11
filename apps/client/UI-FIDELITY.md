@@ -505,6 +505,25 @@ selection and external OS clipboard transfer remain unqualified.
 This does not implement rich-text NPC keywords, external-link warnings, remapped
 Chat Copy actions, private/secondary consoles or unsupported event filters.
 
+## Options footer, keyboard and page Reset continuation — AUTHORING
+
+Recovered OptionsMenuDialog/TibiaDialog source fixes visual and traversal order
+to Ok / Apply / Cancel, makes outer Escape discard the draft, and leaves unfocused
+Enter without an implicit save action. Popups, profile/action dialogs, Help reset
+confirmation and binding capture retain first ownership of Escape; Stop All can
+still capture Escape. Small-window recovery uses bounded/truncated footer labels.
+
+TibiaOptionsPage routes ordinary Reset to the current page, not all options.
+The local implementation restores only implemented controls to Oteryn defaults,
+preserving unrelated pages, unavailable intent, assignments, bindings and locks.
+Active-profile action-bar visibility mirrors remain consistent. Profile-table,
+Help and wholly unavailable page resets are disabled, not counted as working.
+Original factory values and profile-table reset semantics remain unverified.
+Actual footer-click, draft/current isolation, resize and inner-dialog regressions
+are retained. Linux client 209/184/5, strict Clippy, formatting, workspace
+boundaries and governance validation/tests pass. Native exact-source qualification is pending; this is not 1:1
+completion or proof of every page's runtime consumers.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

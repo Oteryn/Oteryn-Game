@@ -69,9 +69,19 @@ is explicitly undefined. `TibiaDialog.qml` (18,668 raw bytes, SHA-256
 `d8e02ba04bed46d77b93289ab9e8a7eeb23f76cd76381eea264e1a33f6f46c9e`)
 routes Escape/Cancel to that cancellation handler. Focused elements can own
 Return, but an outer Enter must not silently save all preferences. The existing
-Oteryn footer has reversed visual order and lacks outer Escape cancellation;
+Oteryn footer previously had reversed visual order and lacked outer Escape cancellation;
 these are local UI gaps, not missing server projections. Inner key-capture and
 confirmation dialogs must consume/cancel first without applying the draft.
+
+`TibiaOptionsPage.qml` (527 raw bytes, SHA-256
+`56efa0c7f077771967862f9a5de611d4ccee15621719b6ca8a66ee2e623a7511`)
+routes the ordinary Reset button to `requestResetCurrentPageToDefault`, not
+the Help page's Reset All Options. This establishes scope, not factory values
+or C++ profile-table reset behavior. Oteryn's page reset restores only its
+implemented page controls to Oteryn defaults, preserves unavailable saved
+intent, other pages, bindings and locks, and never applies automatically.
+Unverified profile-table and empty Help page resets are disabled. Original
+factory-value parity and those table resets remain open.
 
 Resource prefix: `:/qt/qml/qmlcomponents/qml/` in the installed executable.
 

@@ -60,8 +60,13 @@ release. Source `34f5921499960120e726df4100211ebe614d5a5d` passes Linux
 209/179/5, MSVC 208/183/5, strict seven-package native checks and DX12
 20 pages/78 verified hashes/zero invalid entries. Evidence is in UI-FIDELITY.md.
 External-link warning policy/remapped Copy remain unknown. Next source-backed
-local gaps: restore Ok/Apply/Cancel visual order and Escape cancellation, while
-preserving inner key capture and the absence of an outer Enter-save action.
+local batch restores Ok/Apply/Cancel order and Escape cancellation, preserving
+inner key capture and no outer Enter-save action. Source-backed ordinary Reset
+is page-scoped, not global: only implemented controls use Oteryn defaults;
+unavailable intent, bindings, locks and other pages survive. Original factory
+values/profile-table resets remain unverified; those table resets stay disabled.
+Linux 209/184/5, strict Clippy, formatting, workspace boundaries and governance
+pass. Exact-source native qualification and publication evidence are pending.
 
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,

@@ -47,6 +47,65 @@ pub enum PreferenceAction {
 }
 
 impl PreferencesBrowser {
+    /// Reset only locally implemented controls owned by the displayed page.
+    /// Reference factory values and profile-table reset semantics remain unverified.
+    pub(crate) fn reset_current_page(&self, draft: &mut ClientSettings) {
+        let section = reference_settings_sections()[self.section].id;
+        if !page_reset_available(section) || self.overview {
+            return;
+        }
+        let defaults = ClientSettings::default();
+        let basic_keys = [
+            "controls.controls.mouse_preset",
+            "gameplay.gameplay.inspect_permission",
+            "gameplay.gameplay.cancel_chase",
+            "gameplay.gameplay.nearby_corpses",
+            "hud.hud.resource_bars",
+            "hud.hud.arcs",
+            "interface.interface.colourise_loot_value",
+            "graphics.graphics.antialiasing",
+            "sound.sound.master",
+        ];
+        let prefix = format!("{section}.");
+        draft.future_preferences.retain(|key, _| {
+            let owned = if section == "basic" {
+                basic_keys.contains(&key.as_str())
+            } else {
+                (key.starts_with(&prefix) && !(section == "hud" && key == "hud.hud.cooldown_bar"))
+                    || (section == "interface" && key == "hud.hud.cooldown_bar")
+            };
+            // An unavailable control has no qualified default or consumer. Preserve its intent.
+            !owned || oteryn_client::settings_catalog::runtime_consumer(key).is_none()
+        });
+        if matches!(section, "basic" | "action_bars") {
+            draft.action_bar.edge_enabled = defaults.action_bar.edge_enabled;
+            draft.action_bar.visible = defaults.action_bar.visible;
+            for (row, default_row) in draft
+                .action_bar
+                .extra_rows
+                .iter_mut()
+                .zip(defaults.action_bar.extra_rows)
+            {
+                row.visible = default_row.visible;
+            }
+            let action_bar = draft.action_bar.clone();
+            if let Some(profile) = draft.hotkeys.active_mut() {
+                profile.action_bar = action_bar;
+            }
+        }
+        if matches!(section, "basic" | "graphics") {
+            draft.fullscreen = defaults.fullscreen;
+        }
+        if section == "graphics" {
+            draft.vsync = defaults.vsync;
+            draft.fps = defaults.fps;
+            draft.last_frame_limit = defaults.last_frame_limit;
+        }
+        if section == "shortcuts" {
+            draft.panel_shortcuts = defaults.panel_shortcuts;
+        }
+    }
+
     pub(crate) fn clear_transient_route(&mut self) {
         self.forced_advanced = false;
         self.navigation_section = None;
@@ -97,6 +156,36 @@ impl PreferencesBrowser {
     ) -> PreferenceAction {
         if !self.open {
             return PreferenceAction::None;
+        }
+        if ctx.memory(|memory| memory.focused().is_none())
+            && !egui::Popup::is_any_open(ctx)
+            && !self.page_state.has_inner_dialog()
+        {
+            // egui may focus/activate the first button on an unfocused Enter.
+            // Options explicitly has no such default accept action.
+            ctx.input_mut(|input| {
+                input.consume_key(input.modifiers, egui::Key::Enter);
+            });
+        }
+        let escape = ctx.input(|input| {
+            input.events.iter().find_map(|event| match event {
+                egui::Event::Key {
+                    key: egui::Key::Escape,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } => Some(*modifiers),
+                _ => None,
+            })
+        });
+        // A popup/key-capture/confirmation owns Escape before the outer dialog.
+        // The original Options dialog has no implicit Return-to-save handler.
+        if let Some(modifiers) = escape
+            && !egui::Popup::is_any_open(ctx)
+            && !self.page_state.handle_escape()
+        {
+            ctx.input_mut(|input| input.consume_key(modifiers, egui::Key::Escape));
+            return PreferenceAction::Cancel;
         }
         reference_slider::suppress_wheel_tail(ctx);
         let previous_style = ctx.style_of(egui::Theme::Dark);
@@ -262,7 +351,8 @@ impl PreferencesBrowser {
                                 .max_rect(reset_rect)
                                 .layout(egui::Layout::right_to_left(egui::Align::Center)),
                         );
-                        if reset_button(&mut reset_ui, english).clicked() {
+                        let can_reset = !self.overview && page_reset_available(reference_settings_sections()[self.section].id);
+                        if reset_ui.add_enabled_ui(can_reset, |ui| reset_button(ui, english)).inner.clicked() {
                             action = PreferenceAction::Defaults;
                         }
                         let mut page_ui =
@@ -946,10 +1036,32 @@ pub(crate) fn primary_footer(
 
 fn reset_button(ui: &mut egui::Ui, english: bool) -> egui::Response {
     ui.button("Reset").on_hover_text(if english {
-        "Restore defaults in the settings draft"
+        "Restore Oteryn defaults for implemented controls on this page only"
     } else {
-        "Przywróć domyślne ustawienia w wersji roboczej"
+        "Przywróć domyślne wartości Oteryn tylko dla obsługiwanych kontrolek tej strony"
     })
+}
+
+fn page_reset_available(section: &str) -> bool {
+    if matches!(
+        section,
+        "general_hotkeys" | "action_hotkeys" | "custom_hotkeys" | "help"
+    ) {
+        return false;
+    }
+    matches!(section, "basic" | "graphics" | "action_bars" | "shortcuts")
+        || SETTINGS_SECTIONS
+            .iter()
+            .find(|entry| entry.id == section)
+            .is_some_and(|entry| {
+                entry.options.iter().any(|option| {
+                    oteryn_client::settings_catalog::runtime_consumer(&format!(
+                        "{section}.{}",
+                        option.id
+                    ))
+                    .is_some()
+                })
+            })
 }
 
 fn primary_footer_impl(
@@ -1030,7 +1142,12 @@ fn primary_footer_impl(
                 } else {
                     78.0
                 };
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let group_width = 3.0 * action_width + 2.0 * ui.spacing().item_spacing.x;
+                ui.add_space(
+                    (ui.available_width() - group_width - ui.spacing().item_spacing.x).max(0.0),
+                );
+                // Keep visual and keyboard traversal order Ok / Apply / Cancel.
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     if ui
                         .add_sized(
                             [action_width, if compact { 18.0 } else { 32.0 }],
@@ -1039,6 +1156,7 @@ fn primary_footer_impl(
                                     .color(egui::Color32::from_rgb(25, 24, 20))
                                     .strong(),
                             )
+                            .truncate()
                             .fill(egui::Color32::from_rgb(207, 177, 119)),
                         )
                         .clicked()
@@ -1048,19 +1166,17 @@ fn primary_footer_impl(
                     if ui
                         .add_sized(
                             [action_width, if compact { 18.0 } else { 32.0 }],
-                            egui::Button::new(apply),
+                            egui::Button::new(apply).truncate(),
                         )
                         .clicked()
                     {
                         action = PreferenceAction::Apply;
                     }
-                    if ui
-                        .add_sized(
-                            [action_width, if compact { 18.0 } else { 32.0 }],
-                            egui::Button::new(if english { "Cancel" } else { "Anuluj" }),
-                        )
-                        .clicked()
-                    {
+                    let cancel_response = ui.add_sized(
+                        [action_width, if compact { 18.0 } else { 32.0 }],
+                        egui::Button::new(if english { "Cancel" } else { "Anuluj" }).truncate(),
+                    );
+                    if cancel_response.clicked() {
                         action = PreferenceAction::Cancel;
                     }
                 });
@@ -1582,6 +1698,63 @@ mod tests {
         button_position, button_position_in_rect, click, frame, reveal, reveal_in_rect,
         scroll_geometry,
     };
+
+    #[test]
+    fn scoped_reset_keeps_bindings_locks_profiles_and_unavailable_intent() {
+        let mut browser = PreferencesBrowser::new();
+        let mut draft = ClientSettings::default();
+        draft.action_bar.visible = false;
+        draft.action_bar.edge_enabled = [false; 3];
+        draft.action_bar.locked = true;
+        draft.action_bar.shortcuts[0] = None;
+        draft.action_bar.extra_rows[0].locked = false;
+        draft.action_bar.extra_rows[0].visible = true;
+        draft.future_preferences.extend([
+            ("action_bars.bars.labels".into(), FutureValue::Bool(false)),
+            ("sound.sound.master".into(), FutureValue::Int(65)),
+            ("console.console.timestamps".into(), FutureValue::Bool(true)),
+        ]);
+        let before = draft.clone();
+        assert!(browser.open_section("action_bars"));
+        browser.reset_current_page(&mut draft);
+        let mut expected = before.clone();
+        let defaults = ClientSettings::default();
+        expected.action_bar.visible = defaults.action_bar.visible;
+        expected.action_bar.edge_enabled = defaults.action_bar.edge_enabled;
+        for (row, default_row) in expected
+            .action_bar
+            .extra_rows
+            .iter_mut()
+            .zip(defaults.action_bar.extra_rows)
+        {
+            row.visible = default_row.visible;
+        }
+        expected
+            .future_preferences
+            .remove("action_bars.bars.labels");
+        let action_bar = expected.action_bar.clone();
+        if let Some(profile) = expected.hotkeys.active_mut() {
+            profile.action_bar = action_bar;
+        }
+        assert_eq!(draft, expected);
+        for section in [
+            "general_hotkeys",
+            "action_hotkeys",
+            "custom_hotkeys",
+            "help",
+        ] {
+            assert!(browser.open_section(section));
+            browser.reset_current_page(&mut draft);
+            assert_eq!(
+                draft, expected,
+                "unverified reset must not overwrite {section}"
+            );
+        }
+        assert!(browser.open_section("basic"));
+        browser.reset_current_page(&mut draft);
+        assert_eq!(draft.stored_int("sound.sound.master"), Some(65));
+        assert_eq!(draft.stored_bool("console.console.timestamps"), Some(true));
+    }
 
     #[test]
     fn direct_section_navigation_accepts_only_the_twenty_reference_pages() {
@@ -2146,6 +2319,13 @@ mod tests {
                     "compiled page footer is not reachable"
                 );
             }
+            let ok = button_position(&output, size, "Ok").ok_or("Ok footer")?;
+            let apply = button_position(&output, size, "Apply").ok_or("Apply footer")?;
+            let cancel = button_position(&output, size, "Cancel").ok_or("Cancel footer")?;
+            assert!(
+                ok.x < apply.x && apply.x < cancel.x,
+                "reference footer order differs: {section}"
+            );
         }
         Ok(())
     }

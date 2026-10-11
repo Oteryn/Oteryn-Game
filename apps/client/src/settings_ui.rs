@@ -250,7 +250,7 @@ impl SettingsPanel {
                     self.browser.clear_transient_route();
                 }
                 PreferenceAction::Defaults => {
-                    self.draft = ClientSettings::default();
+                    self.browser.reset_current_page(&mut self.draft);
                     self.message = None;
                 }
                 PreferenceAction::OpenCompendium => {
@@ -615,6 +615,139 @@ mod tests {
         assert!(!prelogin_settings_hotkey(false, true, false, false, true));
         assert!(!prelogin_settings_hotkey(false, true, true, true, true));
         assert!(!prelogin_settings_hotkey(false, true, true, false, false));
+    }
+
+    #[test]
+    fn page_reset_preserves_other_pages_and_never_applies() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("graphics"));
+        panel.draft.fullscreen = !current.fullscreen;
+        panel.draft.vsync = !current.vsync;
+        panel
+            .draft
+            .set_frame_limit(144)
+            .map_err(|_| "frame limit")?;
+        panel.draft.set_frame_limit_enabled(true);
+        panel.draft.show_chat = !current.show_chat;
+        panel.draft.future_preferences.insert(
+            "console.console.timestamps".into(),
+            oteryn_client::settings_catalog::FutureValue::Bool(true),
+        );
+        let before = panel.draft.clone();
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        let reset = button_position(&output, size, "Reset").ok_or("page Reset")?;
+        let _ = click(&ctx, size, reset, |ctx| panel.show(ctx, None, None));
+        let defaults = ClientSettings::default();
+        assert_eq!(panel.draft.fullscreen, defaults.fullscreen);
+        assert_eq!(panel.draft.vsync, defaults.vsync);
+        assert_eq!(panel.draft.fps, defaults.fps);
+        assert_eq!(panel.draft.last_frame_limit, defaults.last_frame_limit);
+        assert_eq!(panel.draft.show_chat, before.show_chat);
+        assert_eq!(panel.draft.future_preferences, before.future_preferences);
+        assert_eq!(panel.draft.hotkeys, before.hotkeys);
+        assert_eq!(panel.draft.action_bar, before.action_bar);
+        assert_eq!(panel.current, current);
+        assert!(panel.open);
+        assert!(!panel.applied);
+        assert_eq!(panel.take_runtime_action(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn options_escape_discards_the_draft_but_enter_does_not_save_or_close()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("help"));
+        panel.draft.fullscreen = !current.fullscreen;
+        let unsaved = panel.draft.clone();
+        let _ = frame(
+            &ctx,
+            size,
+            vec![egui::Event::Key {
+                key: egui::Key::Enter,
+                physical_key: Some(egui::Key::Enter),
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+            |ctx| panel.show(ctx, None, None),
+        );
+        assert!(panel.open);
+        assert_eq!(panel.draft, unsaved);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        let _ = frame(
+            &ctx,
+            size,
+            vec![egui::Event::Key {
+                key: egui::Key::Escape,
+                physical_key: Some(egui::Key::Escape),
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+            |ctx| panel.show(ctx, None, None),
+        );
+        assert!(!panel.open);
+        assert_eq!(panel.draft, current);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        assert_eq!(panel.take_runtime_action(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn escape_dismisses_reset_confirmation_before_cancelling_options() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("help"));
+        panel.draft.fullscreen = !current.fullscreen;
+        let unsaved = panel.draft.clone();
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        let reset = button_position(&output, size, "Reset All Options").ok_or("Reset action")?;
+        let _ = click(&ctx, size, reset, |ctx| panel.show(ctx, None, None));
+        let escape = || {
+            vec![egui::Event::Key {
+                key: egui::Key::Escape,
+                physical_key: Some(egui::Key::Escape),
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }]
+        };
+        let _ = frame(&ctx, size, escape(), |ctx| panel.show(ctx, None, None));
+        assert!(panel.open);
+        assert_eq!(panel.draft, unsaved);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        let _ = frame(&ctx, size, escape(), |ctx| panel.show(ctx, None, None));
+        assert!(!panel.open);
+        assert_eq!(panel.draft, current);
+        assert!(!panel.applied);
+        Ok(())
     }
 
     #[test]

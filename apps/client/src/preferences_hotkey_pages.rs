@@ -743,6 +743,31 @@ pub(super) struct State {
     binding_editor: Option<BindingEditor>,
 }
 
+impl State {
+    pub(super) fn has_inner_dialog(&self) -> bool {
+        self.binding_editor.is_some()
+            || self.profile_edit.is_some()
+            || self.remove_confirmation
+            || self.new_action.is_some()
+    }
+
+    pub(super) fn handle_escape(&mut self) -> bool {
+        if self.binding_editor.is_some() {
+            // The existing binding editor owns Escape, including capturing it
+            // for Stop All rather than dismissing its parent Options dialog.
+            return true;
+        }
+        if self.profile_edit.take().is_some() {
+            return true;
+        }
+        if self.remove_confirmation {
+            self.remove_confirmation = false;
+            return true;
+        }
+        self.new_action.take().is_some()
+    }
+}
+
 #[derive(Clone)]
 struct BindingEditor {
     target: BindingTarget,
@@ -2087,6 +2112,37 @@ fn custom_label(action: &CustomHotkeyAction, en: bool) -> String {
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
+
+    #[test]
+    fn escape_dismisses_profile_and_new_action_dialogs_before_options() {
+        let mut state = State::default();
+        assert!(!state.has_inner_dialog());
+        assert!(!state.handle_escape());
+        for operation in [
+            ProfileOperation::Add,
+            ProfileOperation::Copy,
+            ProfileOperation::Rename,
+        ] {
+            state.profile_edit = Some(ProfileEdit {
+                operation,
+                name: "unsaved".into(),
+            });
+            assert!(state.has_inner_dialog());
+            assert!(state.handle_escape());
+            assert!(state.profile_edit.is_none());
+            assert!(!state.handle_escape());
+        }
+        state.remove_confirmation = true;
+        assert!(state.handle_escape());
+        assert!(!state.remove_confirmation);
+        for action in [NewAction::Spell, NewAction::Object, NewAction::Text] {
+            state.new_action = Some(action);
+            assert!(state.has_inner_dialog());
+            assert!(state.handle_escape());
+            assert!(state.new_action.is_none());
+            assert!(!state.handle_escape());
+        }
+    }
 
     #[test]
     fn general_hotkey_catalog_matches_the_official_120_action_inventory() {

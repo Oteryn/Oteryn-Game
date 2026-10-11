@@ -31,6 +31,18 @@ pub(super) enum HelpAction {
 }
 
 impl PageState {
+    pub(super) fn has_inner_dialog(&self) -> bool {
+        self.help_reset_confirmation || self.hotkeys.has_inner_dialog()
+    }
+
+    pub(super) fn handle_escape(&mut self) -> bool {
+        if self.help_reset_confirmation {
+            self.help_reset_confirmation = false;
+            return true;
+        }
+        self.hotkeys.handle_escape()
+    }
+
     pub(super) fn take_help_action(&mut self) -> Option<HelpAction> {
         self.help_action.take()
     }
