@@ -87,7 +87,12 @@
         "initial": 0
       }
     ],
-    "flags": [],
+    "flags": [
+      {
+        "name": "purple_phase",
+        "initial": true
+      }
+    ],
     "timers": [
       {
         "name": "green_to_blue",
@@ -123,7 +128,13 @@
         "kind": "creature_died",
         "role": "aspect_of_power"
       },
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "purple_phase",
+          "value": true
+        }
+      ],
       "actions": [
         {
           "kind": "counter",
@@ -176,6 +187,11 @@
           "value": 0
         },
         {
+          "kind": "flag",
+          "flag": "purple_phase",
+          "value": false
+        },
+        {
           "kind": "transform",
           "role": "goshnars_megalomania",
           "into": {
@@ -225,6 +241,11 @@
       },
       "conditions": [],
       "actions": [
+        {
+          "kind": "flag",
+          "flag": "purple_phase",
+          "value": true
+        },
         {
           "kind": "transform",
           "role": "goshnars_megalomania",

@@ -246,7 +246,7 @@
       }
     ],
     "adaptations": [
-      "The five mini-bosses are projected as one count-5 stage because Crystal stores five independent completion flags and grants the next missing taint on each first-time defeat; this intentionally removes the previous false fixed boss order.",
+      "The five mini-bosses are projected as one any-order count-5 stage, which removes the previous false fixed boss order. Crystal stores five independent completion flags and grants the next missing taint on each first-time defeat; the count-5 projection does not prove that five credited kills are of five distinct bosses, so per-boss uniqueness stays an unresolved hold until the Quest lowering can express five independent flags.",
       "Access mechanics, boss phases, taints, cooldowns, dynamic Ebb and Flow maps and encounter behavior are specified in the digest-bound Soul War reconstruction packet rather than compressed into generic recipe stages.",
       "The previous chosen Soul Mender grant is replaced by one random item from Crystal summer-update finalRewards because the donor reward action samples that finite pool once after Megalomania; native Oteryn item/reward delivery remains held.",
       "YouTube evidence is behavioral and spatial only. It does not override exact donor numeric timings unless an accepted Oteryn decision explicitly does so."

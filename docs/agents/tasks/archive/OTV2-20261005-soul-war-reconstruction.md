@@ -4,7 +4,7 @@
 task_id: OTV2-20261005-soul-war-reconstruction
 title: Reconstruct Soul War from Crystal summer-update with video cross-check
 mode: MIGRATE
-status: review_ready
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/soul-war-reconstruction-20261005
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol session
 created_at: 2026-10-05T22:42:41+02:00
-updated_at: 2026-10-06T08:55:42+02:00
+updated_at: 2026-10-10
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/encounter-authoring/
@@ -24,6 +24,7 @@ owned_paths:
   - content/quests/
   - docs/agents/evidence/OTV2-20261005-soul-war-reconstruction/
   - docs/agents/tasks/OTV2-20261005-soul-war-reconstruction.md
+  - docs/agents/tasks/archive/OTV2-20261005-soul-war-reconstruction.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -90,3 +91,12 @@ Verification on a clean detached worktree:
 - `python tools/content-schema/quest-authoring/soul_war_reconstruction.py --check` -> PASS.
 - `python tools/content-schema/quest-authoring/quest_tree_authoring.py --check` -> PASS.
 - `python -m unittest test_soul_war_crystal_reconstruction.py` -> 3 tests PASS across all generated encounter bundles.
+
+## Validation
+
+python -m unittest test_soul_war_reconstruction test_quest_tree_authoring test_soul_war_crystal_reconstruction pass
+python tools/content-schema/encounter-authoring/soul_war_crystal_reconstruction.py --check pass
+python tools/content-schema/quest-authoring/quest_tree_authoring.py --check pass
+python tools/agents/validate_governance.py pass
+python -m unittest discover -s tools/agents/tests pass
+
