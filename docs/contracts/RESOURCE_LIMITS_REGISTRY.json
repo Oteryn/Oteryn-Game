@@ -1116,7 +1116,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "For creature actors this envelope is replaced by CREATUREAI0-RL-04 (262,144; SPAWN-CEILINGS-1): no production creature path reads ResourceLimit::ActiveActors. It still bounds the ai::AiSnapshot bootstrap snapshot (apps/game-server/src/ai/snapshot.rs), which only tests construct."
     },
     {
       "id": "AI01-AUTHORED-UNITS",
@@ -1287,7 +1288,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-02 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns. The 16 x 4 = 64 product stays only as the fixed D57 envelope of the 64-entry ledgers sized against it (retained corpse projections, the smelly cheese ledger); the creature bite ledger is bounded by `CREATUREAI0-RL-04` instead (`CREATURE_BITE_LEDGER_MAX`, 262,144)."
     },
     {
       "id": "AI01-SPAWN-POPULATION",
@@ -1306,7 +1308,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-03 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns. The 16 x 4 = 64 product stays only as the fixed D57 envelope of the 64-entry ledgers sized against it (retained corpse projections, the smelly cheese ledger); the creature bite ledger is bounded by `CREATUREAI0-RL-04` instead (`CREATURE_BITE_LEDGER_MAX`, 262,144)."
     },
     {
       "id": "AI01-SPAWN-PLACEMENT-CELLS",
@@ -1325,7 +1328,8 @@
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
         "checked arithmetic overflow rejected before allocation or partial mutation"
-      ]
+      ],
+      "notes": "Superseded for spawn realization by CREATUREAI0-RL-03 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns."
     },
     {
       "id": "AI01-SPAWN-OCCUPANCY-RETRIES",
@@ -9043,12 +9047,13 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 131072,
       "id": "CREATUREAI0-RL-01",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact. Carrier headroom (SPAWN-CEILINGS-1): an activation also leaves SPAWN_ACTIVATION_PLAYER_HEADROOM (500, the D128 players-per-Channel design target) carrier slots free for players, so the 131,072-actor pre-production carrier accepts at most 130,572 points and refuses more as CAPACITY_EXCEEDED with nothing kept; test activation_keeps_player_headroom_in_the_pre_production_carrier.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Spawn points of one World map in the spawn family of a bundle",
       "unit": "points"
@@ -9067,12 +9072,13 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 65536,
       "id": "CREATUREAI0-RL-02",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Spawn sources of one World map in the spawn family of a bundle",
       "unit": "sources"
@@ -9091,15 +9097,67 @@
       "consumers": [
         "world bundle compiler",
         "game server World runtime (MAP-LOAD-1)",
-        "game server creature spawn runtime (SPAWN-1b)"
+        "game server creature spawn runtime (SPAWN-1b)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX (SPAWN-CEILINGS-1)"
       ],
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 64,
       "id": "CREATUREAI0-RL-03",
-      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Points of one spawn source",
       "unit": "points"
+    },
+    {
+      "id": "CREATUREAI0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Creature actors of one Channel, every kind (replaces AI01-ACTIVE-ACTORS 256 for creatures)",
+      "unit": "actors",
+      "hard_maximum": 262144,
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked in ChannelActorCarrier::admit_creature against the carrier's occupied-slot count before any slot is selected or written, and in the respawn drive's admission (respawn_into_free_cell) after the dead creature has left; it reserves nothing. The count includes every actor, so it is conservative: the 131,072-slot pre-production carrier never reaches it. The creature ledgers are bounded by the same value: the melee owner is keyed by carrier slot (one live generation per slot; a newer generation replaces a stale entry in place), and the creature bite ledger is keyed by the issuer's exact generation and drops dead issuers' entries when full, so a live issuer is never refused. Native summon and masterless encounter admission (admit_native_summon, admit_native_encounter_masterless) check the same occupied count before anything is written, in place of the D57 envelope of 64 live creatures (Codex 4242954089); the native summon links, one per child actor, are bounded by the same value and indexed by child and parent (Codex 4243039217), and retire_native_summons retires dead children however many there are, examining at most SPAWNCEIL-RL-02 links per call; a summon admission first retires its own parent's dead children.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=262144: a carrier of 262,145 slots admits 262,144 creatures",
+        "max+1=262145: the next creature is refused CAPACITY_EXCEEDED with nothing written, and the free slot still admits a player"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX: ChannelActorCarrier::admit_creature and respawn_into_free_cell",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::admit_native_summon, admit_native_encounter_masterless and retire_native_summons (no 64-creature or 64-dead-child refusal)",
+        "apps/game-server/src/ability/creature_bite.rs CREATURE_BITE_LEDGER_MAX: CreatureBiteLedger (keyed by exact issuer generation, dead entries dropped when full)",
+        "apps/game-server/src/ai_monster_melee.rs MonsterMeleeOwner (keyed by carrier slot, capped by CREATURE_BITE_LEDGER_MAX)",
+        "apps/game-server/src/ai_think/channel_owner.rs CreatureAiTable::forget_dead (the think table holds live creatures only)"
+      ],
+      "notes": "CREATURE-AI-0 \u00a710. Registered by SPAWN-CEILINGS-1 (Codex 4242381779, 4242381774). Tests: apps/game-server/src/foundation/runtime_actor_carrier.rs creature_admission_refuses_past_the_creature_actor_ceiling; channel_owner_creature_bite_tests.rs the_ledger_keeps_every_live_issuer_past_the_old_envelope_and_a_reused_slot_starts_fresh; ai_monster_melee.rs three_hundred_issuers_each_keep_their_entries_and_a_reused_slot_starts_fresh; channel_owner_creature_ai_tests.rs three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_are_forgotten; gameplay_transport/monster_ai_cycle.rs a_pass_swings_every_targeting_monster_up_to_the_think_budget (the channel monster pass swings at most CREATUREAI0-RL-05 targeting monsters per pass, round robin). Summons past the old envelope: monster_summon.rs more_than_sixty_four_summoners_each_summon_retire_together_and_summon_again and more_than_sixty_four_defence_summoners_each_summon (100 summoners each). Bounded retirement past them: runtime_actor_carrier.rs summon_retirement_is_bounded_per_call_and_an_admission_retires_its_parent_first (640 children)."
+    },
+    {
+      "id": "CREATUREAI0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Monster summons per creature: max_summons, summon entries and the count of one entry",
+      "unit": "summons and entries per creature",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Content validation refuses a creature with more than 16 summons (max_summons) or more than 8 summon entries; the carrier refuses a child past the parent's authored total or per-creature count (admit_native_summon). The channel-wide summon state scales with it per live creature: the native summon owner keeps at most CREATUREAI0-RL-04 creatures times 8 entries replay memos (NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, 2,097,152), and the defence summon owner and the creature self-heal ledger at most CREATUREAI0-RL-04 creatures times the 8 defences of CREATUREAI0-RL-07 (CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX). Each is an ActorMemoTable keyed by the exact creature and its entry in ordered maps (Codex 4243039220): a creature's first touch drops what its slot's former occupant left, and a full table drops dead creatures' memos before it refuses, so no lookup or insert passes over every memo. These replace the D57 envelope of 64 creatures times 8.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16 summons and 8 entries: an authored summon set within both passes the profile schedule",
+        "max+1: max_summons 17, an entry count of 17 or a 9th summon entry is refused (InvalidSummonFacts, TooManyEntries)",
+        "channel scale: 100 summoners (more than the old 64-creature envelope) each summon, retire their dead children together and summon again"
+      ],
+      "consumers": [
+        "apps/game-server/src/content/project/v2/creature.rs v2 creature summons validation (max_summons <= 16, entries <= 8) and ai_think/profile_schedule.rs summon facts",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, CREATUREAI0_DEFENCES_PER_CREATURE_MAX, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX (CreatureSelfHealLedger), ActorMemoTable",
+        "apps/game-server/src/monster_summon.rs NativeSummonOwner and DefenseSummonOwner replay memos"
+      ],
+      "notes": "CREATURE-AI-0 \u00a710. Registered by SPAWN-CEILINGS-1 (Codex 4242954089 on #1984). Tests: apps/game-server/src/ai_think/profile_schedule_tests.rs summon_parameters_reject_invalid_content_and_keep_explicit_zero_counts (max_summons 17, count 17) and the ninth-entry case before it; apps/game-server/src/monster_summon.rs more_than_sixty_four_summoners_each_summon_retire_together_and_summon_again and more_than_sixty_four_defence_summoners_each_summon (100 summoners each). Keyed memo table: runtime_actor_carrier.rs actor_memo_table_is_keyed_by_exact_creature_and_drops_stale_memos_by_slot (300 creatures times 8 entries)."
     },
     {
       "allocation_impact": "A value check on a point; it reserves nothing.",
@@ -9146,7 +9204,51 @@
         "apps/game-server/src/ai/spawn.rs RESPAWN_PENDING_PER_CHANNEL_MAX: RespawnSchedule::creature_gone",
         "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::drive_spawn_respawns"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a."
+      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4242270322): ChannelRuntimeV1::drive_spawn_respawns runs at most SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX = 32 respawn steps per 50 ms owner window (registered as SPAWNCEIL-RL-01); occurrences past it stay pending and run first in the next window. Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. SPAWN-CEILINGS-1 (Codex 4243397472): the Channel runtime keeps a deadline index of the pending occurrences, ordered by (due time, spawn point), beside the schedule, so a window reads only the occurrences it runs (at most 32, O(32 log n)) instead of scanning and sorting every due occurrence; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
+    },
+    {
+      "id": "SPAWNCEIL-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Respawn steps run by one Channel owner window",
+      "unit": "steps per window",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-window counter in ChannelRuntimeV1::drive_spawn_respawns; occurrences past it stay pending in the CREATUREAI0-RL-12 schedule and run first in the next 50 ms window. A refused admission also costs its step, so the drives of one window retry it at most 32 times. It reserves nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=32: 32 simultaneous due respawns run in one owner window",
+        "max+1=33: the 33rd stays pending and runs first in the next window"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: ChannelRuntimeV1::drive_spawn_respawns"
+      ],
+      "notes": "CREATURE-AI-0 \u00a76.3 (implementation work budget under RL-12 and RL-17). Registered by SPAWN-CEILINGS-1 (Codex 4242270322; owner decision 2026-10-11). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. Codex 4243397472: the steps are taken from a (due time, spawn point) deadline index, so a window with a 131,072-occurrence backlog reads at most 32 index records for its steps; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
+    },
+    {
+      "id": "SPAWNCEIL-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Native summon links one retirement call examines",
+      "unit": "links per call",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-call bound in ChannelRuntimeV1::retire_native_summons: the pass examines at most 256 links from a cursor kept with the links, in admission order and wrapping, and retires the dead children among them; the dead children past it keep their slots and links until a later call reaches them, so every link is examined within ceil(links / 256) calls. It never refuses: admit_native_summon first retires its own parent's dead children (at most 16, CREATUREAI0-RL-08), so a deferred retirement neither refuses a summon nor lets a parent hold more than 16 links. The retired slots leave the occupied index and the attacker leases in one pass per call. It reserves nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=256: with 640 dead children one call retires 256",
+        "max+1: the rest retire on later calls, and an admission whose parent's dead children the next pass would not reach retires them first and succeeds"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX: ChannelRuntimeV1::retire_native_summons and admit_native_summon"
+      ],
+      "notes": "CREATURE-AI-0 \u00a710 (implementation work budget under CREATUREAI0-RL-04 and RL-08, like SPAWNCEIL-RL-01). Registered by SPAWN-CEILINGS-1 (Codex 4243039217 on #1984, control-plane request). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs summon_retirement_is_bounded_per_call_and_an_admission_retires_its_parent_first."
     },
     {
       "id": "CREATUREAI0-RL-14",
@@ -9167,9 +9269,11 @@
       ],
       "consumers": [
         "apps/game-server/src/ai/spawn.rs REALIZATIONS_PER_WINDOW_MAX: realization_windows",
-        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns"
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns (one owner turn; refuses more than one window)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::begin_activation_spawns / realize_activation_spawn_window (persisted cursor, one window per 50 ms owner window; SPAWN-CEILINGS-1)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX: ChannelRuntimeV1::scan_spawn_points (persisted gone-scan cursor, at most this many spawn points checked for a gone creature per 50 ms owner window; SPAWN-CEILINGS-1 Codex 4243397472)"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Registered by OTV2-20261004-spawn-1a."
+      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Game carrier tests (SPAWN-CEILINGS-1): apps/game-server/src/foundation/runtime_actor_carrier.rs activation_realizes_at_most_rl_14_points_per_owner_window / a_refused_activation_window_realizes_nothing / spawn_sources_per_channel_max_accepted_max_plus_one_rejected. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4243397472): the respawn drive observes gone creatures at the same rate, at most 4,096 spawn points per window from a cursor that wraps in canonical order, so a full Channel of 131,072 points is observed within 32 windows (1.6 s) instead of every point every window; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
     },
     {
       "id": "CREATUREAI0-RL-05",
@@ -9189,9 +9293,11 @@
         "max+1=1025: the 1,025th stays due and starts first in the next window"
       ],
       "consumers": [
-        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due"
+        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due",
+        "apps/game-server/src/ai_think/channel_owner.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due_bounded (the Channel owner's selection)",
+        "apps/game-server/src/gameplay_transport/monster_ai_cycle.rs next_monster_ai_pass_us: a pass leaving due thinks schedules the next pass in the next window"
       ],
-      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1."
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window. SPAWN-CEILINGS-1 (Codex 4243397472): the owner selects a window's thinks with a heap bounded by the remaining budget (no collect and sort of every due think) and takes the next pass time from that selection; a backlog pass between swing passes skips the creature census, admission, forget and wake and reuses the last swing pass's player set with fresh positions; tests: foundation/channel_owner_creature_ai_tests.rs the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think, gameplay_transport/monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval."
     },
     {
       "id": "CREATUREAI0-RL-06",

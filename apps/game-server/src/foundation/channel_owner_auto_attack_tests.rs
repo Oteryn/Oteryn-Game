@@ -476,6 +476,37 @@ fn a_hit_taken_starts_the_sixty_second_deadline_and_clearing_the_target_keeps_it
     );
 }
 
+/// SPAWN-CEILINGS-1 (Codex 4242381774): 300 players, past the old `AI01-ACTIVE-ACTORS` 256, each
+/// hold an attack entry; the carrier's slots, one per controlled player, bound them.
+#[test]
+fn three_hundred_players_each_hold_an_attack_entry() {
+    const PLAYERS: usize = 300;
+    let world = WorldId::decode(&uuid(1)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        PLAYERS,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let mut attack = ChannelAttackStates::default();
+    for index in 0..PLAYERS {
+        let mut bytes = uuid(0);
+        [bytes[14], bytes[15]] = u16::try_from(index + 1).unwrap().to_be_bytes();
+        let session = GameSessionId::decode(&bytes).unwrap();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let player = runtime.commit_fresh_session(reservation).unwrap();
+        assert!(attack.set_modes(&runtime, player, session, FightModes::DEFAULT));
+    }
+    assert_eq!(attack.entries.len(), PLAYERS);
+    assert_eq!(runtime.actor_slot_capacity(), PLAYERS);
+}
+
 #[test]
 fn fight_modes_are_runtime_state_with_the_admission_defaults() {
     let mut owner = owner();
