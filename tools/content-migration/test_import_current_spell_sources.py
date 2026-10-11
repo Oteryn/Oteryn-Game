@@ -98,8 +98,8 @@ class CurrentSourceImportTests(unittest.TestCase):
         held = {json.loads(line)['registration']: json.loads(line) for line in
                 (current.ROOT / self.config['held_path']).read_bytes().splitlines()}
         updates = [b for b in self.config['bindings'] if b['projection'] == 'ordinary_data']
-        self.assertEqual(len(self.config['bindings']), 368)
-        self.assertEqual(len(held), 486)
+        self.assertEqual(len(self.config['bindings']), 375)
+        self.assertEqual(len(held), 479)
         self.assertEqual(len(updates), 75)
         partial = [b for b in updates if b['replacement']['scope'] == 'canonical_base']
         accepted = [b for b in updates if b['replacement']['scope'] == 'accepted_ordinary_model']
