@@ -13,8 +13,9 @@
 //!   or a batch of them in one transaction, [`DurabilityRoot::write_character_last_positions`]);
 //! - the final write inside the terminal release transaction, before `session_state` becomes 3
 //!   (`FreshAdmissionStore::with_final_position`);
-//! - the placement of a consumed pending respawn, in the transaction that consumes it
-//!   (`DurabilityRoot::consume_pending_respawn_placed`).
+//! - the placement of a consumed pending respawn, in the transaction that consumes it: at
+//!   admission (`DurabilityRoot::consume_pending_respawn_placed`) and for an in-session respawn
+//!   (`DurabilityRoot::place_and_consume_pending_respawn_placed`).
 //!
 //! An instance scope (`runtime_scope_kind = 2`) writes nothing: the gameplay fence admits only a
 //! Channel scope, and the terminal release skips any other scope.

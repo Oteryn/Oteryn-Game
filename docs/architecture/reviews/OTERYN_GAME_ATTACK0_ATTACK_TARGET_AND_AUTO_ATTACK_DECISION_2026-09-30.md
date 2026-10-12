@@ -1,8 +1,9 @@
 # ATTACK-0 Attack target and auto-attack
 
 - Decision: `ATTACK0-ATTACK-TARGET-AND-AUTO-ATTACK-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol and
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol and
   combat) and protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, reviewed at `77762114d8dbc869679f5305c96cb9105fe82b0a`, see the acceptance decision section 3): protocol PASS, combat PASS for the implemented ATTACK-WIRE-1 and ATTACK-1b slice. Residual notes carried to ATTACK-PARITY-1: §5 does not name the swing damage distribution (the runtime draws uniformly over [0, max]); the 250 ms poll makes the effective swing interval 2.00 to 2.25 s; the swing occurrence id differs from §4 wording; a zero-damage swing refreshes the in-fight deadline; a closed client under repeated hits has no hold cap.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the architect programme plan (#162 5910870596, M1): a player cannot attack today
   (`spell/cast.rs`: "No attack-target owner exists yet")

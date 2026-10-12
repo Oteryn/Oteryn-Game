@@ -25,8 +25,10 @@
 //!   due session's batch completes at most [`MAX_WRITE_LAG`] after its deadline, within the
 //!   slack: every due session is captured and written, or its batch failed, within the
 //!   interval.
-//! - **Death.** A dead actor is never captured: the settlement of its death upserts the respawn
-//!   cell with the respawn's consumption, and no capture of the dead actor may follow it.
+//! - **Death.** A dead actor is never captured. The in-session placement of its respawn upserts
+//!   the respawn cell in the transaction that places the actor and consumes the respawn
+//!   (DEATH-RESTART-SAFETY-1); a respawn kept for the next admission is written by that
+//!   admission's consumption. No capture of the dead actor may follow either.
 //! - **Final write (§3.2 "At logout").** The terminal release captures the fenced actor's cell
 //!   and the store upserts it inside the release transaction.
 //! - **Shutdown.** Before readiness is withdrawn, every tracked actor is written, whatever its
@@ -173,7 +175,7 @@ impl Track {
 /// One capture attempt under the runtime lock.
 enum Captured {
     At(Capture),
-    /// The actor is dead: its death's settlement writes the respawn cell.
+    /// The actor is dead: the placement of its respawn writes the respawn cell.
     Dead,
     /// The actor has no current position in the pinned context.
     Gone,
@@ -284,7 +286,8 @@ impl LastPositions {
         }
     }
 
-    /// DEATH-2: the settlement of `session`'s death wrote its respawn `cell`.
+    /// DEATH-2: the in-session placement of `session`'s respawn consumed it and wrote (or an
+    /// earlier attempt of it wrote) its respawn `cell`.
     pub(super) fn respawned(&self, session: GameSessionId, cell: LastPositionCell) {
         if let Ok(mut tracks) = self.tracks.lock()
             && let Some(track) = tracks.get_mut(&session)
@@ -309,6 +312,15 @@ const fn position_of(cell: LastPositionCell) -> MovementLocalPosition {
         y: cell.y,
         floor: cell.floor,
     }
+}
+
+/// Whether `placed` records exactly `cell`: the in-session respawn upserts only the cell it
+/// places the actor at.
+pub(super) fn respawn_cell_recorded(
+    cell: MovementLocalPosition,
+    placed: &FinalLastPosition,
+) -> bool {
+    placed.record.cell == cell_of(cell)
 }
 
 /// §3.3 "valid", the parts the stored row decides: the same World and the same coordinate
@@ -578,7 +590,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for &(session, track) in batch {
             let capture = match self.capture_last_position(track.actor).await {
                 Captured::At(capture) => capture,
-                // Its death's settlement writes the respawn cell.
+                // The placement of its respawn writes the respawn cell.
                 Captured::Dead => continue,
                 Captured::Gone => {
                     // The actor is gone: its session ended without a retire of this track.
@@ -777,6 +789,43 @@ mod tests {
         ));
     }
 
+    /// DEATH-RESTART-SAFETY-1 with §3.3 step 1: the in-session respawn upserts exactly the cell
+    /// it places the actor at; any other cell refuses the placement.
+    #[test]
+    fn an_in_session_respawn_writes_only_the_cell_it_places() {
+        let placed = FinalLastPosition {
+            record: stored(world(1), [1; 32]).record,
+            write_sequence: 1,
+        };
+        assert!(respawn_cell_recorded(
+            MovementLocalPosition {
+                x: 5,
+                y: 6,
+                floor: 7
+            },
+            &placed
+        ));
+        for other in [
+            MovementLocalPosition {
+                x: 4,
+                y: 6,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 5,
+                y: 5,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 5,
+                y: 6,
+                floor: 6,
+            },
+        ] {
+            assert!(!respawn_cell_recorded(other, &placed), "{other:?}");
+        }
+    }
+
     /// Unchanged cells are not rewritten, and the interval gates the periodic write.
     #[test]
     fn tracks_are_due_after_the_interval_and_forgotten_on_retire() {
@@ -825,7 +874,7 @@ mod tests {
             positions.tracked(session).map(|track| track.due()),
             Some(captured + NEXT_DUE)
         );
-        // A death's settlement records its respawn cell.
+        // An in-session respawn's placement records its respawn cell.
         let respawn = LastPositionCell {
             x: 9,
             y: 9,

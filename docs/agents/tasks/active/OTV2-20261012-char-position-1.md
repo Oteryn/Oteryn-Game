@@ -63,8 +63,11 @@ plane accepts it in a separate docs PR, and this PR's code does not wait for it)
     its own session fence (`write_character_last_positions`); 256 sessions due together take at
     most 8 batches of two 2 s passes, and a due session completes at most 37 s after its
     deadline, within the 60 s slack (checked at compile time);
-  - a live death's settlement upserts the respawn cell with the respawn's consumption, in one
-    transaction (`settle_player_death_respawned`); a dead actor is never captured;
+  - a live death leaves its respawn pending (DEATH-RESTART-SAFETY-1, #2004); the in-session
+    placement upserts the respawn cell in the fenced transaction that places the actor and
+    consumes the respawn (`place_and_consume_pending_respawn_placed`), only when it deletes the
+    row; a respawn kept for the next admission is written by that admission's consumption; a
+    dead actor is never captured;
   - node shutdown flushes every tracked session before readiness is withdrawn (3 s of the 10 s
     shutdown budget); failed writes are retried and the flush is done only when none failed;
   - nothing is written while a pending respawn exists (`PendingObligation`) or in an instance
@@ -98,7 +101,9 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   - `the_table_refuses_foreign_worlds_lower_keys_and_deletes`;
   - scenario 6 of `owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority`: the
     terminal release writes the final cell, and a replay after the terminal state changes nothing;
-  - `a_settled_live_death_writes_the_respawn_cell_with_its_consumption` (review round 1);
+  - `an_in_session_respawn_writes_the_placed_cell_with_its_consumption` (review round 1,
+    reworked for the #2004 merge);
+  - `an_in_session_respawn_writes_only_the_cell_it_places` (unit, #2004 merge);
   - unit tests in `gameplay_transport/last_position.rs` for the interval bound, sequence order,
     frame match, capture-based deadlines and tracking.
 
@@ -139,6 +144,24 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   compile-time asserts and `a_pass_of_every_tracked_session_fits_in_the_slack` hold.
 - P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (shutdown flush
   timeout bound): deferred to follow-up CHAR-POSITION-2 per D282.
+
+## Merge with main after #2004 (DEATH-RESTART-SAFETY-1, 7cced55e7)
+
+- Conflict in `character_death.rs`: main's side taken. The death commit no longer consumes its
+  respawn, so `settle_player_death_respawned` is removed and `commit_death` calls
+  `settle_player_death` again.
+- The CHAR-POSITION-0 §3.3 step 1 guarantee moves to main's new path:
+  `place_and_consume_pending_respawn_placed` shares the body of
+  `place_and_consume_pending_respawn` and, under the same fence and in the same transaction,
+  upserts the placed cell after the row of the occurrence is deleted (only when the placement
+  returned `true` and the delete removed the row), with the World and nonzero-sequence checks of
+  `consume_pending_respawn_placed` (shared `validate_placed`, refused before `place` runs).
+  `place_and_consume_settled_respawn` passes the respawn cell's record, taken after the death,
+  and the placement refuses a cell other than that record. The admission path
+  (`consume_pending_respawn_placed`) is unchanged.
+- Validation of this merge: `cargo` was not run locally (D1011); `rustfmt --check` on the changed
+  Rust files, `python3 tools/agents/validate_governance.py`, the `tools/agents/tests` unit tests
+  and `git diff --check` ran locally; compile, clippy and the tests are left to the CP and CI.
 
 ## Open questions
 

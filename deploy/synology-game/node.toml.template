@@ -63,3 +63,5 @@ s2_authorization_file = "<BASE>/state/s2-fresh-store.json"
 # the [world_bundle] table of preprod-topology.toml with <BASE> replaced and, in [readiness],
 # map_revision = "<digest>". deploy-ops.sh check-setup refuses any difference from the manifest.
 # Without the table the node serves the fixture entry room.
+# NPC catalogue (NPC-LOAD-1): not a node.toml key. It is two command-line flags, --npc-data-project and
+# --npc-data-sha256, which supervisor.sh passes when the deploy staged BASE/run/npc-data (npc-data.pin.json).

@@ -1942,17 +1942,20 @@ pub(crate) mod tests {
             baseline.frame_binding().digest()
         );
         let entry = room.entry_start();
-        assert!(matches!(
-            room.movement_cells().spell_tiles().lookup(
-                room.movement_cells().scope(),
-                super::super::LogicalCell {
-                    x: entry.x,
-                    y: entry.y,
-                    z: i32::from(entry.floor)
-                }
-            ),
-            Err(super::super::project::SpellTileLookupError::Unknown)
-        ));
+        // ENTRY-SPELL-TILES-1: the room's tile facts are qualified under the outer pin.
+        assert!(
+            room.movement_cells()
+                .spell_tiles()
+                .lookup(
+                    room.movement_cells().scope(),
+                    super::super::LogicalCell {
+                        x: entry.x,
+                        y: entry.y,
+                        z: i32::from(entry.floor)
+                    }
+                )
+                .is_ok_and(|tile| !tile.flags().protection_zone)
+        );
 
         let issuance = NativeEntryActivationIssuance {
             world_id: world,

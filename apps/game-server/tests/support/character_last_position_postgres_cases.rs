@@ -340,12 +340,15 @@ fn a_pending_respawn_decides_and_its_consumption_writes_the_placed_cell() -> Tes
     })
 }
 
-/// DEATH-2 with §3.2: the settlement of a live death consumes its respawn and upserts the respawn
-/// cell in the same transaction, over a position written before the death, so a crash after
-/// the settlement never restores the pre-death position. A replay writes nothing more, and a
-/// later capture of the respawned actor still orders after it.
+/// DEATH-RESTART-SAFETY-1 with §3.2-§3.3 step 1: a live death leaves its respawn pending, so the
+/// position written before the death is left and nothing is written over it; the in-session
+/// placement then consumes the respawn and upserts the placed cell in the same transaction, so a
+/// crash right after the placement never restores the pre-death position. A placed record of
+/// another World or with a zero sequence is refused before the placement is called, a refused
+/// placement writes nothing, a retry after the consumption writes nothing more, and a capture
+/// taken before the placed record never overwrites it.
 #[test]
-fn a_settled_live_death_writes_the_respawn_cell_with_its_consumption() -> TestResult {
+fn an_in_session_respawn_writes_the_placed_cell_with_its_consumption() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -374,60 +377,98 @@ fn a_settled_live_death_writes_the_respawn_cell_with_its_consumption() -> TestRe
                 Ok(LastPositionWrite::Written)
             ));
             let sequencer = CharacterRevisionSequencer::new();
-            let respawn = FinalLastPosition {
+            h.root
+                .settle_player_death(&sequencer, &authority, &h.node, fence(1)?, death(81)?)
+                .await
+                .map_err(debug)?;
+            // The death leaves its respawn recorded and the position untouched.
+            assert_eq!(h.count("game_character_pending_respawns").await?, 1);
+            assert_eq!(row(&h).await?.as_deref(), Some("t|400|6|7|1|50|1|2|3"));
+            let occurrence = PlayerDeathOccurrence::from_bytes(id(81)).map_err(debug)?;
+            let placed = FinalLastPosition {
                 record: record(401),
                 write_sequence: 51,
             };
-            // A respawn record of another World is refused before anything is written.
-            let mut foreign = respawn;
+            // A placed record of another World, or with a zero sequence, is refused before the
+            // placement is called.
+            let mut foreign = placed;
             foreign.record.world_id = WorldId::decode(&id(44)).map_err(debug)?;
-            assert!(matches!(
-                h.root
-                    .settle_player_death_respawned(
-                        &sequencer,
+            let mut unordered = placed;
+            unordered.write_sequence = 0;
+            let called = std::sync::atomic::AtomicBool::new(false);
+            for refused in [foreign, unordered] {
+                assert!(matches!(
+                    h.root
+                        .place_and_consume_pending_respawn_placed(
+                            &authority,
+                            &h.node,
+                            fence(2)?,
+                            occurrence,
+                            refused,
+                            |_| {
+                                called.store(true, std::sync::atomic::Ordering::Relaxed);
+                                async { true }
+                            },
+                        )
+                        .await,
+                    Err(CharacterProgressionError::InvalidInput)
+                ));
+            }
+            assert!(!called.load(std::sync::atomic::Ordering::Relaxed));
+            // A refused placement consumes nothing and writes nothing.
+            assert!(
+                !h.root
+                    .place_and_consume_pending_respawn_placed(
                         &authority,
                         &h.node,
-                        fence(1)?,
-                        death(81)?,
-                        foreign,
+                        fence(2)?,
+                        occurrence,
+                        placed,
+                        |_| async { false },
                     )
-                    .await,
-                Err(CharacterProgressionError::InvalidInput)
-            ));
-            assert_eq!(h.count("game_character_death_receipts").await?, 0);
-            h.root
-                .settle_player_death_respawned(
-                    &sequencer,
-                    &authority,
-                    &h.node,
-                    fence(1)?,
-                    death(81)?,
-                    respawn,
-                )
-                .await
-                .map_err(debug)?;
+                    .await
+                    .map_err(debug)?
+            );
+            assert_eq!(h.count("game_character_pending_respawns").await?, 1);
+            assert_eq!(row(&h).await?.as_deref(), Some("t|400|6|7|1|50|1|2|3"));
+            // The placement consumes the respawn and upserts the placed cell with it.
+            assert!(
+                h.root
+                    .place_and_consume_pending_respawn_placed(
+                        &authority,
+                        &h.node,
+                        fence(2)?,
+                        occurrence,
+                        placed,
+                        |pending| async move { pending.is_some() },
+                    )
+                    .await
+                    .map_err(debug)?
+            );
             assert_eq!(h.count("game_character_pending_respawns").await?, 0);
             assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
-            // A replay consumes nothing and leaves the respawn cell.
-            h.root
-                .settle_player_death_respawned(
-                    &sequencer,
-                    &authority,
-                    &h.node,
-                    fence(1)?,
-                    death(81)?,
-                    FinalLastPosition {
-                        record: record(402),
-                        write_sequence: 52,
-                    },
-                )
-                .await
-                .map_err(debug)?;
+            // A retry after the consumption is handed no row and writes nothing more.
+            assert!(
+                h.root
+                    .place_and_consume_pending_respawn_placed(
+                        &authority,
+                        &h.node,
+                        fence(2)?,
+                        occurrence,
+                        FinalLastPosition {
+                            record: record(402),
+                            write_sequence: 52,
+                        },
+                        |pending| async move { pending.is_none() },
+                    )
+                    .await
+                    .map_err(debug)?
+            );
             assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
-            // A capture taken before the respawn record never overwrites it.
+            // A capture taken before the placed record never overwrites it.
             assert!(matches!(
                 h.root
-                    .write_character_last_position(&authority, &h.node, fence(1)?, 50, record(403))
+                    .write_character_last_position(&authority, &h.node, fence(2)?, 50, record(403))
                     .await,
                 Ok(LastPositionWrite::Superseded)
             ));

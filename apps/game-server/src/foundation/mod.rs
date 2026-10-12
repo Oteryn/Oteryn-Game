@@ -21,8 +21,9 @@ pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
-#[cfg(test)]
-pub(crate) use runtime_actor_carrier::npc_actor::{NpcPlacement, NpcPlacementTable, NpcPlacements};
+pub(crate) use runtime_actor_carrier::npc_actor::{
+    NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
+};
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::runtime_actor_companion::{
     CompanionMaster, CompanionSnapshot, CompanionState, CompiledCreaturePolicies,

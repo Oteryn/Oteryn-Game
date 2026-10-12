@@ -1449,6 +1449,11 @@ struct ChannelActorCarrier {
     /// MAP-ITEM-REF-1 Part B: the corpse Item bound to each retained corpse projection, at most
     /// one per projection; [`ChannelRuntimeV1::bind_corpse_item`] drops the evicted ones.
     corpse_item_bindings: Vec<CorpseItemBinding>,
+    /// Codex 4248192466 (LOOT-LIVE-1): the killed actors whose retained corpse projection an
+    /// accepted, not yet final kill settlement still binds to. A pinned projection is never
+    /// evicted ([`ChannelRuntimeV1::pin_corpse_projection`]); at most
+    /// `MAX_PINNED_CORPSE_PROJECTIONS`, each naming a retained projection.
+    corpse_projection_pins: Vec<ExactActorRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1569,6 +1574,12 @@ pub(crate) const AI01_SPAWN_OCCUPANCY_RETRIES_MAX: u8 = 3;
 /// Channel's respawn cycles.
 const MAX_RETAINED_CORPSE_PROJECTIONS: usize =
     AI01_SPAWN_SOURCES_PER_SCOPE_MAX * AI01_SPAWN_POPULATION_MAX;
+
+/// Codex 4248192466 (LOOT-LIVE-1): the most corpse projections pinned against eviction at once,
+/// one per unsettled kill of KILLRW-RL-01 (64, `gameplay_transport::kill_reward`). The bound of
+/// `MAX_RETAINED_CORPSE_PROJECTIONS` applies to the unpinned projections only, so
+/// `corpse_projections` holds at most 128.
+const MAX_PINNED_CORPSE_PROJECTIONS: usize = MAX_RETAINED_CORPSE_PROJECTIONS;
 
 /// A content-authored spawn source's small stable ordinal within its scope (content input,
 /// §4.8; never decoded from a client handle).
@@ -3956,6 +3967,7 @@ impl ChannelActorCarrier {
             attackers: Vec::new(),
             occupied,
             corpse_item_bindings: Vec::new(),
+            corpse_projection_pins: Vec::new(),
         })
     }
 
@@ -5083,7 +5095,8 @@ impl ChannelActorCarrier {
         let captured_sealed_key = projected.occurrence.death_key();
         // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
         // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
-        // not otherwise pruned; evict the oldest entry rather than grow without bound. The
+        // not otherwise pruned; evict the oldest unpinned entry rather than grow without bound
+        // (a pinned one is an accepted kill settlement's, Codex 4248192466). The
         // evicted death's memoized reward occurrence goes with it: a reward occurrence never
         // outlives, and is never evicted independently of, its projection, so a retained
         // projection can never re-mint a second occurrence for the same death.
@@ -5114,13 +5127,70 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// Codex 4248192466: the eviction takes the oldest unpinned projection, so a projection that
+    /// an accepted kill settlement still binds to survives any number of newer deaths (a full
+    /// kill queue's, a familiar's, a crystal's). At most `MAX_RETAINED_CORPSE_PROJECTIONS`
+    /// unpinned and `MAX_PINNED_CORPSE_PROJECTIONS` pinned projections are retained.
     fn retain_corpse_projection(&mut self, projected: RuntimeCorpseProjection) {
-        if self.corpse_projections.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
-            let evicted = self.corpse_projections.remove(0).occurrence.actor.0;
+        while self.unpinned_corpse_projections() >= MAX_RETAINED_CORPSE_PROJECTIONS {
+            let pins = &self.corpse_projection_pins;
+            let Some(index) = self
+                .corpse_projections
+                .iter()
+                .position(|projection| !pins.contains(&projection.occurrence.actor))
+            else {
+                break;
+            };
+            let evicted = self.corpse_projections.remove(index).occurrence.actor.0;
             self.death_reward_occurrences
                 .retain(|reward| reward.actor != evicted);
         }
         self.corpse_projections.push(projected);
+    }
+
+    fn unpinned_corpse_projections(&self) -> usize {
+        self.corpse_projections
+            .iter()
+            .filter(|projection| {
+                !self
+                    .corpse_projection_pins
+                    .contains(&projection.occurrence.actor)
+            })
+            .count()
+    }
+
+    /// Whether `actor`'s committed death is projected and retained in this world, Channel and
+    /// scope generation.
+    fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
+        actor.world_id() == self.world_id
+            && actor.channel_id() == self.channel_id
+            && actor.scope_generation() == self.scope_generation
+            && self
+                .corpse_projections
+                .iter()
+                .any(|projection| projection.occurrence.actor == actor)
+    }
+
+    fn pin_corpse_projection_inner(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
+        if !self.retains_corpse_projection(actor) {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        if self.corpse_projection_pins.contains(&actor) {
+            return Ok(());
+        }
+        if self.corpse_projection_pins.len() >= MAX_PINNED_CORPSE_PROJECTIONS {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        self.corpse_projection_pins
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        self.corpse_projection_pins.push(actor);
+        Ok(())
+    }
+
+    fn unpin_corpse_projection_inner(&mut self, actor: ExactActorRef) {
+        self.corpse_projection_pins
+            .retain(|pinned| *pinned != actor);
     }
 
     /// D2b: the memoized XP reward occurrence of this generation's committed
@@ -6385,6 +6455,45 @@ impl ChannelRuntimeV1 {
                 revision_ref: revision_ref.to_owned(),
             },
         )
+    }
+
+    /// Codex 4248192466 (LOOT-LIVE-1): keep `actor`'s retained corpse projection from eviction
+    /// until [`Self::unpin_corpse_projection`], so the kill settlement the queue accepted for it
+    /// can still bind its committed corpse Item. Pinning a pinned projection is a no-op. A
+    /// projection that is not retained in this generation is `CommittedLethalUnavailable`; more
+    /// than `MAX_PINNED_CORPSE_PROJECTIONS` pins are `CapacityExceeded`. Runtime memory only.
+    pub(crate) fn pin_corpse_projection(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        self.carrier.pin_corpse_projection_inner(actor)
+    }
+
+    /// Codex 4248192466: release `actor`'s pin once its kill settlement is final. The projection
+    /// stays retained until the bounded FIFO evicts it. Unpinning an unpinned actor is a no-op.
+    pub(crate) fn unpin_corpse_projection(&mut self, actor: ExactActorRef) {
+        self.carrier.unpin_corpse_projection_inner(actor);
+    }
+
+    /// Codex 4248192466: release every pin whose actor is not in `held`, the killed actors of the
+    /// kill settlements still queued, parked or in flight. An entry freed without a settle (a
+    /// `principal_gone` refusal) leaves its pin until this runs.
+    pub(crate) fn retain_corpse_projection_pins(&mut self, held: &[ExactActorRef]) {
+        self.carrier
+            .corpse_projection_pins
+            .retain(|pinned| held.contains(pinned));
+    }
+
+    /// Whether `actor`'s corpse projection is pinned against eviction.
+    #[cfg(test)]
+    pub(crate) fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
+        self.carrier.corpse_projection_pins.contains(&actor)
+    }
+
+    /// Whether `actor`'s committed death is still projected and retained in this generation.
+    #[cfg(test)]
+    pub(crate) fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
+        self.carrier.retains_corpse_projection(actor)
     }
 
     /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
@@ -7701,6 +7810,133 @@ mod tests {
                 .death_reward_occurrences
                 .iter()
                 .any(|reward| reward.actor == actor(1))
+        );
+    }
+
+    fn corpse_actor_at(continuity: &NamespaceContinuityGuard, local: u32) -> ExactActorRef {
+        ExactActorRef(ActorRef {
+            world_id: continuity.world_id,
+            channel_id: continuity.channel_id,
+            scope_generation: continuity.current_generation,
+            actor_local_id: ActorLocalId(local),
+            actor_local_generation: ActorLocalGeneration(1),
+        })
+    }
+
+    /// A projected death of local actor `local` in `continuity`'s generation.
+    fn corpse_projection_at(
+        continuity: &NamespaceContinuityGuard,
+        local: u32,
+    ) -> RuntimeCorpseProjection {
+        RuntimeCorpseProjection {
+            death_at_ms: None,
+            occurrence: CreatureDeathOccurrenceRef {
+                actor: corpse_actor_at(continuity, local),
+                commit_binding: Box::new([]),
+                damage: 1,
+                health_before: 1,
+            },
+            position: VersionedPosition {
+                actor_local_id: ActorLocalId(local),
+                actor_local_generation: ActorLocalGeneration(1),
+                context: spawn_position_context(continuity),
+                position: LocalPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+                revision: 1,
+                facing: None,
+            },
+        }
+    }
+
+    /// Codex 4248192466 (LOOT-LIVE-1): a projection pinned by an accepted kill settlement
+    /// survives more than 64 newer projections, such as those of kills a full queue refuses,
+    /// while the unpinned ones keep their FIFO bound. Once the settle is final and the pin is
+    /// released, the next projection evicts it as the oldest unpinned one.
+    #[test]
+    fn a_pinned_corpse_projection_survives_newer_projections_until_unpinned() {
+        let (continuity, mut carrier) = carrier(4);
+        let pinned = corpse_actor_at(&continuity, 0);
+        carrier.retain_corpse_projection(corpse_projection_at(&continuity, 0));
+        carrier
+            .death_reward_occurrences
+            .push(DeathRewardOccurrence {
+                actor: pinned.0,
+                character: [1; 16],
+                occurrence: [2; 16],
+            });
+        assert_eq!(carrier.pin_corpse_projection_inner(pinned), Ok(()));
+        // Pinning again is a no-op.
+        assert_eq!(carrier.pin_corpse_projection_inner(pinned), Ok(()));
+        assert_eq!(carrier.corpse_projection_pins, vec![pinned]);
+        let max = u32::try_from(MAX_RETAINED_CORPSE_PROJECTIONS).expect("bounded");
+        for local in 1..=2 * max {
+            carrier.retain_corpse_projection(corpse_projection_at(&continuity, local));
+        }
+        assert!(carrier.retains_corpse_projection(pinned));
+        assert!(
+            carrier
+                .death_reward_occurrences
+                .iter()
+                .any(|reward| reward.actor == pinned.0)
+        );
+        assert_eq!(
+            carrier.corpse_projections.len(),
+            MAX_RETAINED_CORPSE_PROJECTIONS + 1
+        );
+        assert!(!carrier.retains_corpse_projection(corpse_actor_at(&continuity, max)));
+        assert!(carrier.retains_corpse_projection(corpse_actor_at(&continuity, max + 1)));
+
+        carrier.unpin_corpse_projection_inner(pinned);
+        assert!(carrier.corpse_projection_pins.is_empty());
+        carrier.retain_corpse_projection(corpse_projection_at(&continuity, 2 * max + 1));
+        assert!(!carrier.retains_corpse_projection(pinned));
+        assert!(
+            carrier
+                .death_reward_occurrences
+                .iter()
+                .all(|reward| reward.actor != pinned.0)
+        );
+        assert_eq!(
+            carrier.corpse_projections.len(),
+            MAX_RETAINED_CORPSE_PROJECTIONS
+        );
+    }
+
+    /// Codex 4248192466: at most `MAX_PINNED_CORPSE_PROJECTIONS` pins, each on a retained
+    /// projection of this generation, so `corpse_projections` never holds more than 128.
+    #[test]
+    fn corpse_projection_pins_are_bounded_and_name_retained_projections() {
+        let (continuity, mut carrier) = carrier(4);
+        let max = u32::try_from(MAX_PINNED_CORPSE_PROJECTIONS).expect("bounded");
+        assert_eq!(
+            carrier.pin_corpse_projection_inner(corpse_actor_at(&continuity, 0)),
+            Err(CarrierError::CommittedLethalUnavailable),
+            "no projection is retained yet"
+        );
+        for local in 0..max {
+            carrier.retain_corpse_projection(corpse_projection_at(&continuity, local));
+            assert_eq!(
+                carrier.pin_corpse_projection_inner(corpse_actor_at(&continuity, local)),
+                Ok(())
+            );
+        }
+        carrier.retain_corpse_projection(corpse_projection_at(&continuity, max));
+        assert_eq!(
+            carrier.pin_corpse_projection_inner(corpse_actor_at(&continuity, max)),
+            Err(CarrierError::CapacityExceeded)
+        );
+        for local in max + 1..=3 * max {
+            carrier.retain_corpse_projection(corpse_projection_at(&continuity, local));
+        }
+        assert_eq!(
+            carrier.corpse_projections.len(),
+            MAX_PINNED_CORPSE_PROJECTIONS + MAX_RETAINED_CORPSE_PROJECTIONS
+        );
+        assert!(
+            (0..max).all(|local| carrier.retains_corpse_projection(corpse_actor_at(&continuity, local)))
         );
     }
 
