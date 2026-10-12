@@ -537,6 +537,33 @@ This is not 1:1 completion, physical keyboard/picker acceptance, live bundle E2E
 or proof of every page's runtime consumers. Final independent review/full CI
 remain open; protected-base audit alone cannot establish them.
 
+## Latest-source Windows launch — 2026-10-12, AUTHORING
+
+Owner requests the latest PR source, not the installed `gc177231dee65` client.
+Exact source `6c3a884a7066a25ef3935efbdebf98fcb1a1f609` is fetched and checked
+out in a separate Windows directory; tracked code and the existing installation
+are not modified. A filtered shallow sparse checkout covers the workspace build
+inputs after two owned unproductive downloads were stopped; partial directories
+are preserved. Rust 1.95 builds the locked x86_64-pc-windows-msvc release.
+
+Private directory:
+`C:\Users\barte\Downloads\oteryn-client-6c3a884a-729b8d1e3a93483c995c272d78183a54`.
+Binary SHA-256 `073bb054698dc8e9bd2eca226fec84a88e09b030680aac91cf649170bc05133d`.
+The exact-source DX12 audit verifies all 20 pages, 78 independently hashed
+captures, markers, unchanged drafts, footer controls and width bounds at 125%
+DPI. Manifest SHA-256
+`efbefe76af77b8b8998664017bdf03f0faf82cb846edf8fc7d1cd8a5442613a6`.
+
+The preprod launcher starts that exact executable as PID 37844; its verified
+path matches the build and its window `Oteryn - logowanie` responds. The existing
+public-only connection folder now has `Start-Oteryn-latest.cmd` pointing to this
+binary: `C:\Users\barte\Downloads\oteryn-preprod-login-20261012-6fb03369a0bf45e290ed32340e706a08`.
+The old installation/starter remain intact. No automatic sign-in,
+credential consumption or Game/Platform restart is performed. This proves the
+latest application is running, not server admission, 1:1 completion, full CI or
+final independent review. The prior empty directory/reset evidence remains an
+unresolved backend acceptance gap, not missing connection data.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

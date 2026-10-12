@@ -32,20 +32,20 @@ must not be claimed as complete.
 
 ## Native login launcher — 2026-10-12
 
-The existing GUI performs PKCE,
-owned-character selection, native ticket/Gateway grant and server admission.
-`tools/qualification/login_local/launch-client-local.ps1` now consumes the
-runbook's private `client.env` without evaluating it or propagating credential
-comments. It validates URL origins/files/keys, sets four public connection values
-only in the child, selects the copied gameplay certificate without installing
-trust and drops configured World/Character IDs in favour of owned GUI selection.
+GUI uses PKCE, owned characters, native ticket/Gateway grant and server admission.
+`tools/qualification/login_local/launch-client-local.ps1` validates the private
+env file without evaluation/credential comments, passes four public values only
+to the child and selects the copied certificate without installing trust.
+World/Character selection remains the authenticated GUI's responsibility.
 No automatic login, deployment, account mutation or production claim.
 Linux/Windows PowerShell 22 checks and client/Platform login tests 10/13 pass. Data
 is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
-root/leaf are valid. Public directory currently returns zero worlds; gameplay
-TLS resets. No missing-data request: E2E waits for a usable Game/Registry route.
-PC installed `gc177231dee65` runs/responds as PID 1020 with preprod settings;
-public-only connection bundle is `Downloads/oteryn-preprod-login-20261012-6fb03369a0bf45e290ed32340e706a08`.
+Root/leaf are valid. Last probe: zero directory worlds and gameplay TLS reset;
+no missing-data request. Game/Registry admission still needs actual acceptance.
+Latest source `6c3a884a` builds/audits on Windows (20 pages/78 hashes) and runs
+as verified PID 37844 with preprod settings; installation `gc177231dee65` is intact.
+Exact source, binary/manifest hashes and paths are retained in UI-FIDELITY.md;
+Public connection bundle/starter paths are in UI-FIDELITY.md.
 No login/restart. Windows fixes: exact expanded IPv6 loopback and closed-file
 validation on refusal; no weaker TLS or additional insecure origins.
 
