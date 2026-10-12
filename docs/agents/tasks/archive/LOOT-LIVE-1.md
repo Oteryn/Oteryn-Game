@@ -4,12 +4,12 @@
 task_id: LOOT-LIVE-1
 title: "LOOT-LIVE-1: a live kill's committed corpse binds to its projection, so its loot can be opened and taken"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/loot-live-1-20261012
 issue: 1622
-pr: null
+pr: 2008
 base_sha: e128fd6cc
 head_sha: null
 final_head_sha: null
@@ -76,7 +76,7 @@ entries through the existing durable TRANSFER.
 
 ### Exact-head CI
 
-Recorded in the PR checks of the frozen head.
+- PR #2008 CI on 65c062d4c: green (control plane). The frozen head's checks are recorded on the PR.
 
 ## Self-review
 
@@ -90,5 +90,21 @@ Recorded in the PR checks of the frozen head.
 
 ## PR and closeout
 
+- PR: 2008
 - changed-file review: within owned paths
-- merge commit/result: pending
+- unresolved review threads: none
+- protected merge: control plane, through Merge Queue
+- merge commit/result: squash merge of #2008
+- source branch closeout: `claude/loot-live-1-20261012` is deleted after the merge
+- ownership release: on merge
+
+## Context checkpoint
+
+```yaml
+last_progress: corpse bind shipped with tests; CI green; record archived
+status: completed
+branch: claude/loot-live-1-20261012
+pr: 2008
+blocker: null
+next_action: none (terminal; lifecycle closes on the squash merge of #2008 and the source branch deletion)
+```
