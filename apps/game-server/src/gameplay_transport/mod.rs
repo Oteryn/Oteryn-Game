@@ -697,12 +697,11 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
         >,
     >,
     /// The progression binding of each bound admitted session (ARCH-PROGRESSION-SOURCE-0 §1.4),
-    /// inserted at fresh admission and removed only in `retire`, so a `ClientResume` of a lost
-    /// session finds the same binding. An unbound session has no entry. Never held across an
-    /// await.
-    pub(crate) progression_sessions: std::sync::Mutex<
-        std::collections::HashMap<GameSessionId, std::sync::Arc<SessionProgressionBinding>>,
-    >,
+    /// inserted at fresh admission and removed in `retire`, so a `ClientResume` of a lost
+    /// session finds the same binding, or when the durable death writer refuses its context
+    /// (`settle_session_death`), which leaves the session unbound. An unbound session has no
+    /// entry. Never held across an await.
+    pub(crate) progression_sessions: ProgressionSessions,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -721,6 +720,91 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
 pub(crate) type SessionProgressionBinding = crate::combat::RewardProgressionBinding<
     { crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS },
 >;
+
+/// The seam's map of bound sessions to their progression bindings.
+pub(crate) type ProgressionSessions = std::sync::Mutex<
+    std::collections::HashMap<GameSessionId, std::sync::Arc<SessionProgressionBinding>>,
+>;
+
+/// What one durable death attempt under a session's progression binding decided (DEATH-2
+/// §4.3-§4.4, ARCH-PROGRESSION-SOURCE-0 §1.5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeathCommit {
+    /// The death is committed or replayed and its pending respawn consumed.
+    Settled,
+    /// The durable writer refused the binding's progression context: a newer Character
+    /// interpretation was configured after the session was bound, so the gameplay fence refuses
+    /// every durable progression write under this binding and no retry can commit it.
+    ContextMismatch,
+    /// No outcome: the actor stays dead and the next cadence retries the same occurrence.
+    Unavailable,
+}
+
+/// DEATH-2: the decision of a refused durable death. Only `ProgressionContextMismatch` is a
+/// refusal of the binding itself; every other refusal keeps the actor dead and retries, as before.
+const fn death_commit_refusal(
+    error: &crate::durability::character_progression::CharacterProgressionError,
+) -> DeathCommit {
+    use crate::durability::character_progression::CharacterProgressionError as Refusal;
+    match error {
+        Refusal::ProgressionContextMismatch => DeathCommit::ContextMismatch,
+        _ => DeathCommit::Unavailable,
+    }
+}
+
+/// The progression binding of `session` in `sessions`; `None` for an unbound or unknown session.
+/// The lock is released before the caller awaits.
+fn session_progression_binding(
+    sessions: &ProgressionSessions,
+    session: GameSessionId,
+) -> Option<std::sync::Arc<SessionProgressionBinding>> {
+    sessions
+        .lock()
+        .ok()?
+        .get(&session)
+        .map(std::sync::Arc::clone)
+}
+
+/// ARCH-PROGRESSION-SOURCE-0 §1.5 and DEATH-2 §4.3-§4.4: settle one death of `session` under its
+/// progression binding. An unbound session respawns non-durably at once. A bound one commits
+/// through `commit`; `false` is an attempt without an outcome, which keeps the actor dead for the
+/// next cadence. When the durable writer refuses the binding's context (a newer Character
+/// interpretation configured after the session was bound), the session is downgraded to unbound
+/// (`progression_unbound reason=progression_context_mismatch`) and this death takes the
+/// non-durable respawn path: no XP, no durable write and no further attempt, so the actor is not
+/// left dead retrying a write that can never commit. Only the binding the refused attempt used is
+/// removed, and the gameplay fence is not widened.
+async fn settle_session_death<F, Fut>(
+    sessions: &ProgressionSessions,
+    session: GameSessionId,
+    commit: F,
+) -> bool
+where
+    F: FnOnce(std::sync::Arc<SessionProgressionBinding>) -> Fut,
+    Fut: std::future::Future<Output = DeathCommit>,
+{
+    let Some(binding) = session_progression_binding(sessions, session) else {
+        return true;
+    };
+    match commit(std::sync::Arc::clone(&binding)).await {
+        DeathCommit::Settled => true,
+        DeathCommit::Unavailable => false,
+        DeathCommit::ContextMismatch => {
+            if let Ok(mut bound) = sessions.lock()
+                && bound
+                    .get(&session)
+                    .is_some_and(|current| std::sync::Arc::ptr_eq(current, &binding))
+            {
+                bound.remove(&session);
+            }
+            operator_event(&format!(
+                "progression_unbound reason={}",
+                character_progression_binding::ProgressionUnbound::ContextMismatch.reason()
+            ));
+            true
+        }
+    }
+}
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
@@ -1109,11 +1193,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// of `death` and its pending respawn, with no lock held across the database. `false` is a
     /// durable attempt without an outcome; the caller keeps the actor dead and retries.
     async fn settle_death(&self, session: GameSessionId, death: actor_spell::PlayerDeath) -> bool {
-        // ARCH-PROGRESSION-SOURCE-0 §1.5: an unbound session respawns non-durably.
-        let Some(progression) = self.progression_binding(session) else {
-            return true;
-        };
-        Box::pin(self.commit_death(session, &progression, death)).await
+        settle_session_death(&self.progression_sessions, session, |progression| {
+            Box::pin(async move { self.commit_death(session, &progression, death).await })
+        })
+        .await
     }
 
     /// The durable half of [`Self::settle_death`]. The death request carries the binding's
@@ -1125,7 +1208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         progression: &SessionProgressionBinding,
         death: actor_spell::PlayerDeath,
-    ) -> bool {
+    ) -> DeathCommit {
         let (map_revision, respawn) = {
             let runtime = self.runtime.lock().await;
             (runtime.map_revision_digest(), runtime.respawn_position())
@@ -1138,9 +1221,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             respawn,
         );
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return false;
+            return DeathCommit::Unavailable;
         };
-        if let Err(error) = self
+        match self
             .root
             .settle_player_death(
                 &self.revision_sequencer,
@@ -1151,10 +1234,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            operator_event(&format!("player_death_settle_failed reason={error}"));
-            return false;
+            Ok(_) => DeathCommit::Settled,
+            Err(error) => {
+                operator_event(&format!("player_death_settle_failed reason={error}"));
+                death_commit_refusal(&error)
+            }
         }
-        true
     }
 
     /// DEATH-2 for a closed client: an actor that died after its connection ended has no cadence
@@ -1420,11 +1505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<std::sync::Arc<SessionProgressionBinding>> {
-        self.progression_sessions
-            .lock()
-            .ok()?
-            .get(&session)
-            .map(std::sync::Arc::clone)
+        session_progression_binding(&self.progression_sessions, session)
     }
 
     fn forget_progression_session(&self, session: GameSessionId) {

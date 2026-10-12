@@ -14,7 +14,7 @@ head_sha: "exact frozen head in the FREEZE report on the PR"
 final_head_sha: "exact frozen head in the FREEZE report on the PR"
 owner: claude-code-session-01Cdzo5t7PGTD7HXJQsrUXGx
 created_at: 2026-10-08
-updated_at: 2026-10-11
+updated_at: 2026-10-12
 owned_paths:
   - apps/game-server/src/content/activation.rs
   - apps/game-server/src/combat/death_reward.rs
@@ -46,11 +46,14 @@ coordination #1622, CP decisions D607 and D968.
   configured after the Character was created) is decided `progression_context_mismatch`: the
   gameplay fence of every durable progression write refuses that root (§0.2), so the session is
   left unbound and its deaths respawn non-durably instead of retrying a death write that can
-  never commit. Known limit: an interpretation configured while a bound session is live makes
-  that session's later durable death writes refuse with `ProgressionContextMismatch` and retry;
-  sessions are not re-decided mid-session (§1.5 decides at admission).
+  never commit. An interpretation configured while a bound session is live (#1964 Codex P1
+  4243820239): the first death write the gameplay fence then refuses with
+  `ProgressionContextMismatch` downgrades the session to unbound (`settle_session_death`, logged
+  `progression_unbound reason=progression_context_mismatch`) and that death respawns non-durably,
+  with no XP and no durable write, after exactly that one attempt; the fence is not widened.
 - A bound session keeps an `Arc<SessionProgressionBinding>` in the seam's session map, removed
-  only in `retire`, so a resume reuses it. `AdmittedSession` is unchanged.
+  in `retire` (so a resume reuses it) or by that context refusal. `AdmittedSession` is
+  unchanged.
 - An unbound session logs `progression_unbound reason=...` once; its deaths respawn non-durably
   and its kills award no XP (`NoProgressionBinding`). `progression_initialization_unavailable`
   also makes the first entry `RefusedUnavailable`.
@@ -78,7 +81,9 @@ unchanged), migrations, and `durability/character_progression.rs` are unchanged.
   acknowledgement reconciles; rounds that all fail leave no row and a later admission
   initializes.
 - Unit: unbound reason names, the binding's revisions, the death request formed from the
-  binding, one table width on the kill and death paths, `AdmittedSession: Copy`, and the bounded
+  binding, one table width on the kill and death paths, `AdmittedSession: Copy`, a binding whose
+  death is refused mid-session for its context settling that death non-durably after one attempt
+  and never attempting again (other refusals keep the binding and retry), and the bounded
   hold (silent client closed after the bound with no frame, a frame before it closes with an
   error, no actor is not bounded).
 
