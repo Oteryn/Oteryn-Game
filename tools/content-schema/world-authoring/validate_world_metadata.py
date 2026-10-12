@@ -22,6 +22,7 @@ HUNTING_SUMMARY = (
 )
 SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
 WIKI_NAMESPACE = "tibiawiki-fandom/page-id"
+SCRIPT_NAMESPACE = "crystalserver/script-step-in-teleport"
 CITY_DIRECTORY = "content/world/areas/cities"
 CATALOGUES = {
     "content/world/objects": "WorldObject",
@@ -279,6 +280,19 @@ def validate(root: Path) -> list[str]:
             errors.append(f"{key}: object must be the canonical key {expected[1]}")
         if declaration["from"] == declaration["to"]:
             errors.append(f"{key}: teleport to its own tile")
+    scripted = [
+        record
+        for record in families["Transition.Teleport"]
+        if record["source_bindings"][0]["identity_namespace"] == SCRIPT_NAMESPACE
+    ]
+    if summary.get("script_teleports") != len(scripted):
+        errors.append(
+            "Transition.Teleport: script teleport count differs from the capture"
+        )
+    if scripted and not any(
+        row["path"].endswith(".lua") for row in summary["source"].get("files", [])
+    ):
+        errors.append("Transition.Teleport: script teleports without a pinned script")
     if summary.get("teleport_object_families") != used:
         errors.append(
             "Transition.Teleport: object family counts differ from the capture"

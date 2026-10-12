@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import shutil
 import struct
@@ -17,6 +18,32 @@ import otbm_reader
 import validate_world_metadata as validate
 
 TELEPORT_ITEM = 1949  # has an Item record in content/items/definitions
+SCRIPT_PATH = "data-global/scripts/fixture_forcefield.lua"
+
+
+def script_text(start=(1003, 1001, 7), end=(1002, 1002, 7)) -> bytes:
+    return (
+        "local forcefield = MoveEvent()\n"
+        "function forcefield.onStepIn(creature, item, position, fromPosition)\n"
+        f"\tcreature:teleportTo(Position({end[0]}, {end[1]}, {end[2]}))\n"
+        "end\n"
+        f"forcefield:position(Position({start[0]}, {start[1]}, {start[2]}))\n"
+        "forcefield:register()\n"
+    ).encode()
+
+
+def script_entry(
+    data: bytes, start=(1003, 1001, 7), end=(1002, 1002, 7), item=TELEPORT_ITEM
+):
+    """A SCRIPT_TELEPORTS row pinning `data`; by default the unset teleport of
+    `script_map`."""
+    return {
+        "from": start,
+        "item": item,
+        "path": SCRIPT_PATH,
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "to": end,
+    }
 
 
 def escape(payload: bytes) -> bytes:
@@ -89,6 +116,15 @@ def fixture_map(extra_houses=(), extra_areas=()) -> bytes:
     return b"\x00\x00\x00\x00" + node(
         0, struct.pack("<IHHII", 4, 2048, 2048, 3, 57), map_data
     )
+
+
+def script_map() -> bytes:
+    """The fixture map plus a tile (1003, 1001, 7) whose teleport has an unset destination."""
+    unset = node(
+        6, struct.pack("<H", TELEPORT_ITEM) + bytes([8]) + struct.pack("<HHB", 0, 0, 0)
+    )
+    area = node(4, struct.pack("<HHB", 1000, 1000, 7), node(5, bytes([3, 1]), unset))
+    return fixture_map(extra_areas=(area,))
 
 
 def add_areas(
@@ -195,7 +231,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         }
         self.root = Path(tempfile.mkdtemp())
         add_areas(self.root)
-        self.out = convert.build(blobs, self.root)
+        self.out = convert.build(blobs, self.root, scripts=())
         for path, data in self.out.items():
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(data)
@@ -252,7 +288,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as empty:
             add_areas(Path(empty), catalogue, items)
             out = convert.build(
-                {"data-global/world/world.otbm": fixture_map()}, Path(empty)
+                {"data-global/world/world.otbm": fixture_map()}, Path(empty), scripts=()
             )
         (path,) = [
             p for p in out if p.startswith("content/world/transitions/teleports-")
@@ -336,7 +372,109 @@ class ConvertAndValidateTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as empty:
             add_areas(Path(empty))
-            self.assertEqual(convert.build(blobs, Path(empty)), self.out)
+            self.assertEqual(convert.build(blobs, Path(empty), scripts=()), self.out)
+
+    def script_build(self, entry, data, root=None):
+        blobs = {"data-global/world/world.otbm": script_map(), entry["path"]: data}
+        return convert.build(blobs, root or self.root, scripts=(entry,))
+
+    def test_script_teleport_becomes_a_transition_of_its_own_namespace(self):
+        data = script_text()
+        add_areas(self.root, (), (TELEPORT_ITEM,))
+        out = self.script_build(script_entry(data), data)
+        self.assertEqual(convert.apply(out, False, self.root), 0)
+        self.assertEqual(validate.validate(self.root), [])
+        summary = json.loads(out[str(convert.SUMMARY.relative_to(convert.ROOT))])
+        self.assertEqual(summary["families"], {"Transition.Teleport": 2})
+        self.assertEqual(summary["script_teleports"], 1)
+        # the fixture's own unset teleport stays excluded, the scripted one is imported
+        self.assertEqual(summary["not_imported"]["teleports"]["unset_destination"], 1)
+        self.assertEqual(
+            [row["path"] for row in summary["source"]["files"]],
+            ["data-global/world/world.otbm", SCRIPT_PATH],
+        )
+        (record,) = [
+            r
+            for path in json.loads(
+                (self.root / "content/world/transitions/index.json").read_text()
+            )["shards"]
+            for r in json.loads((self.root / path).read_text())["records"]
+            if r["source_bindings"][0]["identity_namespace"] == convert.SCRIPT_NAMESPACE
+        ]
+        declaration = record["declaration"]
+        self.assertEqual(
+            declaration["identity"]["key"], "oteryn:transition.teleport.x1003_y1001_z7"
+        )
+        self.assertEqual(
+            (declaration["from"]["x"], declaration["to"]["y"]), (1003, 1002)
+        )
+        self.assertEqual(
+            declaration["object"]["key"], f"oteryn:item.tibia.i{TELEPORT_ITEM}"
+        )
+        self.assertEqual(
+            record["source_bindings"][0]["external_id"], f"1003,1001,7:{TELEPORT_ITEM}"
+        )
+        # the validator ties the record count to the capture
+        summary["script_teleports"] = 0
+        (self.root / convert.SUMMARY.relative_to(convert.ROOT)).write_bytes(
+            convert.canonical(summary)
+        )
+        self.assertTrue(
+            any("script teleport count" in e for e in validate.validate(self.root))
+        )
+
+    def test_script_teleport_fails_closed(self):
+        add_areas(self.root, (), (TELEPORT_ITEM,))
+        data = script_text()
+        cases = {
+            "not loaded": (script_entry(data), None),
+            "sha256 differs": (script_entry(data), data + b"\n"),
+            # the script moved its tile or its destination
+            "no longer teleports": (
+                script_entry(script_text(end=(1001, 1001, 7))),
+                script_text(end=(1001, 1001, 7)),
+            ),
+            # the tile also has a real destination, or no teleport attribute at all
+            "needs exactly one unset": (
+                script_entry(script_text(start=(1001, 1003, 7)), start=(1001, 1003, 7)),
+                script_text(start=(1001, 1003, 7)),
+            ),
+            "has \\[\\]": (
+                script_entry(script_text(start=(1002, 1001, 7)), start=(1002, 1001, 7)),
+                script_text(start=(1002, 1001, 7)),
+            ),
+            # another item id than the unset attribute's
+            "of item 100,": (script_entry(data, item=100), data),
+            "outside the map": (
+                script_entry(script_text(end=(4000, 1, 7)), end=(4000, 1, 7)),
+                script_text(end=(4000, 1, 7)),
+            ),
+            "has no tile": (
+                script_entry(script_text(end=(1500, 1500, 7)), end=(1500, 1500, 7)),
+                script_text(end=(1500, 1500, 7)),
+            ),
+        }
+        for message, (entry, data) in cases.items():
+            with (
+                self.subTest(message),
+                self.assertRaisesRegex(convert.ConvertError, message),
+            ):
+                blobs = {"data-global/world/world.otbm": script_map()}
+                if data is not None:
+                    blobs[entry["path"]] = data
+                convert.build(blobs, self.root, scripts=(entry,))
+
+    def test_pinned_script_teleport_is_the_new_haven_forcefield(self):
+        (entry,) = convert.SCRIPT_TELEPORTS
+        self.assertEqual(
+            (entry["from"], entry["item"], entry["to"]),
+            ((32538, 32514, 7), 37001, (32544, 32515, 7)),
+        )
+        self.assertIn(
+            {"path": entry["path"], "sha256": entry["sha256"]},
+            convert.SOURCE["files"],
+        )
+        self.assertEqual(convert.source_of(), convert.SOURCE)
 
     def test_rejects_stray_file_in_family_directory(self):
         (self.root / "content/world/transitions/extra.json").write_text("{}\n")
@@ -513,7 +651,7 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
             "data-global/world/world.otbm": fixture_map(),
         }
         add_areas(self.root)
-        self.write(convert.build(blobs, self.root))
+        self.write(convert.build(blobs, self.root, scripts=()))
         self.load(snapshot_tool.build_snapshot(PAGES, "2026-09-29"))
 
     def tearDown(self):

@@ -446,11 +446,24 @@ mod tests {
         ExactActorRef,
         GameSessionId,
     ) {
-        use crate::map::boot::tests::{floor_bundle, floor_items, floor_pins};
+        bundle_owner_of(crate::map::boot::tests::floor_bundle)
+    }
+
+    /// [`bundle_owner`] over another fixture bundle starting on the same tile.
+    fn bundle_owner_of(
+        fixture: fn() -> (Vec<u8>, crate::map::BundlePins),
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        NativeEntryMovementCells,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        use crate::map::boot::tests::{floor_items, floor_pins};
         let world = WorldId::decode(&id(1)).unwrap();
         let channel = ChannelId::decode(&id(2)).unwrap();
         let room = crate::content::qualify_native_entry_room(world).unwrap();
-        let (bytes, load) = floor_bundle();
+        let (bytes, load) = fixture();
         let booted =
             crate::map::boot::boot(&bytes, &floor_pins(load), world, channel, floor_items).unwrap();
         let cells = booted.movement_cells(room.movement_cells()).unwrap();
@@ -541,6 +554,118 @@ mod tests {
             ))
         ));
         assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
+    #[test]
+    fn newhaven_teleport_a_bundle_step_onto_a_teleport_moves_the_actor() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let none = std::collections::BTreeSet::new();
+        let mut step = |runtime: &mut ChannelRuntimeV1, direction| {
+            step_in_channel(
+                runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &none,
+                None,
+            )
+        };
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        // Onto the forcefield at (0, 1): the actor ends on its destination, paced onto it.
+        let (_, duration) = step(&mut runtime, CardinalStep::South).unwrap();
+        assert_eq!(at(&mut runtime, actor), (5, 1, 8));
+        assert_eq!(duration, Duration::from_millis(550));
+        // A teleport whose destination a solid box blocks leaves the actor on the teleport.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (4, 1, 8));
+        // So does one whose destination tile the bundle lacks.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (3, 1, 8));
+    }
+
+    #[test]
+    fn newhaven_teleport_a_step_onto_a_teleport_keeps_the_step_rules() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        // The proof carries the teleport destination, not the entered tile.
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        let proof = crate::map::floor::prepare_bundle_step(
+            &runtime,
+            &cells,
+            actor,
+            session,
+            expected,
+            CardinalStep::South,
+        )
+        .unwrap();
+        assert_eq!(
+            (
+                proof.destination().x,
+                proof.destination().y,
+                proof.destination().floor
+            ),
+            (5, 1, 8)
+        );
+        drop(proof);
+        // A door closed on the destination refuses the whole step.
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 5, y: 1, z: 8 }]);
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &closed,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        // A player without control does not step onto it.
+        runtime
+            .record_control_loss(
+                actor,
+                session,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 100,
+                },
+            )
+            .unwrap();
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &std::collections::BTreeSet::new(),
+                None,
+            ),
+            Err(MovementError::NotQualified)
+        ));
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        assert!(
+            crate::map::floor::prepare_bundle_step(
+                &runtime,
+                &cells,
+                actor,
+                session,
+                expected,
+                CardinalStep::South,
+            )
+            .is_err()
+        );
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
     }
 
     #[test]

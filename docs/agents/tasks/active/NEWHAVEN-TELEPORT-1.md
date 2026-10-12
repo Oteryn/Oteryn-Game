@@ -1,0 +1,127 @@
+# NEWHAVEN-TELEPORT-1
+
+```yaml
+task_id: NEWHAVEN-TELEPORT-1
+title: New Haven islet-to-island forcefield as a script Transition.Teleport and a runtime bundle teleport
+mode: IMPLEMENT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/newhaven-teleport-20261012
+pr: null
+base_sha: 7af71791f3b552e21a0e4a8efce16e98777b8923
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: sole writer allocated by the lead session
+created_at: 2026-10-12
+updated_at: 2026-10-12
+execution_policy: continuous_progress
+owned_paths:
+  - tools/content-schema/world-authoring/ (metadata and base converters, validator, schema, tests, samples, README)
+  - content/world/transitions/
+  - content/world/placements/index.json
+  - content/world/placements/region-z07-x127-y127.b3
+  - apps/game-server/src/map/floor.rs
+  - apps/game-server/src/map/boot.rs
+  - apps/game-server/src/gameplay_transport/actor_movement.rs
+  - content/world/pins/oteryn.json (separate final pin commit, after PR 2017 merges)
+  - deploy/synology-game/preprod-topology.toml (separate final pin commit)
+  - the world bundle pin_check test (separate final pin commit)
+  - docs/agents/tasks/active/NEWHAVEN-TELEPORT-1.md, docs/agents/tasks/archive/
+public_contracts: [OTERYN_WORLD_BUNDLE_FORMAT_V1]
+depends_on: [PR 2017 (bundle start tile) for the pin commit]
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+The New Haven forcefield at (32538, 32514, 7) leads from the islet to the island at
+(32544, 32515, 7), as Crystal's `movement_select_vocation.lua` does, through data and the
+bundle runtime, without changing the bundle contract's OPEN-3 rule (§9: one teleport attribute
+per Transition.Teleport record, fail closed otherwise).
+
+- Data: `convert_world_metadata.py` pins the script (`SCRIPT_TELEPORTS`, path and sha256) and
+  writes `oteryn:transition.teleport.x32538_y32514_z7` under the new binding namespace
+  `crystalserver/script-step-in-teleport`; `convert_world_base.py` fills the map's unset (0,0,0)
+  i37001 destination on that tile, so `region-z07-x127-y127.b3` carries the attribute and the
+  compiler matches it with the record. Transition.Teleport goes from 872 to 873 records;
+  `unset_destination` exclusions from 1577 to 1576.
+- Runtime: the boot scan collects every top-level `teleport` attribute into the `FloorTable`;
+  a bundle step that lands on a teleport tile ends on its destination (one hop). A destination
+  the bundle lacks or that cannot be entered leaves the player on the teleport tile; the step's
+  own rules (control, spell reservation, scope, closed doors on the final tile) are unchanged.
+
+## Architecture and source of truth
+
+- PROVEN: Crystal `data-global/scripts/quests/newhaven/movement_select_vocation.lua`
+  (sha256 1d44beffed174b6b3025f0fd4fc00393725445e3bb1a6729a633d9f891ac563b) registers
+  `stepin` on (32538, 32514, 7) and calls `teleportTo(Position(32544, 32515, 7))` for players;
+  it has no premium or vocation gate on the move itself.
+- PROVEN: the OTBM tile (32538, 32514, 7) holds exactly one i37001 teleport with destination
+  (0, 0, 0); the destination tile exists.
+- DERIVED: the runtime teleport follows Canary `Teleport::addThing` on the landing tile; the
+  runtime never places a player on a cell it cannot enter, so a blocked destination is refused
+  to the teleport tile instead of forced.
+
+## High-risk authority/recovery qualification
+
+```yaml
+applicable: false
+reason: no authority, lease, fence or recovery evidence is touched; the step stays committed through the existing sealed BundleStepProof
+```
+
+## Acceptance criteria
+
+- [ ] World-authoring tests and both validators pass on the regenerated data.
+- [ ] Runtime tests: a step onto the forcefield moves the actor; blocked and absent destinations
+  leave it on the teleport; control loss and closed doors still refuse the step.
+- [ ] The pin, inputs_digest, pin_check and preprod topology move in one separate final commit,
+  after PR 2017 merges, announced to the lead before the deployed bundle digest changes.
+
+## Excluded scope
+
+The script's other effects (starter items, tutorial, map marks, storages). PR 2017, PR 1835 and
+`cand/error-codes`. The contract's OPEN-3 rule. No FREEZE, no arm.
+
+## Validation
+
+### Focused
+
+- command/run: pending
+- result: pending
+
+### Exact-head CI
+
+- final head: pending
+- result: pending
+
+## Self-review
+
+- exact head: pending
+- verdict: pending
+
+## Independent review
+
+- required: pending
+- verdict: pending
+
+## PR and closeout
+
+- merge commit/result: pending
+- ownership release: pending
+
+## Context checkpoint
+
+```yaml
+last_progress: generator, data, runtime and tests written; pin commit pending PR 2017
+status: implementing
+branch: claude/newhaven-teleport-20261012
+head_sha: null
+pr: null
+final_head_sha: null
+blocker: null
+next_action: run the local checks and open the PR
+```
