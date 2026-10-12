@@ -22,7 +22,9 @@ function Assert-Origin([string]$Value, [string]$Label) {
     if (-not [Uri]::TryCreate($Value, [UriKind]::Absolute, [ref]$uri)) {
         throw "$Label must be an absolute origin."
     }
-    $loopback = $uri.Host -in @('localhost', '127.0.0.1', '[::1]', '::1')
+    # .NET Framework (Windows PowerShell 5.1) expands IPv6 Uri.Host; modern .NET compresses it.
+    $loopback = $uri.Host -in @('localhost', '127.0.0.1', '[::1]', '::1',
+        '[0000:0000:0000:0000:0000:0000:0000:0001]')
     if (($uri.Scheme -ne 'https' -and -not ($uri.Scheme -eq 'http' -and $loopback)) -or
         [string]::IsNullOrEmpty($uri.Host) -or $uri.UserInfo -ne '' -or
         $uri.AbsolutePath -ne '/' -or $uri.Query -ne '' -or $uri.Fragment -ne '') {
@@ -39,7 +41,9 @@ $allowed = @('OTERYN_PLATFORM_URL', 'OTERYN_GATEWAY_URL', 'OTERYN_OAUTH_CLIENT_I
     'OTERYN_DEV_ROOT', 'OTERYN_WORLD', 'OTERYN_CHARACTER_ID')
 $required = @('OTERYN_PLATFORM_URL', 'OTERYN_GATEWAY_URL', 'OTERYN_OAUTH_CLIENT_ID')
 $values = @{}
-foreach ($line in [IO.File]::ReadLines($environmentFile)) {
+# Get-Content closes the file before validation can throw. PowerShell 5.1 does
+# not reliably dispose a lazy ReadLines enumerator on an early refusal.
+foreach ($line in @(Get-Content -LiteralPath $environmentFile -Encoding UTF8)) {
     $entry = $line.Trim()
     # The runbook includes test credentials in a comment. Never evaluate, display or propagate it.
     if ($entry -eq '' -or $entry.StartsWith('#')) { continue }

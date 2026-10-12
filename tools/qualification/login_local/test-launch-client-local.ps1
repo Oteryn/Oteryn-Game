@@ -41,7 +41,8 @@ try {
     Check (($result.EnvironmentKeys -join ',') -eq 'OTERYN_PLATFORM_URL,OTERYN_GATEWAY_URL,OTERYN_OAUTH_CLIENT_ID,OTERYN_DEV_ROOT') 'Unexpected child configuration keys.'
     Check ([Environment]::GetEnvironmentVariable('OTERYN_PLATFORM_URL') -eq $parentBefore) 'Parent environment changed.'
 
-    foreach ($origin in @('http://localhost:18564', 'http://127.0.0.1:18564', 'http://[::1]:18564')) {
+    foreach ($origin in @('http://localhost:18564', 'http://127.0.0.1:18564',
+        'http://[::1]:18564', 'http://[0000:0000:0000:0000:0000:0000:0000:0001]:18564')) {
         [IO.File]::WriteAllLines($environmentFile, @("OTERYN_PLATFORM_URL=$origin") + $base[1..6])
         $result = & $launcher -ClientPath $executable -ClientEnv $environmentFile -ValidateOnly
         Check (-not $result.AutomaticLogin) 'Loopback origin refused.'

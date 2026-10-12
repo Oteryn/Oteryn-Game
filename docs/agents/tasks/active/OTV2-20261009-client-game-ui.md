@@ -32,7 +32,7 @@ must not be claimed as complete.
 
 ## Native login launcher — 2026-10-12
 
-Owner requests real Platform/server login. The existing GUI performs PKCE,
+The existing GUI performs PKCE,
 owned-character selection, native ticket/Gateway grant and server admission.
 `tools/qualification/login_local/launch-client-local.ps1` now consumes the
 runbook's private `client.env` without evaluating it or propagating credential
@@ -40,10 +40,14 @@ comments. It validates URL origins/files/keys, sets four public connection value
 only in the child, selects the copied gameplay certificate without installing
 trust and drops configured World/Character IDs in favour of owned GUI selection.
 No automatic login, deployment, account mutation or production claim.
-PowerShell 21 checks and client/Platform login tests 10/13 pass. Connection data
+Linux/Windows PowerShell 22 checks and client/Platform login tests 10/13 pass. Data
 is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
 root/leaf are valid. Public directory currently returns zero worlds; gameplay
 TLS resets. No missing-data request: E2E waits for a usable Game/Registry route.
+PC installed `gc177231dee65` runs/responds as PID 1020 with preprod settings;
+public-only connection bundle is `Downloads/oteryn-preprod-login-20261012-6fb03369a0bf45e290ed32340e706a08`.
+No login/restart. Windows fixes: exact expanded IPv6 loopback and closed-file
+validation on refusal; no weaker TLS or additional insecure origins.
 
 ## Main merge — 2026-10-12
 
@@ -126,13 +130,9 @@ queued targets again; stale inputs send no frame or command ID. Duplex tests
 verify exact base-key/revision and item-handle payloads. Actor visuals without an
 accepted binding remain placeholders; this does not enable all mouse/loot presets.
 
-Linux client 209/171/5, Session 72, dev adapter 34, harness 36 and strict Clippy
-pass. MSVC client 208/175/5, Session 72, protocol 214, dev adapter 34, harness 36,
-renderer 43 and assets 2/13 pass with strict seven-package Clippy. Exact-source
-DX12 audit verifies 20 pages/78 capture hashes/zero invalid entries at 125% DPI;
-PID 12896 is preserved/responsive. Source/manifests/recovery for all intermediate
-batches are retained in UI-FIDELITY.md. Same-head protected-base audit passes,
-not full repository CI, independent review or bundle E2E.
+Map source Linux/MSVC/Clippy/DX12 qualification, 20 pages/78 verified capture
+hashes at 125% DPI and preserved owner PID 12896 are retained in UI-FIDELITY.md.
+Same-head protected-base audit is not full CI, independent review or bundle E2E.
 
 Capability 18 stays unadvertised. The joint ground-speed switch needs an owning
 contract: admitted actor/entity/vitals and step-result codecs expose no effective
