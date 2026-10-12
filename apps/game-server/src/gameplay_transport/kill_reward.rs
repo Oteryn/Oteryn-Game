@@ -801,7 +801,7 @@ fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
             | CombatDeathRewardLootError::Corpse(
                 ItemMintError::Unavailable(_) | ItemMintError::CapacityExceeded
             )
-            | CombatDeathRewardLootError::Mint(ItemMintError::Unavailable(_))
+            | CombatDeathRewardLootError::Mint(ItemMintError::Unavailable(_), _)
     )
 }
 
@@ -810,7 +810,8 @@ fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
 pub(crate) enum CorpseBind {
     /// The projected corpse names the committed corpse Item (or already did).
     Bound,
-    /// The settle committed no corpse, so there is nothing to bind.
+    /// The settle committed no corpse (its plan, capacity or corpse MINT was refused), so there
+    /// is nothing to bind.
     NoCorpse,
     /// The Channel refused the binding; the durable Items are unchanged.
     Refused(CarrierError),
@@ -826,13 +827,16 @@ pub(crate) fn bind_settled_corpse(
     entry: &PendingKillSettlement,
     loot: &Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
 ) -> CorpseBind {
-    let Ok(committed) = loot else {
-        return CorpseBind::NoCorpse;
+    // A loot entry's refused MINT still leaves the corpse committed (D52).
+    let committed = match loot {
+        Ok(loot) => &loot.corpse,
+        Err(CombatDeathRewardLootError::Mint(_, corpse)) => corpse,
+        Err(_) => return CorpseBind::NoCorpse,
     };
     let corpse = &entry.row.corpse_item;
     match runtime.bind_corpse_item(
         entry.target,
-        committed.corpse.item_instance_id,
+        committed.item_instance_id,
         &corpse.family,
         &corpse.production_key,
         &corpse.revision_ref,

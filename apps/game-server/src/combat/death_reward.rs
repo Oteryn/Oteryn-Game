@@ -341,7 +341,8 @@ pub(crate) enum CombatDeathRewardLootError {
     Corpse(ItemMintError),
     /// A loot entry's MINT into the committed corpse was refused; already
     /// committed entries stay committed and the remainder is dropped (D52).
-    Mint(ItemMintError),
+    /// It carries the committed corpse, which still binds to its projection.
+    Mint(ItemMintError, CommittedItemMint),
 }
 
 /// One death's committed corpse and the loot entries minted into it.
@@ -502,8 +503,12 @@ async fn settle_loot(
             placement: CorpseContainerPlacement {
                 corpse_item_instance_id: corpse_mint.item_instance_id,
                 // The preflight bounds `index` by the container capacity.
-                placement_ordinal: u32::try_from(index + 1)
-                    .map_err(|_| CombatDeathRewardLootError::Mint(ItemMintError::InvalidInput))?,
+                placement_ordinal: u32::try_from(index + 1).map_err(|_| {
+                    CombatDeathRewardLootError::Mint(
+                        ItemMintError::InvalidInput,
+                        corpse_mint.clone(),
+                    )
+                })?,
             },
             content_revision: ground.content_revision.clone(),
             ruleset_revision: ground.ruleset_revision.clone(),
@@ -513,12 +518,12 @@ async fn settle_loot(
             .root
             .freeze_corpse_loot_mint(session.authority, session.node, request)
             .await
-            .map_err(CombatDeathRewardLootError::Mint)?;
+            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
         let outcome = session
             .root
             .commit_corpse_loot_mint(permit, session.authority, session.node, &mut candidate)
             .await
-            .map_err(CombatDeathRewardLootError::Mint)?;
+            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
         entries.push(committed(outcome));
     }
     Ok(CommittedCorpseLoot {

@@ -855,6 +855,31 @@ fn no_committed_corpse_binds_nothing() {
 }
 
 #[test]
+fn a_corpse_committed_before_a_refused_loot_entry_still_binds() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    // A later entry's MINT was refused finally; the corpse it went into is committed (D52).
+    let partial = Err(CombatDeathRewardLootError::Mint(
+        ItemMintError::AuthorityRejected,
+        mint(20),
+    ));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &partial),
+        CorpseBind::Bound
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+    // A Retry settle that later commits every entry replays the same corpse.
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+#[test]
 fn a_corpse_of_another_channel_generation_is_refused() {
     let (mut runtime, _) = runtime_with_killed_creature();
     // The entry's actor belongs to another Channel's scope generation (D52).

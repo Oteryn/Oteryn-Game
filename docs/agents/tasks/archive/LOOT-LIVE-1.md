@@ -19,8 +19,10 @@ created_at: 2026-10-12
 updated_at: 2026-10-12
 migration_lease: none
 owned_paths:
+  - apps/game-server/src/combat/death_reward.rs
   - apps/game-server/src/gameplay_transport/kill_reward.rs
   - apps/game-server/src/gameplay_transport/kill_reward_tests.rs
+  - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
   - docs/agents/tasks/active/LOOT-LIVE-1.md
   - docs/agents/tasks/archive/LOOT-LIVE-1.md
 public_contracts: []
@@ -51,6 +53,7 @@ entries through the existing durable TRANSFER.
 - [x] A committed corpse binds to the killed actor's projection, and that binding becomes the domain-1 corpse with the row's corpse definition at the death position (`a_committed_corpse_binds_to_the_killed_actors_projection`).
 - [x] A replayed settle binds the same corpse once (`a_replayed_settle_binds_the_same_corpse_once`).
 - [x] Another Item never rebinds a bound corpse (`another_item_never_rebinds_a_bound_corpse`).
+- [x] A corpse committed before a loot entry's MINT is refused still binds. The refusal (`CombatDeathRewardLootError::Mint`) now carries the committed corpse, and a later Retry that commits every entry rebinds the same corpse without effect (`a_corpse_committed_before_a_refused_loot_entry_still_binds`). On PostgreSQL, a generation-2 replay whose second entry is refused carries the durable corpse of generation 1 (`combat_death_reward_postgres`).
 - [x] A settle with no committed corpse binds nothing (`no_committed_corpse_binds_nothing`).
 - [x] A corpse of another Channel's scope generation is refused (`a_corpse_of_another_channel_generation_is_refused`).
 - [x] A live actor with no projected death is refused (`a_live_actor_without_a_projected_death_is_refused`).
@@ -60,15 +63,15 @@ entries through the existing durable TRANSFER.
 
 - Client UI.
 - Corpse survival across a restart or a generation change (D52, existing behaviour).
-- `combat/death_reward.rs` and `foundation/runtime_actor_carrier.rs`, which are hotspots (#2004, MON-RESPAWN-1).
+- `foundation/runtime_actor_carrier.rs`, a hotspot (#2004, MON-RESPAWN-1). The only `combat/death_reward.rs` change is the corpse carried by the loot `Mint` error (review thread 4246395245).
 - The stale `dead_code` allowances on `bind_corpse_item` and `top_damage_character` stay in place for a follow-up in the carrier's owning lane.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server --quiet --lib -- kill_reward`: pass (29 passed, 0 failed)
-- `cargo test --locked -p oteryn-game-server --quiet --lib -- item_ref_admission item_move corpse death_reward`: pass (72 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --quiet --lib -- kill_reward`: pass (30 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --quiet --lib -- death_reward corpse`: pass (56 passed, 0 failed)
 - `cargo test --locked -p oteryn-game-server --test combat_death_reward_postgres --quiet` (PostgreSQL 17.6): pass (1076 passed, 0 failed)
 - `cargo test --locked -p oteryn-game-server --test corpse_transfer_postgres --quiet` (PostgreSQL 17.6): pass (1039 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
@@ -82,7 +85,7 @@ entries through the existing durable TRANSFER.
 
 - method: the implementing agent read the whole diff against the owned paths and the lock order.
 - material findings: none open.
-- residual risk: a final loot `Mint` error partway through a batch leaves the committed corpse unbound, because that error carries no corpse id. Fixing it means changing `combat/death_reward.rs`, which is a hotspot.
+- review thread 4246395245 (P1, accepted and repaired): a corpse committed before a refused loot entry was never bound. The loot `Mint` error now carries the committed corpse, and `bind_settled_corpse` binds it.
 
 ## Independent review
 
@@ -92,7 +95,7 @@ entries through the existing durable TRANSFER.
 
 - PR: 2008
 - changed-file review: within owned paths
-- unresolved review threads: none
+- review threads: 4246395245 repaired and resolved
 - protected merge: control plane, through Merge Queue
 - merge commit/result: squash merge of #2008
 - source branch closeout: `claude/loot-live-1-20261012` is deleted after the merge
@@ -101,7 +104,7 @@ entries through the existing durable TRANSFER.
 ## Context checkpoint
 
 ```yaml
-last_progress: corpse bind shipped with tests; CI green; record archived
+last_progress: corpse bind shipped with tests; review P1 4246395245 repaired; record archived
 status: completed
 branch: claude/loot-live-1-20261012
 pr: 2008
