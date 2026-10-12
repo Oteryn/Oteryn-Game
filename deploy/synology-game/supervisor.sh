@@ -82,7 +82,7 @@ health() {
     fi
     if [[ -s "$STATE_FILE" ]]; then
       node_line="$({ grep 'event=registered' "$LOG_FILE" || true; } | tail -n 1)"
-      sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$node_line" > "$BASE/run/current-node-id"
+      sed -n 's/.*node_id=\([0-9a-f-]*\).*/\1/p' <<<"$node_line" > "$BASE/run/current-node-id"
       [[ -s "$BASE/run/current-node-id" ]] || { echo "no node id in log" >&2; return 1; }
       echo "health=ok state=$(cat "$STATE_FILE")"
       return 0
@@ -102,9 +102,9 @@ health() {
 registration_gap() {
   [[ -f "$LOG_FILE" ]] || return 0
   local id
-  id="$({ grep 'event=registering' "$LOG_FILE" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+  id="$({ grep 'event=registering' "$LOG_FILE" || true; } | tail -n 1 | sed -n 's/.*node_id=\([0-9a-f-]*\).*/\1/p')"
   [[ -n "$id" ]] || return 0
-  if { grep 'event=registered' "$LOG_FILE" || true; } | grep -qF "node_id=$id "; then return 0; fi
+  if { grep 'event=registered' "$LOG_FILE" || true; } | grep -qE "node_id=$id([^0-9a-f-]|$)"; then return 0; fi
   echo "$id"
   return 1
 }

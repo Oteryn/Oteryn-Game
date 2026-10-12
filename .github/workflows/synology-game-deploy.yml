@@ -314,7 +314,7 @@ jobs:
           fi
           previous=""
           if [[ -f "$BASE/log/node.log" ]]; then
-            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([0-9a-f-]*\).*/\1/p')"
           fi
           if [[ -z "$previous" && -s "$BASE/run/current-node-id" ]]; then
             previous="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
