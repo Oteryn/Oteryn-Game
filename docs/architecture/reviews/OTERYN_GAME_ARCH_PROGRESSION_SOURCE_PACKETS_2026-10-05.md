@@ -708,7 +708,10 @@ validation:
   `no_progression_binding`. A bound session's durable death keeps its pending respawn recorded
   until the respawned actor is placed, and only then consumes it under the death's occurrence.
   Before the placement the session's current durable authority is read fresh, since a replayed
-  death receipt checks none, so a terminal or superseded session moves nothing.
+  death receipt checks none, so a terminal or superseded session moves nothing. The placement
+  then revalidates that authority under the Channel owner's lock, with no I/O: the actor's slot
+  must still be bound to the session, unfenced, with the authorized lease and scope generation,
+  so a session that ends or is superseded while the placement waits for the lock moves nothing.
   The in-session placement is volatile, so the row is consumed in session only when it records
   the cell a fresh admission writes (the admitted entry spawn); a restart after the consumption
   then still places the actor at the recorded respawn. A row recording another cell stays, the

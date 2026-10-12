@@ -48,7 +48,11 @@ defects of the review, then accept with a DEATH-3 waiver (no corpse or loot yet)
    #2004). Any other recorded cell keeps the row and the actor dead for the next admission.
    The session's current durable authority is read fresh before the placement, since a
    replayed death receipt checks none, so a terminal or superseded session moves nothing (second
-   Codex review of #2004).
+   Codex review of #2004). The authorization releases its revision slot before the placement
+   waits for the runtime lock, so the placement revalidates that authority under the lock, with
+   no I/O, against the owner's binding: the slot still bound to the session, no write fence (a
+   terminal release fences first), the authorized lease and scope generation. Otherwise nothing
+   moves, no respawn condition is cleared and the actor stays dead (third Codex review of #2004).
 2. `settle_session_death` respawned an unbound session (no World section, no death policy, a
    context mismatch) with no durable death. It now returns `NoDurableDeath`: the actor stays dead
    and the session end recovers the Character normally.
@@ -65,9 +69,9 @@ defects of the review, then accept with a DEATH-3 waiver (no corpse or loot yet)
 applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants: [one durable death per occurrence, respawn only after a durable death, pending respawn consumed once after placement]
-consumer_boundaries: [settle_player_death, respawn_after_death, settle_released_death, admission consumption]
+consumer_boundaries: [settle_player_death, respawn_after_death authorization, in-session placement under the runtime lock, settle_released_death, admission consumption]
 mutation_operators:
-  applicable: [node restart before placement, replay of the same occurrence, second death over a pending respawn, missing binding, context mismatch]
+  applicable: [node restart before placement, replay of the same occurrence, second death over a pending respawn, missing binding, context mismatch, session fenced terminal between authorization and placement, successor rebind between authorization and placement, authorized lease/Character/scope generation differing from the owner binding]
   considered_not_applicable: [protocol versions (no wire change), migrations (no schema change)]
 one_invariant_per_negative_case: true
 independent_current_fact_sources: [PostgreSQL rows via snapshot()]
@@ -84,6 +88,8 @@ finding_family_sweep:
 - [x] The in-session order is settle, place, consume, refill; a failed step stops the chain.
 - [x] The in-session consumption keeps the row unless a fresh admission reproduces its cell.
 - [x] The in-session order is settle, authorize (fresh durable authority), place, consume, refill.
+- [x] The placement revalidates the authorization under the runtime lock; a session fenced or
+  superseded after the authorization moves nothing and clears no respawn condition.
 
 ## Excluded scope
 
@@ -106,6 +112,9 @@ DEATH-3 corpse and item loss (waived by the owner); durable character position (
 - Codex P1 repair (authorize before placement): fmt and clippy as above: pass;
   `cargo test --locked -p oteryn-game-server --quiet --lib -- gameplay_transport::`: pass (476
   passed, 0 failed); PostgreSQL targets left to CI
+- Codex P1 repair (revalidate at the placement): `rustfmt --check` on the touched files,
+  `python tools/agents/validate_governance.py` and `git diff --check`: pass; no local cargo run
+  in this round (control-plane D1011), so build, clippy and tests are left to CI
 
 ## Self-review
 

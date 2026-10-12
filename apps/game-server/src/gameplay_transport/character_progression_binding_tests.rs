@@ -5,8 +5,9 @@
 
 use super::character_progression_binding::ProgressionUnbound;
 use super::{
-    AdmittedSession, DeathCommit, ProgressionSessions, SessionDeath, SessionProgressionBinding,
-    SettledRespawn, actor_spell, death_commit_refusal, player_death_request, respawn_in_order,
+    AdmittedSession, AuthorizedRespawn, DeathCommit, ProgressionSessions, RespawnConsumption,
+    SessionDeath, SessionProgressionBinding, SettledRespawn, TransitionFence, actor_spell,
+    death_commit_refusal, place_authorized_respawn, player_death_request, respawn_in_order,
     session_progression_binding, settle_session_death, settled_respawn_consumed,
     settled_respawn_disposition,
 };
@@ -17,7 +18,10 @@ use crate::content::character_progression_content::{
 use crate::durability::DurabilityError;
 use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};
 use crate::durability::character_progression::CharacterProgressionError;
-use crate::foundation::{ChannelId, GameSessionId, MovementLocalPosition, WorldId};
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, ExactActorRef,
+    GameSessionId, MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
+};
 use std::cell::{Cell, RefCell};
 use std::sync::Arc;
 
@@ -262,7 +266,7 @@ fn a_session_without_a_death_policy_never_respawns_its_dead_player() {
                     steps.borrow_mut().push("authorize");
                     Some(())
                 },
-                step(&steps, "place", true),
+                |()| step(&steps, "place", true),
                 |()| step(&steps, "consume", true),
                 async {
                     steps.borrow_mut().push("refill");
@@ -299,7 +303,7 @@ fn an_in_session_respawn_authorizes_then_places_then_consumes_then_refills() {
                 steps.borrow_mut().push("authorize");
                 authorized.then_some(())
             },
-            step(&steps, "place", placed),
+            |()| step(&steps, "place", placed),
             |()| step(&steps, "consume", consumed),
             async {
                 steps.borrow_mut().push("refill");
@@ -406,5 +410,169 @@ fn a_settled_respawn_is_consumed_only_when_an_admission_reproduces_it() {
     assert_eq!(
         settled_respawn_disposition(occurrence(1), admission, Some(&row(2, at_admission))),
         SettledRespawn::Gone
+    );
+}
+
+/// A Channel owner under scope ownership generation 1 whose pinned entry start, the respawn
+/// position, is (3, 4, 7), with the player of `session(5)` positioned at (10, 10, 7) and bound to
+/// lease generation 1 of the Character `ID`, as its admission bound it.
+fn respawning_owner() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+    let world = WorldId::decode(&uuid_v7(0x60)).expect("world");
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid_v7(0x61)).expect("channel"),
+        NodeId::decode(&uuid_v7(0x62)).expect("node"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        ChannelContentPin::from_activation(world, 1, [1; 32], [2; 32], [3; 32], [4; 32], (3, 4, 7)),
+    )
+    .expect("runtime");
+    let session = session(5);
+    let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+    let actor = runtime.commit_fresh_session(reservation).expect("commit");
+    runtime
+        .initialize_movement_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 10,
+                y: 10,
+                floor: 7,
+            },
+        )
+        .expect("player position");
+    runtime
+        .bind_attacker_lease(
+            actor,
+            session,
+            CharacterLease::new(CharacterId::decode(&ID).expect("character"), 1).expect("lease"),
+        )
+        .expect("bind lease");
+    (runtime, actor, session)
+}
+
+fn uuid_v7(tag: u8) -> [u8; 16] {
+    [
+        0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
+    ]
+}
+
+/// The authority a fresh durable read of `session(5)` proved current before the placement: lease
+/// generation 1 of the Character `ID` under scope ownership generation 1. Written out from those
+/// facts, never read back from the owner whose binding the placement checks.
+fn authorized() -> AuthorizedRespawn {
+    AuthorizedRespawn {
+        consumption: RespawnConsumption::Consume,
+        character_id: crate::domain::CharacterId::from_bytes(ID).expect("character"),
+        lease_generation: 1,
+        scope_generation: ScopeOwnershipGeneration::new(1).expect("scope generation"),
+    }
+}
+
+/// DEATH-RESTART-SAFETY-1 (third Codex review of #2004): the authorization releases the
+/// Character's revision slot before the placement waits for the runtime lock, so the session can
+/// end or be superseded in that window. The placement revalidates the authorized authority against
+/// the owner's binding under the lock and fails closed: a terminal release that fenced the slot,
+/// a successor rebound to it, or an authorization of another lease generation, Character or scope
+/// ownership generation moves nothing, so no respawn condition is cleared and the actor stays
+/// dead. Each case changes exactly one fact; only the binding the authorization proved is placed.
+#[test]
+fn a_session_ended_between_authorization_and_placement_moves_nothing() {
+    let entry = MovementLocalPosition {
+        x: 3,
+        y: 4,
+        floor: 7,
+    };
+    // A terminal release fenced the slot (CHARM-DESC-FENCE-LEASE step (a)) after the authorizing
+    // read, while the placement waited for the lock.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    TransitionFence::Transition(1)
+        .fence(&mut runtime, actor, session)
+        .expect("release fence");
+    assert!(!place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+    // A release that left the session holding its lease lifts the fence; the same authority
+    // then places the actor at the respawn position.
+    assert_eq!(
+        TransitionFence::Transition(1).lift(&mut runtime, actor, session),
+        Ok(true)
+    );
+    assert!(place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    let placed = runtime.read_actor_position(actor).expect("placed");
+    assert_eq!(placed.position(), entry);
+    assert_eq!(placed.revision(), before.revision() + 1);
+
+    // A successor session took the slot over with a newer lease of the same Character.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    runtime
+        .rebind_player_session(
+            actor,
+            session,
+            self::session(6),
+            CharacterLease::new(CharacterId::decode(&ID).expect("character"), 2).expect("lease"),
+        )
+        .expect("successor rebind");
+    assert!(!place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+
+    // An authorization of authority other than the owner's binding, one fact at a time.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    let mut other_character = ID;
+    other_character[15] = 0x31;
+    for stale in [
+        AuthorizedRespawn {
+            lease_generation: 2,
+            ..authorized()
+        },
+        AuthorizedRespawn {
+            character_id: crate::domain::CharacterId::from_bytes(other_character)
+                .expect("other character"),
+            ..authorized()
+        },
+        AuthorizedRespawn {
+            scope_generation: ScopeOwnershipGeneration::new(2).expect("scope generation"),
+            ..authorized()
+        },
+    ] {
+        assert!(!place_authorized_respawn(
+            &mut runtime,
+            actor,
+            session,
+            &stale
+        ));
+        assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+    }
+    assert!(place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(
+        runtime
+            .read_actor_position(actor)
+            .expect("placed")
+            .position(),
+        entry
     );
 }
