@@ -15,7 +15,8 @@
 //!   `tools/content-schema/native-gameplay/door-item-profiles.json`). `top_source_ids` are the
 //!   top-level entries other than the ground, in payload order.
 //! - **`block_solid`.** A non-walkable ground, or a tile the boot blocks: a `wall` Terrain, an
-//!   Item whose definition is solid or does not say, or a sealed door ([`super::facts::BundleFacts::push`]).
+//!   Item whose definition is solid or does not say (unless the Item key is routed to a `ground`
+//!   Terrain record, or to a `border` the terrain catalogue proves walkable), or a sealed door ([`super::facts::BundleFacts::push`]).
 //! - **`block_projectile`.** A `wall` Terrain, or a top-level Item whose served definition blocks
 //!   projectiles; a definition that does not say blocks (`boot_bundle_items` in `node/serve.rs`).
 //! - **`floor_change`.** A top-level entry with a catalogue `floor_change` fact
