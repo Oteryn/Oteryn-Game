@@ -28,7 +28,7 @@ Governing issue: 1622. The owner decided the new-player start is Thais, Tibia (3
 
 - `content/world/pins/oteryn.json` `entry_start` and `deploy/synology-game/preprod-topology.toml` `[world_bundle] start_x/start_y/start_floor` are (32369, 32238, -7) and equal (pin_check.rs).
 - The `pin()` fixture in `tools/world-bundle-compiler/tests/pin_check.rs` follows the new start.
-- Bundle bytes and digest (`5c32d7ac...4965e7`) and `inputs_digest` are unchanged.
+- Bundle bytes and digest (`5c32d7ac...4965e7`) are unchanged. The pin `inputs_digest` is re-pinned to 0548b5b1...e3e1c, because editing the `pin()` fixture in `pin_check.rs` changes the hash of the tracked inputs.
 - Not changed: the bundle, the node code, any host file.
 
 ## Host follow-up (no host was changed)
