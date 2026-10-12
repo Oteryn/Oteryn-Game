@@ -6,8 +6,9 @@
 use super::character_progression_binding::ProgressionUnbound;
 use super::{
     AdmittedSession, DeathCommit, ProgressionSessions, SessionDeath, SessionProgressionBinding,
-    actor_spell, death_commit_refusal, player_death_request, respawn_in_order,
+    SettledRespawn, actor_spell, death_commit_refusal, player_death_request, respawn_in_order,
     session_progression_binding, settle_session_death, settled_respawn_consumed,
+    settled_respawn_disposition,
 };
 use crate::combat::CreatureDeathRewardInput;
 use crate::content::character_progression_content::{
@@ -338,4 +339,53 @@ fn a_settled_respawn_is_consumed_by_its_own_occurrence_or_already_gone() {
     assert!(settled_respawn_consumed(occurrence(1), Ok::<_, &str>(None)));
     assert!(!settled_respawn_consumed(occurrence(1), row(2)));
     assert!(!settled_respawn_consumed(occurrence(1), Err("consumption")));
+}
+
+/// DEATH-RESTART-SAFETY-1 (Codex review of #2004): the in-session placement is volatile, so a
+/// restart right after the consumption must still land the actor on the recorded respawn. The
+/// row is consumed only when it records the cell a fresh admission writes; a row recording any
+/// other cell, or none that decodes, is kept for the next admission, and a row that is gone or
+/// belongs to another occurrence leaves nothing of this death to consume.
+#[test]
+fn a_settled_respawn_is_consumed_only_when_an_admission_reproduces_it() {
+    let occurrence = |tag: u8| {
+        let mut id = ID;
+        id[15] = tag;
+        PlayerDeathOccurrence::from_bytes(id).expect("occurrence")
+    };
+    let admission = MovementLocalPosition {
+        x: 3,
+        y: 4,
+        floor: 7,
+    };
+    let row = |tag: u8, respawn_position: Vec<u8>| ConsumedRespawn {
+        occurrence: occurrence(tag),
+        respawn_position,
+    };
+    let at_admission = vec![0, 0, 0, 3, 0, 0, 0, 4, 0, 7];
+    let elsewhere = vec![0, 0, 0, 3, 0, 0, 0, 5, 0, 7];
+    assert_eq!(
+        settled_respawn_disposition(
+            occurrence(1),
+            admission,
+            Some(&row(1, at_admission.clone()))
+        ),
+        SettledRespawn::Reproduced
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(1, elsewhere))),
+        SettledRespawn::Kept
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(1, vec![0; 9]))),
+        SettledRespawn::Kept
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, None),
+        SettledRespawn::Gone
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(2, at_admission))),
+        SettledRespawn::Gone
+    );
 }

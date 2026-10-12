@@ -42,7 +42,10 @@ defects of the review, then accept with a DEATH-3 waiver (no corpse or loot yet)
    respawn before the actor was placed. A crash in between lost the recorded respawn. Settlement
    now leaves the row; `respawn_after_death` places the actor, then consumes the row under the
    death's occurrence, then refills the vitals. Any failed step leaves the actor dead and the row
-   recorded for the next admission (DEATH-2b already places before consuming).
+   recorded for the next admission (DEATH-2b already places before consuming). The placement
+   is volatile, so the in-session consumption runs only when the row records the cell a fresh
+   admission writes; a restart after it still lands on the recorded respawn (Codex review of
+   #2004). Any other recorded cell keeps the row and the actor dead for the next admission.
 2. `settle_session_death` respawned an unbound session (no World section, no death policy, a
    context mismatch) with no durable death. It now returns `NoDurableDeath`: the actor stays dead
    and the session end recovers the Character normally.
@@ -76,6 +79,7 @@ finding_family_sweep:
   replay loses experience once, and the consumption runs once.
 - [x] An unbound session never respawns without a durable death.
 - [x] The in-session order is settle, place, consume, refill; a failed step stops the chain.
+- [x] The in-session consumption keeps the row unless a fresh admission reproduces its cell.
 
 ## Excluded scope
 
@@ -91,6 +95,10 @@ DEATH-3 corpse and item loss (waived by the owner); durable character position (
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
+- Codex P1 repair (respawn row kept unless an admission reproduces it): `cargo fmt --all --check`,
+  `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass;
+  `cargo test --locked -p oteryn-game-server --quiet --lib -- gameplay_transport::`: pass (470
+  passed, 0 failed); PostgreSQL targets left to CI
 
 ## Self-review
 

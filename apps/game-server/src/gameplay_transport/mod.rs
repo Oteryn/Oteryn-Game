@@ -834,8 +834,9 @@ where
 /// with the actor still dead, and the next cadence starts again from the settle, which replays
 /// the first receipt. So a restart at any point either finds the pending respawn recorded, and
 /// the next admission places the new actor at the recorded position before consuming it, or
-/// finds it consumed after the placement: the recorded respawn is never lost, and the death
-/// never commits twice.
+/// finds it consumed after the placement, which happens only when a fresh admission writes the
+/// recorded cell itself ([`settled_respawn_disposition`]): the recorded respawn is never lost,
+/// and the death never commits twice.
 async fn respawn_in_order<T>(
     settle: impl std::future::Future<Output = SessionDeath>,
     place: impl std::future::Future<Output = bool>,
@@ -864,6 +865,43 @@ fn settled_respawn_consumed<E>(
         Ok(None) => true,
         Ok(Some(consumed)) => consumed.occurrence == occurrence,
         Err(_) => false,
+    }
+}
+
+/// What the pending respawn row of an in-session respawn allows (DEATH-RESTART-SAFETY-1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SettledRespawn {
+    /// No row of this occurrence is left: an earlier attempt consumed it.
+    Gone,
+    /// The row records the cell a fresh admission writes, so a restart after its consumption
+    /// still places the actor at the recorded respawn: it may be consumed.
+    Reproduced,
+    /// The row records another (or an undecodable) cell. Only the row can bring the actor there
+    /// after a restart, so it stays recorded and the actor stays dead in this session; the next
+    /// admission places it at the recorded cell (DEATH-2b) and consumes the row.
+    Kept,
+}
+
+/// DEATH-RESTART-SAFETY-1: whether the pending respawn of `occurrence`, read before the
+/// in-session consumption, may be consumed. The in-session placement is volatile, so after the
+/// consumption only the next admission's own position can stand in for the recorded respawn: a
+/// fresh admission writes the pinned generation's entry start, which is also
+/// `ChannelRuntimeV1::respawn_position`, the `admission_cell` here. The row is consumed only when
+/// it records exactly that cell; otherwise the durable evidence is kept.
+fn settled_respawn_disposition(
+    occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+    admission_cell: crate::foundation::MovementLocalPosition,
+    pending: Option<&crate::durability::character_death::ConsumedRespawn>,
+) -> SettledRespawn {
+    match pending {
+        Some(pending) if pending.occurrence == occurrence => {
+            if respawn_cell(&pending.respawn_position) == Some(admission_cell) {
+                SettledRespawn::Reproduced
+            } else {
+                SettledRespawn::Kept
+            }
+        }
+        _ => SettledRespawn::Gone,
     }
 }
 
@@ -1278,9 +1316,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// DEATH-RESTART-SAFETY-1: consume the pending respawn of `occurrence` after the actor was
     /// placed at its respawn position, in the Character's revision slot and under the session's
-    /// current fences. `false` (no current fence, a failed cursor read or a failed write) keeps
-    /// the actor dead; the row stays for the next attempt or, after a restart, for the next
-    /// admission.
+    /// current fences, and only when a fresh admission would write the recorded cell itself
+    /// ([`settled_respawn_disposition`]), so a restart after the consumption never loses the
+    /// recorded respawn. `false` (no current fence, a failed cursor read, a failed read or write,
+    /// or a recorded cell no admission reproduces) keeps the actor dead; the row stays for the
+    /// next attempt or, after a restart, for the next admission.
     async fn consume_settled_respawn(
         &self,
         session: GameSessionId,
@@ -1293,17 +1333,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
             return false;
         };
+        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            expected_character_revision,
+            ..fence
+        };
+        let pending = match self
+            .root
+            .pending_respawn(self.character, self.holder, fence)
+            .await
+        {
+            Ok(pending) => pending,
+            Err(error) => {
+                operator_event(&format!("settled_respawn_read_failed reason={error}"));
+                return false;
+            }
+        };
+        let admission_cell = self.runtime.lock().await.respawn_position();
+        match settled_respawn_disposition(occurrence, admission_cell, pending.as_ref()) {
+            SettledRespawn::Gone => return true,
+            SettledRespawn::Kept => {
+                operator_event("settled_respawn_kept reason=not_reproduced_by_admission");
+                return false;
+            }
+            SettledRespawn::Reproduced => {}
+        }
         let consumed = self
             .root
-            .consume_pending_respawn(
-                self.character,
-                self.holder,
-                crate::durability::character_progression::CurrentCharacterGameplayFence {
-                    expected_character_revision,
-                    ..fence
-                },
-                Some(occurrence),
-            )
+            .consume_pending_respawn(self.character, self.holder, fence, Some(occurrence))
             .await;
         if let Err(error) = &consumed {
             operator_event(&format!(

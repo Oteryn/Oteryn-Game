@@ -707,6 +707,10 @@ validation:
   recovers the Character normally (§4.5). Kill XP and Bestiary keep logging
   `no_progression_binding`. A bound session's durable death keeps its pending respawn recorded
   until the respawned actor is placed, and only then consumes it under the death's occurrence.
+  The in-session placement is volatile, so the row is consumed in session only when it records
+  the cell a fresh admission writes (the admitted entry spawn); a restart after the consumption
+  then still places the actor at the recorded respawn. A row recording another cell stays, the
+  actor stays dead until the session ends, and the next admission places it there.
 - **Superseded text.** The phrases "current non-durable respawn path" in §1.2, §1.5 and the
   §2 test list now read "stays dead with no durable write" under this amendment.
 - **Unchanged.** The binding rules, the context-mismatch refusal and its log, and the retry of
