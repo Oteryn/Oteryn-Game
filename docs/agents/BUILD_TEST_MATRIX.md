@@ -47,27 +47,25 @@ The pull-request gate is light: heavy qualification runs once, in the Merge Queu
   inputs or no attributable crate select every workspace crate);
 - aggregate `Merge gate / validate` and final `game-gate`.
 
-Heavy jobs — CodeQL, Rust Linux workspace with registered PostgreSQL targets, Rust Windows
-client/input/SIM, Atlas fullworld, node boot and Server Seam — run on a PR only on demand: add the
-`full-ci` label (for example on a large carrier PR). Their selection below then applies on the PR
-and, once requested, `Merge gate / validate` requires them to succeed. Without the label they are
-`skipped` on the PR and are never required to enter the queue; the Merge Queue `game-gate` runs
-them on the exact synthetic candidate and stays the integration authority. Adding or removing any
-other label re-runs the PR gate in an isolated concurrency group without cancelling a running
-qualification.
+CodeQL, full Linux/PostgreSQL, Windows client/input/SIM and installer lifecycle,
+Atlas fullworld, node boot and Server Seam execute in the Merge Queue on the exact
+synthetic candidate. The PR gate contains no heavyweight jobs or `full-ci` switch.
+All label-only and ordinary metadata edits re-run the exact-head PR gate in an
+isolated concurrency group without cancelling a running qualification; retargets
+still require canonical qualification.
 
-Runtime selection (Merge Queue; on the PR with `full-ci`):
+Fast Rust selection on the PR:
 
-| Proven PR surface | Runtime evidence |
+| Proven PR surface | Fast PR evidence |
 |---|---|
 | Unconsumed auxiliary inputs: neutral docs, agent governance, standalone workflows and non-Cargo offline tooling | no Rust product lanes; always-required governance/security/routing and any dedicated workflow remain |
 | Auxiliary file referenced by exact-candidate Cargo package source/build input | route as the consuming package, then apply normal reverse Cargo closure |
-| Audited Atlas fullworld producer/self-test surface | dedicated Atlas producer/consumer gate; add Rust lanes only if another path selects them |
-| Server-only, including server-consumed auxiliary inputs | Linux workspace + PostgreSQL 17.6 + policy/supply chain |
-| Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
-| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
+| Audited Atlas fullworld producer/self-test surface | always-required fast PR checks and any applicable dedicated workflow; add Rust checks only if another consumer selects them |
+| Server-only, including server-consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
+| Client/shared/simulation, including their consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
 
-Physical server qualification is a separate selection. It runs the node boot and Server Seam qualifications against the real Platform (`Merge gate / Node boot against the real Platform`, `Merge gate / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
+Physical server qualification runs only in Merge Queue. It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
 
 - `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
 - the native entry room Content, its WorldProject/v2 model and its activation;
@@ -77,7 +75,7 @@ Physical server qualification is a separate selection. It runs the node boot and
 - Cargo/toolchain inputs;
 - `merge-gate.yml`.
 
-They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. When selected on a `full-ci` PR, `Merge gate / validate` requires both to succeed; the Merge Queue always applies the same selection.
+They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. Only the Merge Queue runs these physical qualifications, and its `game-gate` requires both to succeed whenever selected.
 
 Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows conservatively attach literal file and directory consumers too. Only explicitly audited routing-only directory predicates registered in the protected classifier may be omitted from consumer attachment; every unregistered or ambiguous workflow directory predicate/reference remains fail-closed/FULL. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
@@ -130,6 +128,7 @@ Current selected Windows evidence includes:
 
 - exact release `oteryn-client` build and strict client Clippy;
 - smoke against that exact release artifact plus synthetic harness;
+- unsigned installer build, install/reinstall, concurrency and uninstall checks using the existing lifecycle script and hash-verified Inno Setup; release identity is derived from the exact MQ SHA before the client build;
 - `oteryn-input-platform` package tests on `x86_64-pc-windows-msvc`;
 - `oteryn-simulation-determinism` golden tests on the same target.
 
@@ -137,17 +136,21 @@ Windows smoke exits before renderer construction; it is shell/package evidence, 
 
 ## Protected-main post-merge
 
-`.github/workflows/rust.yml` runs on protected-main pushes and manual dispatch. Policy and supply chain remain independent; runtime omission is allowed only after successful protected classification.
+`.github/workflows/rust.yml` checks policy/metadata and produces a shared Linux
+compilation cache on protected `main`. Complete auxiliary-only diffs may skip
+cache warming; server/client/control or uncertain inputs select it. Manual
+dispatch on protected main also selects cache warming. No cache job or save is
+allowed on an unprotected ref.
 
-| Protected-main input | Standalone runtime lanes |
-|---|---|
-| Proven unconsumed auxiliary inputs | runtime lanes not applicable; policy/supply chain remain |
-| Proven server-only or server-consumed auxiliary input | Linux + PostgreSQL + policy/supply chain |
-| Client/shared/simulation or their consumed auxiliary inputs | FULL |
-| Cargo/toolchain/build/canonical-routing/unknown/incomplete | FULL |
-| Manual dispatch or classifier/evidence failure | FULL |
+The selected cache producer builds and runs strict Clippy, compiles workspace
+tests with `cargo test --no-run`, then runs bounded synthetic/native smoke before
+trimming and saving the cache. It does not execute the full workspace,
+PostgreSQL or Windows test suites after merge. Supply-chain qualification remains
+in PR/MQ; dedicated workflows retain their accepted checks.
 
-Post-merge routing does not replace PR or Merge Queue qualification and cannot retroactively prove a skipped pre-merge gate.
+Compilation can still be substantial. Cache contents are a build optimization;
+PR/MQ exact-candidate qualification and real merge-group `game-gate` remain the
+integration evidence.
 
 ## Required additions as owning layers appear
 

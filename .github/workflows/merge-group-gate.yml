@@ -360,6 +360,13 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    # The legs together run what one serial job ran: every leg selects whole-workspace targets,
+    # so the resolved features match the protected-main cache and each other, and the job
+    # result that game_gate reads is success only when every leg succeeds.
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]
     steps:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -386,6 +393,7 @@ jobs:
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify policy metadata and formatting
+        if: matrix.shard == 'lint'
         shell: bash
         run: |
           set -euo pipefail
@@ -404,6 +412,7 @@ jobs:
           PY
 
       - name: Verify production dependency closure
+        if: matrix.shard == 'lint'
         shell: bash
         run: |
           set -euo pipefail
@@ -452,13 +461,51 @@ jobs:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
           PY
 
-      - name: Build lint and test workspace
+      - name: Lint workspace and reject duplicated test sources
+        if: matrix.shard == 'lint'
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.95.0 build --locked --workspace --all-targets
           cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
-          cargo +1.95.0 test --locked --workspace
+          cargo +1.95.0 clippy --locked --workspace --all-targets --message-format=json -- -D warnings > "$RUNNER_TEMP/clippy-messages.jsonl"
+          python tools/repository/test_check_duplicate_test_sources.py
+          python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"
+
+      # The two library legs split every library test by name: the filter runs the tests whose
+      # path contains `content::` and `--skip` runs all the others.
+      - name: Test workspace libraries (Content modules)
+        if: matrix.shard == 'lib-content'
+        run: |
+          cargo +1.95.0 test --locked --workspace --lib -- content::
+
+      - name: Test workspace libraries (all other modules)
+        if: matrix.shard == 'lib-rest'
+        run: |
+          cargo +1.95.0 test --locked --workspace --lib -- --skip content::
+
+      - name: Test workspace integration targets
+        if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
+          mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
+          test "${#shard_args[@]}" -gt 0
+          cargo +1.95.0 test --locked --workspace "${shard_args[@]}"
+
+      # Library and integration-test harnesses compile in the test legs; this leg builds the
+      # remaining targets, runs the binary unit tests and doctests, the harness and the smoke.
+      - name: Build workspace binaries and run harness and smoke
+        if: matrix.shard == 'build-smoke'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.95.0 build --locked --workspace --bins --examples --benches
+          cargo +1.95.0 test --locked --workspace --bins
+          cargo +1.95.0 test --locked --workspace --doc
           cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness
           cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
 
@@ -656,6 +703,24 @@ jobs:
         shell: pwsh
         run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
 
+      - name: Derive release identity
+        shell: pwsh
+        env:
+          TARGET_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:TARGET_SHA -cnotmatch '^[0-9a-f]{40}$') {
+            throw "target SHA is not a full lowercase commit id"
+          }
+          $metadata = cargo +1.95.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
+          $version = @($metadata.packages | Where-Object { $_.name -eq 'oteryn-client' })[0].version
+          if (-not $version) {
+            throw "oteryn-client version not found"
+          }
+          "OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV
+          "CLIENT_VERSION=$version" >> $env:GITHUB_ENV
+
       - name: Build lint and smoke production client
         shell: pwsh
         run: |
@@ -672,6 +737,52 @@ jobs:
             throw "release client smoke failed with exit code $LASTEXITCODE"
           }
           cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+
+      - name: Install Inno Setup
+        shell: pwsh
+        env:
+          INNO_SETUP_URL: https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe
+          INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          $directory = Join-Path $env:RUNNER_TEMP 'innosetup'
+          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download
+          $actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:INNO_SETUP_SHA256) {
+            throw "Inno Setup download SHA-256 mismatch: $actual"
+          }
+          $process = Start-Process -FilePath $download -Wait -PassThru -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CURRENTUSER', "/DIR=`"$directory`"")
+          if ($process.ExitCode -ne 0) {
+            throw "Inno Setup install failed with exit code $($process.ExitCode)"
+          }
+          $iscc = Join-Path $directory 'ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
+            throw "ISCC.exe missing: $iscc"
+          }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Build and test unsigned installer
+        shell: pwsh
+        env:
+          TARGET_SHA: ${{ github.event.merge_group.head_sha }}
+        run: >-
+          .\apps\client\installer\ci-installer.ps1
+          -ReleaseId $env:OTERYN_RELEASE_ID
+          -ClientVersion $env:CLIENT_VERSION
+          -GameCommit $env:TARGET_SHA
+          -Iscc $env:ISCC
+          -WorkDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer')
+          -OutputDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer-artifact')
+
+      - name: Upload unsigned installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oteryn-client-${{ env.OTERYN_RELEASE_ID }}-x86_64-unsigned
+          path: ${{ runner.temp }}/oteryn-installer-artifact
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Test Windows input platform
         shell: pwsh

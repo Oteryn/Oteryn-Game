@@ -971,6 +971,18 @@ fn source_relocation_stages_same_slot_with_batch_and_reserves_destination_until_
             .position_occupied_by_other(f.targets[2], destination)
             .unwrap()
     );
+    // The issuer's own reservation is invisible to the other-actor census but not to its own.
+    assert!(
+        !f.runtime
+            .position_occupied_by_other(f.caster, destination)
+            .unwrap()
+    );
+    assert!(
+        f.runtime
+            .reserved_into_by_own_pending(f.caster, destination)
+            .unwrap()
+    );
+    assert!(!f.runtime.reserved_into_by_own_pending(f.caster, p).unwrap());
     drop(staged);
     let staged = f
         .runtime

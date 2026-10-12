@@ -13,6 +13,7 @@ mod item_move;
 mod item_ref_admission;
 mod item_view;
 mod kill_reward;
+mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
 #[allow(
@@ -499,6 +500,7 @@ pub async fn serve_gameplay(
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
+        world_gate: std::sync::Mutex::default(),
         attack: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
@@ -651,6 +653,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    /// The world-interaction admission gate (`WORLD_INTERACTION0` §3.4): a leaf lock, never held
+    /// across another.
+    pub(crate) world_gate: std::sync::Mutex<map_door::WorldActionGate>,
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub(crate) attack: Mutex<attack::ChannelAttackStates>,
@@ -1997,6 +2002,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|candidate| candidate.key.as_str().as_bytes() == placement)
     }
 
+    /// MAP-DOOR-1: one `USE_INTENT` on a door of a bundle World. Under the Channel-owner lock
+    /// that `step` takes, so the actor and every other committed position cannot move between
+    /// the occupancy read and the door's compare-and-swap.
+    async fn use_bundle_door(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &crate::map::boot::BundleMap,
+        target: &world_object::WorldObjectTarget,
+    ) -> UseOutcome {
+        let mut runtime = self.runtime.lock().await;
+        if self.spell_states.lock().await.is_dead(actor) {
+            return UseOutcome::rejected();
+        }
+        // The USE's own GameSession must still be the actor's bound session with no control
+        // loss, read under the same lock as the commit (a stale or superseded session acts on
+        // nothing).
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return UseOutcome::rejected();
+        }
+        // Admission is taken under the owner lock that also covers the commit below, and the
+        // owner pass resets the turn cap under the same lock, so an act is counted in the turn
+        // that commits it and its order is the owner lock's.
+        let admitted = self
+            .world_gate
+            .lock()
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
+        if !admitted {
+            return UseOutcome {
+                disposition: world_object::UseDisposition::Exhausted,
+                committed: None,
+                earned: connection::EarnedNotice::NoneEarned,
+            };
+        }
+        let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
+            return UseOutcome::rejected();
+        };
+        let native = |position: crate::foundation::MovementLocalPosition| {
+            Some(crate::map::overlay::TilePos {
+                x: u16::try_from(position.x).ok()?,
+                y: u16::try_from(position.y).ok()?,
+                floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+            })
+        };
+        let Some(actor_tile) = native(expected.position()) else {
+            return UseOutcome::rejected();
+        };
+        map_door::use_door(
+            &map.overlay,
+            &map.facts,
+            runtime.content_pin().client_artifact_digest(),
+            actor_tile,
+            |door| map_door::doorway_occupied(&runtime, actor, actor_tile, door),
+            target,
+        )
+    }
+
     /// C2: one `USE_INTENT` on the entry chest (USE-WIRE-V1 field 1, #162 5914960502). Reach is
     /// the door's rule (same floor, Chebyshev distance <=1 from the chest's cell), read under
     /// the Channel-owner lock, which is released before the durable MINT so the Channel is
@@ -2217,9 +2282,12 @@ impl BundleMapPosition<'_> {
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
     ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
+        // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
+        // appearance and object revision in this update agree.
+        let facts = self.map.facts.pinned();
         let source = world_map::MapViewSource {
             overlay: &self.map.overlay,
-            facts: &self.map.facts,
+            facts: &facts,
             content_generation: self.content_generation,
             reset_epoch: 0,
         };
@@ -2519,9 +2587,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
             return UseOutcome::rejected();
+        }
+        if let Some(map) = self.bundle_map() {
+            return self
+                .use_bundle_door(actor, command.game_session_id, map, &target)
+                .await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;

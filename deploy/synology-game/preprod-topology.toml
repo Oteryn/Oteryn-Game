@@ -1,19 +1,20 @@
 # Non-secret preproduction topology agreement between Game and Platform
 # (docs/architecture/reviews/OTERYN_GAME_ARCH_PLATFORM_PREPROD_TOPOLOGY_2026-10-06.md, sections 1, 4, 6, 10).
 # It holds no key, no certificate and no address outside the private range. Values in angle brackets are
-# placeholders; a manifest PR fills them from the Platform receipts (rollout step 6). The Game deploy
+# placeholders; the Platform-issued ids, route and channel key are filled (rollout step 6); the Game commit, map
+# digest and bundle path placeholders stay until deploy time. The Game deploy
 # (deploy-ops.sh check-setup) refuses while any placeholder remains and when node.toml, report.toml or
 # scope.env disagree with this file. Root copy: ROOT_BASE/ops/preprod-topology.toml (root, 0644).
 
 [nas]
 # Private LAN address of the Synology host (RFC 1918).
-lan_address = "<NAS_LAN_ADDRESS>"
+lan_address = "192.168.1.2"
 
 [scope]
 # Issued once by the Platform Registry (UUIDv7, lowercase), distinct, permanent (D855).
-world_id = "<WORLD_ID>"
-channel_id = "<CHANNEL_ID>"
-channel_key = "ch1"
+world_id = "01a12cf7-c826-728d-8945-95bf96df3e26"
+channel_id = "01a12cf7-c832-72f0-bb82-109de367acda"
+channel_key = "oteryn-staging-1"
 
 [node]
 # Subject (RFC 4514) of the runtime-status certificate; equals NODE_IDENTITY in scope.env.
@@ -29,16 +30,16 @@ peer_name = "platform-internal.preprod.oteryn.internal"
 
 [route]
 # Descriptor published with game-auth:native-route:publish; version and revision come from its receipt.
-host = "<NAS_LAN_ADDRESS>"
-port = "<GAME_PORT>"
+host = "192.168.1.2"
+port = "7172"
 tls_server_name = "node-1.preprod.oteryn.internal"
-route_version = "<ROUTE_VERSION>"
-route_revision = "<ROUTE_REVISION>"
+route_version = "1"
+route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 
 [readiness]
 # Rendered into node.toml [readiness]. Grammar ^[A-Za-z0-9._:-]{1,64}$.
 source_authority = "oteryn:runtime:synology-preprod"
-route_revision = "<ROUTE_REVISION>"
+route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
@@ -54,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = false
 path = "<BASE>/world/world.otbundle"
-digest = "cd44dc3b5860bd385e0a0fcda749ee372cda5730275d272b422932b52983f255"
+digest = "5c32d7acdb5c41552a8081edbc09b8009a9b52a1b282c254e0b7254e0a4965e7"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "d3-8-cheese-admitted-20261007-r1"

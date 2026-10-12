@@ -90,7 +90,7 @@ Merge rules:
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
 
-Usage: python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles \
+Usage: python promotion_candidates.py --reference-engine out/canary/bundles --crystal out/crystal/bundles \
          --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json \
          --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json \
          --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json \
@@ -937,7 +937,7 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True)
+    parser.add_argument('--reference-engine', required=True)
     parser.add_argument('--crystal', required=True)
     parser.add_argument('--snapshot', required=True)
     parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
@@ -952,7 +952,7 @@ def main():
     if args.tibiopedia_facts and not br_facts_bytes:
         parser.error('--tibiopedia-facts (D13) needs --br-facts (D12)')
     tibiopedia_bytes = Path(args.tibiopedia_facts).read_bytes() if args.tibiopedia_facts else None
-    report = build_report(args.canary, args.crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes,
+    report = build_report(args.reference_engine, args.crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes,
                           args.crystal_supplement)
     Path(args.out).write_text(json.dumps(report, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps(report['totals'], indent=1))

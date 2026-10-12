@@ -1093,7 +1093,7 @@ def main() -> int:
         default=None,
         help="path to CrystalServer's decompressed world.otbm, for the CrystalServer-only cross-check",
     )
-    parser.add_argument("--canary", type=Path, default=None,
+    parser.add_argument("--reference-engine", type=Path, default=None,
                         help="Canary checkout at the pinned revision, for the startup id tables")
     parser.add_argument(
         "--crystalserver-source",
@@ -1163,8 +1163,8 @@ def main() -> int:
     registrations = interaction_registrations(interactions)
     id_index: dict[tuple[str, int], list] = {key: [] for key in registrations}
     startup = {}
-    if args.canary is not None:
-        startup = {key: value for key, value in startup_assignments(args.canary).items() if key in registrations}
+    if args.reference_engine is not None:
+        startup = {key: value for key, value in startup_assignments(args.reference_engine).items() if key in registrations}
         for placements in startup.values():
             wanted.update(p["position"] for p in placements)
     canary_tiles = walk_map(canary_path, wanted, id_index)
@@ -1178,7 +1178,7 @@ def main() -> int:
 
     interactions_report = check_interactions(canary_tiles, id_index, startup)
     resolution = resolve_not_found_interactions(
-        interactions_report["not_found"], args.canary, args.crystalserver_source
+        interactions_report["not_found"], args.reference_engine, args.crystalserver_source
     )
     interactions_report["overlay_maps"] = resolution["overlay_maps"]
     interactions_report["runtime_script_resolution"] = resolution["runtime_script_resolution"]

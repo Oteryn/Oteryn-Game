@@ -26,7 +26,6 @@ use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_a
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
-use crate::ai::ResourceLimit;
 use crate::combat::charm_effects::{
     CharmAssignment, CharmAttackerFacts, CharmCatalogueRead, CharmEvaluationInput, CharmHitSource,
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
@@ -319,7 +318,10 @@ impl ChannelAttackStates {
             Some(index) => index,
             None => {
                 self.prune(runtime);
-                if self.entries.len() >= ResourceLimit::ActiveActors.maximum() {
+                // SPAWN-CEILINGS-1 (Codex 4242381774): one entry per controlled player slot,
+                // which `prune` keeps, so the carrier's slots bound it; the old
+                // `AI01-ACTIVE-ACTORS` 256 refused the 257th player of a Channel built for 500.
+                if self.entries.len() >= runtime.actor_slot_capacity() {
                     return None;
                 }
                 self.entries.push(ActorAttack {

@@ -206,7 +206,16 @@ One hook: `apps/client/installer/sign.ps1 <file>`. Inno Setup calls it through `
 
 ## 7. CI build
 
-Owner direction: extend the `rust_windows` job of `merge-gate.yml`. After the existing release build and `--smoke`, the job:
+CI-placement update, 2026-10-11: the owner's selected option A (execute instruction
+recorded on [coordination Issue #1622](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6113400285), implemented by #1997/#1998) supersedes **only** D854's
+PR-job placement. Installer qualification now belongs to `rust_windows` in
+`.github/workflows/merge-group-gate.yml` on the exact composed candidate. D854's
+unsigned-until-external-alpha/signing gate, release identity, package format,
+installer lifecycle and distribution ownership remain binding.
+
+The MQ job derives `<release_id>` and `game_commit` from
+`github.event.merge_group.head_sha` before compiling the production release client.
+After the release build and `--smoke`, the same installer lifecycle job:
 
 1. installs Inno Setup at a pinned version, verifying the downloaded installer's SHA-256 before running it;
 2. writes `packages.json` (empty `packages`, `game_commit` = the exact checked-out SHA) and the `dev` `client.env` template into the staging directory;
@@ -214,7 +223,14 @@ Owner direction: extend the `rust_windows` job of `merge-gate.yml`. After the ex
 4. silently installs into a temporary per-user directory, runs the installed `releases\<release_id>\oteryn-client.exe --smoke`, checks the layout of section 2.1, reinstalls the same installer (the existing release directory is reused), starts a second silent install while the first holds the transaction mutex and checks that it does not interleave, silently uninstalls, and checks that the install directory is gone and a pre-seeded per-user data directory is untouched;
 5. writes `SHA256SUMS` (installer and `packages.json`) and uploads both with the installer as an Actions artifact (`actions/upload-artifact` pinned by commit SHA, short retention), with `permissions: contents: read` only.
 
-Any failure fails `rust_windows` and therefore `game-gate`. Nothing is made optional, skipped or `continue-on-error`. `merge-gate.yml` is a protected workflow whose blob is pinned by `merge-authority-audit.yml`. Owner decision D854 authorizes that audit rotation for this extension; there is no separate installer workflow.
+Whenever the Windows lane is selected, any installer failure fails `rust_windows`
+and therefore the MQ `game-gate`; no selected installer step is optional or
+`continue-on-error`. Genuinely unselected Windows lanes may be skipped under the
+canonical fail-closed classifier. `merge-group-gate.yml` is protected by the
+approved-blob pin in `merge-authority-audit.yml` and the core repository policy.
+The separate owner-authorized rotation #1997 approves the placement implemented
+by #1998. There is no separate installer workflow. The retired PR placement is
+historical evidence of D854, not the current CI caller.
 
 ## 8. Slicing plan
 
@@ -222,7 +238,7 @@ Each slice is one PR, smallest first. Each runs the checks `CONTEXT_ROUTING.md` 
 
 | Slice | Delivers | Owned paths | Validation |
 | --- | --- | --- | --- |
-| CLIENT-INSTALLER-1 | Unsigned installer artifact from CI: exe, launcher, `dev` `client.env`, empty `packages.json`, `<release_id>` compiled in, staged-rename install, atomic `current.txt` activation, the per-user transaction and client mutexes, uninstall | `apps/client/installer/**`; `apps/client/src/bin/oteryn-launcher.rs` and the `apps/client/Cargo.toml` bin entry; the `<release_id>` constant and `CLIENT_BUILD` in `apps/client/src/lib.rs` and the `OterynClient` mutex in `apps/client/src/main.rs`; `.github/workflows/merge-gate.yml` (`rust_windows` steps only) with the D854 `merge-authority-audit.yml` rotation; task record | `cargo fmt`/`clippy`/`test -p oteryn-client` with launcher tests for a missing, malformed and dangling `current.txt`; `rust_windows` green with the install/smoke/uninstall steps of section 7, including an interrupted-install case that leaves the previous release active, a same-`<release_id>` reinstall that keeps the previous distinct release, a reinstall that repairs a corrupted release directory, a repair that writes `<release_id>~1`, activates it and only then removes the broken directory, a concurrent second installer blocked by the transaction mutex, an uninstall refused while setup holds it, a client start refused while setup holds it, and an install refused while the client holds its mutex; `python tools/repository/validate_repository_policy.py` and matching `tools/repository/test_*.py` |
+| CLIENT-INSTALLER-1 | Unsigned installer artifact from CI: exe, launcher, `dev` `client.env`, empty `packages.json`, `<release_id>` compiled in, staged-rename install, atomic `current.txt` activation, the per-user transaction and client mutexes, uninstall | `apps/client/installer/**`; `apps/client/src/bin/oteryn-launcher.rs` and the `apps/client/Cargo.toml` bin entry; the `<release_id>` constant and `CLIENT_BUILD` in `apps/client/src/lib.rs` and the `OterynClient` mutex in `apps/client/src/main.rs`; `.github/workflows/merge-group-gate.yml` (`rust_windows` steps only), with the owner-authorized audit approval described in section 7; task record | `cargo fmt`/`clippy`/`test -p oteryn-client` with launcher tests for a missing, malformed and dangling `current.txt`; `rust_windows` green with the install/smoke/uninstall steps of section 7, including an interrupted-install case that leaves the previous release active, a same-`<release_id>` reinstall that keeps the previous distinct release, a reinstall that repairs a corrupted release directory, a repair that writes `<release_id>~1`, activates it and only then removes the broken directory, a concurrent second installer blocked by the transaction mutex, an uninstall refused while setup holds it, a client start refused while setup holds it, and an install refused while the client holds its mutex; `python tools/repository/validate_repository_policy.py` and matching `tools/repository/test_*.py` |
 | CLIENT-INSTALLER-2 | Client reads `client.env` (section 2.3 precedence) and verifies `packages.json` (section 4 rule 1) | `apps/client/src/**` | `cargo fmt`, `cargo clippy -p oteryn-client`, `cargo test -p oteryn-client` with precedence, malformed-file, unknown-schema and hash-mismatch cases, and one rejected manifest for each mismatching `release` field; `rust_windows` |
 | CLIENT-INSTALLER-3 | Package-manifest CI check: unlisted files and disallowed provenance fail the build | `apps/client/installer/**` | negative fixtures in the same job |
 | CLIENT-INSTALLER-4 | Before external alpha (D854): signing release job behind a protected environment; `sign.ps1` body for the chosen provider | new release workflow, `apps/client/installer/sign.ps1` | installer, uninstaller, `oteryn-client.exe` and `oteryn-launcher.exe` each verify with `Get-AuthenticodeSignature`, and an unsigned launcher fails the job; a rerun for an already published `<release_id>` publishes and signs nothing; no secret in the repository or PR jobs; needs the provider choice |
@@ -234,7 +250,7 @@ Slice 1 is the playable-first minimum: it turns the existing release build into 
 ## 9. Decisions
 
 1. Code signing (owner, D854): unsigned until external alpha; signing is a required gate before external alpha (section 6, slice 4). The provider is chosen at that gate.
-2. CI placement (owner, D854): extend `rust_windows` in `merge-gate.yml` under an owner-authorized `merge-authority-audit.yml` rotation; no separate installer workflow (section 7).
+2. CI placement: D854 originally extended PR `rust_windows` in `merge-gate.yml`. The owner's option A instruction of 2026-10-11 supersedes that placement with MQ `rust_windows` in `merge-group-gate.yml`, under the separate #1997 owner-authorized audit rotation; no separate installer workflow (section 7).
 3. Channel-pointer endpoint (control plane, D607): Platform hosts it under a cross-repository contract (section 5.1); the updater stays disabled until that contract exists.
 
 ## 10. Deferred

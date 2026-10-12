@@ -34,7 +34,7 @@ python -m pip install -r tools/content-schema/monster-authoring/requirements-pre
 SPELL_SOURCE_ROOT=/workspace/spell-sources python -m unittest discover -s tools/content-schema/monster-authoring -p test_monster_presentation_closure.py -v
 python tools/content-schema/monster-authoring/build_monster_presentation_closure.py \
   --import-root /workspace/spells-r22-monster-import \
-  --canary /workspace/spell-sources/canary --crystal /workspace/spell-sources/crystal \
+  --reference-engine /workspace/spell-sources/canary --crystal /workspace/spell-sources/crystal \
   --output /tmp/monster-presentation-new
 ```
 

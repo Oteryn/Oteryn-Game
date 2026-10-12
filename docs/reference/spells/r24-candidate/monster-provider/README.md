@@ -48,7 +48,7 @@ python tools/content-schema/native-gameplay/build_canonical_monster_profiles.py 
   --creatures docs/reference/spells/r23-candidate/creature-profiles.json \
   --presentations docs/reference/spells/r23-candidate/presentation-profiles.json \
   --spell-appearances docs/reference/spells/r23-candidate/spell-appearances.json \
-  --canary-source /workspace/spell-sources/canary \
+  --reference-engine-source /workspace/spell-sources/canary \
   --bundle-root /workspace/spells-r22-monster-import/converted-bundles \
   --source-root /workspace/spells-r22-monster-import/source-inputs \
   --crystal-fallback --out /tmp/oteryn-r24-monster-provider

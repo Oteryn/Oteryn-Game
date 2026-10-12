@@ -144,7 +144,7 @@ python tibiopedia_spells.py fetch --cache <dir>
 python tibiopedia_spells.py facts --cache <dir> --out samples/tibiopedia-spell-facts-2026-09-28.json
 python verify_spells.py --bundles <convert_spells --out dir> --out samples/spell-verify-3-sources-2026-09-28.json
 python vocation_vitals.py fetch --cache <dir>
-python vocation_vitals.py build --cache <dir> --canary <canary@99902524> --crystal <crystalserver@ff7ede5> \
+python vocation_vitals.py build --cache <dir> --reference-engine <canary@99902524> --crystal <crystalserver@ff7ede5> \
     --out samples/vocation-vitals-candidate-2026-09-28.json
 # BR: download the spell-wiki-br-<sha> artifact of spell-wiki-capture.yml, then
 python wiki_spells.py br-facts --artifact wiki-spell-infoboxes-br.json --out samples/wiki-spell-facts-br-2026-09-27.json
