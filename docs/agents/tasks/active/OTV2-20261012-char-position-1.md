@@ -123,73 +123,50 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
 
 ## Review round 2 (Codex, head eef64dc5)
 
-- P1 4248014751 (admission playable after a failed last-position read): accepted and fixed.
-  `restore_last_position` returns whether the placement was decided from a successful read;
-  a failed read or a failed placement makes `consume_admitted_respawn` return `false`, so the
-  first entry is `RefusedByChannel` (not input-eligible), the session stays untracked and
-  nothing is written.
-- P1 4248014759 (sequential write pass can exceed 300 s under load): accepted and fixed. The
-  pass captures each batch first, then reads the batch's fences in one root pass and writes the
-  batch in one transaction, so its durability work no longer grows with one pass per session.
-  The bound (`MAX_WRITE_PASS`, `MAX_WRITE_LAG`) is asserted at compile time and by the unit test
-  `a_pass_of_every_admitted_session_fits_in_the_slack`. A storage error fails the whole batch,
-  which stays due.
-- Validation of this round: `cargo` was not run locally (lead directive D1011); `rustfmt
-  --check` on the changed Rust files, `python tools/agents/validate_governance.py`, `python -m
-  unittest discover -s tools/agents/tests` and `git diff --check` ran locally; fmt, clippy and the
-  tests are left to CI.
+- P1 4248014751 (admission playable after a failed last-position read): fixed. A failed read
+  or placement makes `consume_admitted_respawn` return `false`: the first entry is
+  `RefusedByChannel`, the session stays untracked and nothing is written.
+- P1 4248014759 (sequential write pass can exceed 300 s under load): fixed. Each batch is
+  captured, its fences read in one root pass and written in one transaction; the bound
+  (`MAX_WRITE_PASS`, `MAX_WRITE_LAG`) is asserted at compile time and by a unit test. A storage
+  error fails the whole batch, which stays due.
 
 ## Review round 3 (Codex, head e9fce464)
 
-- P1 4248578094 (writer bound by connections, not tracked sessions): accepted and fixed. A track
-  outlives its socket, so the bound is now `MAX_TRACKED_SESSIONS` (the 500 player slots the
-  carrier reserves, D128), not the 256-connection limit. The batch grows to 64, so a pass of every
-  tracked session is still 8 batches (32 s) and `MAX_WRITE_LAG` 37 s, within the 60 s slack; the
-  compile-time asserts and `a_pass_of_every_tracked_session_fits_in_the_slack` hold.
+- P1 4248578094 (writer bound by connections, not tracked sessions): fixed. The bound is
+  `MAX_TRACKED_SESSIONS` (the 500 player slots, D128); batch 64, so a full pass is 8 batches
+  (32 s) and `MAX_WRITE_LAG` 37 s, within the 60 s slack.
 - P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (shutdown flush
   timeout bound): deferred to follow-up CHAR-POSITION-2 per D282.
 
 ## Merge with main after #2004 (DEATH-RESTART-SAFETY-1, 7cced55e7)
 
-- Conflict in `character_death.rs`: main's side taken. The death commit no longer consumes its
-  respawn, so `settle_player_death_respawned` is removed and `commit_death` calls
-  `settle_player_death` again.
-- The CHAR-POSITION-0 §3.3 step 1 guarantee moves to main's new path:
-  `place_and_consume_pending_respawn_placed` shares the body of
-  `place_and_consume_pending_respawn` and, under the same fence and in the same transaction,
-  upserts the placed cell after the row of the occurrence is deleted (only when the placement
-  returned `true` and the delete removed the row), with the World and nonzero-sequence checks of
-  `consume_pending_respawn_placed` (shared `validate_placed`, refused before `place` runs).
-  `place_and_consume_settled_respawn` passes the respawn cell's record, taken after the death,
-  and the placement refuses a cell other than that record. The admission path
-  (`consume_pending_respawn_placed`) is unchanged.
-- Validation of this merge: `cargo` was not run locally (D1011); `rustfmt --check` on the changed
-  Rust files, `python3 tools/agents/validate_governance.py`, the `tools/agents/tests` unit tests
-  and `git diff --check` ran locally; compile, clippy and the tests are left to the CP and CI.
+- `character_death.rs` conflict: main's side taken; `commit_death` calls `settle_player_death`.
+- §3.3 step 1 moves to main's path: `place_and_consume_pending_respawn_placed` upserts the
+  placed cell in the fenced transaction that places the actor and deletes the respawn row (only
+  when both happened), with the checks of `consume_pending_respawn_placed` (`validate_placed`).
+  `place_and_consume_settled_respawn` refuses a cell other than the respawn cell's record.
 
 ## Review round 4 (Codex, head ecebaf1b)
 
-- P1 4249667405 (saved cell restored only after the first-entry owners ran): accepted and
-  fixed. `initialize_first_entry` now reads the durable position (`read_admission_position`: a
-  pending respawn, else the last position) under the admission's session fence before the
-  Channel-owner lock, and the owner step initializes the actor and places it at the decided cell
-  in the same step (`initialize_admitted_position`, `initialize_first_entry_at`), before the
-  lock is released and before party presence and the familiar's login placement. The house
-  tile, World and frame checks go straight to `entry_start` as before; an occupied or blocked
-  cell uses the NPC-0 §6.1 fallback, else `entry_start`. A failed read leaves the actor
-  unpositioned (not playable). After the progression step, `consume_admitted_respawn` consumes
-  the respawn the first entry already placed (it places only a respawn the first entry did not
-  see), or tracks the session from the stored cell (`track_restored`, which replaces
-  `restore_last_position`); an entry placed for a respawn that is no longer pending is not
-  playable.
-- New unit tests in `gameplay_transport/last_position.rs`:
+- P1 4249667405 (saved cell restored only after the first-entry owners ran): fixed.
+  `initialize_first_entry` reads the durable position (`read_admission_position`: a pending
+  respawn, else the last position) under the session fence before the Channel-owner lock; the
+  owner step initializes the actor and places it at that cell in one step
+  (`initialize_admitted_position`, `initialize_first_entry_at`), before party presence and the
+  familiar's login placement run. House tile, World and frame checks still go to `entry_start`;
+  a blocked or occupied cell uses the NPC-0 §6.1 fallback. A failed read leaves the actor
+  unpositioned. `consume_admitted_respawn` then consumes the respawn already placed (placing
+  only one the first entry did not see) or tracks the stored cell (`track_restored`, replacing
+  `restore_last_position`). New unit tests in `gameplay_transport/last_position.rs`:
   `the_saved_cell_replaces_the_entry_start_in_the_first_entry_step`,
   `a_blocked_saved_cell_uses_the_radius_fallback_then_the_entry_start`,
   `a_house_tile_another_frame_or_no_row_enters_at_the_entry_start`,
   `a_pending_respawn_is_the_first_entry_input`.
-- Validation of this round: `cargo` was not run locally (D1011); `rustfmt --check` on the changed
-  Rust files, `python3 tools/agents/validate_governance.py`, the `tools/agents/tests` unit tests
-  and `git diff --check` ran locally; compile, clippy and the tests are left to CI.
+
+Rounds 2 to 4 and the merge: `cargo` was not run locally (D1011); `rustfmt --check` on the
+changed Rust files, `validate_governance.py`, the `tools/agents/tests` unit tests and `git diff
+--check` ran locally; compile, clippy and the tests are left to CI.
 
 ## Open questions
 
