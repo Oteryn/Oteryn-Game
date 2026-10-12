@@ -19,6 +19,7 @@
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
+use super::character_last_position::{FinalLastPosition, LastPositionKey, upsert_last_position};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ProgressionInitializationRequest,
     assert_gameplay_fence, numeric_u64, policy_digest, state_matches_root, stored_context_matches,
@@ -416,7 +417,29 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: Option<PlayerDeathOccurrence>,
     ) -> Result<Option<ConsumedRespawn>> {
-        self.pending_respawn_under_fence(authority, node, fence, occurrence, true)
+        self.pending_respawn_under_fence(authority, node, fence, occurrence, true, None)
+            .await
+    }
+
+    /// CHAR-POSITION-0 §3.3 step 1: [`Self::consume_pending_respawn`] for an admission that
+    /// placed the actor at `placed`. The same transaction upserts the Character's last position
+    /// with the placed cell under the admitted session's lease key and `write_sequence`, so a
+    /// crash right after placement never puts the Character back at its death cell. The upsert
+    /// runs only when the respawn was deleted.
+    pub async fn consume_pending_respawn_placed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: Option<PlayerDeathOccurrence>,
+        placed: FinalLastPosition,
+    ) -> Result<Option<ConsumedRespawn>> {
+        match fence.runtime_scope {
+            RuntimeScopeRefV1::Channel { world_id, .. }
+                if world_id == placed.record.world_id && placed.write_sequence != 0 => {}
+            _ => return Err(CharacterProgressionError::InvalidInput),
+        }
+        self.pending_respawn_under_fence(authority, node, fence, occurrence, true, Some(placed))
             .await
     }
 
@@ -430,7 +453,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<ConsumedRespawn>> {
-        self.pending_respawn_under_fence(authority, node, fence, None, false)
+        self.pending_respawn_under_fence(authority, node, fence, None, false, None)
             .await
     }
 
@@ -441,6 +464,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: Option<PlayerDeathOccurrence>,
         consume: bool,
+        placed: Option<FinalLastPosition>,
     ) -> Result<Option<ConsumedRespawn>> {
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -489,6 +513,19 @@ impl DurabilityRoot {
                             })
                         }
                     };
+                    if let (Some(placed), Some(_)) = (placed, &consumed) {
+                        let key = LastPositionKey {
+                            character_lease_generation: fence.character_lease_generation,
+                            write_sequence: placed.write_sequence,
+                        };
+                        upsert_last_position(
+                            &mut tx,
+                            fence.character_id.as_bytes(),
+                            key,
+                            &placed.record,
+                        )
+                        .await?;
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(consumed))
                 })

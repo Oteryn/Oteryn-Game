@@ -21,6 +21,7 @@ pub mod character_familiar;
 pub mod character_forge_dust;
 pub mod character_forge_dust_audit;
 pub mod character_inbox;
+pub mod character_last_position;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
@@ -98,6 +99,30 @@ mod account_achievement_linkage {
         let _ = FencedGrantingCharacter::after_fence;
         let _ = record_achievement_grant;
         let _ = DurabilityRoot::commit_test_achievement_grants;
+    }
+}
+
+#[cfg(test)]
+mod character_last_position_linkage {
+    use super::DurabilityRoot;
+    use super::character_last_position::{
+        FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionRecord,
+        LastPositionWrite, StoredLastPosition,
+    };
+    use super::fresh_admission::FreshAdmissionStore;
+
+    #[test]
+    fn character_last_position_api_is_linked() {
+        let _ = std::mem::size_of::<FinalLastPosition>();
+        let _ = std::mem::size_of::<LastPositionCell>();
+        let _ = std::mem::size_of::<LastPositionKey>();
+        let _ = std::mem::size_of::<LastPositionRecord>();
+        let _ = std::mem::size_of::<LastPositionWrite>();
+        let _ = std::mem::size_of::<StoredLastPosition>();
+        let _ = DurabilityRoot::write_character_last_position;
+        let _ = DurabilityRoot::read_character_last_position;
+        let _ = DurabilityRoot::consume_pending_respawn_placed;
+        let _ = FreshAdmissionStore::with_final_position;
     }
 }
 

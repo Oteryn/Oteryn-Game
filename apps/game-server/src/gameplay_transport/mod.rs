@@ -16,6 +16,8 @@ mod item_move;
 mod item_ref_admission;
 mod item_view;
 mod kill_reward;
+mod last_position;
+pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
@@ -399,6 +401,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
     pub(crate) quest_catalogue:
         &'a std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+    /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
+    /// caller never withdraws readiness through it.
+    pub(crate) last_position_flush: Option<&'a LastPositionFlush>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -519,6 +524,7 @@ pub async fn serve_gameplay(
             .map(std::sync::Arc::new),
         wheel_sessions: std::sync::Mutex::default(),
         progression_sessions: std::sync::Mutex::default(),
+        last_positions: last_position::LastPositions::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -541,6 +547,8 @@ pub async fn serve_gameplay(
                 std::future::pending::<()>().await;
             }
             authority.refresh_due_quest_sessions().await;
+            // CHAR-POSITION-0 §3.2: the periodic last-position write rides the same cadence.
+            authority.write_due_last_positions(false).await;
         }
     };
     let serving = first(
@@ -557,9 +565,20 @@ pub async fn serve_gameplay(
     );
     let mut serving = pin!(serving);
     let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
+    // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
+    let mut flush = pin!(async {
+        match owners.last_position_flush {
+            Some(flush) => flush.serve(&authority).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
+    let mut flush_done = false;
     poll_fn(|context| {
+        if !flush_done && flush.as_mut().poll(context).is_ready() {
+            flush_done = true;
+        }
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -702,6 +721,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// (`settle_session_death`), which leaves the session unbound. An unbound session has no
     /// entry. Never held across an await.
     pub(crate) progression_sessions: ProgressionSessions,
+    /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
+    /// sequence generator (CHAR-POSITION-0 §3.2).
+    pub(crate) last_positions: last_position::LastPositions,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -1297,7 +1319,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(pending)) => pending,
-            Ok(None) => return true,
+            Ok(None) => {
+                // CHAR-POSITION-0 §3.3 steps 3 and 4: no pending respawn, so the last position.
+                drop(slot);
+                self.restore_last_position(session, actor, fence).await;
+                return true;
+            }
             Err(error) => {
                 operator_event(&format!("pending_respawn_read_failed reason={error}"));
                 return false;
@@ -1310,10 +1337,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("pending_respawn_placement_failed");
             return false;
         }
-        let consumed = self
-            .root
-            .consume_pending_respawn(self.character, self.holder, fence, Some(pending.occurrence))
-            .await;
+        // CHAR-POSITION-0 §3.3: the consumption upserts the placed cell as the last position, in
+        // the same transaction, under the new lease's key.
+        let placed = self.respawn_last_position(actor).await;
+        let consumed = match placed {
+            Some(placed) => {
+                let consumed = self
+                    .root
+                    .consume_pending_respawn_placed(
+                        self.character,
+                        self.holder,
+                        fence,
+                        Some(pending.occurrence),
+                        placed,
+                    )
+                    .await;
+                if matches!(&consumed, Ok(Some(consumed)) if consumed.occurrence == pending.occurrence)
+                {
+                    self.track_respawned(session, actor, &placed);
+                }
+                consumed
+            }
+            None => {
+                self.root
+                    .consume_pending_respawn(
+                        self.character,
+                        self.holder,
+                        fence,
+                        Some(pending.occurrence),
+                    )
+                    .await
+            }
+        };
         if let Err(error) = &consumed {
             operator_event(&format!(
                 "pending_respawn_consumption_failed reason={error}"
@@ -1738,7 +1793,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 KillRelease::Send(mark) => mark,
                 KillRelease::Deferred => return GraceExpiryResult::Unknown,
             };
-            let pause = match store.release_expired_loss(session, &account_id).await {
+            // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
+            let pause = match self
+                .final_position_store(&store, session, actor)
+                .await
+                .release_expired_loss(session, &account_id)
+                .await
+            {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
@@ -1858,6 +1919,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.fence_holders.forget(session);
                 self.forget_quest_session(session);
                 self.forget_progression_session(session);
+                self.last_positions.forget(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -2022,14 +2084,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
             };
+            // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
+            let releasing = self.final_position_store(&store, session, actor).await;
             let outcome = match release {
                 TerminalRelease::Abandoned(transport) => {
-                    store
+                    releasing
                         .release_abandoned_session(session, &account_id, transport)
                         .await
                 }
                 TerminalRelease::CapabilityMismatch(epoch) => {
-                    store
+                    releasing
                         .release_capability_mismatch(session, &account_id, epoch)
                         .await
                 }

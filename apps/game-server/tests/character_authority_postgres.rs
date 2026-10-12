@@ -2324,6 +2324,9 @@ mod character_build_postgres_cases;
 #[path = "support/character_stance_writer_postgres_cases.rs"]
 mod character_stance_writer_postgres_cases;
 
+#[path = "support/character_last_position_postgres_cases.rs"]
+mod character_last_position_postgres_cases;
+
 #[path = "support/character_familiar_writer_postgres_cases.rs"]
 mod character_familiar_writer_postgres_cases;
 
