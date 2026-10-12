@@ -38,10 +38,17 @@ coordination #1622, CP decisions D607 and D968.
 
 - A fresh admission whose first entry is positioned or reconciled runs the progression step
   before the pending-respawn consumption: the policy is formed from the World's pinned
-  `CharacterProgressionContent` with the root's current interpretation
-  (`read_current_character_interpretation`), the progression row is read under the session's
+  `CharacterProgressionContent` with the revisions stored on the Character root
+  (`read_character_root_interpretation`), the progression row is read under the session's
   gameplay fence, and a new Character (root revision 1) is initialized with the same request in
   up to `RECONCILE_ATTEMPTS` rounds.
+- A root whose interpretation is no longer the newest global one (a newer interpretation was
+  configured after the Character was created) is decided `progression_context_mismatch`: the
+  gameplay fence of every durable progression write refuses that root (§0.2), so the session is
+  left unbound and its deaths respawn non-durably instead of retrying a death write that can
+  never commit. Known limit: an interpretation configured while a bound session is live makes
+  that session's later durable death writes refuse with `ProgressionContextMismatch` and retry;
+  sessions are not re-decided mid-session (§1.5 decides at admission).
 - A bound session keeps an `Arc<SessionProgressionBinding>` in the seam's session map, removed
   only in `retire`, so a resume reuses it. `AdmittedSession` is unchanged.
 - An unbound session logs `progression_unbound reason=...` once; its deaths respawn non-durably
@@ -65,8 +72,9 @@ unchanged), migrations, and `durability/character_progression.rs` are unchanged.
 - PostgreSQL (`character_progression_admission_postgres_cases`, a child of the shared P03 cases,
   so `character_authority_postgres` runs it in CI): a new Character binds, is initialized with the
   stored eight values and its death commits and replays under the binding; a matching row binds
-  with no initializer call; a missing row past revision 1, a stale row, a changed table and a
-  changed death policy each decide without a write; a failed round retries; a lost
+  with no initializer call; a missing row past revision 1, a stale row, a changed table, a
+  changed death policy and a global interpretation advanced past the root each decide without a
+  write, and the advanced root's death is refused by the durable writer on every attempt; a failed round retries; a lost
   acknowledgement reconciles; rounds that all fail leave no row and a later admission
   initializes.
 - Unit: unbound reason names, the binding's revisions, the death request formed from the

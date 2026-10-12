@@ -77,8 +77,12 @@ enum Round<const N: usize> {
 /// current gameplay fence: `Ok(None)` when the session is proven terminal, `Err` when a read
 /// failed. The request is formed once, from the profile, ruleset and content revisions stored on
 /// the fenced Character's own root (never the newest global interpretation, which may have
-/// advanced since the Character was created), and every round sends it unchanged, so a round whose initialization committed with its acknowledgement lost is
-/// reconciled by the next round's `AlreadyInitialized`.
+/// advanced since the Character was created), and every round sends it unchanged, so a round
+/// whose initialization committed with its acknowledgement lost is reconciled by the next
+/// round's `AlreadyInitialized`. A root whose interpretation is no longer the newest global one
+/// is decided `ContextMismatch` in the round that reads it: the gameplay fence of every durable
+/// progression write refuses it (§0.2), so a binding would leave each death of the session
+/// retrying a write that can never commit.
 pub(crate) async fn bind_character_progression<const N: usize, P, F, Fut>(
     durable: ProgressionDurable<'_, '_, '_>,
     policy_for: P,
@@ -102,14 +106,17 @@ where
             }
             Err(()) => continue,
         };
+        let Ok(interpretation) = durable
+            .root
+            .read_character_root_interpretation(durable.character, current_fence.character_id)
+            .await
+        else {
+            continue;
+        };
+        let Some(interpretation) = interpretation else {
+            return ProgressionBinding::Unbound(ProgressionUnbound::ContextMismatch);
+        };
         if request.is_none() {
-            let Ok(interpretation) = durable
-                .root
-                .read_character_root_interpretation(durable.character, current_fence.character_id)
-                .await
-            else {
-                continue;
-            };
             let [profile, ruleset, content, _] = interpretation.revisions();
             let Some(policy) = policy_for(profile, ruleset, content) else {
                 return ProgressionBinding::Unbound(ProgressionUnbound::ContextMismatch);

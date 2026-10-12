@@ -6,7 +6,9 @@
 use super::{Harness, TestResult, configured_admin, context, fence, id};
 use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
 use crate::durability::character_death::{CharacterDeathRequest, DeathCell, PlayerDeathOccurrence};
-use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence,
+};
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
@@ -305,11 +307,14 @@ fn unbindable_rows_and_missing_rows_past_revision_one_decide_without_a_write() -
     })
 }
 
-/// The binding is formed from the Character root's stored revisions (§1.3): a global
-/// interpretation configured after the Character was created does not reach an existing
-/// Character's binding, so its matching row still binds.
+/// The binding is formed from the Character root's stored revisions (§1.3), and only while the
+/// root's interpretation is the newest global one (§0.2): once a newer interpretation is
+/// configured after the Character was created, the gameplay fence of every durable progression
+/// write refuses the root with `ProgressionContextMismatch`, so a later admission of the same
+/// matching row is decided `ContextMismatch` with no policy formed, no initializer call and no
+/// write, instead of a binding whose deaths could never settle.
 #[test]
-fn a_global_interpretation_advanced_after_creation_still_binds_the_root() -> TestResult {
+fn a_global_interpretation_advanced_after_creation_unbinds_the_root() -> TestResult {
     run(|admin| {
         Box::pin(async move {
             let harness = Harness::create(admin, "prog_admit_advanced", false).await?;
@@ -346,12 +351,80 @@ fn a_global_interpretation_advanced_after_creation_still_binds_the_root() -> Tes
                 Vec::new(),
             )
             .await;
+            assert!(read.into_inner().is_empty());
             assert_eq!(
-                read.into_inner(),
-                vec![["profile-1", "ruleset-1", "content-1"].map(str::to_owned)]
+                binding,
+                ProgressionBinding::Unbound(ProgressionUnbound::ContextMismatch)
             );
-            assert_eq!(binding, ProgressionBinding::Bound(Box::new(bound)));
             assert_eq!(calls, 0);
+            assert_eq!(row(&harness.pool).await?.as_deref(), Some(INITIALIZED));
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// The death path of that scenario terminates (§1.5): the root-pinned binding's death is
+/// refused by the durable writer with `ProgressionContextMismatch` on every attempt, so a
+/// session bound to it would keep its actor dead and retry for ever. The step leaves the
+/// session unbound instead, whose death `settle_death` settles at once on the non-durable
+/// respawn path without this write; the refused attempts commit nothing.
+#[test]
+fn an_unbound_advanced_root_never_leaves_its_death_retrying() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = Harness::create(admin, "prog_admit_advanced_death", false).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let (binding, _) = bind(&harness, &authority, pinned, 1, Vec::new()).await;
+            let bound = policy("profile-1", "ruleset-1", "content-1");
+            assert_eq!(binding, ProgressionBinding::Bound(Box::new(bound.clone())));
+            sqlx::query(
+                "INSERT INTO game_character_interpretations VALUES \
+                 (2,'profile-2','ruleset-2','content-2','starter-2',2)",
+            )
+            .execute(&harness.pool)
+            .await?;
+
+            let sequencer = CharacterRevisionSequencer::new();
+            for _ in 0..ROUNDS.attempts {
+                let refused = harness
+                    .root
+                    .settle_player_death(
+                        &sequencer,
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        death(&bound)?,
+                    )
+                    .await;
+                assert!(
+                    matches!(
+                        refused,
+                        Err(CharacterProgressionError::ProgressionContextMismatch)
+                    ),
+                    "{refused:?}"
+                );
+            }
+            let (binding, calls) = bind(&harness, &authority, pinned, 1, Vec::new()).await;
+            assert_eq!(
+                binding,
+                ProgressionBinding::Unbound(ProgressionUnbound::ContextMismatch)
+            );
+            assert_eq!(calls, 0);
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_death_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 0);
             assert_eq!(row(&harness.pool).await?.as_deref(), Some(INITIALIZED));
             drop(authority);
             drop(seal);
