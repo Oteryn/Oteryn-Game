@@ -552,6 +552,41 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
     ) -> Result<CommittedCharacterDeath> {
+        self.settle_player_death_at(sequencer, authority, node, fence, request, None)
+            .await
+    }
+
+    /// CHAR-POSITION-0 §3.2-§3.3 with DEATH-2: [`Self::settle_player_death`] whose consumption
+    /// of the death's own respawn upserts `respawn`, the cell the caller places the actor at,
+    /// as the Character's last position in the same transaction. A crash after the settlement
+    /// therefore never restores the position from before the death.
+    pub async fn settle_player_death_respawned<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        respawn: FinalLastPosition,
+    ) -> Result<CommittedCharacterDeath> {
+        match fence.runtime_scope {
+            RuntimeScopeRefV1::Channel { world_id, .. }
+                if world_id == respawn.record.world_id && respawn.write_sequence != 0 => {}
+            _ => return Err(CharacterProgressionError::InvalidInput),
+        }
+        self.settle_player_death_at(sequencer, authority, node, fence, request, Some(respawn))
+            .await
+    }
+
+    async fn settle_player_death_at<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        respawn: Option<FinalLastPosition>,
+    ) -> Result<CommittedCharacterDeath> {
         let occurrence = request.occurrence;
         let mut slot = sequencer.acquire(fence.character_id).await;
         let original = self
@@ -604,7 +639,7 @@ impl DurabilityRoot {
         let (CharacterDeathOutcome::Committed(committed)
         | CharacterDeathOutcome::AlreadyCommitted(committed)) = outcome;
         let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
-        self.consume_pending_respawn(
+        self.pending_respawn_under_fence(
             authority,
             node,
             CurrentCharacterGameplayFence {
@@ -612,6 +647,8 @@ impl DurabilityRoot {
                 ..fence
             },
             Some(occurrence),
+            true,
+            respawn,
         )
         .await?;
         Ok(committed)

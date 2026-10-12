@@ -39,12 +39,13 @@ public_contracts: []
 depends_on: ["DEATH-2b (#1747)"]
 external_repositories: []
 blocked:
-  - "HP/mana persistence: no accepted contract decides it (see Open questions)"
+  - "HP/mana persistence: CP decision 1a, a separate contract and follow-up packet, not this PR"
 ```
 
 ## Outcome
 
-Position only, per CHAR-POSITION-0 (still CANDIDATE at this base):
+Position only, per CHAR-POSITION-0 (still CANDIDATE at this base; CP decision 2a: the control
+plane accepts it in a separate docs PR, and this PR's code does not wait for it):
 
 - §3.1 storage, migration `0080`: `game_character_last_positions`, one row per Character, never
   deleted. Guards: the row's World is the Character root's World; an UPDATE must keep Character
@@ -53,16 +54,22 @@ Position only, per CHAR-POSITION-0 (still CANDIDATE at this base):
 - §3.2 writes, under the session fence only (no root lock), applied only when the key is greater:
   - final write inside the terminal fresh-admission release, before `session_state = 3`, for
     logout, grace expiry, abandonment and capability mismatch;
-  - periodic write of a changed cell, at most every 300 s (`CHARPOS0-RL-01`), from the gameplay
-    owner cadence; an unchanged cell writes nothing;
+  - periodic write of a changed cell, at most every 300 s (`CHARPOS0-RL-01`), from its own writer
+    loop: it wakes at the earliest absolute deadline, measured from the capture the row holds, with
+    60 s left for the pass, most overdue first; a later capture is reported; an unchanged cell
+    writes nothing;
+  - a live death's settlement upserts the respawn cell with the respawn's consumption, in one
+    transaction (`settle_player_death_respawned`); a dead actor is never captured;
   - node shutdown flushes every tracked session before readiness is withdrawn (3 s of the 10 s
-    shutdown budget);
+    shutdown budget); failed writes are retried and the flush is done only when none failed;
   - nothing is written while a pending respawn exists (`PendingObligation`) or in an instance
     scope.
 - §3.3 admission: a pending respawn is consumed in one transaction that upserts the placed cell
-  under the new lease key. Otherwise the stored cell is restored if it is of the same World and
-  coordinate frame, Walkable, and not a house tile (fail closed when house metadata is unknown),
-  through the NPC-0 §6.1 radius-3 fallback, else the entry start.
+  under the new lease key; a placed actor whose cell cannot be read back consumes nothing and the
+  admission is not playable. Otherwise the stored cell is restored if it is of the same World and
+  coordinate frame and not a house tile (a house tile goes straight to the entry start; fail
+  closed when house metadata is unknown), at the cell or through the NPC-0 §6.1 radius-3
+  fallback, else the entry start.
 - The write sequence is process-wide, strictly increasing and at least the Unix time in
   microseconds, so a restarted node orders after its predecessor under the same lease.
 
@@ -72,8 +79,9 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server --quiet --lib`: pass (2803 passed, 0 failed, 28 ignored)
-- `--test character_authority_postgres last_position`: pass (6)
+- `cargo test --locked -p oteryn-game-server --quiet --lib`: pass (2804 passed, 0 failed, 28 ignored)
+- `--test character_authority_postgres last_position`: pass (7)
+- `--test character_authority_postgres -- death respawn`: pass (104)
 - `--test durability_postgres owning_fresh_loss_is_atomic`: pass (1)
 - the remaining `*_postgres` targets are left to CI
 - New tests:
@@ -84,13 +92,23 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   - `the_table_refuses_foreign_worlds_lower_keys_and_deletes`;
   - scenario 6 of `owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority`: the
     terminal release writes the final cell, and a replay after the terminal state changes nothing;
+  - `a_settled_live_death_writes_the_respawn_cell_with_its_consumption` (review round 1);
   - unit tests in `gameplay_transport/last_position.rs` for the interval bound, sequence order,
-    frame match and tracking.
+    frame match, capture-based deadlines and tracking.
+
+## Review round 1 (Codex, head 559bc229)
+
+- P1 4245761767 (admission respawn, cell not captured): accepted and fixed; no consumption.
+- P1 4245761770 (300 s bound under cadence load): accepted and fixed; own deadline loop.
+- P1 4246368083 (live death not durable): accepted and fixed; atomic respawn upsert. The sweep
+  found the same family at release: the final write captured a dead actor's death cell. Fixed:
+  dead actors are never captured.
+- P2 4245761776 (shutdown flush after failed writes): fixed.
+- P2 4246368094 (saved house tile used the radius fallback): fixed.
 
 ## Open questions
 
-1. HP/mana persistence has no accepted contract. CHAR-POSITION-0 covers position only. Not
-   implemented here.
+1. HP/mana persistence: decided 1a (separate contract and follow-up packet).
 2. The fixture-room world has no house metadata, so a stored cell there fails closed: no restore,
    entry start. Bundle worlds use the compiled house-tile facts.
 3. The `CHARPOS0-RL-01` boundary "a configured value above 300 s is rejected" does not apply: the

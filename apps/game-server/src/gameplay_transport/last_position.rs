@@ -13,10 +13,16 @@
 //!   stored position with `entry_start`.
 //! - **Periodic write (§3.2, `CHARPOS0-RL-01`).** Every [`LAST_POSITION_WRITE_INTERVAL`], a
 //!   tracked actor whose cell changed since its last write is written under the session fence.
+//!   The writer runs on its own loop and wakes at the earliest absolute deadline, each deadline
+//!   measured from the capture the stored row holds, with [`WRITE_PASS_SLACK`] left for the
+//!   pass itself; a capture later than the interval is reported.
+//! - **Death.** A dead actor is never captured: the settlement of its death upserts the respawn
+//!   cell with the respawn's consumption, and no capture of the dead actor may follow it.
 //! - **Final write (§3.2 "At logout").** The terminal release captures the fenced actor's cell
 //!   and the store upserts it inside the release transaction.
-//! - **Shutdown.** Before readiness is withdrawn, every tracked actor is written once, whatever
-//!   its interval, so a planned restart loses no movement.
+//! - **Shutdown.** Before readiness is withdrawn, every tracked actor is written, whatever its
+//!   interval, so a planned restart loses no movement. A failed write is retried; the flush is
+//!   done only when every tracked session was written or refused (the node bounds the wait).
 //!
 //! Each capture takes its `write_sequence` under the runtime lock from one process-wide
 //! generator that is strictly increasing and never below the wall clock in microseconds, so a
@@ -39,9 +45,23 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, Wor
 /// while its position has changed. The registry bounds it to 60..=300 seconds.
 pub(super) const LAST_POSITION_WRITE_INTERVAL: Duration = Duration::from_secs(300);
 
-/// The delay before a tracked session is next due: the interval less one owner cadence, so a
-/// changed position is written within the interval whichever cadence tick finds it due.
-const NEXT_DUE: Duration = LAST_POSITION_WRITE_INTERVAL.saturating_sub(super::QUEST_RETRY_CADENCE);
+/// The part of the interval left for a write pass itself: its captures, fence reads and
+/// sequential writes after the deadline it woke for.
+const WRITE_PASS_SLACK: Duration = Duration::from_secs(60);
+
+/// The delay from a session's last durable (or unchanged) capture to its next deadline.
+const NEXT_DUE: Duration = LAST_POSITION_WRITE_INTERVAL.saturating_sub(WRITE_PASS_SLACK);
+
+/// The longest the writer sleeps, so a newly tracked session is seen without a wake-up.
+const WRITER_MAX_SLEEP: Duration = super::QUEST_RETRY_CADENCE;
+
+/// The shortest pause between passes, so a failing store is not retried in a tight loop.
+const WRITER_MIN_PAUSE: Duration = Duration::from_secs(1);
+
+/// The shutdown flush's passes and the pause between them; the node's own flush budget
+/// (3 s) normally ends the wait first.
+const FLUSH_ATTEMPTS: usize = 8;
+const FLUSH_RETRY_PAUSE: Duration = Duration::from_millis(250);
 
 /// The node's shutdown write of every tracked last position: requested by the node before it
 /// withdraws readiness (which fences every session write), and marked done by the gameplay seam
@@ -63,11 +83,19 @@ impl LastPositionFlush {
         self.done.cancelled().await;
     }
 
-    /// The seam's side: wait for the request, write every tracked session once, mark it done.
+    /// The seam's side: wait for the request, write every tracked session, retrying failed
+    /// writes, and mark it done only once none failed. The node stops waiting at its budget.
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
-        authority.write_due_last_positions(true).await;
-        self.done.cancel();
+        for _ in 0..FLUSH_ATTEMPTS {
+            if authority.write_due_last_positions(true).await == 0 {
+                self.done.cancel();
+                return;
+            }
+            tokio::time::sleep(FLUSH_RETRY_PAUSE).await;
+        }
+        // Never done: the node's budget ends its wait, and the shutdown is reported incomplete.
+        operator_event("last_position_flush_incomplete");
     }
 }
 
@@ -83,7 +111,23 @@ struct Track {
     actor: ExactActorRef,
     /// The cell last written or read for this Character; `None` when nothing is stored.
     written: Option<LastPositionCell>,
-    due: Instant,
+    /// When the cell the stored row holds (or an unchanged one) was last captured.
+    checked: Instant,
+}
+
+impl Track {
+    fn due(&self) -> Instant {
+        self.checked + NEXT_DUE
+    }
+}
+
+/// One capture attempt under the runtime lock.
+enum Captured {
+    At(Capture),
+    /// The actor is dead: its death's settlement writes the respawn cell.
+    Dead,
+    /// The actor has no current position in the pinned context.
+    Gone,
 }
 
 /// One captured position: its record and the sequence it was captured with.
@@ -91,6 +135,7 @@ struct Track {
 struct Capture {
     record: LastPositionRecord,
     write_sequence: u64,
+    at: Instant,
 }
 
 impl LastPositions {
@@ -130,7 +175,7 @@ impl LastPositions {
                 Track {
                     actor,
                     written,
-                    due: Instant::now() + NEXT_DUE,
+                    checked: Instant::now(),
                 },
             );
         }
@@ -146,27 +191,36 @@ impl LastPositions {
         self.tracks.lock().ok()?.get(&session).copied()
     }
 
-    /// The sessions due at `now`, or every tracked session when `all`.
+    /// The sessions due at `now`, or every tracked session when `all`, the most overdue first.
     fn due(&self, now: Instant, all: bool) -> Vec<(GameSessionId, Track)> {
-        self.tracks
+        let mut due: Vec<_> = self
+            .tracks
             .lock()
             .map(|tracks| {
                 tracks
                     .iter()
-                    .filter(|(_, track)| all || track.due <= now)
+                    .filter(|(_, track)| all || track.due() <= now)
                     .map(|(session, track)| (*session, *track))
                     .collect()
             })
-            .unwrap_or_default()
+            .unwrap_or_default();
+        due.sort_by_key(|(_, track)| track.checked);
+        due
     }
 
-    /// A write of `cell` for `actor` is settled: the next one is due after the interval. A
-    /// track replaced by another actor in the meantime is left alone.
+    /// The earliest deadline of any tracked session.
+    fn next_due(&self) -> Option<Instant> {
+        self.tracks.lock().ok()?.values().map(Track::due).min()
+    }
+
+    /// A capture at `at` of `actor` is durable (`cell`) or unchanged (`None`): its next deadline
+    /// is measured from `at`. A track replaced by another actor in the meantime is left alone.
     fn settled(
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
         cell: Option<LastPositionCell>,
+        at: Instant,
     ) {
         if let Ok(mut tracks) = self.tracks.lock()
             && let Some(track) = tracks.get_mut(&session)
@@ -175,7 +229,17 @@ impl LastPositions {
             if cell.is_some() {
                 track.written = cell;
             }
-            track.due = Instant::now() + NEXT_DUE;
+            track.checked = track.checked.max(at);
+        }
+    }
+
+    /// DEATH-2: the settlement of `session`'s death wrote its respawn `cell`.
+    pub(super) fn respawned(&self, session: GameSessionId, cell: LastPositionCell) {
+        if let Ok(mut tracks) = self.tracks.lock()
+            && let Some(track) = tracks.get_mut(&session)
+        {
+            track.written = Some(cell);
+            track.checked = Instant::now();
         }
     }
 }
@@ -246,29 +310,33 @@ fn house_cell(
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Capture `actor`'s current cell under the runtime lock, with its record and a fresh write
-    /// sequence. `None` when the actor has no current position in the pinned context.
-    async fn capture_last_position(&self, actor: ExactActorRef) -> Option<Capture> {
+    /// sequence. A dead actor (DEATH-2 §4.2, until its respawn) is not captured.
+    async fn capture_last_position(&self, actor: ExactActorRef) -> Captured {
         let runtime = self.runtime.lock().await;
-        let snapshot = runtime.read_actor_position(actor).ok()?;
-        if snapshot.context() != runtime.pinned_movement_context() {
-            return None;
+        if self.spell_states.lock().await.is_dead(actor) {
+            return Captured::Dead;
         }
-        let pin = runtime.content_pin();
-        Some(Capture {
-            record: LastPositionRecord {
-                world_id: self.world_id,
-                cell: cell_of(snapshot.position()),
-                coordinate_frame_digest: pin.frame_binding_digest(),
-                map_revision_digest: runtime.map_revision_digest(),
-                server_artifact_digest: pin.server_artifact_digest(),
-            },
-            write_sequence: self.last_positions.next_sequence(),
+        let Ok(snapshot) = runtime.read_actor_position(actor) else {
+            return Captured::Gone;
+        };
+        if snapshot.context() != runtime.pinned_movement_context() {
+            return Captured::Gone;
+        }
+        let placed = self.placed_record(&runtime, snapshot.position());
+        Captured::At(Capture {
+            record: placed.record,
+            write_sequence: placed.write_sequence,
+            at: Instant::now(),
         })
     }
 
-    /// The record of a cell the admission placed, with a fresh write sequence.
-    async fn placed_last_position(&self, cell: MovementLocalPosition) -> FinalLastPosition {
-        let runtime = self.runtime.lock().await;
+    /// The record of `cell` in the pinned context, with a fresh write sequence; taken under the
+    /// runtime lock the caller holds.
+    pub(super) fn placed_record(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        cell: MovementLocalPosition,
+    ) -> FinalLastPosition {
         let pin = runtime.content_pin();
         FinalLastPosition {
             record: LastPositionRecord {
@@ -293,12 +361,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if track.actor != actor {
             return None;
         }
-        self.capture_last_position(actor)
-            .await
-            .map(|capture| FinalLastPosition {
+        match self.capture_last_position(actor).await {
+            Captured::At(capture) => Some(FinalLastPosition {
                 record: capture.record,
                 write_sequence: capture.write_sequence,
-            })
+            }),
+            Captured::Dead | Captured::Gone => None,
+        }
     }
 
     /// The release store of `session`: `store` carrying the final position of a tracked
@@ -323,8 +392,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<FinalLastPosition> {
         let runtime = self.runtime.lock().await;
         let snapshot = runtime.read_actor_position(actor).ok()?;
-        drop(runtime);
-        Some(self.placed_last_position(snapshot.position()).await)
+        Some(self.placed_record(&runtime, snapshot.position()))
     }
 
     /// Track `session` after its respawn consumption wrote `placed`.
@@ -365,7 +433,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut runtime = self.runtime.lock().await;
         let pinned_digest = runtime.content_pin().server_artifact_digest();
         let frame_digest = runtime.content_pin().frame_binding_digest();
-        if stored_position_applies(&stored, self.world_id, frame_digest) {
+        // §3.3: a saved house tile is not a valid position; it goes straight to step 4
+        // (`entry_start`), and only an otherwise valid cell uses the radius fallback.
+        if stored_position_applies(&stored, self.world_id, frame_digest)
+            && !house_cell(self.movement_cells, position_of(stored.record.cell))
+        {
             let door = self.door.lock().await;
             let placed = runtime.place_admitted_respawn(
                 actor,
@@ -392,18 +464,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .track(session, actor, Some(stored.record.cell));
     }
 
-    /// §3.2 periodic write (`CHARPOS0-RL-01`), run by the owner cadence; with `all`, the
+    /// §3.2 periodic writes (`CHARPOS0-RL-01`): sleep until the earliest deadline (at most
+    /// [`WRITER_MAX_SLEEP`], at least [`WRITER_MIN_PAUSE`]), then write every due session. It
+    /// never ends on its own and parks once `shutdown` is requested.
+    pub(super) async fn run_last_position_writes(
+        &self,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) {
+        loop {
+            let now = Instant::now();
+            let wake = self
+                .last_positions
+                .next_due()
+                .map_or(now + WRITER_MAX_SLEEP, |due| {
+                    due.min(now + WRITER_MAX_SLEEP)
+                })
+                .max(now + WRITER_MIN_PAUSE);
+            if super::first(
+                tokio::time::sleep_until(tokio::time::Instant::from_std(wake)),
+                shutdown.cancelled(),
+            )
+            .await
+            .is_none()
+            {
+                std::future::pending::<()>().await;
+            }
+            self.write_due_last_positions(false).await;
+        }
+    }
+
+    /// One pass of §3.2 writes: the due sessions, most overdue first, or with `all` the
     /// shutdown write of every tracked session. A cell unchanged since its last write writes
-    /// nothing; a failed write is retried at the next cadence.
-    pub(super) async fn write_due_last_positions(&self, all: bool) {
+    /// nothing; a dead actor is skipped. Returns the number of failed writes, which stay due.
+    pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
+        let mut failed = 0;
         for (session, track) in self.last_positions.due(Instant::now(), all) {
-            let Some(capture) = self.capture_last_position(track.actor).await else {
-                // The actor is gone: its session ended without a retire of this track.
-                self.last_positions.forget(session);
-                continue;
+            let capture = match self.capture_last_position(track.actor).await {
+                Captured::At(capture) => capture,
+                // Its death's settlement writes the respawn cell.
+                Captured::Dead => continue,
+                Captured::Gone => {
+                    // The actor is gone: its session ended without a retire of this track.
+                    self.last_positions.forget(session);
+                    continue;
+                }
             };
+            if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
+                operator_event("last_position_interval_exceeded");
+            }
             if track.written == Some(capture.record.cell) {
-                self.last_positions.settled(session, track.actor, None);
+                self.last_positions
+                    .settled(session, track.actor, None, capture.at);
                 continue;
             }
             let fence = match self.current_quest_fence(session).await {
@@ -412,7 +523,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.last_positions.forget(session);
                     continue;
                 }
-                Err(()) => continue,
+                Err(()) => {
+                    failed += 1;
+                    continue;
+                }
             };
             match self
                 .root
@@ -430,14 +544,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | LastPositionWrite::Superseded
                     | LastPositionWrite::PendingObligation,
                 ) => {
-                    self.last_positions
-                        .settled(session, track.actor, Some(capture.record.cell));
+                    self.last_positions.settled(
+                        session,
+                        track.actor,
+                        Some(capture.record.cell),
+                        capture.at,
+                    );
                 }
                 Err(error) => {
+                    failed += 1;
                     operator_event(&format!("last_position_write_failed reason={error}"));
                 }
             }
         }
+        failed
     }
 }
 
@@ -479,8 +599,10 @@ mod tests {
     fn write_interval_is_within_the_registered_range() {
         assert!(LAST_POSITION_WRITE_INTERVAL <= Duration::from_secs(300));
         assert!(LAST_POSITION_WRITE_INTERVAL >= Duration::from_secs(60));
-        // The cadence tick that finds a session due runs at most one cadence after it is due.
-        assert!(NEXT_DUE + super::super::QUEST_RETRY_CADENCE <= LAST_POSITION_WRITE_INTERVAL);
+        // The writer wakes at the deadline itself; the slack is left for the pass.
+        assert_eq!(NEXT_DUE + WRITE_PASS_SLACK, LAST_POSITION_WRITE_INTERVAL);
+        assert!(WRITE_PASS_SLACK >= Duration::from_secs(30));
+        assert!(WRITER_MIN_PAUSE < WRITE_PASS_SLACK && WRITER_MAX_SLEEP < WRITE_PASS_SLACK);
         assert!(!NEXT_DUE.is_zero());
     }
 
@@ -535,6 +657,9 @@ mod tests {
         let now = Instant::now();
         assert!(positions.due(now, false).is_empty());
         assert_eq!(positions.due(now, true).len(), 1);
+        let deadline = positions.next_due().expect("tracked");
+        assert!(deadline >= now + NEXT_DUE - Duration::from_secs(1));
+        assert!(deadline <= Instant::now() + NEXT_DUE);
         assert_eq!(
             positions
                 .due(now + NEXT_DUE + Duration::from_secs(1), false)
@@ -546,10 +671,28 @@ mod tests {
             y: 2,
             floor: 7,
         };
-        positions.settled(session, actor, Some(cell));
+        // The next deadline is measured from the capture, not from when its write settled.
+        let captured = Instant::now();
+        positions.settled(session, actor, Some(cell), captured);
+        let track = positions.tracked(session).expect("tracked");
+        assert_eq!(track.written, Some(cell));
+        assert_eq!(track.due(), captured + NEXT_DUE);
+        // An older capture never moves the deadline back.
+        positions.settled(session, actor, None, now);
+        assert_eq!(
+            positions.tracked(session).map(|track| track.due()),
+            Some(captured + NEXT_DUE)
+        );
+        // A death's settlement records its respawn cell.
+        let respawn = LastPositionCell {
+            x: 9,
+            y: 9,
+            floor: 7,
+        };
+        positions.respawned(session, respawn);
         assert_eq!(
             positions.tracked(session).and_then(|track| track.written),
-            Some(cell)
+            Some(respawn)
         );
         positions.forget(session);
         assert!(positions.tracked(session).is_none());

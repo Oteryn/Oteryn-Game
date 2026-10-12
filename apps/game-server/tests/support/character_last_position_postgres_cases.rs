@@ -14,6 +14,7 @@ use crate::durability::character_last_position::{
     StoredLastPosition,
 };
 use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::foundation::{
     ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
@@ -329,6 +330,108 @@ fn a_pending_respawn_decides_and_its_consumption_writes_the_placed_cell() -> Tes
             assert!(consumed.is_some());
             assert_eq!(h.count("game_character_pending_respawns").await?, 0);
             assert_eq!(row(&h).await?.as_deref(), Some("t|301|6|7|1|41|1|2|3"));
+            drop(authority);
+            drop(seal);
+            TestResult::Ok(())
+        }
+        .await;
+        h.cleanup().await?;
+        outcome
+    })
+}
+
+/// DEATH-2 with §3.2: the settlement of a live death consumes its respawn and upserts the respawn
+/// cell in the same transaction, over a position written before the death, so a crash after
+/// the settlement never restores the pre-death position. A replay writes nothing more, and a
+/// later capture of the respawned actor still orders after it.
+#[test]
+fn a_settled_live_death_writes_the_respawn_cell_with_its_consumption() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "last_position_live_death", false).await?;
+        let outcome = async {
+            sqlx::query(
+                "INSERT INTO game_character_progression_state VALUES \
+                 (encode($1,'hex')::uuid,1,9,6500,'profile-1','ruleset-1','content-1',\
+                  'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+            )
+            .bind(id(CHARACTER).as_slice())
+            .execute(&h.pool)
+            .await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            // The living actor's last periodic write, before the death.
+            assert!(matches!(
+                h.root
+                    .write_character_last_position(&authority, &h.node, fence(1)?, 50, record(400))
+                    .await,
+                Ok(LastPositionWrite::Written)
+            ));
+            let sequencer = CharacterRevisionSequencer::new();
+            let respawn = FinalLastPosition {
+                record: record(401),
+                write_sequence: 51,
+            };
+            // A respawn record of another World is refused before anything is written.
+            let mut foreign = respawn;
+            foreign.record.world_id = WorldId::decode(&id(44)).map_err(debug)?;
+            assert!(matches!(
+                h.root
+                    .settle_player_death_respawned(
+                        &sequencer,
+                        &authority,
+                        &h.node,
+                        fence(1)?,
+                        death(81)?,
+                        foreign,
+                    )
+                    .await,
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+            assert_eq!(h.count("game_character_death_receipts").await?, 0);
+            h.root
+                .settle_player_death_respawned(
+                    &sequencer,
+                    &authority,
+                    &h.node,
+                    fence(1)?,
+                    death(81)?,
+                    respawn,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(h.count("game_character_pending_respawns").await?, 0);
+            assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
+            // A replay consumes nothing and leaves the respawn cell.
+            h.root
+                .settle_player_death_respawned(
+                    &sequencer,
+                    &authority,
+                    &h.node,
+                    fence(1)?,
+                    death(81)?,
+                    FinalLastPosition {
+                        record: record(402),
+                        write_sequence: 52,
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
+            // A capture taken before the respawn record never overwrites it.
+            assert!(matches!(
+                h.root
+                    .write_character_last_position(&authority, &h.node, fence(1)?, 50, record(403))
+                    .await,
+                Ok(LastPositionWrite::Superseded)
+            ));
+            assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
             drop(authority);
             drop(seal);
             TestResult::Ok(())

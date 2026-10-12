@@ -547,8 +547,6 @@ pub async fn serve_gameplay(
                 std::future::pending::<()>().await;
             }
             authority.refresh_due_quest_sessions().await;
-            // CHAR-POSITION-0 §3.2: the periodic last-position write rides the same cadence.
-            authority.write_due_last_positions(false).await;
         }
     };
     let serving = first(
@@ -565,6 +563,9 @@ pub async fn serve_gameplay(
     );
     let mut serving = pin!(serving);
     let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
+    // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
+    // deadlines, so no other cadence work delays them.
+    let mut positions = pin!(authority.run_last_position_writes(shutdown));
     // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
     let mut flush = pin!(async {
         match owners.last_position_flush {
@@ -579,6 +580,8 @@ pub async fn serve_gameplay(
         if !flush_done && flush.as_mut().poll(context).is_ready() {
             flush_done = true;
         }
+        // Never ends on its own; it parks once shutdown is requested.
+        let _ = positions.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -1231,9 +1234,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         progression: &SessionProgressionBinding,
         death: actor_spell::PlayerDeath,
     ) -> DeathCommit {
-        let (map_revision, respawn) = {
+        // CHAR-POSITION-0 §3.2: the respawn cell `respawn_after_death` places the actor at is
+        // upserted as the last position with the respawn's consumption, under a sequence taken
+        // after the death, so no earlier capture of the living actor can overwrite it.
+        let (map_revision, respawn, respawned) = {
             let runtime = self.runtime.lock().await;
-            (runtime.map_revision_digest(), runtime.respawn_position())
+            let respawn = runtime.respawn_position();
+            (
+                runtime.map_revision_digest(),
+                respawn,
+                self.placed_record(&runtime, respawn),
+            )
         };
         let request = player_death_request(
             progression,
@@ -1247,16 +1258,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match self
             .root
-            .settle_player_death(
+            .settle_player_death_respawned(
                 &self.revision_sequencer,
                 self.character,
                 self.holder,
                 fence,
                 request,
+                respawned,
             )
             .await
         {
-            Ok(_) => DeathCommit::Settled,
+            Ok(_) => {
+                self.last_positions
+                    .respawned(session, respawned.record.cell);
+                DeathCommit::Settled
+            }
             Err(error) => {
                 operator_event(&format!("player_death_settle_failed reason={error}"));
                 death_commit_refusal(&error)
@@ -1339,36 +1355,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.3: the consumption upserts the placed cell as the last position, in
         // the same transaction, under the new lease's key.
-        let placed = self.respawn_last_position(actor).await;
-        let consumed = match placed {
-            Some(placed) => {
-                let consumed = self
-                    .root
-                    .consume_pending_respawn_placed(
-                        self.character,
-                        self.holder,
-                        fence,
-                        Some(pending.occurrence),
-                        placed,
-                    )
-                    .await;
-                if matches!(&consumed, Ok(Some(consumed)) if consumed.occurrence == pending.occurrence)
-                {
-                    self.track_respawned(session, actor, &placed);
-                }
-                consumed
-            }
-            None => {
-                self.root
-                    .consume_pending_respawn(
-                        self.character,
-                        self.holder,
-                        fence,
-                        Some(pending.occurrence),
-                    )
-                    .await
-            }
+        // A placed actor whose cell cannot be read back (stale or gone) consumes nothing: the
+        // obligation stays for the next admission rather than be consumed without its cell.
+        let Some(placed) = self.respawn_last_position(actor).await else {
+            operator_event("pending_respawn_placed_cell_unavailable");
+            return false;
         };
+        let consumed = self
+            .root
+            .consume_pending_respawn_placed(
+                self.character,
+                self.holder,
+                fence,
+                Some(pending.occurrence),
+                placed,
+            )
+            .await;
+        if matches!(&consumed, Ok(Some(consumed)) if consumed.occurrence == pending.occurrence) {
+            self.track_respawned(session, actor, &placed);
+        }
         if let Err(error) = &consumed {
             operator_event(&format!(
                 "pending_respawn_consumption_failed reason={error}"
