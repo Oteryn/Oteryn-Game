@@ -30,6 +30,19 @@ Reference facts are retained in `apps/client/UI-REFERENCE-COVERAGE.md`,
 evidence. Missing engine/server mechanisms must remain visibly unavailable and
 must not be claimed as complete.
 
+## Native login launcher — 2026-10-12
+
+Owner requests real Platform/server login. The existing GUI performs PKCE,
+owned-character selection, native ticket/Gateway grant and server admission.
+`tools/qualification/login_local/launch-client-local.ps1` now consumes the
+runbook's private `client.env` without evaluating it or propagating credential
+comments. It validates URL origins/files/keys, sets four public connection values
+only in the child, selects the copied gameplay certificate without installing
+trust and drops configured World/Character IDs in favour of owned GUI selection.
+No automatic login, deployment, account mutation or production claim.
+PowerShell 21 checks and existing client/Platform login tests 10/13 pass;
+Windows/browser/current-stack E2E needs public endpoints, OAuth ID and root.
+
 ## Main merge — 2026-10-12
 
 `origin/main` `08e13f7dea83c43c13df85f901caf1e032ef3cd9` (including #1943/#1944,
@@ -88,22 +101,14 @@ original factory/profile Reset semantics, live bundle E2E and final CI remain op
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,
 Interface/HUD, Console/Game Window, Misc/Gameplay and Screenshots/Help.
-Whole-scene AA/Smooth Retro source head `28565f4fbd1c92adc84ff2c71dddf7ad08bc3b3d`
-passed Linux/MSVC checks, physical DX12 pixel readback and all 20 pages/78 captures.
-Full counts, manifest and recovery evidence are in UI-FIDELITY.md. The owner's
-running binary was retained; release uses a separate build directory.
-Source `9e2d0cbc` adds real Unicode Select All, expiry OR gating and upstream OS
-clipboard instead of in-app fallback. Linux/MSVC tests, Clippy, World pin and
-20-page/78-capture DX12 audit pass; evidence is in UI-FIDELITY.md. External
-clipboard transfer and nine-lane contract gaps remain open. No lane is 100%.
-
-Earlier exact-head qualifications (source contracts `993ec2c4`, sliders/volume
-`e6941338`, half-native scaling `985fe6b4`) and their manifests/recovery bundles
-are retained in UI-FIDELITY.md. Reference QML contracts and private source hashes
-are in UI-REFERENCE-EXTRACTED.md. Physical slider/trackpad parity, live lighting
-and playback remain unqualified. Qt qsb 6.4.2 rejects serialization v9 even with
-exit zero; this is not evidence of decoded shaders. Use installed-original
-evidence, never publish original assets/account data, and qualify each new head.
+Earlier AA/Smooth Retro `28565f4f`, Unicode/expiry/OS clipboard `9e2d0cbc`,
+source contracts `993ec2c4`, sliders `e6941338` and half-native scaling `985fe6b4`
+qualifications, manifests and recovery remain in UI-FIDELITY.md; private QML
+hashes remain in UI-REFERENCE-EXTRACTED.md. No lane is 100%. Physical clipboard,
+slider/trackpad, lighting and playback remain unqualified. Qt qsb 6.4.2 rejects
+serialization v9 despite exit zero; no shader decode acceptance follows.
+Preserve the owner's running binary; use separate release build directories,
+never publish original assets/account data and qualify each new source head.
 
 ## Map consumer continuation — AUTHORING
 
