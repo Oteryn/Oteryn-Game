@@ -1,4 +1,4 @@
-# Builds and exercises the unsigned Windows installer in the rust_windows merge-gate job
+# Builds and exercises the unsigned Windows installer in the rust_windows merge-group-gate job
 # (CLIENT-INSTALLER-0 section 7). Run from the repository root after the release build of
 # oteryn-client with OTERYN_RELEASE_ID = $ReleaseId. Every failure throws; nothing is optional.
 #

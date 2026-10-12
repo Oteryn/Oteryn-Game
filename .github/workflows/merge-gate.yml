@@ -17,10 +17,9 @@ on:
 permissions: {}
 
 concurrency:
-  # Metadata edits and labels other than full-ci cannot cancel a pending or running
-  # product qualification. Base retargets and full-ci label changes keep the normal
-  # per-PR cancellation group.
-  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
+  # Metadata and label edits cannot cancel a product qualification.
+  # Base retargets and new commits keep the per-PR cancellation group.
+  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
   cancel-in-progress: true
 
 jobs:
@@ -39,7 +38,6 @@ jobs:
       file_records: ${{ steps.detect.outputs.file_records }}
       file_count: ${{ steps.detect.outputs.file_count }}
       complete: ${{ steps.detect.outputs.complete }}
-      full_ci: ${{ steps.detect.outputs.full_ci }}
     steps:
       - name: Resolve and validate exact pull request head
         id: detect
@@ -159,23 +157,14 @@ jobs:
           if len(serialized.encode('utf-8')) > 32768:
               complete = False
               serialized = '[]'
-          # The on-demand full heavy suite runs on the PR only with the full-ci label.
-          # Malformed label evidence selects it: more checks, never fewer.
-          labels = pull.get('labels', [])
-          if isinstance(labels, list) and all(isinstance(label, dict) for label in labels):
-              full_ci = any(label.get('name') == 'full-ci' for label in labels)
-          else:
-              full_ci = True
           print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
           print(f'Changed files: {changed_files}; complete immutable enumeration: {complete}')
-          print(f'On-demand full heavy suite (full-ci label): {full_ci}')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'pr_number={number_text}\n')
               output.write(f'target_sha={head_sha}\n')
               output.write(f'base_sha={base_sha}\n')
               output.write(f'file_count={changed_files}\n')
               output.write(f'file_records={serialized}\n')
-              output.write(f"full_ci={'true' if full_ci else 'false'}\n")
               output.write(f"complete={'true' if complete else 'false'}\n")
           PY
 
@@ -373,41 +362,6 @@ jobs:
           base-ref: ${{ needs.scope.outputs.base_sha }}
           head-ref: ${{ needs.scope.outputs.target_sha }}
 
-  codeql:
-    name: Merge gate / CodeQL (${{ matrix.language }})
-    needs: scope
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    if: needs.scope.outputs.full_ci == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      security-events: write
-      packages: read
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language:
-          - python
-          - actions
-    steps:
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          persist-credentials: false
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
-        with:
-          languages: ${{ matrix.language }}
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
-        with:
-          category: /language:${{ matrix.language }}
-
   routing_contract:
     name: Merge gate / routing contract
     needs: scope
@@ -453,41 +407,6 @@ jobs:
           CHANGED_FILE_COUNT: ${{ needs.scope.outputs.file_count }}
           ENUMERATION_COMPLETE: ${{ needs.scope.outputs.complete }}
         run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"
-
-  atlas_fullworld:
-    name: Merge gate / Atlas fullworld source
-    needs: [scope, lanes]
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.atlas_fullworld == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Compile bounded fullworld producer and direct consumer
-        run: |
-          python -S -m py_compile \
-            tools/game-atlas-fullworld-source/producer.py \
-            tools/game-atlas-fullworld-source/self_test.py \
-            tools/reference-world-corridor-census/content_source_batch.py \
-            tools/reference-world-corridor-census/content_source_batch_self_test.py
-
-      - name: Run fullworld producer self-test
-        run: python -S tools/game-atlas-fullworld-source/self_test.py
-
-      - name: Run content-source batch consumer self-test
-        run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py
 
   world_bundle:
     name: Merge gate / World bundle
@@ -802,483 +721,6 @@ jobs:
             cargo +1.95.0 test --locked -p "$package" "${target_flags[@]}" < /dev/null
           done < "$RUNNER_TEMP/rust-fast-packages.tsv"
 
-  rust_linux:
-    name: Merge gate / Rust Linux workspace
-    needs: [scope, lanes]
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      pull-requests: read
-    services:
-      postgres:
-        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-    steps:
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Classify registered PostgreSQL targets
-        id: pg_target
-        env:
-          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
-          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
-          GH_TOKEN: ${{ github.token }}
-          PULL_NUMBER: ${{ needs.scope.outputs.pr_number }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import re
-          import sys
-          import urllib.error
-          import urllib.request
-          import subprocess
-
-          repository = os.environ['REPOSITORY']
-          number_text = os.environ['PULL_NUMBER'].strip()
-          expected_head = os.environ['EXPECTED_HEAD'].strip().lower()
-          expected_base = os.environ['EXPECTED_BASE'].strip().lower()
-          targets = (
-              ('durability_postgres', 'apps/game-server/tests/durability_postgres.rs'),
-              ('character_authority_postgres', 'apps/game-server/tests/character_authority_postgres.rs'),
-              ('runtime_scope_assignment_postgres', 'apps/game-server/tests/runtime_scope_assignment_postgres.rs'),
-              ('native_admission_source_postgres', 'apps/game-server/tests/native_admission_source_postgres.rs'),
-          )
-
-          if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
-              raise SystemExit('pull request number must be a positive integer')
-          if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
-              raise SystemExit('expected pull request head SHA is invalid')
-          if re.fullmatch(r'[0-9a-f]{40}', expected_base) is None:
-              raise SystemExit('expected pull request base SHA is invalid')
-
-          headers = {
-              'Accept': 'application/vnd.github+json',
-              'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'Oteryn-v2-postgres-target-classifier',
-          }
-
-          def api(path: str):
-              request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repository}{path}',
-                  headers=headers,
-              )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  return json.load(response)
-
-          def target_blobs(commit: str) -> dict[str, str | None]:
-              try:
-                  commit_payload = api(f'/git/commits/{commit}')
-              except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
-                  raise SystemExit('exact commit inspection failed; fail closed') from error
-              if (
-                  not isinstance(commit_payload, dict)
-                  or commit_payload.get('sha', '').lower() != commit
-              ):
-                  raise SystemExit('exact commit inspection returned mismatched identity; fail closed')
-              tree_sha = commit_payload.get('tree', {}).get('sha')
-              if not isinstance(tree_sha, str) or re.fullmatch(r'[0-9a-f]{40}', tree_sha) is None:
-                  raise SystemExit('exact commit inspection returned invalid tree identity; fail closed')
-              try:
-                  tree_payload = api(f'/git/trees/{tree_sha}?recursive=1')
-              except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
-                  raise SystemExit('exact tree inspection failed; fail closed') from error
-              if (
-                  not isinstance(tree_payload, dict)
-                  or tree_payload.get('sha', '').lower() != tree_sha
-                  or tree_payload.get('truncated') is not False
-                  or not isinstance(tree_payload.get('tree'), list)
-              ):
-                  raise SystemExit('exact tree inspection returned incomplete or mismatched evidence; fail closed')
-
-              legal_modes = {
-                  'blob': ('100644', '100755', '120000'),
-                  'tree': ('040000',),
-                  'commit': ('160000',),
-              }
-              by_path: dict[str, list[dict]] = {}
-              for entry in tree_payload['tree']:
-                  path = entry.get('path') if isinstance(entry, dict) else None
-                  entry_type = entry.get('type') if isinstance(entry, dict) else None
-                  mode = entry.get('mode') if isinstance(entry, dict) else None
-                  if (
-                      not isinstance(entry, dict)
-                      or not isinstance(path, str)
-                      or not path
-                      or '\x00' in path
-                      or path.startswith('/')
-                      or any(component in ('', '.', '..') for component in path.split('/'))
-                      or entry_type not in legal_modes
-                      or mode not in legal_modes[entry_type]
-                      or not isinstance(entry.get('sha'), str)
-                      or re.fullmatch(r'[0-9a-f]{40}', entry['sha']) is None
-                  ):
-                      raise SystemExit('exact tree inspection returned malformed entry; fail closed')
-                  by_path.setdefault(path, []).append(entry)
-
-              blobs: dict[str, str | None] = {}
-              for name, target in targets:
-                  matches = by_path.get(target, [])
-                  if len(matches) > 1:
-                      raise SystemExit(f'exact tree inspection returned duplicate {name} target entries; fail closed')
-                  if not matches:
-                      blobs[name] = None
-                      continue
-                  entry = matches[0]
-                  if entry.get('type') != 'blob' or entry.get('mode') not in ('100644', '100755'):
-                      raise SystemExit(f'exact tree inspection returned unexpected {name} target object; fail closed')
-                  blob_sha = entry.get('sha')
-                  if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
-                      raise SystemExit(f'exact tree inspection returned invalid {name} blob SHA; fail closed')
-                  blobs[name] = blob_sha
-              return blobs
-
-          pull = api(f'/pulls/{number_text}')
-          if pull.get('state') != 'open':
-              raise SystemExit('PostgreSQL target classification requires an open pull request')
-          if pull.get('head', {}).get('sha', '').lower() != expected_head:
-              raise SystemExit('pull request head moved after exact target resolution')
-          if pull.get('head', {}).get('repo', {}).get('full_name') != repository:
-              raise SystemExit('PostgreSQL target classification accepts only same-repository heads')
-          if pull.get('base', {}).get('sha', '').lower() != expected_base:
-              raise SystemExit('pull request base moved after exact target resolution')
-
-          changed_files = pull.get('changed_files')
-          if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
-              raise SystemExit('invalid changed-files count')
-
-          base_blobs = target_blobs(expected_base)
-          head_blobs = target_blobs(expected_head)
-          for name, target in targets:
-              base_blob = base_blobs[name]
-              head_blob = head_blobs[name]
-              base_present = base_blob is not None
-              head_present = head_blob is not None
-              checkout_present = os.path.isfile(target)
-              if checkout_present != head_present:
-                  raise SystemExit(f'exact-head checkout and API {name} target state disagree; fail closed')
-              if checkout_present:
-                  checkout_blob = subprocess.run(
-                      ['git', 'hash-object', '--', target],
-                      check=True,
-                      capture_output=True,
-                      text=True,
-                  ).stdout.strip().lower()
-                  if checkout_blob != head_blob:
-                      raise SystemExit(f'exact-head checkout and API {name} target blob disagree; fail closed')
-              if base_present and not head_present:
-                  raise SystemExit(f'{name} PostgreSQL target was removed or renamed; fail closed')
-
-          pull_after_target = api(f'/pulls/{number_text}')
-          if pull_after_target.get('state') != 'open':
-              raise SystemExit('pull request closed during PostgreSQL target classification')
-          if pull_after_target.get('head', {}).get('sha', '').lower() != expected_head:
-              raise SystemExit('pull request head moved during PostgreSQL target classification')
-          if pull_after_target.get('head', {}).get('repo', {}).get('full_name') != repository:
-              raise SystemExit('pull request repository changed during PostgreSQL target classification')
-          if pull_after_target.get('base', {}).get('sha', '').lower() != expected_base:
-              raise SystemExit('pull request base moved during PostgreSQL target classification')
-          changed_files_after = pull_after_target.get('changed_files')
-          if (
-              isinstance(changed_files_after, bool)
-              or not isinstance(changed_files_after, int)
-              or changed_files_after < 0
-          ):
-              raise SystemExit('invalid post-inspection changed-files count')
-          if changed_files_after != changed_files:
-              raise SystemExit('pull request changed-files count moved during PostgreSQL target classification')
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              for name, _target in targets:
-                  blob = head_blobs[name]
-                  output.write(f"{name}_present={'true' if blob is not None else 'false'}\n")
-                  output.write(f"{name}_blob={blob or ''}\n")
-          print('Registered PostgreSQL target classification completed on exact base/head.')
-          PY
-
-      - name: Install Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
-
-      - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
-            rust-linux-v2-1.95.0-
-
-      - name: Normalize source mtimes for the restored Cargo cache
-        run: python tools/repository/normalize_cargo_mtimes.py
-
-      - name: Build workspace
-        run: cargo +1.95.0 build --locked --workspace --all-targets
-
-      - name: Strict Clippy
-        run: cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
-
-      - name: Test workspace
-        run: cargo +1.95.0 test --locked --workspace
-
-      - name: Run registered PostgreSQL E2E targets when allocated
-        env:
-          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-          DURABILITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.durability_postgres_present }}
-          DURABILITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.durability_postgres_blob }}
-          CHARACTER_AUTHORITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.character_authority_postgres_present }}
-          CHARACTER_AUTHORITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.character_authority_postgres_blob }}
-          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_present }}
-          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_blob }}
-          NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.native_admission_source_postgres_present }}
-          NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB: ${{ steps.pg_target.outputs.native_admission_source_postgres_blob }}
-        run: |
-          set -euo pipefail
-          verify_registered_target_binding() {
-            local name="$1"
-            local path="$2"
-            local metadata
-            metadata="$(mktemp)"
-            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"
-            python - "$metadata" "$name" "$path" <<'PY'
-          import json
-          import pathlib
-          import sys
-
-          metadata_path, name, registered_path = sys.argv[1:]
-          try:
-              payload = json.loads(pathlib.Path(metadata_path).read_text(encoding='utf-8'))
-              packages = payload['packages']
-              if not isinstance(packages, list):
-                  raise ValueError('packages is not a list')
-              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']
-              if len(owners) != 1:
-                  raise ValueError('expected exactly one oteryn-game-server package')
-              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)
-              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)
-              if observed_manifest != expected_manifest:
-                  raise ValueError(
-                      f'package manifest is {observed_manifest}, expected {expected_manifest}'
-                  )
-              targets = owners[0].get('targets')
-              if not isinstance(targets, list):
-                  raise ValueError('package targets is not a list')
-              matches = [target for target in targets if target.get('name') == name]
-              global_matches = [target for package in packages for target in package.get('targets', []) if target.get('name') == name and target.get('kind') == ['test']]
-              if len(global_matches) != 1:
-                  raise ValueError('expected exactly one workspace integration-test target')
-              if len(matches) != 1 or matches[0].get('kind') != ['test']:
-                  raise ValueError('expected exactly one integration-test target')
-              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
-              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)
-              if observed != expected:
-                  raise ValueError(f'target source is {observed}, expected {expected}')
-          except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
-              raise SystemExit(f'Cargo target binding verification failed for {name}: {error}') from error
-          PY
-            rm -f "$metadata"
-          }
-          run_registered_target() {
-            local name="$1"
-            local path="$2"
-            local classified_present="$3"
-            local classified_blob="$4"
-            case "$classified_present" in
-              true)
-                if [[ ! -f "$path" || -L "$path" ]]; then
-                  echo "Registered PostgreSQL target changed from a classified regular file: $path" >&2
-                  exit 1
-                fi
-                local checkout_blob
-                checkout_blob="$(git hash-object -- "$path")"
-                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then
-                  echo "Registered PostgreSQL target blob changed after classification: $path" >&2
-                  exit 1
-                fi
-                verify_registered_target_binding "$name" "$path"
-                cargo +1.95.0 test --locked --workspace --test "$name"
-                ;;
-              false)
-                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then
-                  echo "Registered PostgreSQL target changed from classified absence: $path" >&2
-                  exit 1
-                fi
-                echo "NOT_APPLICABLE: registered PostgreSQL target is absent on this revision: $name -> $path"
-                ;;
-              *)
-                echo "Registered PostgreSQL target classification produced an invalid result: $name" >&2
-                exit 1
-                ;;
-            esac
-          }
-          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs "$DURABILITY_POSTGRES_PRESENT" "$DURABILITY_POSTGRES_BLOB"
-          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs "$CHARACTER_AUTHORITY_POSTGRES_PRESENT" "$CHARACTER_AUTHORITY_POSTGRES_BLOB"
-          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT" "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB"
-          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs "$NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT" "$NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB"
-
-      - name: Run synthetic harness
-        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness
-
-      - name: Smoke native game-server bootstrap
-        run: cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
-
-  rust_windows:
-    name: Merge gate / Rust Windows client
-    needs: [scope, lanes]
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.windows == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 60
-    permissions:
-      contents: read
-    steps:
-      - name: Enable Git long paths
-        shell: pwsh
-        run: git config --system core.longpaths true
-
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        shell: pwsh
-        env:
-          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: |
-          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
-            throw "checked-out revision does not match exact pull request head"
-          }
-
-      - name: Install Rust toolchain
-        shell: pwsh
-        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
-
-      - name: Derive release identity
-        shell: pwsh
-        env:
-          TARGET_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          if ($env:TARGET_SHA -cnotmatch '^[0-9a-f]{40}$') {
-            throw "target SHA is not a full lowercase commit id"
-          }
-          $metadata = cargo +1.95.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
-          $version = @($metadata.packages | Where-Object { $_.name -eq 'oteryn-client' })[0].version
-          if (-not $version) {
-            throw "oteryn-client version not found"
-          }
-          "OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV
-          "CLIENT_VERSION=$version" >> $env:GITHUB_ENV
-
-      - name: Build production client
-        shell: pwsh
-        run: cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
-
-      - name: Strict client Clippy
-        shell: pwsh
-        run: cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
-
-      - name: Launch exact release client smoke
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          $client = ".\target\x86_64-pc-windows-msvc\release\oteryn-client.exe"
-          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {
-            throw "release client artifact missing: $client"
-          }
-          & $client --smoke
-          if ($LASTEXITCODE -ne 0) {
-            throw "release client smoke failed with exit code $LASTEXITCODE"
-          }
-
-      - name: Install Inno Setup
-        shell: pwsh
-        env:
-          INNO_SETUP_URL: https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe
-          INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
-          $directory = Join-Path $env:RUNNER_TEMP 'innosetup'
-          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download
-          $actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne $env:INNO_SETUP_SHA256) {
-            throw "Inno Setup download SHA-256 mismatch: $actual"
-          }
-          $process = Start-Process -FilePath $download -Wait -PassThru -ArgumentList @(
-            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CURRENTUSER', "/DIR=`"$directory`"")
-          if ($process.ExitCode -ne 0) {
-            throw "Inno Setup install failed with exit code $($process.ExitCode)"
-          }
-          $iscc = Join-Path $directory 'ISCC.exe'
-          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
-            throw "ISCC.exe missing: $iscc"
-          }
-          "ISCC=$iscc" >> $env:GITHUB_ENV
-
-      - name: Build and test unsigned installer
-        shell: pwsh
-        env:
-          TARGET_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: >-
-          .\apps\client\installer\ci-installer.ps1
-          -ReleaseId $env:OTERYN_RELEASE_ID
-          -ClientVersion $env:CLIENT_VERSION
-          -GameCommit $env:TARGET_SHA
-          -Iscc $env:ISCC
-          -WorkDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer')
-          -OutputDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer-artifact')
-
-      - name: Upload unsigned installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: oteryn-client-${{ env.OTERYN_RELEASE_ID }}-x86_64-unsigned
-          path: ${{ runner.temp }}/oteryn-installer-artifact
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Run synthetic harness
-        shell: pwsh
-        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
-
-      - name: Test Windows input platform
-        shell: pwsh
-        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
-
-      - name: Verify deterministic simulation golden fixtures
-        shell: pwsh
-        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
-
   rust_supply_chain:
     name: Merge gate / Rust supply chain
     needs: [scope, lanes]
@@ -1301,166 +743,27 @@ jobs:
           command: check
           arguments: --all-features
 
-  node_boot:
-    name: Merge gate / Node boot against the real Platform
-    needs: [scope, lanes]
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.server_qualification != 'false'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-    steps:
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Check out exact public Platform producer
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: Oteryn/Oteryn-Platform
-          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
-          path: _platform
-          persist-credentials: false
-
-      - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
-
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal
-
-      - name: Validate harness
-        run: bash -n tools/qualification/node_boot/run.sh
-
-      - name: Run node boot qualification
-        env:
-          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
-        run: |
-          set -euo pipefail
-          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
-          bash tools/qualification/node_boot/run.sh | tee "$evidence"
-          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
-          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
-
-  server_seam:
-    name: Merge gate / Server Seam over TCP+TLS
-    needs: [scope, lanes]
-    # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
-    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
-    if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.server_qualification != 'false'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-    services:
-      postgres:
-        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-    steps:
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.scope.outputs.target_sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Check out exact public Platform producer
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: Oteryn/Oteryn-Platform
-          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
-          path: _platform
-          persist-credentials: false
-
-      - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
-
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal
-
-      - name: Validate harness
-        run: bash -n tools/qualification/wp5_s3b/run.sh
-
-      - name: Run real composed qualification
-        env:
-          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
-          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-        run: |
-          set -euo pipefail
-          evidence="$RUNNER_TEMP/server-seam-evidence.txt"
-          WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee "$evidence"
-          grep -Fxq 'S3B_RESULT=SEAM_PASS' "$evidence"
-          grep -E '^(S3B_EVIDENCE |SEAM_EVIDENCE |S3B_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
-
   validate:
     name: Merge gate / validate
     if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
-    needs:
-      - scope
-      - lanes
-      - governance
-      - dependency_review
-      - codeql
-      - routing_contract
-      - atlas_fullworld
-      - world_bundle
-      - rust_policy
-      - rust_fast
-      - rust_linux
-      - rust_windows
-      - rust_supply_chain
-      - node_boot
-      - server_seam
+    needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, rust_fast, rust_supply_chain]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
     steps:
-      - name: Require every applicable gate
+      - name: Require every applicable fast gate
         env:
           SCOPE: ${{ needs.scope.result }}
           LANES: ${{ needs.lanes.result }}
           GOVERNANCE: ${{ needs.governance.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
-          CODEQL: ${{ needs.codeql.result }}
           ROUTING_CONTRACT: ${{ needs.routing_contract.result }}
-          FULL_CI: ${{ needs.scope.outputs.full_ci }}
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.lanes.outputs.windows }}
-          ATLAS_FULLWORLD_REQUIRED: ${{ needs.lanes.outputs.atlas_fullworld }}
-          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
           RUST_FAST: ${{ needs.rust_fast.result }}
-          RUST_LINUX: ${{ needs.rust_linux.result }}
-          RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
-          SERVER_QUALIFICATION_REQUIRED: ${{ needs.lanes.outputs.server_qualification }}
-          NODE_BOOT: ${{ needs.node_boot.result }}
-          SERVER_SEAM: ${{ needs.server_seam.result }}
           WORLD_BUNDLE_REQUIRED: ${{ needs.lanes.outputs.world_bundle }}
           WORLD_BUNDLE: ${{ needs.world_bundle.result }}
         run: |
@@ -1472,56 +775,26 @@ jobs:
           for name in ('SCOPE', 'LANES', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'ROUTING_CONTRACT'):
               if os.environ[name] != 'success':
                   failures.append(f'{name}={os.environ[name]}')
-
-          for flag in ('FULL_CI', 'RUST_REQUIRED', 'WINDOWS_REQUIRED', 'ATLAS_FULLWORLD_REQUIRED'):
+          for flag in ('RUST_REQUIRED', 'WINDOWS_REQUIRED'):
               if os.environ[flag] not in {'true', 'false'}:
                   failures.append(f'invalid {flag}={os.environ[flag]}')
           if os.environ['RUST_REQUIRED'] == 'false' and os.environ['WINDOWS_REQUIRED'] == 'true':
               failures.append('Windows selection without Rust selection is invalid')
-          # Fast PR checks are always required for their lane. Heavy qualifications
-          # are the Merge Queue game-gate's authority; on the PR they run only on
-          # demand (full-ci label) and, once requested, must pass.
-          full_ci = os.environ['FULL_CI'] == 'true'
           rust_allowed = {'success'} if os.environ['RUST_REQUIRED'] == 'true' else {'success', 'skipped'}
           for name in ('RUST_POLICY', 'RUST_FAST', 'RUST_SUPPLY_CHAIN'):
               if os.environ[name] not in rust_allowed:
                   failures.append(f'{name}={os.environ[name]}')
-          for flag, name in (
-              ('FULL_CI', 'CODEQL'),
-              ('RUST_REQUIRED', 'RUST_LINUX'),
-              ('WINDOWS_REQUIRED', 'RUST_WINDOWS'),
-              ('ATLAS_FULLWORLD_REQUIRED', 'ATLAS_FULLWORLD'),
-          ):
-              required = full_ci and os.environ[flag] == 'true'
-              allowed = {'success'} if required else {'success', 'skipped'}
-              if os.environ[name] not in allowed:
-                  failures.append(f'{name}={os.environ[name]}')
-          # Requested physical server qualifications fail closed: anything but an
-          # explicit protected-base `false` (including an older classifier) requires them.
-          if full_ci and os.environ.get('SERVER_QUALIFICATION_REQUIRED', '') != 'false':
-              for name in ('NODE_BOOT', 'SERVER_SEAM'):
-                  if os.environ[name] != 'success':
-                      failures.append(f'{name}={os.environ[name]}')
-          else:
-              for name in ('NODE_BOOT', 'SERVER_SEAM'):
-                  if os.environ[name] not in {'success', 'skipped'}:
-                      failures.append(f'{name}={os.environ[name]}')
-
-          # The World bundle lane is fast, not full-ci: anything but an explicit
-          # protected-base `false` (including an older classifier) requires it.
-          world_bundle_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}
-          if os.environ['WORLD_BUNDLE'] not in world_bundle_allowed:
+          # Preserve fail-closed World qualification on the PR. Its measured
+          # two-minute pin-check is a fast check, independent of heavy MQ tests.
+          world_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}
+          if os.environ['WORLD_BUNDLE'] not in world_allowed:
               failures.append(f"WORLD_BUNDLE={os.environ['WORLD_BUNDLE']}")
-
           if failures:
               print('Merge gate failed:', file=sys.stderr)
               for failure in failures:
                   print(f'- {failure}', file=sys.stderr)
               raise SystemExit(1)
-          if full_ci:
-              print('All applicable fast and requested full-ci gates passed on the exact pull request head.')
-          else:
-              print('All applicable fast gates passed on the exact pull request head; heavy qualifications run in the Merge Queue.')
+          print('All applicable fast gates passed on the exact PR head; full qualification belongs to Merge Queue.')
           PY
 
   game_gate:
@@ -1539,7 +812,7 @@ jobs:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
       - name: Revalidate isolated edit target before publishing game-gate
-        if: (github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')
+        if: (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}

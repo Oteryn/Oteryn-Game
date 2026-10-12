@@ -1585,18 +1585,33 @@ pub(crate) struct SpawnDefinition {
     placement_cells: Vec<LocalPosition>,
     /// `1..=CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX`, and exactly `placement_cells.len()`.
     population: usize,
-    /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
-    respawn_delay_micros: u64,
+    /// SPAWN-1b (Codex P1 on #1981): what each point spawns, by point ordinal (same order and
+    /// length as `placement_cells`). An authored source may mix creatures and respawn delays
+    /// across its points, so these are per point, and the source stays one runtime source.
+    points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
+}
+
+/// SPAWN-1b: what one spawn point realizes and when it respawns.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SpawnPointDefinition {
+    /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
+    respawn_delay_micros: u64,
     creature_target_identity: String,
+    /// Always positive.
     creature_initial_health: i64,
-    /// CREATURE-AI-0 §6.3 `blocked_by_nearby_players`. The fixture spawn source is not
-    /// blockable; only a test definition sets it.
+    /// CREATURE-AI-0 §6.3: the point's creature profile `blocked_by_nearby_players`. It is per
+    /// point because a source may mix blockable and non-blockable creatures (Codex P2 on
+    /// #2002). The uniform fixture source is not blockable; only a test definition sets it.
     blockable: bool,
 }
 
+/// SPAWN-1b: one point of a source being built: its placement cell and what it spawns.
+type SpawnPointBuild = ((i32, i32, i16), SpawnPointDefinition);
+
 impl SpawnDefinition {
+    /// A source whose every point spawns the same creature with the same respawn delay.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         placement_cells: Vec<(i32, i32, i16)>,
@@ -1606,34 +1621,59 @@ impl SpawnDefinition {
         creature_target_identity: String,
         creature_initial_health: i64,
     ) -> Result<Self, CarrierError> {
-        if placement_cells.is_empty()
-            || placement_cells.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX
-        {
-            return Err(CarrierError::InvalidSpawnDefinition);
-        }
         // §4.3: "one declared cell per creature" -- a mismatch either way (fewer cells than
         // the population, or extra unused cells) is invalid, not merely clamped, so
         // `resolve_respawn_timer` can never respawn more than the declared population.
-        if population == 0
-            || population != placement_cells.len()
-            || population > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX
-        {
+        if population != placement_cells.len() {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
-        if creature_initial_health <= 0 {
+        // `CREATUREAI0-RL-03` is checked before one point is built.
+        if placement_cells.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
             return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        Self::with_points(
+            placement_cells
+                .into_iter()
+                .map(|cell| {
+                    (
+                        cell,
+                        SpawnPointDefinition {
+                            respawn_delay_micros,
+                            creature_target_identity: creature_target_identity.clone(),
+                            creature_initial_health,
+                            blockable: false,
+                        },
+                    )
+                })
+                .collect(),
+            occupancy_retry_interval_micros,
+        )
+    }
+
+    /// SPAWN-1b: a source from its points in point-ordinal order, each its cell and what it
+    /// spawns. `CREATUREAI0-RL-03` bounds the points; every point's health must be positive.
+    fn with_points(
+        points: Vec<SpawnPointBuild>,
+        occupancy_retry_interval_micros: u64,
+    ) -> Result<Self, CarrierError> {
+        if points.is_empty() || points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        let population = points.len();
+        let mut placement_cells = Vec::with_capacity(population);
+        let mut definitions = Vec::with_capacity(population);
+        for ((x, y, floor), point) in points {
+            if point.creature_initial_health <= 0 {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
+            placement_cells.push(LocalPosition { x, y, floor });
+            definitions.push(point);
         }
         Ok(Self {
-            placement_cells: placement_cells
-                .into_iter()
-                .map(|(x, y, floor)| LocalPosition { x, y, floor })
-                .collect(),
+            placement_cells,
             population,
-            respawn_delay_micros,
+            points: definitions,
             occupancy_retry_interval_micros,
-            creature_target_identity,
-            creature_initial_health,
-            blockable: false,
         })
     }
 
@@ -1643,34 +1683,79 @@ impl SpawnDefinition {
     fn from_activation(facts: ActivationSpawnFacts) -> Result<Self, CarrierError> {
         let (cells, respawn_delay_ms, occupancy_retry_interval_ms, creature, initial_health) =
             facts;
-        let micros = |ms: u64| {
-            ms.checked_mul(1_000)
-                .ok_or(CarrierError::InvalidSpawnDefinition)
-        };
         let population = cells.len();
         Self::new(
             cells,
             population,
-            micros(respawn_delay_ms)?,
-            micros(occupancy_retry_interval_ms)?,
+            activation_micros(respawn_delay_ms)?,
+            activation_micros(occupancy_retry_interval_ms)?,
             creature,
-            i64::try_from(initial_health).map_err(|_| CarrierError::InvalidSpawnDefinition)?,
+            activation_health(initial_health)?,
         )
     }
 
+    /// SPAWN-1b: one activated source of mixed points as a definition, in its authored point
+    /// order; nothing is defaulted here.
+    fn from_activation_source(facts: ActivationSpawnSourceFacts) -> Result<Self, CarrierError> {
+        let (points, occupancy_retry_interval_ms) = facts;
+        if points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        let points = points
+            .into_iter()
+            .map(
+                |(cell, respawn_delay_ms, creature, initial_health, blockable)| {
+                    Ok((
+                        cell,
+                        SpawnPointDefinition {
+                            respawn_delay_micros: activation_micros(respawn_delay_ms)?,
+                            creature_target_identity: creature,
+                            creature_initial_health: activation_health(initial_health)?,
+                            blockable,
+                        },
+                    ))
+                },
+            )
+            .collect::<Result<Vec<_>, CarrierError>>()?;
+        Self::with_points(points, activation_micros(occupancy_retry_interval_ms)?)
+    }
+
+    /// Every point of this source blockable or not.
     #[cfg(test)]
     pub(crate) fn with_blockable(mut self, blockable: bool) -> Self {
-        self.blockable = blockable;
+        for point in &mut self.points {
+            point.blockable = blockable;
+        }
         self
     }
 
-    fn timing(&self) -> spawn::PointTiming {
-        spawn::PointTiming {
-            respawn_delay_micros: self.respawn_delay_micros,
-            occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
-            blockable: self.blockable,
-        }
+    /// The definition of point `ordinal`.
+    fn point(&self, ordinal: usize) -> Result<&SpawnPointDefinition, CarrierError> {
+        self.points
+            .get(ordinal)
+            .ok_or(CarrierError::UnknownSpawnCell)
     }
+
+    /// The respawn timing of point `ordinal`.
+    fn timing(&self, ordinal: usize) -> Result<spawn::PointTiming, CarrierError> {
+        let point = self.point(ordinal)?;
+        Ok(spawn::PointTiming {
+            respawn_delay_micros: point.respawn_delay_micros,
+            occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
+            blockable: point.blockable,
+        })
+    }
+}
+
+/// An activation delay in ms as the owner clock's µs.
+fn activation_micros(ms: u64) -> Result<u64, CarrierError> {
+    ms.checked_mul(1_000)
+        .ok_or(CarrierError::InvalidSpawnDefinition)
+}
+
+/// An activation initial health as the carrier's signed health.
+fn activation_health(health: u64) -> Result<i64, CarrierError> {
+    i64::try_from(health).map_err(|_| CarrierError::InvalidSpawnDefinition)
 }
 
 /// CREATURE-AI-0 §10: checks one activation against the registered spawn ceilings before
@@ -1699,6 +1784,18 @@ fn spawn_points_within_ceilings(definitions: &[SpawnDefinition]) -> Result<usize
 /// Content produces it (`NativeEntrySpawnSource::activation_facts`); Foundation does not name
 /// the content type.
 pub(crate) type ActivationSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
+
+/// SPAWN-1b (Codex P1 on #1981): one activated spawn point as the carrier reads it: its
+/// placement cell, respawn delay (ms), creature key, authored initial health and its creature
+/// profile's `blocked_by_nearby_players` (CREATURE-AI-0 §6.3; Codex P2 on #2002), which is per
+/// point because one source may mix blockable and non-blockable creatures.
+pub(crate) type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+
+/// SPAWN-1b (Codex P1 on #1981): one activated spawn source whose points may differ in
+/// creature, respawn delay and initial health: its points in authored (point-ordinal) order and
+/// its occupancy retry interval (ms). It is one runtime source, so it counts once against
+/// `CREATUREAI0-RL-02` and its point ordinals run `0..points` without a reset.
+pub(crate) type ActivationSpawnSourceFacts = (Vec<ActivationSpawnPointFacts>, u64);
 
 /// SPAWN-1a: what one respawn drive did, in run order. The warning is reported, not
 /// broadcast: no client effect exists for it yet.
@@ -2913,6 +3010,24 @@ impl ChannelRuntimeV1 {
         self.begin_spawn_definitions(definitions)
     }
 
+    /// SPAWN-1b (Codex P1 on #1981): [`Self::begin_activation_spawns`] for sources whose points
+    /// carry their own creature, respawn delay and initial health. Each source stays one
+    /// runtime source (one `CREATUREAI0-RL-02` count, point ordinals in authored order); the
+    /// ceilings, slot headroom and windowed realization are the same.
+    pub(crate) fn begin_activation_spawn_sources(
+        &mut self,
+        sources: Vec<ActivationSpawnSourceFacts>,
+    ) -> Result<usize, CarrierError> {
+        if sources.len() > CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let definitions = sources
+            .into_iter()
+            .map(SpawnDefinition::from_activation_source)
+            .collect::<Result<Vec<_>, _>>()?;
+        self.begin_spawn_definitions(definitions)
+    }
+
     fn begin_spawn_definitions(
         &mut self,
         definitions: Vec<SpawnDefinition>,
@@ -3335,7 +3450,7 @@ impl ChannelRuntimeV1 {
             if gone && self.spawn_schedule.pending(point).is_none() {
                 let due_micros = self
                     .spawn_schedule
-                    .creature_gone(point, spawn.definition.timing(), now_micros)
+                    .creature_gone(point, spawn.definition.timing(cell)?, now_micros)
                     .map_err(|_| CarrierError::CapacityExceeded)?;
                 self.spawn_deadlines.insert((due_micros, point));
             }
@@ -3366,7 +3481,9 @@ impl ChannelRuntimeV1 {
     }
 
     fn spawn_timing(&self, point: spawn::SpawnPoint) -> Result<spawn::PointTiming, CarrierError> {
-        Ok(self.spawn_realization(point)?.definition.timing())
+        self.spawn_realization(point)?
+            .definition
+            .timing(usize::from(point.ordinal))
     }
 
     fn spawn_cell(&self, point: spawn::SpawnPoint) -> Result<MovementLocalPosition, CarrierError> {
@@ -5739,12 +5856,12 @@ impl ChannelActorCarrier {
         self.spawns
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        for cell in &definition.placement_cells {
+        for (cell, point) in definition.placement_cells.iter().zip(&definition.points) {
             let actor = self.admit_creature(
                 continuity,
                 ActorState(0),
-                &definition.creature_target_identity,
-                definition.creature_initial_health,
+                &point.creature_target_identity,
+                point.creature_initial_health,
             )?;
             self.initialize_position(continuity, actor, position_context, *cell)?;
             cells.push(SpawnCellState {
@@ -5819,8 +5936,9 @@ impl ChannelActorCarrier {
             .placement_cells
             .get(ordinal)
             .ok_or(CarrierError::PlanConflict)?;
-        let health = realization.definition.creature_initial_health;
-        let identity = realization.definition.creature_target_identity.clone();
+        let spawned = realization.definition.point(ordinal)?;
+        let health = spawned.creature_initial_health;
+        let identity = spawned.creature_target_identity.clone();
         let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
         // Reserved exactly at point 0: the push never reallocates.
         self.spawns[index].cells.push(SpawnCellState {
@@ -5961,6 +6079,9 @@ impl ChannelActorCarrier {
             });
         }
 
+        let point = self.spawns[spawn_index].definition.point(cell_index)?;
+        let target_identity = point.creature_target_identity.clone();
+        let initial_health = point.creature_initial_health;
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
         let occupied_before = self.occupied.clone();
@@ -5968,11 +6089,6 @@ impl ChannelActorCarrier {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
         }
-        let target_identity = self.spawns[spawn_index]
-            .definition
-            .creature_target_identity
-            .clone();
-        let initial_health = self.spawns[spawn_index].definition.creature_initial_health;
         let actor = match self.admit_creature(
             continuity,
             ActorState(0),
@@ -6032,12 +6148,12 @@ impl ChannelActorCarrier {
             .get(cell_index)
             .ok_or(CarrierError::UnknownSpawnCell)?
             .live;
-        let initial_health = realization.definition.creature_initial_health;
+        let point = realization.definition.point(cell_index)?;
+        let initial_health = point.creature_initial_health;
         if initial_health <= 0 {
             return Err(CarrierError::InvalidCreatureHealth);
         }
-        let target_identity =
-            creature_target_binding(&realization.definition.creature_target_identity)?;
+        let target_identity = creature_target_binding(&point.creature_target_identity)?;
         if let Some(dead_actor) = dead_actor {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
@@ -8164,6 +8280,339 @@ mod tests {
             Err(CarrierError::DuplicateSpawnSource)
         );
         assert_eq!(runtime.carrier.spawns.len(), max);
+    }
+
+    /// The creature key and health of live creature `actor`.
+    fn spawned_creature(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Option<(Vec<u8>, i64)> {
+        let index = runtime
+            .carrier
+            .validate_ref(&runtime.continuity, actor.0)
+            .ok()?;
+        match &runtime.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                target_identity,
+                health,
+                ..
+            } => Some((target_identity.to_vec(), *health)),
+            _ => None,
+        }
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981): one authored source whose points mix creatures, respawn
+    /// delays and initial health stays one runtime source. Its point ordinals run 0..3 in
+    /// authored order without a reset, each point realizes its own creature with its own
+    /// health, and each respawns after its own delay as its own creature.
+    #[test]
+    fn spawn1b_mixed_point_source_is_one_runtime_source_with_per_point_facts() {
+        const RAT: &str = "oteryn:creature/rat";
+        const BAT: &str = "oteryn:creature/bat";
+        let rat = || Some((RAT.as_bytes().to_vec(), 20));
+        let bat = || Some((BAT.as_bytes().to_vec(), 35));
+        let mut runtime = runtime(8);
+        let source: ActivationSpawnSourceFacts = (
+            vec![
+                ((2, 0, 7), 60_000, RAT.to_string(), 20, false),
+                ((3, 0, 7), 30_000, BAT.to_string(), 35, false),
+                ((4, 0, 7), 30_000, RAT.to_string(), 20, false),
+            ],
+            5_000,
+        );
+        assert_eq!(runtime.begin_activation_spawn_sources(vec![source]), Ok(3));
+        let progress = runtime
+            .realize_activation_spawn_window(0)
+            .expect("one window");
+        assert_eq!((progress.realized, progress.remaining), (3, 0));
+        assert_eq!(runtime.carrier.spawns.len(), 1);
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(
+            points
+                .iter()
+                .map(|(point, cell, _)| (point.source, point.ordinal, cell.x))
+                .collect::<Vec<_>>(),
+            vec![(0, 0, 2), (0, 1, 3), (0, 2, 4)]
+        );
+        let live = points
+            .iter()
+            .map(|(_, _, live)| live.expect("live creature"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            live.iter()
+                .map(|actor| spawned_creature(&runtime, *actor))
+                .collect::<Vec<_>>(),
+            vec![rat(), bat(), rat()]
+        );
+
+        for actor in &live {
+            kill_creature(&mut runtime, *actor);
+        }
+        runtime
+            .drive_spawn_respawns(1_000, reference_view)
+            .expect("observe");
+        assert_eq!(
+            points
+                .iter()
+                .map(|(point, _, _)| runtime.pending_respawn(*point).map(|p| p.due_micros))
+                .collect::<Vec<_>>(),
+            vec![
+                Some(1_000 + 60_000_000),
+                Some(1_000 + 30_000_000),
+                Some(1_000 + 30_000_000)
+            ]
+        );
+        let warned = runtime
+            .drive_spawn_respawns(1_000 + 30_000_000, reference_view)
+            .expect("warn");
+        assert_eq!(warned.warnings.len(), 2);
+        let admitted = runtime
+            .drive_spawn_respawns(
+                1_000 + 30_000_000 + spawn::SPAWN_WARNING_MICROS,
+                reference_view,
+            )
+            .expect("admit");
+        assert_eq!(
+            admitted
+                .admitted
+                .iter()
+                .map(|actor| spawned_creature(&runtime, *actor))
+                .collect::<Vec<_>>(),
+            vec![bat(), rat()]
+        );
+        assert_eq!(
+            runtime
+                .pending_respawn(points[0].0)
+                .map(|pending| pending.due_micros),
+            Some(1_000 + 60_000_000)
+        );
+    }
+
+    /// SPAWN-1b (Codex P2 on #2002): blockability is per point (CREATURE-AI-0 §6.3, the point's
+    /// creature profile). In one source mixing a blockable rat and a non-blockable bat, a
+    /// player whose interest area holds both cells blocks the rat's respawn (`BLOCKED`, a
+    /// successor a full delay later) while the bat's warns and admits as usual.
+    #[test]
+    fn spawn1b_mixed_source_blocks_only_its_blockable_points() {
+        const RAT: &str = "oteryn:creature/rat";
+        const BAT: &str = "oteryn:creature/bat";
+        const BAT_CELL: MovementLocalPosition = MovementLocalPosition {
+            x: 3,
+            y: 0,
+            floor: 7,
+        };
+        let source: ActivationSpawnSourceFacts = (
+            vec![
+                ((2, 0, 7), 60_000, RAT.to_string(), 20, true),
+                ((3, 0, 7), 60_000, BAT.to_string(), 35, false),
+            ],
+            5_000,
+        );
+        let definition =
+            SpawnDefinition::from_activation_source(source.clone()).expect("valid source");
+        assert_eq!(
+            [0, 1].map(|ordinal| definition.timing(ordinal).map(|timing| timing.blockable)),
+            [Ok(true), Ok(false)]
+        );
+
+        let mut runtime = runtime(8);
+        assert_eq!(runtime.begin_activation_spawn_sources(vec![source]), Ok(2));
+        let progress = runtime
+            .realize_activation_spawn_window(0)
+            .expect("one window");
+        assert_eq!(progress.remaining, 0);
+        let points = runtime.spawn_point_creatures();
+        for (_, _, live) in &points {
+            kill_creature(&mut runtime, live.expect("live creature"));
+        }
+        place_player(
+            &mut runtime,
+            43,
+            MovementLocalPosition {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+        );
+        runtime
+            .drive_spawn_respawns(0, reference_view)
+            .expect("observe");
+        let due = runtime
+            .drive_spawn_respawns(SPAWN_DELAY, reference_view)
+            .expect("due");
+        assert_eq!((due.blocked, due.warnings), (1, vec![BAT_CELL]));
+        assert_eq!(
+            runtime.pending_respawn(points[0].0).map(|p| p.due_micros),
+            Some(2 * SPAWN_DELAY)
+        );
+        let admitted = runtime
+            .drive_spawn_respawns(SPAWN_DELAY + spawn::SPAWN_WARNING_MICROS, reference_view)
+            .expect("admit");
+        assert_eq!(
+            admitted
+                .admitted
+                .iter()
+                .map(|actor| spawned_creature(&runtime, *actor))
+                .collect::<Vec<_>>(),
+            vec![Some((BAT.as_bytes().to_vec(), 35))]
+        );
+        assert_eq!(
+            runtime.pending_respawn(points[0].0).map(|p| p.due_micros),
+            Some(2 * SPAWN_DELAY)
+        );
+    }
+
+    /// SPAWN-1b: a mixed source keeps every per-source check: `CREATUREAI0-RL-03` (64 points
+    /// pass, 65 refuse), a positive health on every point and no empty source. A refused
+    /// source refuses the whole activation with nothing begun.
+    #[test]
+    fn spawn1b_mixed_point_source_keeps_the_per_source_checks() {
+        let points = |count: usize, health: u64| {
+            (0..count)
+                .map(|x| {
+                    let key = if x % 2 == 0 {
+                        "oteryn:creature/rat"
+                    } else {
+                        "oteryn:creature/bat"
+                    };
+                    (
+                        (i32::try_from(x).expect("small"), 0, 7),
+                        60_000,
+                        key.to_string(),
+                        health,
+                        false,
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let max = CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        assert!(SpawnDefinition::from_activation_source((points(max, 20), 5_000)).is_ok());
+        for refused in [
+            (points(max + 1, 20), 5_000),
+            (points(0, 20), 5_000),
+            (points(2, 0), 5_000),
+            (
+                vec![(
+                    (0, 0, 7),
+                    u64::MAX,
+                    "oteryn:creature/rat".to_string(),
+                    20,
+                    false,
+                )],
+                5_000,
+            ),
+            (points(1, u64::MAX), 5_000),
+        ] {
+            assert_eq!(
+                SpawnDefinition::from_activation_source(refused.clone()),
+                Err(CarrierError::InvalidSpawnDefinition)
+            );
+            let mut runtime = runtime(256);
+            assert_eq!(
+                runtime.begin_activation_spawn_sources(vec![(points(1, 20), 5_000), refused]),
+                Err(CarrierError::InvalidSpawnDefinition)
+            );
+            assert!(runtime.spawn_activation.is_none());
+            assert!(runtime.carrier.spawns.is_empty());
+        }
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981): the pinned preprod bundle's scale, 51,078 authored sources
+    /// with 82,673 active points of mixed creatures and delays, is 51,078 runtime sources: it
+    /// passes `CREATUREAI0-RL-02` and `CREATUREAI0-RL-01` and realizes window by window. Split
+    /// into its 70,206 creature/delay runs it would refuse `CapacityExceeded`, and so does
+    /// 65,537 sources through the per-point entry.
+    #[test]
+    fn spawn1b_bundle_scale_sources_stay_under_the_source_ceiling() {
+        const SOURCES: usize = 51_078;
+        const POINTS: usize = 82_673;
+        const SPLIT_RUNS: usize = 70_206;
+        // 31,595 sources of a rat and a bat with different delays, the rest one rat each.
+        let mixed = POINTS - SOURCES;
+        let source = |index: usize, two: bool| -> ActivationSpawnSourceFacts {
+            let x = i32::try_from(index % 256).expect("small");
+            let y = i32::try_from(index / 256).expect("small");
+            let mut points = vec![(
+                (x, y, 7),
+                60_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+                false,
+            )];
+            if two {
+                points.push((
+                    (x, y + 512, 7),
+                    30_000,
+                    "oteryn:creature/bat".to_string(),
+                    35,
+                    false,
+                ));
+            }
+            (points, 5_000)
+        };
+        let sources = (0..SOURCES)
+            .map(|index| source(index, index < mixed))
+            .collect::<Vec<_>>();
+        let definitions = sources
+            .iter()
+            .cloned()
+            .map(SpawnDefinition::from_activation_source)
+            .collect::<Result<Vec<_>, _>>()
+            .expect("valid sources");
+        assert_eq!(definitions.len(), SOURCES);
+        assert_eq!(spawn_points_within_ceilings(&definitions), Ok(POINTS));
+        let split_runs = vec![row_definition(0, 1); SPLIT_RUNS];
+        assert_eq!(
+            spawn_points_within_ceilings(&split_runs),
+            Err(CarrierError::CapacityExceeded)
+        );
+        drop(split_runs);
+
+        let mut over = runtime(8);
+        assert_eq!(
+            over.begin_activation_spawn_sources(
+                (0..=CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX)
+                    .map(|index| source(index, false))
+                    .collect()
+            ),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert!(over.spawn_activation.is_none());
+        drop(over);
+
+        let mut runtime = runtime(POINTS + SPAWN_ACTIVATION_PLAYER_HEADROOM);
+        assert_eq!(runtime.begin_activation_spawn_sources(sources), Ok(POINTS));
+        let mut now = 0;
+        loop {
+            let progress = runtime
+                .realize_activation_spawn_window(now)
+                .expect("one window");
+            if progress.remaining == 0 {
+                assert_eq!(progress.realized_total, POINTS);
+                break;
+            }
+            now += spawn::OWNER_WINDOW_MICROS;
+        }
+        assert_eq!(runtime.carrier.spawns.len(), SOURCES);
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(points.len(), POINTS);
+        let first = points
+            .iter()
+            .take(2)
+            .map(|(point, _, live)| {
+                (
+                    (point.source, point.ordinal),
+                    spawned_creature(&runtime, live.expect("live")),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            first,
+            vec![
+                ((0, 0), Some((b"oteryn:creature/rat".to_vec(), 20))),
+                ((0, 1), Some((b"oteryn:creature/bat".to_vec(), 35))),
+            ]
+        );
     }
 
     /// Runs a begun activation one window per owner window from owner time 0, checking that no
