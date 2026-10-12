@@ -33,8 +33,8 @@ external_repositories: []
 
 ## Outcome
 
-- Owner decision 2026-10-11 (audit points 2 and 5, option a): CHAT-0, ATTACK-0, DEATH-0 and the Reference first player death decision are ACCEPTED.
-- A new acceptance decision records it, following ACCEPT-SOCIAL-MAP-0. The four documents change their status line only.
+- Owner decision 2026-10-11 (audit points 2 and 5, option a) accepted CHAT-0, ATTACK-0, DEATH-0 and the Reference first player death decision. After the independent reviews of 2026-10-12, only ATTACK-0 and DEATH-0 are ACCEPTED; CHAT-0 and the Reference first player death decision stay CANDIDATE.
+- A new acceptance decision records it, following ACCEPT-SOCIAL-MAP-0. The four documents change their status line and carry a review note.
 - Entry-room spell tile and rat facts are not changed here. They are follow-up records ENTRY-SPELL-TILES-1 and BOOT-RAT-POLICY-1.
 
 ## Architecture and source of truth
@@ -49,7 +49,7 @@ external_repositories: []
 
 ## Acceptance criteria
 
-- [x] Four decisions read ACCEPTED, each pointing to the acceptance decision.
+- [x] ATTACK-0 and DEATH-0 read ACCEPTED, pointing to the acceptance decision. CHAT-0 and Reference first player death read CANDIDATE with the review result.
 - [x] No rule text, wire, content, pin or golden change.
 - [x] Follow-up task records written for the entry-room facts.
 
@@ -92,11 +92,11 @@ external_repositories: []
 
 ## Independent review
 
-- required: NO. Documentation only; the Codex review is skipped for a purely documentation change.
-- exact head: `NOT_APPLICABLE`
-- method/auditor: `NOT_APPLICABLE`
-- material findings: `NOT_APPLICABLE`
-- verdict: `NOT_APPLICABLE`
+- required: YES. Each decision's own gate requires an independent review (owner option 1a, 2026-10-12).
+- exact head: `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13`
+- method/auditor: four separate read-only reviewer sessions, one per decision, not the author. Code and migrations read, no tests run.
+- material findings: CHAT-0 security (no pre-lock rate gate rule; cast-path mute not wired). Reference first player death: DUR-03 item loss not implemented, restart safety (respawn consumed before placement; missing policy respawns without durable death). ATTACK-0 and DEATH-0: none blocking.
+- verdict: ATTACK-0 ACCEPTED (protocol PASS, combat PASS). DEATH-0 ACCEPTED (receipt chain, guards, fencing PASS). CHAT-0 and Reference first player death reverted to CANDIDATE.
 
 ## PR and closeout
 

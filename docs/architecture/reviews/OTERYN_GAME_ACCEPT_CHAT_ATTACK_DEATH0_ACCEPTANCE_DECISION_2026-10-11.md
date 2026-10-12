@@ -1,11 +1,13 @@
 # ACCEPT-CHAT-ATTACK-DEATH-0 Acceptance of the chat, attack and player death decisions
 
 - Decision: `ACCEPT-CHAT-ATTACK-DEATH0-V1`
-- Status: **ACCEPTED BY OWNER 2026-10-11**. This records the owner's decision (audit points 2 and 5,
-  option a). It adds no rule text and changes no code, wire, migration or content.
+- Status: **PARTIALLY ACCEPTED BY OWNER 2026-10-11, after independent review 2026-10-12**. ATTACK-0
+  and DEATH-0 are ACCEPTED. CHAT-0 and the Reference first player death decision stay CANDIDATE
+  because their independent review found defects (section 3). It adds no rule text and changes no
+  code, wire, migration or content.
 - Answers: the audit finding that four decisions were still CANDIDATE while the Game server already
   implements them.
-- Accepts:
+- Accepts (ATTACK-0 and DEATH-0) or reopens (CHAT-0 and Reference first player death, section 3):
   - `reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md`
     (`CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`);
   - `reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md`
@@ -21,7 +23,7 @@
 
 ## 1. What becomes effective
 
-- The four status lines read ACCEPTED, each pointing here. No other line of the four documents
+- The ATTACK-0 and DEATH-0 status lines read ACCEPTED, each pointing here. CHAT-0 and the Reference first player death decision read CANDIDATE with their review result. No other line of the four documents
   changes.
 - Amendments that other decisions wrote as "pending on acceptance" of the target stay worded as
   they are. Each takes effect in the target only when its own source decision is accepted, as
@@ -36,3 +38,18 @@ pin change, not a documentation change. `native_spell_entry_room.json` is qualif
 flags in `native_entry.rs` (four cells, all `protection_zone: false`) and feeds pinned digests and
 goldens. It is carried by the follow-up task records `ENTRY-SPELL-TILES-1` and
 `BOOT-RAT-POLICY-1` (`docs/agents/tasks/`), which need their own allocation.
+
+## 3. Independent review (2026-10-12)
+
+Each decision's own gate requires an independent review. One read-only reviewer per decision, none
+of them the author, read the exact head `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13` and reported.
+
+| Decision | Review required by its gate | Verdict | Result |
+|---|---|---|---|
+| ATTACK-0 | protocol, combat | PASS, PASS | ACCEPTED. Residual notes in the decision document, for ATTACK-PARITY-1. |
+| DEATH-0 | receipt chain, guards, fencing | PASS, PASS, PASS | ACCEPTED. One rewording suggested for section 3.4. |
+| CHAT-0 | protocol, security, privacy | PASS, DEFECT, PASS | CANDIDATE. No rule requires a rate gate before the Channel lock and entity clone for a `say`; the cast-path mute of section 6 is not wired. |
+| Reference first player death | character durability, DUR-03 transfers, restart safety | PASS, DEFECT, DEFECT | CANDIDATE. Item loss (DEATH-3) is not implemented; the pending respawn is consumed before placement; a missing death policy lets a player respawn without a durable death. |
+
+A reviewer ran in a separate read-only session and read code and migrations without running tests.
+Reopened decisions need the defects fixed or the owner's explicit waiver, then a new review.

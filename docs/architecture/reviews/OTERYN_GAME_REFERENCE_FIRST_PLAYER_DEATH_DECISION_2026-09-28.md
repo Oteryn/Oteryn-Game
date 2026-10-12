@@ -1,8 +1,9 @@
 # Reference first player death decision
 
 - Decision: `REFERENCE-FIRST-PLAYER-DEATH-V1`
-- Status: **ACCEPTED with owner decisions D58-D60 and D62-D68 taken (§2)**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance requires
+- Status: **CANDIDATE with owner decisions D58-D60 and D62-D68 taken (§2)**. Acceptance requires
   exact-head validation, independent review and protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): character durability PASS for the DEATH-1 scope, DUR-03 transfers DEFECT (item loss is not implemented, DEATH-3), restart safety DEFECT (the pending respawn is consumed before the actor is placed, so a crash loses the recorded respawn position of §4.5; a missing death policy lets a player respawn without a durable death). The owner's acceptance is not recorded. Reopened as CANDIDATE until these are resolved and re-reviewed.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (target Global Tibia at 2026-09-27, D33)
 - Amends: `OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md` difference 1 (D58). Its

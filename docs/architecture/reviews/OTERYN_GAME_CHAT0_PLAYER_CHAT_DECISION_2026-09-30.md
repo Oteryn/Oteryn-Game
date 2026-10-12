@@ -1,8 +1,9 @@
 # CHAT-0 Player chat
 
 - Decision: `CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`
-- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol,
+- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   security and privacy) and protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to finish the playable game (2026-09-30); players cannot talk
   today

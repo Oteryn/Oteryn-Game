@@ -3,6 +3,7 @@
 - Decision: `DEATH0-CHARACTER-DEATH-RECEIPT-V1`
 - Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance requires exact-head validation, independent review and
   protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): receipt chain PASS, guards PASS, fencing PASS; no defect. Residual: §3.4 says the pending respawn is deleted in the same transaction as the placement, but the placement is runtime memory and the code consumes it in a separate transaction (at-least-once); suggest rewording.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Answers: the storage prerequisite of the Reference first player death decision (§4.3, child
   DEATH-0), required before DEATH-1 can commit anything
