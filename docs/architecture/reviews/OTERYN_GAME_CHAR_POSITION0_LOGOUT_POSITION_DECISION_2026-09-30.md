@@ -1,7 +1,7 @@
 # CHAR-POSITION-0 Durable logout position
 
 - Decision: `CHAR-POSITION0-LOGOUT-POSITION-V1`
-- Status: **ACCEPTED**. Accepted by the control plane on 2026-10-12 (`ACCEPT-CHAR-POSITION-0`, `OTERYN_GAME_ACCEPT_CHAR_POSITION0_ACCEPTANCE_DECISION_2026-10-12.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review
+- Status: **ACCEPTED**. Accepted by the control plane on 2026-10-12, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-CHAR-POSITION-0`, `OTERYN_GAME_ACCEPT_CHAR_POSITION0_ACCEPTANCE_DECISION_2026-10-12.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review
   (persistence) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the gap DEATH-0 §3.4 ("persisting a general Character position for ordinary logins
