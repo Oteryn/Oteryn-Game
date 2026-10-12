@@ -693,3 +693,21 @@ validation:
   - Commit a third-party table: §1.1 already rejects that.
   - Make owner samples blocking: they are not available now, and the formula reproduces the
     known official samples.
+
+## 6. Amendment A2 (DEATH-RESTART-SAFETY-1): no respawn without a durable death
+
+- **Problem.** The first player death review (2026-10-11) found that §1.2 and §1.5 let a session
+  with no binding respawn its dead player through the non-durable path. That respawn has no
+  durable death behind it, which contradicts the first player death decision §4.5: a respawn
+  follows only a committed death.
+- **Ruling.** The owner chose to fix restart safety before accepting the first player death
+  (2026-10-12, option a). A player death in a session with no binding (§1.2 absent section,
+  §1.5 unbound session, a context mismatch downgrade) does not respawn and does not retry. The
+  actor stays dead until the session ends. Nothing durable was written, so the next admission
+  recovers the Character normally (§4.5). Kill XP and Bestiary keep logging
+  `no_progression_binding`. A bound session's durable death keeps its pending respawn recorded
+  until the respawned actor is placed, and only then consumes it under the death's occurrence.
+- **Superseded text.** The phrases "current non-durable respawn path" in §1.2, §1.5 and the
+  §2 test list now read "stays dead with no durable write" under this amendment.
+- **Unchanged.** The binding rules, the context-mismatch refusal and its log, and the retry of
+  a bound session's retryable death failure.

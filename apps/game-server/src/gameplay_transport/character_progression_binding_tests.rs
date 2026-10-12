@@ -5,17 +5,19 @@
 
 use super::character_progression_binding::ProgressionUnbound;
 use super::{
-    AdmittedSession, DeathCommit, ProgressionSessions, SessionProgressionBinding, actor_spell,
-    death_commit_refusal, player_death_request, session_progression_binding, settle_session_death,
+    AdmittedSession, DeathCommit, ProgressionSessions, SessionDeath, SessionProgressionBinding,
+    actor_spell, death_commit_refusal, player_death_request, respawn_in_order,
+    session_progression_binding, settle_session_death, settled_respawn_consumed,
 };
 use crate::combat::CreatureDeathRewardInput;
 use crate::content::character_progression_content::{
     CHARACTER_EXPERIENCE_TABLE_LEVELS, CharacterProgressionContent, tests::section_bytes,
 };
 use crate::durability::DurabilityError;
+use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{ChannelId, GameSessionId, MovementLocalPosition, WorldId};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::sync::Arc;
 
 const ID: [u8; 16] = [
@@ -147,14 +149,15 @@ fn block_on<F: std::future::Future>(future: F) -> F::Output {
         .block_on(future)
 }
 
-/// #1964 Codex P1 4243820239 (ARCH-PROGRESSION-SOURCE-0 §1.5, DEATH-2 §4.3-§4.4): a session
-/// bound at admission whose Character interpretation is advanced by the control plane mid-session
-/// has its durable death refused with `ProgressionContextMismatch`. The death then completes on
-/// the non-durable respawn path after exactly one durable attempt: the session is downgraded to
-/// unbound, and neither a retry tick nor a later death of that session attempts the write again,
-/// so the actor is not left dead retrying for ever. Another session's binding is untouched.
+/// #1964 Codex P1 4243820239 (ARCH-PROGRESSION-SOURCE-0 §1.5, DEATH-2 §4.3-§4.4) and
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5): a session bound at admission whose
+/// Character interpretation is advanced by the control plane mid-session has its durable death
+/// refused with `ProgressionContextMismatch`. After exactly one durable attempt the session is
+/// downgraded to unbound and the death is decided `NoDurableDeath`: neither a retry tick nor a
+/// later death of that session attempts the write again, and none of them respawns the actor
+/// without a durable death. Another session's binding is untouched.
 #[test]
-fn a_binding_refused_mid_session_settles_its_death_non_durably_once() {
+fn a_binding_refused_mid_session_never_respawns_without_a_durable_death() {
     let (refused, other) = (session(1), session(2));
     let binding = Arc::new(binding());
     let sessions = bound(&[
@@ -176,15 +179,19 @@ fn a_binding_refused_mid_session_settles_its_death_non_durably_once() {
             death_commit_refusal(&CharacterProgressionError::ProgressionContextMismatch),
             DeathCommit::ContextMismatch
         );
-        assert!(
-            settle_session_death(&sessions, refused, attempt(DeathCommit::ContextMismatch)).await
+        assert_eq!(
+            settle_session_death(&sessions, refused, attempt(DeathCommit::ContextMismatch)).await,
+            SessionDeath::NoDurableDeath
         );
         assert_eq!(attempts.get(), 1);
         assert!(session_progression_binding(&sessions, refused).is_none());
         assert!(session_progression_binding(&sessions, other).is_some());
-        // The session is unbound now: later settles respawn at once with no durable attempt.
+        // The session is unbound now: later settles attempt nothing and never respawn.
         for _ in 0..3 {
-            assert!(settle_session_death(&sessions, refused, attempt(DeathCommit::Settled)).await);
+            assert_eq!(
+                settle_session_death(&sessions, refused, attempt(DeathCommit::Settled)).await,
+                SessionDeath::NoDurableDeath
+            );
         }
         assert_eq!(attempts.get(), 1);
     });
@@ -208,10 +215,14 @@ fn only_a_context_refusal_of_the_used_binding_unbinds_the_session() {
         assert_eq!(death_commit_refusal(&error), DeathCommit::Unavailable);
     }
     block_on(async {
-        assert!(
-            !settle_session_death(&sessions, target, |_| async { DeathCommit::Unavailable }).await
+        assert_eq!(
+            settle_session_death(&sessions, target, |_| async { DeathCommit::Unavailable }).await,
+            SessionDeath::Retry
         );
-        assert!(settle_session_death(&sessions, target, |_| async { DeathCommit::Settled }).await);
+        assert_eq!(
+            settle_session_death(&sessions, target, |_| async { DeathCommit::Settled }).await,
+            SessionDeath::Durable
+        );
         let kept = session_progression_binding(&sessions, target).expect("bound");
         assert!(Arc::ptr_eq(&kept, &binding));
         // The refused attempt used `binding`; a replacement installed meanwhile stays.
@@ -224,15 +235,107 @@ fn only_a_context_refusal_of_the_used_binding_unbinds_the_session() {
             async { DeathCommit::ContextMismatch }
         })
         .await;
-        assert!(refused);
+        assert_eq!(refused, SessionDeath::NoDurableDeath);
         let kept = session_progression_binding(&sessions, target).expect("replacement");
         assert!(Arc::ptr_eq(&kept, &replacement));
-        // An unknown session respawns non-durably without an attempt.
-        assert!(
-            settle_session_death(&sessions, session(4), |_| async {
-                DeathCommit::Unavailable
-            })
-            .await
-        );
     });
+}
+
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5): a session without a progression
+/// binding (a World pin without a death policy, or any unbound admission of §1.5) commits no
+/// durable death, so its player is never respawned: no durable attempt is made, no placement,
+/// consumption or refill runs, and every later cadence decides the same.
+#[test]
+fn a_session_without_a_death_policy_never_respawns_its_dead_player() {
+    let sessions = bound(&[]);
+    let unbound = session(4);
+    let steps = RefCell::new(Vec::new());
+    block_on(async {
+        for _ in 0..3 {
+            let refilled = respawn_in_order(
+                settle_session_death(&sessions, unbound, |_| {
+                    steps.borrow_mut().push("commit");
+                    async { DeathCommit::Settled }
+                }),
+                step(&steps, "place", true),
+                step(&steps, "consume", true),
+                async {
+                    steps.borrow_mut().push("refill");
+                    Some(())
+                },
+            )
+            .await;
+            assert_eq!(refilled, None);
+        }
+    });
+    assert!(steps.borrow().is_empty(), "{:?}", steps.borrow());
+}
+
+async fn step(steps: &RefCell<Vec<&'static str>>, name: &'static str, outcome: bool) -> bool {
+    steps.borrow_mut().push(name);
+    outcome
+}
+
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): the pending respawn
+/// is consumed only after the actor is placed, and the vitals are refilled (ending the death)
+/// only after the consumption. A step that fails stops the chain with the actor still dead, so
+/// a restart at that point finds the pending respawn recorded for the next admission.
+#[test]
+fn an_in_session_respawn_places_then_consumes_then_refills() {
+    let run = |settled: SessionDeath, placed: bool, consumed: bool| {
+        let steps = RefCell::new(Vec::new());
+        let refilled = block_on(respawn_in_order(
+            async {
+                steps.borrow_mut().push("settle");
+                settled
+            },
+            step(&steps, "place", placed),
+            step(&steps, "consume", consumed),
+            async {
+                steps.borrow_mut().push("refill");
+                Some(7_u64)
+            },
+        ));
+        (refilled, steps.into_inner())
+    };
+    assert_eq!(
+        run(SessionDeath::Durable, true, true),
+        (Some(7), vec!["settle", "place", "consume", "refill"])
+    );
+    // A consumption without an outcome keeps the actor dead and its row recorded.
+    assert_eq!(
+        run(SessionDeath::Durable, true, false),
+        (None, vec!["settle", "place", "consume"])
+    );
+    // A placement that cannot complete consumes nothing.
+    assert_eq!(
+        run(SessionDeath::Durable, false, true),
+        (None, vec!["settle", "place"])
+    );
+    // No durable outcome: nothing is placed, consumed or refilled.
+    for undecided in [SessionDeath::Retry, SessionDeath::NoDurableDeath] {
+        assert_eq!(run(undecided, true, true), (None, vec!["settle"]));
+    }
+}
+
+/// DEATH-RESTART-SAFETY-1: after a durable settle and the placement, the consumption settles the
+/// respawn when it deletes this occurrence's row, or finds none (an earlier consumption whose
+/// acknowledgement was lost). An error or another occurrence's row settles nothing.
+#[test]
+fn a_settled_respawn_is_consumed_by_its_own_occurrence_or_already_gone() {
+    let occurrence = |tag: u8| {
+        let mut id = ID;
+        id[15] = tag;
+        PlayerDeathOccurrence::from_bytes(id).expect("occurrence")
+    };
+    let row = |tag: u8| {
+        Ok::<_, &str>(Some(ConsumedRespawn {
+            occurrence: occurrence(tag),
+            respawn_position: vec![0; 10],
+        }))
+    };
+    assert!(settled_respawn_consumed(occurrence(1), row(1)));
+    assert!(settled_respawn_consumed(occurrence(1), Ok::<_, &str>(None)));
+    assert!(!settled_respawn_consumed(occurrence(1), row(2)));
+    assert!(!settled_respawn_consumed(occurrence(1), Err("consumption")));
 }

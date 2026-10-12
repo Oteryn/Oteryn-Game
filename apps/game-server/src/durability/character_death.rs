@@ -13,8 +13,12 @@
 //!
 //! DEATH-2 adds the consumption of the pending respawn (DEATH-0 §3.4) and the
 //! sequenced settlement the Channel owner runs off its lane for one runtime
-//! death: commit (or replay) the death in the Character's revision slot, then
-//! consume its pending respawn, before the player is placed again.
+//! death: commit (or replay) the death in the Character's revision slot.  The
+//! death's own pending respawn stays recorded until the caller has placed the
+//! player at its respawn position and consumes it
+//! ([`DurabilityRoot::consume_pending_respawn`]), so a restart between the
+//! commit and the placement never loses the recorded respawn (Reference first
+//! player death §4.5, DEATH-RESTART-SAFETY-1).
 
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
@@ -503,10 +507,12 @@ impl DurabilityRoot {
     /// progression row runs the D88 initializer first, as an XP award does, and
     /// an earlier death's unconsumed respawn is consumed first: the actor that
     /// died again was alive and placed, so that respawn has happened).
-    /// The death's own pending respawn is then consumed, so the respawn the
-    /// caller places next never leaves the obligation behind.  A retry after
-    /// any partial outcome converges: the death replays and the consumption
-    /// finds nothing left.
+    /// The death's own pending respawn is left recorded: the caller places the
+    /// player at its respawn position and only then consumes it under the
+    /// occurrence ([`Self::consume_pending_respawn`]).  A restart before that
+    /// consumption leaves the row for the next admission, which places the
+    /// new actor at the recorded position (DEATH-0 §3.4).  A retry after any
+    /// partial outcome converges: the death replays its first receipt.
     pub async fn settle_player_death<const N: usize>(
         &self,
         sequencer: &CharacterRevisionSequencer,
@@ -566,17 +572,6 @@ impl DurabilityRoot {
         };
         let (CharacterDeathOutcome::Committed(committed)
         | CharacterDeathOutcome::AlreadyCommitted(committed)) = outcome;
-        let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
-        self.consume_pending_respawn(
-            authority,
-            node,
-            CurrentCharacterGameplayFence {
-                expected_character_revision,
-                ..fence
-            },
-            Some(occurrence),
-        )
-        .await?;
         Ok(committed)
     }
 

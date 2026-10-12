@@ -931,11 +931,12 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
     })
 }
 
-/// DEATH-2 settlement: one runtime death commits in the Character's revision slot and consumes
-/// its own pending respawn; a retry after the outcome replays the first receipt and writes
-/// nothing more.
+/// DEATH-2 settlement: one runtime death commits in the Character's revision slot and leaves
+/// its own pending respawn recorded for the placement (DEATH-RESTART-SAFETY-1); a retry after the
+/// outcome replays the first receipt and writes nothing more, and the respawn is consumed once,
+/// after the placement, under the occurrence.
 #[test]
-fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestResult {
+fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> TestResult {
     run(|admin| {
         Box::pin(async move {
             let harness = create(admin, "death_settle", &[]).await?;
@@ -962,7 +963,8 @@ fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestRe
                 .map_err(|error| format!("{error:?}"))?;
             // Level 9: 0.59 × 50 × 44 = 1298.
             assert_eq!((first.experience_after.get(), first.level_after), (5202, 8));
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(90));
+            assert_eq!(snapshot(&harness.pool).await?, pending);
             // The fence's revision is replaced by the slot's cursor; a retry replays.
             let replay = harness
                 .root
@@ -971,6 +973,38 @@ fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestRe
                     &authority,
                     &harness.node,
                     fence(1)?,
+                    death(90, &[])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(replay, first);
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+            // The placed actor's respawn is consumed once, under its occurrence.
+            for expected in [Some(occurrence(90)?), None] {
+                assert_eq!(
+                    harness
+                        .root
+                        .consume_pending_respawn(
+                            &authority,
+                            &harness.node,
+                            fence(2)?,
+                            Some(occurrence(90)?)
+                        )
+                        .await
+                        .map_err(|error| format!("{error:?}"))?
+                        .map(|consumed| consumed.occurrence),
+                    expected
+                );
+            }
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // A retry after the consumption still replays and writes nothing.
+            let replay = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
                     death(90, &[])?,
                 )
                 .await
@@ -996,7 +1030,7 @@ fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestRe
             assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
             // An earlier death whose respawn was never consumed (a failed admission
             // consumption): the next settled death consumes it first, then commits and
-            // consumes its own. Level 8: 0.58 × 50 × 32 = 928 for each death.
+            // records its own. Level 8: 0.58 × 50 × 32 = 928 for each death.
             harness
                 .root
                 .commit_character_death(&authority, &harness.node, fence(2)?, death(93, &[])?)
@@ -1014,7 +1048,10 @@ fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestRe
                 .await
                 .map_err(|error| format!("{error:?}"))?;
             assert_eq!((again.experience_after.get(), again.level_after), (3346, 7));
-            assert_eq!(snapshot(&harness.pool).await?, "4|4,7,3346|0|3|0|-|-");
+            assert_eq!(
+                snapshot(&harness.pool).await?,
+                format!("4|4,7,3346|0|3|0|-|{}", uuid(94))
+            );
             drop(authority);
             drop(seal);
             harness.cleanup().await
@@ -1059,9 +1096,154 @@ fn a_player_death_without_progression_initializes_it_first() -> TestResult {
                 ),
                 (1, 1, 0, 2)
             );
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,1,0|0|1|0|-|-");
+            assert_eq!(
+                snapshot(&harness.pool).await?,
+                format!("2|2,1,0|0|1|0|-|{}", uuid(92))
+            );
             drop(authority);
             drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): a node restart
+/// between the durable death and the placement of the respawned actor loses nothing and
+/// duplicates nothing. The restarted node finds the respawn pending at its recorded position,
+/// a replay of the same occurrence returns the first receipt with the experience lost once, a
+/// second death cannot commit before that respawn is consumed, and the consumption after the
+/// admission's placement runs once. A restart after the consumption finds nothing to replay.
+#[test]
+fn a_restart_before_the_placement_keeps_the_respawn_and_loses_experience_once() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_restart", &["spark"]).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let first = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    death(95, &["spark"])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            // Level 9: 0.59 × 50 × 44 = 1298, one blessing −8%: 1194.16 → 1194.
+            assert_eq!(first.experience_lost.get(), 1194);
+            let pending = format!("2|2,8,5306|0|1|0|-|{}", uuid(95));
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+            // The node stops before the actor is placed.
+            drop(authority);
+            drop(seal);
+
+            let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(restarted.maintain_ready_once().await?);
+            let restart_seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let restart_authority = restarted
+                .open_character_authority(&restart_seal)
+                .await
+                .map_err(|error| format!("restart integrity: {error:?}"))?;
+            let restart_sequencer = CharacterRevisionSequencer::new();
+            // The recorded respawn survives the restart for the next admission.
+            let recorded = Some(ConsumedRespawn {
+                occurrence: occurrence(95)?,
+                respawn_position: b"temple:thais".to_vec(),
+            });
+            assert_eq!(
+                restarted
+                    .pending_respawn(&restart_authority, &harness.node, fence(2)?)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                recorded
+            );
+            // A replay of the same occurrence (a lost acknowledgement) loses nothing twice.
+            let replay = restarted
+                .settle_player_death(
+                    &restart_sequencer,
+                    &restart_authority,
+                    &harness.node,
+                    fence(2)?,
+                    death(95, &["spark"])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(replay, first);
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+            // No new death commits over the unconsumed respawn.
+            assert!(matches!(
+                restarted
+                    .commit_character_death(
+                        &restart_authority,
+                        &harness.node,
+                        fence(2)?,
+                        death(96, &[])?
+                    )
+                    .await,
+                Err(CharacterProgressionError::RespawnPending)
+            ));
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+            // The admission placed the new actor at the recorded position, then consumes it once.
+            assert_eq!(
+                restarted
+                    .consume_pending_respawn(
+                        &restart_authority,
+                        &harness.node,
+                        fence(2)?,
+                        Some(occurrence(95)?)
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                recorded
+            );
+            let respawned = "2|2,8,5306|0|1|0|-|-";
+            assert_eq!(snapshot(&harness.pool).await?, respawned);
+            drop(restart_authority);
+            drop(restart_seal);
+            drop(restarted);
+
+            // A restart after the consumption has nothing to replay.
+            let again = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(again.maintain_ready_once().await?);
+            let again_seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let again_authority = again
+                .open_character_authority(&again_seal)
+                .await
+                .map_err(|error| format!("restart integrity: {error:?}"))?;
+            assert_eq!(
+                again
+                    .pending_respawn(&again_authority, &harness.node, fence(2)?)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                None
+            );
+            assert_eq!(
+                again
+                    .reconcile_character_death(&again_authority, occurrence(95)?)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                Some(first)
+            );
+            assert_eq!(snapshot(&harness.pool).await?, respawned);
+            drop(again_authority);
+            drop(again_seal);
+            drop(again);
             harness.cleanup().await
         })
     })
