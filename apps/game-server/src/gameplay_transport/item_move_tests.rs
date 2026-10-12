@@ -242,6 +242,9 @@ enum Replay {
     Conflicting,
 }
 
+/// The occupied slots of one equipment read.
+type Slots = Vec<(EquipmentSlot, ViewItem)>;
+
 /// The Channel owner as command 9 sees it: the replay read, one TRANSFER result, the backpack and
 /// one observation per item target read.
 struct MoveAuthority {
@@ -259,6 +262,9 @@ struct MoveAuthority {
     equip_moves: RefCell<Vec<(u64, EquipmentMove)>>,
     equipment: RefCell<Option<Vec<(EquipmentSlot, ViewItem)>>>,
     after_equip: Option<InventoryItems>,
+    /// Equipment reads answered in order before `equipment`, and the inventory reads counted.
+    equipment_reads: RefCell<VecDeque<Option<Slots>>>,
+    inventory_reads: Cell<u32>,
 }
 
 impl MoveAuthority {
@@ -276,6 +282,8 @@ impl MoveAuthority {
             equip_moves: RefCell::new(Vec::new()),
             equipment: RefCell::new(Some(Vec::new())),
             after_equip: None,
+            equipment_reads: RefCell::new(VecDeque::new()),
+            inventory_reads: Cell::new(0),
         }
     }
 
@@ -339,6 +347,7 @@ impl FreshAdmissionAuthority for MoveAuthority {
         _actor: ExactActorRef,
         _game_session_id: GameSessionId,
     ) -> Option<InventoryItems> {
+        self.inventory_reads.set(self.inventory_reads.get() + 1);
         self.inventory.borrow().clone()
     }
 
@@ -347,6 +356,9 @@ impl FreshAdmissionAuthority for MoveAuthority {
         _actor: ExactActorRef,
         _game_session_id: GameSessionId,
     ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+        if let Some(read) = self.equipment_reads.borrow_mut().pop_front() {
+            return read;
+        }
         self.equipment.borrow().clone()
     }
 
@@ -754,6 +766,7 @@ fn every_equipment_refusal_answers_its_section_4_outcome() {
         ),
         // Swap is the next ITEM-MOVE-2a slice.
         (Refusal::Occupied, ItemMoveOutcome::NotSupported),
+        (Refusal::TimedNotHosted, ItemMoveOutcome::NotSupported),
         (Refusal::Rejected, ItemMoveOutcome::Rejected),
     ] {
         assert_eq!(equipment_outcome(refusal), outcome, "{refusal:?}");
@@ -1360,6 +1373,84 @@ fn capability_12_equips_a_backpack_entry_by_command_9() -> TestResult {
         let ended = ended(end)?;
         assert_eq!(ended.next_command_id, 2);
         assert_eq!(ended.item_view, mirror.continuity());
+        Ok(())
+    })
+}
+
+// EQUIP-WIRE-1 (#2009 thread 4246911927): domain 9's two custody halves describe one committed
+// state.
+
+fn equip_view() -> SessionItemView {
+    SessionItemView::resume(ItemViewContinuity::default()).with_equip_drop()
+}
+
+fn slots(worn: &[(EquipmentSlot, u16)]) -> Option<Slots> {
+    Some(
+        worn.iter()
+            .map(|(slot, n)| (*slot, item(instance(*n))))
+            .collect(),
+    )
+}
+
+#[test]
+fn an_equipment_move_between_the_two_halves_is_read_again() -> TestResult {
+    run(async {
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        authority.show(Some(worn(&[1], &[(EquipmentSlot::RightHand, 2)])));
+        // Entry 2 was equipped while the backpack was read: the slots changed around it.
+        *authority.equipment_reads.borrow_mut() =
+            VecDeque::from([slots(&[]), slots(&[(EquipmentSlot::RightHand, 2)])]);
+        let shown = observe_inventory(
+            &authority,
+            actor(),
+            use_command(1).game_session_id,
+            &equip_view(),
+        )
+        .await
+        .ok_or("a consistent pair")?;
+        assert_eq!(shown, worn(&[1], &[(EquipmentSlot::RightHand, 2)]));
+        assert_eq!(authority.inventory_reads.get(), 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn an_item_in_both_halves_is_never_shown() -> TestResult {
+    run(async {
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        // Entry 1 is in the backpack and in a slot on every read: no committed state has both.
+        authority.show(Some(worn(&[1], &[(EquipmentSlot::RightHand, 1)])));
+        assert_eq!(
+            observe_inventory(
+                &authority,
+                actor(),
+                use_command(1).game_session_id,
+                &equip_view()
+            )
+            .await,
+            None
+        );
+        assert_eq!(
+            authority.inventory_reads.get(),
+            INVENTORY_SNAPSHOT_ATTEMPTS as u32
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn without_capability_12_the_backpack_is_read_once_and_no_slot_is_read() -> TestResult {
+    run(async {
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        authority.show(Some(worn(&[1], &[(EquipmentSlot::RightHand, 1)])));
+        *authority.equipment_reads.borrow_mut() = VecDeque::from([None]);
+        let view = SessionItemView::resume(ItemViewContinuity::default());
+        let shown = observe_inventory(&authority, actor(), use_command(1).game_session_id, &view)
+            .await
+            .ok_or("the backpack")?;
+        assert_eq!(shown, inventory(&[1]));
+        assert_eq!(authority.inventory_reads.get(), 1);
+        assert_eq!(authority.equipment_reads.borrow().len(), 1);
         Ok(())
     })
 }

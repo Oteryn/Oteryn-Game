@@ -4,6 +4,11 @@
 //! transaction through `apply_equipment_in_transaction`, keyed by the command's CommandRef, under
 //! the spell lane (key-33 writer) and with the Channel content pin of the active generation.
 //!
+//! Timed items (TIMED-RT-1b, ITEM-MOVE-WIRE-1 §4 slot wiring): the Game node runs no
+//! `TimedItemHost` yet, so no equipped item has a live lane. An equip of a timed definition is
+//! refused (`NOT_SUPPORTED`) before any write instead of entering a slot non-live; an unequip
+//! moves an item that has no lane, so there is no accrued state to stop, checkpoint or drain.
+//!
 //! Domain 9 shows the occupied slots under capability 12, read through the same current-fence
 //! reader movement uses, and names each item by the pinned generation's Item definition index.
 
@@ -15,8 +20,9 @@ use super::item_move::{
 use super::item_ref_admission::{definition_ref, pinned_index};
 use super::item_view::{ItemKey, ViewItem};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
-use crate::content::ReferenceItemField;
 use crate::content::native_gameplay::NativeGameplayState;
+use crate::content::{ReferenceItemField, ReferenceItemTarget};
+use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::item_view::EquipmentSlot;
@@ -32,6 +38,21 @@ impl EquipmentMoveContent for NativeGameplayState {
                     ReferenceItemField::NotApplicable
                 )
             })
+    }
+
+    /// The hosting runtime's own reading of a timed definition (TIMED-RT-1b): a definition it
+    /// would run, or one whose timed content conflicts, is timed.
+    fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
+        let Some(policy) = self.item_policy(production_key, revision_ref) else {
+            return true;
+        };
+        let Ok(definition) = ReferenceItemTarget::new(production_key, revision_ref) else {
+            return true;
+        };
+        !matches!(
+            resolve_timed_definition(&definition, &policy.record().semantics),
+            Ok(None)
+        )
     }
 }
 
@@ -259,6 +280,19 @@ mod tests {
         EquipmentSlot::Ring,
         EquipmentSlot::Ammo,
     ];
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_definition_the_generation_does_not_name_is_timed_and_never_enters_a_slot() {
+        // The fixture generation has no Item profiles: no definition is known to be untimed.
+        let controller = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .expect("native gameplay");
+        assert!(native.is_timed_item("fixture:unknown", "definition-r1"));
+        assert!(native.is_timed_item("", ""));
+    }
 
     #[test]
     fn every_wire_slot_maps_to_its_durable_code_and_back() {

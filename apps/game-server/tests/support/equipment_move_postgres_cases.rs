@@ -3,7 +3,9 @@
 // main-backpack entry and a free slot, writes one equipment receipt and never advances
 // CharacterRevision; every refusal rolls back and writes nothing. The replay-first read finds
 // the receipt by its CommandRef. The policies are a test-only qualified profile with the same
-// shape the active NativeGameplayState lookup produces.
+// shape the active NativeGameplayState lookup produces. A resent CommandRef replays its receipt
+// under a per-CommandRef lock that the replay read also takes, and a timed item never enters a
+// slot while the Game node hosts no timed lane.
 use crate::corpse_transfer_postgres_cases::{equip_backpack, locations, typed};
 use crate::domain::CharacterId;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -25,6 +27,7 @@ const SWORD: &str = "fixture:equip.sword";
 const ARMOR: &str = "fixture:equip.armor";
 const HEAVY: &str = "fixture:equip.heavy-armor";
 const BAG: &str = "fixture:equip.bag";
+const TIMED: &str = "fixture:equip.timed-helmet";
 /// Durable slot codes (ITEM-MOVE-WIRE-1 §2).
 const TORSO: u8 = 2;
 const HEAD: u8 = 1;
@@ -71,6 +74,7 @@ impl EquipmentPolicyLookup for Profile {
             ARMOR => policy(Some(TORSO), 0, None),
             HEAVY => policy(Some(TORSO), 999, None),
             BAG => policy(Some(TORSO), 0, Some(8)),
+            TIMED => policy(Some(HEAD), 0, None),
             BACKPACK => policy(None, 0, Some(3)),
             _ => None,
         }
@@ -80,6 +84,10 @@ impl EquipmentPolicyLookup for Profile {
 impl EquipmentMoveContent for Profile {
     fn is_plain_item(&self, production_key: &str, _revision_ref: &str) -> bool {
         ![BAG, BACKPACK].contains(&production_key)
+    }
+
+    fn is_timed_item(&self, production_key: &str, _revision_ref: &str) -> bool {
+        production_key == TIMED
     }
 }
 
@@ -309,6 +317,70 @@ fn an_item_is_equipped_and_unequipped_once_and_every_refusal_writes_nothing() ->
         );
         assert_eq!(footprint(&harness).await?, full);
         assert_eq!(character_revision(&harness).await?, revision);
+
+        // A resent CommandRef replays its own receipt; another move under it writes nothing.
+        let replayed = moved(19, unequip(sword, WEAPON))
+            .await?
+            .map_err(|refusal| format!("expected a replay, got {refusal:?}"))?;
+        assert!(replayed.replayed);
+        assert_eq!(
+            moved(19, equip(sword, WEAPON)).await?.err(),
+            Some(EquipmentMoveRefusal::Rejected)
+        );
+        assert_eq!(footprint(&harness).await?, full);
+
+        // A timed item never enters a slot: nothing is written.
+        let timed = harness.mint(&authority, TIMED, 1).await?;
+        match harness
+            .transfer(
+                &authority,
+                fence()?,
+                to_backpack(command(21)?, timed, plain(TIMED)),
+            )
+            .await
+            .map_err(debug)?
+        {
+            ItemTransferOutcome::Committed(_) => {}
+            other => return Err(format!("expected a commit, got {other:?}").into()),
+        }
+        let stocked = footprint(&harness).await?;
+        assert_eq!(
+            moved(22, equip(timed, HEAD)).await?.err(),
+            Some(EquipmentMoveRefusal::TimedNotHosted)
+        );
+        assert_eq!(footprint(&harness).await?, stocked);
+
+        // The replay read waits for an attempt of the same CommandRef that holds its lock.
+        let mut holder = harness.pool.begin().await?;
+        let mut key = id(SESSION).to_vec();
+        key.extend_from_slice(&23_u64.to_be_bytes());
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended(\
+             'oteryn:equipment-move:' || encode($1, 'hex'), 0))",
+        )
+        .bind(key.as_slice())
+        .execute(&mut *holder)
+        .await?;
+        let released = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let release = tokio::spawn({
+            let released = released.clone();
+            async move {
+                tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                released.store(true, std::sync::atomic::Ordering::SeqCst);
+                holder.rollback().await
+            }
+        });
+        let read = harness
+            .root
+            .read_equipment_move_receipt(&authority, character, command(23)?)
+            .await
+            .map_err(debug)?;
+        let read = Ok::<_, Box<dyn std::error::Error>>((
+            read,
+            released.load(std::sync::atomic::Ordering::SeqCst),
+        ));
+        release.await??;
+        assert_eq!(read?, (EquipmentMoveReplay::Absent, true));
 
         drop(authority);
         drop(seal);

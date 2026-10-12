@@ -63,28 +63,56 @@ pub(super) const fn equipment_outcome(refusal: EquipmentMoveRefusal) -> ItemMove
         EquipmentMoveRefusal::NoRoom => ItemMoveOutcome::NoRoom,
         EquipmentMoveRefusal::SlotMismatch => ItemMoveOutcome::SlotMismatch,
         EquipmentMoveRefusal::RequirementNotMet => ItemMoveOutcome::RequirementNotMet,
-        EquipmentMoveRefusal::Occupied => ItemMoveOutcome::NotSupported,
+        EquipmentMoveRefusal::Occupied | EquipmentMoveRefusal::TimedNotHosted => {
+            ItemMoveOutcome::NotSupported
+        }
         EquipmentMoveRefusal::Rejected => ItemMoveOutcome::Rejected,
     }
 }
 
+/// How many times [`observe_inventory`] reads the two custody halves before it gives up.
+pub(super) const INVENTORY_SNAPSHOT_ATTEMPTS: usize = 3;
+
 /// Domain 9's content for `view`: the main backpack and its entries, and under capability 12 the
-/// occupied equipment slots read after it. `None` when either cannot be read.
+/// occupied equipment slots. The two halves are separate durable reads, so under capability 12
+/// the equipment is read before and after the backpack. The pair is kept only when both equipment
+/// reads agree and no item is in both halves; otherwise an equipment move committed between the
+/// reads, and the pair is read again. `None` when a half cannot be read or the halves never
+/// agree within [`INVENTORY_SNAPSHOT_ATTEMPTS`].
 pub(super) async fn observe_inventory<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     game_session_id: GameSessionId,
     view: &SessionItemView,
 ) -> Option<InventoryItems> {
-    let mut inventory = authority
-        .observe_character_inventory(actor, game_session_id)
-        .await?;
-    if view.equip_drop() {
-        inventory.equipment = authority
+    if !view.equip_drop() {
+        return authority
+            .observe_character_inventory(actor, game_session_id)
+            .await;
+    }
+    for _ in 0..INVENTORY_SNAPSHOT_ATTEMPTS {
+        let before = authority
             .observe_character_equipment(actor, game_session_id)
             .await?;
+        let mut inventory = authority
+            .observe_character_inventory(actor, game_session_id)
+            .await?;
+        let after = authority
+            .observe_character_equipment(actor, game_session_id)
+            .await?;
+        let worn_in_backpack = after.iter().any(|(_, worn)| {
+            inventory
+                .main_backpack
+                .iter()
+                .chain(&inventory.entries)
+                .any(|entry| entry.key == worn.key)
+        });
+        if before == after && !worn_in_backpack {
+            inventory.equipment = after;
+            return Some(inventory);
+        }
     }
-    Some(inventory)
+    None
 }
 
 /// What the connection does with one command 9.

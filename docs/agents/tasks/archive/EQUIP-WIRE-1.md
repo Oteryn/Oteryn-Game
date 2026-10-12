@@ -59,6 +59,9 @@ equipment when the session selected capability 12.
 - A resent CommandId that committed answers `MOVED` without a second write; an unknown outcome ends the connection.
 - CharacterRevision does not advance.
 - Ground stays `NOT_SUPPORTED`.
+- A timed item (duration, charges or unknown timed content) never enters a slot while the Game node hosts no timed lane: `NOT_SUPPORTED`, nothing written.
+- The move writer and the replay read take one per-CommandRef lock, so `Absent` proves no attempt of the same CommandRef is in flight and a resent CommandRef replays its own receipt.
+- Domain 9 under capability 12 shows one committed state: the equipment is read before and after the backpack and the pair is kept only when they agree and no item is in both halves.
 - Capability 12 stays `offered: false` in this slice (see Closeout).
 
 ## Validation
@@ -66,6 +69,7 @@ equipment when the session selected capability 12.
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
 - `cargo test --locked -p oteryn-game-server --lib --quiet`: 2810 pass, 1 fail (`content::item_admission::tests::pinned_cheese_packet_digest_and_evidence`: the tracked reference file `docs/reference/spells/r21-local-candidate/item-profiles/item-profiles.json` is absent from the local checkout; unrelated to this change)
+- `cargo test --locked -p oteryn-game-server --lib --quiet gameplay_transport` (review round 1): 480 pass
 - `OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test item_ref_production --quiet` on PostgreSQL 17.6: 1042 pass (includes `equipment_move_postgres_cases`)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
@@ -78,9 +82,16 @@ equipment when the session selected capability 12.
   lane, the session item fence and the Channel content pin, with a replay-first equipment receipt
   read by CommandRef. Domain 9 shows the occupied slots under capability 12. CharacterRevision
   never advances (Postgres test). No migration; 0082 stays leased for the rest of ITEM-MOVE-2a.
+- Review round 1 (#2009): P1 4246911910 (timed slot wiring) repaired fail-closed: the Game node
+  runs no `TimedItemHost` (no production call site exists), so an equip of a timed definition is
+  refused before any write and an unequip moves an item that has no lane. Making a timed item
+  live in its slot stays with the timed host's production wiring. P1 4246911918 repaired: one
+  `pg_advisory_xact_lock` per CommandRef in the writer and the replay read, and the writer replays
+  its own receipt under it. P2 4246911927 fixed: domain 9 keeps a pair of reads only when the
+  equipment read before and after the backpack agree and no item is in both halves.
 - Not offered: capability 12 stays `offered: false`. The ITEM-MOVE-2a offer condition (§2.8)
   also needs swap, the B3 merge on unequip, Premium at commit and the timed slot call sites.
 - Follow-ups: swap and its guards (migration 0082); B3 stack merge on unequip; Premium check at
-  commit; timed-host slot call sites; capability 12 offer with a production-path admission test;
+  commit; live timed lanes in slots once a production `TimedItemHost` exists; capability 12 offer with a production-path admission test;
   Ground drop (ITEM-MOVE-2b); quiver and EXTRA slot rules; the equipment receipt lookup adds one
   durable read per command 9.

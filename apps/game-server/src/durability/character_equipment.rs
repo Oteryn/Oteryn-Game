@@ -871,6 +871,10 @@ pub(crate) enum EquipmentMoveRefusal {
     RequirementNotMet,
     /// The destination slot holds an item: the swap is not in this slice.
     Occupied,
+    /// The item is timed (duration or charges, or conflicting timed content). An equip makes a
+    /// timed item live in its slot (ITEM-MOVE-WIRE-1 §4, TIMED-ITEM-0B §5.1), and the Game node
+    /// hosts no timed lane yet, so it never enters a slot here.
+    TimedNotHosted,
     Rejected,
 }
 
@@ -878,6 +882,9 @@ pub(crate) enum EquipmentMoveRefusal {
 pub(crate) trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
     /// True only when the definition is known to carry no `container` semantics.
     fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    /// True unless the definition is known to have no timed field (`temporal` active-time
+    /// budget or `charges`); unknown or conflicting timed content is timed.
+    fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool;
 }
 
 /// One equip (`to_slot`) or unequip (`from_slot`) of a whole item by durable slot code.
@@ -971,10 +978,68 @@ async fn precheck_move(
             }
             let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
                 .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
-            Ok(contents.then_some(EquipmentMoveRefusal::SlotMismatch))
+            if contents {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            }
+            Ok(content
+                .is_timed_item(&key, &revision)
+                .then_some(EquipmentMoveRefusal::TimedNotHosted))
         }
         _ => Ok(Some(EquipmentMoveRefusal::Rejected)),
     }
+}
+
+/// EQUIP-WIRE-1: the per-CommandRef serialization point of the live equipment move writer and
+/// its replay read (the `lock_cause` pattern of `item_transfer.rs`), held to the end of the
+/// transaction.
+async fn lock_equipment_command(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+) -> std::result::Result<(), sqlx::Error> {
+    let mut key = Vec::with_capacity(24);
+    key.extend_from_slice(command.game_session_id().as_bytes());
+    key.extend_from_slice(&command.command_id().get().to_be_bytes());
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+         'oteryn:equipment-move:' || encode($1, 'hex'), 0))",
+    )
+    .bind(key.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+/// The receipt of `command` read under its lock: `None` when absent, the replayed receipt when
+/// it is this Character's same item move, and a refusal when it is anything else.
+async fn committed_move(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+    character: [u8; 16],
+    intent: &EquipmentIntent,
+) -> Result<Option<std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>>> {
+    let Some(row) = sqlx::query("SELECT transaction_id::text,event_id::text,revision_after::text,character_id::text,operation,intent FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .fetch_optional(&mut **tx)
+        .await?
+    else {
+        return Ok(None);
+    };
+    let stored: serde_json::Value = serde_json::from_slice(&row.try_get::<Vec<u8>, _>("intent")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let same = uuid(row.try_get("character_id")?)? == character
+        && row.try_get::<i16, _>("operation")? == 1
+        && stored.get("character") == Some(&json!(character))
+        && stored.get("intent") == Some(&json!(intent));
+    if !same {
+        return Ok(Some(Err(EquipmentMoveRefusal::Rejected)));
+    }
+    Ok(Some(Ok(EquipmentReceipt {
+        transaction_id: uuid(row.try_get("transaction_id")?)?,
+        event_id: uuid(row.try_get("event_id")?)?,
+        revision_after: number(row.try_get("revision_after")?)?,
+        replayed: true,
+    })))
 }
 
 impl DurabilityRoot {
@@ -1010,6 +1075,24 @@ impl DurabilityRoot {
                     let attempt: Result<
                         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
                     > = async {
+                        let intent = EquipmentIntent::Move {
+                            item: request.item,
+                            from_slot: request.from_slot,
+                            to_slot: request.to_slot,
+                        };
+                        // Replay first under the CommandRef's lock: an attempt of the same
+                        // command that committed first answers with its own receipt.
+                        lock_equipment_command(&mut tx, command).await?;
+                        if let Some(replay) = committed_move(
+                            &mut tx,
+                            command,
+                            *fence.character_id.as_bytes(),
+                            &intent,
+                        )
+                        .await?
+                        {
+                            return Ok(replay);
+                        }
                         let authority = assert_equipment_fence_in_transaction(
                             &mut tx, &record, &node, &fence, command, digest,
                         )
@@ -1020,11 +1103,6 @@ impl DurabilityRoot {
                         {
                             return Ok(Err(refusal));
                         }
-                        let intent = EquipmentIntent::Move {
-                            item: request.item,
-                            from_slot: request.from_slot,
-                            to_slot: request.to_slot,
-                        };
                         apply_equipment_in_transaction(
                             &mut tx, &authority, &snapshot, content, &intent,
                         )
@@ -1062,6 +1140,9 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
+                    // An attempt of the same CommandRef still in flight holds this lock until it
+                    // commits or rolls back, so `Absent` proves no attempt is in flight.
+                    lock_equipment_command(&mut tx, command).await?;
                     let row = sqlx::query("SELECT character_id::text,operation FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
                         .bind(command.game_session_id().as_bytes().as_slice())
                         .bind(command.command_id().get().to_string())
