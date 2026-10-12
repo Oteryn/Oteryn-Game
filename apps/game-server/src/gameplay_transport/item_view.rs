@@ -25,6 +25,9 @@
 //!   `ITEMV0-RL-03-MAP-VIEW`.
 //! - **Taking (ITEM-MOVE-1).** Command 9 takes an entry of the open corpse ([`super::item_move`]);
 //!   after the commit the corpse's domain 11 delta and the domain 9 delta follow.
+//! - **Equipment (EQUIP-WIRE-1).** With capability 12 domain 9 also shows the occupied equipment
+//!   slots in ascending slot order, each item with its handle; without it domain 9 never carries
+//!   equipment.
 
 #![cfg_attr(not(test), allow(dead_code))]
 
@@ -43,10 +46,11 @@ use oteryn_protocol_oteryn::container_tree::{
     SNAPSHOT_TYPE_CONTAINER_VIEWS_V1, STATE_DOMAIN_CONTAINER_VIEWS,
 };
 use oteryn_protocol_oteryn::item_view::{
-    CharacterInventory, DELTA_TYPE_CHARACTER_INVENTORY_V1, DELTA_TYPE_OPEN_CONTAINER_V1, ItemEntry,
-    ItemHandle, MAX_LIVE_ITEM_HANDLES, OpenContainer, SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
-    SNAPSHOT_TYPE_OPEN_CONTAINER_V1, STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
-    encode_character_inventory, encode_open_container,
+    CharacterInventory, DELTA_TYPE_CHARACTER_INVENTORY_V1, DELTA_TYPE_OPEN_CONTAINER_V1,
+    EquipmentSlot, EquippedItem, ItemEntry, ItemHandle, MAX_LIVE_ITEM_HANDLES, OpenContainer,
+    SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1, SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
+    STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+    encode_character_inventory_with_equip_drop, encode_open_container,
 };
 use oteryn_protocol_oteryn::world_map::MAX_MAP_VIEW_HANDLES;
 use std::collections::HashMap;
@@ -82,11 +86,13 @@ pub(crate) struct ViewItem {
     pub(crate) sub_type: u32,
 }
 
-/// Domain 9's content: the main backpack slot and its direct entries in display order.
+/// Domain 9's content: the main backpack slot and its direct entries in display order, and under
+/// capability 12 the occupied equipment slots in ascending slot order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct InventoryItems {
     pub(crate) main_backpack: Option<ViewItem>,
     pub(crate) entries: Vec<ViewItem>,
+    pub(crate) equipment: Vec<(EquipmentSlot, ViewItem)>,
 }
 
 /// Domain 9's content from `read_character_backpack` (`durability/item_transfer.rs`).
@@ -114,6 +120,7 @@ pub(crate) fn inventory_from_backpack(
             .iter()
             .map(|entry| item(&entry.item))
             .collect::<Option<_>>()?,
+        equipment: Vec::new(),
     })
 }
 
@@ -505,6 +512,8 @@ pub(crate) struct SessionItemView {
     open_entries: Vec<ViewItem>,
     /// The open corpse carried from the previous connection until the snapshot decides it.
     carried_open: Option<ItemKey>,
+    /// Capability 12 is selected: domain 9 shows the equipment.
+    equip_drop: bool,
 }
 
 impl SessionItemView {
@@ -520,6 +529,7 @@ impl SessionItemView {
             open: None,
             open_entries: Vec::new(),
             carried_open: continuity.open_corpse,
+            equip_drop: false,
         }
     }
 
@@ -543,6 +553,46 @@ impl SessionItemView {
     pub(crate) fn with_container_tree(mut self) -> Self {
         self.table = self.table.with_container_tree();
         self
+    }
+
+    /// Capability 12 is selected: domain 9 shows the occupied equipment slots.
+    pub(crate) const fn with_equip_drop(mut self) -> Self {
+        self.equip_drop = true;
+        self
+    }
+
+    pub(crate) const fn equip_drop(&self) -> bool {
+        self.equip_drop
+    }
+
+    /// Whether `key` is the main backpack shown in domain 9.
+    pub(crate) fn is_main_backpack(&self, key: &ItemKey) -> bool {
+        self.inventory
+            .main_backpack
+            .is_some_and(|backpack| backpack.key == *key)
+    }
+
+    /// Whether `key` is a direct entry of the main backpack shown in domain 9.
+    pub(crate) fn is_backpack_entry(&self, key: &ItemKey) -> bool {
+        self.inventory.entries.iter().any(|entry| entry.key == *key)
+    }
+
+    /// The slot domain 9 shows `key` in, if it is equipped.
+    pub(crate) fn equipped_slot(&self, key: &ItemKey) -> Option<EquipmentSlot> {
+        self.inventory
+            .equipment
+            .iter()
+            .find(|(_, item)| item.key == *key)
+            .map(|(slot, _)| *slot)
+    }
+
+    /// The item domain 9 shows in `slot`.
+    pub(crate) fn equipped_item(&self, slot: EquipmentSlot) -> Option<ItemKey> {
+        self.inventory
+            .equipment
+            .iter()
+            .find(|(shown, _)| *shown == slot)
+            .map(|(_, item)| item.key)
     }
 
     /// Capability 18 is selected: the handle bound adds `MAPW-RL-04` (`ITEMV0-RL-03-MAP-VIEW`).
@@ -795,6 +845,7 @@ impl SessionItemView {
             .main_backpack
             .iter()
             .chain(&inventory.entries)
+            .chain(inventory.equipment.iter().map(|(_, item)| item))
             .map(|item| item.key)
             .collect();
         let previous = self.table.keys_of(View::Inventory);
@@ -807,9 +858,19 @@ impl SessionItemView {
                 .iter()
                 .map(entry)
                 .collect::<Result<_, _>>()?,
-            equipment: Vec::new(),
+            equipment: inventory
+                .equipment
+                .iter()
+                .map(|(slot, item)| {
+                    Ok(EquippedItem {
+                        slot: *slot,
+                        item: entry(item)?,
+                    })
+                })
+                .collect::<Result<_, _>>()?,
         };
-        match encode_character_inventory(&view) {
+        // Without capability 12 a view with equipment does not encode and is never shown.
+        match encode_character_inventory_with_equip_drop(&view, self.equip_drop) {
             Ok(payload) => {
                 self.inventory = inventory;
                 Ok(payload)

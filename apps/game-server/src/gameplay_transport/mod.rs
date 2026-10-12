@@ -11,6 +11,7 @@ pub(crate) mod charm;
 mod chat_intent;
 mod connection;
 mod container_view;
+mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod item_move;
 mod item_ref_admission;
@@ -2576,6 +2577,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
     ) -> Option<item_view::InventoryItems> {
         item_ref_admission::observe_character_inventory(self, game_session_id).await
+    }
+
+    async fn observe_character_equipment(
+        &self,
+        _actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<
+        Vec<(
+            oteryn_protocol_oteryn::item_view::EquipmentSlot,
+            item_view::ViewItem,
+        )>,
+    > {
+        equipment_move::observe_character_equipment(self, game_session_id).await
+    }
+
+    async fn committed_equipment_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<item_move::EquipmentMoveReplay> {
+        equipment_move::committed_equipment_move(self, command).await
+    }
+
+    async fn move_equipment(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::EquipmentMove,
+    ) -> item_move::EquipmentMoveResult {
+        equipment_move::move_equipment(self, actor, command, request).await
     }
 
     /// VIS-3: the Channel's players and live creatures, read in one owner work item, and
