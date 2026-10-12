@@ -258,8 +258,12 @@ fn a_session_without_a_death_policy_never_respawns_its_dead_player() {
                     steps.borrow_mut().push("commit");
                     async { DeathCommit::Settled }
                 }),
+                async {
+                    steps.borrow_mut().push("authorize");
+                    Some(())
+                },
                 step(&steps, "place", true),
-                step(&steps, "consume", true),
+                |()| step(&steps, "consume", true),
                 async {
                     steps.borrow_mut().push("refill");
                     Some(())
@@ -277,21 +281,26 @@ async fn step(steps: &RefCell<Vec<&'static str>>, name: &'static str, outcome: b
     outcome
 }
 
-/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): the pending respawn
-/// is consumed only after the actor is placed, and the vitals are refilled (ending the death)
-/// only after the consumption. A step that fails stops the chain with the actor still dead, so
-/// a restart at that point finds the pending respawn recorded for the next admission.
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): the respawn is
+/// authorized against the session's fresh durable authority before anything moves, the pending
+/// respawn is consumed only after the actor is placed, and the vitals are refilled (ending the
+/// death) only after the consumption. A step that fails stops the chain with the actor still
+/// dead, so a restart at that point finds the pending respawn recorded for the next admission.
 #[test]
-fn an_in_session_respawn_places_then_consumes_then_refills() {
-    let run = |settled: SessionDeath, placed: bool, consumed: bool| {
+fn an_in_session_respawn_authorizes_then_places_then_consumes_then_refills() {
+    let run = |settled: SessionDeath, authorized: bool, placed: bool, consumed: bool| {
         let steps = RefCell::new(Vec::new());
         let refilled = block_on(respawn_in_order(
             async {
                 steps.borrow_mut().push("settle");
                 settled
             },
+            async {
+                steps.borrow_mut().push("authorize");
+                authorized.then_some(())
+            },
             step(&steps, "place", placed),
-            step(&steps, "consume", consumed),
+            |()| step(&steps, "consume", consumed),
             async {
                 steps.borrow_mut().push("refill");
                 Some(7_u64)
@@ -300,22 +309,32 @@ fn an_in_session_respawn_places_then_consumes_then_refills() {
         (refilled, steps.into_inner())
     };
     assert_eq!(
-        run(SessionDeath::Durable, true, true),
-        (Some(7), vec!["settle", "place", "consume", "refill"])
+        run(SessionDeath::Durable, true, true, true),
+        (
+            Some(7),
+            vec!["settle", "authorize", "place", "consume", "refill"]
+        )
+    );
+    // Codex review of #2004: a settle that replayed a retained receipt checked no current
+    // authority, so a terminal or superseded session refused by the fresh authorization moves
+    // nothing, clears nothing and consumes nothing.
+    assert_eq!(
+        run(SessionDeath::Durable, false, true, true),
+        (None, vec!["settle", "authorize"])
     );
     // A consumption without an outcome keeps the actor dead and its row recorded.
     assert_eq!(
-        run(SessionDeath::Durable, true, false),
-        (None, vec!["settle", "place", "consume"])
+        run(SessionDeath::Durable, true, true, false),
+        (None, vec!["settle", "authorize", "place", "consume"])
     );
     // A placement that cannot complete consumes nothing.
     assert_eq!(
-        run(SessionDeath::Durable, false, true),
-        (None, vec!["settle", "place"])
+        run(SessionDeath::Durable, true, false, true),
+        (None, vec!["settle", "authorize", "place"])
     );
-    // No durable outcome: nothing is placed, consumed or refilled.
+    // No durable outcome: nothing is authorized, placed, consumed or refilled.
     for undecided in [SessionDeath::Retry, SessionDeath::NoDurableDeath] {
-        assert_eq!(run(undecided, true, true), (None, vec!["settle"]));
+        assert_eq!(run(undecided, true, true, true), (None, vec!["settle"]));
     }
 }
 

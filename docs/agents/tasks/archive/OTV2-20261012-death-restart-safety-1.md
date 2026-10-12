@@ -46,6 +46,9 @@ defects of the review, then accept with a DEATH-3 waiver (no corpse or loot yet)
    is volatile, so the in-session consumption runs only when the row records the cell a fresh
    admission writes; a restart after it still lands on the recorded respawn (Codex review of
    #2004). Any other recorded cell keeps the row and the actor dead for the next admission.
+   The session's current durable authority is read fresh before the placement, since a
+   replayed death receipt checks none, so a terminal or superseded session moves nothing (second
+   Codex review of #2004).
 2. `settle_session_death` respawned an unbound session (no World section, no death policy, a
    context mismatch) with no durable death. It now returns `NoDurableDeath`: the actor stays dead
    and the session end recovers the Character normally.
@@ -80,6 +83,7 @@ finding_family_sweep:
 - [x] An unbound session never respawns without a durable death.
 - [x] The in-session order is settle, place, consume, refill; a failed step stops the chain.
 - [x] The in-session consumption keeps the row unless a fresh admission reproduces its cell.
+- [x] The in-session order is settle, authorize (fresh durable authority), place, consume, refill.
 
 ## Excluded scope
 
@@ -98,6 +102,9 @@ DEATH-3 corpse and item loss (waived by the owner); durable character position (
 - Codex P1 repair (respawn row kept unless an admission reproduces it): `cargo fmt --all --check`,
   `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass;
   `cargo test --locked -p oteryn-game-server --quiet --lib -- gameplay_transport::`: pass (470
+  passed, 0 failed); PostgreSQL targets left to CI
+- Codex P1 repair (authorize before placement): fmt and clippy as above: pass;
+  `cargo test --locked -p oteryn-game-server --quiet --lib -- gameplay_transport::`: pass (476
   passed, 0 failed); PostgreSQL targets left to CI
 
 ## Self-review
