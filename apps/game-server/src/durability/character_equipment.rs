@@ -856,3 +856,234 @@ impl DurabilityRoot {
         })).await.map_err(EquipmentError::from)
     }
 }
+
+/// EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4): why one live equipment move did not commit. Nothing was
+/// written: the transaction rolled back.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EquipmentMoveRefusal {
+    /// The item is no longer where the command saw it.
+    Stale,
+    NoBackpack,
+    NoRoom,
+    /// A wrong slot, a hands conflict, a container or unknown equipment semantics.
+    SlotMismatch,
+    /// The level or vocation of the item's pattern.
+    RequirementNotMet,
+    /// The destination slot holds an item: the swap is not in this slice.
+    Occupied,
+    Rejected,
+}
+
+/// The Content an equipment move reads besides the slot claims of [`EquipmentPolicyLookup`].
+pub(crate) trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
+    /// True only when the definition is known to carry no `container` semantics.
+    fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool;
+}
+
+/// One equip (`to_slot`) or unequip (`from_slot`) of a whole item by durable slot code.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct EquipmentMove {
+    pub(crate) item: [u8; 16],
+    pub(crate) from_slot: Option<u8>,
+    pub(crate) to_slot: Option<u8>,
+}
+
+/// What a committed receipt of one CommandRef says about the equipment owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EquipmentMoveReplay {
+    /// No equipment receipt exists for the CommandRef.
+    Absent,
+    /// The CommandRef committed one item move of this Character.
+    Moved,
+    /// The CommandRef committed something else, or for another Character.
+    Conflicting,
+}
+
+/// The §4 result of a rejection the owner raised inside the transaction.
+fn move_refusal(reason: &'static str) -> EquipmentMoveRefusal {
+    match reason {
+        "stale equipment snapshot"
+        | "equipment actual live item"
+        | "equipment source is not direct backpack entry"
+        | "equipment source exact slot" => EquipmentMoveRefusal::Stale,
+        "equipment requires actual backpack" => EquipmentMoveRefusal::NoBackpack,
+        "equipment backpack capacity" => EquipmentMoveRefusal::NoRoom,
+        "equipment minimum level"
+        | "equipment vocation requirement"
+        | "equipment actual vocation" => EquipmentMoveRefusal::RequirementNotMet,
+        "equipment occupancy conflict" => EquipmentMoveRefusal::SlotMismatch,
+        _ => EquipmentMoveRefusal::Rejected,
+    }
+}
+
+/// An owner error inside the move transaction: a rejection or an integrity violation is a known
+/// refusal (nothing committed); any other database error leaves the connection's outcome to the
+/// replay, so it is unavailable.
+fn move_error(error: EquipmentError) -> std::result::Result<EquipmentMoveRefusal, DurabilityError> {
+    match error {
+        EquipmentError::Rejected(reason) => Ok(move_refusal(reason)),
+        EquipmentError::Database(sqlx::Error::Database(database))
+            if database.code().is_some_and(|code| code.starts_with("23")) =>
+        {
+            Ok(EquipmentMoveRefusal::Rejected)
+        }
+        EquipmentError::Database(_) => Err(DurabilityError::Unavailable),
+        EquipmentError::Durability(error) => Err(error),
+    }
+}
+
+/// The checks of §4 that the owner's apply does not make, decided on the snapshot and the item
+/// row of the same transaction before it: an occupied destination (no swap here), and for an
+/// equip a definition without known equipment claims for the slot or with `container`
+/// semantics.
+async fn precheck_move(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &EquipmentAuthority,
+    snapshot: &EquipmentSnapshot,
+    content: &impl EquipmentMoveContent,
+    request: EquipmentMove,
+) -> Result<Option<EquipmentMoveRefusal>> {
+    match (request.from_slot, request.to_slot) {
+        (Some(from), None) => Ok((!snapshot
+            .items
+            .iter()
+            .any(|item| item.item_instance_id == request.item && item.slot == from))
+        .then_some(EquipmentMoveRefusal::Stale)),
+        (None, Some(to)) => {
+            if snapshot.items.iter().any(|item| item.slot == to) {
+                return Ok(Some(EquipmentMoveRefusal::Occupied));
+            }
+            let Some(row) = sqlx::query("SELECT definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1")
+                .bind(request.item.as_slice()).bind(authority.world.as_slice()).fetch_optional(&mut **tx).await?
+            else {
+                return Ok(Some(EquipmentMoveRefusal::Stale));
+            };
+            let key: String = row.try_get("definition_production_key")?;
+            let revision: String = row.try_get("definition_revision_ref")?;
+            let Some(policy) = content.equipment_policy(&key, &revision) else {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            };
+            if claims(&policy, to).is_err()
+                || policy.container_capacity().is_some()
+                || !content.is_plain_item(&key, &revision)
+            {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            }
+            let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+                .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+            Ok(contents.then_some(EquipmentMoveRefusal::SlotMismatch))
+        }
+        _ => Ok(Some(EquipmentMoveRefusal::Rejected)),
+    }
+}
+
+impl DurabilityRoot {
+    /// EQUIP-WIRE-1: one equip or unequip of command type 9 in one semantic transaction under the
+    /// current item fence of `command` and the active Content `content` pins: the owner's
+    /// authority, its snapshot, the §4 prechecks and [`apply_equipment_in_transaction`], then the
+    /// commit. `Ok(Err(_))` is a refusal that wrote nothing; `Err(_)` leaves the outcome to the
+    /// replay ([`Self::read_equipment_move_receipt`]). `CharacterRevision` never advances.
+    pub(crate) async fn commit_equipment_move<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: EquipmentMove,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let fence = *fence;
+        let digest = content.source_digest();
+        let mut context = content;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, content| {
+                Box::pin(async move {
+                    let content: &C = content;
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let attempt: Result<
+                        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+                    > = async {
+                        let authority = assert_equipment_fence_in_transaction(
+                            &mut tx, &record, &node, &fence, command, digest,
+                        )
+                        .await?;
+                        let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
+                        if let Some(refusal) =
+                            precheck_move(&mut tx, &authority, &snapshot, content, request).await?
+                        {
+                            return Ok(Err(refusal));
+                        }
+                        let intent = EquipmentIntent::Move {
+                            item: request.item,
+                            from_slot: request.from_slot,
+                            to_slot: request.to_slot,
+                        };
+                        apply_equipment_in_transaction(
+                            &mut tx, &authority, &snapshot, content, &intent,
+                        )
+                        .await
+                        .map(Ok)
+                    }
+                    .await;
+                    match attempt {
+                        Ok(Ok(receipt)) => {
+                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(receipt))
+                        }
+                        // Dropping the transaction rolls it back: a refusal writes nothing.
+                        Ok(Err(refusal)) => Ok(Err(refusal)),
+                        Err(error) => move_error(error).map(Err),
+                    }
+                })
+            })
+            .await
+    }
+
+    /// EQUIP-WIRE-1 replay first: the equipment receipt of `command`, read by its CommandRef
+    /// alone, so a move that committed before a reconnect answers `MOVED`.
+    pub(crate) async fn read_equipment_move_receipt(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: crate::domain::CharacterId,
+        command: CommandRef,
+    ) -> std::result::Result<EquipmentMoveReplay, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let row = sqlx::query("SELECT character_id::text,operation FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+                        .bind(command.game_session_id().as_bytes().as_slice())
+                        .bind(command.command_id().get().to_string())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                    let replay = match row {
+                        None => EquipmentMoveReplay::Absent,
+                        Some(row) => {
+                            let owner = uuid(row.try_get("character_id")?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let operation: i16 = row.try_get("operation")?;
+                            if owner == *character_id.as_bytes() && operation == 1 {
+                                EquipmentMoveReplay::Moved
+                            } else {
+                                EquipmentMoveReplay::Conflicting
+                            }
+                        }
+                    };
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(replay)
+                })
+            })
+            .await
+    }
+}

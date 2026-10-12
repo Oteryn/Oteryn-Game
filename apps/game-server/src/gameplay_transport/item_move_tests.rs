@@ -22,10 +22,10 @@ use crate::foundation::{
     ChannelId, CommandStatus, GameSessionId, WorldId, encode_command_result, encode_state_delta,
 };
 use oteryn_protocol_oteryn::item_view::{
-    CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
-    COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemHandle, ItemMoveIntent,
-    decode_open_container, encode_item_move_intent, encode_item_move_intent_for,
-    encode_item_move_result,
+    CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1,
+    CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot,
+    ItemHandle, ItemMoveIntent, decode_open_container, encode_item_move_intent,
+    encode_item_move_intent_for, encode_item_move_result, encode_item_move_result_with_equip_drop,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
@@ -78,6 +78,18 @@ fn inventory(entries: &[u16]) -> InventoryItems {
     InventoryItems {
         main_backpack: Some(item(instance(0))),
         entries: entries.iter().map(|n| item(instance(*n))).collect(),
+        equipment: Vec::new(),
+    }
+}
+
+/// Backpack entries `entries` and the occupied slots `worn`, in ascending slot order.
+fn worn(entries: &[u16], worn: &[(EquipmentSlot, u16)]) -> InventoryItems {
+    InventoryItems {
+        equipment: worn
+            .iter()
+            .map(|(slot, n)| (*slot, item(instance(*n))))
+            .collect(),
+        ..inventory(entries)
     }
 }
 
@@ -240,6 +252,13 @@ struct MoveAuthority {
     inventory: RefCell<Option<InventoryItems>>,
     after_take: Option<InventoryItems>,
     targets: RefCell<VecDeque<Option<ItemTargetObservation>>>,
+    /// EQUIP-WIRE-1: the equipment replay read, one equipment move result and the inventory
+    /// (with its slots) the owner shows after it commits.
+    equip_replay: Option<EquipmentMoveReplay>,
+    equip_result: Cell<Option<EquipmentMoveResult>>,
+    equip_moves: RefCell<Vec<(u64, EquipmentMove)>>,
+    equipment: RefCell<Option<Vec<(EquipmentSlot, ViewItem)>>>,
+    after_equip: Option<InventoryItems>,
 }
 
 impl MoveAuthority {
@@ -252,7 +271,34 @@ impl MoveAuthority {
             inventory: RefCell::new(Some(inventory(&[1]))),
             after_take: None,
             targets: RefCell::new(targets.into()),
+            equip_replay: Some(EquipmentMoveReplay::Absent),
+            equip_result: Cell::new(None),
+            equip_moves: RefCell::new(Vec::new()),
+            equipment: RefCell::new(Some(Vec::new())),
+            after_equip: None,
         }
+    }
+
+    /// The owner shows `shown` (backpack and slots) and answers the next move with `result`,
+    /// showing `after` once it commits.
+    fn equipping(
+        mut self,
+        shown: InventoryItems,
+        result: EquipmentMoveResult,
+        after: Option<InventoryItems>,
+    ) -> Self {
+        self.show(Some(shown));
+        self.equip_result = Cell::new(Some(result));
+        self.after_equip = after;
+        self
+    }
+
+    fn show(&self, shown: Option<InventoryItems>) {
+        *self.equipment.borrow_mut() = shown.as_ref().map(|shown| shown.equipment.clone());
+        *self.inventory.borrow_mut() = shown.map(|shown| InventoryItems {
+            equipment: Vec::new(),
+            ..shown
+        });
     }
 
     fn taking(
@@ -294,6 +340,38 @@ impl FreshAdmissionAuthority for MoveAuthority {
         _game_session_id: GameSessionId,
     ) -> Option<InventoryItems> {
         self.inventory.borrow().clone()
+    }
+
+    async fn observe_character_equipment(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+        self.equipment.borrow().clone()
+    }
+
+    async fn committed_equipment_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> Option<EquipmentMoveReplay> {
+        self.equip_replay
+    }
+
+    async fn move_equipment(
+        &self,
+        _actor: ExactActorRef,
+        command: UseCommand,
+        request: EquipmentMove,
+    ) -> EquipmentMoveResult {
+        self.equip_moves
+            .borrow_mut()
+            .push((command.command_id, request));
+        let result = self.equip_result.take().expect("one equipment move");
+        if result == EquipmentMoveResult::Committed {
+            self.show(self.after_equip.clone());
+        }
+        result
     }
 
     async fn observe_item_target(
@@ -637,6 +715,324 @@ fn an_unknown_transfer_or_an_unreadable_backpack_after_it_disconnects() -> TestR
     })
 }
 
+// EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4): equip and unequip under capability 12.
+
+const EQUIP: ItemMoveSelection = ItemMoveSelection {
+    equip_drop: true,
+    container_tree: false,
+};
+
+/// The view after a capability 12 snapshot showing `shown`.
+fn wearing(shown: InventoryItems) -> SessionItemView {
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_equip_drop();
+    view.snapshot(shown, None).expect("snapshot");
+    view
+}
+
+fn into_slot(source: ItemHandle, slot: EquipmentSlot) -> Vec<u8> {
+    encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Equipment(slot),
+        },
+        EQUIP,
+    )
+    .expect("intent")
+}
+
+#[test]
+fn every_equipment_refusal_answers_its_section_4_outcome() {
+    use EquipmentMoveRefusal as Refusal;
+    for (refusal, outcome) in [
+        (Refusal::Stale, ItemMoveOutcome::Stale),
+        (Refusal::NoBackpack, ItemMoveOutcome::NoBackpack),
+        (Refusal::NoRoom, ItemMoveOutcome::NoRoom),
+        (Refusal::SlotMismatch, ItemMoveOutcome::SlotMismatch),
+        (
+            Refusal::RequirementNotMet,
+            ItemMoveOutcome::RequirementNotMet,
+        ),
+        // Swap is the next ITEM-MOVE-2a slice.
+        (Refusal::Occupied, ItemMoveOutcome::NotSupported),
+        (Refusal::Rejected, ItemMoveOutcome::Rejected),
+    ] {
+        assert_eq!(equipment_outcome(refusal), outcome, "{refusal:?}");
+    }
+}
+
+#[test]
+fn an_equip_commits_moved_then_the_domain_9_delta_keeping_the_handle() -> TestResult {
+    run(async {
+        let shown = inventory(&[1, 2]);
+        let after = worn(&[1], &[(EquipmentSlot::RightHand, 2)]);
+        let mut view = wearing(shown.clone());
+        let source = entry(&view, 2);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown.clone(),
+            EquipmentMoveResult::Committed,
+            Some(after.clone()),
+        );
+        let moved = step(
+            &authority,
+            &mut view,
+            &into_slot(source, EquipmentSlot::RightHand),
+            EQUIP,
+        )
+        .await;
+        let mut mirror = wearing(shown);
+        let delta = mirror
+            .inventory_committed(after)
+            .map_err(fault)?
+            .expect("domain 9");
+        assert_eq!(
+            moved,
+            ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![delta])
+        );
+        assert_eq!(
+            *authority.equip_moves.borrow(),
+            [(
+                1,
+                EquipmentMove::Equip {
+                    item: instance(2),
+                    to: EquipmentSlot::RightHand
+                }
+            )]
+        );
+        assert_eq!(
+            view.equipped_slot(&instance(2)),
+            Some(EquipmentSlot::RightHand)
+        );
+        assert_eq!(view.table().handle(&instance(2)), Some(source));
+        assert!(authority.takes.borrow().is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn an_unequip_commits_moved_into_the_main_backpack() -> TestResult {
+    run(async {
+        let shown = worn(&[1], &[(EquipmentSlot::Armor, 3)]);
+        let after = inventory(&[1, 3]);
+        let mut view = wearing(shown.clone());
+        let source = entry(&view, 3);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Committed,
+            Some(after),
+        );
+        let moved = step(&authority, &mut view, &into_backpack(source), EQUIP).await;
+        assert!(matches!(
+            moved,
+            ItemMoveStep::Result(ItemMoveOutcome::Moved, ref deltas) if deltas.len() == 1
+        ));
+        assert_eq!(
+            *authority.equip_moves.borrow(),
+            [(
+                1,
+                EquipmentMove::Unequip {
+                    item: instance(3),
+                    from: EquipmentSlot::Armor
+                }
+            )]
+        );
+        assert_eq!(view.equipped_slot(&instance(3)), None);
+        assert!(view.is_backpack_entry(&instance(3)));
+        assert_eq!(view.table().handle(&instance(3)), Some(source));
+        Ok(())
+    })
+}
+
+#[test]
+fn a_refused_equipment_move_answers_its_outcome_without_deltas() -> TestResult {
+    run(async {
+        for (refusal, outcome) in [
+            (
+                EquipmentMoveRefusal::SlotMismatch,
+                ItemMoveOutcome::SlotMismatch,
+            ),
+            (
+                EquipmentMoveRefusal::RequirementNotMet,
+                ItemMoveOutcome::RequirementNotMet,
+            ),
+            (EquipmentMoveRefusal::NoRoom, ItemMoveOutcome::NoRoom),
+            (EquipmentMoveRefusal::Stale, ItemMoveOutcome::Stale),
+        ] {
+            let shown = worn(&[1, 2], &[(EquipmentSlot::Head, 4)]);
+            let mut view = wearing(shown.clone());
+            let equip = into_slot(entry(&view, 2), EquipmentSlot::Feet);
+            let unequip = into_backpack(entry(&view, 4));
+            for payload in [equip, unequip] {
+                let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+                    shown.clone(),
+                    EquipmentMoveResult::Refused(refusal),
+                    None,
+                );
+                assert_eq!(
+                    step(&authority, &mut view, &payload, EQUIP).await,
+                    result(outcome)
+                );
+                assert_eq!(authority.equip_moves.borrow().len(), 1);
+            }
+        }
+        // Results 10 to 12 are never sent without capability 12.
+        let shown = worn(&[1], &[(EquipmentSlot::Head, 4)]);
+        let mut view = wearing(shown.clone());
+        let source = entry(&view, 4);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Refused(EquipmentMoveRefusal::SlotMismatch),
+            None,
+        );
+        assert_eq!(
+            step(&authority, &mut view, &into_backpack(source), CORPSE_ONLY).await,
+            result(ItemMoveOutcome::Rejected)
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult {
+    run(async {
+        let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
+        let mut view = wearing(shown.clone());
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Committed,
+            None,
+        );
+        // Swap is not in this slice.
+        let into_occupied = into_slot(entry(&view, 2), EquipmentSlot::RightHand);
+        assert_eq!(
+            step(&authority, &mut view, &into_occupied, EQUIP).await,
+            result(ItemMoveOutcome::NotSupported)
+        );
+        // The main backpack never enters a slot of its own.
+        let backpack = into_slot(entry(&view, 0), EquipmentSlot::Armor);
+        assert_eq!(
+            step(&authority, &mut view, &backpack, EQUIP).await,
+            result(ItemMoveOutcome::SlotMismatch)
+        );
+        // Slot to slot is not a move of this slice.
+        let slot_to_slot = into_slot(entry(&view, 4), EquipmentSlot::LeftHand);
+        assert_eq!(
+            step(&authority, &mut view, &slot_to_slot, EQUIP).await,
+            result(ItemMoveOutcome::NotSupported)
+        );
+        assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn ground_stays_not_supported_under_capability_12() -> TestResult {
+    run(async {
+        let shown = worn(&[1, 2], &[(EquipmentSlot::Head, 4)]);
+        let mut view = wearing(shown.clone());
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Committed,
+            None,
+        );
+        for n in [2, 4] {
+            let payload = encode_item_move_intent_for(
+                &ItemMoveIntent {
+                    source: entry(&view, n),
+                    destination: ItemMoveDestination::Ground(
+                        oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                            x: 10,
+                            y: 10,
+                            floor: 7,
+                        },
+                    ),
+                },
+                EQUIP,
+            )
+            .map_err(fault)?;
+            assert_eq!(
+                step(&authority, &mut view, &payload, EQUIP).await,
+                result(ItemMoveOutcome::NotSupported)
+            );
+        }
+        assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn the_equipment_replay_answers_moved_for_a_stale_handle_without_a_move() -> TestResult {
+    run(async {
+        let shown = worn(&[1], &[(EquipmentSlot::RightHand, 2)]);
+        let mut view = wearing(shown.clone());
+        let mut authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        authority.show(Some(shown));
+        authority.equip_replay = Some(EquipmentMoveReplay::Moved);
+        assert_eq!(
+            step(
+                &authority,
+                &mut view,
+                &into_slot(handle(999), EquipmentSlot::Head),
+                EQUIP
+            )
+            .await,
+            result(ItemMoveOutcome::Moved)
+        );
+        let worn_two = into_backpack(entry(&view, 2));
+        authority.equip_replay = Some(EquipmentMoveReplay::Conflicting);
+        assert_eq!(
+            step(&authority, &mut view, &worn_two, EQUIP).await,
+            result(ItemMoveOutcome::Rejected)
+        );
+        authority.equip_replay = None;
+        assert_eq!(
+            step(&authority, &mut view, &worn_two, EQUIP).await,
+            ItemMoveStep::Disconnect
+        );
+        assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn an_unknown_equipment_move_or_unreadable_slots_after_it_disconnect() -> TestResult {
+    run(async {
+        let shown = inventory(&[1, 2]);
+        let mut view = wearing(shown.clone());
+        let source = entry(&view, 2);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown.clone(),
+            EquipmentMoveResult::Unknown,
+            None,
+        );
+        assert_eq!(
+            step(
+                &authority,
+                &mut view,
+                &into_slot(source, EquipmentSlot::Ring),
+                EQUIP
+            )
+            .await,
+            ItemMoveStep::Disconnect
+        );
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Committed,
+            None,
+        );
+        assert_eq!(
+            step(
+                &authority,
+                &mut view,
+                &into_slot(source, EquipmentSlot::Ring),
+                EQUIP
+            )
+            .await,
+            ItemMoveStep::Disconnect
+        );
+        Ok(())
+    })
+}
+
 // Through the connection, with capabilities 4 and 6 selected.
 
 /// Capability 4 is not offered in production until domain 9 can be read there (CP D738); this
@@ -888,6 +1284,82 @@ fn an_unknown_outcome_ends_the_connection_before_the_command_id_advances() -> Te
         // Only the snapshot was written.
         let (_, snapshot) = serve(&authority, session(carried)?, &[]).await?;
         assert_eq!(frames, snapshot);
+        Ok(())
+    })
+}
+
+/// EQUIP-WIRE-1: capabilities 4, 6 and 12 equip one backpack entry by command 9, and its
+/// result and domain 9 delta carry the capability 12 encoding.
+#[test]
+fn capability_12_equips_a_backpack_entry_by_command_9() -> TestResult {
+    run(async {
+        const EQUIP_OFFERED: &[OfferedCapability] = &[
+            OfferedCapability {
+                id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+                requires: CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+            },
+            OfferedCapability {
+                id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_ITEM_EQUIP_DROP_V1,
+                requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+            },
+        ];
+        let selected = SelectedCapabilities::select(EQUIP_OFFERED, &[4, 6, 12]).expect("select");
+        assert_eq!(selected.as_slice(), [4, 6, 12]);
+        let shown = inventory(&[1, 2]);
+        let after = worn(&[1], &[(EquipmentSlot::Armor, 2)]);
+        let mut mirror = wearing(shown.clone());
+        let source = entry(&mirror, 2);
+        let delta = mirror
+            .inventory_committed(after.clone())
+            .map_err(fault)?
+            .expect("domain 9");
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown,
+            EquipmentMoveResult::Committed,
+            Some(after),
+        );
+        let mut admitted = session(ItemViewContinuity::default())?;
+        admitted.continuity.selected_capabilities = selected;
+        let (end, frames) = serve(
+            &authority,
+            admitted,
+            &[command(
+                1,
+                COMMAND_TYPE_ITEM_MOVE_INTENT,
+                &into_slot(source, EquipmentSlot::Armor),
+            )?],
+        )
+        .await?;
+        let expected = [
+            encode_command_result(
+                1,
+                1,
+                1,
+                CommandStatus::Accepted,
+                &encode_item_move_result_with_equip_drop(ItemMoveOutcome::Moved, true)
+                    .map_err(fault)?,
+            )?,
+            delta_frame(2, &delta)?,
+        ];
+        assert!(frames.len() > expected.len());
+        assert_eq!(frames[frames.len() - expected.len()..], expected);
+        assert_eq!(
+            *authority.equip_moves.borrow(),
+            [(
+                1,
+                EquipmentMove::Equip {
+                    item: instance(2),
+                    to: EquipmentSlot::Armor
+                }
+            )]
+        );
+        let ended = ended(end)?;
+        assert_eq!(ended.next_command_id, 2);
+        assert_eq!(ended.item_view, mirror.continuity());
         Ok(())
     })
 }

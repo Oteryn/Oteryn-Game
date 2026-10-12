@@ -65,7 +65,7 @@ fn offered_capabilities_when(
 
 /// The Item definition index of `admission`'s generation while the Channel content pin is that
 /// same generation; `None` otherwise, and then no item is named at all.
-fn pinned_index<'g>(
+pub(super) fn pinned_index<'g>(
     runtime: &ChannelRuntimeV1,
     generation: Option<&'g ActiveGeneration>,
 ) -> Option<&'g ItemDefinitionIndex> {
@@ -76,7 +76,7 @@ fn pinned_index<'g>(
     .then_some(index)
 }
 
-fn definition_ref(
+pub(super) fn definition_ref(
     index: &ItemDefinitionIndex,
     definition: &TypedDefinitionRef,
 ) -> Option<NonZeroU32> {
