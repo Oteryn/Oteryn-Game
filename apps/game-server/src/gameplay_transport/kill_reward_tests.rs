@@ -909,3 +909,152 @@ fn a_live_actor_without_a_projected_death_is_refused() {
     );
     assert!(runtime.visible_corpses().is_empty());
 }
+
+/// Kill another creature of `runtime` standing at `position` and project its death.
+fn kill_creature_at(
+    runtime: &mut ChannelRuntimeV1,
+    position: crate::foundation::MovementLocalPosition,
+    occurrence: &[u8],
+) -> ExactActorRef {
+    let creature = runtime
+        .admit_pinned_test_creature(position)
+        .expect("creature");
+    runtime
+        .commit_monster_lab_damage(creature, occurrence, 20)
+        .expect("lethal hit");
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death.committed_lethal_receipt(creature).expect("receipt");
+    death
+        .project_committed_lethal(receipt)
+        .expect("projected death");
+    creature
+}
+
+const SECOND_CREATURE: crate::foundation::MovementLocalPosition =
+    crate::foundation::MovementLocalPosition {
+        x: 102,
+        y: 100,
+        floor: 7,
+    };
+
+/// Codex 4248192466: an accepted kill pins its corpse projection against eviction until its
+/// settle is final; a Retry keeps the pin, and a final settle releases it after the bind.
+#[test]
+fn an_accepted_kill_pins_its_corpse_until_its_settle_is_final() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert!(!runtime.corpse_projection_pinned(creature));
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Queued
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+    // A replayed append of the same death keeps its one pin.
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Duplicate
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+    let in_flight = taken(queue.take(session(50), 3));
+    let entry = in_flight.entry().expect("entry");
+    release_settled_corpse(&mut runtime, entry, SettleVerdict::Retry);
+    assert!(runtime.corpse_projection_pinned(creature));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    release_settled_corpse(&mut runtime, entry, SettleVerdict::Final);
+    assert!(!runtime.corpse_projection_pinned(creature));
+    in_flight.finish();
+    // Only the protection from eviction is released: the bound corpse stays visible.
+    assert!(runtime.retains_corpse_projection(creature));
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+/// Codex 4248192466: a kill parked under a `releasing` mark is accepted and pins its corpse.
+#[test]
+fn a_parked_kill_pins_its_corpse() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert!(matches!(queue.seal((session(50), 3)), Seal::Sealed(_)));
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Parked(ReleasePhase::Sealed)
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+}
+
+/// Codex 4248192466: a kill the full queue refuses pins nothing and leaves the accepted kills'
+/// pins in place, so its projection can evict only unpinned ones.
+#[test]
+fn a_kill_the_full_queue_refuses_pins_nothing() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    for channel in 3..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
+        assert_eq!(
+            queue.append(pending(channel, 50, 3, 0)),
+            AppendOutcome::Queued
+        );
+    }
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut late = pending(200, 51, 3, 0);
+    late.target = second;
+    assert_eq!(accept_kill(&mut runtime, &queue, late), AppendOutcome::Full);
+    assert!(runtime.corpse_projection_pinned(first));
+    assert!(!runtime.corpse_projection_pinned(second));
+}
+
+/// Codex 4248192466: an entry freed without a settle (`principal_gone`) loses its pin at the
+/// next accepted kill, so the pins stay those of held entries and never leak.
+#[test]
+fn the_pin_of_an_entry_freed_without_a_settle_is_released() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    queue.discard_gone(session(50), None);
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut next = pending(3, 51, 3, 0);
+    next.target = second;
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, next),
+        AppendOutcome::Queued
+    );
+    assert!(!runtime.corpse_projection_pinned(first));
+    assert!(runtime.corpse_projection_pinned(second));
+}
+
+/// Codex 4248192466: an entry requeued after its final settle released its pin (a cancelled
+/// drain) regains the pin at the next accepted kill.
+#[test]
+fn a_requeued_entry_regains_its_pin_at_the_next_accepted_kill() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    let in_flight = taken(queue.take(session(50), 3));
+    release_settled_corpse(
+        &mut runtime,
+        in_flight.entry().expect("entry"),
+        SettleVerdict::Final,
+    );
+    assert!(!runtime.corpse_projection_pinned(first));
+    in_flight.requeue();
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut next = pending(3, 51, 3, 0);
+    next.target = second;
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, next),
+        AppendOutcome::Queued
+    );
+    assert!(runtime.corpse_projection_pinned(first));
+    assert!(runtime.corpse_projection_pinned(second));
+}

@@ -93,7 +93,8 @@ struct ReleasingMark {
 #[derive(Debug, Default)]
 struct KillQueueState {
     queued: VecDeque<PendingKillSettlement>,
-    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal)>,
+    /// Each in-flight entry's death, principal and killed actor.
+    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
     reserved_loot_mints: usize,
     releasing: Vec<ReleasingMark>,
     /// The last mark id or hold slot given out.
@@ -102,7 +103,7 @@ struct KillQueueState {
 
 impl KillQueueState {
     fn holds(&self, death: CreatureDeathOccurrenceKey) -> bool {
-        self.in_flight.iter().any(|(held, _)| *held == death)
+        self.in_flight.iter().any(|(held, _, _)| *held == death)
             || self.queued.iter().any(|e| e.facts.death == death)
             || self
                 .releasing
@@ -205,7 +206,11 @@ impl KillSettlementQueue {
     /// mark. A mark kept from an unknown outcome keeps its phase and parked entries.
     pub(crate) fn seal(&self, principal: Principal) -> Seal {
         let mut state = self.state();
-        if state.in_flight.iter().any(|(_, held)| *held == principal) {
+        if state
+            .in_flight
+            .iter()
+            .any(|(_, held, _)| *held == principal)
+        {
             return Seal::InFlight;
         }
         if state.queued.iter().any(|e| principal_of(e) == principal) {
@@ -362,6 +367,24 @@ impl KillSettlementQueue {
         }
     }
 
+    /// The killed actor of every queued, parked or in-flight entry: the corpse projections the
+    /// queue still binds to (Codex 4248192466).
+    fn held_targets(&self) -> Vec<ExactActorRef> {
+        let state = self.state();
+        state
+            .in_flight
+            .iter()
+            .map(|(_, _, target)| *target)
+            .chain(state.queued.iter().map(|e| e.target))
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(e, _)| e.target)),
+            )
+            .collect()
+    }
+
     pub(crate) fn has_session(&self, session: GameSessionId) -> bool {
         self.state()
             .queued
@@ -397,7 +420,7 @@ impl KillSettlementQueue {
         state.reserved_loot_mints = inflight_before + loot_mints;
         state
             .in_flight
-            .push((entry.facts.death, principal_of(&entry)));
+            .push((entry.facts.death, principal_of(&entry), entry.target));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
             death: entry.facts.death,
@@ -487,7 +510,7 @@ impl Drop for TakenKillSettlement {
     fn drop(&mut self) {
         let mut state = self.queue.state();
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(self.loot_mints);
-        state.in_flight.retain(|(death, _)| *death != self.death);
+        state.in_flight.retain(|(death, _, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
         }
@@ -600,9 +623,53 @@ pub(crate) fn record_creature_kill(
         target,
         no_progression_logged: false,
     };
+    accept_kill(runtime, sink.queue, entry);
+}
+
+/// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
+/// actor's corpse projection, so no later death evicts it before the settle binds the committed
+/// corpse (Codex 4248192466). A duplicate keeps the pin its first append took; a kill the full
+/// queue refuses pins nothing. Runs under the runtime lock and the `attack` guard.
+fn accept_kill(
+    runtime: &mut ChannelRuntimeV1,
+    queue: &KillSettlementQueue,
+    entry: PendingKillSettlement,
+) -> AppendOutcome {
+    let target = entry.target;
     let creature = entry.creature.clone();
-    if sink.queue.append(entry) == AppendOutcome::Full {
-        refuse("queue_full", &creature);
+    let outcome = queue.append(entry);
+    match &outcome {
+        AppendOutcome::Queued | AppendOutcome::Parked(_) => {
+            // The pins become those of the held entries, at most KILLRW-RL-01, so this one
+            // fits: an entry freed without a settle (`principal_gone`) loses its pin, and one
+            // requeued after its final settle released it (a cancelled drain) regains it.
+            let held = queue.held_targets();
+            runtime.retain_corpse_projection_pins(&held);
+            for actor in held {
+                if let Err(error) = runtime.pin_corpse_projection(actor)
+                    && actor == target
+                {
+                    operator_event(&format!(
+                        "kill_reward_corpse_unpinned creature={creature} reason={error:?}"
+                    ));
+                }
+            }
+        }
+        AppendOutcome::Duplicate => {}
+        AppendOutcome::Full => refuse("queue_full", &creature),
+    }
+    outcome
+}
+
+/// Codex 4248192466: a final settle releases the pin its acceptance took, after its corpse bind.
+/// A Retry requeues the entry, which keeps the pin.
+fn release_settled_corpse(
+    runtime: &mut ChannelRuntimeV1,
+    entry: &PendingKillSettlement,
+    verdict: SettleVerdict,
+) {
+    if verdict == SettleVerdict::Final {
+        runtime.unpin_corpse_projection(entry.target);
     }
 }
 
@@ -1122,19 +1189,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // are released before it is taken.
         drop(slot);
         drop(permit);
+        let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
-            && let CorpseBind::Refused(error) = bind_settled_corpse(
-                &mut *admission.runtime.lock().await,
-                entry,
-                &outcome.rewards.loot,
-            )
+            && let CorpseBind::Refused(error) =
+                bind_settled_corpse(&mut runtime, entry, &outcome.rewards.loot)
         {
             operator_event(&format!(
                 "kill_reward_corpse_unbound creature={} reason={error:?}",
                 entry.creature
             ));
         }
-        classify(&entry.creature, &outcome)
+        let report = classify(&entry.creature, &outcome);
+        release_settled_corpse(&mut runtime, entry, report.verdict);
+        report
     }
 }
 
