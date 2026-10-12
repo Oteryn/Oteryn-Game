@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/supervisor-gap-quote-20261012
 issue: null
-pr: "see PR"
+pr: 2023
 head_sha: "exact head in the PR"
 final_head_sha: "exact head in the PR"
 owner: claude-code implementation writer
