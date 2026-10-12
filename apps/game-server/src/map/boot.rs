@@ -328,69 +328,69 @@ fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     })
 }
 
-/// SPAWN-1b: one realizable spawn group of the bundle as the Channel runtime realizes it:
-/// placement cells `(x, y, z)` in authored order, respawn delay and occupancy retry interval
-/// (ms), creature key and initial health.
-pub(crate) type BundleSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
+/// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
+/// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
+/// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
+/// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
+pub(crate) type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
 
-/// One spawn group under construction: creature index, respawn delay (ms) and placement cells.
-type SpawnGroup = (u32, u32, Vec<SpawnCell>);
-type SpawnCell = (i32, i32, i16);
+/// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
+pub(crate) type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
 
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
 pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
-/// A point whose creature has a period other than `All` is outside the activation set. The
-/// consecutive points of one source that share a creature and a respawn delay form one group,
-/// so the canonical (source key, point ordinal) order is kept; a creature `health` does not serve refuses the whole family (`None`). The point
-/// direction is not realized yet.
+/// CREATURE-AI-0 §6.1: each bundle source is one runtime source (one `CREATUREAI0-RL-02`
+/// count), in canonical (source key, point ordinal) order, whatever creatures and respawn
+/// delays its points mix. A point whose creature has a period other than `All` is outside the
+/// activation set, and a source left with no point is not activated. `profile` gives a
+/// creature key's initial health and `blocked_by_nearby_players`; a creature it does not serve
+/// refuses the whole family (`None`). The point direction is not realized yet.
 pub(crate) fn table_activation_spawns(
     table: &oteryn_world_bundle::spawn::Table,
-    health: impl Fn(&str) -> Option<u64>,
+    profile: impl Fn(&str) -> Option<(u64, bool)>,
 ) -> Option<Vec<BundleSpawnFacts>> {
     use oteryn_world_bundle::spawn::Period;
-    let mut out = Vec::new();
+    // Each creature's profile is resolved once, on its first active point.
+    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
+    let mut out = Vec::with_capacity(table.sources.len());
     for source in &table.sources {
-        let mut groups: Vec<SpawnGroup> = Vec::new();
+        let z = i16::from(source.floor).checked_neg()?;
+        let mut points = Vec::with_capacity(source.points.len());
         for point in &source.points {
-            let creature = table.creatures.get(usize::try_from(point.creature).ok()?)?;
+            let index = usize::try_from(point.creature).ok()?;
+            let creature = table.creatures.get(index)?;
             if creature.period != Period::All {
                 continue;
             }
-            let cell = (
-                i32::from(point.x),
-                i32::from(point.y),
-                i16::from(source.floor).checked_neg()?,
-            );
-            match groups.last_mut() {
-                Some((c, r, cells)) if *c == point.creature && *r == point.respawn_ms => {
-                    cells.push(cell)
-                }
-                _ => groups.push((point.creature, point.respawn_ms, vec![cell])),
-            }
-        }
-        for (creature, respawn_ms, cells) in groups {
-            let key = &table.creatures.get(usize::try_from(creature).ok()?)?.key;
-            out.push((
-                cells,
-                u64::from(respawn_ms),
-                BUNDLE_OCCUPANCY_RETRY_MS,
-                key.clone(),
-                health(key)?,
+            let resolved = profiles.get_mut(index)?;
+            let (health, blockable) = match *resolved {
+                Some(known) => known,
+                None => *resolved.insert(profile(&creature.key)?),
+            };
+            points.push((
+                (i32::from(point.x), i32::from(point.y), z),
+                u64::from(point.respawn_ms),
+                creature.key.clone(),
+                health,
+                blockable,
             ));
+        }
+        if !points.is_empty() {
+            out.push((points, BUNDLE_OCCUPANCY_RETRY_MS));
         }
     }
     Some(out)
 }
 
 impl BundleWorld {
-    /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn facts; see
+    /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
     /// [`table_activation_spawns`].
     pub(crate) fn activation_spawns(
         &self,
-        health: impl Fn(&str) -> Option<u64>,
+        profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
-        table_activation_spawns(&self.spawns, health)
+        table_activation_spawns(&self.spawns, profile)
     }
 
     pub fn base(&self) -> &Arc<WorldBase> {
@@ -541,8 +541,10 @@ pub(crate) mod tests {
     use std::error::Error;
     use std::num::NonZeroUsize;
 
+    /// SPAWN-1b (Codex P1 on #1981): a bundle source stays one runtime source whatever its
+    /// points mix; night points and sources left with no point are outside the activation.
     #[test]
-    fn spawn1b_groups_points_and_skips_night_creatures() {
+    fn spawn1b_keeps_each_bundle_source_whole_and_skips_night_creatures() {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
         let point = |creature, x, respawn_ms| Point {
             creature,
@@ -551,60 +553,98 @@ pub(crate) mod tests {
             direction: Direction::South,
             respawn_ms,
         };
+        let creature = |key: &str, period| Creature {
+            key: key.into(),
+            period,
+        };
+        let source = |key: &str, floor, points| Source {
+            key: key.into(),
+            floor,
+            x: 3,
+            y: 5,
+            points,
+        };
         let table = Table {
             creatures: vec![
-                Creature {
-                    key: "oteryn:creature.rat".into(),
-                    period: Period::All,
-                },
-                Creature {
-                    key: "oteryn:creature.bat".into(),
-                    period: Period::Night,
-                },
+                creature("oteryn:creature.bat", Period::Night),
+                creature("oteryn:creature.rat", Period::All),
+                creature("oteryn:creature.wolf", Period::All),
             ],
-            sources: vec![Source {
-                key: "oteryn:spawn/a".into(),
-                floor: -7,
-                x: 3,
-                y: 5,
-                points: vec![
-                    point(0, 1, 60_000),
-                    point(1, 2, 60_000),
-                    point(0, 3, 60_000),
-                    point(0, 4, 30_000),
-                    point(0, 5, 30_000),
-                ],
-            }],
+            sources: vec![
+                source(
+                    "oteryn:spawn/a",
+                    -7,
+                    vec![
+                        point(1, 1, 60_000),
+                        point(0, 2, 60_000),
+                        point(1, 3, 60_000),
+                        point(2, 4, 30_000),
+                        point(1, 5, 30_000),
+                    ],
+                ),
+                source("oteryn:spawn/b", -7, vec![point(0, 6, 60_000)]),
+                source("oteryn:spawn/c", -6, vec![point(2, 7, 45_000)]),
+            ],
         };
-        let health = |key: &str| (key == "oteryn:creature.rat").then_some(20);
-        let facts = table_activation_spawns(&table, health).expect("facts");
+        let calls = std::cell::Cell::new(0);
+        let profile = |key: &str| {
+            calls.set(calls.get() + 1);
+            match key {
+                "oteryn:creature.rat" => Some((20, false)),
+                "oteryn:creature.wolf" => Some((35, true)),
+                _ => None,
+            }
+        };
+        let facts = table_activation_spawns(&table, profile).expect("facts");
+        let rat = |x, respawn_ms| {
+            (
+                (x, 5, 7),
+                respawn_ms,
+                "oteryn:creature.rat".to_string(),
+                20,
+                false,
+            )
+        };
+        let wolf = |x, z, respawn_ms| {
+            (
+                (x, 5, z),
+                respawn_ms,
+                "oteryn:creature.wolf".to_string(),
+                35,
+                true,
+            )
+        };
         assert_eq!(
             facts,
             vec![
                 (
-                    vec![(1, 5, 7), (3, 5, 7)],
-                    60_000,
+                    vec![
+                        rat(1, 60_000),
+                        rat(3, 60_000),
+                        wolf(4, 7, 30_000),
+                        rat(5, 30_000)
+                    ],
                     BUNDLE_OCCUPANCY_RETRY_MS,
-                    "oteryn:creature.rat".to_string(),
-                    20
                 ),
-                (
-                    vec![(4, 5, 7), (5, 5, 7)],
-                    30_000,
-                    BUNDLE_OCCUPANCY_RETRY_MS,
-                    "oteryn:creature.rat".to_string(),
-                    20
-                ),
+                (vec![wolf(7, 6, 45_000)], BUNDLE_OCCUPANCY_RETRY_MS),
             ]
         );
+        // Each served creature's profile is read once; the night creature's never.
+        assert_eq!(calls.get(), 2);
         // A creature the content does not serve refuses the family.
         assert!(table_activation_spawns(&table, |_| None).is_none());
+        assert!(
+            table_activation_spawns(&table, |key| (key == "oteryn:creature.rat")
+                .then_some((20, false)))
+            .is_none()
+        );
         assert_eq!(
-            table_activation_spawns(&Table::default(), health),
+            table_activation_spawns(&Table::default(), profile),
             Some(vec![])
         );
     }
 
+    /// SPAWN-1b: interleaved creatures keep their authored point order inside their source.
     #[test]
     fn spawn1b_keeps_point_order_for_interleaved_creatures() {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
@@ -621,28 +661,30 @@ pub(crate) mod tests {
         };
         let table = Table {
             creatures: vec![
-                creature("oteryn:creature.rat"),
                 creature("oteryn:creature.bat"),
+                creature("oteryn:creature.rat"),
             ],
             sources: vec![Source {
                 key: "oteryn:spawn/a".into(),
                 floor: -7,
                 x: 3,
                 y: 5,
-                points: vec![point(0, 1), point(1, 2), point(0, 3)],
+                points: vec![point(1, 1), point(0, 2), point(1, 3)],
             }],
         };
-        let facts = table_activation_spawns(&table, |_| Some(20)).expect("facts");
-        let order: Vec<(&str, Vec<i32>)> = facts
+        let facts = table_activation_spawns(&table, |_| Some((20, false))).expect("facts");
+        assert_eq!(facts.len(), 1);
+        let order: Vec<(&str, i32)> = facts[0]
+            .0
             .iter()
-            .map(|f| (f.3.as_str(), f.0.iter().map(|c| c.0).collect()))
+            .map(|point| (point.2.as_str(), point.0.0))
             .collect();
         assert_eq!(
             order,
             vec![
-                ("oteryn:creature.rat", vec![1]),
-                ("oteryn:creature.bat", vec![2]),
-                ("oteryn:creature.rat", vec![3]),
+                ("oteryn:creature.rat", 1),
+                ("oteryn:creature.bat", 2),
+                ("oteryn:creature.rat", 3),
             ]
         );
     }
