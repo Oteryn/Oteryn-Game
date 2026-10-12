@@ -4,18 +4,18 @@
 task_id: OTV2-20261012-entry-spell-tiles-1
 title: "ENTRY-SPELL-TILES-1: qualified tile facts for every cell of the accepted entry room"
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/entry-spell-tiles-1-20261012
 pr: 2005
 base_sha: 08e13f7dea83c43c13df85f901caf1e032ef3cd9
-head_sha: null
-final_head_sha: null
+head_sha: "final frozen head in PR #2005 metadata"
+final_head_sha: "final frozen head in PR #2005 metadata"
 final_head_frozen_at: null
 owner: Claude Code session_01CwP6d84eCPvpgoEuyci8Tx
 created_at: 2026-10-12T06:30:00Z
-updated_at: 2026-10-12T07:20:00Z
+updated_at: 2026-10-12T07:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry_room.json
@@ -60,10 +60,10 @@ The accepted entry room (`native_entry_room.json`, `OTERYN_NATIVE_ENTRY_ROOM_SOU
 
 `NOT_APPLICABLE`: this task adds authored content facts to an accepted room overlay and updates two test assertions. It does not touch session, lease, generation or fence evidence, PREPARE/COMMIT, controllers or persisted recovery evidence.
 
-## Open questions
+## Owner decisions
 
-- Amendment 01 §3 and Amendment 02 list a closed set of room overlays that does not name `spell_tiles`. The code (`accepted_shape`) already admits `spell_tiles` for both rooms. Should a docs follow-up amend those tables?
-- Should `ground_speed` stay `null` or be authored as a value? `null` was chosen so that no speed is invented.
+- Amendment 01 §3 and Amendment 02 list a closed set of room overlays that does not name `spell_tiles`, although `accepted_shape` admits it for both rooms. Decision 1a: amend those tables in a docs follow-up, not in this PR.
+- Decision 2a: `ground_speed` stays `null`, so no speed is invented. Companion haste keeps refusing in this room until a value is authored.
 
 ## Validation
 
@@ -75,3 +75,13 @@ The accepted entry room (`native_entry_room.json`, `OTERYN_NATIVE_ENTRY_ROOM_SOU
 - cargo clippy --all-targets, the full workspace tests and the native entry room qualification workflow (`tools/qualification/native_entry_room/run.sh`, Platform checkout and PHP image): CI (local disk full)
 - python tools/agents/validate_governance.py: pass
 - python -m unittest discover -s tools/agents/tests: pass (60 tests OK)
+
+## Self-review and independent review
+
+The full owned delta was reviewed: the room bytes, the monster-lab pin rotation and the two test assertion updates. Independent review for this high-risk packet is pending. The lead triggers it on the frozen head; a review packet was returned to the lead.
+
+## Lifecycle
+
+PR #2005 carries this task end to end. The record is archived in the final authoring commit. CI, review and integration are pending.
+
+Merge commit/result: pending (if integrated, resolve squash merge of #2005).
