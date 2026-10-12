@@ -368,8 +368,9 @@ fn a_global_interpretation_advanced_after_creation_unbinds_the_root() -> TestRes
 /// The death path of that scenario terminates (§1.5): the root-pinned binding's death is
 /// refused by the durable writer with `ProgressionContextMismatch` on every attempt, so a
 /// session bound to it would keep its actor dead and retry for ever. The step leaves the
-/// session unbound instead, whose death `settle_death` settles at once on the non-durable
-/// respawn path without this write; the refused attempts commit nothing.
+/// session unbound instead, whose death `settle_death` decides at once without this write
+/// (`NoDurableDeath`: never respawned without a durable death, DEATH-RESTART-SAFETY-1); the
+/// refused attempts commit nothing.
 #[test]
 fn an_unbound_advanced_root_never_leaves_its_death_retrying() -> TestResult {
     run(|admin| {
