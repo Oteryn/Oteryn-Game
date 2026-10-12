@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
-implementation_branch: claude/start-thais-20261012
+implementation_branch: claude/start-thais-20261012-r2
 issue: 1622
 pr: null
 depends_on:
