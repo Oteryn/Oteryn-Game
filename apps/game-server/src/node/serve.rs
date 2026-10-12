@@ -936,26 +936,99 @@ fn s2_parts(
     ))
 }
 
-/// Retry an S2 operation through transient unavailability, a bounded number
-/// of times. Definite rejections surface as errors.
-async fn with_retries<T, F, Fut>(root: &DurabilityRoot, mut operation: F) -> Option<T>
+/// Whether a boot durability step that failed with `error` may run again
+/// (NODE-BOOT-DEADLINE-1): only when no definite answer came back. The holder was not
+/// ready (no transaction ran), the pass deadline expired, or the commit outcome is unknown.
+/// Any database answer, refusal or stored-state failure is definite and ends the boot.
+fn boot_step_retryable(error: &crate::durability::DurabilityError) -> bool {
+    use crate::durability::DurabilityError;
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitOutcomeUnknown
+    )
+}
+
+/// [`boot_step_retryable`] for the Character authority open.
+fn character_authority_retryable(
+    error: &crate::durability::character_authority::CharacterAuthorityError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::character_authority::CharacterAuthorityError::Unavailable(inner)
+            if boot_step_retryable(inner)
+    )
+}
+
+/// Run one boot durability step under the boot pass deadline, retrying it a bounded
+/// number of times while `retryable` holds; the last error is returned.
+///
+/// Only idempotent steps are wrapped: the S2 registration read and the Character
+/// authority open are read-only, the custody claim writes nothing when custody is
+/// already this incarnation's, and the descriptor registration writes nothing when the
+/// same descriptor is already current. Each re-run first re-reads the stored row under
+/// its lock, so an attempt that committed although its outcome was unknown (or its
+/// deadline expired) is confirmed by that read, never applied twice.
+async fn with_retries<T, E, F, Fut>(
+    root: &DurabilityRoot,
+    step: &str,
+    deadline: Duration,
+    retryable: impl Fn(&E) -> bool,
+    mut operation: F,
+) -> Result<T, E>
 where
+    E: std::fmt::Debug,
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, crate::durability::DurabilityError>>,
+    Fut: Future<Output = Result<T, E>>,
 {
     let mut attempt = 0;
-    for _ in 0..PENDING_RECONCILE_ATTEMPTS {
-        match operation().await {
-            Ok(value) => return Some(value),
-            Err(crate::durability::DurabilityError::RootUnavailable) => {
-                root.request_ready();
-                let _ = root.maintain_ready_once().await;
-                backoff(&mut attempt).await;
-            }
-            Err(_) => return None,
+    let mut runs = 0;
+    loop {
+        let result = {
+            let _boot = root.boot_pass_deadline(deadline);
+            operation().await
+        };
+        let error = match result {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        runs += 1;
+        if runs >= PENDING_RECONCILE_ATTEMPTS || !retryable(&error) {
+            boot_step_failed(step, &error);
+            return Err(error);
         }
+        event(&boot_step_retry_line(step, runs, &error));
+        root.request_ready();
+        let _ = root.maintain_ready_once().await;
+        backoff(&mut attempt).await;
     }
-    None
+}
+
+/// The class of a boot step's error, from the durability error's own form: no SQL text,
+/// parameter or credential is ever part of it.
+fn boot_step_detail(step: &str, error: &impl std::fmt::Debug) -> String {
+    format!("step=\"{step}\" error={error:?}")
+}
+
+fn boot_step_retry_line(step: &str, runs: u32, error: &impl std::fmt::Debug) -> String {
+    format!(
+        "event=boot_step_retry run={runs} {}",
+        boot_step_detail(step, error)
+    )
+}
+
+/// A warn line (always written) naming the failed boot step and its error class, written
+/// before `boot_failed`, whose detail carries only the stage.
+fn boot_step_failed(step: &str, error: &impl std::fmt::Debug) {
+    let detail = boot_step_detail(step, error);
+    let mut line =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "node", "boot_step_failed")
+            .detail(&detail);
+    if let Some(trace) = BOOT_TRACE.get() {
+        line = line.trace(trace);
+    }
+    emit(PROCESS, &line);
 }
 
 /// D3 step 4: establish S2 custody, confirm the recorded descriptor and
@@ -966,9 +1039,12 @@ async fn establish_custody(
     material: &Material,
     evidence: &FreshEvidenceSource,
 ) -> Result<(), BootError> {
-    let stored = with_retries(root, || root.read_native_admission_source_registration())
-        .await
-        .ok_or(BootError::SourceCustody("read"))?;
+    let deadline = material.config.boot_pass_deadline();
+    let stored = with_retries(root, "read", deadline, boot_step_retryable, || {
+        root.read_native_admission_source_registration()
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("read"))?;
     match (stored, &material.s2) {
         (None, None) => {
             return Err(BootError::SourceCustody(
@@ -977,16 +1053,25 @@ async fn establish_custody(
         }
         (None, Some(file)) => {
             let (provenance, descriptor) = s2_parts(file)?;
-            let initialized = root
-                .initialize_native_admission_source(proof, provenance.clone(), descriptor.clone())
-                .await;
-            if initialized.is_err() {
+            let initialized = {
+                let _boot = root.boot_pass_deadline(deadline);
+                root.initialize_native_admission_source(
+                    proof,
+                    provenance.clone(),
+                    descriptor.clone(),
+                )
+                .await
+            };
+            if let Err(error) = initialized {
                 // An initialization whose response was lost: compare exactly.
-                let after = with_retries(root, || root.read_native_admission_source_registration())
-                    .await
-                    .flatten()
-                    .ok_or(BootError::SourceCustody("initialize"))?;
-                if after != (provenance, descriptor) {
+                let after = with_retries(root, "initialize", deadline, boot_step_retryable, || {
+                    root.read_native_admission_source_registration()
+                })
+                .await
+                .ok()
+                .flatten();
+                if after != Some((provenance, descriptor)) {
+                    boot_step_failed("initialize", &error);
                     return Err(BootError::SourceCustody("initialize"));
                 }
             }
@@ -1001,12 +1086,16 @@ async fn establish_custody(
         }
         (Some(_), None) => {}
     }
-    root.claim_native_admission_source_custody(proof)
-        .await
-        .map_err(|_| BootError::SourceCustody("custody claim"))?;
-    root.register_native_admission_descriptor(proof, material.descriptor.clone())
-        .await
-        .map_err(|_| BootError::SourceCustody("descriptor"))?;
+    with_retries(root, "custody claim", deadline, boot_step_retryable, || {
+        root.claim_native_admission_source_custody(proof)
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("custody claim"))?;
+    with_retries(root, "descriptor", deadline, boot_step_retryable, || {
+        root.register_native_admission_descriptor(proof, material.descriptor.clone())
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("descriptor"))?;
     for attempt in 0..PENDING_RECONCILE_ATTEMPTS {
         match evidence.reconcile_retained(root, proof).await {
             Ok(0) => {
@@ -1929,10 +2018,16 @@ async fn boot_and_serve(
     let seal = store
         .seal_current()
         .map_err(|_| BootError::CharacterAuthority)?;
-    let authority = root
-        .open_character_authority(&seal)
-        .await
-        .map_err(|_| BootError::CharacterAuthority)?;
+    let seal = &seal;
+    let authority = with_retries(
+        root,
+        "character authority open",
+        config.boot_pass_deadline(),
+        character_authority_retryable,
+        || root.open_character_authority(seal),
+    )
+    .await
+    .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
     let Some(generation) = first(
         await_assignment(
@@ -2453,6 +2548,81 @@ mod tests {
             retry_delay(0, Some(Duration::from_secs(3))),
             Duration::from_millis(200)
         );
+    }
+
+    #[test]
+    fn boot_steps_retry_only_root_contention_and_deadline_outcomes() {
+        use crate::durability::{
+            DurabilityError, MigrationFailureClass, SchemaCompatibility, SqlxFailureClass,
+        };
+        // The single connection was busy or retired, or the pass ran out of time: the
+        // wrapped steps are idempotent re-reads, so the next run confirms the stored state.
+        for retryable in [
+            DurabilityError::RootUnavailable,
+            DurabilityError::RootPassDeadlineExceeded,
+            DurabilityError::CommitOutcomeUnknown,
+        ] {
+            assert!(boot_step_retryable(&retryable), "{retryable:?}");
+        }
+        // Every other class is a stored-state, schema or configuration verdict: fail closed.
+        for terminal in [
+            DurabilityError::AdmissionGameSessionLedgerExhausted,
+            DurabilityError::Unavailable,
+            DurabilityError::Database(SqlxFailureClass::Database(None)),
+            DurabilityError::Database(SqlxFailureClass::Transport),
+            DurabilityError::Database(SqlxFailureClass::Pool),
+            DurabilityError::Migration(MigrationFailureClass::Dirty),
+            DurabilityError::SchemaIncompatible(SchemaCompatibility::Incompatible),
+            DurabilityError::InvalidConfiguration,
+            DurabilityError::CommitRejected,
+            DurabilityError::RootTaskFailed,
+            DurabilityError::InvalidStoredState,
+        ] {
+            assert!(!boot_step_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn character_authority_open_retries_only_a_retryable_root_cause() {
+        use crate::durability::DurabilityError;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootPassDeadlineExceeded)
+        ));
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)
+        ));
+        for terminal in [
+            CharacterAuthorityError::Rejected,
+            CharacterAuthorityError::Conflict,
+            CharacterAuthorityError::NameUnavailable,
+            CharacterAuthorityError::Unavailable(DurabilityError::Unavailable),
+            CharacterAuthorityError::Unavailable(DurabilityError::InvalidStoredState),
+        ] {
+            assert!(!character_authority_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn boot_step_lines_name_the_step_and_only_the_error_class() {
+        use crate::durability::{DurabilityError, SqlxFailureClass};
+        assert_eq!(
+            boot_step_detail("descriptor", &DurabilityError::RootPassDeadlineExceeded),
+            "step=\"descriptor\" error=RootPassDeadlineExceeded"
+        );
+        assert_eq!(
+            boot_step_detail(
+                "custody claim",
+                &DurabilityError::Database(SqlxFailureClass::Database(None))
+            ),
+            "step=\"custody claim\" error=Database(Database(None))"
+        );
+        let line = boot_step_retry_line("descriptor", 2, &DurabilityError::RootUnavailable);
+        let (level, module, event, detail) = split_event(&line);
+        assert_eq!(level, oteryn_error_codes::Level::Info);
+        assert_eq!(module, "node");
+        assert_eq!(event, "boot_step_retry");
+        assert_eq!(detail, "run=2 step=\"descriptor\" error=RootUnavailable");
     }
 
     #[test]
