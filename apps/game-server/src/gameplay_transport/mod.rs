@@ -731,7 +731,7 @@ pub(crate) type ProgressionSessions = std::sync::Mutex<
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DeathCommit {
     /// The death is committed or replayed; its pending respawn stays recorded until the actor
-    /// is placed ([`ComposedFreshAdmission::consume_settled_respawn`]).
+    /// is placed ([`ComposedFreshAdmission::place_and_consume_settled_respawn`]).
     Settled,
     /// The durable writer refused the binding's progression context: a newer Character
     /// interpretation was configured after the session was bound, so the gameplay fence refuses
@@ -828,74 +828,57 @@ where
 }
 
 /// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): the order of one
-/// in-session respawn. The durable death is settled first; only a durable one is authorized against
-/// the session's fresh durable authority (a settle may replay a retained receipt without checking
-/// it, so this is the first current check); only an authorized actor is placed at its respawn
-/// position, after the Channel owner revalidated under its runtime lock that the authorized
-/// authority is still the actor's own ([`place_authorized_respawn`]); only a placed actor's pending
-/// respawn is consumed, under the authorization; and only a consumed respawn refills the vitals and
-/// ends the death. A step that does not succeed stops the chain with the actor still dead, and the
-/// next cadence starts again from the settle, which replays the first receipt. So a restart at any
-/// point either finds the pending respawn recorded, and the next admission places the new actor at
-/// the recorded position before consuming it, or finds it consumed after the placement, which
-/// happens only when a fresh admission writes the recorded cell itself
-/// ([`settled_respawn_disposition`]): the recorded respawn is never lost, and the death never
-/// commits twice.
-async fn respawn_in_order<A, P, C, T>(
+/// in-session respawn. The durable death is settled first; only a durable one is respawned: the
+/// actor is placed at its respawn position while the session's current durable fence is held, and
+/// its pending respawn is consumed in the same transaction after the placement
+/// ([`DurabilityRoot::place_and_consume_pending_respawn`], a settle may replay a retained receipt
+/// without checking the fence, so this is the first current check); and only a placed, consumed
+/// respawn refills the vitals and ends the death. A step that does not succeed stops the chain
+/// with the actor still dead, and the next cadence starts again from the settle, which replays the
+/// first receipt. So a restart at any point either finds the pending respawn recorded, and the
+/// next admission places the new actor at the recorded position before consuming it, or finds it
+/// consumed after the placement, which happens only when a fresh admission writes the recorded
+/// cell itself ([`settled_respawn_disposition`]): the recorded respawn is never lost, and the
+/// death never commits twice.
+///
+/// [`DurabilityRoot::place_and_consume_pending_respawn`]: crate::durability::DurabilityRoot::place_and_consume_pending_respawn
+async fn respawn_in_order<T>(
     settle: impl std::future::Future<Output = SessionDeath>,
-    authorize: impl std::future::Future<Output = Option<A>>,
-    place: impl FnOnce(A) -> P,
-    consume: impl FnOnce(A) -> C,
+    place_and_consume: impl std::future::Future<Output = bool>,
     refill: impl std::future::Future<Output = Option<T>>,
-) -> Option<T>
-where
-    A: Copy,
-    P: std::future::Future<Output = bool>,
-    C: std::future::Future<Output = bool>,
-{
+) -> Option<T> {
     match settle.await {
         SessionDeath::Durable => {}
         SessionDeath::Retry | SessionDeath::NoDurableDeath => return None,
     }
-    let authorized = authorize.await?;
-    if !place(authorized).await || !consume(authorized).await {
+    if !place_and_consume.await {
         return None;
     }
     refill.await
 }
 
-/// DEATH-RESTART-SAFETY-1: an in-session respawn authorized against the session's current
-/// durable authority before its placement, with the authority the placement revalidates.
+/// DEATH-RESTART-SAFETY-1: the durable authority a fenced in-session placement holds, which the
+/// placement also checks against the Channel owner's own binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct AuthorizedRespawn {
-    consumption: RespawnConsumption,
-    /// The Character the authorizing read proved the session's lease holder.
+    /// The Character the fence proves the session's lease holder.
     character_id: domain::CharacterId,
-    /// The session's Character lease generation the authorizing read proved current.
+    /// The session's Character lease generation the fence proves current.
     lease_generation: u64,
-    /// The runtime scope ownership generation the authorizing read proved current.
+    /// The runtime scope ownership generation the fence proves current.
     scope_generation: ScopeOwnershipGeneration,
 }
 
-/// What the consumption after an authorized in-session placement has left to do.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RespawnConsumption {
-    /// This occurrence's row is still recorded and is consumed after the placement.
-    Consume,
-    /// No row of this occurrence is left: an earlier attempt consumed it.
-    AlreadyConsumed,
-}
-
-/// DEATH-RESTART-SAFETY-1 (third Codex review of #2004): the placement of an authorized in-session
-/// respawn, in one Channel owner step under the runtime lock and with no I/O. The authorization
-/// read the session's durable authority and released its revision slot before this step, so the
-/// session may have become terminal or been superseded while the step waited for the lock. Before
-/// anything moves, the owner's own binding of that authority is revalidated: the actor's slot is
-/// still bound to `session` (a successor's rebind detaches it), carries no write fence (every
-/// transition that may end the session fences the slot under this lock before its durable write,
-/// CHARM-DESC-FENCE-LEASE step (a), and a terminal outcome keeps the fence), holds exactly the
-/// Character lease the authorization proved current, and the runtime still holds the scope
-/// ownership generation it proved. Any mismatch moves nothing and clears no respawn condition: the
+/// DEATH-RESTART-SAFETY-1 (third and fourth Codex reviews of #2004): the placement of an in-session
+/// respawn, in one Channel owner step under the runtime lock and with no I/O. It runs inside the
+/// transaction that holds the session's durable fence ([`ComposedFreshAdmission::place_and_consume_settled_respawn`]),
+/// so no termination, supersession, scope move or node revoke commits in PostgreSQL before it
+/// returns. Before anything moves, the owner's own binding of that authority is checked too: the
+/// actor's slot is still bound to `session` (a successor's rebind detaches it), carries no write
+/// fence (every transition that may end the session fences the slot under this lock before its
+/// durable write, CHARM-DESC-FENCE-LEASE step (a), and a terminal outcome keeps the fence), holds
+/// exactly the Character lease the fence proves current, and the runtime still holds the scope
+/// ownership generation it proves. Any mismatch moves nothing and clears no respawn condition: the
 /// actor stays dead and its pending respawn stays recorded.
 fn place_authorized_respawn(
     runtime: &mut ChannelRuntimeV1,
@@ -918,21 +901,6 @@ fn place_authorized_respawn(
     runtime
         .place_respawned_player(actor, session, respawn)
         .is_ok()
-}
-
-/// DEATH-RESTART-SAFETY-1: the consumption after an in-session placement settled the respawn when
-/// it deleted this occurrence's row, or found no row of it: the death was just committed or
-/// replayed with its row, so a missing row was consumed by an earlier attempt whose
-/// acknowledgement was lost. An error settles nothing.
-fn settled_respawn_consumed<E>(
-    occurrence: crate::durability::character_death::PlayerDeathOccurrence,
-    consumed: Result<Option<crate::durability::character_death::ConsumedRespawn>, E>,
-) -> bool {
-    match consumed {
-        Ok(None) => true,
-        Ok(Some(consumed)) => consumed.occurrence == occurrence,
-        Err(_) => false,
-    }
 }
 
 /// What the pending respawn row of an in-session respawn allows (DEATH-RESTART-SAFETY-1).
@@ -1331,14 +1299,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
     /// actor, in the order of [`respawn_in_order`]. With the session's progression binding the
     /// death is committed (or replayed) off the owner lane, with no lock held across the database;
-    /// the session's current durable authority is then read fresh
-    /// ([`Self::authorize_settled_respawn`]), and only an authorized dead actor whose binding still
-    /// holds that authority under the runtime lock ([`place_authorized_respawn`]) is placed at its
-    /// respawn position in one owner step, its pending respawn consumed off the lane, and only then
-    /// refilled in another owner step, which ends the death. `None` (a durable attempt without an
-    /// outcome, a session without a durable death, a refused or failed authorization, a stale actor
-    /// or a consumption without an outcome) keeps the player dead, and the next cadence tick
-    /// retries the same occurrence.
+    /// the dead actor is then placed at its respawn position in one owner step while the session's
+    /// current durable fence is held, and its pending respawn consumed after that placement in the
+    /// same transaction ([`Self::place_and_consume_settled_respawn`]); only then is it refilled in
+    /// another owner step, which ends the death. `None` (a durable attempt without an outcome, a
+    /// session without a durable death, a refused fence, a stale actor, a recorded cell no
+    /// admission reproduces or a consumption without an outcome) keeps the player dead, and the
+    /// next cadence tick retries the same occurrence.
     async fn respawn_after_death(
         &self,
         actor: ExactActorRef,
@@ -1347,16 +1314,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         respawn_in_order(
             self.settle_death(session, death),
-            self.authorize_settled_respawn(session, death.occurrence),
-            |authorized| async move {
-                place_authorized_respawn(
-                    &mut *self.runtime.lock().await,
-                    actor,
-                    session,
-                    &authorized,
-                )
-            },
-            |authorized| self.consume_settled_respawn(session, authorized, death.occurrence),
+            self.place_and_consume_settled_respawn(actor, session, death.occurrence),
             async {
                 let now = self.owner_now();
                 let runtime = self.runtime.lock().await;
@@ -1386,76 +1344,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
     }
 
-    /// DEATH-RESTART-SAFETY-1: before the placement, resolve the session's current fences and read
-    /// the pending respawn of `occurrence` under them in the Character's revision slot, so a
-    /// terminal or superseded session, a moved lease or a stale node is refused before the old
-    /// actor is moved or its respawn conditions cleared; a settle that replayed a retained receipt
-    /// checked none of them. The slot is released before the placement, so no Channel owner lock is
-    /// taken while it is held; the placement revalidates the authority this returns against the
-    /// owner's binding under the runtime lock instead ([`place_authorized_respawn`]). The row may
-    /// then be consumed only when a fresh admission would write the recorded cell itself
-    /// ([`settled_respawn_disposition`]), so a restart after the consumption never loses the
-    /// recorded respawn. `None` (no current fence, a failed cursor read, a refused or failed read,
-    /// or a recorded cell no admission reproduces) places nothing and keeps the actor dead; the row
-    /// stays for the next attempt or, after a restart, for the next admission.
-    async fn authorize_settled_respawn(
+    /// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): resolve the session's current fences
+    /// and, in the Character's revision slot, place the dead actor while PostgreSQL holds them
+    /// ([`DurabilityRoot::place_and_consume_pending_respawn`]): the placement runs inside the
+    /// fenced transaction, so a session that turns terminal or is superseded, a moved lease, a
+    /// moved scope assignment or a revoked node incarnation commits either before the fence is
+    /// asserted, and nothing is placed, or after the placement. A settle that replayed a retained
+    /// receipt checked none of them. The owner step itself revalidates the owner's binding
+    /// ([`place_authorized_respawn`]) and decides from the pending row read under the fence whether
+    /// it may be consumed ([`settled_respawn_disposition`]); the row is deleted only after the
+    /// placement, in the same transaction. No I/O runs while the runtime lock is held. `false` (no
+    /// current fence, a failed cursor read, a refused fence or placement, a recorded cell no
+    /// admission reproduces or a failed write) keeps the actor dead; the row stays for the next
+    /// attempt or, after a restart, for the next admission.
+    ///
+    /// [`DurabilityRoot::place_and_consume_pending_respawn`]: crate::durability::DurabilityRoot::place_and_consume_pending_respawn
+    async fn place_and_consume_settled_respawn(
         &self,
+        actor: ExactActorRef,
         session: GameSessionId,
-        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
-    ) -> Option<AuthorizedRespawn> {
-        let admission_cell = self.runtime.lock().await.respawn_position();
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return None;
-        };
-        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
-        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
-            expected_character_revision,
-            ..fence
-        };
-        let pending = match self
-            .root
-            .pending_respawn(self.character, self.holder, fence)
-            .await
-        {
-            Ok(pending) => pending,
-            Err(error) => {
-                operator_event(&format!("settled_respawn_read_failed reason={error}"));
-                return None;
-            }
-        };
-        drop(slot);
-        let consumption =
-            match settled_respawn_disposition(occurrence, admission_cell, pending.as_ref()) {
-                SettledRespawn::Gone => RespawnConsumption::AlreadyConsumed,
-                SettledRespawn::Reproduced => RespawnConsumption::Consume,
-                SettledRespawn::Kept => {
-                    operator_event("settled_respawn_kept reason=not_reproduced_by_admission");
-                    return None;
-                }
-            };
-        Some(AuthorizedRespawn {
-            consumption,
-            character_id: fence.character_id,
-            lease_generation: fence.character_lease_generation,
-            scope_generation: fence.scope_ownership_generation,
-        })
-    }
-
-    /// DEATH-RESTART-SAFETY-1: after the authorized actor was placed at its respawn position,
-    /// consume the pending respawn of `occurrence` in the Character's revision slot and under the
-    /// session's current fences, resolved again. `false` (no current fence, a failed cursor read
-    /// or a refused or failed write) keeps the actor dead; the row stays for the next attempt or,
-    /// after a restart, for the next admission.
-    async fn consume_settled_respawn(
-        &self,
-        session: GameSessionId,
-        authorized: AuthorizedRespawn,
         occurrence: crate::durability::character_death::PlayerDeathOccurrence,
     ) -> bool {
-        if authorized.consumption == RespawnConsumption::AlreadyConsumed {
-            return true;
-        }
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
@@ -1463,24 +1372,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
             return false;
         };
-        let consumed = self
+        let authorized = AuthorizedRespawn {
+            character_id: fence.character_id,
+            lease_generation: fence.character_lease_generation,
+            scope_generation: fence.scope_ownership_generation,
+        };
+        let runtime = &self.runtime;
+        let placed = self
             .root
-            .consume_pending_respawn(
+            .place_and_consume_pending_respawn(
                 self.character,
                 self.holder,
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
                     expected_character_revision,
                     ..fence
                 },
-                Some(occurrence),
+                occurrence,
+                move |pending| async move {
+                    let mut runtime = runtime.lock().await;
+                    let admission_cell = runtime.respawn_position();
+                    match settled_respawn_disposition(occurrence, admission_cell, pending.as_ref())
+                    {
+                        SettledRespawn::Kept => {
+                            operator_event(
+                                "settled_respawn_kept reason=not_reproduced_by_admission",
+                            );
+                            false
+                        }
+                        SettledRespawn::Gone | SettledRespawn::Reproduced => {
+                            place_authorized_respawn(&mut runtime, actor, session, &authorized)
+                        }
+                    }
+                },
             )
             .await;
-        if let Err(error) = &consumed {
-            operator_event(&format!(
-                "settled_respawn_consumption_failed reason={error}"
-            ));
+        drop(slot);
+        match placed {
+            Ok(placed) => placed,
+            Err(error) => {
+                operator_event(&format!("settled_respawn_placement_failed reason={error}"));
+                false
+            }
         }
-        settled_respawn_consumed(occurrence, consumed)
     }
 
     /// The durable half of [`Self::settle_death`]. The death request carries the binding's

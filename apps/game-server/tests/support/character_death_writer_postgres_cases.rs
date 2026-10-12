@@ -931,6 +931,177 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
     })
 }
 
+/// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): the in-session placement runs inside the
+/// transaction that holds the current gameplay fence, and the respawn is consumed only after it,
+/// in the same transaction. A stale fence never calls the placement and deletes nothing; while the
+/// placement runs, a writer of the fenced session row cannot commit (here it times out on its
+/// lock), so no termination or supersession lands between the fence and the placement; a refused
+/// placement deletes nothing; a placement deletes exactly its own occurrence's row; and a retry
+/// after that placement is handed no row and deletes nothing.
+#[test]
+fn an_in_session_placement_runs_under_the_held_fence_before_the_consumption() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_place_fenced", &[]).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            harness
+                .root
+                .commit_character_death(&authority, &harness.node, fence(1)?, death(89, &[])?)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(89));
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+            let recorded = ConsumedRespawn {
+                occurrence: occurrence(89)?,
+                respawn_position: b"temple:thais".to_vec(),
+            };
+            let handed = std::sync::Mutex::new(Vec::new());
+            let place = |placed: bool| {
+                let handed = &handed;
+                move |row: Option<ConsumedRespawn>| async move {
+                    handed.lock().expect("handed").push(row);
+                    placed
+                }
+            };
+
+            // A stale lease is refused before the placement is called.
+            let mut stale_lease = fence(2)?;
+            stale_lease.character_lease_generation = 2;
+            let refused = harness
+                .root
+                .place_and_consume_pending_respawn(
+                    &authority,
+                    &harness.node,
+                    stale_lease,
+                    occurrence(89)?,
+                    place(true),
+                )
+                .await;
+            assert_eq!(format!("{refused:?}"), "Err(AuthorityRejected)");
+            assert!(handed.lock().expect("handed").is_empty());
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+
+            // While the placement runs, the fenced session row cannot be written.
+            let pool = harness.pool.clone();
+            let session = fence(2)?.game_session_id;
+            let blocked = std::sync::Mutex::new(None);
+            let kept = harness
+                .root
+                .place_and_consume_pending_respawn(
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    occurrence(89)?,
+                    |row: Option<ConsumedRespawn>| {
+                        let (handed, blocked) = (&handed, &blocked);
+                        async move {
+                            handed.lock().expect("handed").push(row);
+                            let writer = async {
+                                let mut connection = pool.acquire().await?;
+                                sqlx::query("SET lock_timeout = '200ms'")
+                                    .execute(&mut *connection)
+                                    .await?;
+                                sqlx::query(
+                                    "UPDATE game_durability_reconnect_sessions \
+                                        SET session_state = session_state \
+                                      WHERE game_session_id = encode($1,'hex')::uuid",
+                                )
+                                .bind(session.as_bytes().as_slice())
+                                .execute(&mut *connection)
+                                .await
+                                .map(|_| ())
+                            };
+                            let outcome: Result<(), sqlx::Error> = writer.await;
+                            *blocked.lock().expect("blocked") =
+                                Some(outcome.err().and_then(|error| {
+                                    error
+                                        .as_database_error()
+                                        .and_then(|error| error.code())
+                                        .map(|code| code.into_owned())
+                                }));
+                            false
+                        }
+                    },
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert!(!kept);
+            assert_eq!(
+                blocked.lock().expect("blocked").clone(),
+                Some(Some("55P03".to_owned()))
+            );
+            assert_eq!(
+                handed.lock().expect("handed").drain(..).collect::<Vec<_>>(),
+                vec![Some(recorded.clone())]
+            );
+            // The refused placement deleted nothing.
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+
+            // Another occurrence's placement is handed no row and deletes nothing.
+            assert!(
+                harness
+                    .root
+                    .place_and_consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        occurrence(90)?,
+                        place(true),
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?
+            );
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+
+            // The placement of this occurrence consumes its row, after it, in the same step.
+            assert!(
+                harness
+                    .root
+                    .place_and_consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        occurrence(89)?,
+                        place(true),
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?
+            );
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // A retry after a lost acknowledgement is handed no row and deletes nothing.
+            assert!(
+                harness
+                    .root
+                    .place_and_consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        occurrence(89)?,
+                        place(true),
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?
+            );
+            assert_eq!(
+                handed.lock().expect("handed").drain(..).collect::<Vec<_>>(),
+                vec![None, Some(recorded), None]
+            );
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
 /// DEATH-2 settlement: one runtime death commits in the Character's revision slot and leaves
 /// its own pending respawn recorded for the placement (DEATH-RESTART-SAFETY-1); a retry after the
 /// outcome replays the first receipt and writes nothing more, and the respawn is consumed once,

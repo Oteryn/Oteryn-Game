@@ -5,11 +5,10 @@
 
 use super::character_progression_binding::ProgressionUnbound;
 use super::{
-    AdmittedSession, AuthorizedRespawn, DeathCommit, ProgressionSessions, RespawnConsumption,
-    SessionDeath, SessionProgressionBinding, SettledRespawn, TransitionFence, actor_spell,
-    death_commit_refusal, place_authorized_respawn, player_death_request, respawn_in_order,
-    session_progression_binding, settle_session_death, settled_respawn_consumed,
-    settled_respawn_disposition,
+    AdmittedSession, AuthorizedRespawn, DeathCommit, ProgressionSessions, SessionDeath,
+    SessionProgressionBinding, SettledRespawn, TransitionFence, actor_spell, death_commit_refusal,
+    place_authorized_respawn, player_death_request, respawn_in_order, session_progression_binding,
+    settle_session_death, settled_respawn_disposition,
 };
 use crate::combat::CreatureDeathRewardInput;
 use crate::content::character_progression_content::{
@@ -262,12 +261,7 @@ fn a_session_without_a_death_policy_never_respawns_its_dead_player() {
                     steps.borrow_mut().push("commit");
                     async { DeathCommit::Settled }
                 }),
-                async {
-                    steps.borrow_mut().push("authorize");
-                    Some(())
-                },
-                |()| step(&steps, "place", true),
-                |()| step(&steps, "consume", true),
+                step(&steps, "place_and_consume", true),
                 async {
                     steps.borrow_mut().push("refill");
                     Some(())
@@ -285,26 +279,21 @@ async fn step(steps: &RefCell<Vec<&'static str>>, name: &'static str, outcome: b
     outcome
 }
 
-/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4): the respawn is
-/// authorized against the session's fresh durable authority before anything moves, the pending
-/// respawn is consumed only after the actor is placed, and the vitals are refilled (ending the
-/// death) only after the consumption. A step that fails stops the chain with the actor still
-/// dead, so a restart at that point finds the pending respawn recorded for the next admission.
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4; fourth Codex review of
+/// #2004): only a durable death is respawned; the actor is placed and its pending respawn consumed
+/// in one fenced step, and the vitals are refilled (ending the death) only after it. A fenced step
+/// that refuses or fails stops the chain with the actor still dead, so a restart at that point
+/// finds the pending respawn recorded for the next admission.
 #[test]
-fn an_in_session_respawn_authorizes_then_places_then_consumes_then_refills() {
-    let run = |settled: SessionDeath, authorized: bool, placed: bool, consumed: bool| {
+fn an_in_session_respawn_places_and_consumes_under_the_fence_then_refills() {
+    let run = |settled: SessionDeath, placed: bool| {
         let steps = RefCell::new(Vec::new());
         let refilled = block_on(respawn_in_order(
             async {
                 steps.borrow_mut().push("settle");
                 settled
             },
-            async {
-                steps.borrow_mut().push("authorize");
-                authorized.then_some(())
-            },
-            |()| step(&steps, "place", placed),
-            |()| step(&steps, "consume", consumed),
+            step(&steps, "place_and_consume", placed),
             async {
                 steps.borrow_mut().push("refill");
                 Some(7_u64)
@@ -313,55 +302,18 @@ fn an_in_session_respawn_authorizes_then_places_then_consumes_then_refills() {
         (refilled, steps.into_inner())
     };
     assert_eq!(
-        run(SessionDeath::Durable, true, true, true),
-        (
-            Some(7),
-            vec!["settle", "authorize", "place", "consume", "refill"]
-        )
+        run(SessionDeath::Durable, true),
+        (Some(7), vec!["settle", "place_and_consume", "refill"])
     );
-    // Codex review of #2004: a settle that replayed a retained receipt checked no current
-    // authority, so a terminal or superseded session refused by the fresh authorization moves
-    // nothing, clears nothing and consumes nothing.
+    // A refused fence or placement, or a consumption without an outcome, keeps the actor dead.
     assert_eq!(
-        run(SessionDeath::Durable, false, true, true),
-        (None, vec!["settle", "authorize"])
+        run(SessionDeath::Durable, false),
+        (None, vec!["settle", "place_and_consume"])
     );
-    // A consumption without an outcome keeps the actor dead and its row recorded.
-    assert_eq!(
-        run(SessionDeath::Durable, true, true, false),
-        (None, vec!["settle", "authorize", "place", "consume"])
-    );
-    // A placement that cannot complete consumes nothing.
-    assert_eq!(
-        run(SessionDeath::Durable, true, false, true),
-        (None, vec!["settle", "authorize", "place"])
-    );
-    // No durable outcome: nothing is authorized, placed, consumed or refilled.
+    // No durable outcome: nothing is placed, consumed or refilled.
     for undecided in [SessionDeath::Retry, SessionDeath::NoDurableDeath] {
-        assert_eq!(run(undecided, true, true, true), (None, vec!["settle"]));
+        assert_eq!(run(undecided, true), (None, vec!["settle"]));
     }
-}
-
-/// DEATH-RESTART-SAFETY-1: after a durable settle and the placement, the consumption settles the
-/// respawn when it deletes this occurrence's row, or finds none (an earlier consumption whose
-/// acknowledgement was lost). An error or another occurrence's row settles nothing.
-#[test]
-fn a_settled_respawn_is_consumed_by_its_own_occurrence_or_already_gone() {
-    let occurrence = |tag: u8| {
-        let mut id = ID;
-        id[15] = tag;
-        PlayerDeathOccurrence::from_bytes(id).expect("occurrence")
-    };
-    let row = |tag: u8| {
-        Ok::<_, &str>(Some(ConsumedRespawn {
-            occurrence: occurrence(tag),
-            respawn_position: vec![0; 10],
-        }))
-    };
-    assert!(settled_respawn_consumed(occurrence(1), row(1)));
-    assert!(settled_respawn_consumed(occurrence(1), Ok::<_, &str>(None)));
-    assert!(!settled_respawn_consumed(occurrence(1), row(2)));
-    assert!(!settled_respawn_consumed(occurrence(1), Err("consumption")));
 }
 
 /// DEATH-RESTART-SAFETY-1 (Codex review of #2004): the in-session placement is volatile, so a
@@ -459,25 +411,25 @@ fn uuid_v7(tag: u8) -> [u8; 16] {
     ]
 }
 
-/// The authority a fresh durable read of `session(5)` proved current before the placement: lease
-/// generation 1 of the Character `ID` under scope ownership generation 1. Written out from those
-/// facts, never read back from the owner whose binding the placement checks.
+/// The authority the durable fence of `session(5)` holds through the placement: lease generation
+/// 1 of the Character `ID` under scope ownership generation 1. Written out from those facts, never
+/// read back from the owner whose binding the placement checks.
 fn authorized() -> AuthorizedRespawn {
     AuthorizedRespawn {
-        consumption: RespawnConsumption::Consume,
         character_id: crate::domain::CharacterId::from_bytes(ID).expect("character"),
         lease_generation: 1,
         scope_generation: ScopeOwnershipGeneration::new(1).expect("scope generation"),
     }
 }
 
-/// DEATH-RESTART-SAFETY-1 (third Codex review of #2004): the authorization releases the
-/// Character's revision slot before the placement waits for the runtime lock, so the session can
-/// end or be superseded in that window. The placement revalidates the authorized authority against
-/// the owner's binding under the lock and fails closed: a terminal release that fenced the slot,
-/// a successor rebound to it, or an authorization of another lease generation, Character or scope
-/// ownership generation moves nothing, so no respawn condition is cleared and the actor stays
-/// dead. Each case changes exactly one fact; only the binding the authorization proved is placed.
+/// DEATH-RESTART-SAFETY-1 (third and fourth Codex reviews of #2004): the durable fence held
+/// through the placement serializes it with every PostgreSQL-side transition; a transition this
+/// owner began first fences its slot under the runtime lock before its durable write. The
+/// placement checks the fenced authority against the owner's binding under the lock and fails
+/// closed: a terminal release that fenced the slot, a successor rebound to it, or a fence of
+/// another lease generation, Character or scope ownership generation moves nothing, so no respawn
+/// condition is cleared and the actor stays dead. Each case changes exactly one fact; only the
+/// binding the fence proves is placed.
 #[test]
 fn a_session_ended_between_authorization_and_placement_moves_nothing() {
     let entry = MovementLocalPosition {

@@ -53,6 +53,11 @@ defects of the review, then accept with a DEATH-3 waiver (no corpse or loot yet)
    no I/O, against the owner's binding: the slot still bound to the session, no write fence (a
    terminal release fences first), the authorized lease and scope generation. Otherwise nothing
    moves, no respawn condition is cleared and the actor stays dead (third Codex review of #2004).
+   The placement and the consumption run in one transaction holding the session's durable
+   gameplay fence, so a PostgreSQL-side supersession, scope move or node revoke serializes with
+   the placement, and a refused or failed placement keeps the row (fourth Codex review of #2004).
+   Keeping the row until a completed placement is durably recorded needs CHAR-POSITION and is
+   split to D282.
 2. `settle_session_death` respawned an unbound session (no World section, no death policy, a
    context mismatch) with no durable death. It now returns `NoDurableDeath`: the actor stays dead
    and the session end recovers the Character normally.
@@ -90,6 +95,8 @@ finding_family_sweep:
 - [x] The in-session order is settle, authorize (fresh durable authority), place, consume, refill.
 - [x] The placement revalidates the authorization under the runtime lock; a session fenced or
   superseded after the authorization moves nothing and clears no respawn condition.
+- [x] The placement runs under the held durable gameplay fence and the consumption commits in
+  the same transaction; a refused placement keeps the row.
 
 ## Excluded scope
 
@@ -115,6 +122,10 @@ DEATH-3 corpse and item loss (waived by the owner); durable character position (
 - Codex P1 repair (revalidate at the placement): `rustfmt --check` on the touched files,
   `python tools/agents/validate_governance.py` and `git diff --check`: pass; no local cargo run
   in this round (control-plane D1011), so build, clippy and tests are left to CI
+- Codex P1 repair (durable fence through the placement): `cargo fmt --all --check`,
+  `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass;
+  `cargo test --locked -p oteryn-game-server --quiet --lib -- gameplay_transport::`: pass (466
+  passed, 0 failed); PostgreSQL targets compile, run left to CI
 
 ## Self-review
 

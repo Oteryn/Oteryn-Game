@@ -712,10 +712,16 @@ validation:
   then revalidates that authority under the Channel owner's lock, with no I/O: the actor's slot
   must still be bound to the session, unfenced, with the authorized lease and scope generation,
   so a session that ends or is superseded while the placement waits for the lock moves nothing.
+  The placement and the consumption run in one transaction that holds the session's durable
+  gameplay fence (session and scope rows, node registration, root row, admission relations), so
+  a supersession, scope move or node revoke committed in PostgreSQL during the placement waits
+  for it, and a refused or failed placement keeps the row.
   The in-session placement is volatile, so the row is consumed in session only when it records
   the cell a fresh admission writes (the admitted entry spawn); a restart after the consumption
   then still places the actor at the recorded respawn. A row recording another cell stays, the
   actor stays dead until the session ends, and the next admission places it there.
+  Keeping the row until a completed placement is durably recorded needs a durable position
+  (CHAR-POSITION) and is split out of this amendment (D282).
 - **Superseded text.** The phrases "current non-durable respawn path" in §1.2, §1.5 and the
   §2 test list now read "stays dead with no durable write" under this amendment.
 - **Unchanged.** The binding rules, the context-mismatch refusal and its log, and the retry of

@@ -424,6 +424,90 @@ impl DurabilityRoot {
             .await
     }
 
+    /// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): place a living
+    /// session's dead actor for the respawn of `occurrence` while the durable
+    /// fence of [`Self::consume_pending_respawn`] is held, and consume the row
+    /// only after that placement, in the same transaction.  `place` runs
+    /// inside the transaction after the recovery fence, the admission relation
+    /// locks and the full gameplay fence were asserted: the session row, the
+    /// scope assignment and the node registration stay share-locked and the
+    /// Character root row-locked until the transaction ends, so no termination,
+    /// supersession, scope move or node revoke commits before `place` returns.
+    /// It receives the pending row of `occurrence` (`None` when an earlier
+    /// attempt already consumed it) and must do no I/O.  `true` (it placed the
+    /// actor) deletes that row; `false` deletes nothing.  A refused fence never
+    /// calls `place`.
+    pub async fn place_and_consume_pending_respawn<P, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: PlayerDeathOccurrence,
+        place: P,
+    ) -> Result<bool>
+    where
+        P: FnOnce(Option<ConsumedRespawn>) -> F + Send,
+        F: std::future::Future<Output = bool> + Send,
+    {
+        if fence.character_lease_generation == 0
+            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let mut context = (Some(place), std::marker::PhantomData::<F>);
+
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let row = sqlx::query(
+                        "SELECT death_occurrence_id::text, respawn_position \
+                           FROM game_character_pending_respawns \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND death_occurrence_id = encode($2,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(occurrence.0.as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let pending = match row {
+                        None => None,
+                        Some(row) => Some(ConsumedRespawn {
+                            occurrence,
+                            respawn_position: row.try_get("respawn_position")?,
+                        }),
+                    };
+                    let Some(place) = context.0.take() else {
+                        return Ok(Err(CharacterProgressionError::InvalidInput));
+                    };
+                    if !place(pending).await {
+                        return Ok(Ok(false));
+                    }
+                    sqlx::query(
+                        "DELETE FROM game_character_pending_respawns \
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND death_occurrence_id = encode($2,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(occurrence.0.as_slice())
+                    .execute(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(true))
+                })
+            })
+            .await?
+    }
+
     /// Read the Character's pending respawn (DEATH-0 §3.4) under the same
     /// fences as [`Self::consume_pending_respawn`], deleting nothing, so an
     /// admission places the actor at its recorded position before the
