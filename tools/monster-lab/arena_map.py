@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 SOURCE = "apps/game-server/src/content/project/native_entry_room.json"
-SOURCE_SHA256 = "b0d5d0348a59d7ef3ff31e9062f5b207634c1a2c3a29807a97ed0222a1308940"
+SOURCE_SHA256 = "5f7ba6cd2589e20adcf97975fd002ca7c6a6b5e1ad9390a69893c391c3de27f6"
 
 
 def export_map(source_path, expected_sha256, maximum_cells=256):
