@@ -15,12 +15,13 @@ final_head_sha: "final frozen head in PR #2005 metadata"
 final_head_frozen_at: null
 owner: Claude Code session_01CwP6d84eCPvpgoEuyci8Tx
 created_at: 2026-10-12T06:30:00Z
-updated_at: 2026-10-12T07:40:00Z
+updated_at: 2026-10-12T08:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry_room.json
   - apps/game-server/src/content/native_gameplay.rs
   - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
+  - apps/game-server/src/spell/world_execution.rs
   - tools/monster-lab/arena_map.py
   - docs/agents/tasks/active/OTV2-20261012-entry-spell-tiles-1.md
   - docs/agents/tasks/archive/OTV2-20261012-entry-spell-tiles-1.md
@@ -48,17 +49,18 @@ The accepted entry room (`native_entry_room.json`, `OTERYN_NATIVE_ENTRY_ROOM_SOU
 - `tools/monster-lab/arena_map.py` `SOURCE_SHA256` is rotated to the new bytes.
 - `.github/workflows/native-entry-room-qualification.yml` needs no change: `EXPECTED_SHA` is the commit under test, and `_platform` pins the Platform checkout, not the room.
 - Two tests asserted `Unknown` tiles for the room and now assert the qualified tile (`monster_ai_cycle.rs`, `native_gameplay.rs`).
+- CI on `6e44d6b` found a third test: `spell::world_execution::tests::actual_native_metadata_unknown_does_not_become_empty_or_clear`. The lead added `world_execution.rs` to the owned paths. The test keeps its intent that Unknown is not empty. For the entry room it now asserts the qualified tile (ground present, no ground speed, no top items) and that a cell outside the document answers `Ok(None)` (Absent). For Unknown it uses the qualified Thalom source world: a cell outside its bounds still refuses with `MissingTileMetadata`. The stale module doc about entry-r1 lacking metadata is updated. In that run the merge gate failed only on `RUST_FAST`; `WORLD_BUNDLE` was `skipped`, which is allowed because it is not required.
 
 ## Behavior changes (DERIVED from code)
 
 - When native gameplay is active, `field_step_ingress` takes the durable field-ingress path for entry-room player steps instead of the plain `step_in_channel`, as the spell candidate room already does.
-- `world_execution` no longer refuses world/tile-metadata spells in this room with `MissingTileMetadata`.
+- `world_execution` no longer refuses world/tile-metadata spells in this room with `MissingTileMetadata`; cells whose facts are Unknown still do.
 - In `monster_ai_cycle::creature_cell_admissible`, the `Unknown` fail-open arm is no longer reached for the entry room. It is kept for any accepted room without a tile document; removing it is a possible follow-up.
 - Player pacing still uses `EngineeringGroundSpeed` (150). With `ground_speed: null`, companion haste still refuses in this room.
 
 ## High-risk authority/recovery qualification
 
-`NOT_APPLICABLE`: this task adds authored content facts to an accepted room overlay and updates two test assertions. It does not touch session, lease, generation or fence evidence, PREPARE/COMMIT, controllers or persisted recovery evidence.
+`NOT_APPLICABLE`: this task adds authored content facts to an accepted room overlay and updates three test assertions. It does not touch session, lease, generation or fence evidence, PREPARE/COMMIT, controllers or persisted recovery evidence.
 
 ## Owner decisions
 
@@ -70,6 +72,7 @@ The accepted entry room (`native_entry_room.json`, `OTERYN_NATIVE_ENTRY_ROOM_SOU
 - cargo fmt --all --check: pass
 - git diff --check: pass
 - cargo test --locked -p oteryn-game-server --lib -- native_entry native_spell_tiles monster_ai_cycle native_gameplay content::: pass (352 passed, 1 ignored)
+- cargo test --locked -p oteryn-game-server --lib -- spell::world_execution native_spell_tiles: pass (9 passed)
 - cargo test --locked -p oteryn-game-server --test content_native_entry_room --test content_native_entry: pass (11 passed; 2 passed, 1 ignored)
 - python3 -m unittest discover -p 'test_*.py' (tools/monster-lab): pass (51 tests OK)
 - cargo clippy --all-targets, the full workspace tests and the native entry room qualification workflow (`tools/qualification/native_entry_room/run.sh`, Platform checkout and PHP image): CI (local disk full)
@@ -78,7 +81,7 @@ The accepted entry room (`native_entry_room.json`, `OTERYN_NATIVE_ENTRY_ROOM_SOU
 
 ## Self-review and independent review
 
-The full owned delta was reviewed: the room bytes, the monster-lab pin rotation and the two test assertion updates. Independent review for this high-risk packet is pending. The lead triggers it on the frozen head; a review packet was returned to the lead.
+The full owned delta was reviewed: the room bytes, the monster-lab pin rotation and the three test assertion updates. Independent review for this high-risk packet is pending. The lead triggers it on the frozen head; a review packet was returned to the lead.
 
 ## Lifecycle
 
