@@ -40,6 +40,10 @@ DOOR_ADMISSION = {
     "stack_class": "NonStackable",
     "legal_destinations": ["Ground"],
 }
+# The ground and border Items of the pinned World's entry area (WORLD-START-TILE-1): walkable by the client
+# appearance flags (no unpass), so the Item provider says they do not block movement.
+START_TILE_PROFILES = "tools/content-schema/native-gameplay/start-tile-item-profiles.json"
+START_TILE_KEYS = {f"oteryn:item.tibia.i{i}" for i in (1104, 1105, 4394)}
 COIN_ADMISSION = {
     "materializable": True,
     "stack_class": "StackCapable",
@@ -97,12 +101,26 @@ def check_door_profiles(doors: dict, present: set[str]) -> list[dict]:
     return doors["records"]
 
 
+def check_start_tile_profiles(start: dict, present: set[str]) -> list[dict]:
+    """The start-tile overlay: exactly the walkable ground and border Items, never twice."""
+    keys = [r["production_definition"]["production_key"] for r in start["records"]]
+    if (
+        start["schema"] != "OTERYN_NATIVE_START_TILE_ITEM_PROFILES/v1"
+        or set(keys) != START_TILE_KEYS or len(keys) != len(START_TILE_KEYS) or present & START_TILE_KEYS
+        or any(r["attributes"]["blocks_movement"] is not False or r["admission"] != DOOR_ADMISSION
+               for r in start["records"])
+    ):
+        raise ValueError("START_TILE_ITEM_PROFILES_DISAGREE_WITH_THE_ENTRY_AREA")
+    return start["records"]
+
+
 def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
-    """Merge the coin (D175/D176) and door (MAP-DOOR-CONTENT-1) overlays into the pinned Item provider."""
+    """Merge the coin (D175/D176), door (MAP-DOOR-CONTENT-1) and start-tile (WORLD-START-TILE-1) overlays into the pinned Item provider."""
     path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     document = json.loads(generated[path])
     coins = json.loads((root / COIN_PROFILES).read_bytes())
     doors = json.loads((root / DOOR_PROFILES).read_bytes())
+    start = json.loads((root / START_TILE_PROFILES).read_bytes())
     present = {r["production_definition"]["production_key"] for r in document["records"]}
     keys = [r["production_definition"]["production_key"] for r in coins["records"]]
     stack = {"state": "KNOWN", "value": {
@@ -116,11 +134,12 @@ def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
                for r in coins["records"])
     ):
         raise ValueError("COIN_ITEM_PROFILES_DISAGREE_WITH_D176")
-    added = coins["records"] + check_door_profiles(doors, present)
+    added = coins["records"] + check_door_profiles(doors, present) + check_start_tile_profiles(start, present)
     document["records"] = sorted(document["records"] + added, key=provider_order)
     data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     digest = hashlib.sha256(data).hexdigest()
-    if digest != coins["item_profiles_sha256"] or digest != doors["item_profiles_sha256"]:
+    if digest != coins["item_profiles_sha256"] or digest != doors["item_profiles_sha256"] \
+            or digest != start["item_profiles_sha256"]:
         raise ValueError("ITEM_PROFILES_PROVIDER_DRIFT")
     generated[path] = data
     manifest = json.loads(generated[NATIVE_MANIFEST])

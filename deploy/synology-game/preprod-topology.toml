@@ -61,7 +61,7 @@ world_schema_version = "reference-schema-v1"
 content_revision = "d3-8-cheese-admitted-20261007-r1"
 production = false
 start_x = 10228
-start_y = 10032
+start_y = 10035
 start_floor = 0
 
 [interpretation]

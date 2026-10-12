@@ -40,6 +40,9 @@ DOOR_CLOSED=(1629,1632,1638,1640,1642,1644,1651,1654,1656,1658,1660,1662,1669,16
 # 42627). Both are walkable DOOR profiles so the placement or the source transform never lands on a profile-less item.
 DOOR_OPEN_EXTRA=(42629,43955)
 DOOR_IDS=tuple(sorted({c for c in DOOR_CLOSED}|{c+1 for c in DOOR_CLOSED}|set(DOOR_OPEN_EXTRA)));DOORS='door-item-profiles.json'
+# Ground and border Items of the pinned World's entry area (WORLD-START-TILE-1): no unpass flag in the client
+# appearances, so their profiles say they block neither movement nor projectiles. The start cell holds only i4394.
+START_GROUND_IDS=(1104,1105,4394);STARTS='start-tile-item-profiles.json'
 SECTIONS=('presentation','classification','physical','stack','equipment','weapon','protection','skill_modifiers','charges','temporal','container','imbuement','use_transform','trade_restrictions','fluid','readable_writeable')
 
 def pinned(root,path):return subprocess.check_output(['git','-C',str(root),'show',f'{CANARY_PIN}:{path}'])
@@ -128,7 +131,7 @@ def build(canary,crystal,bundles,out):
  if 'bool replaceable = true;' not in hpp or 'itemType.replaceable = valueAttribute.as_bool();' not in captured['src/items/functions/item/item_parse.cpp'].decode():raise ValueError('source field replacement loader drifted')
  if 'iType.stackable = object.flags().cumulative()' not in cpp:raise ValueError('source stack loader drifted')
  if 'removeChargesFromRunes = true' not in captured['config.lua.dist'].decode() or 'item->getItemCount() - 1' not in captured['src/creatures/combat/spells.cpp'].decode():raise ValueError('source Rune consumption policy changed')
- wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}|set(COIN_IDS)|set(DOOR_IDS)
+ wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}|set(COIN_IDS)|set(DOOR_IDS)|set(START_GROUND_IDS)
  excluded=[]
  for path in bundles.glob('*/spell.json'):
   doc=json.loads(path.read_bytes());found=set(refs(doc))
@@ -177,6 +180,12 @@ def build(canary,crystal,bundles,out):
  (out/DOORS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_DOOR_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
   'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
   'closed_door_ids':list(DOOR_CLOSED),'open_door_extra_ids':list(DOOR_OPEN_EXTRA),'records':doors},indent=2,ensure_ascii=False)+'\n').encode())
+ starts=[r for r in result['records'] if r['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in START_GROUND_IDS}]
+ if len(starts)!=len(START_GROUND_IDS) or any(r['attributes']['blocks_movement'] is not False or r['attributes']['blocks_projectile'] is not False for r in starts):
+  raise ValueError('start-tile profile disagrees with the client appearance flags')
+ (out/STARTS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_START_TILE_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
+  'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
+  'start_ground_ids':list(START_GROUND_IDS),'records':starts},indent=2,ensure_ascii=False)+'\n').encode())
  # The overlays register_spell_families.py adds to the pinned r25 Item provider; with them, the
  # provider is exactly item-profiles.json.
  (out/COINS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_COIN_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],

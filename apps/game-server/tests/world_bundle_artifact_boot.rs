@@ -1,16 +1,21 @@
 //! BUNDLE-BUILD-1: the committed World pin's real artifact, built by `pin-check`, passes the node's
-//! boot checks (`map::boot::check`) with the pins a preproduction `[world_bundle]` carries.
-//! Booting it needs the generation's Item definitions, so that stage is reported, not asserted.
+//! boot checks (`map::boot::check`) with the pins a preproduction `[world_bundle]` carries, and
+//! then boots with the Item definitions of the committed native item profiles (as the node serves
+//! them), so a start tile that a profile-less Item blocks (E2012 `StartNotEnterable`) fails here.
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+use std::collections::BTreeMap;
+use std::num::NonZeroU32;
 use std::path::Path;
 use std::process::Command;
 
 use oteryn_game_server::foundation::{ChannelId, WorldId};
 use oteryn_game_server::map::BundlePins;
 use oteryn_game_server::map::boot::{BootPins, check};
+use oteryn_game_server::map::facts::ItemDefinition;
 use oteryn_game_server::map::overlay::TilePos;
+use oteryn_world_bundle::bundle::{Family, visit};
 use serde_json::Value;
 
 #[test]
@@ -63,14 +68,61 @@ fn the_pinned_artifact_passes_the_node_boot_checks() {
         },
     };
     // `check` compares `map_revision` with the bundle's own `sha256:<digest>` and the start tile.
-    let checked = check(data, pins).expect("the pinned artifact passes the boot checks");
+    let checked = check(data.clone(), pins).expect("the pinned artifact passes the boot checks");
     let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).unwrap();
     let channel =
         ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]).unwrap();
-    // With no served Item definitions the boot result names the precondition that is missing.
-    eprintln!(
-        "boot without Item definitions: {:?}",
-        checked.boot(world, channel, |_| None).map(|_| ())
+    // The Item definitions the node serves: the bundle's palette id (reference = id + 1) and the
+    // committed native item profile of the key (`boot_bundle_items`); a key without a profile
+    // does not say it is walkable, so it blocks, which is the real start tile's failure mode.
+    let profiles: Value = serde_json::from_slice(
+        &std::fs::read(root.join("content/items/definitions/spell-native-profiles.json")).unwrap(),
+    )
+    .unwrap();
+    let mut served = BTreeMap::new();
+    for record in profiles["records"].as_array().unwrap() {
+        let attributes = &record["attributes"];
+        let physical = &record["semantics"]["physical"]["value"];
+        let class = &record["semantics"]["classification"]["value"];
+        served.insert(
+            record["production_definition"]["production_key"]
+                .as_str()
+                .unwrap()
+                .to_owned(),
+            (
+                attributes["blocks_movement"].as_bool(),
+                attributes["blocks_projectile"].as_bool().unwrap_or(true),
+                physical["pickupable"]["value"] == true,
+                class["item_type"]["value"] == "DOOR",
+            ),
+        );
+    }
+    let ids: BTreeMap<String, u32> = visit(&data, |_, _| Ok(()))
+        .unwrap()
+        .manifest
+        .palette
+        .iter()
+        .filter(|entry| entry.family == Family::Item)
+        .map(|entry| (entry.key.clone(), entry.id))
+        .collect();
+    let item = |key: &str| {
+        let id = *ids.get(key)?;
+        let (solid, blocks_projectile, pickupable, door) = served
+            .get(key)
+            .copied()
+            .unwrap_or((None, true, false, false));
+        Some(ItemDefinition {
+            reference: NonZeroU32::new(id + 1)?,
+            solid,
+            blocks_projectile,
+            pickupable,
+            door,
+        })
+    };
+    assert_eq!(
+        checked.boot(world, channel, item).map(|_| ()),
+        Ok(()),
+        "the pinned World boots with the committed Item profiles"
     );
     let _ = std::fs::remove_dir_all(&out);
 }
