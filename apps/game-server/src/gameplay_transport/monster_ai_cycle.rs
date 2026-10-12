@@ -444,10 +444,10 @@ fn creature_cell_admissible(
     };
     let tile = match cells.spell_tiles().lookup(cells.scope(), target) {
         Ok(tile) => Some((tile.flags().protection_zone, tile.flags().floor_change)),
-        // The accepted entry room (`native_entry_room.json`, the spawned-rat room) qualifies no
-        // tile document, so every lookup is `Unknown`. Its Movement owner admits a player step on
-        // terrain and doors alone ("accepted entry movement", `field_step_ingress`): the room
-        // has no protection-zone or floor-change tile. A creature step follows the same rule.
+        // An accepted entry room without a tile document (ENTRY-SPELL-TILES-1 gave
+        // `native_entry_room.json` one) answers every lookup `Unknown`. Its Movement owner admits
+        // a player step on terrain and doors alone ("accepted entry movement",
+        // `field_step_ingress`), so a creature step follows the same rule.
         Err(crate::content::SpellTileLookupError::Unknown) if accepted_entry_movement(cells) => {
             Some((false, false))
         }
@@ -879,9 +879,10 @@ mod tests {
         MovementLocalPosition { x, y, floor: 0 }
     }
 
-    /// CREATURE-MOVE-1 (Codex 4242014304): the accepted entry room qualifies no tile document, so
-    /// every tile lookup is `Unknown`; its ordinary Walkable cells still admit a creature step,
-    /// while its Blocked cell, its door cell (closed or open) and cells outside it refuse.
+    /// CREATURE-MOVE-1 (Codex 4242014304), ENTRY-SPELL-TILES-1: the accepted entry room qualifies
+    /// a tile for every placed cell, none a protection-zone or floor-change tile; its ordinary
+    /// Walkable cells admit a creature step, while its Blocked cell, its door cell (closed or
+    /// open) and cells outside it refuse.
     #[test]
     #[allow(clippy::expect_used)]
     fn the_accepted_entry_room_admits_creature_steps_onto_its_ordinary_cells() {
@@ -894,10 +895,19 @@ mod tests {
         let cells = room.movement_cells();
         assert!(accepted_entry_movement(cells));
         let east = LogicalCell { x: 1, y: 0, z: 0 };
+        let flags = cells
+            .spell_tiles()
+            .lookup(cells.scope(), east)
+            .expect("the accepted entry room qualifies its tiles")
+            .flags();
+        assert!(!flags.protection_zone && !flags.floor_change);
         assert_eq!(
-            cells.spell_tiles().lookup(cells.scope(), east).err(),
-            Some(crate::content::SpellTileLookupError::Unknown),
-            "the accepted entry room carries no tile document"
+            cells
+                .spell_tiles()
+                .lookup(cells.scope(), LogicalCell { x: 3, y: 0, z: 0 })
+                .err(),
+            Some(crate::content::SpellTileLookupError::Absent),
+            "a cell outside the room has no tile"
         );
         let closed = door.collision_cells().clone();
         assert_eq!(

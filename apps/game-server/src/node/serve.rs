@@ -1833,6 +1833,74 @@ fn realize_fixture_spawns(
         .map_err(|_| BootError::Readiness("creature spawn realization"))
 }
 
+/// The Channel owner window an activation realizes at most one spawn window in
+/// (`CREATUREAI0-RL-14`; the carrier's `spawn::OWNER_WINDOW_MICROS`).
+const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
+
+/// SPAWN-1b (CREATURE-AI-0 §6.1, §6.2): a bundle World realizes the spawn family of its bundle
+/// at Channel activation, before the listener binds, each bundle source as one runtime source.
+/// Each creature's initial health is its served definition's maximum health; a creature the
+/// active content does not serve refuses readiness. The served policy does not carry the
+/// creature profile's `blocked_by_nearby_players` yet, so every point keeps the SPAWN-1a
+/// default (not blockable).
+///
+/// The activation is begun once (every registered ceiling checked, nothing admitted) and then
+/// realized one `CREATUREAI0-RL-14` window (4,096 points) per 50 ms owner window, in canonical
+/// order, on a boot-local monotonic owner clock: the loop waits for the next window boundary
+/// between windows. Any refusal refuses readiness with nothing realized. Returns the creatures
+/// realized and the windows used, or `None` when shutdown was requested meanwhile.
+async fn realize_bundle_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    world: &crate::map::boot::BundleWorld,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    let sources = world
+        .activation_spawns(|key| {
+            let policy = runtime.companion_policy(key).ok()?;
+            Some((u64::try_from(policy.maximum_health).ok()?, false))
+        })
+        .ok_or_else(refuse)?;
+    realize_activation_paced(runtime, sources, signalled).await
+}
+
+/// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
+/// 50 ms owner window (see [`realize_bundle_spawns`]).
+async fn realize_activation_paced(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    runtime
+        .begin_activation_spawn_sources(sources)
+        .map_err(|_| refuse())?;
+    let origin = tokio::time::Instant::now();
+    let mut windows = 0u64;
+    loop {
+        let now = u64::try_from(origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+        let progress = runtime
+            .realize_activation_spawn_window(now)
+            .map_err(|_| refuse())?;
+        if progress.realized > 0 {
+            windows += 1;
+        }
+        if progress.remaining == 0 {
+            return Ok(Some((progress.realized_total, windows)));
+        }
+        let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
+            .saturating_add(1)
+            .saturating_mul(SPAWN_ACTIVATION_WINDOW_MICROS);
+        let wake = origin + Duration::from_micros(next);
+        if first(tokio::time::sleep_until(wake), signalled.cancelled())
+            .await
+            .is_none()
+        {
+            return Ok(None);
+        }
+    }
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -2013,10 +2081,21 @@ async fn boot_and_serve(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot.as_ref())?;
-    let spawned_monsters =
-        realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
+    let (spawned_monsters, spawn_windows) = match &bundle {
+        Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
+            Some(realized) => realized,
+            None => {
+                stopped_before_ready();
+                return Ok(());
+            }
+        },
+        None => {
+            let realized = realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?;
+            (realized, u64::from(realized > 0))
+        }
+    };
     event(&format!(
-        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
@@ -2465,6 +2544,161 @@ mod tests {
             Some(0)
         );
         assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981, `CREATUREAI0-RL-14`): an activation above one window is
+    /// realized one window of at most 4,096 points per 50 ms owner window, not in one turn; a
+    /// shutdown requested meanwhile stops it before readiness.
+    #[test]
+    fn spawn1b_activation_is_paced_one_window_per_owner_window() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                9_000,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        // 131 sources of 63 points: 8,253 points in windows of 4,096, 4,096 and 61.
+        let sources = || -> Vec<crate::map::boot::BundleSpawnFacts> {
+            (0..131)
+                .map(|_| {
+                    let points = (0..63)
+                        .map(|x| {
+                            (
+                                (x, 0, 7),
+                                60_000,
+                                "oteryn:creature/rat".to_string(),
+                                20,
+                                false,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    (points, 5_000)
+                })
+                .collect::<Vec<_>>()
+        };
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        executor.block_on(async {
+            let mut paced = runtime();
+            let started = std::time::Instant::now();
+            let realized =
+                realize_activation_paced(&mut paced, sources(), &CancellationToken::new()).await;
+            assert_eq!(realized.ok(), Some(Some((8_253, 3))));
+            assert!(started.elapsed() >= Duration::from_millis(100));
+            assert_eq!(paced.spawn_point_creatures().len(), 8_253);
+
+            let stopped = CancellationToken::new();
+            stopped.cancel();
+            let mut cancelled = runtime();
+            assert_eq!(
+                realize_activation_paced(&mut cancelled, sources(), &stopped)
+                    .await
+                    .ok(),
+                Some(None)
+            );
+        });
+    }
+
+    /// SPAWN-1b (Codex P1 4243711197 on #1981): a family of the pinned pre-production bundle's
+    /// shape, 51,078 sources with 82,673 active points of which 31,595 sources mix two
+    /// creatures and delays, is 51,078 runtime sources: within `CREATUREAI0-RL-02` (65,536),
+    /// where one runtime source per creature/delay run would be 82,673 and refuse. It realizes
+    /// paced, in 21 owner windows.
+    #[test]
+    fn spawn1b_bundle_scale_family_stays_one_runtime_source_per_bundle_source() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        const SOURCES: usize = 51_078;
+        const POINTS: usize = 82_673;
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature/bat"),
+                creature("oteryn:creature/rat"),
+            ],
+            sources: (0..SOURCES)
+                .map(|index| {
+                    let x = u16::try_from(index % 1_024).expect("small");
+                    let mut points = vec![point(1, x, 60_000)];
+                    if index < POINTS - SOURCES {
+                        points.push(point(0, x, 30_000));
+                    }
+                    Source {
+                        key: format!("oteryn:spawn/{index:05}"),
+                        floor: -7,
+                        x,
+                        y: 5,
+                        points,
+                    }
+                })
+                .collect(),
+        };
+        assert_eq!(table.point_count(), POINTS);
+        let sources = crate::map::boot::table_activation_spawns(&table, |key| {
+            Some((if key.ends_with("rat") { 20 } else { 35 }, false))
+        })
+        .expect("served creatures");
+        drop(table);
+        assert_eq!(sources.len(), SOURCES);
+        assert_eq!(
+            sources.iter().map(|source| source.0.len()).sum::<usize>(),
+            POINTS
+        );
+
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            POINTS + 1_000,
+            crate::foundation::ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        let realized = executor.block_on(realize_activation_paced(
+            &mut runtime,
+            sources,
+            &CancellationToken::new(),
+        ));
+        assert_eq!(realized.ok(), Some(Some((POINTS, 21))));
+        assert_eq!(runtime.spawn_point_creatures().len(), POINTS);
     }
 
     #[test]

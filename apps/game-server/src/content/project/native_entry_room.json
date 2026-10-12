@@ -499,6 +499,119 @@
     "rng": {
       "profile_revision": "oteryn:rng-profile/entry-r1",
       "purpose_key": "oteryn:rng/rat-loot"
+    },
+    "spell_tiles": {
+      "schema": "OTERYN_NATIVE_SPELL_TILES/v1",
+      "tiles": [
+        {
+          "cell_key": "oteryn:cell/entry-start",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": false,
+            "block_projectile": false,
+            "immovable_block_solid": false,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        },
+        {
+          "cell_key": "oteryn:cell/entry-east",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": false,
+            "block_projectile": false,
+            "immovable_block_solid": false,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        },
+        {
+          "cell_key": "oteryn:cell/entry-north",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": true,
+            "block_projectile": true,
+            "immovable_block_solid": true,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        },
+        {
+          "cell_key": "oteryn:cell/entry-den",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": false,
+            "block_projectile": false,
+            "immovable_block_solid": false,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        },
+        {
+          "cell_key": "oteryn:cell/entry-den-north",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": false,
+            "block_projectile": false,
+            "immovable_block_solid": false,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        },
+        {
+          "cell_key": "oteryn:cell/entry-door",
+          "ground": {
+            "terrain_key": "oteryn:terrain/stone-floor",
+            "source_binding": null
+          },
+          "ground_speed": null,
+          "top_items": [],
+          "flags": {
+            "block_solid": false,
+            "block_projectile": false,
+            "immovable_block_solid": false,
+            "immovable_block_item": false,
+            "immovable_nonfield_block_item": false,
+            "floor_change": false,
+            "protection_zone": false
+          }
+        }
+      ]
     }
   },
   "authoring_profiles": [

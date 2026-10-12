@@ -29,6 +29,7 @@ fn inventory(entries: u16) -> InventoryItems {
     InventoryItems {
         main_backpack: Some(item(instance(0))),
         entries: (1..=entries).map(|n| item(instance(n))).collect(),
+        equipment: Vec::new(),
     }
 }
 
@@ -565,6 +566,15 @@ mod connection {
             _game_session_id: GameSessionId,
         ) -> Option<InventoryItems> {
             Some(inventory(2))
+        }
+
+        /// Capability 14 requires 12: domain 9 shows the (empty) equipment slots.
+        async fn observe_character_equipment(
+            &self,
+            _actor: ExactActorRef,
+            _game_session_id: GameSessionId,
+        ) -> Option<Vec<(oteryn_protocol_oteryn::item_view::EquipmentSlot, ViewItem)>> {
+            Some(Vec::new())
         }
 
         async fn observe_container(
