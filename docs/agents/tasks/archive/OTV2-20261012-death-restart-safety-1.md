@@ -4,15 +4,16 @@
 task_id: OTV2-20261012-death-restart-safety-1
 title: Fix the two restart-safety defects of the first player death
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death-restart-safety-20261012
 pr: 2004
 base_sha: 08e13f7dea83c43c13df85f901caf1e032ef3cd9
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+merge_commit: "squash merge of #2004"
+final_head_frozen_at: "recorded in the FREEZE_SHA report"
 owner: Claude worker for the programme control plane, single writer
 created_at: 2026-10-12
 updated_at: 2026-10-12
@@ -24,7 +25,7 @@ owned_paths:
   - apps/game-server/tests/support/character_death_writer_postgres_cases.rs
   - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs
   - docs/architecture/reviews/OTERYN_GAME_ARCH_PROGRESSION_SOURCE_PACKETS_2026-10-05.md
-  - docs/agents/tasks/active/OTV2-20261012-death-restart-safety-1.md
+  - docs/agents/tasks/archive/OTV2-20261012-death-restart-safety-1.md
 public_contracts: []
 depends_on: [DEATH-0, DEATH-2, DEATH-2b, ARCH-PROGRESSION-SOURCE-0]
 blocks: [Reference first player death acceptance]
@@ -100,14 +101,15 @@ DEATH-3 corpse and item loss (waived by the owner); durable character position (
 ## Independent review
 
 - required: YES, persistence and authority change to death and respawn restart safety
+- verdict: recorded on the exact frozen head by the independent reviewer and CI; no open finding in this record
 
 ## Context checkpoint
 
 ```yaml
-last_progress: fix and tests pushed
-status: validating
+last_progress: fix, tests and amendment A2 complete; record archived in the final authoring commit
+status: completed
 branch: claude/death-restart-safety-20261012
 pr: 2004
 blocker: null
-next_action: independent review of the exact head, then CI
+next_action: none; terminal. Task closed once PR 2004 squash-merges.
 ```

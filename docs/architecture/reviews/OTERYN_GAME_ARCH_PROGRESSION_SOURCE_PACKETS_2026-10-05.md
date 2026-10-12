@@ -711,3 +711,15 @@ validation:
   §2 test list now read "stays dead with no durable write" under this amendment.
 - **Unchanged.** The binding rules, the context-mismatch refusal and its log, and the retry of
   a bound session's retryable death failure.
+- **Decision test.**
+  1. Must decide now? YES. The first player death cannot be accepted while an unbound session
+     respawns without a durable death, and a crash between the death and the placement loses
+     the recorded respawn.
+  2. What is blocked? The Reference first player death acceptance (owner option a, DEATH-3
+     waived).
+  3. What gets harder later? Nothing beyond the DEATH-3 corpse and loot work. A later change
+     that lets an unbound session respawn needs a durable death first.
+  4. What would justify superseding it? A durable death record for unbound sessions, or a
+     decision that the non-durable respawn is acceptable for a named session kind.
+  5. What is deliberately not decided? Corpse and item loss (DEATH-3) and the durable
+     character position (CHAR-POSITION).
