@@ -57,7 +57,11 @@ plane accepts it in a separate docs PR, and this PR's code does not wait for it)
   - periodic write of a changed cell, at most every 300 s (`CHARPOS0-RL-01`), from its own writer
     loop: it wakes at the earliest absolute deadline, measured from the capture the row holds, with
     60 s left for the pass, most overdue first; a later capture is reported; an unchanged cell
-    writes nothing;
+    writes nothing. A pass works in batches of 32 sessions, each one root pass reading the
+    sessions' fences (`current_sessions_at`) and one transaction writing them, each write under
+    its own session fence (`write_character_last_positions`); 256 sessions due together take at
+    most 8 batches of two 2 s passes, and a due session completes at most 37 s after its
+    deadline, within the 60 s slack (checked at compile time);
   - a live death's settlement upserts the respawn cell with the respawn's consumption, in one
     transaction (`settle_player_death_respawned`); a dead actor is never captured;
   - node shutdown flushes every tracked session before readiness is withdrawn (3 s of the 10 s
@@ -69,7 +73,8 @@ plane accepts it in a separate docs PR, and this PR's code does not wait for it)
   admission is not playable. Otherwise the stored cell is restored if it is of the same World and
   coordinate frame and not a house tile (a house tile goes straight to the entry start; fail
   closed when house metadata is unknown), at the cell or through the NPC-0 §6.1 radius-3
-  fallback, else the entry start.
+  fallback, else the entry start. A last-position read that fails (storage or fence error) or a
+  placement that cannot complete leaves the admission not playable, as an unplaced respawn does.
 - The write sequence is process-wide, strictly increasing and at least the Unix time in
   microseconds, so a restarted node orders after its predecessor under the same lease.
 
@@ -105,6 +110,24 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   dead actors are never captured.
 - P2 4245761776 (shutdown flush after failed writes): fixed.
 - P2 4246368094 (saved house tile used the radius fallback): fixed.
+
+## Review round 2 (Codex, head eef64dc5)
+
+- P1 4248014751 (admission playable after a failed last-position read): accepted and fixed.
+  `restore_last_position` returns whether the placement was decided from a successful read;
+  a failed read or a failed placement makes `consume_admitted_respawn` return `false`, so the
+  first entry is `RefusedByChannel` (not input-eligible), the session stays untracked and
+  nothing is written.
+- P1 4248014759 (sequential write pass can exceed 300 s under load): accepted and fixed. The
+  pass captures each batch first, then reads the batch's fences in one root pass and writes the
+  batch in one transaction, so its durability work no longer grows with one pass per session.
+  The bound (`MAX_WRITE_PASS`, `MAX_WRITE_LAG`) is asserted at compile time and by the unit test
+  `a_pass_of_every_admitted_session_fits_in_the_slack`. A storage error fails the whole batch,
+  which stays due.
+- Validation of this round: `cargo` was not run locally (lead directive D1011); `rustfmt
+  --check` on the changed Rust files, `python tools/agents/validate_governance.py`, `python -m
+  unittest discover -s tools/agents/tests` and `git diff --check` ran locally; fmt, clippy and the
+  tests are left to CI.
 
 ## Open questions
 

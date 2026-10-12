@@ -9,7 +9,8 @@
 //! (Character lease generation, `write_sequence`) is greater than the stored key, and never while
 //! a pending respawn exists. Three writers use it:
 //!
-//! - the periodic write of a live Channel actor ([`DurabilityRoot::write_character_last_position`]);
+//! - the periodic write of a live Channel actor ([`DurabilityRoot::write_character_last_position`],
+//!   or a batch of them in one transaction, [`DurabilityRoot::write_character_last_positions`]);
 //! - the final write inside the terminal release transaction, before `session_state` becomes 3
 //!   (`FreshAdmissionStore::with_final_position`);
 //! - the placement of a consumed pending respawn, in the transaction that consumes it
@@ -81,6 +82,22 @@ pub enum LastPositionWrite {
     PendingObligation,
 }
 
+/// The most periodic writes one batch carries ([`DurabilityRoot::write_character_last_positions`]).
+/// A Channel's write pass needs at most `ceil(MAX_CONNECTIONS / LAST_POSITION_WRITE_BATCH)`
+/// batches, each one fence read and one write transaction, so its durability work is bounded
+/// whatever the number of sessions (`CHARPOS0-RL-01`).
+pub const LAST_POSITION_WRITE_BATCH: usize = 32;
+
+/// One periodic write of a batch: the writing session's fence (its
+/// `expected_character_revision` is not read), the write's sequence within the session's lease
+/// and the record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PeriodicLastPosition {
+    pub fence: CurrentCharacterGameplayFence,
+    pub write_sequence: u64,
+    pub record: LastPositionRecord,
+}
+
 /// The final write the terminal release commits (§3.2 "At logout"): the record and the write
 /// sequence it was captured with. The lease generation is the released session's own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -131,6 +148,47 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// §3.2 periodic writes of up to [`LAST_POSITION_WRITE_BATCH`] live Channel actors in one
+    /// transaction, so a write pass costs one durability pass per batch rather than one per
+    /// session (`CHARPOS0-RL-01`). Each write is checked exactly as
+    /// [`Self::write_character_last_position`] checks it, under its own session fence, and has
+    /// its own outcome, in the order of `writes`: a refused fence or an invalid input refuses
+    /// that write only. A storage error, or the pass deadline, fails the whole batch and commits
+    /// none of it, so every write of it stays due.
+    pub async fn write_character_last_positions(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        writes: Vec<PeriodicLastPosition>,
+    ) -> Result<Vec<Result<LastPositionWrite>>> {
+        if writes.len() > LAST_POSITION_WRITE_BATCH {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        if writes.is_empty() {
+            return Ok(Vec::new());
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        Ok(self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let mut outcomes = Vec::with_capacity(writes.len());
+                    for write in writes {
+                        outcomes.push(write_periodic(&mut tx, &node, write).await?);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(outcomes)
+                })
+            })
+            .await?)
+    }
+
     /// §3.3: the Character's last position, read under the session fence of `fence` when a new
     /// runtime actor is admitted. `None` when no row exists (a first login).
     pub async fn read_character_last_position(
@@ -164,6 +222,32 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// One write of a batch, inside its transaction (which holds the recovery fence and the
+/// admission relation locks): the checks and upsert of
+/// [`DurabilityRoot::write_character_last_position`]. `Ok(Err(_))` refuses this write only.
+async fn write_periodic(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    write: PeriodicLastPosition,
+) -> std::result::Result<Result<LastPositionWrite>, DurabilityError> {
+    if let Err(error) = validate_fence(&write.fence, &write.record) {
+        return Ok(Err(error));
+    }
+    if write.write_sequence == 0 {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    if let Err(error) = assert_session_fence(tx, &write.fence, node).await? {
+        return Ok(Err(error));
+    }
+    let key = LastPositionKey {
+        character_lease_generation: write.fence.character_lease_generation,
+        write_sequence: write.write_sequence,
+    };
+    let outcome =
+        upsert_last_position(tx, write.fence.character_id.as_bytes(), key, &write.record).await?;
+    Ok(Ok(outcome))
 }
 
 fn validate_fence(

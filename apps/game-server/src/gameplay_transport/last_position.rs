@@ -7,7 +7,10 @@
 //!   same coordinate frame, a Walkable cell of the pinned movement cells that no closed door
 //!   blocks, and not a house tile) places the actor there, or by the NPC-0 §6.1 fallback
 //!   (nearest free admissible cell within 3, else `entry_start`). Anything else leaves the actor
-//!   at `entry_start`. Resume reads nothing.
+//!   at `entry_start`. A read that fails (a storage or fence error) or a placement that cannot
+//!   complete leaves the admission not playable, as a pending respawn that cannot be placed
+//!   does: the actor never becomes input-eligible at a location its durable row did not decide.
+//!   Resume reads nothing.
 //! - **Tracking.** Only a session whose placement was decided from a successful read (or a
 //!   consumed respawn) is tracked, so a failed read never lets the new session overwrite the
 //!   stored position with `entry_start`.
@@ -15,7 +18,13 @@
 //!   tracked actor whose cell changed since its last write is written under the session fence.
 //!   The writer runs on its own loop and wakes at the earliest absolute deadline, each deadline
 //!   measured from the capture the stored row holds, with [`WRITE_PASS_SLACK`] left for the
-//!   pass itself; a capture later than the interval is reported.
+//!   pass itself; a capture later than the interval is reported. A pass works in batches of
+//!   [`LAST_POSITION_WRITE_BATCH`] sessions, each one fence read and one fenced write
+//!   transaction, so even [`super::MAX_CONNECTIONS`] sessions due together take at most
+//!   [`MAX_WRITE_PASS`] of durability work (each pass bounded by [`DB_PASS_DEADLINE`]), and a
+//!   due session's batch completes at most [`MAX_WRITE_LAG`] after its deadline, within the
+//!   slack: every due session is captured and written, or its batch failed, within the
+//!   interval.
 //! - **Death.** A dead actor is never captured: the settlement of its death upserts the respawn
 //!   cell with the respawn's consumption, and no capture of the dead actor may follow it.
 //! - **Final write (§3.2 "At logout").** The terminal release captures the fenced actor's cell
@@ -34,8 +43,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{ComposedFreshAdmission, operator_event, respawn_cell_admissible};
+use crate::domain::CharacterRevision;
+use crate::durability::DB_PASS_DEADLINE;
 use crate::durability::character_last_position::{
-    FinalLastPosition, LastPositionCell, LastPositionRecord, LastPositionWrite, StoredLastPosition,
+    FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionRecord,
+    LastPositionWrite, PeriodicLastPosition, StoredLastPosition,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -45,12 +57,38 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, Wor
 /// while its position has changed. The registry bounds it to 60..=300 seconds.
 pub(super) const LAST_POSITION_WRITE_INTERVAL: Duration = Duration::from_secs(300);
 
-/// The part of the interval left for a write pass itself: its captures, fence reads and
-/// sequential writes after the deadline it woke for.
+/// The part of the interval left for a write pass itself, after the deadline it woke for: its
+/// captures and its batches of fence reads and writes ([`MAX_WRITE_LAG`]).
 const WRITE_PASS_SLACK: Duration = Duration::from_secs(60);
 
 /// The delay from a session's last durable (or unchanged) capture to its next deadline.
 const NEXT_DUE: Duration = LAST_POSITION_WRITE_INTERVAL.saturating_sub(WRITE_PASS_SLACK);
+
+/// The batches of a pass in which every admitted session of a Channel is due.
+const MAX_WRITE_BATCHES: usize = super::MAX_CONNECTIONS.div_ceil(LAST_POSITION_WRITE_BATCH);
+
+/// The most durability work of one batch: one root pass reading the sessions' fences and one
+/// write transaction, each bounded by [`DB_PASS_DEADLINE`] (a pass whose holder is busy fails at
+/// once rather than waits).
+const MAX_BATCH_WORK: Duration = DB_PASS_DEADLINE.saturating_mul(2);
+
+/// The most durability work of one write pass, every admitted session due in it.
+const MAX_WRITE_PASS: Duration = MAX_BATCH_WORK.saturating_mul(MAX_WRITE_BATCHES as u32);
+
+/// The latest a due session's batch completes after its deadline: the rest of the pass running
+/// at that deadline, [`WRITER_MIN_PAUSE`], then the pass that takes the session, up to its own
+/// batch. A deadline recurs only [`NEXT_DUE`] after a capture, so no session is in both passes:
+/// together they hold at most [`super::MAX_CONNECTIONS`] sessions, in at most
+/// `MAX_WRITE_BATCHES + 1` batches. It must fit in [`WRITE_PASS_SLACK`], so every due session
+/// is captured and written (or its batch failed) within [`LAST_POSITION_WRITE_INTERVAL`].
+const MAX_WRITE_LAG: Duration = MAX_BATCH_WORK
+    .saturating_mul(MAX_WRITE_BATCHES as u32 + 1)
+    .saturating_add(WRITER_MIN_PAUSE);
+
+// `CHARPOS0-RL-01` under load, at compile time: a pass of every admitted session, and the lag of
+// any due session behind its deadline, fit in the slack the deadline leaves.
+const _: () = assert!(MAX_WRITE_PASS.as_millis() <= WRITE_PASS_SLACK.as_millis());
+const _: () = assert!(MAX_WRITE_LAG.as_millis() <= WRITE_PASS_SLACK.as_millis());
 
 /// The longest the writer sleeps, so a newly tracked session is seen without a wake-up.
 const WRITER_MAX_SLEEP: Duration = super::QUEST_RETRY_CADENCE;
@@ -109,6 +147,9 @@ pub(crate) struct LastPositions {
 #[derive(Debug, Clone, Copy)]
 struct Track {
     actor: ExactActorRef,
+    /// The Character revision of the admission fence. A periodic write fills the fence's
+    /// `expected_character_revision` with it; the write does not read it (no root lock).
+    revision: CharacterRevision,
     /// The cell last written or read for this Character; `None` when nothing is stored.
     written: Option<LastPositionCell>,
     /// When the cell the stored row holds (or an unchanged one) was last captured.
@@ -168,12 +209,14 @@ impl LastPositions {
         session: GameSessionId,
         actor: ExactActorRef,
         written: Option<LastPositionCell>,
+        revision: CharacterRevision,
     ) {
         if let Ok(mut tracks) = self.tracks.lock() {
             tracks.insert(
                 session,
                 Track {
                     actor,
+                    revision,
                     written,
                     checked: Instant::now(),
                 },
@@ -395,26 +438,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Some(self.placed_record(&runtime, snapshot.position()))
     }
 
-    /// Track `session` after its respawn consumption wrote `placed`.
+    /// Track `session` after its respawn consumption under `fence` wrote `placed`.
     pub(super) fn track_respawned(
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
         placed: &FinalLastPosition,
+        fence: CurrentCharacterGameplayFence,
     ) {
-        self.last_positions
-            .track(session, actor, Some(placed.record.cell));
+        self.last_positions.track(
+            session,
+            actor,
+            Some(placed.record.cell),
+            fence.expected_character_revision,
+        );
     }
 
     /// §3.3 steps 3 and 4 for an admission with no pending respawn: read the last position
-    /// under `fence` and place the actor by it. A failed read leaves the actor at
-    /// `entry_start` and the session untracked, so it never overwrites the stored row.
+    /// under `fence` and place the actor by it. `true` once the placement is decided from a
+    /// successful read and the session is tracked. A failed read (a storage or fence error) or a
+    /// placement that cannot complete returns `false`: the admission is not playable, nothing
+    /// is written and the session stays untracked, so it never overwrites the stored row.
     pub(super) async fn restore_last_position(
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
         fence: CurrentCharacterGameplayFence,
-    ) {
+    ) -> bool {
         let stored = match self
             .root
             .read_character_last_position(self.character, self.holder, fence)
@@ -423,12 +473,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(stored) => stored,
             Err(error) => {
                 operator_event(&format!("last_position_read_failed reason={error}"));
-                return;
+                return false;
             }
         };
         let Some(stored) = stored else {
-            self.last_positions.track(session, actor, None);
-            return;
+            self.last_positions
+                .track(session, actor, None, fence.expected_character_revision);
+            return true;
         };
         let mut runtime = self.runtime.lock().await;
         let pinned_digest = runtime.content_pin().server_artifact_digest();
@@ -456,12 +507,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             if placed.is_err() {
                 operator_event("last_position_placement_failed");
-                return;
+                return false;
             }
         }
         drop(runtime);
-        self.last_positions
-            .track(session, actor, Some(stored.record.cell));
+        self.last_positions.track(
+            session,
+            actor,
+            Some(stored.record.cell),
+            fence.expected_character_revision,
+        );
+        true
     }
 
     /// §3.2 periodic writes (`CHARPOS0-RL-01`): sleep until the earliest deadline (at most
@@ -494,11 +550,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// One pass of §3.2 writes: the due sessions, most overdue first, or with `all` the
-    /// shutdown write of every tracked session. A cell unchanged since its last write writes
-    /// nothing; a dead actor is skipped. Returns the number of failed writes, which stay due.
+    /// shutdown write of every tracked session, in batches of [`LAST_POSITION_WRITE_BATCH`]. A
+    /// cell unchanged since its last write writes nothing; a dead actor is skipped. Returns the
+    /// number of failed writes, which stay due.
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
+        let due = self.last_positions.due(Instant::now(), all);
         let mut failed = 0;
-        for (session, track) in self.last_positions.due(Instant::now(), all) {
+        for batch in due.chunks(LAST_POSITION_WRITE_BATCH) {
+            failed += self.write_last_position_batch(batch).await;
+        }
+        failed
+    }
+
+    /// One batch of a pass: capture each session under the runtime lock, then read the changed
+    /// sessions' fences in one root pass and write them in one transaction, so the batch costs
+    /// two durability passes whatever its size (`CHARPOS0-RL-01`). Returns the failed writes.
+    async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
+        let mut changed = Vec::with_capacity(batch.len());
+        for &(session, track) in batch {
             let capture = match self.capture_last_position(track.actor).await {
                 Captured::At(capture) => capture,
                 // Its death's settlement writes the respawn cell.
@@ -517,28 +586,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .settled(session, track.actor, None, capture.at);
                 continue;
             }
-            let fence = match self.current_quest_fence(session).await {
-                Ok(Some(fence)) => fence,
-                Ok(None) => {
-                    self.last_positions.forget(session);
-                    continue;
-                }
-                Err(()) => {
-                    failed += 1;
-                    continue;
-                }
+            changed.push((session, track, capture));
+        }
+        if changed.is_empty() {
+            return 0;
+        }
+        let current = match FreshAdmissionStore::from_root(self.root.clone())
+            .current_sessions_at(changed.iter().map(|(session, _, _)| *session).collect())
+            .await
+        {
+            Ok(current) => current,
+            Err(error) => {
+                operator_event(&format!("last_position_write_failed reason={error}"));
+                return changed.len();
+            }
+        };
+        // `current` has one entry per changed session, in order; a missing one stays due.
+        let mut failed = changed.len().saturating_sub(current.len());
+        let mut writes = Vec::with_capacity(changed.len());
+        let mut fenced = Vec::with_capacity(changed.len());
+        for ((session, track, capture), current) in changed.into_iter().zip(current) {
+            let Some(current) = current else {
+                failed += 1;
+                continue;
             };
-            match self
-                .root
-                .write_character_last_position(
-                    self.character,
-                    self.holder,
-                    fence,
-                    capture.write_sequence,
-                    capture.record,
-                )
-                .await
-            {
+            // The fence `current_quest_fence` builds, with the admission revision (not read).
+            if current.session_state() == crate::foundation::GameSessionState::Terminal {
+                self.last_positions.forget(session);
+                continue;
+            }
+            let Ok(character_id) =
+                crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+            else {
+                failed += 1;
+                continue;
+            };
+            writes.push(PeriodicLastPosition {
+                fence: CurrentCharacterGameplayFence {
+                    character_id,
+                    game_session_id: session,
+                    connection_generation: current.current_connection_generation(),
+                    character_lease_generation: current.current_character_lease().generation(),
+                    runtime_scope: current.current_runtime_scope(),
+                    scope_ownership_generation: current.current_scope_generation(),
+                    expected_character_revision: track.revision,
+                },
+                write_sequence: capture.write_sequence,
+                record: capture.record,
+            });
+            fenced.push((session, track, capture));
+        }
+        if writes.is_empty() {
+            return failed;
+        }
+        let outcomes = match self
+            .root
+            .write_character_last_positions(self.character, self.holder, writes)
+            .await
+        {
+            Ok(outcomes) => outcomes,
+            Err(error) => {
+                operator_event(&format!("last_position_write_failed reason={error}"));
+                return failed + fenced.len();
+            }
+        };
+        failed += fenced.len().saturating_sub(outcomes.len());
+        for ((session, track, capture), outcome) in fenced.into_iter().zip(outcomes) {
+            match outcome {
                 Ok(
                     LastPositionWrite::Written
                     | LastPositionWrite::Superseded
@@ -606,6 +720,20 @@ mod tests {
         assert!(!NEXT_DUE.is_zero());
     }
 
+    /// `CHARPOS0-RL-01` under load: every admitted session of a Channel due at once is captured
+    /// and written within the slack, each batch costing two passes bounded by the pass deadline,
+    /// however slow the store is short of failing a pass.
+    #[test]
+    fn a_pass_of_every_admitted_session_fits_in_the_slack() {
+        assert_eq!(super::super::MAX_CONNECTIONS, 256);
+        assert_eq!(MAX_WRITE_BATCHES, 8);
+        assert_eq!(MAX_BATCH_WORK, Duration::from_secs(4));
+        assert!(MAX_WRITE_PASS <= WRITE_PASS_SLACK);
+        assert!(MAX_WRITE_PASS < MAX_WRITE_LAG);
+        assert!(MAX_WRITE_LAG <= WRITE_PASS_SLACK);
+        assert!(NEXT_DUE + MAX_WRITE_LAG <= LAST_POSITION_WRITE_INTERVAL);
+    }
+
     /// §3.2 "Order": each capture orders after every earlier one of the process.
     #[test]
     fn sequences_strictly_increase_from_the_wall_clock() {
@@ -653,7 +781,12 @@ mod tests {
         .expect("uuid v7");
         let channel = crate::foundation::ChannelId::decode(session.as_bytes()).expect("uuid");
         let actor = ExactActorRef::transport_fixture(world(1), channel);
-        positions.track(session, actor, None);
+        positions.track(
+            session,
+            actor,
+            None,
+            CharacterRevision::new(1).expect("revision"),
+        );
         let now = Instant::now();
         assert!(positions.due(now, false).is_empty());
         assert_eq!(positions.due(now, true).len(), 1);

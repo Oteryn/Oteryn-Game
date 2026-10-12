@@ -1315,8 +1315,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// is the obligation consumed. A recorded cell that is not valid or not free uses the
     /// CHAR-POSITION-0 §3.3 fallback, so a placement is always defined. A placement that cannot
     /// complete or a failed read or write leaves the row for the next admission; the Character
-    /// writers refuse with `RespawnPending` until then. `true` only when no respawn is pending or
-    /// exactly the placed one was consumed.
+    /// writers refuse with `RespawnPending` until then. `true` only when exactly the placed
+    /// respawn was consumed, or no respawn is pending and the last position was resolved
+    /// (CHAR-POSITION-0 §3.3 steps 3 and 4): a failed last-position read or placement leaves
+    /// this admission not playable, as an unplaced respawn does.
     async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
@@ -1337,9 +1339,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Some(pending)) => pending,
             Ok(None) => {
                 // CHAR-POSITION-0 §3.3 steps 3 and 4: no pending respawn, so the last position.
+                // A read or placement that fails keeps the admission not playable.
                 drop(slot);
-                self.restore_last_position(session, actor, fence).await;
-                return true;
+                return self.restore_last_position(session, actor, fence).await;
             }
             Err(error) => {
                 operator_event(&format!("pending_respawn_read_failed reason={error}"));
@@ -1372,7 +1374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         if matches!(&consumed, Ok(Some(consumed)) if consumed.occurrence == pending.occurrence) {
-            self.track_respawned(session, actor, &placed);
+            self.track_respawned(session, actor, &placed, fence);
         }
         if let Err(error) = &consumed {
             operator_event(&format!(

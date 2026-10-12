@@ -106,8 +106,8 @@ mod account_achievement_linkage {
 mod character_last_position_linkage {
     use super::DurabilityRoot;
     use super::character_last_position::{
-        FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionRecord,
-        LastPositionWrite, StoredLastPosition,
+        FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionKey,
+        LastPositionRecord, LastPositionWrite, PeriodicLastPosition, StoredLastPosition,
     };
     use super::fresh_admission::FreshAdmissionStore;
 
@@ -119,7 +119,11 @@ mod character_last_position_linkage {
         let _ = std::mem::size_of::<LastPositionRecord>();
         let _ = std::mem::size_of::<LastPositionWrite>();
         let _ = std::mem::size_of::<StoredLastPosition>();
+        let _ = std::mem::size_of::<PeriodicLastPosition>();
+        let _ = LAST_POSITION_WRITE_BATCH;
         let _ = DurabilityRoot::write_character_last_position;
+        let _ = DurabilityRoot::write_character_last_positions;
+        let _ = FreshAdmissionStore::current_sessions_at;
         let _ = DurabilityRoot::read_character_last_position;
         let _ = DurabilityRoot::consume_pending_respawn_placed;
         let _ = FreshAdmissionStore::with_final_position;

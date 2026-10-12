@@ -1786,6 +1786,38 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// CHAR-POSITION-1 (`CHARPOS0-RL-01`): the current session of each of `sessions`, read as
+    /// [`Self::current_session_at`] reads one, but all in one root pass, so a periodic
+    /// last-position write pass reads a bounded number of passes whatever the number of its
+    /// sessions. One entry per session, in order; `None` when that session's read failed. A
+    /// storage error of the pass itself fails all of them.
+    pub async fn current_sessions_at(
+        &self,
+        sessions: Vec<GameSessionId>,
+    ) -> Result<Vec<Option<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>>>> {
+        if sessions.is_empty() {
+            return Ok(Vec::new());
+        }
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut current = Vec::with_capacity(sessions.len());
+                    for session in sessions {
+                        current.push(store.current_session_locked(&mut tx, session).await.ok());
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(current)
+                })
+            })
+            .await
+    }
+
     pub async fn reconcile_lifecycle(
         &self,
         evidence: &AdmissionClaimLifecycleEvidenceV1,
