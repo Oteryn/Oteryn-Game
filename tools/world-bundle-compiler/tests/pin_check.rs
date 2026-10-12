@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use oteryn_world_bundle_compiler::bundle::{self, Manifest, TerrainKind};
+use oteryn_world_bundle_compiler::bundle::{self, Family, Manifest, TerrainKind};
 use serde_json::{Value, json};
 
 const BIN: &str = env!("CARGO_BIN_EXE_oteryn-world-bundle-compiler");
@@ -152,7 +152,7 @@ fn pin(inputs: &str, digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 10228, "y": 10032, "floor": 0},
+        "entry_start": {"x": 10229, "y": 10032, "floor": 0},
         "inputs_digest": inputs,
     })
 }
@@ -307,10 +307,18 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         assert!(!dir.check().status.success(), "{bad}");
     }
 
-    // entry_start outside the World bounds fails; so does a cell without walkable ground
-    // and one without a tile, both read from the bundle that was just built.
-    let mut cells = vec![(5, 5, 0), (10228, 10032, 99), (34000, 33000, 0)];
-    let (mut blocked, mut open) = (None, None);
+    // entry_start outside the World bounds fails; so does a cell without walkable ground,
+    // one without a tile and one whose walkable ground holds a plain Item (no Terrain record),
+    // all read from the bundle that was just built. (10228, 10032, 0), the former start, holds
+    // the plain Item i1788: the node refuses it (E2012) because a plain Item without a served
+    // `blocks_movement` blocks.
+    let mut cells = vec![
+        (5, 5, 0),
+        (10228, 10032, 99),
+        (34000, 33000, 0),
+        (10228, 10032, 0),
+    ];
+    let (mut blocked, mut open, mut item) = (None, None, None);
     let visited = bundle::visit(&written, |manifest: &Manifest, sector| {
         for tile in &sector.tiles {
             let terrains: Vec<_> = tile
@@ -336,6 +344,16 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
             if open.is_none() && tile.items.is_empty() {
                 open = Some(cell);
             }
+            if item.is_none()
+                && ground.is_some_and(|t| t.walkable == Some(true))
+                && tile.items.iter().any(|entry| {
+                    entry.depth == 0
+                        && manifest.palette[entry.palette as usize].family == Family::Item
+                        && manifest.palette[entry.palette as usize].terrain.is_none()
+                })
+            {
+                item = Some(cell);
+            }
         }
         Ok(())
     })
@@ -343,7 +361,12 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let extent = visited.manifest.world;
     cells.extend(blocked);
     cells.extend(open);
+    cells.extend(item);
     assert!(blocked.is_some(), "the World holds a blocked cell");
+    assert!(
+        item.is_some(),
+        "the World holds a plain Item on walkable ground"
+    );
     for (x, y, floor) in cells {
         let mut bad = good.clone();
         bad["entry_start"] = json!({"x": x, "y": y, "floor": floor});
