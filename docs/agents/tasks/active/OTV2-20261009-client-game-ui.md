@@ -40,8 +40,10 @@ comments. It validates URL origins/files/keys, sets four public connection value
 only in the child, selects the copied gameplay certificate without installing
 trust and drops configured World/Character IDs in favour of owned GUI selection.
 No automatic login, deployment, account mutation or production claim.
-PowerShell 21 checks and existing client/Platform login tests 10/13 pass;
-Windows/browser/current-stack E2E needs public endpoints, OAuth ID and root.
+PowerShell 21 checks and client/Platform login tests 10/13 pass. Connection data
+is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
+root/leaf are valid. Public directory currently returns zero worlds; gameplay
+TLS resets. No missing-data request: E2E waits for a usable Game/Registry route.
 
 ## Main merge — 2026-10-12
 
@@ -141,11 +143,9 @@ the existing spell/condition/light/audio/event projection gaps. Floor/teleport
 snapshot recovery, map drag, bundle E2E and frozen-head independent review remain
 open. Animation/light/minimap are outside the accepted MAP-CLIENT-1 packet.
 
-Historical qualification remains recorded, with exact SHAs, manifests and private
-capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
-scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer
-`5b784e60` passed their MSVC/Clippy/DX12 chains. These are not qualifications for a
-new source head. Contextual Animated cursor consumers remain unavailable.
+Historical scissor `08495a50`, integral scaling `1b3a3be5`, repeat
+`5bf89893`/`597fda90` and pointer `5b784e60` MSVC/Clippy/DX12 evidence remains
+in UI-FIDELITY.md, not inherited by successors. Animated cursor stays unavailable.
 
 Receipt-clock/Clear `1b2928fb` and the lockfile/World-pin CI repair remain fully
 qualified and documented in UI-FIDELITY.md. Never invent timestamps or mutate
