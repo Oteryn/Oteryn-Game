@@ -6,6 +6,11 @@ name: Synology Game Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      stage_world_bundle:
+        description: Build the pinned World Bundle and install it as BASE/world/world.otbundle through the root wrapper (needs the one-time sudoers entry for stage-world)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -38,11 +43,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rustup toolchain install 1.94.0 --profile minimal
-          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
+          rustup toolchain install 1.95.0 --profile minimal
+          cargo +1.95.0 build --release --locked -p oteryn-game-server --bins
+
+      - name: Build the pinned World Bundle (opt-in)
+        if: ${{ inputs.stage_world_bundle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # pin-check fails unless the tree builds twice to exactly the digest of content/world/pins/oteryn.json.
+          cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
 
       - name: Stage release bundle
         shell: bash
+        env:
+          STAGE_WORLD_BUNDLE: ${{ inputs.stage_world_bundle }}
         run: |
           set -euo pipefail
           bundle="$RUNNER_TEMP/bundle"
@@ -55,8 +70,13 @@ jobs:
           python3 deploy/synology-game/stage_gameplay.py \
             content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
           echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
+          if [[ "$STAGE_WORLD_BUNDLE" = true ]]; then
+            pin="$(python3 -c 'import json;print(json.load(open("content/world/pins/oteryn.json"))["digest"])')"
+            mkdir -p "$bundle/world"
+            install -m 0644 "$RUNNER_TEMP/world-bundle/oteryn-$pin.otwb" "$bundle/world/world.otbundle"
+          fi
           # Every file is in the bundle before the checksums are computed.
-          (cd "$bundle" && find bin gameplay supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$bundle" && find bin gameplay $([[ -d world ]] && echo world) supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -103,6 +123,29 @@ jobs:
           test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
           sha256sum --check --strict SHA256SUMS
           test "$(uname -m)" = x86_64
+
+      - name: Stage the World Bundle (opt-in, as root through the wrapper)
+        if: ${{ inputs.stage_world_bundle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Runs before check-setup, which requires an enabled World Bundle to be staged already.
+          wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
+          test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
+          # Trust boundaries first: nothing below runs sudo until the root-run wrapper, its directory and BASE
+          # are known to be unwritable by this runner user (root ownership alone does not exclude group/ACL write).
+          test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin" && test "$(stat -c '%u' "$ROOT_BASE/bin")" = 0
+          test "$(stat -c '%u' "$BASE")" = 0 && test ! -w "$BASE"
+          cmp -s "$wrapper" "$RUNNER_TEMP/bundle/deploy-ops.sh" ||
+            { echo "::error::root-installed oteryn-game-deploy-ops does not match this bundle; the owner upgrades it as root, then re-run"; exit 1; }
+          sudo -n -l "$wrapper" stage-world >/dev/null ||
+            { echo "::error::sudoers does not allow: oteryn-game-deploy-ops stage-world (owner one-time ops, see deploy/synology-game/README.md)"; exit 1; }
+          test -d "$BASE/run" && test -f "$RUNNER_TEMP/bundle/world/world.otbundle"
+          # The wrapper takes no path: it reads this fixed runner-writable file, copies it once and verifies
+          # the copy against the pinned digest of the root manifest before an atomic rename into BASE/world.
+          install -m 0644 "$RUNNER_TEMP/bundle/world/world.otbundle" "$BASE/run/world-bundle.incoming"
+          trap 'rm -f "$BASE/run/world-bundle.incoming"' EXIT
+          sudo -n "$wrapper" stage-world
 
       - name: Verify the one-time operator setup exists
         shell: bash

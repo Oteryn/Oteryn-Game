@@ -70,6 +70,7 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
         skipped_provisional_keys: Vec::new(),
         dropped_teleports: Vec::new(),
         spawns: Default::default(),
+        npcs: Default::default(),
     };
     let tile = |x, palettes: &[u32]| Tile {
         x,
@@ -124,6 +125,7 @@ fn item(key: &str) -> Option<ItemDefinition> {
         solid: Some(solid),
         blocks_projectile: solid,
         pickupable: !solid,
+        door: false,
     })
 }
 

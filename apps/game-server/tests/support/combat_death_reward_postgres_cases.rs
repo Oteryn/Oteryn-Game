@@ -1391,11 +1391,10 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
 // settled live. The rat's Creature profile (XP, corpse `i5964`) and the
 // admission facts are read from the production pin (`spell-native-profiles`
 // and the `loot_tables` section); the settled table is the rat's pinned
-// table narrowed to its admitted entries (gold `i3031`). The real table also
-// names cheese `i3607`, which is not materializable, so the content row for
-// the rat refuses with `loot_item_inadmissible`
-// (`content::creature_reward` tests); its admission is
-// OTV2-20261007-d3-8-cheese.
+// table narrowed to its gold entry (`i3031`). The real table also names
+// cheese `i3607`, admitted by OTV2-20261007-d3-8-cheese; the content row for
+// the rat settles with it (`content::creature_reward` tests) and this live
+// case narrows to the gold entry only.
 mod kill_reward_live {
     use super::{
         Harness, TestResult, capture, configured_admin, death_fixture, debug, ground, id,
@@ -1442,7 +1441,7 @@ mod kill_reward_live {
         corpse: LootDefinitionRef,
         table_ref: LootDefinitionRef,
         admitted: LootTableDefinition,
-        cheese_refused: bool,
+        cheese_admitted: bool,
     }
 
     fn rat_pin() -> TestResult<RatPin> {
@@ -1480,11 +1479,14 @@ mod kill_reward_live {
         assert_eq!(corpse_facts["container_capacity"], 16);
 
         let mut entries = Vec::new();
-        let mut cheese_refused = false;
+        let mut cheese_admitted = false;
         for entry in table["entries"].as_array().ok_or("entries")? {
             let item_facts = facts(&entry["item"]).ok_or("entry admission facts")?;
             if item_facts["materializable"] != true {
-                cheese_refused |= entry["item"]["key"] == CHEESE;
+                continue;
+            }
+            if entry["item"]["key"] == CHEESE {
+                cheese_admitted = true;
                 continue;
             }
             let count = |name: &str| -> TestResult<u32> {
@@ -1507,7 +1509,7 @@ mod kill_reward_live {
                 algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
                 entries,
             },
-            cheese_refused,
+            cheese_admitted,
         })
     }
 
@@ -1517,8 +1519,8 @@ mod kill_reward_live {
     fn the_pinned_rat_row_settles_its_corpse_gold_and_xp() -> TestResult {
         let pin = rat_pin()?;
         assert!(
-            pin.cheese_refused,
-            "the pinned rat table still names cheese"
+            pin.cheese_admitted,
+            "the pinned rat table names admitted cheese"
         );
         assert_eq!(pin.xp, 5);
         assert_eq!(pin.corpse.production_key, "oteryn:item.tibia.i5964");

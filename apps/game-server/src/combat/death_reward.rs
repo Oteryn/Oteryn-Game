@@ -191,6 +191,18 @@ pub(crate) struct RewardProgressionBinding<const N: usize> {
 }
 
 impl<const N: usize> RewardProgressionBinding<N> {
+    /// ARCH-PROGRESSION-SOURCE-0 §1.4: the binding of one admission, from the policy its
+    /// pinned `CharacterProgressionContent` forms with the Character root's three revisions
+    /// (`policy_for`). The binding's revisions are the policy's own, so they cannot disagree.
+    pub(crate) fn from_content(policy: FiniteProgressionPolicy<String, N>) -> Self {
+        Self {
+            context: policy.context.clone(),
+            policy_revision: policy.policy_revision.clone(),
+            reward_revision: policy.reward_revision.clone(),
+            policy,
+        }
+    }
+
     fn initialization_request(&self) -> ProgressionInitializationRequest<N> {
         ProgressionInitializationRequest {
             context: self.context.clone(),

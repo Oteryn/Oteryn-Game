@@ -41,6 +41,13 @@ pub const ITEM_ADMISSION_V2_PACKET: &[u8] = include_bytes!(
 pub const ITEM_ADMISSION_V2_PACKET_SHA256: &str =
     "59ff17d440ede062ec1ca0287bbd72da3acde35ffe753f0e4022a6589ac64cfe";
 pub const ITEM_ADMISSION_V2_ITEM_COUNT: usize = 1;
+/// The pinned v2 cheese packet bytes (D3-8): the stack-capable food `oteryn:item.tibia.i3607`.
+pub const ITEM_ADMISSION_V2_CHEESE_PACKET: &[u8] = include_bytes!(
+    "../../../../docs/agents/evidence/OTV2-20261007-d3-8-cheese-item-admission.json"
+);
+pub const ITEM_ADMISSION_V2_CHEESE_PACKET_SHA256: &str =
+    "6bcd22fe11ab5ba02a86af744e494af92630516b22efffa6a408987066e02e0d";
+pub const ITEM_ADMISSION_V2_CHEESE_ITEM_COUNT: usize = 1;
 const SCHEMA_V2: &str = "OTERYN_ITEM_ADMISSION/v2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,6 +95,13 @@ struct Admission {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum StackClass {
     NonStackable,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum StackClassV2 {
+    NonStackable,
+    StackCapable,
 }
 
 #[derive(Deserialize)]
@@ -241,14 +255,17 @@ struct PolicyV2 {
 struct AdmissionV2 {
     item_key: String,
     materializable: bool,
-    stack_class: StackClass,
-    container_capacity: u16,
-    equipment: NotApplicable,
-    decay_target: NotApplicable,
-    temporal_mode: TemporalMode,
-    temporal_duration_ms: u64,
-    temporal_stop_duration: bool,
-    /// The only evidence source is Canary; any other source fails to decode.
+    stack_class: StackClassV2,
+    /// Present exactly for the container shape (the corpse).
+    container_capacity: Option<u16>,
+    equipment: Option<NotApplicable>,
+    decay_target: Option<NotApplicable>,
+    temporal_mode: Option<TemporalMode>,
+    temporal_duration_ms: Option<u64>,
+    temporal_stop_duration: Option<bool>,
+    /// Present exactly for the stack-capable shape (the cheese).
+    stack_max: Option<u16>,
+    /// Canary is always pinned; the reference candidate is the only other source that decodes.
     #[allow(dead_code)]
     evidence: EvidenceV2,
 }
@@ -258,6 +275,8 @@ struct AdmissionV2 {
 struct EvidenceV2 {
     #[allow(dead_code)]
     canary: serde_json::Value,
+    #[allow(dead_code)]
+    reference_candidate: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -274,7 +293,33 @@ enum TemporalMode {
 
 /// Apply the pinned D3-7 corpse packet to `draft`; returns the number of admitted Items.
 pub fn apply_item_admission_v2(draft: &mut ProjectV2Draft) -> Result<usize, ItemAdmissionError> {
-    if world_project_sha256(ITEM_ADMISSION_V2_PACKET) != ITEM_ADMISSION_V2_PACKET_SHA256 {
+    apply_packet_v2(
+        draft,
+        ITEM_ADMISSION_V2_PACKET,
+        ITEM_ADMISSION_V2_PACKET_SHA256,
+        ITEM_ADMISSION_V2_ITEM_COUNT,
+    )
+}
+
+/// Apply the pinned D3-8 cheese packet to `draft`; returns the number of admitted Items.
+pub fn apply_item_admission_v2_cheese(
+    draft: &mut ProjectV2Draft,
+) -> Result<usize, ItemAdmissionError> {
+    apply_packet_v2(
+        draft,
+        ITEM_ADMISSION_V2_CHEESE_PACKET,
+        ITEM_ADMISSION_V2_CHEESE_PACKET_SHA256,
+        ITEM_ADMISSION_V2_CHEESE_ITEM_COUNT,
+    )
+}
+
+fn apply_packet_v2(
+    draft: &mut ProjectV2Draft,
+    packet: &[u8],
+    sha256: &str,
+    expected: usize,
+) -> Result<usize, ItemAdmissionError> {
+    if world_project_sha256(packet) != sha256 {
         return Err(ItemAdmissionError::Digest);
     }
     let items = draft
@@ -296,8 +341,8 @@ pub fn apply_item_admission_v2(draft: &mut ProjectV2Draft) -> Result<usize, Item
             )),
             _ => None,
         });
-    let admitted = apply_admissions_v2(items, ITEM_ADMISSION_V2_PACKET)?;
-    if admitted != ITEM_ADMISSION_V2_ITEM_COUNT {
+    let admitted = apply_admissions_v2(items, packet)?;
+    if admitted != expected {
         return Err(ItemAdmissionError::Counts);
     }
     Ok(admitted)
@@ -319,7 +364,10 @@ fn apply_admissions_v2<'a>(
     if packet.schema != SCHEMA_V2
         || packet.task.is_empty()
         || packet.decision.is_empty()
-        || packet.policy.agreement != "DECISION_SHAPE_WITH_PINNED_EVIDENCE"
+        || !matches!(
+            packet.policy.agreement.as_str(),
+            "DECISION_SHAPE_WITH_PINNED_EVIDENCE" | "PINNED_EVIDENCE_NO_CONFLICT"
+        )
         || packet.policy.scope.is_empty()
     {
         return Err(ItemAdmissionError::Decode("schema".to_owned()));
@@ -370,26 +418,60 @@ fn admit_v2(
     {
         return Err(item_error(key, "baseline is not an identity-only Item"));
     }
-    let StackClass::NonStackable = admission.stack_class;
-    let NotApplicable::NotApplicable = admission.equipment;
-    let NotApplicable::NotApplicable = admission.decay_target;
-    let TemporalMode::DurableAbsoluteDeadline = admission.temporal_mode;
-    *materializable = true;
-    *stack_class = ItemStackDocument::NonStackable;
-    semantics.stack = Known(ReferenceItemStack {
-        stackable: Known(false),
-        stack_max: Unknown,
-    });
-    semantics.container = Known(ReferenceItemContainer {
-        capacity: Known(admission.container_capacity),
-    });
-    semantics.equipment = NotApplicableField;
-    semantics.temporal = Known(ReferenceItemTemporal {
-        consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
-        duration: Known(ReferenceMilliseconds(admission.temporal_duration_ms)),
-        stop_duration: Known(admission.temporal_stop_duration),
-        decay_target: NotApplicableField,
-    });
+    match (
+        &admission.stack_class,
+        admission.container_capacity,
+        &admission.equipment,
+        &admission.decay_target,
+        &admission.temporal_mode,
+        admission.temporal_duration_ms,
+        admission.temporal_stop_duration,
+        admission.stack_max,
+    ) {
+        (
+            StackClassV2::NonStackable,
+            Some(capacity),
+            Some(NotApplicable::NotApplicable),
+            Some(NotApplicable::NotApplicable),
+            Some(TemporalMode::DurableAbsoluteDeadline),
+            Some(duration_ms),
+            Some(stop_duration),
+            None,
+        ) => {
+            *materializable = true;
+            *stack_class = ItemStackDocument::NonStackable;
+            semantics.stack = Known(ReferenceItemStack {
+                stackable: Known(false),
+                stack_max: Unknown,
+            });
+            semantics.container = Known(ReferenceItemContainer {
+                capacity: Known(capacity),
+            });
+            semantics.equipment = NotApplicableField;
+            semantics.temporal = Known(ReferenceItemTemporal {
+                consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
+                duration: Known(ReferenceMilliseconds(duration_ms)),
+                stop_duration: Known(stop_duration),
+                decay_target: NotApplicableField,
+            });
+        }
+        (StackClassV2::StackCapable, None, None, None, None, None, None, Some(stack_max))
+            if stack_max > 1 =>
+        {
+            *materializable = true;
+            *stack_class = ItemStackDocument::StackCapable;
+            semantics.stack = Known(ReferenceItemStack {
+                stackable: Known(true),
+                stack_max: Known(stack_max),
+            });
+        }
+        _ => {
+            return Err(item_error(
+                key,
+                "admission shape is neither corpse nor stack",
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -684,5 +766,131 @@ mod tests {
             assert!(block.contains(&needle), "{needle}");
         }
         assert_eq!(canary["attributes"].as_object().map(|a| a.len()), Some(4));
+    }
+
+    const CHEESE: &str = "oteryn:item.tibia.i3607";
+
+    fn cheese_packet() -> serde_json::Value {
+        serde_json::from_slice(ITEM_ADMISSION_V2_CHEESE_PACKET).expect("pinned cheese packet")
+    }
+
+    #[test]
+    fn admits_the_cheese_stack_shape() {
+        let (mut materializable, mut stack_class, mut semantics) = (
+            false,
+            ItemStackDocument::Unknown,
+            ReferenceItemSemantics::default(),
+        );
+        let admitted = apply_v2(
+            &cheese_packet(),
+            CHEESE,
+            &mut materializable,
+            &mut stack_class,
+            &mut semantics,
+        )
+        .expect("admits");
+        assert_eq!(admitted, 1);
+        assert!(materializable);
+        assert_eq!(stack_class, ItemStackDocument::StackCapable);
+        assert_eq!(
+            semantics.stack,
+            ReferenceItemField::Known(ReferenceItemStack {
+                stackable: ReferenceItemField::Known(true),
+                stack_max: ReferenceItemField::Known(100),
+            })
+        );
+        assert_eq!(semantics.container, ReferenceItemField::Unknown);
+        assert_eq!(semantics.temporal, ReferenceItemField::Unknown);
+        // A second run fails closed: the record is no longer identity-only.
+        assert!(
+            apply_v2(
+                &cheese_packet(),
+                CHEESE,
+                &mut materializable,
+                &mut stack_class,
+                &mut semantics,
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_mixed_or_bad_cheese_admissions() {
+        for edit in [
+            |p: &mut serde_json::Value| p["admissions"][0]["container_capacity"] = 16.into(),
+            |p: &mut serde_json::Value| p["admissions"][0]["stack_max"] = 1.into(),
+            |p: &mut serde_json::Value| {
+                p["admissions"][0]["stack_class"] = "NON_STACKABLE".into();
+            },
+            |p: &mut serde_json::Value| {
+                p["admissions"][0]["evidence"]["crystalserver"] = serde_json::json!({});
+            },
+        ] {
+            let mut packet = cheese_packet();
+            edit(&mut packet);
+            let (mut m, mut s, mut sem) = (
+                false,
+                ItemStackDocument::Unknown,
+                ReferenceItemSemantics::default(),
+            );
+            assert!(apply_v2(&packet, CHEESE, &mut m, &mut s, &mut sem).is_err());
+        }
+    }
+
+    #[test]
+    fn pinned_cheese_packet_digest_and_evidence() {
+        assert_eq!(
+            world_project_sha256(ITEM_ADMISSION_V2_CHEESE_PACKET),
+            ITEM_ADMISSION_V2_CHEESE_PACKET_SHA256
+        );
+        let packet = cheese_packet();
+        assert_eq!(
+            packet["admissions"].as_array().map(Vec::len),
+            Some(ITEM_ADMISSION_V2_CHEESE_ITEM_COUNT)
+        );
+        let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
+        let evidence = &packet["admissions"][0]["evidence"];
+        let canary = &evidence["canary"];
+        let items_xml = std::fs::read(format!("{root}imports/canary/items-xml/items.xml"))
+            .expect("pinned Canary import");
+        assert_eq!(
+            canary["sha256"].as_str(),
+            Some(world_project_sha256(&items_xml).as_str())
+        );
+        let text = String::from_utf8(items_xml).expect("utf8");
+        let lines: Vec<&str> = text.lines().collect();
+        let block = lines[11462..11467].join("\n");
+        assert_eq!(canary["lines"], "11463-11467");
+        assert!(block.contains(r#"<item id="3607" name="cheese""#));
+        for (name, value) in canary["attributes"].as_object().expect("attributes") {
+            let needle = format!(
+                r#"<attribute key="{name}" value="{}"/>"#,
+                value.as_str().expect("string")
+            );
+            assert!(block.contains(&needle), "{needle}");
+        }
+        let candidate = &evidence["reference_candidate"];
+        let bytes = std::fs::read(format!(
+            "{root}{}",
+            candidate["path"].as_str().expect("path")
+        ))
+        .expect("reference candidate");
+        assert_eq!(
+            candidate["sha256"].as_str(),
+            Some(world_project_sha256(&bytes).as_str())
+        );
+        let text = String::from_utf8(bytes).expect("utf8");
+        let lines: Vec<&str> = text.lines().collect();
+        let record = lines[14038..14181].join("\n");
+        assert_eq!(candidate["lines"], "14039-14181");
+        assert!(record.contains(r#""key": "candidate:item/3607""#));
+        assert!(record.contains(r#""stack_class": "StackCapable""#));
+        assert!(record.contains(r#""stack_max": {"#));
+        let parsed: serde_json::Value =
+            serde_json::from_str(&format!("{{\"r\":{}}}", record.trim_end_matches(',')))
+                .expect("record decodes");
+        let stack = &parsed["r"]["semantics"]["stack"]["value"];
+        assert_eq!(stack["stackable"]["value"], candidate["stackable"]);
+        assert_eq!(stack["stack_max"]["value"], candidate["stack_max"]);
     }
 }

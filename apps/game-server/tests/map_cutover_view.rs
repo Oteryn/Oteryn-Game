@@ -96,6 +96,7 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
         skipped_provisional_keys: Vec::new(),
         dropped_teleports: vec![dropped],
         spawns: Default::default(),
+        npcs: Default::default(),
     };
     let sector = Sector {
         floor: -7,
@@ -152,6 +153,7 @@ fn item(key: &str) -> Option<ItemDefinition> {
         solid: Some(false),
         blocks_projectile: false,
         pickupable,
+        door: false,
     })
 }
 

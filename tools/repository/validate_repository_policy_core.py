@@ -42,22 +42,15 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - labeled
       - unlabeled
 """
-EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "58f82007970f60d20cc4d6ea972d92c4aea1e00bef85838679bacc695c0e4f37"
-)
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "f7758816e1fcc9d90b5dbb5b1a7b70e9ad8887d7a7f13ef9b66837c4ccc4052d"
-)
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "1669ece37d96a830a756d13868428a38acd72ed7723bcde5ce4325053098a8c7"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "ea55c7616536cbd1a51bbe88a952eecddd6da81976e11682ed6e04f8f927038c"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
+EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "331213b6a65f8852cd43eaeba80d7cb4bc9b5dc928399cf679475c85bf0a589e"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "4c22cdc4906cff602998291a0c9c608e777aee4c70d6354ca75b2c37b147ac4e"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a385601c7260b8ee2641e68d70e"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
-EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "50d310601f3c790c871ecf3f785fe4171c50101fe279e1481d230f334357a777"
-EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "3b99b013e3cd5be77b3b38d0e56e58a6b80ab540ea51060bc9d74c29bc11dc1d"
-EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "100f9ddd5667fc70e80aa06a10023abde8f5ea8b01f165ec56250d45f0763d5b"
-EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "74cff6521db83eb964d9e66a12bfa263d59d1a4b7ebf1619a066487abe50f43b"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ad119be7742b603d7f4602bcebc017120a34d801"
-EXPECTED_POST_MERGE_RUST_SHA256 = "49c7f40526130cc6279f5456a83c98a8f16c833f895d6e244f386bbd98d1128c"
+EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "d7cfbf90b2b81c43f92c010660f41d242a3cf840"
+EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -383,7 +376,7 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        if "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'full-ci')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+        if "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
@@ -403,24 +396,13 @@ def main() -> int:
         )
         if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
             errors.append("merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract")
-        atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
-        atlas_fullworld_digest = (
-            hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
-            if atlas_fullworld_block else None
-        )
-        if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
-            errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
-        for job, expected in (
-            ("world_bundle", EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256),
-            ("node_boot", EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256),
-            ("server_seam", EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256),
-        ):
-            job_block = indented_yaml_mapping_block(text, job, 2)
-            job_digest = hashlib.sha256(job_block.encode("utf-8")).hexdigest() if job_block else None
-            if job_digest != expected:
-                errors.append(
-                    f"merge gate {job} job must exactly match the reviewed exact-head qualification contract"
-                )
+        world_block = indented_yaml_mapping_block(text, "world_bundle", 2)
+        world_digest = hashlib.sha256(world_block.encode("utf-8")).hexdigest() if world_block else None
+        if world_digest != EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256:
+            errors.append("merge gate World bundle must retain its reviewed fail-closed qualification")
+        jobs = yaml_mapping_keys_at_indent(top_level_yaml_mapping_block(text, "jobs") or "", 2)
+        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "rust_fast", "rust_supply_chain", "validate", "game_gate"]:
+            errors.append("merge gate must contain only the canonical fast PR jobs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
@@ -454,18 +436,12 @@ def main() -> int:
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
             "Merge gate / dependency review",
-            "Merge gate / CodeQL",
             "Merge gate / routing contract",
             "Verify protected-base routing contract health",
             "git diff --check \"$EXPECTED_BASE\" \"$EXPECTED_HEAD\"",
-            "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
             "Merge gate / Rust changed-crate Clippy and unit tests",
-            "Merge gate / Rust Linux workspace",
-            "Merge gate / Rust Windows client",
             "Merge gate / Rust supply chain",
-            "Merge gate / Node boot against the real Platform",
-            "Merge gate / Server Seam over TCP+TLS",
         ):
             if required_fragment not in text:
                 errors.append(f"merge gate missing required recovery/sub-gate contract: {required_fragment}")
@@ -537,16 +513,25 @@ def main() -> int:
                 "ref: ${{ github.event.merge_group.head_sha }}",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
                 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
-                "cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
+                "cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
                 "if-no-files-found: error",
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
-                "cargo +1.94.0 build --locked --workspace --all-targets",
-                "cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings",
-                "cargo +1.94.0 test --locked --workspace",
-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
-                "cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke",
+                "      fail-fast: true\n",
+                "        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]\n",
+                "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
+                "python tools/repository/test_check_duplicate_test_sources.py",
+                'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
+                "cargo +1.95.0 test --locked --workspace --lib -- content::",
+                "cargo +1.95.0 test --locked --workspace --lib -- --skip content::",
+                'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
+                'cargo +1.95.0 test --locked --workspace "${shard_args[@]}"',
+                "cargo +1.95.0 build --locked --workspace --bins --examples --benches",
+                "cargo +1.95.0 test --locked --workspace --bins",
+                "cargo +1.95.0 test --locked --workspace --doc",
+                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness",
+                "cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke",
             ),
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
@@ -557,7 +542,7 @@ def main() -> int:
                 'git cat-file -e "$HEAD_SHA:$path"',
                 'if [[ "$base_present" == true && "$head_present" == false ]]; then',
                 "verify_registered_target_binding() {",
-                'cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+                'cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
                 "owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
                 "expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
                 "observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
@@ -567,7 +552,7 @@ def main() -> int:
                 "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
                 "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
                 'verify_registered_target_binding "$name" "$path"',
-                'cargo +1.94.0 test --locked --workspace --test "$name"',
+                'cargo +1.95.0 test --locked --workspace --test "$name"',
                 "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
@@ -578,13 +563,21 @@ def main() -> int:
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
                 "$ErrorActionPreference = 'Stop'",
                 "$PSNativeCommandUseErrorActionPreference = $true",
-                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
-                "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+                "TARGET_SHA: ${{ github.event.merge_group.head_sha }}",
+                '"OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV',
+                "INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
+                "Inno Setup download SHA-256 mismatch",
+                "Inno Setup install failed with exit code",
+                r".\apps\client\installer\ci-installer.ps1",
+                "-GameCommit $env:TARGET_SHA",
+                "          if-no-files-found: error",
+                "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+                "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
                 '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
                 "Test-Path -LiteralPath $client -PathType Leaf",
                 "& $client --smoke",
-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",

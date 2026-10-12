@@ -239,8 +239,8 @@ def build(import_root, sources, output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--import-root', type=Path, required=True)
-    parser.add_argument('--canary', type=Path, required=True)
+    parser.add_argument('--reference-engine', type=Path, required=True)
     parser.add_argument('--crystal', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    build(args.import_root, {'canary': args.canary, 'crystal': args.crystal}, args.output)
+    build(args.import_root, {'canary': args.reference_engine, 'crystal': args.crystal}, args.output)

@@ -85,5 +85,5 @@ def build(source, catalog):
         records.append({'alias':alias,'kind':kind,'source_enum':enum,'value':values[kind][enum]})
     return {'schema':'OTERYN_SOURCE_SPELL_CUES/v1','source_revision':PIN,'source_files':[{'path':p,'sha256':hashlib.sha256(b).hexdigest()} for p,b in zip(FILES,blobs)],'records':records,'dynamic_aliases':['canary.appearance:missile/weapontype']}
 if __name__ == '__main__':
-    p=argparse.ArgumentParser();p.add_argument('--canary',type=Path,required=True);p.add_argument('--catalog',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
-    a.out.write_text(json.dumps(build(a.canary,a.catalog),sort_keys=True,indent=2)+'\n')
+    p=argparse.ArgumentParser();p.add_argument('--reference-engine',type=Path,required=True);p.add_argument('--catalog',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    a.out.write_text(json.dumps(build(a.reference_engine,a.catalog),sort_keys=True,indent=2)+'\n')

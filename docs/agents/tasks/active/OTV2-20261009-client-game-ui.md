@@ -30,6 +30,19 @@ Reference facts are retained in `apps/client/UI-REFERENCE-COVERAGE.md`,
 evidence. Missing engine/server mechanisms must remain visibly unavailable and
 must not be claimed as complete.
 
+## Main merge — 2026-10-12
+
+`origin/main` `08e13f7dea83c43c13df85f901caf1e032ef3cd9` (including #1943/#1944,
+the Rust 1.95 CI migration) is merged normally into this branch. Only the World
+pin conflicted: it takes main's bundle digest `5c32d7ac` and content revision and
+re-pins only `inputs_digest` to the merged tree (`51b3af96`); `pin-check`
+double-builds `5c32d7ac`. The earlier branch pin `5e2707ac` was stale against
+the branch lockfile. No client, Session or play source changed in the merge.
+Linux 1.95.0: `cargo fmt --all --check` pass; strict all-target Clippy for
+`oteryn-platform-client` and `oteryn-client` pass; their tests pass
+(209/184/5/16) and `oteryn-identity` 9 pass. Native MSVC/DX12 qualification,
+full CI and independent review of the merged head remain open.
+
 ## Current authoring batch — 2026-10-11
 
 The 20 observed production pages/order, semantic markers, scroll/geometry and

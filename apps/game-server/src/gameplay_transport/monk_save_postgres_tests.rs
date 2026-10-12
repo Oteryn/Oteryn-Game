@@ -205,6 +205,7 @@ impl Dependencies {
             achievements: &self.achievements,
             imported_charms: &self.charms,
             spell_states: Mutex::default(),
+            world_gate: std::sync::Mutex::default(),
             attack: Mutex::default(),
             clock_origin: std::time::Instant::now(),
             lost: std::sync::Mutex::default(),
@@ -215,6 +216,7 @@ impl Dependencies {
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
             wheel_ruleset: None,
             wheel_sessions: std::sync::Mutex::default(),
+            progression_sessions: std::sync::Mutex::default(),
             premium: crate::premium::refresh::PremiumRefresher::new(
                 Default::default(),
                 harness.root.clone(),

@@ -21,6 +21,8 @@ pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
+#[cfg(test)]
+pub(crate) use runtime_actor_carrier::npc_actor::{NpcPlacement, NpcPlacementTable, NpcPlacements};
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::runtime_actor_companion::{
     CompanionMaster, CompanionSnapshot, CompanionState, CompiledCreaturePolicies,
@@ -41,19 +43,22 @@ pub(crate) use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitA
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
     ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX,
-    ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ApplicationFacts,
-    AttackerCommand, AttributeModifier, AttributeModifiers, BoneOverlordCagePhase,
-    BoneOverlordPhase, BonePhaseError, BonePhaseTransition, BoneSharedHpResult, BorethDeathLedger,
-    BorethDeathResult, COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
-    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
-    ChannelRuntimeV1, CombatSkill, CommittedLethalReceipt, ConditionDefinition,
-    ConditionOwnerError, ConditionRefusal, ConditionSource, ConditionSourceKind, ConditionStore,
-    ConditionTick, ConditionType, ConditionValues, ControlLossMark, CreatureDeathOccurrenceKey,
-    CreatureDeathOccurrenceRef, CreatureSelfHealLedger, CreatureSelfHealRegistration,
-    CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
-    CurrentOwnerMovementPosition, DamageSchedule, DamageSegment, DotElement, EncounterSpawnError,
-    ExactActorRef, ExactSpeedRatio, FirstEntryPosition, MovementFacing, MovementLocalPosition,
-    MovementPositionContext, MovementPositionSnapshot, NativeEncounterSpawnSpec,
+    ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ActorMemoTable,
+    ApplicationFacts, AttackerCommand, AttributeModifier, AttributeModifiers,
+    BoneOverlordCagePhase, BoneOverlordPhase, BonePhaseError, BonePhaseTransition,
+    BoneSharedHpResult, BorethDeathLedger, BorethDeathResult,
+    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX,
+    CarrierError, ChannelContentPin, ChannelRuntimeV1, CombatSkill, CommittedLethalReceipt,
+    ConditionDefinition, ConditionOwnerError, ConditionRefusal, ConditionSource,
+    ConditionSourceKind, ConditionStore, ConditionTick, ConditionType, ConditionValues,
+    ControlLossMark, CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef,
+    CreatureSelfHealLedger, CreatureSelfHealRegistration, CurrentOwnerCombatDeath,
+    CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition,
+    DamageSchedule, DamageSegment, DotElement, EncounterSpawnError, ExactActorRef, ExactSpeedRatio,
+    FirstEntryPosition, MovementFacing, MovementLocalPosition, MovementPositionContext,
+    MovementPositionSnapshot, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX,
+    NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX, NativeEncounterSpawnSpec,
     NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
     OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
     RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeCorpseProjection, SpeedRange, StatusKind,

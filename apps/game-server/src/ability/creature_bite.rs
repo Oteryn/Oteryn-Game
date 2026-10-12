@@ -16,14 +16,18 @@
 //! applies damage twice, and a rejected bite is never buffered for later. AI reads the result only
 //! through its next snapshot.
 
+use std::collections::BTreeMap;
+
 use super::{AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource};
 use super::{RevisionSet, intent::AiAbilityAdapter};
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 
-/// Retained bite state per Channel owner: one entry per live creature. The D57 envelope bounds
-/// live creatures to 16 spawn sources x 4 creatures (§4.9 derived bound, 64).
-pub(crate) const CREATURE_BITE_LEDGER_MAX: usize = 64;
+/// Retained bite state per Channel owner: `CREATUREAI0-RL-04`, the creature actors one Channel
+/// admits (Foundation's `CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`; a Foundation test holds the
+/// two equal). SPAWN-CEILINGS-1 (Codex 4242381779): it replaced the D57 envelope of 16 spawn
+/// sources x 4 creatures (64) this ledger was sized against.
+pub(crate) const CREATURE_BITE_LEDGER_MAX: usize = 262_144;
 
 /// The bite's content inputs (§4.8): the interval and the magnitude. Code never invents them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -173,16 +177,17 @@ struct BiteEntry {
 }
 
 /// The Channel owner's bite cooldowns and occurrence results, beside `ChannelRuntimeV1` and used
-/// only under its lock.
+/// only under its lock. Keyed by the issuer's exact generation (`placement_identity`), so a newer
+/// generation in a reused slot never reads a dead one's cooldown or occurrence result.
 #[derive(Debug, Default)]
 pub(crate) struct CreatureBiteLedger {
-    entries: Vec<BiteEntry>,
+    entries: BTreeMap<[u8; 16], BiteEntry>,
 }
 
 impl CreatureBiteLedger {
     /// Drop the issuer's entry on its death or despawn. A no-op for an unknown issuer.
     pub(crate) fn retire(&mut self, issuer: ExactActorRef) {
-        self.entries.retain(|entry| entry.issuer != issuer);
+        self.entries.remove(&issuer.placement_identity());
     }
 
     #[cfg(test)]
@@ -190,25 +195,28 @@ impl CreatureBiteLedger {
         self.entries.len()
     }
 
-    fn entry_index(
+    /// The live `issuer`'s entry, made on its first bite. A full ledger first drops the entries
+    /// of dead issuers. The carrier admits at most `CREATUREAI0-RL-04` creatures, and `issuer` is
+    /// one of them without an entry, so the live entries left are fewer than the maximum and a
+    /// live issuer is never refused `LedgerFull`.
+    fn entry(
         &mut self,
         runtime: &ChannelRuntimeV1,
         issuer: ExactActorRef,
-    ) -> Result<usize, BiteRejection> {
-        if let Some(index) = self.entries.iter().position(|entry| entry.issuer == issuer) {
-            return Ok(index);
+    ) -> Result<&mut BiteEntry, BiteRejection> {
+        let key = issuer.placement_identity();
+        if !self.entries.contains_key(&key) && self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
+            self.entries
+                .retain(|_, entry| runtime.contains_live_creature(entry.issuer));
+            if self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
+                return Err(BiteRejection::LedgerFull);
+            }
         }
-        self.entries
-            .retain(|entry| runtime.contains_live_creature(entry.issuer));
-        if self.entries.len() >= CREATURE_BITE_LEDGER_MAX || self.entries.try_reserve(1).is_err() {
-            return Err(BiteRejection::LedgerFull);
-        }
-        self.entries.push(BiteEntry {
+        Ok(self.entries.entry(key).or_insert(BiteEntry {
             issuer,
             ready_at: SemanticTimeMicros::from_micros(0),
             last: None,
-        });
-        Ok(self.entries.len() - 1)
+        }))
     }
 }
 
@@ -229,8 +237,7 @@ pub(crate) fn commit_ai_bite(
     if !runtime.contains_live_creature(intent.issuer) {
         return Err(BiteRejection::StaleIssuer);
     }
-    let index = ledger.entry_index(runtime, intent.issuer)?;
-    let entry = ledger.entries[index];
+    let entry = *ledger.entry(runtime, intent.issuer)?;
     if let Some((sequence, target, result)) = entry.last {
         if intent.think_sequence < sequence {
             return Err(BiteRejection::OccurrenceSuperseded);
@@ -246,7 +253,7 @@ pub(crate) fn commit_ai_bite(
     let result = resolve_and_apply(
         runtime, vitals, &entry, intent, definition, revisions, protection, now,
     );
-    let entry = &mut ledger.entries[index];
+    let entry = ledger.entry(runtime, intent.issuer)?;
     if result.is_ok() {
         entry.ready_at = now.saturating_add_micros(definition.interval_micros);
     }
