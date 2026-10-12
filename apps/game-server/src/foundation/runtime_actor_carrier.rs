@@ -1591,9 +1591,6 @@ pub(crate) struct SpawnDefinition {
     points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
-    /// CREATURE-AI-0 §6.3 `blocked_by_nearby_players`. The fixture spawn source is not
-    /// blockable; only a test definition sets it.
-    blockable: bool,
 }
 
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
@@ -1604,7 +1601,14 @@ struct SpawnPointDefinition {
     creature_target_identity: String,
     /// Always positive.
     creature_initial_health: i64,
+    /// CREATURE-AI-0 §6.3: the point's creature profile `blocked_by_nearby_players`. It is per
+    /// point because a source may mix blockable and non-blockable creatures (Codex P2 on
+    /// #2002). The uniform fixture source is not blockable; only a test definition sets it.
+    blockable: bool,
 }
+
+/// SPAWN-1b: one point of a source being built: its placement cell and what it spawns.
+type SpawnPointBuild = ((i32, i32, i16), SpawnPointDefinition);
 
 impl SpawnDefinition {
     /// A source whose every point spawns the same creature with the same respawn delay.
@@ -1633,9 +1637,12 @@ impl SpawnDefinition {
                 .map(|cell| {
                     (
                         cell,
-                        respawn_delay_micros,
-                        creature_target_identity.clone(),
-                        creature_initial_health,
+                        SpawnPointDefinition {
+                            respawn_delay_micros,
+                            creature_target_identity: creature_target_identity.clone(),
+                            creature_initial_health,
+                            blockable: false,
+                        },
                     )
                 })
                 .collect(),
@@ -1643,11 +1650,10 @@ impl SpawnDefinition {
         )
     }
 
-    /// SPAWN-1b: a source from its points in point-ordinal order, each its cell, respawn delay
-    /// (µs), creature key and initial health. `CREATUREAI0-RL-03` bounds the points; every
-    /// point's health must be positive.
+    /// SPAWN-1b: a source from its points in point-ordinal order, each its cell and what it
+    /// spawns. `CREATUREAI0-RL-03` bounds the points; every point's health must be positive.
     fn with_points(
-        points: Vec<((i32, i32, i16), u64, String, i64)>,
+        points: Vec<SpawnPointBuild>,
         occupancy_retry_interval_micros: u64,
     ) -> Result<Self, CarrierError> {
         if points.is_empty() || points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
@@ -1656,23 +1662,18 @@ impl SpawnDefinition {
         let population = points.len();
         let mut placement_cells = Vec::with_capacity(population);
         let mut definitions = Vec::with_capacity(population);
-        for ((x, y, floor), respawn_delay_micros, creature_target_identity, health) in points {
-            if health <= 0 {
+        for ((x, y, floor), point) in points {
+            if point.creature_initial_health <= 0 {
                 return Err(CarrierError::InvalidSpawnDefinition);
             }
             placement_cells.push(LocalPosition { x, y, floor });
-            definitions.push(SpawnPointDefinition {
-                respawn_delay_micros,
-                creature_target_identity,
-                creature_initial_health: health,
-            });
+            definitions.push(point);
         }
         Ok(Self {
             placement_cells,
             population,
             points: definitions,
             occupancy_retry_interval_micros,
-            blockable: false,
         })
     }
 
@@ -1702,21 +1703,29 @@ impl SpawnDefinition {
         }
         let points = points
             .into_iter()
-            .map(|(cell, respawn_delay_ms, creature, initial_health)| {
-                Ok((
-                    cell,
-                    activation_micros(respawn_delay_ms)?,
-                    creature,
-                    activation_health(initial_health)?,
-                ))
-            })
+            .map(
+                |(cell, respawn_delay_ms, creature, initial_health, blockable)| {
+                    Ok((
+                        cell,
+                        SpawnPointDefinition {
+                            respawn_delay_micros: activation_micros(respawn_delay_ms)?,
+                            creature_target_identity: creature,
+                            creature_initial_health: activation_health(initial_health)?,
+                            blockable,
+                        },
+                    ))
+                },
+            )
             .collect::<Result<Vec<_>, CarrierError>>()?;
         Self::with_points(points, activation_micros(occupancy_retry_interval_ms)?)
     }
 
+    /// Every point of this source blockable or not.
     #[cfg(test)]
     pub(crate) fn with_blockable(mut self, blockable: bool) -> Self {
-        self.blockable = blockable;
+        for point in &mut self.points {
+            point.blockable = blockable;
+        }
         self
     }
 
@@ -1729,10 +1738,11 @@ impl SpawnDefinition {
 
     /// The respawn timing of point `ordinal`.
     fn timing(&self, ordinal: usize) -> Result<spawn::PointTiming, CarrierError> {
+        let point = self.point(ordinal)?;
         Ok(spawn::PointTiming {
-            respawn_delay_micros: self.point(ordinal)?.respawn_delay_micros,
+            respawn_delay_micros: point.respawn_delay_micros,
             occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
-            blockable: self.blockable,
+            blockable: point.blockable,
         })
     }
 }
@@ -1776,8 +1786,10 @@ fn spawn_points_within_ceilings(definitions: &[SpawnDefinition]) -> Result<usize
 pub(crate) type ActivationSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
 
 /// SPAWN-1b (Codex P1 on #1981): one activated spawn point as the carrier reads it: its
-/// placement cell, respawn delay (ms), creature key and authored initial health.
-pub(crate) type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64);
+/// placement cell, respawn delay (ms), creature key, authored initial health and its creature
+/// profile's `blocked_by_nearby_players` (CREATURE-AI-0 §6.3; Codex P2 on #2002), which is per
+/// point because one source may mix blockable and non-blockable creatures.
+pub(crate) type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
 
 /// SPAWN-1b (Codex P1 on #1981): one activated spawn source whose points may differ in
 /// creature, respawn delay and initial health: its points in authored (point-ordinal) order and
@@ -8302,9 +8314,9 @@ mod tests {
         let mut runtime = runtime(8);
         let source: ActivationSpawnSourceFacts = (
             vec![
-                ((2, 0, 7), 60_000, RAT.to_string(), 20),
-                ((3, 0, 7), 30_000, BAT.to_string(), 35),
-                ((4, 0, 7), 30_000, RAT.to_string(), 20),
+                ((2, 0, 7), 60_000, RAT.to_string(), 20, false),
+                ((3, 0, 7), 30_000, BAT.to_string(), 35, false),
+                ((4, 0, 7), 30_000, RAT.to_string(), 20, false),
             ],
             5_000,
         );
@@ -8376,6 +8388,80 @@ mod tests {
         );
     }
 
+    /// SPAWN-1b (Codex P2 on #2002): blockability is per point (CREATURE-AI-0 §6.3, the point's
+    /// creature profile). In one source mixing a blockable rat and a non-blockable bat, a
+    /// player whose interest area holds both cells blocks the rat's respawn (`BLOCKED`, a
+    /// successor a full delay later) while the bat's warns and admits as usual.
+    #[test]
+    fn spawn1b_mixed_source_blocks_only_its_blockable_points() {
+        const RAT: &str = "oteryn:creature/rat";
+        const BAT: &str = "oteryn:creature/bat";
+        const BAT_CELL: MovementLocalPosition = MovementLocalPosition {
+            x: 3,
+            y: 0,
+            floor: 7,
+        };
+        let source: ActivationSpawnSourceFacts = (
+            vec![
+                ((2, 0, 7), 60_000, RAT.to_string(), 20, true),
+                ((3, 0, 7), 60_000, BAT.to_string(), 35, false),
+            ],
+            5_000,
+        );
+        let definition =
+            SpawnDefinition::from_activation_source(source.clone()).expect("valid source");
+        assert_eq!(
+            [0, 1].map(|ordinal| definition.timing(ordinal).map(|timing| timing.blockable)),
+            [Ok(true), Ok(false)]
+        );
+
+        let mut runtime = runtime(8);
+        assert_eq!(runtime.begin_activation_spawn_sources(vec![source]), Ok(2));
+        let progress = runtime
+            .realize_activation_spawn_window(0)
+            .expect("one window");
+        assert_eq!(progress.remaining, 0);
+        let points = runtime.spawn_point_creatures();
+        for (_, _, live) in &points {
+            kill_creature(&mut runtime, live.expect("live creature"));
+        }
+        place_player(
+            &mut runtime,
+            43,
+            MovementLocalPosition {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+        );
+        runtime
+            .drive_spawn_respawns(0, reference_view)
+            .expect("observe");
+        let due = runtime
+            .drive_spawn_respawns(SPAWN_DELAY, reference_view)
+            .expect("due");
+        assert_eq!((due.blocked, due.warnings), (1, vec![BAT_CELL]));
+        assert_eq!(
+            runtime.pending_respawn(points[0].0).map(|p| p.due_micros),
+            Some(2 * SPAWN_DELAY)
+        );
+        let admitted = runtime
+            .drive_spawn_respawns(SPAWN_DELAY + spawn::SPAWN_WARNING_MICROS, reference_view)
+            .expect("admit");
+        assert_eq!(
+            admitted
+                .admitted
+                .iter()
+                .map(|actor| spawned_creature(&runtime, *actor))
+                .collect::<Vec<_>>(),
+            vec![Some((BAT.as_bytes().to_vec(), 35))]
+        );
+        assert_eq!(
+            runtime.pending_respawn(points[0].0).map(|p| p.due_micros),
+            Some(2 * SPAWN_DELAY)
+        );
+    }
+
     /// SPAWN-1b: a mixed source keeps every per-source check: `CREATUREAI0-RL-03` (64 points
     /// pass, 65 refuse), a positive health on every point and no empty source. A refused
     /// source refuses the whole activation with nothing begun.
@@ -8394,6 +8480,7 @@ mod tests {
                         60_000,
                         key.to_string(),
                         health,
+                        false,
                     )
                 })
                 .collect::<Vec<_>>()
@@ -8405,7 +8492,13 @@ mod tests {
             (points(0, 20), 5_000),
             (points(2, 0), 5_000),
             (
-                vec![((0, 0, 7), u64::MAX, "oteryn:creature/rat".to_string(), 20)],
+                vec![(
+                    (0, 0, 7),
+                    u64::MAX,
+                    "oteryn:creature/rat".to_string(),
+                    20,
+                    false,
+                )],
                 5_000,
             ),
             (points(1, u64::MAX), 5_000),
@@ -8439,13 +8532,20 @@ mod tests {
         let source = |index: usize, two: bool| -> ActivationSpawnSourceFacts {
             let x = i32::try_from(index % 256).expect("small");
             let y = i32::try_from(index / 256).expect("small");
-            let mut points = vec![((x, y, 7), 60_000, "oteryn:creature/rat".to_string(), 20)];
+            let mut points = vec![(
+                (x, y, 7),
+                60_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+                false,
+            )];
             if two {
                 points.push((
                     (x, y + 512, 7),
                     30_000,
                     "oteryn:creature/bat".to_string(),
                     35,
+                    false,
                 ));
             }
             (points, 5_000)
