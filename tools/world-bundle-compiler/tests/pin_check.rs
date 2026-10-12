@@ -152,7 +152,7 @@ fn pin(inputs: &str, digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 10229, "y": 10032, "floor": 0},
+        "entry_start": {"x": 32369, "y": 32238, "floor": -7},
         "inputs_digest": inputs,
     })
 }
