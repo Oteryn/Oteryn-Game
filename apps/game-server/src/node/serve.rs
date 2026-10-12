@@ -60,6 +60,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
+mod bundle_npcs;
+
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;
 const TRANSPORT_PROFILE: u64 = 1;
@@ -1580,8 +1582,10 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     run_with_npc_data_project(config_path, None).await
 }
 
-/// Optionally retain a pinned NPC authoring catalogue for the process lifetime.
-/// This imports data only; the active world and NPC gameplay capabilities are unchanged.
+/// Optionally retain a pinned NPC authoring catalogue for the process lifetime. With a
+/// `[world_bundle]` World it also decides which of the bundle's NPC placements become NPC
+/// actors at Channel start (NPC-LOAD-1, NPC-PLACE-1 §7, [`bundle_npcs`]); NPC services and
+/// talk stay inactive.
 pub async fn run_with_npc_data_project(
     config_path: &Path,
     npc_data: Option<(&Path, &str)>,
@@ -1608,15 +1612,28 @@ pub async fn run_with_npc_data_project(
         config.scope.world_id, config.scope.channel_id
     ));
     // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
+    let mut npc_frame = None;
     let bundle = world_bundle_gate(config, |path| {
-        Ok(read_file(
+        let data = read_file(
             "world_bundle.path",
             path,
             FileClass::Trusted,
             effective_uid(),
             oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
-        )?)
+        )?;
+        npc_frame = Some(bundle_npcs::read(&data)?);
+        Ok(data)
     })?;
+    let npc_boot = bundle_npcs::prepare(
+        npc_frame,
+        npc_catalogue
+            .as_ref()
+            .zip(npc_data.map(|(project_root, _)| project_root)),
+        config
+            .world_bundle
+            .as_ref()
+            .is_some_and(|bundle| bundle.production),
+    )?;
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
@@ -1629,7 +1646,7 @@ pub async fn run_with_npc_data_project(
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
     let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
-    let result = boot_and_serve(&root, &material, bundle, &signalled).await;
+    let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
@@ -1820,6 +1837,7 @@ async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
     bundle: Option<crate::map::boot::CheckedBundle>,
+    npc_boot: Option<bundle_npcs::NpcBoot>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
@@ -1993,6 +2011,8 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
+    bundle_npcs::place(&mut channel_runtime, npc_boot.as_ref())?;
     let spawned_monsters =
         realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
     event(&format!(
