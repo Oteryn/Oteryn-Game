@@ -90,6 +90,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         },
+        target: actor,
         no_progression_logged: false,
     }
 }
@@ -708,4 +709,178 @@ fn parked_entries_count_toward_killrw_rl_01() {
     assert_eq!(queue.append(pending(200, 51, 3, 0)), AppendOutcome::Full);
     // A parked death is deduplicated like a queued one.
     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Duplicate);
+}
+
+/// LOOT-LIVE-1: a pinned Channel runtime with one creature at (101, 100, 7) that a 20-point lab
+/// hit has killed, its death projected as `record_creature_kill` leaves it.
+fn runtime_with_killed_creature() -> (ChannelRuntimeV1, ExactActorRef) {
+    let world = WorldId::decode(&id(1)).expect("world");
+    let pin = crate::foundation::ChannelContentPin::from_activation(
+        world,
+        1,
+        [1; 32],
+        [2; 32],
+        [3; 32],
+        [4; 32],
+        (100, 100, 7),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(0x61)).expect("channel"),
+        crate::foundation::NodeId::decode(&id(0x62)).expect("node"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        pin,
+    )
+    .expect("runtime");
+    let creature = runtime
+        .admit_pinned_test_creature(crate::foundation::MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7,
+        })
+        .expect("creature");
+    runtime
+        .commit_monster_lab_damage(creature, b"loot-live-1", 20)
+        .expect("lethal hit");
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death.committed_lethal_receipt(creature).expect("receipt");
+    death
+        .project_committed_lethal(receipt)
+        .expect("projected death");
+    (runtime, creature)
+}
+
+/// A settled entry whose killed actor is `creature`: the runtime's projected corpse.
+fn entry_for(creature: ExactActorRef) -> PendingKillSettlement {
+    let mut entry = pending(2, 50, 3, 1);
+    entry.target = creature;
+    entry
+}
+
+fn mint(seed: u8) -> crate::durability::item_mint::CommittedItemMint {
+    crate::durability::item_mint::CommittedItemMint {
+        transaction_id: id(seed),
+        event_id: id(seed.wrapping_add(1)),
+        item_instance_id: id(seed.wrapping_add(2)),
+        occurred_at_unix_ms: 1_000,
+        envelope_sha256: [seed; 32],
+    }
+}
+
+fn committed(corpse: u8) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+    Ok(CommittedCorpseLoot {
+        corpse: mint(corpse),
+        entries: vec![mint(corpse.wrapping_add(10))],
+    })
+}
+
+#[test]
+fn a_committed_corpse_binds_to_the_killed_actors_projection() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert!(runtime.visible_corpses().is_empty());
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+    assert_eq!(corpse.item.family, "Item");
+    assert_eq!(corpse.item.production_key, "oteryn:item.corpse");
+    assert_eq!(corpse.item.revision_ref, "definition-r1");
+    assert_eq!(
+        corpse.position,
+        crate::foundation::MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7
+        }
+    );
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+#[test]
+fn a_replayed_settle_binds_the_same_corpse_once() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    let before = runtime.visible_corpses();
+    // A Retry settle replays the same committed corpse MINT (`AlreadyCommitted`).
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(runtime.visible_corpses(), before);
+}
+
+#[test]
+fn another_item_never_rebinds_a_bound_corpse() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(40)),
+        CorpseBind::Refused(CarrierError::CorpseProjectionConflict)
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+}
+
+#[test]
+fn no_committed_corpse_binds_nothing() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    let refused = Err(CombatDeathRewardLootError::Corpse(
+        ItemMintError::CapacityExceeded,
+    ));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &refused),
+        CorpseBind::NoCorpse
+    );
+    assert!(runtime.visible_corpses().is_empty());
+}
+
+#[test]
+fn a_corpse_of_another_channel_generation_is_refused() {
+    let (mut runtime, _) = runtime_with_killed_creature();
+    // The entry's actor belongs to another Channel's scope generation (D52).
+    let foreign = pending(2, 50, 3, 1);
+    assert!(matches!(
+        bind_settled_corpse(&mut runtime, &foreign, &committed(20)),
+        CorpseBind::Refused(_)
+    ));
+    assert!(runtime.visible_corpses().is_empty());
+}
+
+#[test]
+fn a_live_actor_without_a_projected_death_is_refused() {
+    let (mut runtime, _) = runtime_with_killed_creature();
+    let living = runtime
+        .admit_pinned_test_creature(crate::foundation::MovementLocalPosition {
+            x: 102,
+            y: 100,
+            floor: 7,
+        })
+        .expect("creature");
+    let mut entry = pending(2, 50, 3, 1);
+    entry.target = living;
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Refused(CarrierError::CommittedLethalUnavailable)
+    );
+    assert!(runtime.visible_corpses().is_empty());
 }

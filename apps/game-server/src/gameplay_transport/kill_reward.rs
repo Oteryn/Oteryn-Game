@@ -19,9 +19,10 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use crate::combat::{
     CapturedRewardPrincipal, CombatDeathRewardBestiaryError, CombatDeathRewardLootError,
-    CombatDeathRewardXpError, CreatureDeathBestiaryInput, CreatureDeathRewardAdmissionError,
-    CreatureDeathRewardInput, CreatureDeathRewardWithBestiaryOutcome, DeathGroundContext,
-    DurabilitySession, ProjectedCreatureDeathFacts, RewardPrincipal, capture_projected_death_facts,
+    CombatDeathRewardXpError, CommittedCorpseLoot, CreatureDeathBestiaryInput,
+    CreatureDeathRewardAdmissionError, CreatureDeathRewardInput,
+    CreatureDeathRewardWithBestiaryOutcome, DeathGroundContext, DurabilitySession,
+    ProjectedCreatureDeathFacts, RewardPrincipal, capture_projected_death_facts,
     check_inflight_loot_mint_capacity, loot_plan_seed, plan_creature_loot,
     settle_creature_death_rewards_with_bestiary,
 };
@@ -32,7 +33,7 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::item_mint::ItemMintError;
 use crate::foundation::runtime_actor_spell_types::CombatBatchReceipt;
 use crate::foundation::{
-    ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+    CarrierError, ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
 };
 
 use super::attack::ChannelAttackStates;
@@ -48,6 +49,9 @@ pub(crate) struct PendingKillSettlement {
     pub(crate) creature: String,
     pub(crate) row: Arc<CreatureRewardRow>,
     pub(crate) ground: DeathGroundContext,
+    /// The killed actor whose committed corpse projection the minted corpse
+    /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
+    pub(crate) target: ExactActorRef,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -593,6 +597,7 @@ pub(crate) fn record_creature_kill(
         creature,
         row,
         ground,
+        target,
         no_progression_logged: false,
     };
     let creature = entry.creature.clone();
@@ -798,6 +803,43 @@ fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
             )
             | CombatDeathRewardLootError::Mint(ItemMintError::Unavailable(_))
     )
+}
+
+/// The result of [`bind_settled_corpse`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CorpseBind {
+    /// The projected corpse names the committed corpse Item (or already did).
+    Bound,
+    /// The settle committed no corpse, so there is nothing to bind.
+    NoCorpse,
+    /// The Channel refused the binding; the durable Items are unchanged.
+    Refused(CarrierError),
+}
+
+/// MAP-ITEM-REF-1 Part B (D607): after the settle commits the corpse Ground MINT, bind that Item
+/// to the killed actor's committed corpse projection, so domain 1 shows the corpse and USE and
+/// command 9 reach its contents. Runtime memory only: it writes nothing durable, and a replayed
+/// settle carries the same committed Item, which binds idempotently. The projection is per
+/// generation (D52), so a corpse of another world, Channel or scope generation is refused.
+pub(crate) fn bind_settled_corpse(
+    runtime: &mut ChannelRuntimeV1,
+    entry: &PendingKillSettlement,
+    loot: &Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
+) -> CorpseBind {
+    let Ok(committed) = loot else {
+        return CorpseBind::NoCorpse;
+    };
+    let corpse = &entry.row.corpse_item;
+    match runtime.bind_corpse_item(
+        entry.target,
+        committed.corpse.item_instance_id,
+        &corpse.family,
+        &corpse.production_key,
+        &corpse.revision_ref,
+    ) {
+        Ok(()) => CorpseBind::Bound,
+        Err(error) => CorpseBind::Refused(error),
+    }
 }
 
 fn classify(
@@ -1072,6 +1114,22 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             },
         )
         .await;
+        // The runtime lock is first in the lock order, so the lane permit and the revision slot
+        // are released before it is taken.
+        drop(slot);
+        drop(permit);
+        if let Ok(outcome) = &outcome
+            && let CorpseBind::Refused(error) = bind_settled_corpse(
+                &mut *admission.runtime.lock().await,
+                entry,
+                &outcome.rewards.loot,
+            )
+        {
+            operator_event(&format!(
+                "kill_reward_corpse_unbound creature={} reason={error:?}",
+                entry.creature
+            ));
+        }
         classify(&entry.creature, &outcome)
     }
 }
