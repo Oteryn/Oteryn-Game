@@ -24,6 +24,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/character_progression_binding_tests.rs
   - apps/game-server/src/gameplay_transport/kill_reward.rs
   - apps/game-server/src/gameplay_transport/connection.rs
+  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
   - apps/game-server/tests/support/character_progression_postgres_cases.rs
   - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs
   - docs/agents/tasks/archive/OTV2-20261005-progression-owner-1.md
