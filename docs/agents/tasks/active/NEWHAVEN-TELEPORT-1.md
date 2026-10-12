@@ -4,13 +4,13 @@
 task_id: NEWHAVEN-TELEPORT-1
 title: New Haven islet-to-island forcefield as a script Transition.Teleport and a runtime bundle teleport
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/newhaven-teleport-20261012
-pr: null
+pr: 2018
 base_sha: 7af71791f3b552e21a0e4a8efce16e98777b8923
-head_sha: null
+head_sha: 858a91c28
 final_head_sha: null
 final_head_frozen_at: null
 owner: sole writer allocated by the lead session
@@ -90,8 +90,13 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
 
 ### Focused
 
-- command/run: pending
-- result: pending
+- `python -m unittest test_world_authoring test_world_base` (world-authoring): pass (94 OK)
+- `validate_world_metadata.py`: pass; `validate_world_base.py`: pass (populated)
+- `ruff check` / `ruff format --check` on tools/content-schema/world-authoring: pass
+- `cargo fmt --all --check`: pass
+- `cargo clippy` / `cargo test -p oteryn-game-server`: left to CI (sparse checkout lacks the
+  ~100 MB of included evidence, disk ~98% full); type and borrow check of the new code clean
+- `python tools/agents/validate_governance.py`: see PR CI (local sparse checkout lacks evidence)
 
 ### Exact-head CI
 
@@ -116,12 +121,12 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
 ## Context checkpoint
 
 ```yaml
-last_progress: generator, data, runtime and tests written; pin commit pending PR 2017
-status: implementing
+last_progress: PR 2018 opened with generator, data, runtime and tests; pin commit pending PR 2017
+status: validating
 branch: claude/newhaven-teleport-20261012
-head_sha: null
-pr: null
+head_sha: 858a91c28
+pr: 2018
 final_head_sha: null
 blocker: null
-next_action: run the local checks and open the PR
+next_action: after PR 2017 merges, merge main and add the separate pin commit
 ```
