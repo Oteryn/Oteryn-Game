@@ -42,7 +42,22 @@ goldens. It is carried by the follow-up task records `ENTRY-SPELL-TILES-1` and
 ## 3. Independent review (2026-10-12)
 
 Each decision's own gate requires an independent review. One read-only reviewer per decision, none
-of them the author, read the exact head `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13` and reported.
+of them the author, reported.
+
+- Round 1 read `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13`. It found the CHAT-0 and Reference
+  first player death defects below, and passed ATTACK-0 and DEATH-0.
+- Round 2 (ATTACK-0 and DEATH-0 only) read `77762114d8dbc869679f5305c96cb9105fe82b0a`, the
+  pre-record parent commit that the record commit builds on. Each reviewer confirmed with
+  `git diff a1d2ee2d..77762114` that only status lines and review-record text changed in six
+  documentation files, with no change to code, migrations, protocol, registry, content or decision
+  rules, and then repeated the review. Both passed again, with the same residual notes.
+- The only change after the reviewed commit is the record commit itself. It touches exactly these
+  files, by status lines and review-record text: this acceptance decision (section 3), the ATTACK-0
+  and DEATH-0 decision documents (their review-record line), and the task record
+  `OTV2-20261011-accept-chat-attack-death-0.md` (independent review section). The record cannot
+  contain its own SHA; the final head is the PR head.
+- CHAT-0 and the Reference first player death decision stay CANDIDATE, so no acceptance rests on
+  their round 1 review.
 
 | Decision | Review required by its gate | Verdict | Result |
 |---|---|---|---|

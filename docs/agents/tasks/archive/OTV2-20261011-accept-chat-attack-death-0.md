@@ -93,7 +93,7 @@ external_repositories: []
 ## Independent review
 
 - required: YES. Each decision's own gate requires an independent review (owner option 1a, 2026-10-12).
-- exact head: `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13`
+- exact head: round 1 `a1d2ee2d8b9f4b573c90c7496b53caf925d32e13`; round 2 for ATTACK-0 and DEATH-0 `77762114d8dbc869679f5305c96cb9105fe82b0a`, the pre-record parent commit. The reviewers confirmed by `git diff` that only status and review-record text changed between them. The record commit changes only the acceptance decision, the ATTACK-0 and DEATH-0 review-record lines and this record.
 - method/auditor: four separate read-only reviewer sessions, one per decision, not the author. Code and migrations read, no tests run.
 - material findings: CHAT-0 security (no pre-lock rate gate rule; cast-path mute not wired). Reference first player death: DUR-03 item loss not implemented, restart safety (respawn consumed before placement; missing policy respawns without durable death). ATTACK-0 and DEATH-0: none blocking.
 - verdict: ATTACK-0 ACCEPTED (protocol PASS, combat PASS). DEATH-0 ACCEPTED (receipt chain, guards, fencing PASS). CHAT-0 and Reference first player death reverted to CANDIDATE.
