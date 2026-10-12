@@ -86,10 +86,6 @@ pub(crate) enum VisibleKind {
     Creature,
     /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
     /// carries 100 for it.
-    #[allow(
-        dead_code,
-        reason = "NPC-RT-1: the join snapshot producer is the follow-up after NPC-PLACE-1b"
-    )]
     Npc,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,

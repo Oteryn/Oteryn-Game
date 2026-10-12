@@ -2609,8 +2609,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         equipment_move::move_equipment(self, actor, command, request).await
     }
 
-    /// VIS-3: the Channel's players and live creatures, read in one owner work item, and
-    /// (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same read.
+    /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
+    /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
+    /// read.
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
@@ -2628,6 +2629,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .map(|entry| (VisibleKind::Creature, entry)),
         )
+        .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
             kind,
             identity: entry.actor.placement_identity(),
