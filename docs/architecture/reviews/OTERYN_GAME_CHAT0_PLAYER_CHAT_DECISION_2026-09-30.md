@@ -3,6 +3,7 @@
 - Decision: `CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   security and privacy) and protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to finish the playable game (2026-09-30); players cannot talk
   today
