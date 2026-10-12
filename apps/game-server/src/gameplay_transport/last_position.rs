@@ -20,7 +20,7 @@
 //!   measured from the capture the stored row holds, with [`WRITE_PASS_SLACK`] left for the
 //!   pass itself; a capture later than the interval is reported. A pass works in batches of
 //!   [`LAST_POSITION_WRITE_BATCH`] sessions, each one fence read and one fenced write
-//!   transaction, so even [`super::MAX_CONNECTIONS`] sessions due together take at most
+//!   transaction, so even [`MAX_TRACKED_SESSIONS`] sessions due together take at most
 //!   [`MAX_WRITE_PASS`] of durability work (each pass bounded by [`DB_PASS_DEADLINE`]), and a
 //!   due session's batch completes at most [`MAX_WRITE_LAG`] after its deadline, within the
 //!   slack: every due session is captured and written, or its batch failed, within the
@@ -64,31 +64,39 @@ const WRITE_PASS_SLACK: Duration = Duration::from_secs(60);
 /// The delay from a session's last durable (or unchanged) capture to its next deadline.
 const NEXT_DUE: Duration = LAST_POSITION_WRITE_INTERVAL.saturating_sub(WRITE_PASS_SLACK);
 
-/// The batches of a pass in which every admitted session of a Channel is due.
-const MAX_WRITE_BATCHES: usize = super::MAX_CONNECTIONS.div_ceil(LAST_POSITION_WRITE_BATCH);
+/// The most sessions a Channel tracks at once: the 500 player slots its carrier reserves for
+/// player admission (`SPAWN_ACTIVATION_PLAYER_HEADROOM`, the D128 target of 500 concurrent
+/// players per Channel). Not the listener's connection limit: a track outlives its socket while
+/// the actor is held for reconnect, and a freed connection admits another character.
+const MAX_TRACKED_SESSIONS: usize = 500;
+
+/// The batches of a pass in which every tracked session of a Channel is due.
+const MAX_WRITE_BATCHES: usize = MAX_TRACKED_SESSIONS.div_ceil(LAST_POSITION_WRITE_BATCH);
 
 /// The most durability work of one batch: one root pass reading the sessions' fences and one
 /// write transaction, each bounded by [`DB_PASS_DEADLINE`] (a pass whose holder is busy fails at
 /// once rather than waits).
 const MAX_BATCH_WORK: Duration = DB_PASS_DEADLINE.saturating_mul(2);
 
-/// The most durability work of one write pass, every admitted session due in it.
+/// The most durability work of one write pass, every tracked session due in it.
 const MAX_WRITE_PASS: Duration = MAX_BATCH_WORK.saturating_mul(MAX_WRITE_BATCHES as u32);
 
 /// The latest a due session's batch completes after its deadline: the rest of the pass running
 /// at that deadline, [`WRITER_MIN_PAUSE`], then the pass that takes the session, up to its own
 /// batch. A deadline recurs only [`NEXT_DUE`] after a capture, so no session is in both passes:
-/// together they hold at most [`super::MAX_CONNECTIONS`] sessions, in at most
+/// together they hold at most [`MAX_TRACKED_SESSIONS`] sessions, in at most
 /// `MAX_WRITE_BATCHES + 1` batches. It must fit in [`WRITE_PASS_SLACK`], so every due session
 /// is captured and written (or its batch failed) within [`LAST_POSITION_WRITE_INTERVAL`].
 const MAX_WRITE_LAG: Duration = MAX_BATCH_WORK
     .saturating_mul(MAX_WRITE_BATCHES as u32 + 1)
     .saturating_add(WRITER_MIN_PAUSE);
 
-// `CHARPOS0-RL-01` under load, at compile time: a pass of every admitted session, and the lag of
+// `CHARPOS0-RL-01` under load, at compile time: a pass of every tracked session, and the lag of
 // any due session behind its deadline, fit in the slack the deadline leaves.
 const _: () = assert!(MAX_WRITE_PASS.as_millis() <= WRITE_PASS_SLACK.as_millis());
 const _: () = assert!(MAX_WRITE_LAG.as_millis() <= WRITE_PASS_SLACK.as_millis());
+// A track outlives its socket, so the tracked sessions may exceed the open connections.
+const _: () = assert!(MAX_TRACKED_SESSIONS > super::MAX_CONNECTIONS);
 
 /// The longest the writer sleeps, so a newly tracked session is seen without a wake-up.
 const WRITER_MAX_SLEEP: Duration = super::QUEST_RETRY_CADENCE;
@@ -720,12 +728,13 @@ mod tests {
         assert!(!NEXT_DUE.is_zero());
     }
 
-    /// `CHARPOS0-RL-01` under load: every admitted session of a Channel due at once is captured
+    /// `CHARPOS0-RL-01` under load: every tracked session of a Channel due at once is captured
     /// and written within the slack, each batch costing two passes bounded by the pass deadline,
-    /// however slow the store is short of failing a pass.
+    /// however slow the store is short of failing a pass. The bound is the reserved player
+    /// slots, which exceed the listener's connection limit (Codex 4248578094).
     #[test]
-    fn a_pass_of_every_admitted_session_fits_in_the_slack() {
-        assert_eq!(super::super::MAX_CONNECTIONS, 256);
+    fn a_pass_of_every_tracked_session_fits_in_the_slack() {
+        assert_eq!(MAX_TRACKED_SESSIONS, 500);
         assert_eq!(MAX_WRITE_BATCHES, 8);
         assert_eq!(MAX_BATCH_WORK, Duration::from_secs(4));
         assert!(MAX_WRITE_PASS <= WRITE_PASS_SLACK);

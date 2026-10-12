@@ -83,10 +83,11 @@ pub enum LastPositionWrite {
 }
 
 /// The most periodic writes one batch carries ([`DurabilityRoot::write_character_last_positions`]).
-/// A Channel's write pass needs at most `ceil(MAX_CONNECTIONS / LAST_POSITION_WRITE_BATCH)`
-/// batches, each one fence read and one write transaction, so its durability work is bounded
-/// whatever the number of sessions (`CHARPOS0-RL-01`).
-pub const LAST_POSITION_WRITE_BATCH: usize = 32;
+/// A Channel's write pass needs at most `ceil(500 / LAST_POSITION_WRITE_BATCH)` batches (its
+/// 500 reserved player slots bound its tracked sessions), each one fence read and one write
+/// transaction, so its durability work is bounded whatever the number of sessions
+/// (`CHARPOS0-RL-01`).
+pub const LAST_POSITION_WRITE_BATCH: usize = 64;
 
 /// One periodic write of a batch: the writing session's fence (its
 /// `expected_character_revision` is not read), the write's sequence within the session's lease

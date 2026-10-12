@@ -40,6 +40,7 @@ depends_on: ["DEATH-2b (#1747)"]
 external_repositories: []
 blocked:
   - "HP/mana persistence: CP decision 1a, a separate contract and follow-up packet, not this PR"
+next_action: "FREEZE at the round-3 head. Deferred to follow-up CHAR-POSITION-2 per D282, not this PR: Codex P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (bound the shutdown flush's timeout)"
 ```
 
 ## Outcome
@@ -57,7 +58,7 @@ plane accepts it in a separate docs PR, and this PR's code does not wait for it)
   - periodic write of a changed cell, at most every 300 s (`CHARPOS0-RL-01`), from its own writer
     loop: it wakes at the earliest absolute deadline, measured from the capture the row holds, with
     60 s left for the pass, most overdue first; a later capture is reported; an unchanged cell
-    writes nothing. A pass works in batches of 32 sessions, each one root pass reading the
+    writes nothing. A pass works in batches of 64 sessions, each one root pass reading the
     sessions' fences (`current_sessions_at`) and one transaction writing them, each write under
     its own session fence (`write_character_last_positions`); 256 sessions due together take at
     most 8 batches of two 2 s passes, and a due session completes at most 37 s after its
@@ -128,6 +129,16 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   --check` on the changed Rust files, `python tools/agents/validate_governance.py`, `python -m
   unittest discover -s tools/agents/tests` and `git diff --check` ran locally; fmt, clippy and the
   tests are left to CI.
+
+## Review round 3 (Codex, head e9fce464)
+
+- P1 4248578094 (writer bound by connections, not tracked sessions): accepted and fixed. A track
+  outlives its socket, so the bound is now `MAX_TRACKED_SESSIONS` (the 500 player slots the
+  carrier reserves, D128), not the 256-connection limit. The batch grows to 64, so a pass of every
+  tracked session is still 8 batches (32 s) and `MAX_WRITE_LAG` 37 s, within the 60 s slack; the
+  compile-time asserts and `a_pass_of_every_tracked_session_fits_in_the_slack` hold.
+- P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (shutdown flush
+  timeout bound): deferred to follow-up CHAR-POSITION-2 per D282.
 
 ## Open questions
 
