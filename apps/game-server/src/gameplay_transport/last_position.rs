@@ -2,15 +2,19 @@
 //! CHAR-POSITION-0, `reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md`
 //! §3.2 and §3.3).
 //!
-//! - **Admission (§3.3).** When a new runtime actor is admitted and no pending respawn is placed,
-//!   the Character's last position is read under the session fence. A valid one (same World,
-//!   same coordinate frame, a Walkable cell of the pinned movement cells that no closed door
-//!   blocks, and not a house tile) places the actor there, or by the NPC-0 §6.1 fallback
-//!   (nearest free admissible cell within 3, else `entry_start`). Anything else leaves the actor
-//!   at `entry_start`. A read that fails (a storage or fence error) or a placement that cannot
-//!   complete leaves the admission not playable, as a pending respawn that cannot be placed
-//!   does: the actor never becomes input-eligible at a location its durable row did not decide.
-//!   Resume reads nothing.
+//! - **Admission (§3.3).** When a new runtime actor is admitted, its durable position is read
+//!   under the session fence before the first-entry Channel-owner step: a pending respawn, else
+//!   the Character's last position. It replaces `entry_start` as that step's input: the actor
+//!   is placed in the same owner step that initializes its position, before the lock is
+//!   released, so party presence and the familiar's login placement, which run after it, read
+//!   the placed cell. A pending respawn's cell, or a valid last position (same World, same
+//!   coordinate frame, a Walkable cell of the pinned movement cells that no closed door blocks,
+//!   and not a house tile), places the actor there or by the NPC-0 §6.1 fallback (nearest free
+//!   admissible cell within 3, else `entry_start`). Anything else (a house tile, another World
+//!   or frame, no row) leaves the actor at `entry_start`. A read that fails (a storage or fence
+//!   error) or a placement that cannot complete leaves the admission not playable, as a pending
+//!   respawn that cannot be placed does: the actor never becomes input-eligible at a location
+//!   its durable row did not decide. Resume reads nothing.
 //! - **Tracking.** Only a session whose placement was decided from a successful read (or a
 //!   consumed respawn) is tracked, so a failed read never lets the new session overwrite the
 //!   stored position with `entry_start`.
@@ -44,16 +48,20 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use super::{ComposedFreshAdmission, operator_event, respawn_cell_admissible};
+use super::{ComposedFreshAdmission, operator_event, respawn_cell, respawn_cell_admissible};
 use crate::domain::CharacterRevision;
 use crate::durability::DB_PASS_DEADLINE;
+use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionRecord,
     LastPositionWrite, PeriodicLastPosition, StoredLastPosition,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, WorldId};
+use crate::foundation::{
+    CarrierError, ChannelRuntimeV1, ExactActorRef, FirstEntryPosition, GameSessionId,
+    MovementLocalPosition, WorldId,
+};
 
 /// `CHARPOS0-RL-01`: the interval between periodic last-position writes of one live Character
 /// while its position has changed. The registry bounds it to 60..=300 seconds.
@@ -371,6 +379,72 @@ fn house_cell(
     )
 }
 
+/// §3.3: what the durable rows decide for a new runtime actor, read under its session fence
+/// before the first-entry Channel-owner step ([`ComposedFreshAdmission::read_admission_position`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum AdmissionPosition {
+    /// Step 1: a pending respawn. The first-entry step places the actor at its cell; the
+    /// respawn is consumed after the progression step.
+    Respawn(ConsumedRespawn),
+    /// Step 3: the stored last position, placed only if it is valid (else step 4).
+    Stored(StoredLastPosition),
+    /// No row: a first login, step 4.
+    FirstLogin,
+}
+
+/// §3.3: the input that replaces `entry_start` in the first-entry owner step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum FirstEntryInput {
+    /// Step 4: the entry start itself.
+    EntryStart,
+    /// Step 1 or 3: this cell, else the NPC-0 §6.1 fallback, else step 4. `None` (an
+    /// undecodable respawn record) goes straight to step 4.
+    Recorded(Option<MovementLocalPosition>),
+}
+
+/// §3.3: the first-entry input `decided` selects. A pending respawn's recorded cell; a stored
+/// cell only when it is of `world_id` and `frame_digest` and not a `house` tile (a saved house
+/// tile goes straight to step 4, never through the radius fallback); else the entry start.
+fn first_entry_input(
+    decided: &AdmissionPosition,
+    world_id: WorldId,
+    frame_digest: [u8; 32],
+    house: impl Fn(MovementLocalPosition) -> bool,
+) -> FirstEntryInput {
+    match decided {
+        AdmissionPosition::Respawn(pending) => {
+            FirstEntryInput::Recorded(respawn_cell(&pending.respawn_position))
+        }
+        AdmissionPosition::Stored(stored)
+            if stored_position_applies(stored, world_id, frame_digest)
+                && !house(position_of(stored.record.cell)) =>
+        {
+            FirstEntryInput::Recorded(Some(position_of(stored.record.cell)))
+        }
+        AdmissionPosition::Stored(_) | AdmissionPosition::FirstLogin => FirstEntryInput::EntryStart,
+    }
+}
+
+/// §3.3 "it replaces `entry_start` as the input to `initialize_position`", in one Channel-owner
+/// step: the actor's position is initialized and, before the caller releases the lock and any
+/// owner reads it, moved to the cell `input` selects (`admissible` and free, or by the NPC-0 §6.1
+/// fallback, else `entry_start`). An initialization that had already completed (`Reconciled`)
+/// moves nothing. An error leaves the actor not playable.
+pub(super) fn initialize_first_entry_at(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    input: FirstEntryInput,
+    admissible: impl Fn(MovementLocalPosition) -> bool,
+) -> Result<FirstEntryPosition, CarrierError> {
+    match (runtime.initialize_first_entry_position(actor)?, input) {
+        (FirstEntryPosition::Initialized(_), FirstEntryInput::Recorded(cell)) => runtime
+            .place_admitted_respawn(actor, session, cell, admissible)
+            .map(FirstEntryPosition::Initialized),
+        (initialized, _) => Ok(initialized),
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Capture `actor`'s current cell under the runtime lock, with its record and a fresh write
     /// sequence. A dead actor (DEATH-2 §4.2, until its respawn) is not captured.
@@ -474,69 +548,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
     }
 
-    /// §3.3 steps 3 and 4 for an admission with no pending respawn: read the last position
-    /// under `fence` and place the actor by it. `true` once the placement is decided from a
-    /// successful read and the session is tracked. A failed read (a storage or fence error) or a
-    /// placement that cannot complete returns `false`: the admission is not playable, nothing
-    /// is written and the session stays untracked, so it never overwrites the stored row.
-    pub(super) async fn restore_last_position(
+    /// §3.3: the durable position of a new runtime actor, read under `fence` before the
+    /// first-entry owner step: a pending respawn (step 1), else the last position (steps 3 and
+    /// 4). `Err` for a failed read (a storage or fence error): the actor is left unpositioned
+    /// and the admission is not playable.
+    pub(super) async fn read_admission_position(
         &self,
-        session: GameSessionId,
-        actor: ExactActorRef,
         fence: CurrentCharacterGameplayFence,
-    ) -> bool {
-        let stored = match self
+    ) -> Result<AdmissionPosition, ()> {
+        match self
+            .root
+            .pending_respawn(self.character, self.holder, fence)
+            .await
+        {
+            Ok(Some(pending)) => return Ok(AdmissionPosition::Respawn(pending)),
+            Ok(None) => {}
+            Err(error) => {
+                operator_event(&format!("pending_respawn_read_failed reason={error}"));
+                return Err(());
+            }
+        }
+        match self
             .root
             .read_character_last_position(self.character, self.holder, fence)
             .await
         {
-            Ok(stored) => stored,
+            Ok(Some(stored)) => Ok(AdmissionPosition::Stored(stored)),
+            Ok(None) => Ok(AdmissionPosition::FirstLogin),
             Err(error) => {
                 operator_event(&format!("last_position_read_failed reason={error}"));
-                return false;
-            }
-        };
-        let Some(stored) = stored else {
-            self.last_positions
-                .track(session, actor, None, fence.expected_character_revision);
-            return true;
-        };
-        let mut runtime = self.runtime.lock().await;
-        let pinned_digest = runtime.content_pin().server_artifact_digest();
-        let frame_digest = runtime.content_pin().frame_binding_digest();
-        // §3.3: a saved house tile is not a valid position; it goes straight to step 4
-        // (`entry_start`), and only an otherwise valid cell uses the radius fallback.
-        if stored_position_applies(&stored, self.world_id, frame_digest)
-            && !house_cell(self.movement_cells, position_of(stored.record.cell))
-        {
-            let door = self.door.lock().await;
-            let placed = runtime.place_admitted_respawn(
-                actor,
-                session,
-                Some(position_of(stored.record.cell)),
-                |cell| {
-                    respawn_cell_admissible(
-                        self.movement_cells.index(),
-                        self.movement_cells.scope(),
-                        self.world_id,
-                        pinned_digest,
-                        door.blocking_cells(),
-                        cell,
-                    ) && !house_cell(self.movement_cells, cell)
-                },
-            );
-            if placed.is_err() {
-                operator_event("last_position_placement_failed");
-                return false;
+                Err(())
             }
         }
-        drop(runtime);
-        self.last_positions.track(
-            session,
-            actor,
-            Some(stored.record.cell),
-            fence.expected_character_revision,
-        );
+    }
+
+    /// §3.3 in the first-entry owner step, under the Channel-owner lock the caller holds:
+    /// initialize `actor` and place it at the cell `decided` selects
+    /// ([`initialize_first_entry_at`]), so every owner that reads its position after this step
+    /// sees the placed cell.
+    pub(super) async fn initialize_admitted_position(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        decided: &AdmissionPosition,
+    ) -> Result<FirstEntryPosition, CarrierError> {
+        let (pinned_digest, frame_digest) = {
+            let pin = runtime.content_pin();
+            (pin.server_artifact_digest(), pin.frame_binding_digest())
+        };
+        let input = first_entry_input(decided, self.world_id, frame_digest, |cell| {
+            house_cell(self.movement_cells, cell)
+        });
+        // A respawn's fallback is DEATH-2b's; a stored cell's fallback never lands on a house
+        // tile either.
+        let stored = matches!(decided, AdmissionPosition::Stored(_));
+        let door = self.door.lock().await;
+        initialize_first_entry_at(runtime, actor, session, input, |cell| {
+            respawn_cell_admissible(
+                self.movement_cells.index(),
+                self.movement_cells.scope(),
+                self.world_id,
+                pinned_digest,
+                door.blocking_cells(),
+                cell,
+            ) && !(stored && house_cell(self.movement_cells, cell))
+        })
+    }
+
+    /// §3.3 steps 3 and 4, once no pending respawn is left to consume: track `session` with the
+    /// stored cell its first entry was decided by. `false` when that entry was decided by a
+    /// pending respawn that is no longer pending: the admission is not playable, nothing is
+    /// written and the session stays untracked, so it never overwrites the stored row.
+    pub(super) fn track_restored(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        decided: &AdmissionPosition,
+        fence: CurrentCharacterGameplayFence,
+    ) -> bool {
+        let written = match decided {
+            AdmissionPosition::Stored(stored) => Some(stored.record.cell),
+            AdmissionPosition::FirstLogin => None,
+            AdmissionPosition::Respawn(_) => {
+                operator_event("admitted_respawn_no_longer_pending");
+                return false;
+            }
+        };
+        self.last_positions
+            .track(session, actor, written, fence.expected_character_revision);
         true
     }
 
@@ -887,5 +987,167 @@ mod tests {
         );
         positions.forget(session);
         assert!(positions.tracked(session).is_none());
+    }
+
+    fn at(x: i32, y: i32) -> MovementLocalPosition {
+        MovementLocalPosition { x, y, floor: 7 }
+    }
+
+    fn v7(seed: u8) -> [u8; 16] {
+        let mut bytes = [seed; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes
+    }
+
+    /// The first-entry owner step's state: a runtime of `world(1)` whose pinned entry start is
+    /// (3, 4, 7) and frame digest `[3; 32]`, with one committed player not yet positioned.
+    fn admitted() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId};
+        let world_id = world(1);
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            ChannelId::decode(&v7(0x61)).expect("channel"),
+            NodeId::decode(&v7(0x62)).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::from_activation(
+                world_id,
+                1,
+                [1; 32],
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (3, 4, 7),
+            ),
+        )
+        .expect("runtime");
+        let session = GameSessionId::decode(&v7(0x21)).expect("session");
+        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+        let player = runtime.commit_fresh_session(reservation).expect("commit");
+        (runtime, player, session)
+    }
+
+    fn saved(world_id: WorldId, frame: [u8; 32], cell: MovementLocalPosition) -> AdmissionPosition {
+        let mut row = stored(world_id, frame);
+        row.record.cell = cell_of(cell);
+        AdmissionPosition::Stored(row)
+    }
+
+    fn position(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> MovementLocalPosition {
+        runtime
+            .read_actor_position(actor)
+            .expect("positioned")
+            .position()
+    }
+
+    /// Codex 4249667405, §3.3 "it replaces `entry_start` as the input to
+    /// `initialize_position`": a valid saved cell other than the entry start is the cell the
+    /// first-entry owner step leaves the actor at, so the owners that run after that step (party
+    /// presence, the familiar's login placement) read the saved cell, never `entry_start`.
+    #[test]
+    fn the_saved_cell_replaces_the_entry_start_in_the_first_entry_step() {
+        let (mut runtime, player, session) = admitted();
+        let decided = saved(world(1), [3; 32], at(20, 20));
+        let input = first_entry_input(&decided, world(1), [3; 32], |_| false);
+        assert_eq!(input, FirstEntryInput::Recorded(Some(at(20, 20))));
+        let placed = initialize_first_entry_at(&mut runtime, player, session, input, |_| true)
+            .expect("first entry");
+        assert!(matches!(
+            placed,
+            FirstEntryPosition::Initialized(snapshot) if snapshot.position() == at(20, 20)
+        ));
+        assert_eq!(position(&runtime, player), at(20, 20));
+        // An initialization that had already completed moves nothing.
+        let again = initialize_first_entry_at(
+            &mut runtime,
+            player,
+            session,
+            FirstEntryInput::Recorded(Some(at(30, 30))),
+            |_| true,
+        )
+        .expect("reconciled");
+        assert!(matches!(again, FirstEntryPosition::Reconciled(_)));
+        assert_eq!(position(&runtime, player), at(20, 20));
+    }
+
+    /// §3.3 "Occupied or blocked tile": the NPC-0 §6.1 fallback (north first), and with no
+    /// admissible free cell within 3, step 4, the entry start; all within the owner step.
+    #[test]
+    fn a_blocked_saved_cell_uses_the_radius_fallback_then_the_entry_start() {
+        let (mut runtime, player, session) = admitted();
+        let input = FirstEntryInput::Recorded(Some(at(20, 20)));
+        initialize_first_entry_at(&mut runtime, player, session, input, |cell| {
+            cell != at(20, 20)
+        })
+        .expect("fallback");
+        assert_eq!(position(&runtime, player), at(20, 19));
+        let (mut runtime, player, session) = admitted();
+        initialize_first_entry_at(&mut runtime, player, session, input, |_| false)
+            .expect("entry start");
+        assert_eq!(position(&runtime, player), at(3, 4));
+    }
+
+    /// §3.3 "valid": a saved house tile goes straight to step 4, as do another World or frame
+    /// and a first login (no row); the entry start is then the step's own input.
+    #[test]
+    fn a_house_tile_another_frame_or_no_row_enters_at_the_entry_start() {
+        let house = |cell: MovementLocalPosition| cell == at(20, 20);
+        for decided in [
+            saved(world(1), [3; 32], at(20, 20)),
+            saved(world(2), [3; 32], at(21, 21)),
+            saved(world(1), [9; 32], at(21, 21)),
+            AdmissionPosition::FirstLogin,
+        ] {
+            assert_eq!(
+                first_entry_input(&decided, world(1), [3; 32], house),
+                FirstEntryInput::EntryStart,
+                "{decided:?}"
+            );
+        }
+        let (mut runtime, player, session) = admitted();
+        initialize_first_entry_at(
+            &mut runtime,
+            player,
+            session,
+            FirstEntryInput::EntryStart,
+            |_| true,
+        )
+        .expect("entry start");
+        assert_eq!(position(&runtime, player), at(3, 4));
+    }
+
+    /// §3.3 step 1: a pending respawn's recorded cell is the first-entry input, even when it is
+    /// a house tile; an undecodable record enters at step 4.
+    #[test]
+    fn a_pending_respawn_is_the_first_entry_input() {
+        let occurrence =
+            crate::durability::character_death::PlayerDeathOccurrence::from_bytes(v7(0x31))
+                .expect("occurrence");
+        let mut recorded = Vec::new();
+        recorded.extend_from_slice(&5_i32.to_be_bytes());
+        recorded.extend_from_slice(&6_i32.to_be_bytes());
+        recorded.extend_from_slice(&7_i16.to_be_bytes());
+        let pending = AdmissionPosition::Respawn(ConsumedRespawn {
+            occurrence,
+            respawn_position: recorded,
+        });
+        let input = first_entry_input(&pending, world(1), [3; 32], |_| true);
+        assert_eq!(input, FirstEntryInput::Recorded(Some(at(5, 6))));
+        let (mut runtime, player, session) = admitted();
+        initialize_first_entry_at(&mut runtime, player, session, input, |_| true).expect("respawn");
+        assert_eq!(position(&runtime, player), at(5, 6));
+        let undecodable = AdmissionPosition::Respawn(ConsumedRespawn {
+            occurrence,
+            respawn_position: vec![1, 2, 3],
+        });
+        let input = first_entry_input(&undecodable, world(1), [3; 32], |_| false);
+        assert_eq!(input, FirstEntryInput::Recorded(None));
+        let (mut runtime, player, session) = admitted();
+        initialize_first_entry_at(&mut runtime, player, session, input, |_| true).expect("step 4");
+        assert_eq!(position(&runtime, player), at(3, 4));
     }
 }

@@ -40,7 +40,7 @@ depends_on: ["DEATH-2b (#1747)"]
 external_repositories: []
 blocked:
   - "HP/mana persistence: CP decision 1a, a separate contract and follow-up packet, not this PR"
-next_action: "FREEZE at the round-3 head. Deferred to follow-up CHAR-POSITION-2 per D282, not this PR: Codex P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (bound the shutdown flush's timeout)"
+next_action: "FREEZE at the round-4 head (Codex P1 4249667405 fixed). Deferred to follow-up CHAR-POSITION-2 per D282, not this PR: Codex P1 4248578112 (quiesce gameplay before the shutdown flush) and P2 4248578103 (bound the shutdown flush's timeout)"
 ```
 
 ## Outcome
@@ -72,7 +72,11 @@ plane accepts it in a separate docs PR, and this PR's code does not wait for it)
     shutdown budget); failed writes are retried and the flush is done only when none failed;
   - nothing is written while a pending respawn exists (`PendingObligation`) or in an instance
     scope.
-- §3.3 admission: a pending respawn is consumed in one transaction that upserts the placed cell
+- §3.3 admission: the durable position (a pending respawn, else the last position) is read
+  under the session fence before the first-entry Channel-owner step and replaces `entry_start`
+  as its input: the actor is initialized and placed in that one owner step, so party presence
+  and the familiar's login placement, which run after it, read the placed cell. A pending
+  respawn is consumed in one transaction that upserts the placed cell
   under the new lease key; a placed actor whose cell cannot be read back consumes nothing and the
   admission is not playable. Otherwise the stored cell is restored if it is of the same World and
   coordinate frame and not a house tile (a house tile goes straight to the entry start; fail
@@ -162,6 +166,30 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
 - Validation of this merge: `cargo` was not run locally (D1011); `rustfmt --check` on the changed
   Rust files, `python3 tools/agents/validate_governance.py`, the `tools/agents/tests` unit tests
   and `git diff --check` ran locally; compile, clippy and the tests are left to the CP and CI.
+
+## Review round 4 (Codex, head ecebaf1b)
+
+- P1 4249667405 (saved cell restored only after the first-entry owners ran): accepted and
+  fixed. `initialize_first_entry` now reads the durable position (`read_admission_position`: a
+  pending respawn, else the last position) under the admission's session fence before the
+  Channel-owner lock, and the owner step initializes the actor and places it at the decided cell
+  in the same step (`initialize_admitted_position`, `initialize_first_entry_at`), before the
+  lock is released and before party presence and the familiar's login placement. The house
+  tile, World and frame checks go straight to `entry_start` as before; an occupied or blocked
+  cell uses the NPC-0 §6.1 fallback, else `entry_start`. A failed read leaves the actor
+  unpositioned (not playable). After the progression step, `consume_admitted_respawn` consumes
+  the respawn the first entry already placed (it places only a respawn the first entry did not
+  see), or tracks the session from the stored cell (`track_restored`, which replaces
+  `restore_last_position`); an entry placed for a respawn that is no longer pending is not
+  playable.
+- New unit tests in `gameplay_transport/last_position.rs`:
+  `the_saved_cell_replaces_the_entry_start_in_the_first_entry_step`,
+  `a_blocked_saved_cell_uses_the_radius_fallback_then_the_entry_start`,
+  `a_house_tile_another_frame_or_no_row_enters_at_the_entry_start`,
+  `a_pending_respawn_is_the_first_entry_input`.
+- Validation of this round: `cargo` was not run locally (D1011); `rustfmt --check` on the changed
+  Rust files, `python3 tools/agents/validate_governance.py`, the `tools/agents/tests` unit tests
+  and `git diff --check` ran locally; compile, clippy and the tests are left to CI.
 
 ## Open questions
 
