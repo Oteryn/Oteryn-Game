@@ -1,4 +1,4 @@
-// PG-COVERAGE-1 guard. CI runs only the PostgreSQL targets that `.github/workflows/rust.yml`
+// PG-COVERAGE-1 guard. CI runs only the PostgreSQL targets that `.github/workflows/merge-group-gate.yml`
 // names; every other `tests/*_postgres.rs` target is skipped there because the routed database
 // is absent. Each such standalone target must therefore be a thin wrapper whose shared
 // `support/*_cases.rs` files are all included by a CI-run target. Needs no database.
@@ -17,7 +17,8 @@ fn manifest_dir() -> PathBuf {
 
 /// Target names CI runs: `--test <name>` and `run_registered_target <name> <path>` calls.
 fn ci_run_targets() -> io::Result<BTreeSet<String>> {
-    let text = fs::read_to_string(manifest_dir().join("../../.github/workflows/rust.yml"))?;
+    let text =
+        fs::read_to_string(manifest_dir().join("../../.github/workflows/merge-group-gate.yml"))?;
     let mut targets = BTreeSet::new();
     for line in text.lines() {
         let line = line.trim();
@@ -63,7 +64,7 @@ fn every_postgres_target_runs_its_cases_in_a_ci_run_target() -> io::Result<()> {
     let ci = ci_run_targets()?;
     assert!(
         ci.contains("character_authority_postgres") && ci.contains("durability_postgres"),
-        "CI-run PostgreSQL targets not found in rust.yml: {ci:?}"
+        "CI-run PostgreSQL targets not found in merge-group-gate.yml: {ci:?}"
     );
     let targets = postgres_targets()?;
     let mut aggregated = BTreeSet::new();

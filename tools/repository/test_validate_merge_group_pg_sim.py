@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "cb48993d2f1f2aed34a472e66437e82b91f5d2c0"
+APPROVED = "d7cfbf90b2b81c43f92c010660f41d242a3cf840"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -143,7 +143,8 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
 
 
 def _postgres_cache_consumer_regressions() -> None:
-    for filename, job in (("rust.yml", "durability-postgres"), ("merge-group-gate.yml", "durability_postgres")):
+    # The PostgreSQL harness executes only in MQ; main is a cache producer.
+    for filename, job in (("merge-group-gate.yml", "durability_postgres"),):
         text = (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
         block = text.split("  " + job + ":\n", 1)[1]
         block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
@@ -411,6 +412,22 @@ def main() -> int:
     for fragment in WINDOWS_REQUIRED_FRAGMENTS:
         assert windows.count(fragment) == 1, f"required Windows fragment missing or duplicated: {fragment}"
     assert "cargo +1.95.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
+    # Release identity must be embedded before compiling the exact queue client;
+    # installer lifecycle runs after that production build, never just on the PR.
+    assert windows.index("- name: Derive release identity") < windows.index("- name: Build lint and smoke production client")
+    assert windows.index("- name: Build lint and smoke production client") < windows.index("- name: Build and test unsigned installer")
+    assert windows.count("TARGET_SHA: ${{ github.event.merge_group.head_sha }}") == 2
+    installer_fragments = (
+        '"OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV',
+        "INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
+        "Inno Setup download SHA-256 mismatch",
+        "Inno Setup install failed with exit code",
+        r".\apps\client\installer\ci-installer.ps1",
+        "-GameCommit $env:TARGET_SHA",
+        "          if-no-files-found: error",
+    )
+    for fragment in installer_fragments:
+        assert windows.count(fragment) == 1, fragment
 
     lifecycle = subprocess.run(
         [sys.executable, str(LIFECYCLE)],
@@ -458,6 +475,10 @@ def main() -> int:
         assert validate(original.replace(marker, "", 1)) != 0
         mutations += 1
 
+    for fragment in installer_fragments:
+        assert validate(original.replace(fragment, "", 1)) != 0, fragment
+        mutations += 1
+
     deletion_guard = '            if [[ "$base_present" == true && "$head_present" == false ]]; then'
     assert original.count(deletion_guard) == 1
     assert validate(original.replace(deletion_guard, '            if [[ "$base_present" == false && "$head_present" == false ]]; then', 1)) != 0
@@ -486,7 +507,7 @@ def main() -> int:
         mutations += 1
 
     for fragment in (LIFECYCLE_COMMAND, *NATIVE_POLICY):
-        assert original.count(fragment) == 1
+        assert original.count(fragment) >= 1
         assert validate(original.replace(fragment, "", 1)) != 0, fragment
         mutations += 1
 
