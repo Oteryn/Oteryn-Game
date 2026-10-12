@@ -123,6 +123,13 @@ impl ActiveGeneration {
     pub(crate) fn native_gameplay(&self) -> Option<&super::native_gameplay::NativeGameplayState> {
         self.runtime_state.native_gameplay()
     }
+    /// The generation's pinned Character progression content (ARCH-PROGRESSION-SOURCE-0 §1.4);
+    /// `None` for a pin without the `progression` section.
+    pub(crate) fn progression(
+        &self,
+    ) -> Option<&super::character_progression_content::CharacterProgressionContent> {
+        self.native_gameplay()?.progression()
+    }
     pub fn identity(&self) -> &GenerationIdentity {
         &self.identity
     }

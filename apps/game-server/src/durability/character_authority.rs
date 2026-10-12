@@ -277,6 +277,61 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// The interpretation stored on the active Character root `character_id`, under the
+    /// reconciled recovery fence: its profile, ruleset, content and starter template revisions.
+    /// A progression binding is built from the root's own revisions, never from the newest
+    /// global interpretation, which may have advanced since the Character was created
+    /// (ARCH-PROGRESSION-SOURCE-0 §1.3-§1.5). `Ok(None)` when the root's interpretation is not
+    /// the newest global interpretation (or none is configured): the gameplay fence of every
+    /// durable progression write refuses such a root with `ProgressionContextMismatch`
+    /// (§0.2), so it can hold no binding. `Rejected` when no active root exists. Read only.
+    pub async fn read_character_root_interpretation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+    ) -> Result<Option<CharacterInterpretationV1>> {
+        let character = *character_id.as_bytes();
+        let recovery = authority.record_for(self)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let row = sqlx::query(
+                        "SELECT profile_revision, ruleset_revision, content_revision, \
+                                starter_template_revision \
+                           FROM game_character_roots \
+                          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1",
+                    )
+                    .bind(character.as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let Some(row) = row else {
+                        return Ok(Err(CharacterAuthorityError::Rejected));
+                    };
+                    let text = |column: &str| -> std::result::Result<String, DurabilityError> {
+                        row.try_get(column)
+                            .map_err(|_| DurabilityError::InvalidStoredState)
+                    };
+                    let interpretation = CharacterInterpretationV1::new(
+                        &text("profile_revision")?,
+                        &text("ruleset_revision")?,
+                        &text("content_revision")?,
+                        &text("starter_template_revision")?,
+                    )
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    // The same comparison as the gameplay fence (`assert_gameplay_fence`): all
+                    // four revisions against the newest global interpretation.
+                    let current = current_interpretation(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(current
+                        .is_some_and(|(_, current)| current == interpretation)
+                        .then_some(interpretation)))
+                })
+            })
+            .await?
+    }
+
     /// Issue the authority capability for a sealed recovery fence: the database's
     /// latest admission must equal the fence and the full integrity check must pass.
     pub async fn open_character_authority<'f, 's>(
