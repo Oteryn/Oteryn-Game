@@ -2899,6 +2899,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> Option<actor_spell::SpellCastOutcome> {
+        // CHAT-0 §6: a muted character cannot cast any spell.
+        if let Some(outcome) = self.chat.muted_cast(game_session_id, self.owner_now()) {
+            return Some(outcome);
+        }
         if !self.ensure_source_map_initialized().await {
             return None;
         }
