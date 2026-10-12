@@ -11,6 +11,7 @@
 use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
 use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
+use super::spell_tiles::{BundleSpellTiles, SpellTilesBuilder};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{
@@ -182,7 +183,9 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        let (facts, blocked, floors) = scan(&self.data, &item)?;
+        let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
+        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
             return Err(BootRefusal::StartNotEnterable);
@@ -213,6 +216,7 @@ impl CheckedBundle {
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
                 floors,
+                spell_tiles,
             }),
             base: self.base,
             map_revision: self.map_revision,
@@ -225,10 +229,12 @@ impl CheckedBundle {
 /// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
 /// a `wall` Terrain or an Item whose definition is solid (a usable door is not among them, since
 /// its state decides: [`BundleFacts::doors`]), and the tiles whose top-level entries carry a
-/// catalogue `floor_change` fact (MAP-FLOOR-1).
+/// catalogue `floor_change` fact (MAP-FLOOR-1). `spell_tiles` collects the spell tile facts of
+/// the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
+    spell_tiles: &mut SpellTilesBuilder,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
     let mut masks: Vec<u8> = Vec::new();
@@ -275,6 +281,7 @@ fn scan(
             );
         }
         facts.push(manifest, &sector, &mut blocked);
+        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -314,7 +321,7 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
 }
 
 /// The native tile of a movement cell: `z` is legacy `z` in `0..=15`, native floor `-z`.
-fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
+pub(super) fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     let z = i8::try_from(cell.z).ok().filter(|z| (0..=15).contains(z))?;
     Some(TilePos {
         x: u16::try_from(cell.x).ok()?,
@@ -397,7 +404,12 @@ impl BundleWorld {
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
         };
-        Ok(NativeEntryMovementCells::from_bundle(entry, scope, index))
+        Ok(NativeEntryMovementCells::from_bundle(
+            entry,
+            scope,
+            index,
+            Arc::clone(&self.map.spell_tiles),
+        ))
     }
 }
 
@@ -408,6 +420,8 @@ pub(crate) struct BundleMap {
     pub(crate) overlay: ChannelOverlay,
     pub(crate) facts: BundleFacts,
     pub(crate) floors: FloorTable,
+    /// The spell tile facts of the bundle (BUNDLE-TILES-1).
+    pub(crate) spell_tiles: Arc<BundleSpellTiles>,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
