@@ -23,6 +23,7 @@
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
+use super::character_last_position::{FinalLastPosition, LastPositionKey, upsert_last_position};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ProgressionInitializationRequest,
     assert_gameplay_fence, numeric_u64, policy_digest, state_matches_root, stored_context_matches,
@@ -420,7 +421,25 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: Option<PlayerDeathOccurrence>,
     ) -> Result<Option<ConsumedRespawn>> {
-        self.pending_respawn_under_fence(authority, node, fence, occurrence, true)
+        self.pending_respawn_under_fence(authority, node, fence, occurrence, true, None)
+            .await
+    }
+
+    /// CHAR-POSITION-0 §3.3 step 1: [`Self::consume_pending_respawn`] for an admission that
+    /// placed the actor at `placed`. The same transaction upserts the Character's last position
+    /// with the placed cell under the admitted session's lease key and `write_sequence`, so a
+    /// crash right after placement never puts the Character back at its death cell. The upsert
+    /// runs only when the respawn was deleted.
+    pub async fn consume_pending_respawn_placed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: Option<PlayerDeathOccurrence>,
+        placed: FinalLastPosition,
+    ) -> Result<Option<ConsumedRespawn>> {
+        validate_placed(&fence, &placed)?;
+        self.pending_respawn_under_fence(authority, node, fence, occurrence, true, Some(placed))
             .await
     }
 
@@ -443,6 +462,51 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         occurrence: PlayerDeathOccurrence,
+        place: P,
+    ) -> Result<bool>
+    where
+        P: FnOnce(Option<ConsumedRespawn>) -> F + Send,
+        F: std::future::Future<Output = bool> + Send,
+    {
+        self.place_and_consume_under_fence(authority, node, fence, occurrence, None, place)
+            .await
+    }
+
+    /// CHAR-POSITION-0 §3.2-§3.3 step 1 with DEATH-RESTART-SAFETY-1:
+    /// [`Self::place_and_consume_pending_respawn`] for an in-session respawn whose `place`
+    /// puts the actor at `placed`. When `place` placed the actor and the row of `occurrence`
+    /// was deleted, the same transaction, under the same fence, upserts `placed` as the
+    /// Character's last position under the fence's lease generation and
+    /// `placed.write_sequence`, so a crash right after the placement never puts the Character
+    /// back at its death cell. A placement that deletes nothing (an earlier attempt consumed
+    /// the row, and its transaction wrote that attempt's placed cell) or a `place` that returns
+    /// `false` writes no position. `placed` of another World, or with a zero sequence, is
+    /// refused before `place` is called.
+    pub async fn place_and_consume_pending_respawn_placed<P, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: PlayerDeathOccurrence,
+        placed: FinalLastPosition,
+        place: P,
+    ) -> Result<bool>
+    where
+        P: FnOnce(Option<ConsumedRespawn>) -> F + Send,
+        F: std::future::Future<Output = bool> + Send,
+    {
+        validate_placed(&fence, &placed)?;
+        self.place_and_consume_under_fence(authority, node, fence, occurrence, Some(placed), place)
+            .await
+    }
+
+    async fn place_and_consume_under_fence<P, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: PlayerDeathOccurrence,
+        placed: Option<FinalLastPosition>,
         place: P,
     ) -> Result<bool>
     where
@@ -492,7 +556,7 @@ impl DurabilityRoot {
                     if !place(pending).await {
                         return Ok(Ok(false));
                     }
-                    sqlx::query(
+                    let deleted = sqlx::query(
                         "DELETE FROM game_character_pending_respawns \
                           WHERE character_id = encode($1,'hex')::uuid \
                             AND death_occurrence_id = encode($2,'hex')::uuid",
@@ -501,6 +565,23 @@ impl DurabilityRoot {
                     .bind(occurrence.0.as_slice())
                     .execute(&mut *tx)
                     .await?;
+                    // CHAR-POSITION-0 §3.3 step 1: the placed cell, after the row is gone (the
+                    // upsert writes nothing while a pending respawn exists).
+                    if let Some(placed) = placed
+                        && deleted.rows_affected() == 1
+                    {
+                        let key = LastPositionKey {
+                            character_lease_generation: fence.character_lease_generation,
+                            write_sequence: placed.write_sequence,
+                        };
+                        upsert_last_position(
+                            &mut tx,
+                            fence.character_id.as_bytes(),
+                            key,
+                            &placed.record,
+                        )
+                        .await?;
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(true))
                 })
@@ -518,7 +599,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<ConsumedRespawn>> {
-        self.pending_respawn_under_fence(authority, node, fence, None, false)
+        self.pending_respawn_under_fence(authority, node, fence, None, false, None)
             .await
     }
 
@@ -529,6 +610,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: Option<PlayerDeathOccurrence>,
         consume: bool,
+        placed: Option<FinalLastPosition>,
     ) -> Result<Option<ConsumedRespawn>> {
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -577,6 +659,19 @@ impl DurabilityRoot {
                             })
                         }
                     };
+                    if let (Some(placed), Some(_)) = (placed, &consumed) {
+                        let key = LastPositionKey {
+                            character_lease_generation: fence.character_lease_generation,
+                            write_sequence: placed.write_sequence,
+                        };
+                        upsert_last_position(
+                            &mut tx,
+                            fence.character_id.as_bytes(),
+                            key,
+                            &placed.record,
+                        )
+                        .await?;
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(consumed))
                 })
@@ -701,6 +796,22 @@ async fn slot_cursor(
             }
             _ => CharacterProgressionError::AuthorityRejected,
         })
+}
+
+/// CHAR-POSITION-0 §3.2: a placed cell is written only in the fence's own Channel World and
+/// under a nonzero sequence.
+fn validate_placed(
+    fence: &CurrentCharacterGameplayFence,
+    placed: &FinalLastPosition,
+) -> Result<()> {
+    match fence.runtime_scope {
+        RuntimeScopeRefV1::Channel { world_id, .. }
+            if world_id == placed.record.world_id && placed.write_sequence != 0 =>
+        {
+            Ok(())
+        }
+        _ => Err(CharacterProgressionError::InvalidInput),
+    }
 }
 
 fn validate_request<const N: usize>(
