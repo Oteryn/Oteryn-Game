@@ -329,3 +329,23 @@ fn a_command_from_out_of_range_closes_with_the_farewell() {
     assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
     assert!(chat.engaged(session).is_none());
 }
+
+#[test]
+fn an_unanswered_command_to_another_npc_keeps_the_current_conversation() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let chat = chat_of(session);
+    // Engaged with some other NPC than the one the command names.
+    chat.converse(session, |engaged| *engaged = Some(actor))
+        .expect("session");
+    let outcome = NpcConversations::default().talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE),
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(outcome.conversation.is_none());
+    assert_eq!(chat.engaged(session), Some(actor));
+}

@@ -202,8 +202,14 @@ impl NpcConversations {
             entry,
         }];
         let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
-            let had = engaged.is_some();
+            let prior = *engaged;
+            let had = prior.is_some();
             let reply = talk(at, &text, &npcs, engaged);
+            if reply.is_none() {
+                // Only the NPC this command names was offered to the rule, so a command it does not
+                // answer must not end a conversation held with another NPC.
+                *engaged = prior;
+            }
             (reply, had, engaged.is_some())
         }) else {
             // An unknown session, or an NPC already serving `NPC0-RL-05` customers.
