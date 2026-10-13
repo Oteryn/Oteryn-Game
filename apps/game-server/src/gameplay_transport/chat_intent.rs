@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatSpeaker, ChatSpeechMode,
 };
+use oteryn_protocol_oteryn::npc_service::MAX_OPEN_CONVERSATIONS_PER_NPC;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::actor_spell::ChannelSpellStates;
@@ -43,6 +44,8 @@ struct ChatSession {
     egress: ChatEgress,
     /// The NPC this session is in conversation with (NPC-TALK-1).
     engaged: Option<ExactActorRef>,
+    /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
+    npc_service: bool,
 }
 
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
@@ -64,20 +67,23 @@ impl ChatRuntime {
                 limiter: ChatLimiter::new(now),
                 egress: ChatEgress::new(),
                 engaged: None,
+                npc_service: false,
             });
             entry.name = name.to_owned();
             entry.egress.clear();
             entry.engaged = None;
+            entry.npc_service = false;
         }
     }
 
     /// Installs the NPC talk of the Channel once; a second install is ignored.
-    #[allow(
-        dead_code,
-        reason = "boot wiring follows NPC-PLACE-1b (no runtime NPC before it)"
-    )]
     pub(crate) fn install_npc_talk(&self, book: Arc<NpcTalkBook>) {
         let _ = self.npc_talk.set(book);
+    }
+
+    /// What the NPCs of the Channel say, once installed.
+    pub(crate) fn npc_talk(&self) -> Option<&NpcTalkBook> {
+        self.npc_talk.get().map(AsRef::as_ref)
     }
 
     pub(crate) fn knows(&self, session: GameSessionId) -> bool {
@@ -93,7 +99,62 @@ impl ChatRuntime {
         {
             entry.egress.clear();
             entry.engaged = None;
+            entry.npc_service = false;
         }
+    }
+
+    /// `session` selected capability 3 (admission, reconnect or transfer): NPCs answer its
+    /// `say`, and it starts without a conversation, as its domain 7 snapshot is empty.
+    pub(crate) fn set_npc_service(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.npc_service = true;
+            entry.engaged = None;
+        }
+    }
+
+    /// The NPC `session` is in conversation with.
+    pub(crate) fn engaged(&self, session: GameSessionId) -> Option<ExactActorRef> {
+        self.sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).and_then(|entry| entry.engaged))
+    }
+
+    /// Ends the conversation of `session` when it is held with `npc`.
+    pub(crate) fn end_engagement(&self, session: GameSessionId, npc: ExactActorRef) -> bool {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return false;
+        };
+        match sessions.get_mut(&session) {
+            Some(entry) if entry.engaged == Some(npc) => {
+                entry.engaged = None;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Runs `step` on the conversation of `session`. A step that opens a conversation with an NPC
+    /// that already has `NPC0-RL-05` customers is undone: `None`, as for an unknown session.
+    pub(crate) fn converse<R>(
+        &self,
+        session: GameSessionId,
+        step: impl FnOnce(&mut Option<ExactActorRef>) -> R,
+    ) -> Option<R> {
+        let mut sessions = self.sessions.lock().ok()?;
+        let entry = sessions.get_mut(&session)?;
+        let prior = entry.engaged;
+        let result = step(&mut entry.engaged);
+        if let Some(npc) = entry.engaged
+            && prior != Some(npc)
+            && crowded(&sessions, session, npc)
+        {
+            sessions.get_mut(&session)?.engaged = prior;
+            return None;
+        }
+        Some(result)
     }
 
     pub(crate) fn forget(&self, session: GameSessionId) {
@@ -271,6 +332,19 @@ pub(crate) fn chat_in_channel(
     result(ChatDisposition::Ok)
 }
 
+/// Whether `npc` already has `NPC0-RL-05` customers other than `session`.
+fn crowded(
+    sessions: &HashMap<GameSessionId, ChatSession>,
+    session: GameSessionId,
+    npc: ExactActorRef,
+) -> bool {
+    let others = sessions
+        .iter()
+        .filter(|(id, entry)| **id != session && entry.engaged == Some(npc))
+        .count();
+    others >= MAX_OPEN_CONVERSATIONS_PER_NPC as usize
+}
+
 /// The answer of a nearby NPC to a `say`, queued like any other local line (NPC-TALK-1).
 fn npc_answer(
     book: &NpcTalkBook,
@@ -309,9 +383,22 @@ fn npc_answer(
     let Some(speaking) = sessions.get_mut(&session) else {
         return;
     };
+    if !speaking.npc_service {
+        return;
+    }
+    let prior = speaking.engaged;
     let Some(reply) = talk(at, text, &npcs, &mut speaking.engaged) else {
         return;
     };
+    if speaking.engaged.is_some_and(|npc| prior != Some(npc))
+        && crowded(sessions, session, reply.id)
+    {
+        // The NPC is serving as many customers as it can: the greeting is not answered.
+        if let Some(speaking) = sessions.get_mut(&session) {
+            speaking.engaged = prior;
+        }
+        return;
+    }
     let Some((actor, generation, position, entry)) =
         spots.iter().find(|(actor, ..)| *actor == reply.id)
     else {
@@ -647,6 +734,7 @@ mod tests {
             NpcTalkEntry::new("Alice", Some("Alice buys and sells goods.")),
         );
         chat.install_npc_talk(Arc::new(book));
+        chat.set_npc_service(first.1);
         let said = |who, text: &str| speak(&chat, &runtime, who, &say(text), BASE);
         // A topic before a greeting is not answered.
         said(first, "trade");

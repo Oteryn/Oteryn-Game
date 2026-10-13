@@ -26,11 +26,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
     assert_eq!(
         catalogue.project_revision(),
-        "d3-8-cheese-admitted-20261007-r1"
+        "item-sem-use-2-consumables-20261013-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "9765ddf321d887855c381a7dc4d1fb07ceb7186406dc0c129c1b1aadd79383b6"
+        "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

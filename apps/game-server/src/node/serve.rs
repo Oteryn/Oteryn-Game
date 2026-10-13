@@ -2326,6 +2326,7 @@ async fn boot_and_serve(
         combat_room: combat_room.as_ref(),
         achievements: &achievements,
         imported_charms: &imported_charms,
+        npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
         last_position_flush: Some(&last_position_flush),
     };

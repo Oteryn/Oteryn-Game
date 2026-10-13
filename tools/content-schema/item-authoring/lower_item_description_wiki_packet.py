@@ -15,8 +15,9 @@ OUTPUT = (
 )
 
 
-def qualify(source, historical, definition, owners, params):
+def qualify(source, historical, definition, owners, params, admission=None):
     target, text = source["target"], strict.flavor(source["description"])
+    guard = strict.admitted_guard(source["native_header_guard"], admission)
     if (
         target != historical["target"]
         or source["source_item_id"] != historical["source_item_id"]
@@ -37,7 +38,7 @@ def qualify(source, historical, definition, owners, params):
         or definition.get("identity") != target
         or not strict.same(
             {k: definition.get(k) for k in strict.HEADERS},
-            source["native_header_guard"],
+            guard,
         )
         or strict.movable.leaf(definition, "presentation.name")
         != source["native_name_guard"]
@@ -103,6 +104,7 @@ def build(root=ROOT):
     ):
         raise ValueError("latest official admitted frame drift")
     members = {label: {r[0]: r for r in m["entries"]} for label, m in manifests.items()}
+    consumable = strict.consumable_admissions(root)
     aliases = json.loads((root / "content/items/aliases.json").read_text())["entries"]
     wiki = json.loads((root / strict.base.WIKI).read_text())["records"]
     rows, holds, seen = [], [], set()
@@ -175,7 +177,16 @@ def build(root=ROOT):
                 }
             )
             continue
-        rows.append(qualify(source, prior, definitions[target["key"]], owners, params))
+        rows.append(
+            qualify(
+                source,
+                prior,
+                definitions[target["key"]],
+                owners,
+                params,
+                consumable.get(target["key"]),
+            )
+        )
     d289_holds.require_hits(
         d289_holds.NATIVE_CORE_HOLD_KEYS,
         [

@@ -27,7 +27,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
         drive_owner_spawns(&mut runtime, now.get());
-        let Some(room) = self.qualified_room else {
+        // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
+        // World and its bundle view (bundle cells and map revision) on a bundle World.
+        let Some(room) = self.combat_room else {
             return;
         };
         let Some(content) = self
@@ -168,8 +170,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // radius) is committed here when its destination is a walkable, open, ordinary cell.
         // Lock order: runtime, spell states, attack, then the door runtime (read only).
         // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
-        let doors = self.door.lock().await.collision_cells().clone();
+        // The entry door is bound in the entry frame: it is no obstacle on a bundle World, whose
+        // doors are Unknown tiles that refuse a step.
         let cells = room.movement_cells();
+        let doors = if bundle_cells(cells) {
+            std::collections::BTreeSet::new()
+        } else {
+            self.door.lock().await.collision_cells().clone()
+        };
         let (_, next_think) = melee_owner.creature_ai.run_due_thinks_until_next(
             &mut runtime,
             now.get(),
@@ -470,6 +478,14 @@ fn accepted_entry_movement(cells: &crate::content::NativeEntryMovementCells) -> 
         cells.index(),
         crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
     ) && !crate::movement::source_floor_change::is_source_profile(cells)
+}
+
+/// BUNDLE-MONSTER-AI-1: whether `cells` are a World Bundle's.
+fn bundle_cells(cells: &crate::content::NativeEntryMovementCells) -> bool {
+    matches!(
+        cells.index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+    )
 }
 
 /// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
@@ -951,6 +967,37 @@ mod tests {
             &std::collections::BTreeSet::new(),
             cell(1, -1)
         ));
+    }
+
+    /// BUNDLE-MONSTER-AI-1: on a bundle World the step rule reads the bundle's tile facts and its
+    /// own collision index: an ordinary walkable cell admits a creature step, while a protection
+    /// zone, water, a wall, a floor-change stair and cells outside the bundle refuse. The
+    /// bundle cells are recognised, the entry room's are not.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_bundle_admits_creature_steps_only_onto_ordinary_walkable_cells() {
+        use crate::map::spell_tiles::tests::{id, world};
+        let world_id = crate::foundation::WorldId::decode(&id(1)).expect("world");
+        let entry = crate::content::qualify_native_entry_room(world_id).expect("entry room");
+        let cells = world()
+            .movement_cells(entry.movement_cells())
+            .expect("bundle cells");
+        assert!(bundle_cells(&cells) && !bundle_cells(entry.movement_cells()));
+        let none = std::collections::BTreeSet::new();
+        let at = |x| MovementLocalPosition { x, y: 0, floor: 7 };
+        for x in [1, 13] {
+            assert!(creature_cell_admissible(&cells, &none, at(x)), "grass {x}");
+        }
+        for (x, why) in [
+            (2, "protection zone"),
+            (3, "water"),
+            (4, "wall"),
+            (5, "floor-change stair"),
+            (0, "outside"),
+            (14, "outside"),
+        ] {
+            assert!(!creature_cell_admissible(&cells, &none, at(x)), "{why}");
+        }
     }
 
     /// CREATURE-MOVE-1 (Codex 4242014304): in the accepted entry room the spawned rats, thinking

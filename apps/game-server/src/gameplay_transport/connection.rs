@@ -36,6 +36,7 @@ use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView, ViewItem,
 };
+use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
@@ -87,6 +88,14 @@ use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
     ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_with_equip_drop,
+};
+use oteryn_protocol_oteryn::npc_service::{
+    COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT, DELTA_TYPE_NPC_CONVERSATION_V1,
+    DELTA_TYPE_NPC_TRADE_WINDOW_V1, NpcConversation, NpcIntentDisposition, NpcTalkIntent,
+    NpcTradeWindow, SNAPSHOT_TYPE_NPC_CONVERSATION_V1, SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1,
+    STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW, decode_npc_talk_intent,
+    decode_npc_trade_intent, encode_npc_conversation, encode_npc_intent_result,
+    encode_npc_trade_window,
 };
 use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
@@ -194,6 +203,9 @@ pub(crate) struct SessionContinuity {
     /// cumulative per GameSession, so a resume or channel transfer carries it and the next
     /// snapshot follows it.
     pub(crate) chat_revision: u64,
+    /// NPC-CMD-1a: the last domain 7 and 8 revisions sent. Used only with capability 3; a resume
+    /// or channel transfer carries them and the next snapshot follows them.
+    pub(crate) npc: NpcContinuity,
 }
 
 impl SessionContinuity {
@@ -221,6 +233,10 @@ impl SessionContinuity {
         combat: CombatContinuity::FRESH,
         world_map_revision: 0,
         chat_revision: 0,
+        npc: NpcContinuity {
+            conversation_revision: 0,
+            window_revision: 0,
+        },
     };
 }
 
@@ -540,6 +556,38 @@ pub(crate) trait FreshAdmissionAuthority {
     /// CHAT-WIRE-1: every line queued for the session since the last call, oldest first.
     fn chat_drain(&self, _session: GameSessionId) -> impl Future<Output = Vec<ChatLine>> {
         async { Vec::new() }
+    }
+
+    /// NPC-CMD-1a: a session with capability 3 starts (or restarts) without a conversation.
+    fn npc_session_open(&self, _session: GameSessionId) -> impl Future<Output = ()> {
+        async {}
+    }
+
+    /// NPC-CMD-1a: the domain 7 payload when the conversation differs from the NPC `shown` to
+    /// the client: one opened from chat, or ended by walking out of range.
+    fn npc_follow(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _shown: Option<WireEntityRef>,
+    ) -> impl Future<Output = Option<NpcUpdate>> {
+        async { None }
+    }
+
+    /// NPC-CMD-1a: one `NPC_TALK_INTENT` (command 7) of the admitted actor.
+    fn npc_talk(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _intent: NpcTalkIntent,
+    ) -> impl Future<Output = NpcTalkOutcome> {
+        async {
+            NpcTalkOutcome {
+                disposition: NpcIntentDisposition::Rejected,
+                conversation: None,
+                window: None,
+            }
+        }
     }
 
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
@@ -1432,6 +1480,49 @@ where
             payload: &chat_snapshot,
         });
     }
+    // NPC-CMD-1a: with capability 3, domain 7 (no conversation: a fresh snapshot ends it) and
+    // domain 8 (a closed window), each above its last revision.
+    let npc_snapshots: Option<(Vec<u8>, Vec<u8>)>;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_NPC_CONVERSATION)
+    {
+        authority.npc_session_open(admitted.game_session_id).await;
+        let (Some(conversation_revision), Some(window_revision)) = (
+            admitted.continuity.npc.conversation_revision.checked_add(1),
+            admitted.continuity.npc.window_revision.checked_add(1),
+        ) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let (Ok(conversation), Ok(window)) = (
+            encode_npc_conversation(&NpcConversation::default()),
+            encode_npc_trade_window(&NpcTradeWindow::default()),
+        ) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        admitted.continuity.npc = NpcContinuity {
+            conversation_revision,
+            window_revision,
+        };
+        npc_snapshots = Some((conversation, window));
+    } else {
+        npc_snapshots = None;
+    }
+    if let Some((conversation, window)) = &npc_snapshots {
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_NPC_CONVERSATION,
+            revision: admitted.continuity.npc.conversation_revision,
+            snapshot_type: SNAPSHOT_TYPE_NPC_CONVERSATION_V1,
+            payload: conversation,
+        });
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_NPC_TRADE_WINDOW,
+            revision: admitted.continuity.npc.window_revision,
+            snapshot_type: SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1,
+            payload: window,
+        });
+    }
     // ATTACK-1b: with capability 17, domain 10 above every revision the session has seen. The
     // target was cleared by the reconnect or transfer; the in-fight deadline survives it.
     let combat_snapshot = if admitted
@@ -1542,6 +1633,15 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    // NPC-CMD-1a: a session with domain 7 follows its conversation (chat greeting, walking away).
+    let mut npc_refresh = npc_snapshots.is_some().then(|| {
+        let mut refresh =
+            tokio::time::interval_at(tokio::time::Instant::now() + CHAT_REFRESH, CHAT_REFRESH);
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
+    // The NPC domain 7 shows as the conversation partner; a fresh snapshot shows none.
+    let mut npc_shown: Option<WireEntityRef> = None;
     // ATTACK-1b: only a session with domain 10 drives swings and follows its combat state.
     let mut combat_refresh = combat_snapshot.is_some().then(|| {
         let mut refresh =
@@ -1579,6 +1679,7 @@ where
             Chat,
             Visibility,
             Combat,
+            Npc,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
@@ -1625,6 +1726,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut npc_tick = std::pin::pin!(async {
+                match npc_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut combat_tick = std::pin::pin!(async {
                 match combat_refresh.as_mut() {
                     Some(refresh) => refresh.tick().await,
@@ -1649,6 +1756,9 @@ where
                 }
                 if combat_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Combat);
+                }
+                if npc_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Npc);
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
@@ -1739,6 +1849,30 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.chat_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+                continue;
+            }
+            Next::Npc => {
+                let Some(update) = authority
+                    .npc_follow(actor, admitted.game_session_id, npc_shown)
+                    .await
+                else {
+                    continue;
+                };
+                let Some(frames) = npc_update_frames(
+                    generation,
+                    &mut sequence,
+                    &mut admitted.continuity.npc,
+                    &update,
+                    &mut npc_shown,
+                ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                admitted.continuity.server_sequence = sequence;
+                for frame in frames {
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
@@ -1944,6 +2078,8 @@ where
             Attack(AttackIntentDisposition),
             /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
             Chat(ChatIntentResult),
+            /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
+            Npc(NpcIntentDisposition, NpcUpdate),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -2195,6 +2331,30 @@ where
                 ),
                 Err(_) => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
+            // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's
+            // NPC0-RL-04 allowance: it reaches the limiter as an intent with no text.
+            let intent = decode_npc_talk_intent(command.payload).unwrap_or(NpcTalkIntent {
+                npc_actor: WireEntityRef {
+                    identity: Default::default(),
+                    generation: 0,
+                },
+                text: String::new(),
+            });
+            let outcome = authority
+                .npc_talk(actor, admitted.game_session_id, intent)
+                .await;
+            Dispatch::Npc(
+                outcome.disposition,
+                NpcUpdate {
+                    conversation: outcome.conversation,
+                    window: outcome.window,
+                },
+            )
+        } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
+            // NPC-CMD-1a: trade is NPC-CMD-1b; the window is closed, so no intent can be valid.
+            let _ = decode_npc_trade_intent(command.payload);
+            Dispatch::Npc(NpcIntentDisposition::Rejected, NpcUpdate::default())
         } else if command.command_type == COMMAND_TYPE_ATTACK_TARGET_INTENT {
             // ATTACK-1b: over ATTACK0-RL-01 (25 per second per GameSession, sliding window) it is
             // REJECTED with an empty payload before decoding, as is a malformed intent.
@@ -2326,6 +2486,14 @@ where
                     payload,
                 )
             }
+            Dispatch::Npc(disposition, _) => (
+                if *disposition == NpcIntentDisposition::Rejected {
+                    CommandStatus::Rejected
+                } else {
+                    CommandStatus::Accepted
+                },
+                encode_npc_intent_result(*disposition),
+            ),
             Dispatch::Attack(disposition) => (
                 if *disposition == AttackIntentDisposition::Rejected {
                     CommandStatus::Rejected
@@ -2655,6 +2823,25 @@ where
             }
             // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks.
             Dispatch::Chat(_) => {}
+            // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
+            // follow the result, to the speaker alone.
+            Dispatch::Npc(_, update) => {
+                let Some(frames) = npc_update_frames(
+                    generation,
+                    &mut sequence,
+                    &mut admitted.continuity.npc,
+                    &update,
+                    &mut npc_shown,
+                ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                admitted.continuity.server_sequence = sequence;
+                for frame in frames {
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
             Dispatch::Attack(_) => {
                 // The changed target or modes reach domain 10 right after the result.
                 let Some(state) = authority
@@ -2811,6 +2998,75 @@ fn chat_line_delta(
         revision,
         to,
         DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, to))
+}
+
+/// The domain 7 and 8 delta frames of `update`, in that order, from the sequence after
+/// `sequence` (advanced to the last one); `npc_shown` follows the conversation. `None` on an
+/// encoding fault.
+fn npc_update_frames(
+    generation: u64,
+    sequence: &mut u64,
+    continuity: &mut NpcContinuity,
+    update: &NpcUpdate,
+    npc_shown: &mut Option<WireEntityRef>,
+) -> Option<Vec<Vec<u8>>> {
+    let mut frames = Vec::new();
+    let mut next = *sequence;
+    let mut conversation_revision = continuity.conversation_revision;
+    let mut window_revision = continuity.window_revision;
+    let mut shown = *npc_shown;
+    if let Some(conversation) = &update.conversation {
+        let (delta_sequence, frame, revision) =
+            npc_conversation_delta(generation, next, conversation_revision, conversation)?;
+        (next, conversation_revision) = (delta_sequence, revision);
+        shown = conversation.open.map(|(npc, _)| npc);
+        frames.push(frame);
+    }
+    if let Some(window) = &update.window {
+        let delta_sequence = next.checked_add(1)?;
+        let to = window_revision.checked_add(1)?;
+        let frame = encode_state_delta(
+            generation,
+            delta_sequence,
+            STATE_DOMAIN_NPC_TRADE_WINDOW,
+            window_revision,
+            to,
+            DELTA_TYPE_NPC_TRADE_WINDOW_V1,
+            &encode_npc_trade_window(window).ok()?,
+        )
+        .ok()?;
+        (next, window_revision) = (delta_sequence, to);
+        frames.push(frame);
+    }
+    *sequence = next;
+    continuity.conversation_revision = conversation_revision;
+    continuity.window_revision = window_revision;
+    *npc_shown = shown;
+    Some(frames)
+}
+
+/// The domain 7 delta replacing the whole conversation, from `revision` at the sequence after
+/// `sequence`, with the new revision; `None` on an encoding fault.
+fn npc_conversation_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    conversation: &NpcConversation,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let to = revision.checked_add(1)?;
+    let payload = encode_npc_conversation(conversation).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_NPC_CONVERSATION,
+        revision,
+        to,
+        DELTA_TYPE_NPC_CONVERSATION_V1,
         &payload,
     )
     .ok()?;
@@ -3701,6 +3957,7 @@ mod tests {
                     combat: CombatContinuity::FRESH,
                     world_map_revision: 0,
                     chat_revision: 0,
+                    npc: NpcContinuity::default(),
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
