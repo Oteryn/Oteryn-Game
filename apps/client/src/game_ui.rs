@@ -689,7 +689,8 @@ impl GameUi {
                         continue;
                     }
                     ResolvedHotkey::General(_) => continue,
-                    ResolvedHotkey::Custom(action) => action,
+                    ResolvedHotkey::Custom(action @ CustomHotkeyAction::Text { .. }) => action,
+                    ResolvedHotkey::Custom(_) => continue,
                 };
                 matched = true;
                 match action {
@@ -719,16 +720,7 @@ impl GameUi {
                             }
                         }
                     }
-                    CustomHotkeyAction::Spell { .. } | CustomHotkeyAction::Object { .. } => {
-                        self.notice = Some(
-                            if settings.english {
-                                "This custom action has no authoritative session assignment."
-                            } else {
-                                "Ta własna czynność nie ma autorytatywnego przypisania sesji."
-                            }
-                            .into(),
-                        );
-                    }
+                    CustomHotkeyAction::Spell { .. } | CustomHotkeyAction::Object { .. } => {}
                 }
             }
         }
@@ -2844,6 +2836,44 @@ mod tests {
         );
         assert_eq!(ui.draft, "manual draft");
         assert_eq!(ui.chat_mode, ChatMode::Off);
+    }
+
+    #[test]
+    fn unavailable_legacy_actions_do_not_claim_input_or_enqueue_commands() {
+        let settings = oteryn_client::settings::ClientSettings::default();
+        let (link, mut commands, _outbox) = oteryn_client::play::play_channel();
+        for chat_on in [false, true] {
+            let mut ui = super::GameUi {
+                draft: "ordinary input".into(),
+                ..Default::default()
+            };
+            assert!(!ui.route_actions(
+                &[],
+                &[
+                    oteryn_client::hotkeys::ResolvedHotkey::Custom(
+                        oteryn_client::hotkeys::CustomHotkeyAction::Spell {
+                            spell_key: "legacy".into(),
+                            parameter: String::new(),
+                        }
+                    ),
+                    oteryn_client::hotkeys::ResolvedHotkey::Custom(
+                        oteryn_client::hotkeys::CustomHotkeyAction::Object {
+                            item_definition_ref: 3003,
+                            use_mode: oteryn_client::hotkeys::ObjectUseMode::Use,
+                        }
+                    ),
+                ],
+                &link,
+                &settings,
+                chat_on,
+                false
+            ));
+            assert_eq!(ui.draft, "ordinary input");
+            assert!(ui.notice.is_none());
+            assert!(commands.try_recv().is_err());
+            assert!(link.action_result().is_none());
+            assert!(link.chat_result().is_none());
+        }
     }
 
     #[test]

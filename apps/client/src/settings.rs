@@ -424,12 +424,12 @@ impl ClientSettings {
         if !self.hotkeys.auto_switch {
             return Ok(false);
         }
-        let candidate = character_name.trim();
+        let candidate = character_name.trim().to_lowercase();
         let Some(index) = self
             .hotkeys
             .profiles
             .iter()
-            .position(|profile| profile.name.eq_ignore_ascii_case(candidate))
+            .position(|profile| profile.name.trim().to_lowercase() == candidate)
         else {
             return Ok(false);
         };
@@ -1305,24 +1305,31 @@ mod tests {
     #[test]
     fn hotkey_auto_switch_uses_only_an_existing_character_named_profile()
     -> Result<(), Box<dyn std::error::Error>> {
-        let mut settings = ClientSettings::default();
-        let mut knight = crate::hotkeys::HotkeyProfile {
-            name: "Owned Knight".into(),
-            ..Default::default()
-        };
-        knight.action_bar.edge_enabled = [false, true, false];
-        settings.hotkeys.profiles.push(knight.clone());
-        settings.hotkeys.auto_switch = true;
-        assert!(!settings.auto_switch_hotkey_profile("Unknown")?);
-        assert_eq!(settings.hotkeys.selected, 0);
-        assert!(settings.auto_switch_hotkey_profile("owned knight")?);
-        assert_eq!(settings.hotkeys.selected, 1);
-        assert_eq!(settings.action_bar, knight.action_bar);
-        assert!(!settings.auto_switch_hotkey_profile("Owned Knight")?);
-        settings.hotkeys.auto_switch = false;
-        assert!(!settings.auto_switch_hotkey_profile("Default")?);
-        assert_eq!(settings.hotkeys.selected, 1);
-        settings.validate()?;
+        for (stored_name, character_name) in [
+            ("Owned Knight", "owned knight"),
+            (" Owned Knight ", "Owned Knight"),
+            (" ŁÓDŹ ", "łódź"),
+        ] {
+            let mut settings = ClientSettings::default();
+            let mut knight = crate::hotkeys::HotkeyProfile {
+                name: stored_name.into(),
+                ..Default::default()
+            };
+            knight.action_bar.edge_enabled = [false, true, false];
+            settings.hotkeys.profiles.push(knight.clone());
+            settings.hotkeys.auto_switch = true;
+            assert!(!settings.auto_switch_hotkey_profile("Unknown")?);
+            assert_eq!(settings.hotkeys.selected, 0);
+            assert!(settings.auto_switch_hotkey_profile(character_name)?);
+            assert_eq!(settings.hotkeys.selected, 1);
+            assert_eq!(settings.action_bar, knight.action_bar);
+            assert_eq!(settings.hotkeys.profiles[1].name, stored_name);
+            assert!(!settings.auto_switch_hotkey_profile(character_name)?);
+            settings.hotkeys.auto_switch = false;
+            assert!(!settings.auto_switch_hotkey_profile("Default")?);
+            assert_eq!(settings.hotkeys.selected, 1);
+            settings.validate()?;
+        }
         Ok(())
     }
 

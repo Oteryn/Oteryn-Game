@@ -40,6 +40,16 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 
 ## Page matrix
 
+Supported hotkey/profile authoring now refuses over256-byte Unicode text,
+control characters and full256-action profiles before changing the draft.
+Profile naming and auto-switch use the persisted trim/to_lowercase rule;
+same-frame edits are revalidated before confirmation. Legacy unsupported
+Spell/Object bindings remain loadable but cannot claim a physical key in either
+the resolver or native router. Actual modal button transactions and retained
+input/data regressions are part of this batch. Fresh exact-source native
+qualification is required; previous4ff evidence is not inherited. See
+`docs/agents/tasks/active/OTV2-20261013-client-hotkey-authoring.md`.
+
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
 | --- | --- | --- |
 | Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs have a vitals renderer behind explicit HUD selections. Audio stays disabled because no backend/content exists |

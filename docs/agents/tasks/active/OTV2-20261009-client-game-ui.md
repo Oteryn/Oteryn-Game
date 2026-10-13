@@ -48,6 +48,9 @@ Duplicate/interrupted central records and local CRC/size mismatches are refused;
 real Cancel/Apply/persistence tests pass. Linux 210/194/5, strict Clippy/fmt pass.
 Original/minimap formats, native picker/DX12 and missing server inputs remain open.
 
+Supported-profile batch: `OTV2-20261013-client-hotkey-authoring.md` retains
+the grouped behavior fixes and exact qualification boundary.
+
 ## Native login launcher — 2026-10-12
 
 GUI uses PKCE, owned characters, native ticket/Gateway grant and server admission.

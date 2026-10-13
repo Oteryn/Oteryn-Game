@@ -3,8 +3,8 @@
 use oteryn_client::{
     action_bar::{ACTION_BAR_ROWS, ACTION_BAR_SLOTS, SlotShortcut},
     hotkeys::{
-        CustomHotkey, CustomHotkeyAction, HotkeyPair, HotkeyProfile, MAX_HOTKEY_PROFILES,
-        ObjectUseMode, general_action_supported, is_movement_action,
+        CustomHotkey, CustomHotkeyAction, HotkeyPair, HotkeyProfile, MAX_CUSTOM_HOTKEYS,
+        MAX_HOTKEY_PROFILES, ObjectUseMode, general_action_supported, is_movement_action,
     },
     settings::ClientSettings,
     settings_catalog::ShortcutBinding,
@@ -917,13 +917,13 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         }
     });
     if let Some(edit) = &mut state.profile_edit {
-        let valid_name = profile_name_available(draft, edit);
-        let show_invalid_name = !edit.name.trim().is_empty() && !valid_name;
         let mut close_editor = false;
         egui::Modal::new(egui::Id::new("hotkey-profile-editor")).show(ui.ctx(), |ui| {
             ui.heading(profile_editor_title(edit.operation, en));
             ui.label(profile_editor_prompt(edit.operation, en));
             ui.add(egui::TextEdit::singleline(&mut edit.name).char_limit(48));
+            let valid_name = profile_name_available(draft, edit);
+            let show_invalid_name = !edit.name.trim().is_empty() && !valid_name;
             if show_invalid_name {
                 ui.colored_label(
                     ui.visuals().error_fg_color,
@@ -939,8 +939,7 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
                     .add_enabled(valid_name, egui::Button::new(CONFIRM_LABEL))
                     .clicked()
                 {
-                    apply_profile_edit(draft, edit);
-                    close_editor = true;
+                    close_editor = apply_profile_edit(draft, edit);
                 }
                 if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
                     close_editor = true;
@@ -1040,7 +1039,10 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
     }
 }
 
-fn apply_profile_edit(draft: &mut ClientSettings, edit: &ProfileEdit) {
+fn apply_profile_edit(draft: &mut ClientSettings, edit: &ProfileEdit) -> bool {
+    if !profile_name_available(draft, edit) {
+        return false;
+    }
     let name = edit.name.trim().to_owned();
     match edit.operation {
         ProfileOperation::Add => {
@@ -1065,13 +1067,16 @@ fn apply_profile_edit(draft: &mut ClientSettings, edit: &ProfileEdit) {
             }
         }
     }
+    true
 }
 
 fn profile_name_available(draft: &ClientSettings, edit: &ProfileEdit) -> bool {
-    let candidate = edit.name.trim();
-    !candidate.is_empty()
-        && candidate.len() <= 48
-        && !candidate.chars().any(char::is_control)
+    let candidate = edit.name.trim().to_lowercase();
+    (matches!(edit.operation, ProfileOperation::Rename)
+        || draft.hotkeys.profiles.len() < MAX_HOTKEY_PROFILES)
+        && !candidate.is_empty()
+        && edit.name.trim().len() <= 48
+        && !edit.name.chars().any(char::is_control)
         && !draft
             .hotkeys
             .profiles
@@ -1080,7 +1085,7 @@ fn profile_name_available(draft: &ClientSettings, edit: &ProfileEdit) -> bool {
             .any(|(index, profile)| {
                 let editing_current = matches!(edit.operation, ProfileOperation::Rename)
                     && index == draft.hotkeys.selected;
-                !editing_current && profile.name.eq_ignore_ascii_case(candidate)
+                !editing_current && profile.name.trim().to_lowercase() == candidate
             })
 }
 
@@ -1244,30 +1249,43 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
     if let Some(index) = remove {
         profile.custom.remove(index);
     }
-    new_action_menu(ui, en, state);
+    new_action_menu(ui, en, state, profile.custom.len() < MAX_CUSTOM_HOTKEYS);
     if let Some(kind) = state.new_action {
         edit_new_action(ui, profile, en, state, kind);
     }
 }
 
-fn new_action_menu(ui: &mut egui::Ui, en: bool, state: &mut State) -> egui::Response {
-    ui.menu_button(if en { "New Action" } else { "Nowa czynność" }, |ui| {
-        for (kind, pl, english) in [
-            (NewAction::Spell, "Przypisz czar", "Assign Spell"),
-            (NewAction::Object, "Przypisz przedmiot", "Assign Object"),
-            (NewAction::Text, "Przypisz tekst", "Assign Text"),
-        ] {
-            let available = new_action_available(kind);
-            let response = ui
-                .add_enabled(available, egui::Button::new(if en { english } else { pl }))
-                .on_hover_text(new_action_availability_hint(kind, en));
-            if response.clicked() {
-                state.new_action = Some(kind);
-                ui.close();
+fn new_action_menu(
+    ui: &mut egui::Ui,
+    en: bool,
+    state: &mut State,
+    can_add: bool,
+) -> egui::Response {
+    ui.add_enabled_ui(can_add, |ui| {
+        ui.menu_button(if en { "New Action" } else { "Nowa czynność" }, |ui| {
+            for (kind, pl, english) in [
+                (NewAction::Spell, "Przypisz czar", "Assign Spell"),
+                (NewAction::Object, "Przypisz przedmiot", "Assign Object"),
+                (NewAction::Text, "Przypisz tekst", "Assign Text"),
+            ] {
+                let available = new_action_available(kind);
+                let response = ui
+                    .add_enabled(available, egui::Button::new(if en { english } else { pl }))
+                    .on_hover_text(new_action_availability_hint(kind, en));
+                if response.clicked() {
+                    state.new_action = Some(kind);
+                    ui.close();
+                }
             }
-        }
+        })
+        .response
     })
-    .response
+    .inner
+    .on_disabled_hover_text(if en {
+        "This profile has reached the limit of 256 custom actions."
+    } else {
+        "Ten profil osiągnął limit 256 własnych czynności."
+    })
 }
 
 fn new_action_available(kind: NewAction) -> bool {
@@ -1397,10 +1415,13 @@ fn edit_new_action(
                 );
             }
         }
-        let valid = new_action_valid(state, kind);
+        let valid = new_action_available(kind)
+            && profile.custom.len() < MAX_CUSTOM_HOTKEYS
+            && new_action_valid(state, kind);
         ui.horizontal(|ui| {
-            if ui.add_enabled(valid, egui::Button::new("OK")).clicked() {
-                add_new_action(profile, state, kind);
+            if ui.add_enabled(valid, egui::Button::new("OK")).clicked()
+                && add_new_action(profile, state, kind)
+            {
                 state.new_action = None;
             }
             if ui
@@ -1425,16 +1446,29 @@ fn new_text_label(en: bool) -> &'static str {
 
 fn new_action_valid(state: &State, kind: NewAction) -> bool {
     match kind {
-        NewAction::Spell => !state.spell_key.trim().is_empty(),
+        NewAction::Spell => {
+            !state.spell_key.trim().is_empty()
+                && state.spell_key.len() <= 128
+                && state.spell_parameter.len() <= 128
+                && !state.spell_key.chars().any(char::is_control)
+                && !state.spell_parameter.chars().any(char::is_control)
+        }
         NewAction::Object => state
             .object_definition
             .parse::<u32>()
             .is_ok_and(|definition| definition != 0),
-        NewAction::Text => !state.new_text.trim().is_empty(),
+        NewAction::Text => {
+            !state.new_text.trim().is_empty()
+                && state.new_text.len() <= 256
+                && !state.new_text.chars().any(char::is_control)
+        }
     }
 }
 
-fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewAction) {
+fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewAction) -> bool {
+    if profile.custom.len() >= MAX_CUSTOM_HOTKEYS || !new_action_valid(state, kind) {
+        return false;
+    }
     let action = match kind {
         NewAction::Spell => CustomHotkeyAction::Spell {
             spell_key: std::mem::take(&mut state.spell_key),
@@ -1442,7 +1476,7 @@ fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewActio
         },
         NewAction::Object => {
             let Some(item_definition_ref) = state.object_definition.parse::<u32>().ok() else {
-                return;
+                return false;
             };
             state.object_definition.clear();
             CustomHotkeyAction::Object {
@@ -1460,6 +1494,7 @@ fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewActio
         chat_on: HotkeyPair::default(),
         chat_off: HotkeyPair::default(),
     });
+    true
 }
 
 fn table_header(ui: &mut egui::Ui, en: bool) {
@@ -2111,7 +2146,169 @@ fn custom_label(action: &CustomHotkeyAction, en: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::preferences_browser::test_support::{button_position, click, frame};
     use std::collections::BTreeSet;
+
+    #[test]
+    fn text_editor_buttons_preserve_rejected_input_and_commit_only_valid_bounded_actions()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for button in ["OK", "Apply"] {
+            for (text, count, accepted) in [
+                ("😀".repeat(64), 255, true),
+                ("😀".repeat(65), 0, false),
+                ("ą".repeat(128), 0, true),
+                ("ą".repeat(129), 0, false),
+                ("line\nnext".into(), 0, false),
+                (" \t ".into(), 0, false),
+                ("hello".into(), MAX_CUSTOM_HOTKEYS, false),
+            ] {
+                let ctx = egui::Context::default();
+                let size = egui::vec2(900.0, 620.0);
+                let mut profile = HotkeyProfile {
+                    custom: vec![
+                        CustomHotkey {
+                            action: CustomHotkeyAction::Text {
+                                text: "existing".into(),
+                                send_automatically: false,
+                            },
+                            chat_on: HotkeyPair::default(),
+                            chat_off: HotkeyPair::default(),
+                        };
+                        count
+                    ],
+                    ..HotkeyProfile::default()
+                };
+                let original = profile.clone();
+                let mut state = State {
+                    new_text: text.clone(),
+                    new_action: Some(NewAction::Text),
+                    ..State::default()
+                };
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("text-editor-test").show(ctx, |ui| {
+                        edit_new_action(ui, &mut profile, true, &mut state, NewAction::Text);
+                    });
+                };
+                let _ = frame(&ctx, size, vec![], &mut draw);
+                let output = frame(&ctx, size, vec![], &mut draw).1;
+                let position = button_position(&output, size, button).ok_or("editor button")?;
+                click(&ctx, size, position, &mut draw);
+                if accepted {
+                    assert_eq!(profile.custom.len(), count + 1);
+                    assert!(state.new_text.is_empty());
+                    assert_eq!(state.new_action.is_none(), button == "OK");
+                    assert_eq!(
+                        profile.custom.last().map(|entry| &entry.action),
+                        Some(&CustomHotkeyAction::Text {
+                            text,
+                            send_automatically: false,
+                        })
+                    );
+                } else {
+                    assert_eq!(profile, original);
+                    assert_eq!(state.new_text, text);
+                    assert!(state.new_action.is_some());
+                    assert!(!add_new_action(&mut profile, &mut state, NewAction::Text));
+                    assert_eq!(profile, original);
+                }
+                let preferences = oteryn_client::hotkeys::HotkeyPreferences {
+                    profiles: vec![profile],
+                    selected: 0,
+                    auto_switch: false,
+                };
+                preferences.validate(&[82, 79, 81, 80])?;
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn unicode_profile_edits_refuse_duplicates_without_mutating_the_draft()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for operation in [
+            ProfileOperation::Add,
+            ProfileOperation::Copy,
+            ProfileOperation::Rename,
+        ] {
+            let ctx = egui::Context::default();
+            let size = egui::vec2(900.0, 620.0);
+            let mut draft = ClientSettings::default();
+            draft.hotkeys.profiles[0].name = " ŁÓDŹ ".into();
+            draft.hotkeys.profiles.push(HotkeyProfile {
+                name: "Other".into(),
+                ..HotkeyProfile::default()
+            });
+            draft.select_hotkey_profile(1)?;
+            let original = draft.clone();
+            let mut state = State {
+                profile_edit: Some(ProfileEdit {
+                    operation,
+                    name: "łódź".into(),
+                }),
+                ..State::default()
+            };
+            let mut draw = |ctx: &egui::Context| {
+                egui::Window::new("profile-editor-test")
+                    .show(ctx, |ui| header(ui, &mut draft, true, &mut state));
+            };
+            let _ = frame(&ctx, size, vec![], &mut draw);
+            let output = frame(&ctx, size, vec![], &mut draw).1;
+            let position = button_position(&output, size, "Ok").ok_or("profile Ok")?;
+            click(&ctx, size, position, &mut draw);
+            assert_eq!(draft, original);
+            let edit = state
+                .profile_edit
+                .as_ref()
+                .ok_or("rejected editor closed")?;
+            assert!(!apply_profile_edit(&mut draft, edit));
+            assert_eq!(draft, original);
+            draft.validate()?;
+        }
+        let mut draft = ClientSettings::default();
+        draft.hotkeys.profiles[0].name = "ŁÓDŹ".into();
+        assert!(apply_profile_edit(
+            &mut draft,
+            &ProfileEdit {
+                operation: ProfileOperation::Rename,
+                name: " łódź ".into(),
+            }
+        ));
+        assert_eq!(draft.hotkeys.profiles[0].name, "łódź");
+        for (name, accepted) in [("ą".repeat(24), true), ("ą".repeat(25), false)] {
+            assert_eq!(
+                apply_profile_edit(
+                    &mut draft,
+                    &ProfileEdit {
+                        operation: ProfileOperation::Add,
+                        name,
+                    }
+                ),
+                accepted
+            );
+            draft.validate()?;
+        }
+        while draft.hotkeys.profiles.len() < MAX_HOTKEY_PROFILES {
+            let name = format!("Profile {}", draft.hotkeys.profiles.len());
+            assert!(apply_profile_edit(
+                &mut draft,
+                &ProfileEdit {
+                    operation: ProfileOperation::Copy,
+                    name,
+                }
+            ));
+        }
+        let original = draft.clone();
+        assert!(!apply_profile_edit(
+            &mut draft,
+            &ProfileEdit {
+                operation: ProfileOperation::Add,
+                name: "overflow".into(),
+            }
+        ));
+        assert_eq!(draft, original);
+        draft.validate()?;
+        Ok(())
+    }
 
     #[test]
     fn escape_dismisses_profile_and_new_action_dialogs_before_options() {
@@ -2327,7 +2524,7 @@ mod tests {
         ) -> (egui::Rect, Vec<String>) {
             let mut button = egui::Rect::NOTHING;
             let mut output = context.run_ui(input, |ui| {
-                button = new_action_menu(ui, true, state).rect;
+                button = new_action_menu(ui, true, state, true).rect;
             });
             let text = output
                 .shapes

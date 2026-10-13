@@ -425,6 +425,11 @@ impl HotkeyPreferences {
                 }
             }
             for custom in &profile.custom {
+                // Legacy spell/object assignments remain loadable, but an
+                // unavailable action must not claim or suppress a physical key.
+                if !matches!(custom.action, CustomHotkeyAction::Text { .. }) {
+                    continue;
+                }
                 let pair = if chat_on {
                     custom.chat_on
                 } else {
@@ -1393,6 +1398,68 @@ window.vip=19:C,-"#
                 .resolve(&[repeated(30, Modifiers::NONE)?], false)
                 .is_empty()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn unsupported_legacy_custom_bindings_round_trip_without_claiming_keys()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_on.clear();
+        profile.general_chat_off.clear();
+        for (key, action) in [
+            (
+                58,
+                CustomHotkeyAction::Spell {
+                    spell_key: "legacy".into(),
+                    parameter: "friend".into(),
+                },
+            ),
+            (
+                59,
+                CustomHotkeyAction::Object {
+                    item_definition_ref: 3003,
+                    use_mode: ObjectUseMode::Crosshair,
+                },
+            ),
+            (
+                60,
+                CustomHotkeyAction::Text {
+                    text: "hello".into(),
+                    send_automatically: false,
+                },
+            ),
+        ] {
+            let pair = HotkeyPair {
+                first: Some(binding(key, true)),
+                second: None,
+            };
+            profile.custom.push(CustomHotkey {
+                action,
+                chat_on: pair,
+                chat_off: pair,
+            });
+        }
+        preferences.validate(&[82, 79, 81, 80])?;
+        let restored: HotkeyPreferences =
+            serde_json::from_slice(&serde_json::to_vec(&preferences)?)?;
+        assert_eq!(restored, preferences);
+        for chat_on in [false, true] {
+            for key in [58, 59] {
+                let events = [pressed(key, true)?];
+                let resolved = restored.resolve(&events, chat_on);
+                assert!(resolved.is_empty());
+                assert!(!ClaimedKeyLifecycle::default().observe(&events, !resolved.is_empty()));
+            }
+            assert_eq!(
+                restored.resolve(&[pressed(60, true)?], chat_on),
+                vec![ResolvedHotkey::Custom(CustomHotkeyAction::Text {
+                    text: "hello".into(),
+                    send_automatically: false
+                })]
+            );
+        }
         Ok(())
     }
 
