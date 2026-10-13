@@ -8,8 +8,6 @@ use serde_json::Value;
 
 const FIXTURE: &str =
     include_str!("../../../../../content/combat/parity/tibiapal_auto_attack_v1.json");
-const STATS_PACKET: &str =
-    include_str!("../../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 
 /// Weapon rows whose Oteryn `weapon.attack` is unknown or differs from the catalogue attack
 /// (packet 1.4): `(item key, oteryn attack or none, tibiatools attack)`. Empty: all 15 selected
@@ -34,25 +32,53 @@ fn int(value: &Value) -> i64 {
     value.as_i64().expect("an integer")
 }
 
-/// Oteryn `weapon.attack` per item key from the ITEM-SEM-2b-1 stats packet.
+/// The live `weapon.attack` of an Item definition in `content/items/definitions/` (packet 2.2):
+/// `Some` only when `semantics.weapon` and `weapon.attack` are both `KNOWN`.
 fn oteryn_attack(key: &str) -> Option<i64> {
-    let packet: Value = serde_json::from_str(STATS_PACKET).expect("the stats packet parses");
-    packet["promotions"]
-        .as_array()
-        .expect("promotions")
+    let record = definition_records()
+        .into_iter()
+        .find(|record| record["definition"]["identity"]["key"] == key)
+        .unwrap_or_else(|| panic!("no Item definition for {key}"));
+    let weapon = &record["definition"]["semantics"]["weapon"];
+    let attack = &weapon["value"]["attack"];
+    (weapon["state"] == "KNOWN" && attack["state"] == "KNOWN").then(|| int(&attack["value"]))
+}
+
+fn definition_records() -> Vec<Value> {
+    let directory = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../content/items/definitions"
+    );
+    let mut shards: Vec<_> = std::fs::read_dir(directory)
+        .expect("the definitions directory")
+        .map(|entry| entry.expect("an entry").path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("items-") && name.ends_with(".json"))
+        })
+        .collect();
+    shards.sort();
+    assert!(!shards.is_empty());
+    shards
         .iter()
-        .find(|row| row["field_path"] == "weapon.attack" && row["item_key"] == key)
-        .map(|row| int(&row["typed_value"]["value"]))
+        .flat_map(|path| {
+            let shard: Value = serde_json::from_slice(&std::fs::read(path).expect("a shard"))
+                .expect("the shard parses");
+            shard["records"].as_array().expect("records").clone()
+        })
+        .collect()
 }
 
 fn highest_attack() -> i64 {
-    let packet: Value = serde_json::from_str(STATS_PACKET).expect("the stats packet parses");
-    packet["promotions"]
-        .as_array()
-        .expect("promotions")
+    definition_records()
         .iter()
-        .filter(|row| row["field_path"] == "weapon.attack")
-        .map(|row| int(&row["typed_value"]["value"]))
+        .filter_map(|record| {
+            let weapon = &record["definition"]["semantics"]["weapon"];
+            let attack = &weapon["value"]["attack"];
+            (weapon["state"] == "KNOWN" && attack["state"] == "KNOWN")
+                .then(|| int(&attack["value"]))
+        })
         .max()
         .expect("weapon attacks")
 }

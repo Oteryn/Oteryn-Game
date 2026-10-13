@@ -10,6 +10,20 @@ const TABLE_SCHEMA: &str = "OTERYN_ATTACK_CONSTANTS/v1";
 /// The only parity state this slice admits; ATTACK-PARITY-1 changes it.
 const PARITY_PENDING: &str = "PARITY_PENDING";
 
+/// Every value the table labels (packet 1.1); the parser requires exactly this key set.
+const PARITY_VALUE_KEYS: [&str; 10] = [
+    "player_melee_offensive_attack",
+    "player_melee_balanced_attack",
+    "player_melee_defensive_attack",
+    "monk_melee",
+    "defence",
+    "armor",
+    "block",
+    "creature_melee",
+    "attack_interval_ms",
+    "in_fight_ms",
+];
+
 /// Fight mode (`FIGHT_MODES_INTENT`, ATTACK-0 §3); balanced is the default.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum FightMode {
@@ -138,10 +152,10 @@ impl AttackConstants {
         let defence = table.defence;
         let valid = table.schema == TABLE_SCHEMA
             && table.parity == PARITY_PENDING
-            && table
-                .parity_by_value
-                .values()
-                .all(|parity| parity == PARITY_PENDING)
+            && table.parity_by_value.len() == PARITY_VALUE_KEYS.len()
+            && PARITY_VALUE_KEYS.iter().all(|key| {
+                table.parity_by_value.get(*key).map(String::as_str) == Some(PARITY_PENDING)
+            })
             && table.attack_interval_ms > 0
             && table.in_fight_ms > 0
             && table.block.refill_ms > 0

@@ -10,7 +10,10 @@
     "monk_melee": "PARITY_PENDING",
     "defence": "PARITY_PENDING",
     "armor": "PARITY_PENDING",
-    "block": "PARITY_PENDING"
+    "block": "PARITY_PENDING",
+    "creature_melee": "PARITY_PENDING",
+    "attack_interval_ms": "PARITY_PENDING",
+    "in_fight_ms": "PARITY_PENDING"
   },
   "player_melee_source": "tibiatools a1d368906caa8ae98bcb7123f2431733d318d710 src/lib/damage-calc/damage.ts:13-25 and character-state.ts:73-75 (ATTACK-PARITY-1 packet 1.3); min/max equal TibiaPal on all 1536 fixture rows, the uniform mean does not (1.4)",
   "attack_interval_ms": 2000,
