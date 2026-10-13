@@ -307,7 +307,15 @@ fn cell_facts(
                 };
                 cell.floor_change |= *change;
                 let top = item.depth == 0;
-                cell.block_solid |= top && *solid;
+                // The game server's `terrain_floor`: the World's grounds, and borders the
+                // catalogue proves walkable, are Item entries without a solidity fact that do
+                // not block by themselves (`map/facts.rs`).
+                let floor = matches!(terrain, Ok(Some(t)) if match t.kind {
+                    bundle::TerrainKind::Ground => true,
+                    bundle::TerrainKind::Border => t.walkable == Some(true),
+                    _ => false,
+                });
+                cell.block_solid |= top && *solid && !floor;
                 match terrain {
                     Err(_) => cell.unclassified = true,
                     Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {
