@@ -364,6 +364,31 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
+    /// CHAR-VITALS-1: the health and mana a last-position write saves, or `None` while both are
+    /// at their maxima (the row then holds none, and the next actor starts at its maxima,
+    /// SPELL-D2).
+    pub(crate) const fn saved_vitals(&self) -> Option<(u32, u32)> {
+        if self.health == self.facts.max_health && self.mana == self.facts.max_mana {
+            None
+        } else {
+            Some((self.health, self.mana))
+        }
+    }
+
+    /// CHAR-VITALS-1: a newly created runtime actor takes the health and mana its Character's
+    /// last-position row saved, each capped at its current maximum, in the owner step that
+    /// creates it, before its first command and before any vitals snapshot is sent. It is the
+    /// actor's initial state, so the `ACTOR_VITALS` revision is unchanged. A health that would be
+    /// zero changes nothing: a saved actor is alive, and the actor keeps its maxima.
+    pub(crate) fn restore_saved_vitals(&mut self, health: u32, mana: u32) {
+        let health = health.min(self.facts.max_health);
+        if health == 0 {
+            return;
+        }
+        self.health = health;
+        self.mana = mana.min(self.facts.max_mana);
+    }
+
     /// Test only: stages a wounded actor (no damage owner exists yet).
     #[cfg(test)]
     pub(crate) const fn set_health_for_test(&mut self, health: u32) {

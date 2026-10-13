@@ -1,6 +1,7 @@
 //! The Channel owner's side of the durable last position (CHAR-POSITION-1, decision
 //! CHAR-POSITION-0, `reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md`
-//! §3.2 and §3.3).
+//! §3.2 and §3.3), with the Character's saved health and mana (CHAR-VITALS-1, owner decision
+//! 2026-10-13, `reviews/OTERYN_GAME_CHAR_VITALS0_DURABLE_VITALS_DECISION_2026-10-13.md`).
 //!
 //! - **Admission (§3.3).** When a new runtime actor is admitted, its durable position is read
 //!   under the session fence before the first-entry Channel-owner step: a pending respawn, else
@@ -19,7 +20,8 @@
 //!   consumed respawn) is tracked, so a failed read never lets the new session overwrite the
 //!   stored position with `entry_start`.
 //! - **Periodic write (§3.2, `CHARPOS0-RL-01`).** Every [`LAST_POSITION_WRITE_INTERVAL`], a
-//!   tracked actor whose cell changed since its last write is written under the session fence.
+//!   tracked actor whose cell (or vitals) changed since its last write is written under the
+//!   session fence.
 //!   The writer runs on its own loop and wakes at the earliest absolute deadline, each deadline
 //!   measured from the capture the stored row holds, with [`WRITE_PASS_SLACK`] left for the
 //!   pass itself; a capture later than the interval is reported. A pass works in batches of
@@ -38,6 +40,14 @@
 //! - **Shutdown.** Before readiness is withdrawn, every tracked actor is written, whatever its
 //!   interval, so a planned restart loses no movement. A failed write is retried; the flush is
 //!   done only when every tracked session was written or refused (the node bounds the wait).
+//! - **Vitals (CHAR-VITALS-1).** Every capture also reads the living actor's health and mana
+//!   under the same runtime lock (`None` when both are at their maxima; the vitals last written
+//!   when they cannot be read), so the row's cell and vitals are written by one upsert under one
+//!   key and fence. A periodic write is due when the cell or the vitals changed. A respawn
+//!   placement writes no vitals: the respawned actor is at its maxima (DEATH-2 §4.5). A newly
+//!   created actor placed from a stored row takes that row's vitals, capped at its maxima, in the
+//!   owner step that creates its spell state ([`admitted_vitals`]); a respawn admission, a first
+//!   login or a row without vitals starts at the maxima (SPELL-D2).
 //!
 //! Each capture takes its `write_sequence` under the runtime lock from one process-wide
 //! generator that is strictly increasing and never below the wall clock in microseconds, so a
@@ -54,7 +64,7 @@ use crate::durability::DB_PASS_DEADLINE;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionRecord,
-    LastPositionWrite, PeriodicLastPosition, StoredLastPosition,
+    LastPositionWrite, LastVitals, PeriodicLastPosition, StoredLastPosition,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -168,15 +178,33 @@ struct Track {
     /// The Character revision of the admission fence. A periodic write fills the fence's
     /// `expected_character_revision` with it; the write does not read it (no root lock).
     revision: CharacterRevision,
-    /// The cell last written or read for this Character; `None` when nothing is stored.
-    written: Option<LastPositionCell>,
-    /// When the cell the stored row holds (or an unchanged one) was last captured.
+    /// The cell and vitals last written or read for this Character; `None` when nothing is
+    /// stored.
+    written: Option<Saved>,
+    /// When the cell and vitals the stored row holds (or unchanged ones) were last captured.
     checked: Instant,
 }
 
 impl Track {
     fn due(&self) -> Instant {
         self.checked + NEXT_DUE
+    }
+}
+
+/// What a stored row holds that a periodic write compares with a capture: the cell and the
+/// vitals (CHAR-VITALS-1). The digests are of the pinned content and do not change in a process.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Saved {
+    cell: LastPositionCell,
+    vitals: Option<LastVitals>,
+}
+
+impl Saved {
+    const fn of(record: &LastPositionRecord) -> Self {
+        Self {
+            cell: record.cell,
+            vitals: record.vitals,
+        }
     }
 }
 
@@ -226,7 +254,7 @@ impl LastPositions {
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
-        written: Option<LastPositionCell>,
+        written: Option<Saved>,
         revision: CharacterRevision,
     ) {
         if let Ok(mut tracks) = self.tracks.lock() {
@@ -274,33 +302,33 @@ impl LastPositions {
         self.tracks.lock().ok()?.values().map(Track::due).min()
     }
 
-    /// A capture at `at` of `actor` is durable (`cell`) or unchanged (`None`): its next deadline
+    /// A capture at `at` of `actor` is durable (`saved`) or unchanged (`None`): its next deadline
     /// is measured from `at`. A track replaced by another actor in the meantime is left alone.
     fn settled(
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
-        cell: Option<LastPositionCell>,
+        saved: Option<Saved>,
         at: Instant,
     ) {
         if let Ok(mut tracks) = self.tracks.lock()
             && let Some(track) = tracks.get_mut(&session)
             && track.actor == actor
         {
-            if cell.is_some() {
-                track.written = cell;
+            if saved.is_some() {
+                track.written = saved;
             }
             track.checked = track.checked.max(at);
         }
     }
 
     /// DEATH-2: the in-session placement of `session`'s respawn consumed it and wrote (or an
-    /// earlier attempt of it wrote) its respawn `cell`.
+    /// earlier attempt of it wrote) its respawn `cell`, with no vitals (the maxima).
     pub(super) fn respawned(&self, session: GameSessionId, cell: LastPositionCell) {
         if let Ok(mut tracks) = self.tracks.lock()
             && let Some(track) = tracks.get_mut(&session)
         {
-            track.written = Some(cell);
+            track.written = Some(Saved { cell, vitals: None });
             track.checked = Instant::now();
         }
     }
@@ -402,6 +430,26 @@ pub(super) enum FirstEntryInput {
     Recorded(Option<MovementLocalPosition>),
 }
 
+/// CHAR-VITALS-1: the (health, mana) a newly placed actor takes from the stored row that decided
+/// its first entry. A respawn (the respawned actor is at its maxima, DEATH-2 §4.5), a first
+/// login, a row without vitals and a row of another World start at the maxima (SPELL-D2). The
+/// vitals are the Character's, so in its World they apply even when the stored cell does not
+/// (another coordinate frame, a house tile).
+pub(super) fn admitted_vitals(
+    decided: &AdmissionPosition,
+    world_id: WorldId,
+) -> Option<(u32, u32)> {
+    match decided {
+        AdmissionPosition::Stored(stored) if stored.record.world_id == world_id => stored
+            .record
+            .vitals
+            .map(|vitals| (vitals.health(), vitals.mana())),
+        AdmissionPosition::Stored(_)
+        | AdmissionPosition::Respawn(_)
+        | AdmissionPosition::FirstLogin => None,
+    }
+}
+
 /// §3.3: the first-entry input `decided` selects. A pending respawn's recorded cell; a stored
 /// cell only when it is of `world_id` and `frame_digest` and not a `house` tile (a saved house
 /// tile goes straight to step 4, never through the radius fallback); else the entry start.
@@ -446,20 +494,34 @@ pub(super) fn initialize_first_entry_at(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Capture `actor`'s current cell under the runtime lock, with its record and a fresh write
-    /// sequence. A dead actor (DEATH-2 §4.2, until its respawn) is not captured.
-    async fn capture_last_position(&self, actor: ExactActorRef) -> Captured {
+    /// Capture `track`'s actor's current cell and `session`'s vitals under the runtime lock,
+    /// with its record and a fresh write sequence. A dead actor (DEATH-2 §4.2, until its
+    /// respawn) is not captured. Vitals that cannot be read (no spell state, or a health of 0 not
+    /// yet recorded as a death) keep the ones the track last wrote, so a capture never saves the
+    /// maxima it did not see.
+    async fn capture_last_position(&self, track: &Track, session: GameSessionId) -> Captured {
+        let actor = track.actor;
+        let kept = track.written.and_then(|saved| saved.vitals);
         let runtime = self.runtime.lock().await;
-        if self.spell_states.lock().await.is_dead(actor) {
-            return Captured::Dead;
-        }
+        let vitals = {
+            let states = self.spell_states.lock().await;
+            if states.is_dead(actor) {
+                return Captured::Dead;
+            }
+            match states.saved_vitals(&runtime, actor, session) {
+                Some(Some((health, mana))) => LastVitals::new(health, mana).or(kept),
+                Some(None) => None,
+                None => kept,
+            }
+        };
         let Ok(snapshot) = runtime.read_actor_position(actor) else {
             return Captured::Gone;
         };
         if snapshot.context() != runtime.pinned_movement_context() {
             return Captured::Gone;
         }
-        let placed = self.placed_record(&runtime, snapshot.position());
+        let mut placed = self.placed_record(&runtime, snapshot.position());
+        placed.record.vitals = vitals;
         Captured::At(Capture {
             record: placed.record,
             write_sequence: placed.write_sequence,
@@ -467,8 +529,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
-    /// The record of `cell` in the pinned context, with a fresh write sequence; taken under the
-    /// runtime lock the caller holds.
+    /// The record of `cell` in the pinned context, with a fresh write sequence and no vitals (a
+    /// placed respawn is at its maxima); taken under the runtime lock the caller holds.
     pub(super) fn placed_record(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
@@ -482,6 +544,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 coordinate_frame_digest: pin.frame_binding_digest(),
                 map_revision_digest: runtime.map_revision_digest(),
                 server_artifact_digest: pin.server_artifact_digest(),
+                vitals: None,
             },
             write_sequence: self.last_positions.next_sequence(),
         }
@@ -498,7 +561,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if track.actor != actor {
             return None;
         }
-        match self.capture_last_position(actor).await {
+        match self.capture_last_position(&track, session).await {
             Captured::At(capture) => Some(FinalLastPosition {
                 record: capture.record,
                 write_sequence: capture.write_sequence,
@@ -543,7 +606,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.last_positions.track(
             session,
             actor,
-            Some(placed.record.cell),
+            Some(Saved::of(&placed.record)),
             fence.expected_character_revision,
         );
     }
@@ -617,8 +680,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// §3.3 steps 3 and 4, once no pending respawn is left to consume: track `session` with the
-    /// stored cell its first entry was decided by. `false` when that entry was decided by a
-    /// pending respawn that is no longer pending: the admission is not playable, nothing is
+    /// stored cell and vitals its first entry was decided by. `false` when that entry was decided
+    /// by a pending respawn that is no longer pending: the admission is not playable, nothing is
     /// written and the session stays untracked, so it never overwrites the stored row.
     pub(super) fn track_restored(
         &self,
@@ -628,7 +691,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
     ) -> bool {
         let written = match decided {
-            AdmissionPosition::Stored(stored) => Some(stored.record.cell),
+            AdmissionPosition::Stored(stored) => Some(Saved::of(&stored.record)),
             AdmissionPosition::FirstLogin => None,
             AdmissionPosition::Respawn(_) => {
                 operator_event("admitted_respawn_no_longer_pending");
@@ -671,8 +734,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// One pass of §3.2 writes: the due sessions, most overdue first, or with `all` the
     /// shutdown write of every tracked session, in batches of [`LAST_POSITION_WRITE_BATCH`]. A
-    /// cell unchanged since its last write writes nothing; a dead actor is skipped. Returns the
-    /// number of failed writes, which stay due.
+    /// cell and vitals unchanged since their last write write nothing; a dead actor is skipped.
+    /// Returns the number of failed writes, which stay due.
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
         let due = self.last_positions.due(Instant::now(), all);
         let mut failed = 0;
@@ -688,7 +751,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
         let mut changed = Vec::with_capacity(batch.len());
         for &(session, track) in batch {
-            let capture = match self.capture_last_position(track.actor).await {
+            let capture = match self.capture_last_position(&track, session).await {
                 Captured::At(capture) => capture,
                 // The placement of its respawn writes the respawn cell.
                 Captured::Dead => continue,
@@ -701,7 +764,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if capture.at.saturating_duration_since(track.checked) > LAST_POSITION_WRITE_INTERVAL {
                 operator_event("last_position_interval_exceeded");
             }
-            if track.written == Some(capture.record.cell) {
+            if track.written == Some(Saved::of(&capture.record)) {
                 self.last_positions
                     .settled(session, track.actor, None, capture.at);
                 continue;
@@ -781,7 +844,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.last_positions.settled(
                         session,
                         track.actor,
-                        Some(capture.record.cell),
+                        Some(Saved::of(&capture.record)),
                         capture.at,
                     );
                 }
@@ -819,6 +882,7 @@ mod tests {
                 coordinate_frame_digest: frame,
                 map_revision_digest: [2; 32],
                 server_artifact_digest: [3; 32],
+                vitals: None,
             },
             key: crate::durability::character_last_position::LastPositionKey {
                 character_lease_generation: 1,
@@ -964,9 +1028,13 @@ mod tests {
         };
         // The next deadline is measured from the capture, not from when its write settled.
         let captured = Instant::now();
-        positions.settled(session, actor, Some(cell), captured);
+        let saved = Saved {
+            cell,
+            vitals: LastVitals::new(40, 3),
+        };
+        positions.settled(session, actor, Some(saved), captured);
         let track = positions.tracked(session).expect("tracked");
-        assert_eq!(track.written, Some(cell));
+        assert_eq!(track.written, Some(saved));
         assert_eq!(track.due(), captured + NEXT_DUE);
         // An older capture never moves the deadline back.
         positions.settled(session, actor, None, now);
@@ -983,10 +1051,59 @@ mod tests {
         positions.respawned(session, respawn);
         assert_eq!(
             positions.tracked(session).and_then(|track| track.written),
-            Some(respawn)
+            Some(Saved {
+                cell: respawn,
+                vitals: None
+            })
         );
         positions.forget(session);
         assert!(positions.tracked(session).is_none());
+    }
+
+    /// CHAR-VITALS-1: a periodic write is due when the cell or the vitals changed, and only
+    /// then; a capture is compared with the cell and vitals of the row it last wrote or read.
+    #[test]
+    fn a_vitals_change_alone_makes_the_capture_changed() {
+        let row = stored(world(1), [1; 32]).record;
+        let mut wounded = row;
+        wounded.vitals = LastVitals::new(40, 3);
+        let mut moved = row;
+        moved.cell.x += 1;
+        assert_ne!(Saved::of(&wounded), Saved::of(&row));
+        assert_ne!(Saved::of(&moved), Saved::of(&row));
+        let mut healed = wounded;
+        healed.vitals = LastVitals::new(41, 3);
+        assert_ne!(Saved::of(&healed), Saved::of(&wounded));
+        // The digests are the pinned content's; they never make a capture changed.
+        let mut other_map = wounded;
+        other_map.map_revision_digest = [9; 32];
+        assert_eq!(Saved::of(&other_map), Saved::of(&wounded));
+    }
+
+    /// CHAR-VITALS-1: only a stored row's vitals are restored at admission; a respawn, a first
+    /// login, a row without vitals and a row of another World start the actor at its maxima.
+    /// In its World the vitals apply whatever the stored cell (another frame still restores
+    /// them).
+    #[test]
+    fn only_a_stored_rows_vitals_are_restored() {
+        let mut row = stored(world(1), [9; 32]);
+        assert_eq!(
+            admitted_vitals(&AdmissionPosition::Stored(row), world(1)),
+            None
+        );
+        row.record.vitals = LastVitals::new(40, 0);
+        assert_eq!(
+            admitted_vitals(&AdmissionPosition::Stored(row), world(1)),
+            Some((40, 0))
+        );
+        assert_eq!(
+            admitted_vitals(&AdmissionPosition::Stored(row), world(2)),
+            None
+        );
+        assert_eq!(
+            admitted_vitals(&AdmissionPosition::FirstLogin, world(1)),
+            None
+        );
     }
 
     fn at(x: i32, y: i32) -> MovementLocalPosition {
@@ -1137,6 +1254,8 @@ mod tests {
         });
         let input = first_entry_input(&pending, world(1), [3; 32], |_| true);
         assert_eq!(input, FirstEntryInput::Recorded(Some(at(5, 6))));
+        // CHAR-VITALS-1: the respawned actor starts at its maxima (DEATH-2 §4.5).
+        assert_eq!(admitted_vitals(&pending, world(1)), None);
         let (mut runtime, player, session) = admitted();
         initialize_first_entry_at(&mut runtime, player, session, input, |_| true).expect("respawn");
         assert_eq!(position(&runtime, player), at(5, 6));

@@ -1,6 +1,7 @@
 //! The durable last position of a Character (CHAR-POSITION-1, decision CHAR-POSITION-0,
 //! `reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md` §3, migration
-//! 0080).
+//! 0080), with the Character's saved health and mana (CHAR-VITALS-1, owner decision 2026-10-13,
+//! `reviews/OTERYN_GAME_CHAR_VITALS0_DURABLE_VITALS_DECISION_2026-10-13.md`, migration 0084).
 //!
 //! The row is a Character runtime-state projection (§3.2): it is outside the CharacterRevision
 //! chain, with no cause, no receipt and no replay. Every write is one upsert under the
@@ -19,6 +20,12 @@
 //!
 //! An instance scope (`runtime_scope_kind = 2`) writes nothing: the gameplay fence admits only a
 //! Channel scope, and the terminal release skips any other scope.
+//!
+//! The saved vitals ride in the same row and the same upsert as the cell, so every write above
+//! stores the cell and the vitals of one capture together, under one key and one fence: a stale
+//! session or a lower key overwrites neither. A row without vitals (`None`: a respawn placement,
+//! an actor at its maxima, or a row written before migration 0084) restores the next actor at its
+//! maxima (SPELL-D2).
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -31,6 +38,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
+use oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL;
 use sqlx::Row;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
@@ -44,8 +52,40 @@ pub struct LastPositionCell {
     pub floor: i16,
 }
 
+/// The saved health and mana of a living actor (CHAR-VITALS-1): health in
+/// `1..=MAX_VITAL_POOL`, mana in `0..=MAX_VITAL_POOL` (the SPELL-D8 wire bound). The next
+/// admission caps each at the actor's current maximum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LastVitals {
+    health: u32,
+    mana: u32,
+}
+
+impl LastVitals {
+    /// `None` for a zero health (a dead actor is never saved) or a value above the wire bound.
+    #[must_use]
+    pub const fn new(health: u32, mana: u32) -> Option<Self> {
+        if health == 0 || health > MAX_VITAL_POOL || mana > MAX_VITAL_POOL {
+            None
+        } else {
+            Some(Self { health, mana })
+        }
+    }
+
+    #[must_use]
+    pub const fn health(self) -> u32 {
+        self.health
+    }
+
+    #[must_use]
+    pub const fn mana(self) -> u32 {
+        self.mana
+    }
+}
+
 /// One last position as written (§3.1): the World, the cell, and the frame, map and server
-/// artifact digests of the Channel content it was written under.
+/// artifact digests of the Channel content it was written under, with the actor's saved vitals
+/// (`None`: the next actor starts at its maxima).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LastPositionRecord {
     pub world_id: WorldId,
@@ -53,6 +93,7 @@ pub struct LastPositionRecord {
     pub coordinate_frame_digest: [u8; 32],
     pub map_revision_digest: [u8; 32],
     pub server_artifact_digest: [u8; 32],
+    pub vitals: Option<LastVitals>,
 }
 
 /// The §3.2 order key of one write: the writing session's Character lease generation and the
@@ -288,13 +329,21 @@ pub(super) async fn upsert_last_position(
     if pending {
         return Ok(LastPositionWrite::PendingObligation);
     }
+    // `LastVitals` bounds both values to `MAX_VITAL_POOL`, below `i32::MAX`.
+    let (health, mana) = match record.vitals {
+        Some(vitals) => (
+            Some(i32::try_from(vitals.health).map_err(|_| DurabilityError::InvalidStoredState)?),
+            Some(i32::try_from(vitals.mana).map_err(|_| DurabilityError::InvalidStoredState)?),
+        ),
+        None => (None, None),
+    };
     let written = sqlx::query(
         "INSERT INTO game_character_last_positions AS p \
             (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
              map_revision_digest, server_artifact_digest, character_lease_generation, \
-             write_sequence) \
+             write_sequence, health, mana) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \
-                 $9::text::numeric(20,0), $10::text::numeric(20,0)) \
+                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12) \
          ON CONFLICT (character_id) DO UPDATE SET \
              world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \
              tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \
@@ -302,7 +351,8 @@ pub(super) async fn upsert_last_position(
              map_revision_digest = EXCLUDED.map_revision_digest, \
              server_artifact_digest = EXCLUDED.server_artifact_digest, \
              character_lease_generation = EXCLUDED.character_lease_generation, \
-             write_sequence = EXCLUDED.write_sequence \
+             write_sequence = EXCLUDED.write_sequence, \
+             health = EXCLUDED.health, mana = EXCLUDED.mana \
          WHERE (p.character_lease_generation, p.write_sequence) \
              < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)",
     )
@@ -316,6 +366,8 @@ pub(super) async fn upsert_last_position(
     .bind(record.server_artifact_digest.as_slice())
     .bind(key.character_lease_generation.to_string())
     .bind(key.write_sequence.to_string())
+    .bind(health)
+    .bind(mana)
     .execute(&mut **tx)
     .await?;
     Ok(if written.rows_affected() == 1 {
@@ -332,7 +384,7 @@ async fn load_last_position(
     let row = sqlx::query(
         "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
                 map_revision_digest, server_artifact_digest, \
-                character_lease_generation::text, write_sequence::text \
+                character_lease_generation::text, write_sequence::text, health, mana \
            FROM game_character_last_positions \
           WHERE character_id = encode($1,'hex')::uuid",
     )
@@ -353,6 +405,7 @@ fn decode_row(
     let world: String = row.try_get("world_id")?;
     let world_id = WorldId::decode(&super::character_progression::uuid_text(&world)?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let vitals = decode_vitals(row.try_get("health")?, row.try_get("mana")?)?;
     Ok(StoredLastPosition {
         record: LastPositionRecord {
             world_id,
@@ -364,6 +417,7 @@ fn decode_row(
             coordinate_frame_digest: digest("coordinate_frame_digest")?,
             map_revision_digest: digest("map_revision_digest")?,
             server_artifact_digest: digest("server_artifact_digest")?,
+            vitals,
         },
         key: LastPositionKey {
             character_lease_generation: numeric_u64(row, "character_lease_generation")?,
@@ -372,9 +426,29 @@ fn decode_row(
     })
 }
 
+/// The stored vitals: both absent (start at the maxima) or both a valid [`LastVitals`]. Anything
+/// else is a corrupt row, which fails the read closed as a corrupt cell does.
+fn decode_vitals(
+    health: Option<i32>,
+    mana: Option<i32>,
+) -> std::result::Result<Option<LastVitals>, DurabilityError> {
+    match (health, mana) {
+        (None, None) => Ok(None),
+        (Some(health), Some(mana)) => {
+            let health = u32::try_from(health).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let mana = u32::try_from(mana).map_err(|_| DurabilityError::InvalidStoredState)?;
+            LastVitals::new(health, mana)
+                .map(Some)
+                .ok_or(DurabilityError::InvalidStoredState)
+        }
+        _ => Err(DurabilityError::InvalidStoredState),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::LastPositionKey;
+    #![allow(clippy::expect_used)]
+    use super::{LastPositionKey, LastVitals, MAX_VITAL_POOL, decode_vitals};
 
     /// §3.2 "Order": a later lease always orders after an earlier one, whatever its sequence.
     #[test]
@@ -386,5 +460,36 @@ mod tests {
         assert!(key(2, 1) > key(1, u64::MAX));
         assert!(key(1, 2) > key(1, 1));
         assert!(key(1, 1) == key(1, 1));
+    }
+
+    /// CHAR-VITALS-1: a saved actor is alive and within the wire bound.
+    #[test]
+    fn vitals_are_alive_and_within_the_wire_bound() {
+        assert_eq!(LastVitals::new(0, 5), None);
+        assert_eq!(LastVitals::new(MAX_VITAL_POOL + 1, 5), None);
+        assert_eq!(LastVitals::new(5, MAX_VITAL_POOL + 1), None);
+        let vitals = LastVitals::new(1, 0).expect("alive");
+        assert_eq!((vitals.health(), vitals.mana()), (1, 0));
+        assert!(LastVitals::new(MAX_VITAL_POOL, MAX_VITAL_POOL).is_some());
+    }
+
+    /// CHAR-VITALS-1: a stored row holds both vitals or neither; anything else fails closed.
+    #[test]
+    fn stored_vitals_are_both_or_neither_and_valid() {
+        assert_eq!(decode_vitals(None, None).ok(), Some(None));
+        assert_eq!(
+            decode_vitals(Some(7), Some(0)).ok(),
+            Some(LastVitals::new(7, 0))
+        );
+        for (health, mana) in [
+            (Some(7), None),
+            (None, Some(7)),
+            (Some(0), Some(7)),
+            (Some(-1), Some(7)),
+            (Some(7), Some(-1)),
+            (Some(i32::MAX), Some(7)),
+        ] {
+            assert!(decode_vitals(health, mana).is_err(), "{health:?} {mana:?}");
+        }
     }
 }
