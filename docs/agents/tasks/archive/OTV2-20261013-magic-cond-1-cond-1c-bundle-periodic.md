@@ -32,6 +32,12 @@ fixture World and the room's bundle view (bundle-pin identities) on a bundle Wor
 `qualified_room` consumer stays closed (monster AI, world item and parameter casts, field step
 ingress, source map initialization).
 
+Codex round 1 (P2, accepted): a bundle's fields are static top Items of the bundle tile, not
+`game_item_ground_locations` rows, so the standing element read only the Ground rows and a
+same-element field was missed. The standing fact now merges the Ground rows with the tile's static
+top Items (policy by source id; an Item with no policy has no field semantics, an unknown
+classification is Unknown and consumes no damage). Test: `standing_fact_tests`.
+
 ## Excluded scope
 
 COND-WIRE-1, protocol, migration, `foundation/**` (no change was needed).

@@ -37,6 +37,55 @@ fn standing_element(
     }
     Some(None)
 }
+/// The field a bundle tile carries as a static top Item (COND-1c): the bundle's fields are not
+/// `game_item_ground_locations` rows. An Item with no policy has no field semantics; one whose
+/// classification is not known is Unknown, so no damage is consumed.
+fn static_element(
+    tile: &crate::content::QualifiedSpellTile,
+    source: &NativeGameplayState,
+) -> Option<Option<DotElement>> {
+    for id in tile.top_source_ids() {
+        let Some(policy) = source.item_policy_for_source_id(*id) else {
+            continue;
+        };
+        let record = policy.record();
+        let ReferenceItemField::Known(classification) = &record.semantics.classification else {
+            return None;
+        };
+        match classification.item_type {
+            ReferenceItemField::Known(ReferenceItemType::MagicField) => {
+                return record.attributes.field_condition.as_ref()?.element().ok();
+            }
+            ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {}
+            ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
+        }
+    }
+    Some(None)
+}
+/// Ground Items and static bundle Items are two sources of the one standing fact: a known field
+/// wins, Unknown on either side stays Unknown (no damage consumed).
+fn combine_elements(
+    dynamic: Option<Option<DotElement>>,
+    fixed: Option<Option<DotElement>>,
+) -> Option<Option<DotElement>> {
+    match (dynamic?, fixed?) {
+        (Some(element), _) | (None, Some(element)) => Some(Some(element)),
+        (None, None) => Some(None),
+    }
+}
+#[cfg(test)]
+mod standing_fact_tests {
+    use super::*;
+    #[test]
+    fn static_bundle_field_is_not_lost_and_unknown_stays_unknown() {
+        let fire = Some(Some(DotElement::Fire));
+        assert_eq!(combine_elements(Some(None), fire), fire);
+        assert_eq!(combine_elements(fire, Some(None)), fire);
+        assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
+        assert_eq!(combine_elements(None, fire), None);
+        assert_eq!(combine_elements(fire, None), None);
+    }
+}
 impl ChannelSpellStates {
     /// A preview is read-only. Canonical Creature-origin damage is consumed by
     /// the existing HP/conditions/death owner, including after its creator dies.
@@ -154,7 +203,24 @@ impl ChannelSpellStates {
         let standing_on_field = if in_protection_zone {
             None
         } else {
-            let Some(element) = standing_element(read, source) else {
+            let static_tile = cells
+                .spell_tiles()
+                .lookup(
+                    cells.scope(),
+                    crate::content::LogicalCell {
+                        x: snapshot.position().x,
+                        y: snapshot.position().y,
+                        z: i32::from(snapshot.position().floor),
+                    },
+                )
+                .ok();
+            let dynamic = standing_element(read, source);
+            let fixed = match static_tile {
+                Some(tile) => static_element(tile, source),
+                None => Some(None),
+            };
+            let element = combine_elements(dynamic, fixed);
+            let Some(element) = element else {
                 // Missing field semantics cannot consume damage. Non-damage
                 // ticks depend on the independently qualified PZ, however.
                 return self.tick_in_environment(runtime, cells, actor, session, now);
