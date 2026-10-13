@@ -12,9 +12,8 @@ import json
 import sys
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
-
 from convert_world_metadata import SCRIPT_TELEPORTS
+from jsonschema import Draft202012Validator
 
 HERE = Path(__file__).resolve().parent
 SCHEMA = json.loads((HERE / "world-metadata.schema.json").read_text(encoding="utf-8"))
