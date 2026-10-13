@@ -6,8 +6,8 @@
 //! movement like a creature, is never a combat target and is never removed within the
 //! generation. Nothing is durable.
 //!
-//! The table here is the typed §3.2 shape. Until NPC-PLACE-1b ships the format v4 reader, only
-//! tests supply it; the boot wiring and the join snapshot are the follow-up packet.
+//! The table here is the typed §3.2 shape. NPC-LOAD-1 supplies it at boot from the World
+//! Bundle's format v4 NPC frame (`node::serve::bundle_npcs`).
 
 use super::{
     ActorLocalGeneration, ActorLocalId, ActorRef, CarrierError, ChannelRuntimeV1, ExactActorRef,
@@ -139,10 +139,6 @@ impl NpcPlacementTable {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "NPC-RT-1: no runtime caller until the boot wiring follow-up after NPC-PLACE-1b"
-)]
 impl ChannelRuntimeV1 {
     /// NPC-BEHAVIOUR-0 §3.1: one actor per placement, allocated in frame order under the pinned
     /// Movement context, once, at Channel start. `admitted` answers whether the loaded NPC

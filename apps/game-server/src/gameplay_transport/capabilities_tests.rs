@@ -450,6 +450,7 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
                 sub_type: 0,
             }),
             entries: Vec::new(),
+            equipment: Vec::new(),
         })
     }
 

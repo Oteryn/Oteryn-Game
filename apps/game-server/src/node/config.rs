@@ -3,7 +3,8 @@
 //!
 //! Unknown or duplicate keys reject, every value is required, no production
 //! default exists, and secrets are given only as file references. Errors name
-//! the failing key, never its value.
+//! the failing key, never its value. The one exception is the optional `[boot]`
+//! table: without it the boot steps keep the ordinary semantic-pass deadline.
 
 use serde::Deserialize;
 use std::net::{IpAddr, SocketAddr};
@@ -17,6 +18,10 @@ pub const MAX_CONFIG_BYTES: usize = 64 * 1024;
 /// Bounded operator-assignment wait (D3 step 6).
 pub const MAX_ASSIGNMENT_WAIT_MS: u64 = 24 * 60 * 60 * 1000;
 pub const MAX_ENTRY_DEADLINE_MS: u64 = 60_000;
+/// Bounds of `boot.pass_deadline_ms` (NODE-BOOT-DEADLINE-1): never shorter than the
+/// ordinary `DB_PASS_DEADLINE`, never longer than `DurabilityRoot::MAX_BOOT_PASS_DEADLINE`.
+pub const MIN_BOOT_PASS_DEADLINE_MS: u64 = 2_000;
+pub const MAX_BOOT_PASS_DEADLINE_MS: u64 = 60_000;
 /// Owner-accepted finite bound for the explicitly non-production first slice.
 /// This is a required config value, never a production default or registry value.
 pub const PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY: u32 = 131_072;
@@ -193,6 +198,15 @@ impl WorldBundleConfig {
     }
 }
 
+/// NODE-BOOT-DEADLINE-1: the semantic-pass deadline of the boot durability steps (S2 custody
+/// read, initialization, claim and descriptor registration, Character authority open) on a
+/// loaded host. Gameplay passes keep `DB_PASS_DEADLINE`.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BootConfig {
+    pub pass_deadline_ms: u64,
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -206,6 +220,8 @@ pub struct NodeConfig {
     pub platform: PlatformConfig,
     pub launch: LaunchConfig,
     pub world_bundle: Option<WorldBundleConfig>,
+    /// Absent: the boot steps run under `DB_PASS_DEADLINE`.
+    pub boot: Option<BootConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -319,6 +335,17 @@ impl NodeConfig {
         let config: Self = parse(document)?;
         config.validate()?;
         Ok(config)
+    }
+
+    /// The semantic-pass deadline of the boot durability steps: `boot.pass_deadline_ms`, or
+    /// `DB_PASS_DEADLINE` without `[boot]`.
+    #[must_use]
+    pub fn boot_pass_deadline(&self) -> std::time::Duration {
+        self.boot
+            .as_ref()
+            .map_or(crate::durability::DB_PASS_DEADLINE, |boot| {
+                std::time::Duration::from_millis(boot.pass_deadline_ms)
+            })
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
@@ -483,6 +510,12 @@ impl NodeConfig {
         }
         if let Some(bundle) = &self.world_bundle {
             check_world_bundle(bundle)?;
+        }
+        if self.boot.as_ref().is_some_and(|boot| {
+            !(MIN_BOOT_PASS_DEADLINE_MS..=MAX_BOOT_PASS_DEADLINE_MS)
+                .contains(&boot.pass_deadline_ms)
+        }) {
+            return reject("boot.pass_deadline_ms");
         }
         Ok(())
     }
@@ -830,6 +863,58 @@ start_floor = -7
         assert!(NodeConfig::parse(unknown.as_bytes()).is_err());
         let missing = with.replace("start_y = 200\n", "");
         assert!(NodeConfig::parse(missing.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn boot_pass_deadline_is_optional_bounded_and_defaults_to_the_pass_deadline() {
+        use std::time::Duration;
+        // The bounds are the durability root's own.
+        assert_eq!(
+            Duration::from_millis(MIN_BOOT_PASS_DEADLINE_MS),
+            crate::durability::DB_PASS_DEADLINE
+        );
+        assert_eq!(
+            Duration::from_millis(MAX_BOOT_PASS_DEADLINE_MS),
+            crate::durability::DurabilityRoot::MAX_BOOT_PASS_DEADLINE
+        );
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("fixture node");
+        assert_eq!(config.boot, None);
+        assert_eq!(
+            config.boot_pass_deadline(),
+            crate::durability::DB_PASS_DEADLINE
+        );
+        for (millis, expected) in [
+            ("2000", Duration::from_secs(2)),
+            ("15000", Duration::from_secs(15)),
+            ("60000", Duration::from_secs(60)),
+        ] {
+            let with = format!("{NODE}\n[boot]\npass_deadline_ms = {millis}\n");
+            let config = NodeConfig::parse(with.as_bytes()).expect(millis);
+            assert_eq!(config.boot_pass_deadline(), expected);
+        }
+        for millis in ["0", "1999", "60001", "9223372036854775807"] {
+            let with = format!("{NODE}\n[boot]\npass_deadline_ms = {millis}\n");
+            let error = NodeConfig::parse(with.as_bytes()).expect_err(millis);
+            assert_eq!(error.key, "boot.pass_deadline_ms");
+            assert!(!error.to_string().contains(millis));
+        }
+        // A negative, fractional, textual, unknown or missing value is a document error.
+        for table in [
+            "pass_deadline_ms = -1",
+            "pass_deadline_ms = 15000.5",
+            "pass_deadline_ms = \"15000\"",
+            "pass_deadline_ms = 15000\nretries = 3",
+            "",
+        ] {
+            let with = format!("{NODE}\n[boot]\n{table}\n");
+            assert_eq!(
+                NodeConfig::parse(with.as_bytes())
+                    .err()
+                    .map(|error| error.key),
+                Some("<document>"),
+                "{table}"
+            );
+        }
     }
 
     #[test]

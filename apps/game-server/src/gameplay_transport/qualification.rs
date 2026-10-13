@@ -1602,6 +1602,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             achievements: &achievements,
             imported_charms: &imported_charms,
             quest_catalogue: &quest_catalogue,
+            last_position_flush: None,
         },
         &shutdown,
     );
