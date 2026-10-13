@@ -54,7 +54,7 @@ entry gate of the family, and every child of the family inherits it. The externa
 children, which the appendix lists on those children; they do not gate the other children. A row may name its own
 children (they complete before the row does) but never a child of a family whose entry gate needs this row: such a
 shared child is delivered first and named by the consumer child, not by the row (LOOP-WORLD-1, LOOP-MONSTER-1,
-MAGIC-SUMMON-1 and ITEM-STORAGE-1 were narrowed this way). Packets that the accepted brief releases together are one
+MAGIC-SUMMON-1 and ITEM-STORAGE-1 were narrowed this way). An integration child that needs a downstream family's child is released by that child and is outside its own family's completion set (stated under the graph); a family gate names the narrowest child or the entry gate, not an aggregate whose completion set contains a consumer. Packets that the accepted brief releases together are one
 allocation named with `+` (PREM-2b+PREM-5). Dependency check: a script over this section and section 7 finds
 cycles (strongly connected components of entry-gate and child edges) and dangling names; it reports none.
 
@@ -95,8 +95,8 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | ECON-RET-0 | 122, 113 | **MERGED (#1748).** guild and market event retention profiles (GUILD-RET-0, MARKET-RET-0); releases GUILD-1 and MARKET-1 | none (control plane routes; privacy review) | decision | no | maybe |
 | NPC-ECON-1 | 39, 81 | bank, promotion purchase | #2040 (merged), BANK-FEE-0, BANK-RET-0 (merged, #1748) (BANK-1 waits on it); external prerequisites of the brief children: MAP-BUNDLE-1, MAP-CUTOVER-1b, GOLD-FEE-1b, DEATH-1 | hard (value) | yes | maybe |
 | TRADE-PLAYER-1 | 82 | player-to-player trade | ITEM-LOOP-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1, MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
-| MAIL-1 | 88 | mail and parcels | ITEM-STORAGE-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1, MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
-| MARKET-1 | 122 | market | ITEM-STORAGE-1, NPC-ECON-1, ECON-RET-0 (merged, #1748; MARKET-RET-0), PREMIUM-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1, MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
+| MAIL-1 | 88 | mail and parcels | ITEM-LOOP-1 (ITEM-STORAGE-1 as a whole is not an entry gate: the parcel children name DEPOT-1 through BAGS-DEPOT-1 themselves, and MAIL-TEXT-1 and MAIL-CONTENT-1 run before WRITE-1); external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1, MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
+| MARKET-1 | 122 | market | ITEM-LOOP-1, NPC-ECON-1 (ITEM-STORAGE-1 as a whole is not an entry gate: MARKET-CONTENT-1 runs before STASH-CONTENT-1), ECON-RET-0 (merged, #1748; MARKET-RET-0), PREMIUM-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1, MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
 | CRAFT-1 | 89, 91 | crafting, fishing, digging, cooking | #2039 (merged), ITEM-LOOP-1 | hard (item conversions) | yes | no |
 | HIRE-1 | 90 | hirelings | HOUSE-1a, NPC-ECON-1, PREMIUM-1 | impl | yes | no |
 | QUEST-RT-1 | 86, 87 | quest runtime on the bundle, chest rewards, cap 16 offer | QUEST-LOWER-1, ITEM-LOOP-1, MAP-PICKUP-1 (chest and ground pickup), QUEST-XP-ADMISSION-1 (pays quest XP); external prerequisites of the brief children: MAP-LOAD-1, MAP-WIRE-2, NPC-TALK-1, GOLD-FEE-2, MAP-BUNDLE-1, NPC-CONTENT-1 | hard (rewards are mints) | maybe | yes |
@@ -344,6 +344,8 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (SPELL_NPC_MAP0, SPELL_PRESENT0) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
 
+SPELL-RT-FIELDBUFF-1 is not part of the MAGIC-CAST-1 completion set: its prerequisite is the field-ingress child WORLDINT-ADMIT-1 of LOOP-WORLD-1 (not the LOOP-WORLD-1 aggregate), and it completes with MAGIC-SUMMON-1, so the shared summon children (MONSTER-SUMMON-1, CREATURE-AI-1) that inherit the MAGIC-CAST-1 entry gate do not wait for LOOP-WORLD-1.
+
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
 | PRESENT-CONTENT-1 | SPELL_PRESENT0 | content |  | this decision |
@@ -352,7 +354,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (SPELL_NPC_MAP0
 | COMBAT-PRESENT-1 | SPELL_PRESENT0 | combat lane, combat and determinism review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1b; COND-1 for ticks |
 | PRESENT-CLIENT-1 | SPELL_PRESENT0 | client lane (client owner) |  | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
 | SPELL-RT-SCHED-1 | SPELL_NPC_MAP0 §3 | spell lane, combat and determinism review. Key `delayed_strike` (D.1.5): the spell scheduler, delayed and repeated strikes, cancellation (no scheduler exists on main; this child is the scheduler, never a second runtime) |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 for ticks |
-| SPELL-RT-FIELDBUFF-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `owned_field_buff` (Divine Empowerment, B.1) |  | SPELL-RT-SCHED-1; LOOP-WORLD-1 (field ingress) |
+| SPELL-RT-FIELDBUFF-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `owned_field_buff` (Divine Empowerment, B.1) |  | SPELL-RT-SCHED-1; WORLDINT-ADMIT-1 (the LOOP-WORLD-1 field-ingress child) |
 | SPELL-RT-MONK-1 | SPELL_NPC_MAP0 §2, §3, §5 | spell lane, combat review. Key `monk_focus` and the `harmony_role` field (A.2, S26), the 3 callbacks once (never per spell), the 6 Monk formulas with source types and rounding |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 |
 | SPELL-RT-MONKAI-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `monster_ai_override` (A.3, Balanced Brawl) |  | GAME-AI-01 runtime wiring (#1798); SPELL-RT-MONK-1 |
 | SPELL-RT-STANCE-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `stance_toggle` (C.4), the 27 stance spells |  | STANCE-0; STANCE-1 |
@@ -408,6 +410,8 @@ MAGIC-SUMMON-1 is complete only when every child above, the `owned_field_buff` c
 ### ITEM-LOOP-1
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (BAGS0, ITEM_MOVE_WIRE0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
+
+Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITEM-USE-CLIENT-1 are not part of the ITEM-LOOP-1 completion set: each is allocated after the downstream child it names (DEPOT-1, TRADE-1, RANGED-1's Ground ordinal, ATTACK-CLIENT-1) and completes with that downstream family, so ITEM-STORAGE-1, TRADE-PLAYER-1 and LOOP-RANGED-1 are not blocked by them.
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
@@ -468,6 +472,8 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (IMBUE_FORGE0, 
 ### ITEM-STORAGE-1
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (DEPOT0, SUPPLY_STASH0, WRITE0) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
+
+WRITE-WIRE-1 is not part of the ITEM-STORAGE-1 completion set: it is allocated after MAIL-WIRE-1 and completes with the MAIL-1 family, which keeps ITEM-LOOP-1 (not ITEM-STORAGE-1) as its entry gate.
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
