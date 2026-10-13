@@ -4,13 +4,13 @@
 task_id: CHAT-2A
 title: "CHAT-2A: sealed World chat relay payload, key ring and replay window (CHAT-0 section 5)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/chat-2-20261013
 issue: 2074
 governing_issue: 1622
-pr: null
+pr: 2076
 base_sha: b4774770
 head_sha: null
 final_head_sha: null
@@ -25,7 +25,7 @@ owned_paths:
   - Cargo.toml
   - Cargo.lock
   - content/world/pins/oteryn.json
-  - docs/agents/tasks/active/CHAT-2A.md
+  - docs/agents/tasks/archive/CHAT-2A.md
 public_contracts: []
 external_repositories: []
 ```
@@ -45,7 +45,7 @@ rustls; no new crate enters `Cargo.lock`.
 
 - PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` section 5 (layout, sealing, rotation, replay) and section 8 rows `CHAT0-RL-06`, `-12`, `-13`.
 - DERIVED: the channel is `oteryn_chat_<WorldId without hyphens>` (44 bytes) because production WorldIds are canonical UUIDv7 (`node/config.rs`); CHAT-0 section 5 writes `<world_id>` without fixing the encoding.
-- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and a de-duplication entry is kept for twice the window, so no line the freshness check accepts can return after its entry is gone. The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
+- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce. The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
 - Plaintext is at most 1,185 bytes (two-byte length prefixes), sealed at most 1,214, base64 at most 1,624, inside the section 5 figures.
 
 ## Acceptance criteria
@@ -69,7 +69,9 @@ registry, migration or content change here.
 
 - `cargo fmt -p oteryn-game-server --check`: pass
 - `cargo clippy --offline -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --offline -p oteryn-game-server --lib -- chat`: pass (55 passed, 0 failed; 14 are `chat::relay`)
+- `cargo test --offline -p oteryn-game-server --lib -- chat::relay`: pass (15 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
 
 ### Exact-head CI
 
@@ -88,4 +90,4 @@ Recorded in the PR checks of the frozen head.
 
 - `Merge gate / World bundle` failed on `6e447ee`: `Cargo.toml` and `Cargo.lock` are world-bundle inputs, so the pin `inputs_digest` was refreshed (`pin-check` passes locally).
 - Refs #2074 (does not close it).
-- merge commit/result: pending
+- merge commit/result: squash merge of #2076 (pending)
