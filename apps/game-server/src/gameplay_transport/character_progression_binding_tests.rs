@@ -5,17 +5,23 @@
 
 use super::character_progression_binding::ProgressionUnbound;
 use super::{
-    AdmittedSession, DeathCommit, ProgressionSessions, SessionProgressionBinding, actor_spell,
-    death_commit_refusal, player_death_request, session_progression_binding, settle_session_death,
+    AdmittedSession, AuthorizedRespawn, DeathCommit, ProgressionSessions, SessionDeath,
+    SessionProgressionBinding, SettledRespawn, TransitionFence, actor_spell, death_commit_refusal,
+    place_authorized_respawn, player_death_request, respawn_in_order, session_progression_binding,
+    settle_session_death, settled_respawn_disposition,
 };
 use crate::combat::CreatureDeathRewardInput;
 use crate::content::character_progression_content::{
     CHARACTER_EXPERIENCE_TABLE_LEVELS, CharacterProgressionContent, tests::section_bytes,
 };
 use crate::durability::DurabilityError;
+use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};
 use crate::durability::character_progression::CharacterProgressionError;
-use crate::foundation::{ChannelId, GameSessionId, MovementLocalPosition, WorldId};
-use std::cell::Cell;
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, ExactActorRef,
+    GameSessionId, MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
+};
+use std::cell::{Cell, RefCell};
 use std::sync::Arc;
 
 const ID: [u8; 16] = [
@@ -147,14 +153,15 @@ fn block_on<F: std::future::Future>(future: F) -> F::Output {
         .block_on(future)
 }
 
-/// #1964 Codex P1 4243820239 (ARCH-PROGRESSION-SOURCE-0 §1.5, DEATH-2 §4.3-§4.4): a session
-/// bound at admission whose Character interpretation is advanced by the control plane mid-session
-/// has its durable death refused with `ProgressionContextMismatch`. The death then completes on
-/// the non-durable respawn path after exactly one durable attempt: the session is downgraded to
-/// unbound, and neither a retry tick nor a later death of that session attempts the write again,
-/// so the actor is not left dead retrying for ever. Another session's binding is untouched.
+/// #1964 Codex P1 4243820239 (ARCH-PROGRESSION-SOURCE-0 §1.5, DEATH-2 §4.3-§4.4) and
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5): a session bound at admission whose
+/// Character interpretation is advanced by the control plane mid-session has its durable death
+/// refused with `ProgressionContextMismatch`. After exactly one durable attempt the session is
+/// downgraded to unbound and the death is decided `NoDurableDeath`: neither a retry tick nor a
+/// later death of that session attempts the write again, and none of them respawns the actor
+/// without a durable death. Another session's binding is untouched.
 #[test]
-fn a_binding_refused_mid_session_settles_its_death_non_durably_once() {
+fn a_binding_refused_mid_session_never_respawns_without_a_durable_death() {
     let (refused, other) = (session(1), session(2));
     let binding = Arc::new(binding());
     let sessions = bound(&[
@@ -176,15 +183,19 @@ fn a_binding_refused_mid_session_settles_its_death_non_durably_once() {
             death_commit_refusal(&CharacterProgressionError::ProgressionContextMismatch),
             DeathCommit::ContextMismatch
         );
-        assert!(
-            settle_session_death(&sessions, refused, attempt(DeathCommit::ContextMismatch)).await
+        assert_eq!(
+            settle_session_death(&sessions, refused, attempt(DeathCommit::ContextMismatch)).await,
+            SessionDeath::NoDurableDeath
         );
         assert_eq!(attempts.get(), 1);
         assert!(session_progression_binding(&sessions, refused).is_none());
         assert!(session_progression_binding(&sessions, other).is_some());
-        // The session is unbound now: later settles respawn at once with no durable attempt.
+        // The session is unbound now: later settles attempt nothing and never respawn.
         for _ in 0..3 {
-            assert!(settle_session_death(&sessions, refused, attempt(DeathCommit::Settled)).await);
+            assert_eq!(
+                settle_session_death(&sessions, refused, attempt(DeathCommit::Settled)).await,
+                SessionDeath::NoDurableDeath
+            );
         }
         assert_eq!(attempts.get(), 1);
     });
@@ -208,10 +219,14 @@ fn only_a_context_refusal_of_the_used_binding_unbinds_the_session() {
         assert_eq!(death_commit_refusal(&error), DeathCommit::Unavailable);
     }
     block_on(async {
-        assert!(
-            !settle_session_death(&sessions, target, |_| async { DeathCommit::Unavailable }).await
+        assert_eq!(
+            settle_session_death(&sessions, target, |_| async { DeathCommit::Unavailable }).await,
+            SessionDeath::Retry
         );
-        assert!(settle_session_death(&sessions, target, |_| async { DeathCommit::Settled }).await);
+        assert_eq!(
+            settle_session_death(&sessions, target, |_| async { DeathCommit::Settled }).await,
+            SessionDeath::Durable
+        );
         let kept = session_progression_binding(&sessions, target).expect("bound");
         assert!(Arc::ptr_eq(&kept, &binding));
         // The refused attempt used `binding`; a replacement installed meanwhile stays.
@@ -224,15 +239,292 @@ fn only_a_context_refusal_of_the_used_binding_unbinds_the_session() {
             async { DeathCommit::ContextMismatch }
         })
         .await;
-        assert!(refused);
+        assert_eq!(refused, SessionDeath::NoDurableDeath);
         let kept = session_progression_binding(&sessions, target).expect("replacement");
         assert!(Arc::ptr_eq(&kept, &replacement));
-        // An unknown session respawns non-durably without an attempt.
-        assert!(
-            settle_session_death(&sessions, session(4), |_| async {
-                DeathCommit::Unavailable
-            })
-            .await
-        );
     });
+}
+
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5): a session without a progression
+/// binding (a World pin without a death policy, or any unbound admission of §1.5) commits no
+/// durable death, so its player is never respawned: no durable attempt is made, no placement,
+/// consumption or refill runs, and every later cadence decides the same.
+#[test]
+fn a_session_without_a_death_policy_never_respawns_its_dead_player() {
+    let sessions = bound(&[]);
+    let unbound = session(4);
+    let steps = RefCell::new(Vec::new());
+    block_on(async {
+        for _ in 0..3 {
+            let refilled = respawn_in_order(
+                settle_session_death(&sessions, unbound, |_| {
+                    steps.borrow_mut().push("commit");
+                    async { DeathCommit::Settled }
+                }),
+                step(&steps, "place_and_consume", true),
+                async {
+                    steps.borrow_mut().push("refill");
+                    Some(())
+                },
+            )
+            .await;
+            assert_eq!(refilled, None);
+        }
+    });
+    assert!(steps.borrow().is_empty(), "{:?}", steps.borrow());
+}
+
+async fn step(steps: &RefCell<Vec<&'static str>>, name: &'static str, outcome: bool) -> bool {
+    steps.borrow_mut().push(name);
+    outcome
+}
+
+/// DEATH-RESTART-SAFETY-1 (first player death decision §4.5, DEATH-0 §3.4; fourth Codex review of
+/// #2004): only a durable death is respawned; the actor is placed and its pending respawn consumed
+/// in one fenced step, and the vitals are refilled (ending the death) only after it. A fenced step
+/// that refuses or fails stops the chain with the actor still dead, so a restart at that point
+/// finds the pending respawn recorded for the next admission.
+#[test]
+fn an_in_session_respawn_places_and_consumes_under_the_fence_then_refills() {
+    let run = |settled: SessionDeath, placed: bool| {
+        let steps = RefCell::new(Vec::new());
+        let refilled = block_on(respawn_in_order(
+            async {
+                steps.borrow_mut().push("settle");
+                settled
+            },
+            step(&steps, "place_and_consume", placed),
+            async {
+                steps.borrow_mut().push("refill");
+                Some(7_u64)
+            },
+        ));
+        (refilled, steps.into_inner())
+    };
+    assert_eq!(
+        run(SessionDeath::Durable, true),
+        (Some(7), vec!["settle", "place_and_consume", "refill"])
+    );
+    // A refused fence or placement, or a consumption without an outcome, keeps the actor dead.
+    assert_eq!(
+        run(SessionDeath::Durable, false),
+        (None, vec!["settle", "place_and_consume"])
+    );
+    // No durable outcome: nothing is placed, consumed or refilled.
+    for undecided in [SessionDeath::Retry, SessionDeath::NoDurableDeath] {
+        assert_eq!(run(undecided, true), (None, vec!["settle"]));
+    }
+}
+
+/// DEATH-RESTART-SAFETY-1 (Codex review of #2004): the in-session placement is volatile, so a
+/// restart right after the consumption must still land the actor on the recorded respawn. The
+/// row is consumed only when it records the cell a fresh admission writes; a row recording any
+/// other cell, or none that decodes, is kept for the next admission, and a row that is gone or
+/// belongs to another occurrence leaves nothing of this death to consume.
+#[test]
+fn a_settled_respawn_is_consumed_only_when_an_admission_reproduces_it() {
+    let occurrence = |tag: u8| {
+        let mut id = ID;
+        id[15] = tag;
+        PlayerDeathOccurrence::from_bytes(id).expect("occurrence")
+    };
+    let admission = MovementLocalPosition {
+        x: 3,
+        y: 4,
+        floor: 7,
+    };
+    let row = |tag: u8, respawn_position: Vec<u8>| ConsumedRespawn {
+        occurrence: occurrence(tag),
+        respawn_position,
+    };
+    let at_admission = vec![0, 0, 0, 3, 0, 0, 0, 4, 0, 7];
+    let elsewhere = vec![0, 0, 0, 3, 0, 0, 0, 5, 0, 7];
+    assert_eq!(
+        settled_respawn_disposition(
+            occurrence(1),
+            admission,
+            Some(&row(1, at_admission.clone()))
+        ),
+        SettledRespawn::Reproduced
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(1, elsewhere))),
+        SettledRespawn::Kept
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(1, vec![0; 9]))),
+        SettledRespawn::Kept
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, None),
+        SettledRespawn::Gone
+    );
+    assert_eq!(
+        settled_respawn_disposition(occurrence(1), admission, Some(&row(2, at_admission))),
+        SettledRespawn::Gone
+    );
+}
+
+/// A Channel owner under scope ownership generation 1 whose pinned entry start, the respawn
+/// position, is (3, 4, 7), with the player of `session(5)` positioned at (10, 10, 7) and bound to
+/// lease generation 1 of the Character `ID`, as its admission bound it.
+fn respawning_owner() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+    let world = WorldId::decode(&uuid_v7(0x60)).expect("world");
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid_v7(0x61)).expect("channel"),
+        NodeId::decode(&uuid_v7(0x62)).expect("node"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        ChannelContentPin::from_activation(world, 1, [1; 32], [2; 32], [3; 32], [4; 32], (3, 4, 7)),
+    )
+    .expect("runtime");
+    let session = session(5);
+    let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+    let actor = runtime.commit_fresh_session(reservation).expect("commit");
+    runtime
+        .initialize_movement_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 10,
+                y: 10,
+                floor: 7,
+            },
+        )
+        .expect("player position");
+    runtime
+        .bind_attacker_lease(
+            actor,
+            session,
+            CharacterLease::new(CharacterId::decode(&ID).expect("character"), 1).expect("lease"),
+        )
+        .expect("bind lease");
+    (runtime, actor, session)
+}
+
+fn uuid_v7(tag: u8) -> [u8; 16] {
+    [
+        0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
+    ]
+}
+
+/// The authority the durable fence of `session(5)` holds through the placement: lease generation
+/// 1 of the Character `ID` under scope ownership generation 1. Written out from those facts, never
+/// read back from the owner whose binding the placement checks.
+fn authorized() -> AuthorizedRespawn {
+    AuthorizedRespawn {
+        character_id: crate::domain::CharacterId::from_bytes(ID).expect("character"),
+        lease_generation: 1,
+        scope_generation: ScopeOwnershipGeneration::new(1).expect("scope generation"),
+    }
+}
+
+/// DEATH-RESTART-SAFETY-1 (third and fourth Codex reviews of #2004): the durable fence held
+/// through the placement serializes it with every PostgreSQL-side transition; a transition this
+/// owner began first fences its slot under the runtime lock before its durable write. The
+/// placement checks the fenced authority against the owner's binding under the lock and fails
+/// closed: a terminal release that fenced the slot, a successor rebound to it, or a fence of
+/// another lease generation, Character or scope ownership generation moves nothing, so no respawn
+/// condition is cleared and the actor stays dead. Each case changes exactly one fact; only the
+/// binding the fence proves is placed.
+#[test]
+fn a_session_ended_between_authorization_and_placement_moves_nothing() {
+    let entry = MovementLocalPosition {
+        x: 3,
+        y: 4,
+        floor: 7,
+    };
+    // A terminal release fenced the slot (CHARM-DESC-FENCE-LEASE step (a)) after the authorizing
+    // read, while the placement waited for the lock.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    TransitionFence::Transition(1)
+        .fence(&mut runtime, actor, session)
+        .expect("release fence");
+    assert!(!place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+    // A release that left the session holding its lease lifts the fence; the same authority
+    // then places the actor at the respawn position.
+    assert_eq!(
+        TransitionFence::Transition(1).lift(&mut runtime, actor, session),
+        Ok(true)
+    );
+    assert!(place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    let placed = runtime.read_actor_position(actor).expect("placed");
+    assert_eq!(placed.position(), entry);
+    assert_eq!(placed.revision(), before.revision() + 1);
+
+    // A successor session took the slot over with a newer lease of the same Character.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    runtime
+        .rebind_player_session(
+            actor,
+            session,
+            self::session(6),
+            CharacterLease::new(CharacterId::decode(&ID).expect("character"), 2).expect("lease"),
+        )
+        .expect("successor rebind");
+    assert!(!place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+
+    // An authorization of authority other than the owner's binding, one fact at a time.
+    let (mut runtime, actor, session) = respawning_owner();
+    let before = runtime.read_actor_position(actor).expect("position");
+    let mut other_character = ID;
+    other_character[15] = 0x31;
+    for stale in [
+        AuthorizedRespawn {
+            lease_generation: 2,
+            ..authorized()
+        },
+        AuthorizedRespawn {
+            character_id: crate::domain::CharacterId::from_bytes(other_character)
+                .expect("other character"),
+            ..authorized()
+        },
+        AuthorizedRespawn {
+            scope_generation: ScopeOwnershipGeneration::new(2).expect("scope generation"),
+            ..authorized()
+        },
+    ] {
+        assert!(!place_authorized_respawn(
+            &mut runtime,
+            actor,
+            session,
+            &stale
+        ));
+        assert_eq!(runtime.read_actor_position(actor).expect("kept"), before);
+    }
+    assert!(place_authorized_respawn(
+        &mut runtime,
+        actor,
+        session,
+        &authorized()
+    ));
+    assert_eq!(
+        runtime
+            .read_actor_position(actor)
+            .expect("placed")
+            .position(),
+        entry
+    );
 }

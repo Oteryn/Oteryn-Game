@@ -646,20 +646,17 @@ pub(super) struct FencedCharacterRoot {
     content_revision: String,
 }
 
-/// The complete current gameplay fence shared by every Character progression
-/// write.  The caller has already asserted the recovery fence and taken the
-/// admission relation locks in this transaction.  Proves the live FND-04
-/// session/lease/scope, the scope assignment held by the current node
-/// incarnation, the admission guards, the live root (row-locked) at the
-/// expected CharacterRevision and the current Game-owned interpretation.
-pub(super) async fn assert_gameplay_fence(
+/// The composition rule 2 session checks of the gameplay fence, with no Character root lock:
+/// the live FND-04 session/lease/scope row (`FOR SHARE`), the scope assignment held by the
+/// current node incarnation and the admission guards. The caller has already asserted the
+/// recovery fence and taken the admission relation locks in this transaction. Returns the
+/// session's account. A runtime-state projection (CHAR-POSITION-0 §3.2) writes under this fence
+/// alone.
+pub(super) async fn assert_session_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterGameplayFence,
     node: &NodeIncarnationProof,
-) -> std::result::Result<
-    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
-    DurabilityError,
-> {
+) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
     let RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
@@ -748,6 +745,31 @@ pub(super) async fn assert_gameplay_fence(
     if !guards_ok {
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     }
+
+    Ok(Ok(account_text))
+}
+
+/// The complete current gameplay fence shared by every Character progression
+/// write.  The caller has already asserted the recovery fence and taken the
+/// admission relation locks in this transaction.  Proves the live FND-04
+/// session/lease/scope, the scope assignment held by the current node
+/// incarnation, the admission guards, the live root (row-locked) at the
+/// expected CharacterRevision and the current Game-owned interpretation.
+pub(super) async fn assert_gameplay_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterGameplayFence,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    let account_text = match assert_session_fence(tx, fence, node).await? {
+        Ok(account_text) => account_text,
+        Err(error) => return Ok(Err(error)),
+    };
+    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    };
 
     let root = sqlx::query(
         "SELECT account_id::text, world_id::text, character_revision::text, \
