@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/premium-activation-accept-20261013
-pr: 0
+pr: 2089
 head_sha: "exact frozen head in the report to the control plane"
 final_head_sha: "exact frozen head in the report to the control plane"
 owner: claude-code worker for control plane session_01XYC239givrMonrYoBwwECV
@@ -93,7 +93,7 @@ external_repositories: []
 last_progress: acceptance recorded
 status: completed
 branch: claude/premium-activation-accept-20261013
-pr: 0
+pr: 2089
 blocker: null
 next_action: control plane sends the PR to merge
 ```
