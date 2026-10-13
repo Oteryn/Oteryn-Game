@@ -692,8 +692,10 @@ fn the_runtime_role_cannot_change_items_without_a_use_record() -> TestResult {
     })
 }
 
-/// ITEM-USE-1c, `ITEMUSE0-RL-02`: sequential one-item use commits on one Character, the
-/// qualification evidence of the per-Channel commit budget. Measures; asserts only the outcomes.
+/// ITEM-USE-1c, `ITEMUSE0-RL-02`: sequential flask-shaped potion use commits (one potion unit
+/// burned, the target flask stack grown, the TRANSFORM operation recorded) on one Character, the
+/// ITEM-USE-0 §4.4 qualification shape of the per-Channel commit budget. Measures; asserts only
+/// the outcomes.
 #[test]
 fn item_use_commit_throughput_is_measured() -> TestResult {
     const COMMITS: u16 = 99;
@@ -704,8 +706,10 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
             .execute(&mut *tx)
             .await?;
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
-            "UPDATE game_item_instances SET quantity = 100 WHERE item_instance_id = {};",
-            uuid(FOOD)
+            "UPDATE game_item_instances SET quantity = 100 WHERE item_instance_id = {}; \
+             UPDATE game_item_instances SET quantity = 1 WHERE item_instance_id = {};",
+            uuid(POTION),
+            uuid(FLASK_STACK)
         )))
         .execute(&mut *tx)
         .await?;
@@ -727,7 +731,13 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
                     0xA0, high, low, tag, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 0xA0,
                 ]
             };
-            let mut request = food(u64::from(n) + 1_000, 150, 100 - u32::from(n));
+            let mut request = potion(
+                u64::from(n) + 1_000,
+                150,
+                POTION,
+                100 - u32::from(n),
+                flask_stack(FLASK_STACK, 1 + u32::from(n)),
+            );
             request.transaction_id = fresh(1);
             request.event_id = fresh(2);
             let commit = std::time::Instant::now();
@@ -741,7 +751,7 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
             assert_eq!(
                 outcome,
                 ItemUseOutcome::Written {
-                    shape: ItemUseShape::Burn
+                    shape: ItemUseShape::FlaskStack
                 }
             );
         }
@@ -757,7 +767,8 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
         );
         drop(authority);
         drop(seal);
-        assert_eq!(used.item(FOOD).await?, (1, 1, Some(1)));
+        assert_eq!(used.item(POTION).await?, (1, 1, Some(2)));
+        assert_eq!(used.item(FLASK_STACK).await?, (100, 1, Some(4)));
         used.cleanup().await
     })
 }

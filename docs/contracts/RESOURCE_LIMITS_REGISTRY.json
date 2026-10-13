@@ -9893,21 +9893,21 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
       "resource": "Item-use commits (DUR-03 one-item transactions) per Channel",
       "unit": "commits per second",
-      "hard_maximum": 120,
+      "hard_maximum": 115,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 120
+        "maximum": 115
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Qualification budget, not a runtime cutoff: per-actor admission (ITEMUSE0-RL-01, the one use in flight and the cooldowns) bounds the offered load; a Channel whose item-use load would exceed this budget needs a new measurement before it ships.",
       "client_visible": false,
       "boundary_tests": [
-        "measured: apps/game-server/tests/support/item_use_postgres_cases.rs item_use_commit_throughput_is_measured (99 sequential commits on one Character)"
+        "measured: apps/game-server/tests/support/item_use_postgres_cases.rs item_use_commit_throughput_is_measured (99 sequential flask-stack potion uses on one Character)"
       ],
       "consumers": [
         "DurabilityRoot::commit_item_use from the Channel owner (ITEM-USE-1c)"
       ],
-      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 against a local PostgreSQL 17.6 container (CI harness image), sequential commits on one connection: 120, 123 and 133 commits/s over three runs; the lowest is registered. Not production hardware; re-measure on the qualified database before raising."
+      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 on the ITEM-USE-0 §4.4 flask shape (FlaskStack: source unit burned, target flask stack grown, TRANSFORM recorded) against a local PostgreSQL 17 instance, sequential commits on one connection: 115, 119 and 119 commits/s over three runs; the lowest is registered (an earlier one-item Burn measurement, 120 to 133 commits/s, was the cheaper shape and is not the registered evidence). Not production hardware; re-measure on the qualified database before raising."
     },
     {
       "id": "ITEMUSE0-RL-02-DB-P99",
@@ -9928,7 +9928,7 @@
       "consumers": [
         "DurabilityRoot::commit_item_use from the Channel owner (ITEM-USE-1c)"
       ],
-      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 with ITEMUSE0-RL-02: p99 18.7, 20.2 and 55.3 ms over three runs; the highest is registered, rounded up. Not production hardware."
+      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 with ITEMUSE0-RL-02 on the flask shape: p99 18.8, 27.2 and 31.8 ms over three runs; an earlier one-item Burn measurement peaked at 55.3 ms. The highest observed, rounded up, is registered. Not production hardware."
     },
     {
       "id": "ITEMUSE0-RL-03",
