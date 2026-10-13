@@ -69,16 +69,14 @@ validation on refusal; no weaker TLS or additional insecure origins.
 
 ## Main reconciliation — 2026-10-13
 
-PR reports `mergeable=false/dirty`; ordinary pull_request CI does not run on
-conflicting heads, while pull_request_target audit can pass. Main
-`c754f847b9a69084afa2d401712b13b663885347` is merged normally, preserving all
-client work. Only World `inputs_digest` conflicts: main's digest/content/start
-are retained, and the merged index re-pins inputs to `718013fb`. Release
-pin-check double-builds unchanged bundle `5c32d7ac` (25,097,259 bytes). Client,
-Session, protocol, Platform client and Cargo/toolchain bytes are unchanged from
-`11d92f90`; their local tests retain that scope, not fresh native qualification.
-Oct12 merge `08e13f7d`/input `51b3af96` is historical, superseded only for this
-integration state. MSVC/DX12, actual E2E, full CI/final review remain open.
+Normal merges preserve earlier c754 history and current protected main2daf1e4c,
+including accepted combat/chat/NPC transport and the NPC-placement repair.
+Only World inputs conflict; main bundle e6451f92/start/identity/topology remain
+intact, merged inputs744b6cad. Release pin-check double-builds25,089,885 bytes.
+Client/Session/protocol/Platform-client/Cargo/toolchain equal guard source1562;
+component proof retains that scope, not fresh Windows/E2E acceptance. Policy
+23files/63workflows, routing and governance/60 pass. Full CI/final review remain
+open. Earlier reconciliation evidence is retained in UI-FIDELITY.md.
 
 ## Current authoring batch — 2026-10-11
 

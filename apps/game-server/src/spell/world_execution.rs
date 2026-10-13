@@ -148,10 +148,16 @@ pub(crate) fn qualified_combat_tile<'owner>(
 enum WorldStaticOwnerBorrow<'owner> {
     Entry(&'owner crate::world_runtime::LocalObjectRuntime),
     Source(&'owner crate::content::native_spell_world::QualifiedNativeSpellWorld),
+    /// BUNDLE-COMBAT-ENABLE-1: a bundle World's cells. Its static blockers are already the
+    /// bundle tile facts (`block_solid`, `block_projectile`, BUNDLE-TILES-1), and its runtime
+    /// blockers (a usable door, a pickupable Item) are Unknown tiles, refused before this owner
+    /// is asked; the entry door runtime has no cell in the bundle frame.
+    Bundle,
 }
 impl WorldStaticOwnerBorrow<'_> {
     fn blocks_movement(&self, position: MovementLocalPosition) -> bool {
         match self {
+            Self::Bundle => false,
             Self::Entry(objects) => objects.blocking_cells().contains(&cell(position)),
             Self::Source(world) => matches!(
                 world.lookup(world.scope(), cell(position)),
@@ -181,6 +187,12 @@ fn qualified_static_owner<'owner>(
             return Err(WorldRelocationError::AuthorityMismatch);
         }
         return Ok(WorldStaticOwnerBorrow::Source(world));
+    }
+    if matches!(
+        cells.index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+    ) {
+        return Ok(WorldStaticOwnerBorrow::Bundle);
     }
     objects
         .check_scope_fence(

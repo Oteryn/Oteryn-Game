@@ -44,6 +44,19 @@ pub trait KeyResolver {
     fn solid(&self, _key: &str) -> bool {
         true
     }
+
+    /// Whether a native profile states that the Item blocks movement. The game server keeps
+    /// that value; it derives walkability from the Terrain only when the profile says nothing.
+    fn solid_stated(&self, _key: &str) -> bool {
+        false
+    }
+
+    /// Whether the key routes to a `border` Terrain record whose catalogue `walkable` fact is
+    /// KNOWN true: the game server's `terrain_floor` lets such a border carry no solidity. The
+    /// bundle does not carry a border's `walkable`, so the compiler asks the catalogue.
+    fn walkable_border(&self, _key: &str) -> bool {
+        false
+    }
 }
 
 pub struct Input<'a> {
@@ -280,6 +293,8 @@ fn cell_facts(
                 resolver.terrain(key),
                 resolver.floor_change(key),
                 family == Family::Item && resolver.solid(key),
+                resolver.solid_stated(key),
+                resolver.walkable_border(key),
             )),
             _ => None,
         })
@@ -302,12 +317,22 @@ fn cell_facts(
                 if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
                     cell.teleport = true;
                 }
-                let Some(Some((terrain, change, solid))) = kinds.get(item.palette as usize) else {
+                let Some(Some((terrain, change, solid, stated, border))) =
+                    kinds.get(item.palette as usize)
+                else {
                     continue;
                 };
                 cell.floor_change |= *change;
                 let top = item.depth == 0;
-                cell.block_solid |= top && *solid;
+                // The game server's `terrain_floor`: the World's grounds, and borders the
+                // catalogue proves walkable, are Item entries without a solidity fact that do
+                // not block by themselves (`map/facts.rs`).
+                let floor = matches!(terrain, Ok(Some(t)) if match t.kind {
+                    bundle::TerrainKind::Ground => true,
+                    bundle::TerrainKind::Border => *border,
+                    _ => false,
+                });
+                cell.block_solid |= top && *solid && (*stated || !floor);
                 match terrain {
                     Err(_) => cell.unclassified = true,
                     Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {

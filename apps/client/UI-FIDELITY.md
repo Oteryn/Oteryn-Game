@@ -672,6 +672,17 @@ Session regression and was repaired using the canonical server encoder and
 independently encoded fixtures. Both queue and refusal defects have RED/GREEN
 evidence, not just serialization tests.
 
+Normal upstream composition additionally preserves protected main
+`2daf1e4cc5d09fb2b0d373f4e8eb73bdde20fead`, including accepted bundle combat,
+chat/NPC transport and the NPC-placement compiler repair. The sole conflict is
+the World input fingerprint. The accepted `e6451f92` bundle, start/identity and
+preprod digest stay intact; the merged inputs become `744b6cad`. A fresh release
+pin-check double-builds the identical 25,089,885-byte bundle. Client, Session,
+protocol code, Platform client, Cargo and toolchain bytes are identical to the
+published guard source `1562c11e`; its component proof retains only that scope.
+Repository policy (23 files/63 workflows), routing regressions and governance/60
+pass. This is not a deploy, live NPC/E2E or new native-page qualification.
+
 Linux client 217/194/5 and Session 74 tests pass, as do strict all-target Clippy,
 formatting, boundaries, governance validation and all 60 governance tests.
 The predecessor 1bd4a7a5 has green exact-head PR CI, including the repaired
