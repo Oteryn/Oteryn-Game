@@ -62,11 +62,11 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| LOOP-WORLD-1 | 6, 8, 9, 10 | confirm teleports, keyed/level/quest doors, levers and tile damage on the bundle node | #2018, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1 (the `qualified_room` gate), CHAT-1; CHAT-1b-2b (ENC-WORLD-1 child only); external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1; ENC-COMBAT-1 names MONSTER-SUMMON-1 itself, a shared child of the LOOP-MONSTER-1 graph that is delivered first and is not an entry gate here | hard (child graph, App. 7) | maybe | maybe |
-| LOOP-MAP-1 | 13 | close the cap 18 offer decision: MAP-VIEWPORT-MEASURE-1 is merged (#1873; 0.41-0.44 core per 500 players against the 20% default, so it does not fit), what remains is MAP-VIEWPORT-OPT-1 and MAP-VIEWPORT-LIMIT-1 (Appendix 7) | #1942 client proof; MAP-VIEWPORT-OPT-1; MAP-VIEWPORT-LIMIT-1; external prerequisites of the brief children: MAP-LOAD-1, MAP-OVERLAY-1, VIS-2, CHAR-REV-SEQ-1, BANK-FEE-0, SPAWN-1a, SPAWN-1b | hard (child graph, App. 7) | maybe | maybe |
-| LOOP-COMBAT-MODES-1 | 20 | chase mode (CHASE-1), secure mode, fight-mode effect on targeting | none; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, DUR-03, SPEED-1, CREATURE-MOVE-1 | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-WORLD-1 | 6, 8, 9, 10 | confirm teleports, keyed/level/quest doors, levers and tile damage on the bundle node | #2018, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1 (the `qualified_room` gate), CHAT-1; CHAT-1b-2b (ENC-WORLD-1 child only); external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1 (merged), ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1; ENC-COMBAT-1 names MONSTER-SUMMON-1 itself, a shared child of the LOOP-MONSTER-1 graph that is delivered first and is not an entry gate here | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-MAP-1 | 13 | close the cap 18 offer decision: MAP-VIEWPORT-MEASURE-1 is merged (#1873; 0.41-0.44 core per 500 players against the 20% default, so it does not fit), what remains is MAP-VIEWPORT-OPT-1 and MAP-VIEWPORT-LIMIT-1 (Appendix 7) | #1942 client proof; MAP-VIEWPORT-OPT-1; MAP-VIEWPORT-LIMIT-1; external prerequisites of the brief children: MAP-LOAD-1, MAP-OVERLAY-1, VIS-2, CHAR-REV-SEQ-1, BANK-FEE-0, SPAWN-1a (merged), SPAWN-1b | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-COMBAT-MODES-1 | 20 | chase mode (CHASE-1), secure mode, fight-mode effect on targeting | none; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, DUR-03, SPEED-1 (merged), CREATURE-MOVE-1 | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-DAMAGE-1 | 23, 24, 25, 26 | enable cap 12 (EQUIP-0), resistances, crits/leech, area and chain attacks on the bundle, mana shield | EQUIP-0, BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1 (merged), SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (wire) | maybe | yes |
-| LOOP-RANGED-1 | 21, 22, 51 | projectile profiles, distance weapons and ammo (a DUR-03 burn), wands/rods, attack spells | BUNDLE-TILES-PROJECTILE-1, LOOP-DAMAGE-1, ITEM-LOOP-1; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, SPEED-1, CREATURE-MOVE-1 | hard (ammo burn) | yes | maybe |
+| LOOP-RANGED-1 | 21, 22, 51 | projectile profiles, distance weapons and ammo (a DUR-03 burn), wands/rods, attack spells | BUNDLE-TILES-PROJECTILE-1, LOOP-DAMAGE-1, ITEM-LOOP-1; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, SPEED-1 (merged), CREATURE-MOVE-1 | hard (ammo burn) | yes | maybe |
 | CHAR-BUILD-1 | 38, 40, 41 | **MERGED (#1393 (1a, migration 0030) and the 1b writer, archive records OTV2-20260930-char-build-1 and -1b; the residues are W2b, DAWNPORT-1, DEATH-ML-LOSS-1 and LOOP-PROGRESS-1).** character build state: table, receipt kind, nullable death-receipt build columns, admission load, guards, verifier (A13 §5); takes the skill columns of SKILLS-0 in the same migration | A13 accepted, migrations 0018-0020 | hard (persistence review) | yes | no |
 | W2b | 38, 40, 41 | `CasterState` from build state, `Vocation::None`, training accumulation, Reference formula; trains skills with magic level | CHAR-BUILD-1 (merged) | hard | maybe | no |
 | DAWNPORT-1 | 38 | Dawnport content and the vocation-choice interaction (vocation choice keeps cumulative progress, SKILLS-0 §3.3) | CHAR-BUILD-1 (merged) | impl (content) | maybe | no |
@@ -74,20 +74,20 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | LOOP-PROGRESS-1 | 37, 38, 40, 41 | level-up vitals/capacity per vocation, vocations end to end, skill gain on hits, magic level; entry gate of the four children above | GAME-CHAR-CMD-0, CHAR-BUILD-1 (merged), W2b, DAWNPORT-1 (vocation choice); production training enabled only after DEATH-ML-LOSS-1 | hard (Character writes) | yes | no |
 | LOOP-VITALS-1 | 30, 32, 33 | durable regeneration accumulator, food-time ingress, soul regen and soul orb, stamina | ITEM-USE-1c (in flight; #2039 merged only the 1a and 1b slices), LOOP-PROGRESS-1; external prerequisites of the brief children: CHAR-BUILD-1 (merged), SKILLS-0, CHAR-POSITION-1, PREY-0, WORLDINT-USE-1, WO-2, TIMED-CONTENT-1, TIMED-ITEM-0B, ITEM-SEM-2b, HOUSE-RUNTIME-1a, HOUSE-VIEW-1, WORLDINT-WIRE-1, DUR-02 | hard (Character state) | yes | no |
 | LOOP-TRAIN-1 | 34, 35 | offline training (statue) and exercise weapons; beds are BED-1 | PREMIUM-1 (the statue is Premium), LOOP-VITALS-1, LOOP-PROGRESS-1 (skill build state, A13 magic-level training), CHAR-POSITION-1, a slot in the shared guard-rewrite order, WORLDINT-USE-1, OFFLINE-1, STATUE-1, EXERCISE-1 children (Appendix 7), ITEM-TIMED-1 (`charges`), the training statue and dummy content (WO-2, OFFLINE-CONTENT-1, EXERCISE-CONTENT-1; OFFLINE-0 §30-34, EXERCISE-0 §33-35); external prerequisites of the brief children: CHAR-BUILD-1 (merged), SKILLS-0, PREY-0, TIMED-CONTENT-1, TIMED-ITEM-0B, ITEM-SEM-2b, HOUSE-RUNTIME-1a, HOUSE-VIEW-1, WORLDINT-WIRE-1, DUR-02 | hard | yes | no |
-| LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1 (MAGIC-SUMMON-1 is not an entry gate: the two rows share one child graph and its shared summon children are delivered first); external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1, VIS-2 | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1 (MAGIC-SUMMON-1 is not an entry gate: the two rows share one child graph and its shared summon children are delivered first); external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1 (merged), VIS-2 | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-GROUND-1 | 18 | decay of dropped items on Ground (shared with the death drop) | DEATH-DUR-1 | hard (retire) | maybe | no |
 | LOOP-CLOCK-1 | 15 | **Slice MERGED (#2071: capability 19, domain 18, the pure World clock). Row 15 is not complete without the residual CLOCK-1 batch (Appendix 7): the VIS-2 `light` field, which WORLD-INTERACTION-0 §11 assigns to CLOCK-1 as an amendment of VIS-2 after VIS-2 and COND-1.** World clock and day phase, server light state | CLOCK-1 (residue; Wave 1, behind VIS-2 and COND-1) | impl | no | yes |
 | WEATHER-1 | 17 | weather state and change events | LOOP-CLOCK-1 (slice merged); CLOCK-1 (residue) | impl | no | yes |
 | LOGOUT-WIRE-1 | 109 | the logout command: `LOGOUT_INTENT`, capability `LOGOUT_V1`, `LOGOUT-RL-01`, `TerminalRelease::Logout` (ARCH-KILL-REWARD-LOGOUT-1 §2.2) | ATTACK-1b (#1798, merged); LOGOUT_V1 is not on main; not KILL-REWARD-COMP-1 | hard (fencing; protocol review) | no (`migration_lease: none`) | yes (protocol and resource-limit registries) |
-| KILL-REWARD-COMP-1 | 107 | **MERGED on main@ab7d51ae6 (`gameplay_transport/kill_reward.rs`, `content/creature_reward.rs`, `combat/death_reward.rs`, e2e #2075); a worker confirms only the §2.1 acceptance tests at allocation.** Live loot and XP settlement for a creature kill (ARCH-KILL-REWARD-LOGOUT-1 §2.1) | ATTACK-1b (#1798, merged), D3-7 | hard | no (`migration_lease: none`) | yes (`KILLRW-RL-01`) |
+| KILL-REWARD-COMP-1 | 107 | **MERGED on main@ab7d51ae6 (`gameplay_transport/kill_reward.rs`, `content/creature_reward.rs`, `combat/death_reward.rs`, e2e #2075); a worker confirms only the §2.1 acceptance tests at allocation.** Live loot and XP settlement for a creature kill (ARCH-KILL-REWARD-LOGOUT-1 §2.1) | ATTACK-1b (#1798, merged), D3-7 (merged) | hard | no (`migration_lease: none`) | yes (`KILLRW-RL-01`) |
 
 ### Epic 2. Economy and items
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| ITEM-LOOP-1 | 62, 63, 64, 65, 66, 68 (pickup rows 62 and 63 from a base-map entry are gated on MAP-PICKUP-1) | equip/unequip, drop/pickup, nested containers, stacks, cap and weight enforcement, starter pack on the bundle | EQUIP-0, #2039; external prerequisites of the brief children: CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1, VIS-2, MOVE-RL-11, ITEM-SEM-2b, MAP-OVERLAY-1, DEPOT-1, INBOX-1a, TRADE-1, GROUND-MOVE-1, RANGED-1, GAME-ABILITY-01 | hard (durable item) | yes | maybe |
-| ITEM-TIMED-1 | 69 | charges, duration and repair; children TIMED-RT-1a, TIMED-RT-1b, TIMED-RT-1c (hard), TIMED-HOUSE-1, TIMED-FX-1 (hard, combat), TIMED-WIRE-1 (Reg), TIMED-PARITY-1 (TIMED_ITEM0B; Appendix 7) | ITEM-LOOP-1, TIMED-CONTENT-1, ITEM-MOVE-2a/2b, EQUIP-RT-1, COND-1 (per child); external prerequisites of the brief children: ITEM-SEM-2b, NPC-TRADE-1, ITEM-MOVE-2b, ITEM-USE-1c, HOUSE-CUSTODY-0, ITEM-SEM-USE, USE-WIRE-V1, ITEM-MOVE-WIRE-1, GOLD-FEE-2, ATTACK-1b, SPEED-1, GAME-AI-01, SPELL-D3, MARKET-1 | hard | yes | yes |
-| ITEM-IMBUE-1 | 72 | imbuing; children IMBUE-1 (hard), IMBUE-RT-1 (hard, combat), IMBUE-SCROLL-1 (hard), IMBUE-WIRE-1 (Reg), IMBUE-CONTENT-1 (IMBUE_FORGE0; Appendix 7) | ITEM-LOOP-1, GOLD-FEE-2, ITEM-MOVE-2a, ATTACK-1b, SPEED-1, NPC-ECON-1 (per child), PREMIUM-1 | hard | yes | yes |
+| ITEM-LOOP-1 | 62, 63, 64, 65, 66, 68 (pickup rows 62 and 63 from a base-map entry are gated on MAP-PICKUP-1) | equip/unequip, drop/pickup, nested containers, stacks, cap and weight enforcement, starter pack on the bundle | EQUIP-0, #2039; external prerequisites of the brief children: CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1, VIS-2, MOVE-RL-11, ITEM-SEM-2b, MAP-OVERLAY-1, DEPOT-1, INBOX-1a (merged), TRADE-1, GROUND-MOVE-1, RANGED-1, GAME-ABILITY-01 | hard (durable item) | yes | maybe |
+| ITEM-TIMED-1 | 69 | charges, duration and repair; children TIMED-RT-1a, TIMED-RT-1b, TIMED-RT-1c (hard), TIMED-HOUSE-1, TIMED-FX-1 (hard, combat), TIMED-WIRE-1 (Reg), TIMED-PARITY-1 (TIMED_ITEM0B; Appendix 7) | ITEM-LOOP-1, TIMED-CONTENT-1, ITEM-MOVE-2a/2b, EQUIP-RT-1, COND-1 (per child); external prerequisites of the brief children: ITEM-SEM-2b, NPC-TRADE-1, ITEM-MOVE-2b, ITEM-USE-1c, HOUSE-CUSTODY-0, ITEM-SEM-USE, USE-WIRE-V1, ITEM-MOVE-WIRE-1, GOLD-FEE-2, ATTACK-1b, SPEED-1 (merged), GAME-AI-01, SPELL-D3, MARKET-1 | hard | yes | yes |
+| ITEM-IMBUE-1 | 72 | imbuing; children IMBUE-1 (hard), IMBUE-RT-1 (hard, combat), IMBUE-SCROLL-1 (hard), IMBUE-WIRE-1 (Reg), IMBUE-CONTENT-1 (IMBUE_FORGE0; Appendix 7) | ITEM-LOOP-1, GOLD-FEE-2, ITEM-MOVE-2a, ATTACK-1b, SPEED-1 (merged), NPC-ECON-1 (per child), PREMIUM-1 | hard | yes | yes |
 | ITEM-FORGE-1 | 73 | exaltation forge; children FORGE-1a, FORGE-1b (hard), FORGE-WIRE-1 (Reg), FORGE-CREATURE-1 (hard, combat), TIER-EFFECT-1 (hard, combat), MARKET-TIER-1 (hard, after MARKET-1), FORGE-CONTENT-1 (IMBUE_FORGE0; Appendix 7) | ITEM-LOOP-1, GOLD-FEE-2, ITEM-MOVE-2a, GAME-AI-01 runtime, ATTACK-1b (per child), PREMIUM-1 | hard | yes | yes |
 | ITEM-STORAGE-1 | 70, 71, 74 | depot, supply stash, books and papers | ITEM-LOOP-1; external prerequisites of the brief children: ITEM-VIEW-1b, MAP-LOAD-1, MAP-WIRE-1, HOUSE-CUSTODY-1, ITEM-MOVE-2a, WO-1, BANK-RET-0 (merged, #1748), MARKET-CONTENT-1, ITEM-SEM-2b, MAIL-TEXT-1, ITEM-MOVE-2b, BAGS-1, HOUSE-RUNTIME-1a, LEVER-1; WRITE-WIRE-1 names MAIL-WIRE-1 itself and is delivered after MAIL-1 | hard | yes | yes |
 | ITEM-LOOK-1 | 75 | look/examine message | none | impl | no | yes |
@@ -108,14 +108,14 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | PREMIUM-1 (Premium spell check, PREMIUM-ACTIVATION-0 §4.6); external prerequisites of the brief children: VIS-2, SPELL-D4, ATTACK-1b, COND-1, STANCE-1, GAME-AI-01, PARTY-1, SKILLS-0, ITEM-SEM-2b; complete only when every child in App. 7 is complete | hard (child graph, App. 7) | maybe | maybe |
 | MAGIC-COND-1 | 27, 28, 29 | DoT, haste/paralyze/invisibility/outfit, muted/exhaust/infight/pacified/rooted/feared/powerless/agony | BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1 (merged), SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (child graph, App. 7) | maybe | maybe |
 | MAGIC-ITEMS-1 | 55, 56 | rune use with target and conjure | ITEM-USE-1c (#2039 merged only 1a and 1b); external prerequisites of the brief children: ITEM-USE-WIRE-1, ITEM-SEM-USE, ITEM-USE-1c, SPELL-TARGET-1, ATTACK-0, VIS-2, CHAR-BUILD-1 (merged), SPELL-D4, COND-1 | hard (DUR-03) | maybe | maybe |
-| MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields; complete only when every child in App. 7 is complete | MAGIC-CAST-1 (LOOP-WORLD-1 field ingress gates only the field children, which name it themselves, not the shared summon children); external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1, VIS-2 | hard (child graph, App. 7) | maybe | maybe |
+| MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields; complete only when every child in App. 7 is complete | MAGIC-CAST-1 (LOOP-WORLD-1 field ingress gates only the field children, which name it themselves, not the shared summon children); external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1 (merged), VIS-2 | hard (child graph, App. 7) | maybe | maybe |
 | PROG-ADV-1 | 42, 43, 44 | weapon proficiency (PROF-WIRE-0), wheel of destiny, gem atelier | LOOP-PROGRESS-1, PREMIUM-1; external prerequisites of the brief children: PROF-CONTENT-1, PROF-1, FORGE-1a, PROF-WIRE-1, ATTACK-1b, RANGED-1, SKILLS-0, EQUIP-RT-1, CHAR-REV-SEQ-1, GAME-ABILITY-01, CONDITIONS-0, PREM-1, GOLD-FEE-2, WHEEL-GEM-0A, ITEM-USE-0 | hard | yes | yes |
 
 ### Epic 4. World and NPC
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040 (merged), CHAR-POSITION-1, PREMIUM-1, CHAT-1; CHAT-1b-2b (NPC-VOICE-1); external prerequisites of the brief children: NPC-CONTENT-1, QUEST-CONTENT-1, NPC-TALK-1, GOLD-FEE-1b, DEATH-1, QUEST-PRED-1, PREM-1, PREM-3, NPC-PLACE-1b, CREATURE-MOVE-1, SPEED-1, NPC-WIRE-1, VIS-2 | hard (travel moves a Character) | yes | maybe |
+| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040 (merged), CHAR-POSITION-1, PREMIUM-1, CHAT-1; CHAT-1b-2b (NPC-VOICE-1); external prerequisites of the brief children: NPC-CONTENT-1, QUEST-CONTENT-1, NPC-TALK-1, GOLD-FEE-1b, DEATH-1, QUEST-PRED-1, PREM-1, PREM-3, NPC-PLACE-1b, CREATURE-MOVE-1, SPEED-1 (merged), NPC-WIRE-1, VIS-2 | hard (travel moves a Character) | yes | maybe |
 | MONSTER-META-1 | 98, 99, 100, 101 | bestiary (CHARM-6), charms, bosstiary, bosses | LOOP-MONSTER-1, CHAT-1; CHAT-1b-2b (RAID-1), PARTY-XP-1 (BOSS-REWARD-1); external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2 | hard (child graph, App. 7) | maybe | maybe |
 | EVENTS-RAID-1 | 102 | raids | LOOP-MONSTER-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1; CHAT-1b-2b, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
 | EVENTS-WORLD-1 | 103, 104 | world changes, Fury Gates, Nightmare Isles, hazard | EVENTS-RAID-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1; CHAT-1b-2b, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
@@ -128,7 +128,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 |---|---|---|---|---|---|---|
 | CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | CHAT-1; CHAT-1b-2b (NOT merged: no task record and no resource row yet; Wave 1); acceptance gate: CHAT-0 is CANDIDATE (reopened by the 2026-10-12 security review: rate gate before the Channel lock, now #2026; cast-path mute, now #2003); CHAT-2 is not allocated until CHAT-0 is re-reviewed and ACCEPTED | hard (World relay) | maybe | maybe |
 | PARTY-1 | 112 | party membership and state: invite/join/leave, succession, shared-XP toggle, `PartyView` cache (membership only) | CHAT-2 (which follows CHAT-1; CHAT-1b-2b) (PARTY-PVP-0 §30-33) | hard (shared state) | yes | yes |
-| PARTY-XP-1 | 59 | shared-XP eligibility and split, party immunity in area effects, party loot right, `party_buff` query and party spells | PARTY-1, the D118 XP lane (LOOP-PROGRESS-1), D3-4 (LOOP-DAMAGE-1) (PARTY-PVP-0 §30-32); external prerequisites of the brief children: DEATH-1, ATTACK-1b, COND-1, DEATH-3, SPEED-1, VIS-2, ATTACK-WIRE-1, CHAT-2 | hard (combat, rewards) | maybe | maybe |
+| PARTY-XP-1 | 59 | shared-XP eligibility and split, party immunity in area effects, party loot right, `party_buff` query and party spells | PARTY-1, the D118 XP lane (LOOP-PROGRESS-1), D3-4 (LOOP-DAMAGE-1) (PARTY-PVP-0 §30-32); external prerequisites of the brief children: DEATH-1, ATTACK-1b, COND-1, DEATH-3, SPEED-1 (merged), VIS-2, ATTACK-WIRE-1, CHAT-2 | hard (combat, rewards) | maybe | maybe |
 | GUILD-1 | 113 | guild, rank, member, invitation tables and transactions (GUILD0 §3, §4) | PARTY-1, ECON-RET-0 (merged, #1748; GUILD-RET-0), PREMIUM-1 (PREM-WIRE-1), NPC-ECON-1 (BANK-1) (PREMIUM-ACTIVATION-0 l.367-368; SOCIAL_MAP_PACKETS l.122-126) | hard (persistence, security) | yes | yes |
 | GUILD-BANK-1 | 113 | guild balance and ledger, disband payout and custody claims | GUILD-1, NPC-ECON-1 (BANK-1) | hard (persistence, economy) | yes | maybe |
 | GUILDHALL-1 | 113, 119 | guildhall bid with split escrow, guild rent, guild ban, `GUILD_DISBAND`, guild ACL | GUILD-1, GUILD-BANK-1, HOUSE-1b, HOUSE-ACL-1 | hard (persistence, economy, security) | yes | no |
@@ -141,7 +141,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | HOUSE-RUNTIME-1b | 120 | house interior runtime, map-load child (HOUSE-RUNTIME-1b) | HOUSE-RUNTIME-1a, MAP-LOAD-1 | hard (security, persistence review) | maybe | no |
 | HOUSE-RUNTIME-1c | 120 | house interior runtime, position child (HOUSE-RUNTIME-1c) | HOUSE-RUNTIME-1b, CHAR-POSITION-1 | hard (security, persistence review) | maybe | no |
 | HOUSE-1a | 119 | house ownership, auction, rent (HOUSE-OWN-0 §3-§9; SOCIAL_MAP_PACKETS HOUSE-1a) | BANK-1 (NPC-ECON-1), HOUSE-RUNTIME-1a, 1b and 1c, PREM-WIRE-1 (PREMIUM-1) | hard (persistence, economy, security) | yes | no |
-| HOUSE-1b | 119 | house ownership, second half (SOCIAL_MAP_PACKETS HOUSE-1b) | HOUSE-1a, INBOX-1a (MAIL-1), MAP-OVERLAY-1c | hard (persistence, economy, security) | yes | no |
+| HOUSE-1b | 119 | house ownership, second half (SOCIAL_MAP_PACKETS HOUSE-1b) | HOUSE-1a, INBOX-1a (merged) (MAIL-1), MAP-OVERLAY-1c | hard (persistence, economy, security) | yes | no |
 | MAP-OVERLAY-1a | 13 | **MERGED (#1800).** map overlay, first child | MAP-LOAD-1 | hard | maybe | maybe |
 | MAP-OVERLAY-1b | 13 | **MERGED (#1809).** map overlay, second child | MAP-OVERLAY-1a | hard | maybe | maybe |
 | MAP-OVERLAY-1c | 13 | map overlay, house child | MAP-OVERLAY-1b, HOUSE-RUNTIME-1a | hard | maybe | maybe |
@@ -175,7 +175,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1; external prerequisites of the brief children: CHAR-REV-SEQ-1, GOLD-FEE-1b, SPELL-TARGET-1, ATTACK-0, ITEM-USE-1c, ATTACK-1b, CHAR-BUILD-1b (merged), CHARM-1 | hard (child graph, App. 7) | maybe | maybe |
 | SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1 (slice merged); CLOCK-1 (residue); ITEM-LOOK-1 (registry order); external prerequisites of the brief children: PROD-COMPAT-01, ADMIT-CAP-1, ANL-01, DATA-PRIVACY-01, ANL-03 | hard (child graph, App. 7) | no | yes |
 | GM-1 | 136 | GM tools, mute, kick, staff audit and reports (Game side of OPS-GM-01, ARCH-LIVE-READINESS-0 §1). Account bans and sanction enforcement across the boundary are a Platform proposal (P1) that binds nothing in Game until Platform accepts; the owner of bans is unassigned until then. Complete only when every child in App. 7 is complete | LOGOUT-WIRE-1 (LOGOUT-WIRE-1), WRITE-MOD-1; external prerequisites of the brief children: see App. 7 | hard (child graph, App. 7) | yes | yes |
-| SPECTATE-1 | 138 | spectating | LOOP-WORLD-1; external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1, CHAT-1; CHAT-1b-2b | hard (child graph, App. 7) | maybe | yes |
+| SPECTATE-1 | 138 | spectating | LOOP-WORLD-1; external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1 (merged), MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1, CHAT-1; CHAT-1b-2b | hard (child graph, App. 7) | maybe | yes |
 
 ### Death module and in-flight work (not re-planned here)
 
@@ -278,7 +278,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (ENCOUNTER_RT0)
 | HAZARD-1 | WORLD_INTERACTION0 | impl, combat review |  | LEVER-1; COND-1 |
 | CLOCK-1 | WORLD_INTERACTION0 | impl, determinism and protocol review. The clock epoch, the clock and light functions and capability 19 with domain 18 are MERGED (#2071); the residue is the `world_time` predicate and the VIS-2 `light` field (WORLD_INTERACTION0 §11) | yes | VIS-2; COND-1 |
 | WORLDINT-CONTENT-1 | WORLD_INTERACTION0 | content |  | WO-2; WO-3; QUEST-CONTENT-2 |
-| ENC-RT-1 | ENCOUNTER_RT0 | hard (determinism), determinism review |  | CREATURE-AI-1; the typed Encounter profile (E1) |
+| ENC-RT-1 | ENCOUNTER_RT0 | hard (determinism), determinism review |  | CREATURE-AI-1 (merged); the typed Encounter profile (E1) |
 | ENC-COMBAT-1 | ENCOUNTER_RT0 | hard (combat), combat review |  | ENC-RT-1; COND-1; MONSTER-SUMMON-1 |
 | ENC-WORLD-1 | ENCOUNTER_RT0 | impl, determinism review |  | ENC-RT-1; LEVER-1; FLOOR-1; CHAT-1; CHAT-1b-2b; ITEM-USE-1c |
 | ENC-OUTCOME-1 | ENCOUNTER_RT0 | hard (persistence), persistence and security review |  | ENC-RT-1; BOSS-REWARD-1; QUEST-STATE-1 |
@@ -321,7 +321,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (RANGED0) is al
 | RANGED-CONTENT-1 | RANGED0 | content |  | ITEM-SEM-2b |
 | QUIVER-1 | RANGED0 | impl, persistence review |  | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | RANGED0 | hard (combat, persistence), combat and persistence review |  | ATTACK-1b; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b; DUR-03 amendment accepted |
-| CHASE-1 | RANGED0 | hard (movement), movement and determinism review |  | ATTACK-1b; SPEED-1; CREATURE-MOVE-1 |
+| CHASE-1 | RANGED0 | hard (movement), movement and determinism review |  | ATTACK-1b; SPEED-1 (merged); CREATURE-MOVE-1 |
 | RANGED-PARITY-1 | RANGED0 | impl |  | RANGED-1 |
 
 ### LOOP-DAMAGE-1, MAGIC-COND-1
@@ -331,12 +331,12 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
 | EQUIP-CONTENT-1 | EQUIP0 | **MERGED (#1719).** content |  | ITEM-SEM-2b |
-| EQUIP-RT-1 | EQUIP0 | hard (combat), combat and determinism review |  | ITEM-MOVE-2a; SPEED-1; COND-1; CHAR-BUILD-1 (merged) and SKILLS-0's live skill read (the base a `SKILL_BOOST` adds to) |
+| EQUIP-RT-1 | EQUIP0 | hard (combat), combat and determinism review |  | ITEM-MOVE-2a; SPEED-1 (merged); COND-1; CHAR-BUILD-1 (merged) and SKILLS-0's live skill read (the base a `SKILL_BOOST` adds to) |
 | EQUIP-PARITY-1 | EQUIP0 | impl |  | EQUIP-RT-1 |
 | CHARM-DEF-1 | CHARM4 | combat lane, combat and determinism review |  | ATTACK-1b (creature attacks on characters) |
 | COND-1 | CONDITIONS0 | hard (combat), combat and determinism review |  | this decision |
-| SPEED-1 | CONDITIONS0 | impl, movement review |  | COND-1; the GAME-AI-01 step cadence (§4.3) |
-| COND-WIRE-1 | CONDITIONS0 | impl, protocol review | yes | COND-1; SPEED-1; VIS-2 |
+| SPEED-1 | CONDITIONS0 | **MERGED (#1715).** impl, movement review |  | COND-1; the GAME-AI-01 step cadence (§4.3) |
+| COND-WIRE-1 | CONDITIONS0 | impl, protocol review | yes | COND-1; SPEED-1 (merged); VIS-2 |
 | COND-DUR-1 | CONDITIONS0 | hard (persistence), persistence review |  | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | CONDITIONS0 | **MERGED (#1400).** content |  | this decision |
 
@@ -365,7 +365,7 @@ SPELL-RT-FIELDBUFF-1 is not part of the MAGIC-CAST-1 completion set: its prerequ
 | SPELL-RT-PARTY-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `party_buff` (C.3) adapter and the 11 party spells (`spell/party.rs`) |  | PARTY-1 for membership reads |
 | SPELL-RT-PREM-1 | PREMIUM_ACTIVATION0 §4.6 | spell lane. Premium spell check at admission through the merged Premium reader, no second Premium runtime |  | PREMIUM-1 |
 
-MAGIC-CAST-1 is complete only when every child in this table is complete. The wheel spells (36) belong to the WHEEL batches (SPELL-WHEEL-GATE-1 first) and the Paralyze caster effect to RUNE-CAST-1 under MAGIC-ITEMS-1; neither is a second copy here.
+MAGIC-CAST-1 is complete only when every child in this table except SPELL-RT-FIELDBUFF-1 is complete (that child completes with MAGIC-SUMMON-1, see the exclusion above). The wheel spells (36) belong to the WHEEL batches (SPELL-WHEEL-GATE-1 first) and the Paralyze caster effect to RUNE-CAST-1 under MAGIC-ITEMS-1; neither is a second copy here.
 
 ### LOOP-VITALS-1, LOOP-TRAIN-1, house beds
 
@@ -391,12 +391,12 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CREATURE_AI0, 
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
-| SPAWN-CONTENT-1 | CREATURE_AI0 | content (amended: spawns are a base bundle family) |  | MAP-BUNDLE-1 (merged); admitted creature definitions; not MAP-OVERLAY-1 and not the MAP-CUTOVER-1a/1b pair (CREATURE_AI0 amendment, CORE_LOOP_PACKETS §1.3, §1.4) |
-| SPAWN-1a | CREATURE_AI0 | hard, performance review: realization and respawn of the D116 fixture spawn (2 rats, `oteryn:spawn/entry-rat`) through one spawn-source seam, before MAP-LOAD-1 |  | AI-2 (merged); SPAWN-CONTENT-1; VIS-1 |
-| SPAWN-1b | CREATURE_AI0 | **MERGED (#1981).** hard, performance review: the bundle spawn family through MAP-LOAD-1's reader, and the `RL-15` and `RL-16` measurements |  | SPAWN-1a; MAP-LOAD-1; SPAWN-CONTENT-1 |
-| CREATURE-AI-1 | CREATURE_AI0 | hard (AI), combat and determinism review |  | VIS-1; ATTACK-1b; AI-4 (merged) |
-| CREATURE-MOVE-1 | CREATURE_AI0 | Slices MERGED: 1a (#1977: chase, flee and wander steps, one step per think) and 1b (#1987: steps admitted on the entry room). Residue, still this row: the 1a deferrals (speed-based step timer, A* paths, walk back, leash, dance, near-target, `relocate_creature`; Wave 2). hard (movement), movement and performance review |  | CREATURE-AI-1; SPEED-1 |
-| MONSTER-SUMMON-1 | CREATURE_AI0 | impl, combat review |  | CREATURE-AI-1 |
+| SPAWN-CONTENT-1 | CREATURE_AI0 | **MERGED (#1759).** content (amended: spawns are a base bundle family) |  | MAP-BUNDLE-1 (merged); admitted creature definitions; not MAP-OVERLAY-1 and not the MAP-CUTOVER-1a/1b pair (CREATURE_AI0 amendment, CORE_LOOP_PACKETS §1.3, §1.4) |
+| SPAWN-1a | CREATURE_AI0 | **MERGED (#1969).** hard, performance review: realization and respawn of the D116 fixture spawn (2 rats, `oteryn:spawn/entry-rat`) through one spawn-source seam, before MAP-LOAD-1 |  | AI-2 (merged); SPAWN-CONTENT-1 (merged); VIS-1 |
+| SPAWN-1b | CREATURE_AI0 | **MERGED (#1981).** hard, performance review: the bundle spawn family through MAP-LOAD-1's reader, and the `RL-15` and `RL-16` measurements |  | SPAWN-1a (merged); MAP-LOAD-1; SPAWN-CONTENT-1 (merged) |
+| CREATURE-AI-1 | CREATURE_AI0 | **MERGED (#1813).** hard (AI), combat and determinism review |  | VIS-1; ATTACK-1b; AI-4 (merged) |
+| CREATURE-MOVE-1 | CREATURE_AI0 | Slices MERGED: 1a (#1977: chase, flee and wander steps, one step per think) and 1b (#1987: steps admitted on the entry room). Residue, still this row: the 1a deferrals (speed-based step timer, A* paths, walk back, leash, dance, near-target, `relocate_creature`; Wave 2). hard (movement), movement and performance review |  | CREATURE-AI-1 (merged); SPEED-1 (merged) |
+| MONSTER-SUMMON-1 | CREATURE_AI0 | impl, combat review |  | CREATURE-AI-1 (merged) |
 | SUMMON-1 | CREATURE_AI0 | hard (combat), combat and security review |  | CREATURE-MOVE-1; ATTACK-1b |
 | SUMMON-WIRE-1 | CREATURE_AI0 | impl, protocol review | yes | VIS-2; SUMMON-1 |
 | FAMILIAR-CONTENT-1 | FAMILIARS0 | content |  | the spell and creature authoring schemas |
@@ -428,7 +428,7 @@ Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITE
 | ITEM-CLIENT-4 | ITEM_MOVE_WIRE1 | client lane |  | ITEM-CLIENT-3; ITEM-MOVE-2b |
 | BAGS-USE-1 | BAGS0 | impl, combat review |  | ITEM-USE-1c; BAGS-1 |
 | BAGS-GROUND-1 | BAGS0 | hard, persistence review |  | ITEM-MOVE-2b; BAGS-1 |
-| BAGS-DEPOT-1 | BAGS0 | hard, persistence review |  | DEPOT-1; INBOX-1a; BAGS-1 |
+| BAGS-DEPOT-1 | BAGS0 | hard, persistence review |  | DEPOT-1; INBOX-1a (merged); BAGS-1 |
 | BAGS-TRADE-1 | BAGS0 | hard, persistence and security review |  | TRADE-1; BAGS-1 |
 | STACK-WIRE-1 | STACK0 | impl, protocol review | yes | ITEM-EQUIP-WIRE-1; BAGS-WIRE-1 |
 | STACK-1 | STACK0 | hard (persistence), persistence review |  | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground ordinal |
@@ -449,7 +449,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (IMBUE_FORGE0, 
 |---|---|---|---|---|
 | TIMED-CONTENT-1 | TIMED_ITEM0 | **MERGED (#1699).** content |  | ITEM-SEM-2b |
 | TIMED-REPAIR-1 | TIMED_ITEM0 | impl, persistence review |  | NPC-TRADE-1 (the gold fee path) |
-| TIMED-RT-1a | TIMED_ITEM0B | hard (persistence) |  | #1681 (migration 0054, merged or in flight) |
+| TIMED-RT-1a | TIMED_ITEM0B | **MERGED (#1681).** hard (persistence) |  | #1681 (migration 0054, merged) |
 | TIMED-RT-1b | TIMED_ITEM0B | **MERGED (archive record OTV2-20261003-timed-rt-1b).** hard (persistence, fencing) |  | #1681; TIMED-CONTENT-1 |
 | TIMED-RT-1c | TIMED_ITEM0B | hard (persistence) |  | TIMED-RT-1b; ITEM-MOVE-2a; ITEM-MOVE-2b; ITEM-USE-1c |
 | TIMED-HOUSE-1 | TIMED_ITEM0B | impl, persistence review |  | TIMED-RT-1c; the house-lane item placement (HOUSE-CUSTODY-0) |
@@ -459,7 +459,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (IMBUE_FORGE0, 
 | IMBUE-CONTENT-1 | IMBUE_FORGE0 | content |  | ITEM-SEM-USE |
 | IMBUE-WIRE-1 | IMBUE_FORGE0 | impl, protocol review | yes | USE-WIRE-V1; ITEM-MOVE-WIRE-1 |
 | IMBUE-1 | IMBUE_FORGE0 | hard, persistence and economy review |  | GOLD-FEE-2; ITEM-MOVE-2a |
-| IMBUE-RT-1 | IMBUE_FORGE0 | hard (combat), combat review |  | IMBUE-1; ATTACK-1b; SPEED-1 |
+| IMBUE-RT-1 | IMBUE_FORGE0 | hard (combat), combat review |  | IMBUE-1; ATTACK-1b; SPEED-1 (merged) |
 | IMBUE-SCROLL-1 | IMBUE_FORGE0 | hard, persistence review |  | IMBUE-1; NPC-TRADE-1 |
 | FORGE-CONTENT-1 | IMBUE_FORGE0 | content |  | ITEM-SEM-USE |
 | FORGE-1a | IMBUE_FORGE0 | **MERGED (#1691).** hard, persistence review (value asset) |  | none (migration 0059) |
@@ -520,15 +520,15 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (MAIL0, MARKET0
 | TRADE-1 | PLAYER_TRADE0 | hard, persistence and security review |  | TRADE-WIRE-1; ITEM-MOVE-2a |
 | MAIL-CONTENT-1 | MAIL0 | content |  | WO-1; MAP-LOAD-1 |
 | MAIL-TEXT-1 | MAIL0 | hard, security and privacy review |  | ITEM-MOVE-1; MAIL-CONTENT-1 |
-| MAIL-1 | MAIL0 | hard, persistence review |  | INBOX-1a; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
+| MAIL-1 | MAIL0 | hard, persistence review |  | INBOX-1a (merged); ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
 | MAIL-WIRE-1 | MAIL0 | impl, protocol review | yes | ITEM-VIEW-1b; MAP-WIRE-2; MAIL-1 |
 | MAIL-PARCEL-1 | MAIL0 | hard, persistence review |  | MAIL-1; BAGS-1; BAGS-DEPOT-1 (Inbox trees) |
 | MAIL-SYSTEM-1 | MAIL0 | hard, persistence review |  | MAIL-1; HOUSE-1b |
 | MARKET-CONTENT-1 | MARKET0 | content |  | none |
 | MARKET-RET-0 | MARKET0 | **MERGED (#1748).** control plane routes; privacy review |  | this decision |
-| INBOX-1a | MARKET0 | hard, persistence review |  | none (HOUSE-CUSTODY-1 merged) |
-| INBOX-1b | MARKET0 | hard, persistence review |  | INBOX-1a; DEPOT-1 |
-| MARKET-1 | MARKET0 | hard, persistence, economy and security review |  | BANK-1; GOLD-FEE-2; MARKET-RET-0; INBOX-1a; MARKET-CONTENT-1 |
+| INBOX-1a | MARKET0 | **MERGED (#1785).** hard, persistence review |  | none (HOUSE-CUSTODY-1 merged) |
+| INBOX-1b | MARKET0 | hard, persistence review |  | INBOX-1a (merged); DEPOT-1 |
+| MARKET-1 | MARKET0 | hard, persistence, economy and security review |  | BANK-1; GOLD-FEE-2; MARKET-RET-0; INBOX-1a (merged); MARKET-CONTENT-1 |
 | MARKET-WIRE-1 | MARKET0 | impl, protocol review | yes | DEPOT-WIRE-1; MARKET-1 |
 
 ### QUEST-RT-1
@@ -573,8 +573,8 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (PROFICIENCY1, 
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
-| PROF-SHAPE-CONTENT-1 | PROFICIENCY1, PROFICIENCY1B | content (one batch for both briefs) |  | PROF-CONTENT-1 |
-| PROF-SHAPE-1b | PROFICIENCY1B | hard (persistence), persistence, economy and determinism rev |  | PROF-1; PROF-2; FORGE-1a (the dust balance and ledger; #1685 and FORGE-1a merged first, ARCH_BATCH_TIMED_FORGE_PROF_PACKETS §1.4); PROF-SHAPE-CONTENT-1 |
+| PROF-SHAPE-CONTENT-1 | PROFICIENCY1, PROFICIENCY1B | **MERGED (#1670).** content (one batch for both briefs) |  | PROF-CONTENT-1 |
+| PROF-SHAPE-1b | PROFICIENCY1B | hard (persistence), persistence, economy and determinism rev |  | PROF-1; PROF-2; FORGE-1a (the dust balance and ledger; #1685 and FORGE-1a merged first, ARCH_BATCH_TIMED_FORGE_PROF_PACKETS §1.4); PROF-SHAPE-CONTENT-1 (merged) |
 | PROF-SHAPE-WIRE-1 | PROFICIENCY1B | hard (protocol), protocol review | yes | PROF-WIRE-1; PROF-SHAPE-1b |
 | PROF-CONTENT-2 | PROF_EFFECT0 | content |  | PROF-CONTENT-1 |
 | PROF-PARITY-1 | PROF_EFFECT0 | impl |  | PROF-2 |
@@ -601,7 +601,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (TRAVEL0) is al
 |---|---|---|---|---|
 | TRAVEL-CONTENT-1 | TRAVEL0 | impl (NPC content lane), content review |  | NPC-CONTENT-1; QUEST-CONTENT-1 for gate and discount tracks |
 | NPC-TRAVEL-2 | TRAVEL0 | impl, persistence review |  | NPC-TRAVEL-1; PREM-1; PREM-3 |
-| NPC-ACTOR-1 | NPC_BEHAVIOUR0 | impl, determinism review |  | NPC-PLACE-1b; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
+| NPC-ACTOR-1 | NPC_BEHAVIOUR0 | impl, determinism review |  | NPC-PLACE-1b; CREATURE-MOVE-1; SPEED-1 (merged); NPC-WIRE-1 |
 | NPC-TALK-2 | NPC_BEHAVIOUR0 | impl |  | NPC-TALK-1 |
 | NPC-VIS-1 | NPC_BEHAVIOUR0 | **MERGED (archive record OTV2-20261003-npc-vis-1).** impl, protocol review | yes | VIS-2 |
 | NPC-VOICE-1 | NPC_BEHAVIOUR0 | impl |  | CHAT-1; CHAT-1b-2b; NPC-ACTOR-1 |
@@ -633,7 +633,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (BOSS_RAID0, MO
 | PVP-1b | PARTY_PVP0 | residue of PVP-1 (PARTY_PVP0 line 33): skull evaluation in the death transaction (the points and revenge-mark inserts), the node World cleanup job that calls the 1a cleanup function, and the `rulesets/pvp/` and `rulesets/party/` rows with `pvp_type` `OPTIONAL` for the first World (§6, §9). Wave 2. hard, persistence and security review |  | PVP-1a (merged); DEATH-1 (merged); PARTY-1 |
 | PVP-RT-1 | PARTY_PVP0 | hard (combat), combat and security review. #2032 (archive record `PVP-RT-1.md`) merged only PVP-1a, the state tables and the deadline write-ahead; the runtime wiring stays here |  | ATTACK-1b; COND-1; PVP-1a (merged); PVP-1b |
 | PVP-DEATH-1 | PARTY_PVP0 | hard (persistence), persistence review |  | DEATH-1; DEATH-3; PVP-1a (merged); PVP-1b |
-| PVP-BLOCK-1 | PARTY_PVP0 | impl, movement review |  | PVP-RT-1; SPEED-1 |
+| PVP-BLOCK-1 | PARTY_PVP0 | impl, movement review |  | PVP-RT-1; SPEED-1 (merged) |
 | PVP-WIRE-1 | PARTY_PVP0 | impl, protocol review | yes | PARTY-1; PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
 
 ### GUILD-*
@@ -677,7 +677,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHAT0) is allo
 | HOUSE-VIEW-1 | HOUSE_RUNTIME0 | impl, protocol review |  | HOUSE-RUNTIME-1a, 1b and 1c; MAP-WIRE-1 children |
 | HOUSE-ITEM-WIRE-1 | HOUSE_RUNTIME0 | protocol decision first, then impl with protocol and securit | yes | its own wire decision; HOUSE-RUNTIME-1a, 1b and 1c; HOUSE-VIEW-1; ITEM-MOVE-WIRE-1 |
 | HOUSE-1a | HOUSE_OWN0 | hard, persistence, economy and security review |  | BANK-1; HOUSE-RUNTIME-1a, 1b and 1c; PREM-WIRE-1 (SOCIAL_MAP_PACKETS §0.1) |
-| HOUSE-1b | HOUSE_OWN0 | hard, persistence, economy and security review |  | HOUSE-1a; INBOX-1a; MAP-OVERLAY-1c |
+| HOUSE-1b | HOUSE_OWN0 | hard, persistence, economy and security review |  | HOUSE-1a; INBOX-1a (merged); MAP-OVERLAY-1c |
 | HOUSE-ACL-1 | HOUSE_OWN0 | hard, security review |  | HOUSE-1a |
 | HOUSE-WIRE-1 | HOUSE_OWN0 | impl, protocol review | yes | HOUSE-1b; HOUSE-ACL-1 |
 
@@ -786,7 +786,7 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | D3-4 | D3 corpse | **MERGED (archive record OTV2-20260929-d3-4-corpse-transfer).** Migration + `durability/item_transfer.rs`: admit TRANSFER source `Container(parent=corpse) |  | D3-1 |
 | D3-5 | D3 corpse | **MERGED (archive record OTV2-20260929-d3-5-corpse-pickup).** `combat/pickup.rs` (B3-2 extension): a corpse-container pickup request variant wired to D3 |  | D3-4 |
 | D3-6 | D3 corpse | **MERGED (archive record OTV2-20260929-d3-6-corpse-decay).** `foundation/owner_timer.rs`: a decay `Family`, scheduled at corpse-MINT commit from `mater |  | D3-1, D3-2 |
-| D3-7 | D3 corpse | Content: `i00005801` revision (materializable, stack class, container capacity 16, no `con |  | none (parallel); D3-2/D3-6 need it merged before their own tests can use real content |
+| D3-7 | D3 corpse | **MERGED (#1830).** Content: `i00005801` revision (materializable, stack class, container capacity 16, no `con |  | none (parallel); D3-2/D3-6 need it merged before their own tests can use real content |
 | DEATH-0 | DEATH-0, FIRST_PLAYER_DEATH | The migration (§3.1-§3.4: death receipts, blessings, pending respawns), guard changes and |  | this decision; also (FIRST_PLAYER_DEATH): Death receipt and Character migration decision (§4.3 storage prerequisite), then its migra (architecture decision; Character persistence owner) |
 | DEATH-1 | DEATH-0, FIRST_PLAYER_DEATH | **MERGED (#1278).** `commit_character_death` and `reconcile_character_death`, the calculator change, pending-r |  | DEATH-0; progression readiness; also (FIRST_PLAYER_DEATH): Calculator change (§4.3.1) and the durable Character death transaction (DEATH-0; progression readiness; P03) |
 | DEATH-2 | FIRST_PLAYER_DEATH | **MERGED (#1742).** Death trigger, occurrence and respawn in the Channel owner; removal of the D54 floor |  | spell P3b-2 vitals; AI-4 |
@@ -804,7 +804,7 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | PREM-2b+PREM-5 | PREMIUM_ACTIVATION | One allocation (PREMIUM_ACTIVATION0 §2, §3 packet them together, released after NPC-TALK-1): (PREM-2b) promotion state, effective promotion at login, soul maxima, death input (§4.2, §4.3), also the Wheel's promotion read (WHEEL0 §6.2); (PREM-5) the promotion and Premium blessing NPC services. PREM-2a's pure rules are merged (`domain/premium.rs`). Held: needs a promotion source |  | PREM-WIRE-1; NPC-TALK-1; progression readiness; spell P3b-2 vitals |
 | PREM-3 | PREMIUM_ACTIVATION | Premium-area flags, entry refusal, login relocation (§4.5) |  | PREM-1; content pipeline |
 | PREM-4 | PREMIUM_ACTIVATION | Premium spell cast check (§4.6): superseded, it is PREM-WIRE-1 (PREMIUM_ACTIVATION0 §2.1); no separate batch |  | PREM-WIRE-1 |
-| PREM-1b | PREMIUM_DELIVERY0 | Oteryn-Game |  | Game-side acceptance of this decision; PREM-1a |
+| PREM-1b | PREMIUM_DELIVERY0 | **MERGED (#1678).** Oteryn-Game |  | Game-side acceptance of this decision; PREM-1a |
 | MKTCOIN-CONTRACT-1 | MARKET_COINS0 | Game, control plane; security review |  | this decision |
 | MKTCOIN-P | MARKET_COINS0 | Oteryn-Platform (external) |  | Platform's own acceptance of §5 |
 | MKTCOIN-1 | MARKET_COINS0 | Game, hard; persistence, economy and security review |  | MARKET-1; MKTCOIN-CONTRACT-1 |
