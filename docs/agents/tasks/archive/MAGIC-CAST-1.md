@@ -4,12 +4,12 @@
 task_id: MAGIC-CAST-1
 title: "MAGIC-CAST-1: widen the castable starter book with free self-heals"
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 2048
 base_branch: main
 branch: claude/magic-cast-1-20261013
-pr: null
+pr: 2072
 base_sha: 4ac13390
 owner: claude-code-session-01QigX6fgNLhCNtPzkTKXaHD
 control_plane: session_01XYC239givrMonrYoBwwECV
