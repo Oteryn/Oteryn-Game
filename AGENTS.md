@@ -36,10 +36,10 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 ## Work in batches
 
 - **Defect finding and audits:** one sweep per lane or module produces one findings list (one Issue or one comment), not an Issue or PR per finding.
-- **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. Keep a batch reviewable: at most about five findings or 500 changed lines of hand-written code (generated data excluded); split larger batches. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
+- **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. A batch is one coherent, reviewable unit (one owner and its consumer, a contract and its store, and so on). About 500 hand-written changed lines (generated data excluded) or five findings is only a warning signal, not a reason to split: do not split a coherent unit just for size, and split only when the parts are independently reviewable and mergeable. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
 - **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
-- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed.
+- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed: a task record is archived in the final authoring commit of the PR that completes the task, and a separate archive-only PR is never opened.
 
 ## Silent operation
 
