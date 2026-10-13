@@ -1038,3 +1038,178 @@ fn a_held_actor_bitten_to_death_ends_the_hold_with_its_death_recorded_for_releas
         "a dead actor is not held"
     );
 }
+
+/// BUNDLE-COMBAT-ENABLE-1: a bundle World's Channel, pinned as `node/serve.rs` pins it, with
+/// the combat room it serves (the entry room's bundle view), a player at `player_x` and a rat
+/// at `rat_x` on the synthetic bundle row (`map::spell_tiles::tests::world`, x 2 is a
+/// protection zone).
+struct BundleOwner {
+    entry: QualifiedNativeEntryRoom,
+    owner: Owner,
+}
+
+fn bundle_owner(player_x: i32, rat_x: i32) -> BundleOwner {
+    use crate::map::spell_tiles::tests::{id, world as bundle_world};
+    let world = bundle_world();
+    let world_id = WorldId::decode(&id(1)).unwrap();
+    let entry = crate::content::qualify_native_entry_room(world_id).unwrap();
+    let cells = world.movement_cells(entry.movement_cells()).unwrap();
+    let start = world.start();
+    let room = entry
+        .bundle_view(
+            cells,
+            world.frame_binding_digest(world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: -i16::from(start.floor),
+            },
+        )
+        .expect("the bundle cells bind the view");
+    let floor = -i16::from(start.floor);
+    let pin = ChannelContentPin::from_activation(
+        world_id,
+        1,
+        entry.compiled().server_digest(),
+        entry.compiled().client_digest(),
+        world.frame_binding_digest(world_id),
+        world.map_revision_digest(),
+        (player_x, 0, floor),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world_id,
+        ChannelId::decode(&id(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        2,
+        pin.clone(),
+    )
+    .unwrap();
+    runtime
+        .install_companion_policies(rat_policy(pin.server_artifact_digest()))
+        .unwrap();
+    let session = GameSessionId::decode(&uuid(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let player = runtime.commit_fresh_session(reservation).unwrap();
+    runtime.initialize_first_entry_position(player).unwrap();
+    runtime
+        .realize_native_qualification_spawn(
+            pin,
+            "fixture:rat",
+            MovementLocalPosition {
+                x: rat_x,
+                y: 0,
+                floor,
+            },
+        )
+        .expect("the rat spawns on the bundle row");
+    let creature = runtime.visible_entities().creatures[0];
+    let rat = EntityRef {
+        identity: creature.actor.placement_identity(),
+        generation: creature.generation,
+    };
+    BundleOwner {
+        entry,
+        owner: Owner {
+            room,
+            runtime,
+            player,
+            session,
+            rat,
+            attack: ChannelAttackStates::default(),
+        },
+    }
+}
+
+#[test]
+fn a_bundle_view_carries_the_bundle_pin_identities_and_binds_only_bundle_cells() {
+    let BundleOwner { entry, owner } = bundle_owner(1, 6);
+    let pin = owner.runtime.content_pin();
+    let view = &owner.room;
+    // The room-vs-pin identity every combat consumer checks now holds for the bundle pin.
+    assert_eq!(
+        view.compiled().server_digest(),
+        pin.server_artifact_digest()
+    );
+    assert_eq!(
+        view.compiled().client_digest(),
+        pin.client_artifact_digest()
+    );
+    assert_eq!(view.frame_binding().digest(), pin.frame_binding_digest());
+    assert_eq!(view.map_revision_digest(), pin.map_revision_digest());
+    assert_eq!(
+        view.movement_cells().scope().generation_digest,
+        pin.server_artifact_digest()
+    );
+    assert!(view.source_world().is_none() && view.spawn_source().is_none());
+    // The entry room itself does not match the bundle pin: the root cause of the closed gate.
+    assert_ne!(entry.frame_binding().digest(), pin.frame_binding_digest());
+    assert_ne!(entry.map_revision_digest(), pin.map_revision_digest());
+    // Only bundle cells bind a view; the entry room's own cells and a view's own frame do not.
+    let start = entry.entry_start();
+    assert!(
+        entry
+            .bundle_view(
+                entry.movement_cells().clone(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+                start,
+            )
+            .is_none()
+    );
+}
+
+#[test]
+fn a_bundle_rat_is_held_and_attackable_outside_a_bundle_protection_zone() {
+    let BundleOwner { entry, mut owner } = bundle_owner(1, 6);
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    assert_eq!(owner.held(), Some(rat));
+    let actor = owner.runtime.visible_entities().creatures[0].actor;
+    let facts = target_facts(
+        &owner.runtime,
+        &owner.room,
+        owner.player,
+        owner.session,
+        actor,
+        at(T0),
+    )
+    .expect("the bundle tiles answer both positions");
+    assert!(facts.present_and_visible && facts.attackable_kind && facts.alive && facts.same_floor);
+    assert_eq!(facts.distance, 5);
+    assert!(!facts.attacker_in_protection_zone && !facts.target_in_protection_zone);
+    // The entry room's tiles do not answer for a bundle position: no facts, no swing.
+    assert!(
+        target_facts(
+            &owner.runtime,
+            &entry,
+            owner.player,
+            owner.session,
+            actor,
+            at(T0),
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn a_bundle_protection_zone_refuses_the_target_and_the_attacker() {
+    let mut bundle = bundle_owner(1, 2);
+    let rat = bundle.owner.rat;
+    assert_eq!(
+        bundle.owner.target(T0, Some(rat), 1),
+        AttackIntentDisposition::ProtectionZone
+    );
+    assert_eq!(bundle.owner.held(), None);
+    let mut bundle = bundle_owner(2, 6);
+    let rat = bundle.owner.rat;
+    assert_eq!(
+        bundle.owner.target(T0, Some(rat), 1),
+        AttackIntentDisposition::ProtectionZone
+    );
+    assert_eq!(bundle.owner.held(), None);
+}

@@ -1932,7 +1932,11 @@ fn bundle_combat_room(
     });
     event(&format!(
         "event=bundle_combat state={}",
-        if view.is_some() { "enabled" } else { "disabled" }
+        if view.is_some() {
+            "enabled"
+        } else {
+            "disabled"
+        }
     ));
     view
 }
