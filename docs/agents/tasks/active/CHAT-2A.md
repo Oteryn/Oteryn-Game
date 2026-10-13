@@ -38,12 +38,13 @@ kinds), AES-256-GCM sealing with a random 96-bit nonce and the channel name plus
 associated data, the per-World key ring (send with the newest key, open with any key retired
 within 24 hours, `CHAT0-RL-12`), the 30 s freshness check and the bounded `message_id`
 de-duplication window (`CHAT0-RL-13`, a full window refuses rather than forgets), and the
-`oteryn_chat_<world_id>` channel name. AES-GCM comes from `aws-lc-rs`, already in the lock through
+`oteryn_chat_<WorldId hex>` channel name (the canonical UUID without hyphens). AES-GCM comes from `aws-lc-rs`, already in the lock through
 rustls; no new crate enters `Cargo.lock`.
 
 ## Architecture and source of truth
 
 - PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` section 5 (layout, sealing, rotation, replay) and section 8 rows `CHAT0-RL-06`, `-12`, `-13`.
+- DERIVED: the channel is `oteryn_chat_<WorldId without hyphens>` (44 bytes) because production WorldIds are canonical UUIDv7 (`node/config.rs`); CHAT-0 section 5 writes `<world_id>` without fixing the encoding.
 - DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and a de-duplication entry is kept for twice the window, so no line the freshness check accepts can return after its entry is gone. The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
 - Plaintext is at most 1,185 bytes (two-byte length prefixes), sealed at most 1,214, base64 at most 1,624, inside the section 5 figures.
 

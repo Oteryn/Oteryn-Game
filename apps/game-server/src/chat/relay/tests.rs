@@ -2,7 +2,8 @@
 
 use super::*;
 
-const CHANNEL: &str = "oteryn_chat_world_a";
+const WORLD: &str = "01890a5d-ac96-7ab2-80e7-0123456789ab";
+const CHANNEL: &str = "oteryn_chat_01890a5dac967ab280e70123456789ab";
 const NOW: u64 = 1_000_000_000_000;
 const NONCE: [u8; NONCE_BYTES] = [7; NONCE_BYTES];
 
@@ -85,7 +86,12 @@ fn another_channel_or_an_altered_line_fails_authentication() {
     let ring = ring(&[(1, 0)]);
     let text = seal(&ring, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
     assert_eq!(
-        open(&ring, "oteryn_chat_world_b", &text, NOW),
+        open(
+            &ring,
+            "oteryn_chat_01890a5dac967ab280e70123456789ac",
+            &text,
+            NOW
+        ),
         Err(RelayError::Unauthentic)
     );
     let mut bytes = STANDARD.decode(&text).expect("base64");
@@ -223,11 +229,18 @@ fn a_full_window_refuses_instead_of_forgetting() {
 
 #[test]
 fn the_channel_name_is_a_safe_world_scoped_identifier() {
-    assert_eq!(channel_name("world_a").as_deref(), Ok(CHANNEL));
-    for bad in ["", "World", "a-b", "a b", "a;b", &"w".repeat(52)] {
+    assert_eq!(channel_name(WORLD).as_deref(), Ok(CHANNEL));
+    assert_eq!(CHANNEL.len(), 44);
+    for bad in [
+        "",
+        "world_a",
+        "01890A5D-AC96-7AB2-80E7-0123456789AB",
+        "01890a5dac967ab280e70123456789ab",
+        "01890a5d-ac96-7ab2-80e7-0123456789a;",
+        "01890a5d-ac96-7ab2-80e7-0123456789abc",
+    ] {
         assert_eq!(channel_name(bad), Err(RelayError::BadChannel), "{bad}");
     }
-    assert!(channel_name(&"w".repeat(51)).is_ok());
 }
 
 #[test]

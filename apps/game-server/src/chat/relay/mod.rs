@@ -40,9 +40,7 @@ const PLAINTEXT_MAX_BYTES: usize =
 pub(crate) const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
 const KIND_PRIVATE: u8 = 1;
 const KIND_ROOM: u8 = 2;
-/// Postgres identifiers hold 63 bytes; the prefix leaves room for the World id.
 const CHANNEL_PREFIX: &str = "oteryn_chat_";
-const CHANNEL_MAX_BYTES: usize = 63;
 
 /// Why a relay line is refused. Every refusal drops the line; none reaches a client.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -207,17 +205,21 @@ impl<'a> Cursor<'a> {
     }
 }
 
-/// The `NOTIFY` channel of a World: `oteryn_chat_<world_id>`. The World id is lower-case ASCII
-/// letters, digits and `_`, so the name is a safe unquoted identifier.
+/// The `NOTIFY` channel of a World: `oteryn_chat_<32 hex digits>`, the canonical lower-case
+/// UUID of the WorldId (as `node/config.rs` admits it, 36 characters with hyphens) without its
+/// hyphens. The name is a safe unquoted identifier, 44 bytes, and distinct per World.
 pub(crate) fn channel_name(world_id: &str) -> Result<String, RelayError> {
-    let valid = !world_id.is_empty()
-        && world_id
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
-    if !valid || CHANNEL_PREFIX.len() + world_id.len() > CHANNEL_MAX_BYTES {
+    let bytes = world_id.as_bytes();
+    let canonical = bytes.len() == 36
+        && bytes.iter().enumerate().all(|(index, byte)| match index {
+            8 | 13 | 18 | 23 => *byte == b'-',
+            _ => byte.is_ascii_digit() || (b'a'..=b'f').contains(byte),
+        });
+    if !canonical {
         return Err(RelayError::BadChannel);
     }
-    Ok(format!("{CHANNEL_PREFIX}{world_id}"))
+    let hex: String = world_id.chars().filter(|c| *c != '-').collect();
+    Ok(format!("{CHANNEL_PREFIX}{hex}"))
 }
 
 /// One relay key of a World. The bytes come from an environment secret, never the repository.
