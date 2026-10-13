@@ -51,6 +51,8 @@ pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
+pub mod npc_trade;
+pub mod npc_trade_audit;
 pub mod premium_fence;
 pub mod pvp_state;
 pub mod quest_state;
