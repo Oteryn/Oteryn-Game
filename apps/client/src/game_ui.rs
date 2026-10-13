@@ -591,7 +591,8 @@ impl GameUi {
     ) -> bool {
         match action {
             // Native file pickers belong to WindowsShell, not panel navigation.
-            crate::settings_ui::SettingsRuntimeAction::ExportOptions => false,
+            crate::settings_ui::SettingsRuntimeAction::ExportOptions
+            | crate::settings_ui::SettingsRuntimeAction::ImportOptions => false,
             crate::settings_ui::SettingsRuntimeAction::OpenCompendium => {
                 self.panels.open("compendium")
             }

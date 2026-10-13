@@ -26,6 +26,7 @@ pub(super) struct PageState {
 pub(super) enum HelpAction {
     OpenCompendium,
     Export,
+    Import,
     Reset,
     OpenScreenshotFolder,
 }
@@ -89,10 +90,10 @@ fn help(ui: &mut egui::Ui, en: bool, compendium_available: bool, state: &mut Pag
     } else {
         "Brak jeszcze wersjonowanego formatu importu/eksportu minimapy."
     };
-    let import_unavailable = if en {
-        "Unavailable until both versioned options and minimap files can be dispatched safely."
+    let import_supported = if en {
+        "Imports only an Oteryn options ZIP into the draft. Apply or Ok saves it. Original-client and minimap archives are unsupported."
     } else {
-        "Niedostępne, dopóki nie będzie można bezpiecznie rozpoznawać zarówno wersjonowanych ustawień, jak i plików minimapy."
+        "Importuje tylko ZIP ustawień Oteryn do wersji roboczej. Apply lub Ok zapisuje zmiany. Archiwa oryginalnego klienta i minimapy są nieobsługiwane."
     };
 
     boxed(ui, "", |ui| {
@@ -177,7 +178,7 @@ fn help(ui: &mut egui::Ui, en: bool, compendium_available: bool, state: &mut Pag
             false,
             minimap_unavailable,
         );
-        help_row(
+        if help_row(
             ui,
             "import-options-minimap",
             if en {
@@ -185,9 +186,13 @@ fn help(ui: &mut egui::Ui, en: bool, compendium_available: bool, state: &mut Pag
             } else {
                 "Importuj ustawienia/minimapę"
             },
-            false,
-            import_unavailable,
-        );
+            true,
+            import_supported,
+        )
+        .clicked()
+        {
+            state.help_action = Some(HelpAction::Import);
+        }
         if help_row(
             ui,
             "reset-options",
@@ -1689,7 +1694,7 @@ mod tests {
                 ("info", "Info", true),
                 ("export-options", "Export All Options", true),
                 ("export-minimap", "Export Minimap", false),
-                ("import-options-minimap", "Import Options/Minimap", false),
+                ("import-options-minimap", "Import Options/Minimap", true),
                 ("reset-options", "Reset All Options", true),
             ];
             let mut previous_y = f32::NEG_INFINITY;
@@ -1754,7 +1759,7 @@ mod tests {
             for _ in 0..2 {
                 output = frame(&ctx, size, vec![], &mut draw).1;
             }
-            for label in ["Client Help", "Import Options/Minimap"] {
+            for label in ["Client Help", "Export Minimap"] {
                 let position =
                     button_position(&output, size, label).ok_or("missing disabled Help action")?;
                 click(&ctx, size, position, &mut draw);

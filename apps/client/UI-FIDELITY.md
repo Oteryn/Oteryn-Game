@@ -44,7 +44,7 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | --- | --- | --- |
 | Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs have a vitals renderer behind explicit HUD selections. Audio stays disabled because no backend/content exists |
 | Controls | Yes | Four cardinal movement bindings work; diagonal rows remain disabled because the accepted movement wire has no diagonal intent. Keyboard Delay has the observed 0–1000 ms slider and explicit default 250 ms master; applied selections drive a client-owned held-key scheduler independently of OS repeat and frame-rate limits, using the existing paced session step queue. Releases, lost focus/device, modal/text editors, chat-context/profile changes and Stop All cancel repeats. The custom delay is retained under the default master. The exact three mouse presets and the Classic-only `Loot: Right / SHIFT+Right / Left` selector are composed with the observed dependency, but stay disabled because their input consumers are pending; persistence alone is not counted. Fresh native qualification for the repeat scheduler remains pending |
-| General Hotkeys | Partial: dedicated profile/action table | All 120 official English labels have stable IDs; Polish labels are Oteryn-authored. Profile management, both chat contexts, delayed search, two bindings and cross-family conflict validation work. Real consumers cover cardinal movement/explicit clearing, Stop All, profile cycling/character auto-switch, admitted battle targets, Options/Custom Hotkeys, existing Cyclopedia/dialog/panel navigation, fullscreen/FPS, minimap and action-row visibility, channel/mode/send operations and composer Select All. Escape remains reserved for Stop All. Dialogs open idempotently; windows toggle. Existing local panel compositions are not server-backed data, and unknown interiors remain unavailable. Diagonals, clipboard-copy assignments, unsupported inventory actions and most other observed actions remain disabled without exact consumers |
+| General Hotkeys | Partial: dedicated profile/action table | All 120 official English labels have stable IDs; Polish labels are Oteryn-authored. Profile management, both chat contexts, delayed search, two bindings and cross-family conflict validation work. Real consumers cover cardinal movement/explicit clearing, Stop All, profile cycling/character auto-switch, admitted battle targets, Options/Custom Hotkeys, existing Cyclopedia/dialog/panel navigation, fullscreen/FPS, minimap and action-row visibility, channel/mode/send operations and composer Select All/ordered Copy. Escape remains reserved for Stop All. Dialogs open idempotently; windows toggle. Existing local panel compositions are not server-backed data, and unknown interiors remain unavailable. Diagonals, unsupported inventory actions and most other observed actions remain disabled without exact consumers. Physical clipboard and original link-warning acceptance remain open |
 | Action Bar Hotkeys | Dedicated visible 9 × 50 table; editing disabled | Both stored chord columns remain visible in the distinct Chat On/Off contexts, and legacy 12-slot/default migration remains loadable and validated. The runtime router executes a slot only when that session has an executable assignment and no longer claims an empty slot's key. Production has no authoritative spell/object assignment source, so every binding cell stays disabled and the internal assignment/migration primitives are not counted as reachable activation behavior. A fresh native Windows acceptance for this candidate remains pending. |
 | Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
 | Interface | Yes | Tile-under-pointer highlighting works. Explicit Native off draws an independently authored Oteryn arrow, Native on restores the OS pointer, and Big doubles the custom arrow around the same pointer hotspot. Specialized text/resize cursors retain their OS semantics; contextual Animated cursor states, native/Big combination acceptance, link-copy warning, loot-colour and expiry remain pending. Fresh native qualification of the custom arrow is required. Oteryn language, contrast, motion and scale controls are intentionally absent from this reference page |
@@ -61,7 +61,7 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
 | Screenshots | Yes, two trigger columns | The folder action creates and opens the local Oteryn screenshot directory. The screenshot hotkey performs a real non-overwriting PNG renderer capture, and Only Capture Game Window selects the actual scene crop. Seventeen automatic triggers stay disabled because their event pipeline does not exist |
-| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; confirmed reset works. AUTHORING replaces fixed-path JSON export with an upstream native Windows ZIP SaveFile picker and atomic Oteryn-only archive writer. Cancel leaves state/files unchanged; invalid drafts and failed writes preserve previous exports. Native picker interaction and original archive interoperability remain unqualified. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists. Export Minimap and the combined Import Options/Minimap action stay disabled until a versioned minimap format and honest format dispatch exist |
+| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; confirmed reset works. Native window-owned ZIP export is atomic; import accepts only the bounded flat Oteryn options archive and stages validated/migrated preferences into draft. Apply/Ok saves normally, Cancel discards and errors preserve current/draft/files. The reference combined Import Options/Minimap row explicitly supports Oteryn options only; original-client/minimap archives are refused, not partially guessed. Export Minimap remains disabled. Native picker interaction and original interoperability remain unqualified. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists |
 
 ## Compiled-page verification — 2026-10-11
 
@@ -594,6 +594,36 @@ public CA and ALPN `oteryn-game/1`. This is not sign-in, ticket consumption,
 admission, movement or chat acceptance. Main `0db5c53b` adds no active client
 spell/cooldown/condition/light/sound/speed projections; unallocated candidates
 and unoffered capabilities are not enabled by this client task.
+
+## Bounded Oteryn options import — 2026-10-13, AUTHORING
+
+The reference combined import row dispatches a parent-owned native OpenFile
+picker after the egui frame, at login or during play. Only the existing exported
+`oteryn-options.json` flat Stored ZIP is accepted, with an 8-MiB settings bound,
+bounded archive input, exact entry name/type, regular-file checks and indexed
+plus streaming CRC/local/central validation. Unknown/original/minimap formats,
+paths, symlinks, encryption, other compression, duplicates and oversized or
+invalid settings are refused. No archive entry is extracted into user folders.
+
+Upstream zip 9.0.1 deduplicates indexed names and its stream visitor swallows
+central parse errors. Actual duplicate/interrupted-record regressions establish
+these limitations. A minimal guard checks upstream-parsed offsets and the exact
+flat ZIP32 envelope written by our exporter; no ZIP parser/fork is introduced.
+Both local CRC/size mismatch cases and actual corrupted payloads are covered.
+
+Import parses through the existing settings migrations/validator in a private
+temporary directory, then changes draft only. Picker cancellation/error preserves
+draft/current/files. The real Cancel click discards; a child-process fixture
+clicks real Apply and exercises ordinary persistence without changing the
+parent environment or the user's preferences. Linux client 210/194/5, strict
+Clippy, formatting and diff checks pass. Windows picker/clipboard, fresh DX12
+pages and live admission remain unqualified while the PC is offline.
+
+TLS acceptance additionally verifies the exact SNI hostname and previously
+supplied public-CA fingerprint, not just chain trust; no trust store is changed.
+REA Ghidra is available with command-scoped `GHIDRA_INSTALL_DIR` pointing to the
+existing 12.1.4 installation. The ELF/pwntools route remains unconfigured; no
+full auto-analysis timeout is repeated and no new original behavior is claimed.
 
 ## Required evidence per page/panel
 

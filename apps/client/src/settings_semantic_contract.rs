@@ -355,7 +355,6 @@ fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result
         "Manual",
         "FAQ",
         "Export Minimap",
-        "Import Options/Minimap",
     ] {
         assert_eq!(button_disabled(&output, label), Some(true), "{label}");
     }
@@ -363,6 +362,7 @@ fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result
         "Compendium",
         "Info",
         "Export All Options",
+        "Import Options/Minimap",
         "Reset All Options",
     ] {
         assert_eq!(button_disabled(&output, label), Some(false), "{label}");
@@ -397,13 +397,15 @@ fn help_page_exposes_the_complete_enabled_and_disabled_action_groups() -> Result
     let output = settle(&context, &mut browser, &mut draft);
     let import = button_position(&output, SIZE, "Import Options/Minimap")
         .ok_or("missing combined import action")?;
+    let unchanged = draft.clone();
     let action = click(&context, SIZE, import, |context| {
         browser.show(context, &mut draft, None)
     });
     assert!(
-        matches!(action, PreferenceAction::None),
-        "the combined action must remain disabled until options and minimap import both work"
+        matches!(action, PreferenceAction::ImportOptions),
+        "the reference row dispatches only the explicitly supported Oteryn options import"
     );
+    assert_eq!(draft, unchanged);
     Ok(())
 }
 

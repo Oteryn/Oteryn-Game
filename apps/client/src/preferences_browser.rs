@@ -42,6 +42,7 @@ pub enum PreferenceAction {
     Defaults,
     OpenCompendium,
     ExportOptions,
+    ImportOptions,
     ResetOptions,
     OpenScreenshotFolder,
 }
@@ -374,6 +375,7 @@ impl PreferencesBrowser {
                                         PreferenceAction::OpenCompendium
                                     }
                                     pages::HelpAction::Export => PreferenceAction::ExportOptions,
+                                    pages::HelpAction::Import => PreferenceAction::ImportOptions,
                                     pages::HelpAction::Reset => PreferenceAction::ResetOptions,
                                     pages::HelpAction::OpenScreenshotFolder => PreferenceAction::OpenScreenshotFolder,
                                 };

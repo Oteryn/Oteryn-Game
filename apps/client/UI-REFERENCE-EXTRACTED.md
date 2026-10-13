@@ -8,6 +8,9 @@ bounded native-handler observations are retained under
 15.33.b21348 source SHA-256
 `065f961b29904f3231b5c82be2f7748d88c7b74f3d324e12b5d5dd50b14afead`.
 Those earlier facts are retained provenance, not newly verified behavior.
+REA Ghidra availability is verified with command-scoped `GHIDRA_INSTALL_DIR`
+set to `/home/kasm-user/.local/opt/ghidra_12.1.4_PUBLIC`; global settings are
+unchanged. Availability is not new original-client analysis or acceptance.
 REA's ELF-layout route currently reports `provider_unavailable`: it requires a
 caller-supplied Python with pinned pwntools/pyelftools/Unicorn. Earlier full REA
 analysis timed out; it is not rerun here. Existing Qt/resource and focused

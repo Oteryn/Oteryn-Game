@@ -36,14 +36,17 @@ Copy consumes the real composer via ordered upstream egui Copy events; hidden,
 read-only, modal and unrelated focus cannot claim it. Linux 210/188/5, strict
 Clippy and formatting pass. Native regression is added but PC access reports
 offline; old Windows evidence is not inherited. Exact-version BSL exceptions
-with provenance fix the actual clipboard CI failure; local cargo-deny passes
-all four checks. Remote CI still needs its own result. REA 6.4.0 and retained
-Ghidra evidence are located; its ELF provider is unavailable, not an analysis
-success. Public staging world/channel now exist and gameplay TLS 1.3/ALPN verify
-with the supplied CA; no account operation or admission is performed. Main
+with provenance fix the clipboard CI cause; local cargo-deny passes all checks.
+Full remote CI is not yet proven. REA 6.4.0/Ghidra are available with scoped
+configuration; ELF/pwntools is unavailable, not an analysis success. Staging
+world/channel exist; gameplay TLS 1.3/ALPN, hostname and supplied CA verify;
+no account operation or admission is performed. Main
 `0db5c53b` adds no missing active presentation/speed projections. Do not allocate
 them or enable unoffered caps. Details/remaining acceptance are in UI-FIDELITY.md.
-Next unblocked batch: bounded Oteryn-only ZIP import into draft, not auto-Apply.
+Oteryn-only ZIP import now stages bounded/validated draft, never auto-Apply.
+Duplicate/interrupted central records and local CRC/size mismatches are refused;
+real Cancel/Apply/persistence tests pass. Linux 210/194/5, strict Clippy/fmt pass.
+Original/minimap formats, native picker/DX12 and missing server inputs remain open.
 
 ## Native login launcher — 2026-10-12
 

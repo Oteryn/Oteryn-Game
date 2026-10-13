@@ -104,6 +104,7 @@ pub(crate) const fn prelogin_settings_hotkey(
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SettingsRuntimeAction {
     ExportOptions,
+    ImportOptions,
     OpenCompendium,
 }
 
@@ -261,6 +262,9 @@ impl SettingsPanel {
                 PreferenceAction::ExportOptions => {
                     self.runtime_action = Some(SettingsRuntimeAction::ExportOptions);
                 }
+                PreferenceAction::ImportOptions => {
+                    self.runtime_action = Some(SettingsRuntimeAction::ImportOptions);
+                }
                 PreferenceAction::ResetOptions => {
                     self.draft = ClientSettings::default();
                     self.message = Some(if en {
@@ -308,6 +312,7 @@ impl SettingsPanel {
                     | PreferenceAction::Defaults
                     | PreferenceAction::OpenCompendium
                     | PreferenceAction::ExportOptions
+                    | PreferenceAction::ImportOptions
                     | PreferenceAction::ResetOptions
                     | PreferenceAction::OpenScreenshotFolder => {}
                 }
@@ -550,6 +555,28 @@ impl SettingsPanel {
         crate::options_export::save(&self.draft, path)
     }
 
+    #[cfg(windows)]
+    pub(crate) fn import_options(&mut self, parent: &winit::window::Window) {
+        let selected = crate::options_export::choose_source(self.draft.english, parent);
+        self.import_options_selected(selected.as_deref());
+    }
+
+    fn import_options_selected(&mut self, selected: Option<&std::path::Path>) {
+        let Some(path) = selected else {
+            return;
+        };
+        let english = self.draft.english;
+        self.message = Some(match crate::options_export::load(path) {
+            Ok(options) => {
+                self.draft = options;
+                if english { "Oteryn options are staged. Choose Apply or Ok to save; Cancel discards them." }
+                else { "Ustawienia Oteryn są gotowe. Apply lub Ok zapisuje zmiany; Cancel je odrzuca." }
+            }
+            Err(_) if english => "Import refused. Only Oteryn options ZIP is supported; original-client and minimap archives are unsupported.",
+            Err(_) => "Odrzucono import. Obsługiwany jest tylko ZIP ustawień Oteryn; archiwa oryginalnego klienta i minimapy są nieobsługiwane.",
+        }.into());
+    }
+
     fn finish_save(&mut self, result: std::io::Result<()>, close_after_save: bool) {
         match result {
             Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); if close_after_save { self.open = false; self.message = None; self.browser.clear_transient_route(); } }
@@ -767,18 +794,22 @@ mod tests {
         for _ in 0..3 {
             output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
         }
-        let export =
-            button_position(&output, size, "Export All Options").ok_or("Export action visible")?;
-        let _ = click(&ctx, size, export, |ctx| panel.show(ctx, None, None));
-        assert_eq!(
-            panel.take_runtime_action(),
-            Some(SettingsRuntimeAction::ExportOptions)
-        );
-        assert_eq!(panel.take_runtime_action(), None);
-        assert_eq!(panel.draft, unsaved);
-        assert_eq!(panel.current, current);
-        assert!(panel.open);
-        assert!(!panel.applied);
+        for (label, action) in [
+            ("Export All Options", SettingsRuntimeAction::ExportOptions),
+            (
+                "Import Options/Minimap",
+                SettingsRuntimeAction::ImportOptions,
+            ),
+        ] {
+            let position = button_position(&output, size, label).ok_or("ZIP action visible")?;
+            let _ = click(&ctx, size, position, |ctx| panel.show(ctx, None, None));
+            assert_eq!(panel.take_runtime_action(), Some(action));
+            assert_eq!(panel.take_runtime_action(), None);
+            assert_eq!(panel.draft, unsaved);
+            assert_eq!(panel.current, current);
+            assert!(panel.open);
+            assert!(!panel.applied);
+        }
         Ok(())
     }
 
@@ -798,7 +829,7 @@ mod tests {
         for _ in 0..3 {
             output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
         }
-        for label in ["Client Help", "Import Options/Minimap"] {
+        for label in ["Client Help", "Export Minimap"] {
             let position =
                 button_position(&output, size, label).ok_or("disabled Help action visible")?;
             let _ = click(&ctx, size, position, |ctx| panel.show(ctx, None, None));
@@ -943,6 +974,137 @@ mod tests {
                 }
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn options_import_stages_only_the_draft_and_cancel_or_error_preserves_state()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let source = directory.path().join("options.zip");
+        let active = directory.path().join("active.json");
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        current.save(&active)?;
+        let original_file = std::fs::read(&active)?;
+        let imported = ClientSettings {
+            fullscreen: !current.fullscreen,
+            fps: 7,
+            last_frame_limit: 7,
+            ..current.clone()
+        };
+        crate::options_export::save(&imported, &source)?;
+        let archive = std::fs::read(&source)?;
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        panel.message = Some("existing message".into());
+        panel.import_options_selected(None);
+        assert_eq!(panel.message.as_deref(), Some("existing message"));
+        assert_eq!(panel.draft, current);
+        panel.import_options_selected(Some(&source));
+        assert_eq!(panel.draft, imported);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        assert_eq!(std::fs::read(&active)?, original_file);
+        assert_eq!(std::fs::read(&source)?, archive);
+        std::fs::write(&source, b"unsupported original/minimap archive")?;
+        panel.import_options_selected(Some(&source));
+        assert_eq!(panel.draft, imported);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        assert!(panel.message.as_deref().is_some_and(|message| {
+            message.contains("original-client and minimap archives are unsupported")
+        }));
+        assert_eq!(std::fs::read(&active)?, original_file);
+        assert_eq!(
+            std::fs::read(&source)?,
+            b"unsupported original/minimap archive"
+        );
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        assert!(panel.open_complete_section("help"));
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        let cancel = button_position(&output, size, "Cancel").ok_or("Cancel visible")?;
+        let _ = click(&ctx, size, cancel, |ctx| panel.show(ctx, None, None));
+        assert_eq!(panel.draft, current);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
+        assert!(!panel.open);
+        assert_eq!(std::fs::read(&active)?, original_file);
+        // Explicit normal save completion applies the staged draft, not import itself.
+        std::fs::write(&source, archive)?;
+        panel.import_options_selected(Some(&source));
+        let result = panel.draft.save(&active);
+        panel.finish_save(result, false);
+        assert_eq!(panel.current, imported);
+        assert!(panel.applied);
+        assert_eq!(ClientSettings::load(&active)?, imported);
+        Ok(())
+    }
+
+    #[test]
+    fn options_import_apply_button_uses_the_normal_persistence_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const FIXTURE: &str = "OTERYN_OPTIONS_IMPORT_APPLY_FIXTURE";
+        let Some(fixture) = std::env::var_os(FIXTURE) else {
+            // Select the ordinary preference path only in a child test process:
+            // no process-global environment races or real user preference writes.
+            let directory = tempfile::tempdir()?;
+            let output = std::process::Command::new(std::env::current_exe()?)
+                .args([
+                    "--exact",
+                    "settings_ui::tests::options_import_apply_button_uses_the_normal_persistence_path",
+                    "--nocapture",
+                ])
+                .env(FIXTURE, directory.path())
+                .env("LOCALAPPDATA", directory.path())
+                .output()?;
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Ok(());
+        };
+        let directory = std::path::PathBuf::from(fixture);
+        let active = directory.join("Oteryn/settings.json");
+        assert_eq!(ClientSettings::path(), Some(active.clone()));
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        current.save(&active)?;
+        let original = std::fs::read(&active)?;
+        let imported = ClientSettings {
+            fullscreen: !current.fullscreen,
+            ..current.clone()
+        };
+        let source = directory.join("options.zip");
+        crate::options_export::save(&imported, &source)?;
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("help"));
+        panel.import_options_selected(Some(&source));
+        assert_eq!(panel.current, current);
+        assert_eq!(std::fs::read(&active)?, original);
+        let context = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&context, size, Vec::new(), |ctx| {
+                panel.show(ctx, None, None)
+            })
+            .1;
+        }
+        let apply = button_position(&output, size, "Apply").ok_or("Apply visible")?;
+        let _ = click(&context, size, apply, |ctx| panel.show(ctx, None, None));
+        assert_eq!(panel.current, imported);
+        assert!(panel.applied && panel.open);
+        assert_eq!(ClientSettings::load(&active)?, imported);
         Ok(())
     }
 

@@ -963,6 +963,9 @@ impl ApplicationHandler for Application {
                     while let Some(action) = login.settings.take_runtime_action() {
                         if action == crate::settings_ui::SettingsRuntimeAction::ExportOptions {
                             login.settings.export_options(window);
+                        } else if action == crate::settings_ui::SettingsRuntimeAction::ImportOptions
+                        {
+                            login.settings.import_options(window);
                         }
                     }
                     state.handle_platform_output(window, output.platform_output.clone());
@@ -1049,6 +1052,9 @@ impl ApplicationHandler for Application {
                     while let Some(action) = gui.settings.take_runtime_action() {
                         if action == crate::settings_ui::SettingsRuntimeAction::ExportOptions {
                             gui.settings.export_options(window);
+                        } else if action == crate::settings_ui::SettingsRuntimeAction::ImportOptions
+                        {
+                            gui.settings.import_options(window);
                         } else {
                             let _ = self.hud.route_settings_action(action);
                         }
