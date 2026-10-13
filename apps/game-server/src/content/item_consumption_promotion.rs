@@ -87,8 +87,9 @@ fn apply_rows<'a>(
             return Err(format!("{}: food carries use requirements", row.target.key));
         }
     }
+    // Validate every row before mutating: a drift leaves the draft untouched.
+    let mut targets = Vec::new();
     let mut seen = BTreeSet::new();
-    let (mut food, mut potions) = (0, 0);
     for (identity, materializable, semantics) in items {
         let Some(row) = rows.get(identity.key.as_str()) else {
             continue;
@@ -105,6 +106,14 @@ fn apply_rows<'a>(
                 identity.key
             ));
         }
+        seen.insert(identity.key.as_str());
+        targets.push((*row, semantics));
+    }
+    if let Some(missing) = rows.keys().find(|key| !seen.contains(*key)) {
+        return Err(format!("{missing}: no Item record with this key"));
+    }
+    let (mut food, mut potions) = (0, 0);
+    for (row, semantics) in targets {
         semantics.consumption = ReferenceItemField::Known(row.consumption.clone());
         if let Some(requirements) = &row.use_requirements {
             semantics.use_requirements = ReferenceItemField::Known(requirements.clone());
@@ -113,10 +122,6 @@ fn apply_rows<'a>(
             ReferenceItemConsumption::Food(_) => food += 1,
             ReferenceItemConsumption::Potion(_) => potions += 1,
         }
-        seen.insert(identity.key.as_str());
-    }
-    if let Some(missing) = rows.keys().find(|key| !seen.contains(*key)) {
-        return Err(format!("{missing}: no Item record with this key"));
     }
     Ok((food, potions))
 }
