@@ -4,11 +4,11 @@
 task_id: NPC-CMD-1b-read
 title: "NPC-CMD-1b-read: read-only domain 8 NPC_TRADE_WINDOW on bundle Worlds"
 mode: IMPLEMENT
-status: in_progress
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-cmd-1b-20261013
-pr: null
+pr: 2035
 base_sha: null
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
