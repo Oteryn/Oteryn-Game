@@ -1340,6 +1340,14 @@ impl ApplicationHandler for Application {
         {
             self.return_to_login(class);
         }
+        let step_deadline = self
+            .play
+            .as_ref()
+            .and_then(|play| play.link.step_deadline(std::time::Instant::now()));
+        let repeat_deadline = match (repeat_deadline, step_deadline) {
+            (Some(repeat), Some(step)) => Some(repeat.min(step)),
+            (repeat, step) => repeat.or(step),
+        };
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let status = play.view.combat_status();
             if status != play.status {

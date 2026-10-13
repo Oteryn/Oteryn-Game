@@ -4,9 +4,7 @@
 //! (north is `y - 1`); N4 maps it 1:1 onto the session's `step` command. No command, wire
 //! message or server behaviour is added.
 //!
-//! SPEED-1 step pacing (CONDITIONS-0 §4.2, §4.3): the client reads the same checked-in step-speed
-//! table as the server and waits a moved step's duration before sending the next one, so a paced
-//! walk never sends a step the server would hold or refuse.
+//! Native step pacing consumes command-bound server receipts, never tile/actor speed guesses.
 
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
@@ -17,6 +15,38 @@ use oteryn_renderer::{TileCoord, TileView};
 use oteryn_session::EntityRef;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
+
+/// Monotonic receipt deadline; transport reservation remains in the play mailbox.
+#[derive(Debug, Default)]
+pub struct StepDeadline {
+    next: Option<Instant>,
+}
+
+impl StepDeadline {
+    pub fn reset(&mut self) {
+        self.next = None;
+    }
+    pub fn observe(
+        &mut self,
+        received_at: Instant,
+        wait_ms: u32,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        self.next = Some(
+            received_at
+                .checked_add(Duration::from_millis(u64::from(wait_ms)))
+                .ok_or(oteryn_renderer::BatchError::InvalidView)?,
+        );
+        Ok(())
+    }
+    #[must_use]
+    pub fn ready(&self, now: Instant) -> bool {
+        self.next.is_none_or(|deadline| now >= deadline)
+    }
+    #[must_use]
+    pub const fn next(&self) -> Option<Instant> {
+        self.next
+    }
+}
 
 /// Client-owned movement repeat, independent of the operating system's key
 /// repeat rate. Releases and focus/device loss always reconcile held keys.
@@ -133,6 +163,7 @@ pub fn step_toward(from: TileCoord, to: TileCoord) -> Option<StepDir> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepResult {
     Moved,
+    Retry,
     Refused,
 }
 

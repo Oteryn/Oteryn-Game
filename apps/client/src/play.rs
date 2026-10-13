@@ -6,7 +6,7 @@
 //! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
-use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
+use crate::input::{ClickWalk, StepDeadline, StepDir, StepResult, TargetKind, Targetable};
 use crate::map_view::{MapTarget, MapView};
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
@@ -15,14 +15,14 @@ use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
     ActorPosition, EntityKind, EntityRef, JoinSnapshot, Session, SessionError, SessionEvent,
-    SessionStream, StepDirection, StepDisposition, StepOutcome, WorldObjectOverlayEntry,
-    WorldSpatialEntity,
+    SessionStream, StepDirection, StepDisposition, StepOutcome, StepReceiptOutcome,
+    WorldObjectOverlayEntry, WorldSpatialEntity,
 };
 use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// How long the session task serves liveness probes while no step is pending; well inside the
@@ -94,6 +94,31 @@ pub enum BattleTargetSelection {
 /// Most inputs held while the session task is busy; a later one is dropped.
 const MAX_QUEUED_INPUTS: usize = 16;
 
+#[derive(Debug, Clone, Copy)]
+struct StepAnimation {
+    previous: ActorPosition,
+    destination: ActorPosition,
+    received_at: Instant,
+    duration: Duration,
+}
+
+impl StepAnimation {
+    fn finished(&self, now: Instant) -> bool {
+        now.saturating_duration_since(self.received_at) >= self.duration
+    }
+    fn offset(&self, now: Instant) -> [i32; 2] {
+        let remaining = self
+            .duration
+            .saturating_sub(now.saturating_duration_since(self.received_at));
+        let pixels =
+            i32::try_from(32 * remaining.as_nanos() / self.duration.as_nanos()).unwrap_or(0);
+        [
+            (self.previous.x - self.destination.x) * pixels,
+            (self.previous.y - self.destination.y) * pixels,
+        ]
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PlayView {
     own: TileCoord,
@@ -111,6 +136,9 @@ pub struct PlayView {
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
+    retry_cancelled: bool,
+    paced: bool,
+    walking: Option<StepAnimation>,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
@@ -163,6 +191,9 @@ impl PlayView {
             map_floor: None,
             walk: ClickWalk::new(),
             in_flight: false,
+            retry_cancelled: false,
+            paced: false,
+            walking: None,
             inputs: VecDeque::new(),
             entities: Vec::new(),
             map: None,
@@ -316,6 +347,7 @@ impl PlayView {
                 {
                     self.walk
                         .set_goal(TileCoord::new(picked.position.x, picked.position.y));
+                    self.retry_cancelled = false;
                 } else if picked.target.is_none() {
                     self.combat_line = Some("That item is out of reach");
                 }
@@ -323,7 +355,10 @@ impl PlayView {
             }
         }
         match self.scene.select_tile(tile)? {
-            None => self.walk.set_goal(tile),
+            None => {
+                self.walk.set_goal(tile);
+                self.retry_cancelled = false;
+            }
             Some(Targetable {
                 entity: Some(target),
                 ..
@@ -415,6 +450,7 @@ impl PlayView {
     /// Drop queued local actions and enqueue the protocol's explicit stop-attack
     /// intent. An already-sent step can only be resolved by the server.
     pub fn stop_all(&mut self) {
+        self.retry_cancelled = true;
         self.inputs.clear();
         self.walk.cancel();
         self.queue(Input::Stop);
@@ -452,7 +488,12 @@ impl PlayView {
 
     /// An arrow key: the latest press wins over an arrow still waiting at the end of the queue.
     pub fn arrow(&mut self, direction: StepDir) {
-        if matches!(self.inputs.back(), Some(Input::Arrow(_))) {
+        self.retry_cancelled = false;
+        if self.paced {
+            self.walk.cancel();
+            self.inputs
+                .retain(|input| !matches!(input, Input::Arrow(_)));
+        } else if matches!(self.inputs.back(), Some(Input::Arrow(_))) {
             self.inputs.pop_back();
         }
         self.queue(Input::Arrow(direction));
@@ -487,6 +528,7 @@ impl PlayView {
     /// Applies one step outcome: the domain-1 delta moves the own actor, the domain-2 delta
     /// moves a marker. A refused step ends the click walk.
     pub fn apply(&mut self, outcome: &StepOutcome) -> Result<(), BatchError> {
+        self.retry_cancelled = false;
         self.in_flight = false;
         self.walk
             .on_result(if outcome.disposition == StepDisposition::Moved {
@@ -501,6 +543,67 @@ impl PlayView {
             self.set_marker(&delta.value);
         }
         self.rebuild()
+    }
+
+    fn apply_receipt(
+        &mut self,
+        result: &StepReceiptOutcome,
+        now: Instant,
+    ) -> Result<(), BatchError> {
+        let cancelled = std::mem::take(&mut self.retry_cancelled);
+        self.paced |= result.receipt.is_some();
+        if self.paced {
+            let last = self
+                .inputs
+                .iter()
+                .rposition(|input| matches!(input, Input::Arrow(_)));
+            let mut index = 0;
+            self.inputs.retain(|input| {
+                let keep = !matches!(input, Input::Arrow(_)) || Some(index) == last;
+                index += 1;
+                keep
+            });
+        }
+        if result.receipt.is_some() && result.disposition == StepDisposition::TooEarly {
+            self.in_flight = false;
+            self.walk.on_result(StepResult::Retry);
+            if !cancelled
+                && self.walk.goal().is_none()
+                && !self
+                    .inputs
+                    .iter()
+                    .any(|input| matches!(input, Input::Arrow(_)))
+            {
+                self.arrow(self.facing);
+            }
+            return self.rebuild_at(now);
+        }
+        let previous = ActorPosition {
+            x: self.own.x,
+            y: self.own.y,
+            floor: self.floor,
+        };
+        self.walking = None;
+        self.apply(&result.outcome)?;
+        if let Some(receipt) = result.receipt
+            && result.disposition == StepDisposition::Moved
+            && let Some(delta) = &result.world_spatial_delta
+        {
+            let destination = delta.value.actor_position;
+            if previous.floor == destination.floor
+                && u64::from(previous.x.abs_diff(destination.x))
+                    + u64::from(previous.y.abs_diff(destination.y))
+                    == 1
+            {
+                self.walking = Some(StepAnimation {
+                    previous,
+                    destination,
+                    received_at: receipt.received_at,
+                    duration: Duration::from_millis(u64::from(receipt.wait_ms)),
+                });
+            }
+        }
+        self.rebuild_at(now)
     }
 
     /// Applies what the server pushed outside any step, coalesced: the latest own position and
@@ -522,6 +625,9 @@ impl PlayView {
     }
 
     fn place(&mut self, position: ActorPosition) {
+        if self.own != TileCoord::new(position.x, position.y) || self.floor != position.floor {
+            self.walking = None;
+        }
         self.own = TileCoord::new(position.x, position.y);
         self.floor = position.floor;
     }
@@ -538,6 +644,10 @@ impl PlayView {
     }
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
+        self.rebuild_at(Instant::now())
+    }
+
+    fn rebuild_at(&mut self, now: Instant) -> Result<(), BatchError> {
         if let Some(map) = &self.map {
             let header = map.header().ok_or(BatchError::InvalidView)?;
             let drawable = |position: ActorPosition| {
@@ -573,12 +683,18 @@ impl PlayView {
             };
             let actors = entities
                 .into_iter()
-                .map(|entity| entity.position)
-                .chain([own])
-                .map(|position| crate::map_draw::MapActor {
+                .map(|entity| (entity.position, false))
+                .chain([(own, true)])
+                .map(|(position, own_actor)| crate::map_draw::MapActor {
                     position,
-                    previous: None,
-                    offset: [0, 0],
+                    previous: self
+                        .walking
+                        .filter(|animation| own_actor && !animation.finished(now))
+                        .map(|animation| animation.previous),
+                    offset: self
+                        .walking
+                        .filter(|animation| own_actor && !animation.finished(now))
+                        .map_or([0, 0], |animation| animation.offset(now)),
                     cells: Vec::new(),
                 })
                 .collect();
@@ -635,10 +751,14 @@ impl PlayView {
     /// delivered, then hands it the next step if one is due. A session end returns to login with
     /// its public class; a view error is a render failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PublicClass> {
+        self.tick_at(link, Instant::now())
+    }
+
+    fn tick_at(&mut self, link: &PlayLink, now: Instant) -> Result<(), PublicClass> {
         while let Some(event) = link.poll() {
             match event {
                 PlayEvent::Stepped(outcome) => self
-                    .apply(&outcome)
+                    .apply_receipt(&outcome, now)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
                 PlayEvent::Pushed(pushed) => self
                     .apply_pushed(&pushed)
@@ -658,8 +778,22 @@ impl PlayView {
                         },
                     )
                 }
-                PlayEvent::Ended(class) => return Err(class),
+                PlayEvent::Ended(class) => {
+                    self.walk.cancel();
+                    self.inputs.clear();
+                    self.in_flight = false;
+                    self.paced = false;
+                    self.walking = None;
+                    return Err(class);
+                }
             }
+        }
+        if let Some(animation) = self.walking {
+            if animation.finished(now) {
+                self.walking = None;
+            }
+            self.rebuild_at(now)
+                .map_err(|_| PublicClass::SessionUnavailable)?;
         }
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
@@ -673,7 +807,7 @@ impl PlayView {
                 }
                 Input::Arrow(_) => {
                     if !link
-                        .request_step(|| self.send_step())
+                        .request_step_at(now, || self.send_step())
                         .map_err(|_error| PublicClass::SessionUnavailable)?
                     {
                         break;
@@ -685,7 +819,7 @@ impl PlayView {
             }
         }
         if self.inputs.is_empty() {
-            link.request_step(|| self.send_step())
+            link.request_step_at(now, || self.send_step())
                 .map_err(|_error| PublicClass::SessionUnavailable)?;
         }
         Ok(())
@@ -706,7 +840,7 @@ impl PlayView {
 /// What the session task reports to the shell.
 #[derive(Debug)]
 pub enum PlayEvent {
-    Stepped(Box<StepOutcome>),
+    Stepped(Box<StepReceiptOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Pushed),
     /// The server's answer to a combat command.
@@ -761,9 +895,11 @@ const MAX_PUSHED_MARKERS: usize = 1024;
 struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
-    stepped: Option<Box<StepOutcome>>,
+    stepped: Option<Box<StepReceiptOutcome>>,
     /// Held from enqueue until the shell consumes the outcome, not just until task completion.
     step_pending: bool,
+    step_deadline: StepDeadline,
+    connection_generation: Option<u64>,
     pushed: Pushed,
     last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
@@ -792,11 +928,29 @@ fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
 pub struct Outbox(SharedMailbox);
 
 impl Outbox {
+    #[cfg(test)]
     fn stepped(&self, outcome: StepOutcome) {
+        self.stepped_with_receipt(outcome.into());
+    }
+
+    fn stepped_with_receipt(&self, result: StepReceiptOutcome) {
         let mut mailbox = lock(&self.0);
+        mailbox.step_deadline.reset();
+        if let Some(receipt) = result.receipt
+            && (receipt.command_id != result.command_id
+                || mailbox.connection_generation != Some(receipt.connection_generation)
+                || mailbox
+                    .step_deadline
+                    .observe(receipt.received_at, receipt.wait_ms)
+                    .is_err())
+        {
+            mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
+            mailbox.step_pending = false;
+            return;
+        }
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
-        mailbox.stepped = Some(Box::new(outcome));
+        mailbox.stepped = Some(Box::new(result));
     }
 
     fn push(&self, events: Vec<SessionEvent>) {
@@ -849,7 +1003,9 @@ impl Outbox {
 
     /// The first end wins.
     fn end(&self, class: PublicClass) {
-        lock(&self.0).ended.get_or_insert(class);
+        let mut mailbox = lock(&self.0);
+        mailbox.ended.get_or_insert(class);
+        mailbox.step_deadline.reset();
     }
 }
 
@@ -930,11 +1086,19 @@ impl PlayLink {
         &self,
         next: impl FnOnce() -> Result<Option<StepDir>, BatchError>,
     ) -> Result<bool, BatchError> {
+        self.request_step_at(Instant::now(), next)
+    }
+
+    fn request_step_at(
+        &self,
+        now: Instant,
+        next: impl FnOnce() -> Result<Option<StepDir>, BatchError>,
+    ) -> Result<bool, BatchError> {
         let mut mailbox = lock(&self.mailbox);
         if self.commands.is_closed() {
             mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
         }
-        if mailbox.ended.is_some() || mailbox.step_pending {
+        if mailbox.ended.is_some() || mailbox.step_pending || !mailbox.step_deadline.ready(now) {
             return Ok(false);
         }
         let Some(direction) = next()? else {
@@ -947,6 +1111,16 @@ impl PlayLink {
             return Ok(false);
         }
         Ok(true)
+    }
+
+    /// A future native wake-up, not a stale deadline that would busy-loop the shell.
+    #[must_use]
+    pub fn step_deadline(&self, now: Instant) -> Option<Instant> {
+        let mailbox = lock(&self.mailbox);
+        (!mailbox.step_pending && mailbox.ended.is_none())
+            .then(|| mailbox.step_deadline.next())
+            .flatten()
+            .filter(|deadline| *deadline > now)
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
@@ -983,6 +1157,9 @@ impl PlayLink {
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn connection_generation(&self) -> Option<u64> {
+        None
+    }
     fn use_map(
         &mut self,
         _target: MapTarget,
@@ -1016,6 +1193,12 @@ pub trait Stepper: Send {
         &mut self,
         direction: StepDirection,
     ) -> impl Future<Output = Result<StepOutcome, SessionError>> + Send;
+    fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> impl Future<Output = Result<StepReceiptOutcome, SessionError>> + Send {
+        async move { self.step(direction).await.map(StepReceiptOutcome::from) }
+    }
     fn serve(
         &mut self,
         duration: Duration,
@@ -1035,6 +1218,9 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn connection_generation(&self) -> Option<u64> {
+        Some(Session::connection_generation(self))
+    }
     async fn use_map(
         &mut self,
         target: MapTarget,
@@ -1083,6 +1269,13 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         direction: StepDirection,
     ) -> impl Future<Output = Result<StepOutcome, SessionError>> + Send {
         self.step_retrying(direction)
+    }
+
+    fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> impl Future<Output = Result<StepReceiptOutcome, SessionError>> + Send {
+        self.step_retrying_with_receipt(direction)
     }
 
     fn serve(
@@ -1140,7 +1333,12 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    lock(&outbox.0).game = session.game_state();
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.game = session.game_state();
+        mailbox.connection_generation = session.connection_generation();
+        mailbox.step_deadline.reset();
+    }
     let mut held = Vec::new();
     loop {
         let action = lock(&outbox.0).action_pending.take();
@@ -1182,9 +1380,9 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
             Ok(PlayCommand::Step(direction)) => {
-                match session.step(step_direction(direction)).await {
+                match session.step_with_receipt(step_direction(direction)).await {
                     Ok(outcome) => {
-                        outbox.stepped(outcome);
+                        outbox.stepped_with_receipt(outcome);
                         publish(&mut session, &outbox, &mut held);
                         continue;
                     }
@@ -1331,6 +1529,239 @@ mod tests {
             }),
             world_object_overlay_delta: None,
         }
+    }
+
+    fn timed(
+        mut outcome: StepOutcome,
+        received_at: Instant,
+        wait_ms: u32,
+        early: bool,
+    ) -> StepReceiptOutcome {
+        if early {
+            outcome.disposition = StepDisposition::TooEarly;
+            outcome.status = CommandStatus::Rejected;
+            outcome.world_spatial_delta = None;
+        }
+        let receipt = Some(oteryn_session::StepReceipt {
+            command_id: outcome.command_id,
+            connection_generation: 1,
+            received_at,
+            wait_ms,
+        });
+        StepReceiptOutcome { outcome, receipt }
+    }
+
+    #[test]
+    fn real_dispatch_gate_runs_ten_thousand_jittered_receipts_without_early_or_burst_steps()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, mut commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let mut now = Instant::now();
+        let mut seed = 17u64;
+        assert!(link.request_step_at(now, || Ok(Some(StepDir::East)))?);
+        commands.try_recv()?;
+        for index in 0..10_000 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let received = now + Duration::from_millis(seed % 38);
+            let early = index % 17 == 0;
+            let wait = if early {
+                37
+            } else if index == 9999 {
+                111150
+            } else {
+                50 * (1 + index % 5)
+            };
+            let mut outcome = moved_to(100, 200, 0);
+            outcome.command_id = u64::from(index) + 7;
+            outbox.stepped_with_receipt(timed(outcome, received, wait, early));
+            // A completed but undrained outcome retains the one-flight reservation.
+            assert!(!link.request_step_at(received, || Err(BatchError::InvalidView))?);
+            assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
+            let due = received + Duration::from_millis(u64::from(wait));
+            now = received + Duration::from_millis((seed >> 32) % 20);
+            while now < due {
+                // An early attempt must not consume any queued view input.
+                assert!(!link.request_step_at(now, || Err(BatchError::InvalidView))?);
+                assert!(commands.try_recv().is_err());
+                now += Duration::from_millis(20);
+            }
+            assert!(now.duration_since(due) <= Duration::from_millis(20));
+            assert!(link.request_step_at(now, || Ok(Some(StepDir::East)))?);
+            assert!(matches!(
+                commands.try_recv()?,
+                PlayCommand::Step(StepDir::East)
+            ));
+            assert!(!link.request_step_at(now, || Err(BatchError::InvalidView))?);
+            assert!(commands.try_recv().is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn receipt_too_early_preserves_goal_latest_buffer_and_exact_remaining_deadline()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut view = view()?;
+        let (link, mut commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let received = Instant::now();
+        view.click(TileCoord::new(98, 200))?;
+        view.tick_at(&link, received)
+            .map_err(|_| "initial tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::West)
+        ));
+        outbox.stepped_with_receipt(timed(moved_to(100, 200, 0), received, 37, true));
+        view.tick_at(&link, received)
+            .map_err(|_| "receipt tick failed")?;
+        assert_eq!(view.walk.goal(), Some(TileCoord::new(98, 200)));
+        assert!(commands.try_recv().is_err());
+        view.arrow(StepDir::North);
+        view.cast(NonZeroU32::MIN);
+        view.arrow(StepDir::East);
+        assert_eq!(
+            view.inputs
+                .iter()
+                .filter(|input| matches!(input, Input::Arrow(_)))
+                .count(),
+            1
+        );
+        view.tick_at(&link, received + Duration::from_millis(36))
+            .map_err(|_| "early tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Combat(CombatCommand::Cast(_))
+        ));
+        assert!(commands.try_recv().is_err());
+        assert_eq!(view.inputs.front(), Some(&Input::Arrow(StepDir::East)));
+        view.tick_at(&link, received + Duration::from_millis(37))
+            .map_err(|_| "due tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::East)
+        ));
+        assert!(commands.try_recv().is_err());
+        // Stop is drained before the outstanding TOO_EARLY arrives: it must not resurrect.
+        view.stop_all();
+        view.tick_at(&link, received + Duration::from_millis(37))
+            .map_err(|_| "stop tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Combat(CombatCommand::Stop)
+        ));
+        outbox.stepped_with_receipt(timed(
+            moved_to(100, 200, 0),
+            received + Duration::from_millis(37),
+            37,
+            true,
+        ));
+        view.tick_at(&link, received + Duration::from_millis(74))
+            .map_err(|_| "cancelled retry tick failed")?;
+        assert!(commands.try_recv().is_err());
+        view.arrow(StepDir::North);
+        view.tick_at(&link, received + Duration::from_millis(74))
+            .map_err(|_| "fresh intent tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::North)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn receipt_generation_fence_and_terminal_reset_do_not_survive_fresh_admission()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let now = Instant::now();
+        let (link, _commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let mut wrong = timed(moved_to(100, 200, 0), now, 100, false);
+        wrong
+            .receipt
+            .as_mut()
+            .ok_or("missing receipt")?
+            .connection_generation = 2;
+        outbox.stepped_with_receipt(wrong);
+        assert!(!link.request(StepDir::East));
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        let (next, mut commands, outbox) = play_channel();
+        assert!(next.request_step_at(now, || Ok(Some(StepDir::North)))?);
+        commands.try_recv()?;
+        lock(&outbox.0).connection_generation = Some(3);
+        let mut result = timed(moved_to(100, 199, 0), now, 111150, false);
+        result
+            .receipt
+            .as_mut()
+            .ok_or("missing receipt")?
+            .connection_generation = 3;
+        outbox.stepped_with_receipt(result);
+        outbox.end(PublicClass::SessionUnavailable);
+        assert_eq!(next.step_deadline(now), None);
+        assert!(
+            !next.request_step_at(now + Duration::from_secs(200), || Ok(Some(StepDir::North)))?
+        );
+        let (fresh, _commands, _outbox) = play_channel();
+        assert!(fresh.request_step_at(now, || Ok(Some(StepDir::North)))?);
+        Ok(())
+    }
+
+    #[test]
+    fn receipt_animates_actual_streamed_actor_for_the_server_duration_and_resets_on_correction()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        let bytes = encode_world_map_snapshot(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [1; 32],
+                bundle_digest: [2; 32],
+                reset_epoch: 1,
+                origin: ActorPosition {
+                    x: 100,
+                    y: 200,
+                    floor: -7,
+                },
+                first_visible_floor: 0,
+            },
+            tiles: vec![],
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+        map.replace_snapshot(&bytes).map_err(|e| format!("{e:?}"))?;
+        view.apply_pushed(&Pushed {
+            map: Some(Box::new(map)),
+            ..Pushed::default()
+        })?;
+        let start = Instant::now();
+        view.apply_receipt(&timed(moved_to(100, 199, -7), start, 100, false), start)?;
+        assert_eq!(view.own(), TileCoord::new(100, 199)); // authority is never interpolated
+        let (link, _commands, _outbox) = play_channel();
+        for (elapsed, expected_y) in [(0, 288.0), (50, 264.0), (100, 240.0)] {
+            view.tick_at(&link, start + Duration::from_millis(elapsed))
+                .map_err(|_| "animation tick failed")?;
+            let frame = view.scene().sprite_frame().ok_or("not streamed")?;
+            assert_eq!(frame.quads().quad_count(), 1);
+            assert_eq!(frame.quads().batches()[0][0].position, [336.0, expected_y]);
+        }
+        assert!(view.walking.is_none());
+        view.apply_receipt(&timed(moved_to(101, 199, -7), start, 111150, false), start)?;
+        assert_eq!(
+            view.walking.ok_or("no animation")?.duration,
+            Duration::from_millis(111150)
+        );
+        view.apply_pushed(&Pushed {
+            own: Some(ActorPosition {
+                x: 101,
+                y: 200,
+                floor: -7,
+            }),
+            ..Pushed::default()
+        })?;
+        assert!(view.walking.is_none());
+        Ok(())
     }
 
     fn view() -> Result<PlayView, BatchError> {
