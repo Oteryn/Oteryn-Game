@@ -10,21 +10,24 @@
 //! The capability changes no other command: command type 9 keeps its meaning, and its map-item and
 //! Ground sources are a separate registry change.
 //!
-//! `PUSH_INTENT` is flat to fit `WORLDINT0-RL-21` (32 bytes): the 16-byte identity, a `uint32`
-//! generation, and the destination x and y. A creature push never changes floor (Canary
+//! `PUSH_INTENT` is flat: the 16-byte identity, the full `uint64` generation, and the destination x
+//! and y, both always present (zero is an explicit varint, never an absent field). That is 37
+//! bytes at most, 5 over `WORLDINT0-RL-21`'s 32; narrowing the generation to `uint32` would give
+//! exactly 32 but breaks the `session-generation` width, so the bound is held at 37 pending an
+//! owner decision. A creature push never changes floor (Canary
 //! `Game::playerMoveCreature` bounds the throw by `getThrowRange`, 1, against a z distance
 //! times 4), so the destination floor is the target's and is not sent.
 //!
 //! Decoding is strict, and encoding refuses the same values as a fault before any byte is emitted:
-//! an identity that is not 16 bytes, a zero generation or one over `u32`, a coordinate outside
-//! the 3-byte range, a missing target or coordinate pair, a payload over its bound, and unknown
+//! an identity that is not 16 bytes, a zero generation, a coordinate outside the 3-byte
+//! range, a missing target, generation, x or y, a payload over its bound, and unknown
 //! or repeated fields all fail closed.
 
 use crate::charm_wire::{
-    WireResult, push_message_field, push_nonzero_varint_field, read_bytes, read_uint32,
+    WireResult, push_message_field, push_nonzero_varint_field, push_varint, read_bytes,
     read_varint, set_once,
 };
-use crate::item_view::{decode_sint32, push_sint32};
+use crate::item_view::decode_sint32;
 use crate::world_object::{
     CAPABILITY_ITEM_USE_V1, MAX_USE_RESULT_BYTES, UseDisposition, WorldObjectError,
     decode_use_result_with_gate, encode_use_result_with_gate,
@@ -46,8 +49,15 @@ pub const COMMAND_TYPE_PUSH_INTENT: u32 = 15;
 /// Destination coordinates are `sint32` limited to 3-byte varints: -2^20 to 2^20 - 1.
 pub const MIN_PUSH_COORDINATE: i32 = -(1 << 20);
 pub const MAX_PUSH_COORDINATE: i32 = (1 << 20) - 1;
-/// `PushIntentV1`: identity 1 + 1 + 16, generation 1 + 5, x 1 + 3, y 1 + 3 (`WORLDINT0-RL-21`).
-pub const MAX_PUSH_INTENT_BYTES: usize = 32;
+/// `PushIntentV1`: identity 1 + 1 + 16, generation 1 + 10 (u64), x 1 + 3, y 1 + 3 = 37 bytes.
+/// `WORLDINT0-RL-21` says 32; see the module docs.
+pub const MAX_PUSH_INTENT_BYTES: usize = 37;
+
+fn push_explicit_sint32(output: &mut Vec<u8>, field: u64, value: i32) {
+    let zigzag = ((value << 1) ^ (value >> 31)) as u32;
+    push_varint(output, field << 3);
+    push_varint(output, u64::from(zigzag));
+}
 /// `PushResultV1` is the USE result message, at most 4 bytes.
 pub const MAX_PUSH_RESULT_BYTES: usize = MAX_USE_RESULT_BYTES;
 
@@ -65,7 +75,6 @@ fn coordinate_in_range(value: i32) -> bool {
 
 pub fn encode_push_intent(intent: &PushIntent) -> WireResult<Vec<u8>> {
     if intent.target.generation == 0
-        || u32::try_from(intent.target.generation).is_err()
         || !coordinate_in_range(intent.to_x)
         || !coordinate_in_range(intent.to_y)
     {
@@ -74,12 +83,12 @@ pub fn encode_push_intent(intent: &PushIntent) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_PUSH_INTENT_BYTES);
     push_message_field(&mut output, 1, &intent.target.identity);
     push_nonzero_varint_field(&mut output, 2, intent.target.generation);
-    push_sint32(&mut output, 3, intent.to_x);
-    push_sint32(&mut output, 4, intent.to_y);
+    push_explicit_sint32(&mut output, 3, intent.to_x);
+    push_explicit_sint32(&mut output, 4, intent.to_y);
     Ok(output)
 }
 
-/// The target is required; an absent coordinate is 0 (proto3).
+/// The target, generation and both coordinates are required; zero must be written explicitly.
 pub fn decode_push_intent(payload: &[u8]) -> WireResult<PushIntent> {
     if payload.len() > MAX_PUSH_INTENT_BYTES {
         return Err(WorldInteractionWireError::LimitExceeded);
@@ -94,7 +103,7 @@ pub fn decode_push_intent(payload: &[u8]) -> WireResult<PushIntent> {
                     .map_err(|_| WorldInteractionWireError::Malformed)?;
                 set_once(&mut identity, bytes)?;
             }
-            0x10 => set_once(&mut generation, read_uint32(payload, &mut cursor)?)?,
+            0x10 => set_once(&mut generation, read_varint(payload, &mut cursor)?)?,
             0x18 => set_once(
                 &mut to_x,
                 decode_sint32(read_varint(payload, &mut cursor)?)?,
@@ -106,18 +115,19 @@ pub fn decode_push_intent(payload: &[u8]) -> WireResult<PushIntent> {
             _ => return Err(WorldInteractionWireError::Malformed),
         }
     }
-    let (to_x, to_y) = (to_x.unwrap_or(0), to_y.unwrap_or(0));
+    let (to_x, to_y) = (
+        to_x.ok_or(WorldInteractionWireError::Malformed)?,
+        to_y.ok_or(WorldInteractionWireError::Malformed)?,
+    );
     if !coordinate_in_range(to_x) || !coordinate_in_range(to_y) {
         return Err(WorldInteractionWireError::Malformed);
     }
     Ok(PushIntent {
         target: EntityRef {
             identity: identity.ok_or(WorldInteractionWireError::Malformed)?,
-            generation: u64::from(
-                generation
-                    .filter(|generation| *generation != 0)
-                    .ok_or(WorldInteractionWireError::Malformed)?,
-            ),
+            generation: generation
+                .filter(|generation| *generation != 0)
+                .ok_or(WorldInteractionWireError::Malformed)?,
         },
         to_x,
         to_y,

@@ -42,10 +42,11 @@ use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
     CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_USE_INTENT,
-    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
     STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
     WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
-    encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
+    encode_use_result_with_gate, encode_world_object_overlay_delta,
+    encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
@@ -834,6 +835,9 @@ pub(crate) struct UseOutcome {
     /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
     /// it only for a session that selected capability 8.
     pub(crate) earned: EarnedNotice,
+    /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
+    /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
+    pub(crate) gate_message_id: Option<u8>,
 }
 
 impl UseOutcome {
@@ -842,6 +846,7 @@ impl UseOutcome {
             disposition: super::world_object::UseDisposition::Rejected,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            gate_message_id: None,
         }
     }
 }
@@ -2528,10 +2533,11 @@ where
                 ),
             ),
             Dispatch::Use(outcome) => {
-                let disposition = negotiated_use_disposition(
+                let (disposition, gate_message_id) = negotiated_use_disposition(
                     selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
                     selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
                     outcome.disposition,
+                    outcome.gate_message_id,
                 );
                 (
                     if disposition == UseDisposition::Rejected {
@@ -2539,7 +2545,11 @@ where
                     } else {
                         CommandStatus::Accepted
                     },
-                    encode_use_result(disposition),
+                    match gate_message_id {
+                        Some(_) => encode_use_result_with_gate(disposition, gate_message_id)
+                            .unwrap_or_else(|_| encode_use_result(UseDisposition::Rejected)),
+                        None => encode_use_result(disposition),
+                    },
                 )
             }
             Dispatch::Spell(outcome) => (
@@ -3013,9 +3023,20 @@ fn negotiated_use_disposition(
     item_use: bool,
     world_interaction: bool,
     disposition: UseDisposition,
-) -> UseDisposition {
+    gate_message_id: Option<u8>,
+) -> (UseDisposition, Option<u8>) {
     if disposition.needs_world_interaction() && !world_interaction {
-        return UseDisposition::Rejected;
+        return (UseDisposition::Rejected, None);
+    }
+    // `SEALED` carries its gate message id and no other disposition does; a mismatch is a server
+    // fault, and the one refusal every session can decode replaces it.
+    let valid_gate = match (disposition, gate_message_id) {
+        (UseDisposition::Sealed, Some(id)) => (1..=MAX_GATE_MESSAGE_ID).contains(&id),
+        (UseDisposition::Sealed, None) | (_, Some(_)) => false,
+        (_, None) => true,
+    };
+    if !valid_gate {
+        return (UseDisposition::Rejected, None);
     }
     match disposition {
         UseDisposition::RequirementNotMet
@@ -3024,9 +3045,9 @@ fn negotiated_use_disposition(
         | UseDisposition::NoTarget
             if !item_use =>
         {
-            UseDisposition::Rejected
+            (UseDisposition::Rejected, None)
         }
-        other => other,
+        other => (other, gate_message_id),
     }
 }
 
@@ -3242,6 +3263,7 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    use super::super::world_object::decode_use_result_with_gate;
     use super::*;
     use crate::gameplay_transport::world_spatial::encode_step_result;
     use std::cell::{Cell, RefCell};
@@ -3251,21 +3273,21 @@ mod tests {
     #[test]
     fn use_dispositions_7_to_10_need_capability_15() {
         use UseDisposition as D;
+        let neg = |i, w, d| negotiated_use_disposition(i, w, d, None).0;
         for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
-            assert_eq!(negotiated_use_disposition(false, false, d), D::Rejected);
-            assert_eq!(negotiated_use_disposition(true, false, d), d);
+            assert_eq!(neg(false, false, d), D::Rejected);
+            assert_eq!(neg(true, false, d), d);
         }
         for d in [
             D::Locked,
             D::KeyMismatch,
-            D::Sealed,
             D::PzBlocked,
             D::NotMovable,
             D::NoRoom,
             D::NotPossible,
         ] {
-            assert_eq!(negotiated_use_disposition(true, false, d), D::Rejected);
-            assert_eq!(negotiated_use_disposition(true, true, d), d);
+            assert_eq!(neg(true, false, d), D::Rejected);
+            assert_eq!(neg(true, true, d), d);
         }
         for d in [
             D::Committed,
@@ -3274,8 +3296,36 @@ mod tests {
             D::StaleState,
             D::TooFar,
         ] {
-            assert_eq!(negotiated_use_disposition(false, false, d), d);
+            assert_eq!(neg(false, false, d), d);
         }
+    }
+
+    #[test]
+    fn sealed_carries_its_gate_message_id_only_under_capability_11() {
+        use UseDisposition as D;
+        assert_eq!(
+            negotiated_use_disposition(true, true, D::Sealed, Some(9)),
+            (D::Sealed, Some(9))
+        );
+        assert_eq!(
+            negotiated_use_disposition(true, false, D::Sealed, Some(9)),
+            (D::Rejected, None)
+        );
+        for bad in [None, Some(0), Some(128)] {
+            assert_eq!(
+                negotiated_use_disposition(true, true, D::Sealed, bad),
+                (D::Rejected, None)
+            );
+        }
+        assert_eq!(
+            negotiated_use_disposition(true, true, D::Locked, Some(9)),
+            (D::Rejected, None)
+        );
+        let payload = encode_use_result_with_gate(D::Sealed, Some(9)).expect("sealed");
+        assert_eq!(
+            decode_use_result_with_gate(&payload).expect("decode"),
+            (D::Sealed, Some(9))
+        );
     }
 
     const CHARACTER: [u8; 16] = uuid_v7(0x11);
@@ -4696,6 +4746,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed.clone()),
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -4932,6 +4983,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed),
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -4989,6 +5041,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let world_id = WorldId::decode(&WORLD)?;
@@ -5065,6 +5118,7 @@ mod tests {
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -5104,6 +5158,78 @@ mod tests {
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
+            Ok(())
+        })
+    }
+
+    /// WORLDINT-WIRE-1: a `SEALED` authority outcome carries its gate message id through the
+    /// server to the result under capability 11, and is refused as plain `Rejected` without it.
+    #[test]
+    fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::Sealed,
+                    committed: None,
+                    earned: EarnedNotice::NoneEarned,
+                    gate_message_id: Some(42),
+                },
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let frames_with = |capabilities: &'static [u32]| {
+                let offered = [
+                    OfferedCapability {
+                        id: CAPABILITY_ITEM_USE_V1,
+                        requires: &[],
+                    },
+                    OfferedCapability {
+                        id: 18,
+                        requires: &[],
+                    },
+                    OfferedCapability {
+                        id: CAPABILITY_WORLD_INTERACTION_V1,
+                        requires: &[CAPABILITY_ITEM_USE_V1, 18],
+                    },
+                ];
+                let selected =
+                    SelectedCapabilities::select(&offered, capabilities).expect("selection");
+                let admitted = AdmittedSession {
+                    continuity: SessionContinuity {
+                        selected_capabilities: selected,
+                        ..SessionContinuity::FRESH
+                    },
+                    ..positioned().expect("session")
+                };
+                (
+                    admitted,
+                    use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0),
+                )
+            };
+            let result_present = |frames: &[Vec<u8>], status, payload: &[u8]| {
+                (0..64u64).any(|sequence| {
+                    encode_command_result(1, 1, sequence, status, payload)
+                        .is_ok_and(|expected| frames.contains(&expected))
+                })
+            };
+            let (admitted, command) =
+                frames_with(&[CAPABILITY_ITEM_USE_V1, 18, CAPABILITY_WORLD_INTERACTION_V1]);
+            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
+            let sealed =
+                encode_use_result_with_gate(UseDisposition::Sealed, Some(42)).expect("sealed");
+            assert!(result_present(&frames, CommandStatus::Accepted, &sealed));
+
+            let (admitted, command) = frames_with(&[CAPABILITY_ITEM_USE_V1]);
+            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
+            assert!(result_present(
+                &frames,
+                CommandStatus::Rejected,
+                &encode_use_result(UseDisposition::Rejected)
+            ));
             Ok(())
         })
     }
@@ -5826,6 +5952,7 @@ mod tests {
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned,
+                gate_message_id: None,
             },
         }
     }

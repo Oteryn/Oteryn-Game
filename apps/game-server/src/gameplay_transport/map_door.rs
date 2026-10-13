@@ -22,6 +22,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         disposition,
         committed: None,
         earned: EarnedNotice::NoneEarned,
+        gate_message_id: None,
     }
 }
 

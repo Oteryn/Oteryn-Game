@@ -34,38 +34,27 @@ fn a_push_round_trips_and_the_largest_fits_the_bound() {
     let bytes = encode_push_intent(&small).expect("encode");
     assert_eq!(decode_push_intent(&bytes), Ok(small));
     for largest in [
-        push(
-            u64::from(u32::MAX),
-            MIN_PUSH_COORDINATE,
-            MIN_PUSH_COORDINATE,
-        ),
-        push(
-            u64::from(u32::MAX),
-            MAX_PUSH_COORDINATE,
-            MAX_PUSH_COORDINATE,
-        ),
+        push(u64::MAX, MIN_PUSH_COORDINATE, MIN_PUSH_COORDINATE),
+        push(u64::MAX, MAX_PUSH_COORDINATE, MAX_PUSH_COORDINATE),
     ] {
         let bytes = encode_push_intent(&largest).expect("encode");
-        assert!(bytes.len() <= MAX_PUSH_INTENT_BYTES);
+        assert_eq!(bytes.len(), MAX_PUSH_INTENT_BYTES);
         assert_eq!(decode_push_intent(&bytes), Ok(largest));
     }
-    let bytes =
-        encode_push_intent(&push(u64::from(u32::MAX), MIN_PUSH_COORDINATE, 1_000)).expect("encode");
+    let bytes = encode_push_intent(&push(u64::MAX, MIN_PUSH_COORDINATE, 1_000)).expect("encode");
     assert_eq!(decode_push_intent(&bytes).expect("decode").to_y, 1_000);
-    // Coordinates 0 are omitted and decode as 0.
+    // A zero coordinate is written explicitly and round-trips.
     let origin = push(2, 0, 0);
-    assert_eq!(
-        decode_push_intent(&encode_push_intent(&origin).expect("encode")),
-        Ok(origin)
-    );
-    assert_eq!(MAX_PUSH_INTENT_BYTES, 32);
+    let bytes = encode_push_intent(&origin).expect("encode");
+    assert_eq!(&bytes[bytes.len() - 4..], &[0x18, 0, 0x20, 0]);
+    assert_eq!(decode_push_intent(&bytes), Ok(origin));
+    assert_eq!(MAX_PUSH_INTENT_BYTES, 37);
 }
 
 #[test]
 fn malformed_pushes_fail_closed() {
     for bad in [
         push(0, 1, 1),
-        push(u64::from(u32::MAX) + 1, 1, 1),
         push(1, MAX_PUSH_COORDINATE + 1, 1),
         push(1, 1, MIN_PUSH_COORDINATE - 1),
     ] {
@@ -87,9 +76,14 @@ fn malformed_pushes_fail_closed() {
     push_varint_field(&mut twice_generation, 2, 3);
     let mut unknown = good.clone();
     push_varint_field(&mut unknown, 5, 1);
-    let mut big_generation = Vec::new();
-    push_message_field(&mut big_generation, 1, &[1; 16]);
-    push_varint_field(&mut big_generation, 2, 1 << 32);
+    let mut no_destination = Vec::new();
+    push_message_field(&mut no_destination, 1, &[1; 16]);
+    push_varint_field(&mut no_destination, 2, 1);
+    let mut no_y = no_destination.clone();
+    push_varint_field(&mut no_y, 3, 2);
+    let mut no_x = no_destination.clone();
+    push_varint_field(&mut no_x, 4, 2);
+    let truncated = good[..good.len() - 1].to_vec();
     let mut far = Vec::new();
     push_message_field(&mut far, 1, &[1; 16]);
     push_varint_field(&mut far, 2, 1);
@@ -103,7 +97,10 @@ fn malformed_pushes_fail_closed() {
         (short_identity, WorldInteractionWireError::Malformed),
         (twice_generation, WorldInteractionWireError::Malformed),
         (unknown, WorldInteractionWireError::Malformed),
-        (big_generation, WorldInteractionWireError::Malformed),
+        (no_destination, WorldInteractionWireError::Malformed),
+        (no_x, WorldInteractionWireError::Malformed),
+        (no_y, WorldInteractionWireError::Malformed),
+        (truncated, WorldInteractionWireError::Malformed),
         (far, WorldInteractionWireError::Malformed),
         (oversized, WorldInteractionWireError::LimitExceeded),
     ] {

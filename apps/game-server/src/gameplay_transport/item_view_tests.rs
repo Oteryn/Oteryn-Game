@@ -686,6 +686,7 @@ mod connection {
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
+                gate_message_id: None,
             }
         }
 
