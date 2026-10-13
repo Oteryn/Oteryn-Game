@@ -8193,6 +8193,29 @@
       "notes": "World, English, Help and Advertising (CHAT-0 \u00a75 and \u00a78). Registered by OTV2-20261001-chat-1b-1."
     },
     {
+      "id": "CHAT0-RL-11",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+      "resource": "Undelivered chat lines queued for one session",
+      "unit": "lines per session",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=64: 64 queued lines are all kept and none owes a marker",
+        "max+1=65: a 65th line drops the oldest room line and owes exactly one marker; a sent marker covers further overflow until a line is sent"
+      ],
+      "consumers": [
+        "apps/game-server/src/chat/egress.rs EGRESS_MAX_LINES, ChatEgress::push",
+        "apps/game-server/src/gameplay_transport/chat_intent.rs per-session ChatEgress"
+      ],
+      "notes": "CHAT-0 \u00a77 and \u00a78. Registered by CHAT-1b-2b; the queue itself was built by OTV2-20261004-chat-1b-2a and wired by CHAT-WIRE-1."
+    },
+    {
       "id": "ANALYSERS0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
       "resource": "Facts in one analyser batch (domain 15 delta type 1)",

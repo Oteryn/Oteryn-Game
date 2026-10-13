@@ -635,3 +635,22 @@ fn the_pre_gate_leaves_an_empty_bucket_yell_to_the_level_check() {
         Err(ChatRefusal::Muted { .. })
     ));
 }
+
+#[test]
+fn egress_bound_is_the_registered_chat0_rl_11_row() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .expect("resource registry");
+    let rows: Vec<&serde_json::Value> = registry["entries"]
+        .as_array()
+        .expect("entries")
+        .iter()
+        .filter(|entry| entry["id"] == "CHAT0-RL-11")
+        .collect();
+    assert_eq!(rows.len(), 1, "CHAT0-RL-11 registered once");
+    assert_eq!(
+        rows[0]["hard_maximum"].as_u64(),
+        Some(EGRESS_MAX_LINES as u64)
+    );
+}
