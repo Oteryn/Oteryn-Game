@@ -533,12 +533,12 @@ fn shutdown_flush_saves_live_monk_values_and_skips_untracked_actors() -> TestRes
         let owner = dependencies.owner(&harness, &authority);
         dependencies.initialize(&owner).await;
         // Untracked: nothing is written.
-        assert_eq!(owner.flush_monk_states().await, 0);
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
         assert_eq!(receipt_count(&harness).await?, 0);
         assert_eq!(revision(&harness).await?, 1);
         track(&owner, &dependencies)?;
         // The session stays live and fenced in; the flush is the only writer.
-        assert_eq!(owner.flush_monk_states().await, 0);
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
         let state = harness
             .root
             .read_character_monk_state(&authority, fence(1)?.character_id)
@@ -584,7 +584,7 @@ fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailabl
         track(&owner, &dependencies)?;
         // An unproven save is reported, so the flush is retried and never marked done.
         sqlx::query("ALTER TABLE game_character_monk_state_receipts RENAME TO spell_fixture_unavailable_receipts").execute(&harness.pool).await?;
-        assert_eq!(owner.flush_monk_states().await, 1);
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 1);
         assert_eq!(revision(&harness).await?, 1);
         sqlx::query("ALTER TABLE spell_fixture_unavailable_receipts RENAME TO game_character_monk_state_receipts").execute(&harness.pool).await?;
         // A session that ended meanwhile is fenced out: nothing is written, nothing is retried.
@@ -599,7 +599,7 @@ fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailabl
                 .map_err(debug)?,
             crate::durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
         ));
-        assert_eq!(owner.flush_monk_states().await, 0);
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
         assert_eq!(revision(&harness).await?, 1);
         assert_eq!(receipt_count(&harness).await?, 0);
         drop(owner);

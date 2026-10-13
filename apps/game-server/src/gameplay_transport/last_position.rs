@@ -143,10 +143,11 @@ impl LastPositionFlush {
     /// writes, and mark it done only once none failed. The node stops waiting at its budget.
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
+        let mut monks_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
             // OPS-SAVE-1: the monk values of the live actors go with the positions.
             let failed = authority.write_due_last_positions(true).await
-                + authority.flush_monk_states().await;
+                + authority.flush_monk_states(&mut monks_settled).await;
             if failed == 0 {
                 self.done.cancel();
                 return;

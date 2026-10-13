@@ -8,6 +8,8 @@
 //! slot (CHAR-REV-SEQ-1); the runtime lock is taken only briefly, inside the slot, to read the
 //! values, and never across the slot wait or the durable write.
 
+use std::collections::HashSet;
+
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::connection::AdmittedSession;
@@ -21,9 +23,6 @@ use crate::durability::monk_state::{
     DurableMonkState, MonkStateSaveOccurrence, MonkStateSaveOutcome, MonkStateSaveRequest,
 };
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
-
-/// The monk saves of one shutdown flush that run at once.
-const MONK_FLUSH_CONCURRENCY: usize = 32;
 
 /// The result of the actor-end save; only `Unknown` holds the lease release back.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,42 +74,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// readiness is withdrawn and the sessions are fenced out. It is the same fenced, slot-run
     /// save as the actor-end one, so a session ended meanwhile writes nothing. Actors without
     /// monk state are skipped without a durable read. Returns the number of unproven saves,
-    /// which the caller retries.
-    pub(super) async fn flush_monk_states(&self) -> usize {
-        let mut monks = Vec::new();
-        for (session, actor) in self.last_positions.tracked_actors() {
-            if self.is_monk(session, actor).await {
-                monks.push((session, actor));
-            }
-        }
-        // Each save takes its own Character's revision slot, so a bounded group runs
-        // concurrently and the pass costs about one save per group, not per monk.
+    /// which the caller retries; sessions in `settled` are skipped.
+    pub(super) async fn flush_monk_states(&self, settled: &mut HashSet<GameSessionId>) -> usize {
         let mut failed = 0;
-        for group in monks.chunks(MONK_FLUSH_CONCURRENCY) {
-            let mut saves: Vec<_> = group
-                .iter()
-                .map(|&(session, actor)| Some(Box::pin(self.save_monk_state_of(session, actor))))
-                .collect();
-            std::future::poll_fn(|context| {
-                let mut pending = false;
-                for slot in &mut saves {
-                    if let Some(save) = slot {
-                        match save.as_mut().poll(context) {
-                            std::task::Poll::Ready(outcome) => {
-                                failed += usize::from(outcome == MonkSave::Unknown);
-                                *slot = None;
-                            }
-                            std::task::Poll::Pending => pending = true,
-                        }
-                    }
-                }
-                if pending {
-                    std::task::Poll::Pending
-                } else {
-                    std::task::Poll::Ready(())
-                }
-            })
-            .await;
+        for (session, actor) in self.last_positions.tracked_actors() {
+            if settled.contains(&session) || !self.is_monk(session, actor).await {
+                continue;
+            }
+            // One save at a time: the durability root has a single holder, so concurrent saves
+            // would only fight for it. A save that is proven stays settled across the retries.
+            if self.save_monk_state_of(session, actor).await == MonkSave::Unknown {
+                failed += 1;
+            } else {
+                settled.insert(session);
+            }
         }
         failed
     }
