@@ -46,6 +46,20 @@ CANARY_RAW = (
 )
 FOODS_LUA = "data/scripts/actions/items/foods.lua"
 POTIONS_LUA = "data/scripts/actions/items/potions.lua"
+# Pinned Canary sources: the whole-file sha256 at CANARY_REVISION and the digest of the extracted
+# rows, so an edited or mis-refreshed snapshot cannot change gameplay data under the recorded SHA.
+CANARY_PINS = {
+    "foods": (
+        FOODS_LUA,
+        "d561ef0e3c583b7f08415e29b7da91cc6956ce2b2a99b87f27f18d0426b55cde",
+        "fea7037889e67a20aabfe95a7fa4c9603d4859f0194263f08b5fcde7a3b5c289",
+    ),
+    "potions": (
+        POTIONS_LUA,
+        "d2a334ede24e3d1d22fad81a22e7cd7da12aa8bbbd067d0a68229a494f657fc8",
+        "3be385e2088a88bff565997abc89a074d5f6f89ce7fd5be570671f07aae28161",
+    ),
+}
 WIKI_API = "https://tibia.fandom.com/api.php"
 KEY = "oteryn:item.tibia.i"
 REVISION = "definition-r1"
@@ -336,7 +350,27 @@ def target(item_id):
     return {"family": "Item", "key": f"{KEY}{item_id}", "revision": REVISION}
 
 
+def verify_canary(snapshot):
+    if snapshot.get("schema") != "OTERYN_ITEM_CONSUMPTION_SOURCES/v1":
+        raise SystemExit("sources snapshot schema drift")
+    canary = snapshot["canary"]
+    if (
+        canary.get("repository") != "opentibiabr/canary"
+        or canary.get("revision") != CANARY_REVISION
+    ):
+        raise SystemExit("sources snapshot Canary repository or revision drift")
+    for name, (path, file_sha256, rows_sha256) in CANARY_PINS.items():
+        source = canary[name]
+        if (
+            source.get("path") != path
+            or source.get("sha256") != file_sha256
+            or sha256(encode(source["rows"])) != rows_sha256
+        ):
+            raise SystemExit(f"sources snapshot Canary {name} drift")
+
+
 def build(snapshot):
+    verify_canary(snapshot)
     world = {int(i): v for i, v in snapshot["world_baseline"].items()}
     xml = items_xml_lines()
     foods = parse_foods(snapshot["canary"]["foods"]["rows"])

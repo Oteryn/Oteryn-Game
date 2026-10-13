@@ -19,6 +19,16 @@ class Consumption(unittest.TestCase):
         self.assertEqual(lane.FACTS.read_bytes(), lane.encode(self.facts))
         self.assertEqual(lane.ADMISSION.read_bytes(), lane.encode(self.admission))
 
+    def test_an_edited_canary_snapshot_is_refused(self):
+        edited = json.loads(lane.SNAPSHOT.read_bytes())
+        edited["canary"]["potions"]["rows"][0]["text"] += " "
+        with self.assertRaises(SystemExit):
+            lane.build(edited)
+        edited = json.loads(lane.SNAPSHOT.read_bytes())
+        edited["canary"]["revision"] = "0" * 40
+        with self.assertRaises(SystemExit):
+            lane.build(edited)
+
     def test_every_row_names_its_source(self):
         for row in self.facts["rows"]:
             source = row["source"]
