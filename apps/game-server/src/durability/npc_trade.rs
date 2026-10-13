@@ -367,6 +367,7 @@ fn request_binding(
 }
 
 /// One locked direct entry of the backpack, highest ordinal first.
+#[derive(Clone)]
 struct Entry {
     item_instance_id: [u8; 16],
     placement_ordinal: u64,
