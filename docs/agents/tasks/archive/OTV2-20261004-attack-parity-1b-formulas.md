@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/loop-combat-modes-1-parity-1b-20261013
-pr: 0
+pr: 2091
 base_sha: main
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -56,5 +56,5 @@ The player melee and fist bounds now follow the pinned TibiaTools expression (co
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `git diff --check`: pass
-- `python tools/agents/validate_governance.py`: pending
+- `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
