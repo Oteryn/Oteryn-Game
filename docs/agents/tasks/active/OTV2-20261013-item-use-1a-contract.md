@@ -4,7 +4,7 @@
 task_id: OTV2-20261013-item-use-1a-contract
 title: "ITEM-USE-1a: DUR-03 item-use audit contract (operation tag 9, rows, encoder)"
 mode: IMPLEMENT
-status: in_progress
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 implementation_branch: claude/use-item-1-20261013
