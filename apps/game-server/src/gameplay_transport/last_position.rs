@@ -36,7 +36,8 @@
 //! - **Final write (§3.2 "At logout").** The terminal release captures the fenced actor's cell
 //!   and the store upserts it inside the release transaction.
 //! - **Shutdown.** Before readiness is withdrawn, every tracked actor is written, whatever its
-//!   interval, so a planned restart loses no movement. A failed write is retried; the flush is
+//!   interval, so a planned restart loses no movement; the same flush saves each live monk's
+//!   Harmony and Serene time (OPS-SAVE-1, `monk_save`). A failed write is retried; the flush is
 //!   done only when every tracked session was written or refused (the node bounds the wait).
 //!
 //! Each capture takes its `write_sequence` under the runtime lock from one process-wide
@@ -144,7 +145,10 @@ impl LastPositionFlush {
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
         for _ in 0..FLUSH_ATTEMPTS {
-            if authority.write_due_last_positions(true).await == 0 {
+            // OPS-SAVE-1: the monk values of the live actors go with the positions.
+            let failed = authority.write_due_last_positions(true).await
+                + authority.flush_monk_states().await;
+            if failed == 0 {
                 self.done.cancel();
                 return;
             }
@@ -267,6 +271,19 @@ impl LastPositions {
             .unwrap_or_default();
         due.sort_by_key(|(_, track)| track.checked);
         due
+    }
+
+    /// OPS-SAVE-1: every tracked session with its actor, for the shutdown flush of actor state.
+    pub(super) fn tracked_actors(&self) -> Vec<(GameSessionId, ExactActorRef)> {
+        self.tracks
+            .lock()
+            .map(|tracks| {
+                tracks
+                    .iter()
+                    .map(|(session, track)| (*session, track.actor))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     /// The earliest deadline of any tracked session.

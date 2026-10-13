@@ -20,7 +20,7 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::monk_state::{
     DurableMonkState, MonkStateSaveOccurrence, MonkStateSaveOutcome, MonkStateSaveRequest,
 };
-use crate::foundation::{ExactActorRef, GameSessionState};
+use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 
 /// The result of the actor-end save; only `Unknown` holds the lease release back.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,13 +64,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: &AdmittedSession,
         actor: ExactActorRef,
     ) -> MonkSave {
+        self.save_monk_state_of(admitted.game_session_id, actor)
+            .await
+    }
+
+    /// OPS-SAVE-1: the shutdown flush of the monk values of every tracked live actor, before
+    /// readiness is withdrawn and the sessions are fenced out. It is the same fenced, slot-run
+    /// save as the actor-end one, so a session ended meanwhile writes nothing. Actors without
+    /// monk state are skipped without a durable read. Returns the number of unproven saves,
+    /// which the caller retries.
+    pub(super) async fn flush_monk_states(&self) -> usize {
+        let mut failed = 0;
+        for (session, actor) in self.last_positions.tracked_actors() {
+            if !self.is_monk(session, actor).await {
+                continue;
+            }
+            if self.save_monk_state_of(session, actor).await == MonkSave::Unknown {
+                failed += 1;
+            }
+        }
+        failed
+    }
+
+    /// Whether `actor` of `session` holds monk state now (a cheap in-memory read).
+    async fn is_monk(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
+        let runtime = self.runtime.lock().await;
+        self.spell_states
+            .lock()
+            .await
+            .monk_save_values(&runtime, actor, session, self.owner_now())
+            .is_some()
+    }
+
+    async fn save_monk_state_of(&self, session: GameSessionId, actor: ExactActorRef) -> MonkSave {
         #[cfg(test)]
         postgres_tests::record_save_attempt();
         for attempt in 0..RECONCILE_ATTEMPTS {
             if attempt > 0 {
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
             }
-            let fence = match self.current_monk_fence(admitted).await {
+            let fence = match self.current_monk_fence(session).await {
                 Ok(Some(fence)) => fence,
                 // The session no longer owns the actor: any write would be fenced out.
                 Ok(None) => return MonkSave::FencedOut,
@@ -82,7 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.spell_states.lock().await.monk_save_values(
                     &runtime,
                     actor,
-                    admitted.game_session_id,
+                    session,
                     self.owner_now(),
                 )
             };
@@ -139,13 +172,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// `Ok(None)` when that session is terminal; `Err` when a read failed.
     pub(super) async fn current_monk_fence(
         &self,
-        admitted: &AdmittedSession,
+        session_id: GameSessionId,
     ) -> Result<Option<CurrentCharacterGameplayFence>, ()> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (session, _) = store
-            .current_session_at(admitted.game_session_id)
-            .await
-            .map_err(|_| ())?;
+        let (session, _) = store.current_session_at(session_id).await.map_err(|_| ())?;
         if session.session_state() == GameSessionState::Terminal {
             return Ok(None);
         }
@@ -158,7 +188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         Ok(Some(CurrentCharacterGameplayFence {
             character_id,
-            game_session_id: admitted.game_session_id,
+            game_session_id: session_id,
             connection_generation: session.current_connection_generation(),
             character_lease_generation: session.current_character_lease().generation(),
             runtime_scope: session.current_runtime_scope(),
