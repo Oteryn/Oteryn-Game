@@ -56,4 +56,6 @@ Death-transaction skull, points and marks (PVP-DEATH-1), ledger writer, kill cla
 
 ## Review
 
-Codex rounds on #2032: the World cleanup takes the scope authority and checks it against its transaction; points and marks are written by the death transaction of their victim (receipt created in the same transaction, recipient in the death World, anchors stamped by the database, points immutable, marks change only avenged_at once); a revenge mark expires exactly seven days after creation. Each round fixed in one commit with Postgres cases.
+Codex rounds on #2032: the World cleanup takes the scope authority and checks it against its transaction; points and marks are written by the death transaction of their victim (receipt created in the same transaction, recipient in the death World, anchors stamped by the database, points immutable, marks are insert-only here); a revenge mark expires exactly seven days after creation. Each round fixed in one commit with Postgres cases.
+
+Round 6: rows are protected by DELETE guards (points >45 days, marks past expires_at, ledger rows older than 5 minutes or removed in the victim's death transaction); a point/mark recipient must appear in the victim's ledger within the 5-minute window. Revenge-mark CLOSURE (avenge) is cut from PVP-1 and belongs to PVP-DEATH-1.

@@ -72,16 +72,10 @@ CREATE TABLE game_character_revenge_marks (
     -- PARTYPVP0-RL-17: exactly seven days.
     expires_at TIMESTAMPTZ NOT NULL,
     avenged_at TIMESTAMPTZ,
-    -- The death of the marked killer that closed the mark (one closure per death and victim).
-    avenged_by_occurrence_id UUID REFERENCES game_character_death_receipts (death_occurrence_id),
-    CHECK ((avenged_at IS NULL) = (avenged_by_occurrence_id IS NULL)),
     PRIMARY KEY (victim_character_id, killer_character_id, death_occurrence_id),
     CHECK (victim_character_id <> killer_character_id),
     CHECK (expires_at = created_at + INTERVAL '7 days')
 );
-CREATE UNIQUE INDEX game_character_revenge_marks_avenged_once
-    ON game_character_revenge_marks (victim_character_id, avenged_by_occurrence_id)
-    WHERE avenged_by_occurrence_id IS NOT NULL;
 CREATE INDEX game_character_revenge_marks_expiry
     ON game_character_revenge_marks (expires_at, victim_character_id);
 CREATE INDEX game_character_pvp_ledger_age
@@ -168,7 +162,9 @@ $$;
 -- receipt, created in this same transaction, and its recipient (the earner or the killer) lives
 -- in the World of that death. The database stamps the anchors (`committed_at`, `created_at`,
 -- and `expires_at` = creation + seven days, RL-17), so a caller cannot choose them. A point is
--- never updated; a mark changes only `avenged_at`, once.
+-- never updated, and neither is a mark: closing a mark is part of the avenging death
+-- transaction and is added with PVP-DEATH-1. The recipient must also be a contributor of the
+-- victim's ledger within its five-minute window.
 CREATE FUNCTION game_character_pvp_receipt_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -181,34 +177,8 @@ BEGIN
         v_recipient := NEW.character_id;
     ELSE
         IF TG_OP = 'UPDATE' THEN
-            IF (NEW.victim_character_id, NEW.killer_character_id, NEW.death_occurrence_id,
-                NEW.created_at, NEW.expires_at)
-               IS DISTINCT FROM (OLD.victim_character_id, OLD.killer_character_id,
-                OLD.death_occurrence_id, OLD.created_at, OLD.expires_at)
-               OR OLD.avenged_at IS NOT NULL OR NEW.avenged_at IS NULL THEN
-                RAISE EXCEPTION 'a revenge mark changes only avenged_at, once'
-                    USING ERRCODE = '23514';
-            END IF;
-            -- The victim avenges by killing the marked killer: the cited death is that killer's,
-            -- created in this transaction, with the victim among the damage contributors of the
-            -- dying killer's ledger; the mark is the oldest open one of the pair.
-            IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
-                            WHERE d.death_occurrence_id = NEW.avenged_by_occurrence_id
-                              AND d.character_id = OLD.killer_character_id
-                              AND d.created_xact_id = pg_current_xact_id())
-               OR NOT EXISTS (SELECT 1 FROM game_character_pvp_ledger l
-                               WHERE l.victim_character_id = OLD.killer_character_id
-                                 AND l.contributor_character_id = OLD.victim_character_id)
-               OR EXISTS (SELECT 1 FROM game_character_revenge_marks m
-                           WHERE m.victim_character_id = OLD.victim_character_id
-                             AND m.killer_character_id = OLD.killer_character_id
-                             AND m.avenged_at IS NULL
-                             AND m.expires_at > clock_timestamp()
-                             AND m.created_at < OLD.created_at) THEN
-                RAISE EXCEPTION 'a revenge mark is closed by the death of its killer, oldest first'
-                    USING ERRCODE = '23514';
-            END IF;
-            RETURN NEW;
+            RAISE EXCEPTION 'a revenge mark is closed by the avenging death transaction (PVP-DEATH-1)'
+                USING ERRCODE = '23514';
         END IF;
         v_recipient := NEW.killer_character_id;
     END IF;
@@ -217,7 +187,11 @@ BEGIN
                                                 AND r.world_id = d.death_world_id
                     WHERE d.death_occurrence_id = NEW.death_occurrence_id
                       AND d.character_id = NEW.victim_character_id
-                      AND d.created_xact_id = pg_current_xact_id()) THEN
+                      AND d.created_xact_id = pg_current_xact_id())
+       OR NOT EXISTS (SELECT 1 FROM game_character_pvp_ledger l
+                       WHERE l.victim_character_id = NEW.victim_character_id
+                         AND l.contributor_character_id = v_recipient
+                         AND l.last_at >= clock_timestamp() - INTERVAL '5 minutes') THEN
         RAISE EXCEPTION 'a PvP consequence is written by the death transaction of its victim'
             USING ERRCODE = '23514';
     END IF;
@@ -228,6 +202,27 @@ BEGIN
         NEW.expires_at := NEW.created_at + INTERVAL '7 days';
     END IF;
     RETURN NEW;
+END;
+$$;
+
+-- Rows leave only when expired (points after 45 days, marks at expiry, ledger rows after five
+-- minutes: the World job), or, for a ledger, in the death transaction of its victim.
+CREATE FUNCTION game_character_pvp_delete_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_TABLE_NAME = 'game_character_unjustified_points' THEN
+        IF OLD.committed_at < clock_timestamp() - INTERVAL '45 days' THEN RETURN OLD; END IF;
+    ELSIF TG_TABLE_NAME = 'game_character_revenge_marks' THEN
+        IF OLD.expires_at <= clock_timestamp() THEN RETURN OLD; END IF;
+    ELSE
+        IF OLD.last_at < clock_timestamp() - INTERVAL '5 minutes'
+           OR EXISTS (SELECT 1 FROM game_character_death_receipts d
+                       WHERE d.character_id = OLD.victim_character_id
+                         AND d.created_xact_id = pg_current_xact_id()) THEN
+            RETURN OLD;
+        END IF;
+    END IF;
+    RAISE EXCEPTION 'an unexpired PvP row is not deleted' USING ERRCODE = '23514';
 END;
 $$;
 
@@ -243,6 +238,15 @@ CREATE TRIGGER game_character_unjustified_points_receipt_guard BEFORE INSERT OR 
 CREATE TRIGGER game_character_revenge_marks_receipt_guard BEFORE INSERT OR UPDATE
     ON game_character_revenge_marks FOR EACH ROW
     EXECUTE FUNCTION game_character_pvp_receipt_guard();
+CREATE TRIGGER game_character_pvp_ledger_delete_guard BEFORE DELETE
+    ON game_character_pvp_ledger FOR EACH ROW
+    EXECUTE FUNCTION game_character_pvp_delete_guard();
+CREATE TRIGGER game_character_unjustified_points_delete_guard BEFORE DELETE
+    ON game_character_unjustified_points FOR EACH ROW
+    EXECUTE FUNCTION game_character_pvp_delete_guard();
+CREATE TRIGGER game_character_revenge_marks_delete_guard BEFORE DELETE
+    ON game_character_revenge_marks FOR EACH ROW
+    EXECUTE FUNCTION game_character_pvp_delete_guard();
 CREATE TRIGGER game_character_pvp_state_no_truncate BEFORE TRUNCATE
     ON game_character_pvp_state EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_character_pvp_ledger_no_truncate BEFORE TRUNCATE
@@ -259,7 +263,8 @@ BEGIN
     FOREACH v_function IN ARRAY ARRAY[
         'game_character_pvp_state_guard()',
         'game_character_pvp_ledger_guard()',
-        'game_character_pvp_receipt_guard()'
+        'game_character_pvp_receipt_guard()',
+        'game_character_pvp_delete_guard()'
     ] LOOP
         EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp', v_function, current_schema());
     END LOOP;
@@ -268,7 +273,7 @@ END $$;
 REVOKE ALL ON game_character_pvp_state, game_character_pvp_ledger,
     game_character_unjustified_points, game_character_revenge_marks FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_character_pvp_state_guard(), game_character_pvp_ledger_guard(),
-    game_character_pvp_receipt_guard() FROM PUBLIC;
+    game_character_pvp_receipt_guard(), game_character_pvp_delete_guard() FROM PUBLIC;
 -- The state row is never deleted. Ledger rows are deleted by the victim's death transaction and
 -- the World job; points and marks only by the World job (§6.2).
 GRANT SELECT, INSERT, UPDATE ON game_character_pvp_state TO oteryn_game_runtime;
