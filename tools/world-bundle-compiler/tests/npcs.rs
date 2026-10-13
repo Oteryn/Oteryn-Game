@@ -548,3 +548,74 @@ fn positions_outside_the_world_and_duplicate_keys_fail_compilation() -> TestResu
     assert!(matches!(fails(&families), Some(Error::Format(_))));
     Ok(())
 }
+
+/// NPC-PLACE-ZERO-1: the World's grounds and borders are Item entries without a native profile,
+/// which `solid` reports as blocking; they must not hold an NPC placement by themselves.
+struct ItemFloors;
+
+const FLOOR_PALETTE: [&str; 4] = [
+    "item:ground",
+    "item:border",
+    "item:border_unknown",
+    "item:crate",
+];
+
+impl KeyResolver for ItemFloors {
+    fn resolve(&self, key: &str) -> Resolution {
+        match FLOOR_PALETTE.iter().position(|k| *k == key) {
+            Some(i) => Resolution::Resolved(Family::Item, i as u32),
+            None => Resolution::Unknown,
+        }
+    }
+
+    fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error> {
+        let (kind, walkable) = match key {
+            "item:ground" => (TerrainKind::Ground, Some(true)),
+            "item:border" => (TerrainKind::Border, Some(true)),
+            "item:border_unknown" => (TerrainKind::Border, None),
+            _ => return Ok(None),
+        };
+        Ok(Some(Terrain {
+            kind,
+            walkable,
+            ground_speed: None,
+        }))
+    }
+
+    fn floor_change(&self, _key: &str) -> bool {
+        false
+    }
+
+    fn solid(&self, _key: &str) -> bool {
+        true
+    }
+}
+
+#[test]
+fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
+    let tiles = [
+        tile(1, vec![item(0, 0)], 0),
+        tile(2, vec![item(0, 0), item(1, 0)], 0),
+        tile(3, vec![item(0, 0), item(2, 0)], 0),
+        tile(4, vec![item(0, 0), item(3, 0)], 0),
+    ];
+    let regions = vec![region(7, &tiles)?];
+    let palette: Vec<String> = FLOOR_PALETTE.map(String::from).to_vec();
+    let mut families = npcs();
+    families.npc_placements = vec![
+        placement("ground", "tom", 1),
+        placement("border", "sam", 2),
+        placement("unknown-border", "tom", 3),
+        placement("crate", "sam", 4),
+    ];
+    let input = input(&regions, &palette, &families, BuildClass::NonProduction);
+    let (spawns, _) = realize_spawns(&input, &ItemFloors)?;
+    let (table, report) = realize_npcs(&input, &ItemFloors, &spawns)?;
+    assert_eq!(table.placement_count(), 2);
+    let held: Vec<_> = report.held.iter().map(|h| (h.cell.0, h.reason)).collect();
+    assert_eq!(
+        held,
+        [(3, HoldReason::BlockSolid), (4, HoldReason::BlockSolid)]
+    );
+    Ok(())
+}
