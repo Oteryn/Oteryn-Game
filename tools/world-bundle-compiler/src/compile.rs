@@ -50,6 +50,13 @@ pub trait KeyResolver {
     fn solid_stated(&self, _key: &str) -> bool {
         false
     }
+
+    /// Whether the key routes to a `border` Terrain record whose catalogue `walkable` fact is
+    /// KNOWN true: the game server's `terrain_floor` lets such a border carry no solidity. The
+    /// bundle does not carry a border's `walkable`, so the compiler asks the catalogue.
+    fn walkable_border(&self, _key: &str) -> bool {
+        false
+    }
 }
 
 pub struct Input<'a> {
@@ -287,6 +294,7 @@ fn cell_facts(
                 resolver.floor_change(key),
                 family == Family::Item && resolver.solid(key),
                 resolver.solid_stated(key),
+                resolver.walkable_border(key),
             )),
             _ => None,
         })
@@ -309,7 +317,8 @@ fn cell_facts(
                 if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
                     cell.teleport = true;
                 }
-                let Some(Some((terrain, change, solid, stated))) = kinds.get(item.palette as usize)
+                let Some(Some((terrain, change, solid, stated, border))) =
+                    kinds.get(item.palette as usize)
                 else {
                     continue;
                 };
@@ -320,7 +329,7 @@ fn cell_facts(
                 // not block by themselves (`map/facts.rs`).
                 let floor = matches!(terrain, Ok(Some(t)) if match t.kind {
                     bundle::TerrainKind::Ground => true,
-                    bundle::TerrainKind::Border => t.walkable == Some(true),
+                    bundle::TerrainKind::Border => *border,
                     _ => false,
                 });
                 cell.block_solid |= top && *solid && (*stated || !floor);

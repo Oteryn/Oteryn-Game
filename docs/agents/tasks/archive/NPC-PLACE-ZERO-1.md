@@ -4,21 +4,21 @@
 task_id: NPC-PLACE-ZERO-1
 title: "NPC-PLACE-ZERO-1: World Bundle compiler wrote 0 NPC placements (ground items counted as solid)"
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 implementation_branch: claude/xp-kill-1-20261013
 issue: 1622
 pr: 2027
 governing_issue: 1622
-terminal_pr_policy: archive_pending
+terminal_pr_policy: archived_in_pr
 owned_paths:
   - tools/world-bundle-compiler/src/compile.rs
   - content/world/pins/oteryn.json
   - deploy/synology-game/preprod-topology.toml
   - tools/world-bundle-compiler/src/resolve.rs
   - tools/world-bundle-compiler/tests/npcs.rs
-  - docs/agents/tasks/active/NPC-PLACE-ZERO-1.md
+  - docs/agents/tasks/archive/NPC-PLACE-ZERO-1.md
 ```
 
 ## Cause
@@ -27,8 +27,12 @@ Preprod logged `event=npc_actors state=placed npcs=0 placements=0 actors=0`: the
 
 ## Fix
 
-`cell_facts` applies the same exemption. 20 of 25 placements are now written (5 remain held `BlockSolid`). The pin `digest`/`inputs_digest` and the preprod topology digest are refreshed.
+`cell_facts` applies the same exemption; `Registry::terrain_of` keeps a known `walkable` fact on borders, and an explicit solid profile on a ground Item still blocks. 20 of 25 placements are now written (5 remain held `BlockSolid`). The pin `digest`/`inputs_digest` and the preprod topology digest are refreshed.
 
 ## Proposal (workflow not edited)
 
 The deploy gate greps only `state=placed`; require `npcs>0` as well (`event=npc_actors state=placed npcs=[1-9]`).
+
+## Validation
+
+PENDING

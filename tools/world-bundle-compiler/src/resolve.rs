@@ -450,4 +450,19 @@ impl KeyResolver for Registry {
     fn solid_stated(&self, key: &str) -> bool {
         self.closed.contains(key)
     }
+
+    fn walkable_border(&self, key: &str) -> bool {
+        let record = match self.ids.get(key) {
+            Some((Family::Terrain, _)) => key,
+            Some((Family::Item, _)) => match self.route(key) {
+                Some(record) if record.family == "Terrain" => &record.key,
+                _ => return false,
+            },
+            None => return false,
+        };
+        self.classified.get(record).is_some_and(|fields| {
+            fields.kind.as_ref().and_then(Value::as_str) == Some("border")
+                && fields.walkable.as_ref().and_then(Value::as_bool) == Some(true)
+        })
+    }
 }

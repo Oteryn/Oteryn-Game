@@ -594,6 +594,10 @@ impl KeyResolver for ItemFloors {
     fn solid_stated(&self, key: &str) -> bool {
         key == "item:ground_closed"
     }
+
+    fn walkable_border(&self, key: &str) -> bool {
+        key == "item:border"
+    }
 }
 
 #[test]
