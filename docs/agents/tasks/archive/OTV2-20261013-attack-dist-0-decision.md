@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/attack-dist-0-20261013
-pr: 0
+pr: 2095
 base_sha: main
 head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE_SHA entry"
@@ -34,6 +34,6 @@ Decision packet `OTERYN_GAME_ATTACK_DIST0_AUTO_ATTACK_DRAW_DECISION_2026-10-13.m
 
 ## Validation
 
-- `python tools/agents/validate_governance.py`: pending
+- `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
