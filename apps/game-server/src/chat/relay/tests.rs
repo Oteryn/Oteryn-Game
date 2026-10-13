@@ -39,7 +39,7 @@ fn a_room_and_a_private_line_round_trip() {
         ..room_line(2, NOW)
     };
     for line in [room, private] {
-        let text = seal(&ring, CHANNEL, &line, NONCE).expect("seal");
+        let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
         assert_eq!(open(&ring, CHANNEL, &text, NOW), Ok(line));
     }
 }
@@ -55,7 +55,7 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
         text: "ą".repeat(TEXT_MAX_BYTES / 2),
         ..room_line(1, NOW)
     };
-    let text = seal(&ring, CHANNEL, &line, NONCE).expect("seal");
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
     assert!(text.len() <= 1_624, "{}", text.len());
     assert!(STANDARD.decode(&text).expect("base64").len() <= 1_216);
     assert_eq!(SEALED_MAX_BYTES, 1_214);
@@ -75,7 +75,7 @@ fn an_oversized_field_is_rejected_not_truncated() {
     };
     for line in [long_text, long_name] {
         assert_eq!(
-            seal(&ring, CHANNEL, &line, NONCE),
+            seal_with_nonce(&ring, CHANNEL, &line, NONCE),
             Err(RelayError::Oversized)
         );
     }
@@ -84,7 +84,7 @@ fn an_oversized_field_is_rejected_not_truncated() {
 #[test]
 fn another_channel_or_an_altered_line_fails_authentication() {
     let ring = ring(&[(1, 0)]);
-    let text = seal(&ring, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
+    let text = seal_with_nonce(&ring, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
     assert_eq!(
         open(
             &ring,
@@ -128,7 +128,7 @@ fn garbage_is_malformed_and_an_unheld_key_is_unknown() {
         Err(RelayError::Malformed)
     );
     let other = self::ring(&[(5, 0)]);
-    let text = seal(&other, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
+    let text = seal_with_nonce(&other, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
     assert_eq!(
         open(&ring, CHANNEL, &text, NOW),
         Err(RelayError::UnknownKey)
@@ -140,8 +140,8 @@ fn rotation_sends_with_the_newest_key_and_opens_the_old_one_for_24_hours() {
     let added = NOW;
     let ring = ring(&[(1, 0), (2, added)]);
     let old_only = self::ring(&[(1, 0)]);
-    let old_text = seal(&old_only, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
-    let new_text = seal(&ring, CHANNEL, &room_line(2, NOW), NONCE).expect("seal");
+    let old_text = seal_with_nonce(&old_only, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
+    let new_text = seal_with_nonce(&ring, CHANNEL, &room_line(2, NOW), NONCE).expect("seal");
     assert_eq!(STANDARD.decode(&new_text).expect("base64")[0], 2);
 
     let just_inside = added + KEY_OVERLAP_MICROS - 1;
@@ -155,7 +155,7 @@ fn rotation_sends_with_the_newest_key_and_opens_the_old_one_for_24_hours() {
     );
     // The newest key never expires.
     let fresh = room_line(3, at_expiry);
-    let text = seal(&ring, CHANNEL, &fresh, NONCE).expect("seal");
+    let text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
     assert_eq!(open(&ring, CHANNEL, &text, at_expiry), Ok(fresh));
 }
 
@@ -165,14 +165,14 @@ fn an_old_overlap_line_opens_while_fresh() {
     let old_only = ring(&[(1, 0)]);
     let both = ring(&[(1, 0), (2, NOW)]);
     let line = room_line(1, NOW);
-    let text = seal(&old_only, CHANNEL, &line, NONCE).expect("seal");
+    let text = seal_with_nonce(&old_only, CHANNEL, &line, NONCE).expect("seal");
     assert_eq!(open(&both, CHANNEL, &text, NOW + 1_000_000), Ok(line));
 }
 
 #[test]
 fn a_line_outside_the_freshness_window_is_stale() {
     let ring = ring(&[(1, 0)]);
-    let text = seal(&ring, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
+    let text = seal_with_nonce(&ring, CHANNEL, &room_line(1, NOW), NONCE).expect("seal");
     assert!(open(&ring, CHANNEL, &text, NOW + FRESHNESS_MICROS).is_ok());
     assert_eq!(
         open(&ring, CHANNEL, &text, NOW + FRESHNESS_MICROS + 1),
@@ -198,7 +198,7 @@ fn a_replay_is_still_refused_until_it_would_be_stale_anyway() {
     let mut window = ReplayWindow::default();
     let ring = ring(&[(1, 0)]);
     let line = room_line(1, NOW);
-    let text = seal(&ring, CHANNEL, &line, NONCE).expect("seal");
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
     window.admit(&line, NOW).expect("first");
     // Every instant at which `open` still accepts the line, the window still remembers it.
     let last_fresh = NOW + FRESHNESS_MICROS;
@@ -210,7 +210,22 @@ fn a_replay_is_still_refused_until_it_would_be_stale_anyway() {
     let later = NOW + FRESHNESS_MICROS * 2 + 1;
     assert_eq!(open(&ring, CHANNEL, &text, later), Err(RelayError::Stale));
     assert_eq!(window.admit(&room_line(9, later), later), Ok(()));
-    assert!(window.seen.len() == 1 && window.order.len() == 1);
+    assert!(window.expiry_of.len() == 1 && window.by_expiry.len() == 1);
+}
+
+#[test]
+fn expiry_follows_each_lines_own_deadline_not_arrival_order() {
+    let mut window = ReplayWindow::default();
+    let late = room_line(1, NOW + 20_000_000);
+    let early = room_line(2, NOW - 20_000_000);
+    window.admit(&late, NOW).expect("late-stamped first");
+    window.admit(&early, NOW).expect("early-stamped second");
+    // `early` is no longer fresh after NOW + 10 s; it must be forgotten even though it arrived
+    // behind `late`, while `late` is still remembered.
+    let t = NOW + 10_000_001;
+    assert_eq!(window.admit(&late, t), Err(RelayError::Replayed));
+    assert_eq!(window.expiry_of.len(), 1);
+    assert_eq!(window.by_expiry.len(), 1);
 }
 
 #[test]

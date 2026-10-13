@@ -5,7 +5,7 @@
 //! The `LISTEN`/`NOTIFY` connection, the readiness gate and the delivery to sessions feed these
 //! rules and live outside this module. Chat text is never logged or stored here (FND-02 §20).
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -298,7 +298,7 @@ fn aead_key(key: &RelayKey) -> Result<LessSafeKey, RelayError> {
 }
 
 /// A fresh random 96-bit nonce per line (many nodes share one key, so no counter).
-pub(crate) fn random_nonce() -> Result<[u8; NONCE_BYTES], RelayError> {
+fn random_nonce() -> Result<[u8; NONCE_BYTES], RelayError> {
     let mut nonce = [0_u8; NONCE_BYTES];
     fill(&mut nonce).map_err(|_| RelayError::Random)?;
     Ok(nonce)
@@ -311,10 +311,19 @@ pub(crate) fn random_message_id() -> Result<[u8; ID_BYTES], RelayError> {
     Ok(id)
 }
 
-/// Seals `line` for `channel` with the newest key and returns the `NOTIFY` text (standard
-/// base64 of `key_id || nonce || ciphertext || tag`). The associated data is the channel name
-/// and the `key_id`. A line over the bound is `Oversized`, never truncated or split.
+/// Seals `line` for `channel` with the newest key and a fresh random nonce, and returns the
+/// `NOTIFY` text (standard base64 of `key_id || nonce || ciphertext || tag`). The associated data
+/// is the channel name and the `key_id`. A line over the bound is `Oversized`, never truncated or
+/// split. The nonce is drawn here so no caller can reuse one under a shared key.
 pub(crate) fn seal(
+    ring: &RelayKeyRing,
+    channel: &str,
+    line: &RelayLine,
+) -> Result<String, RelayError> {
+    seal_with_nonce(ring, channel, line, random_nonce()?)
+}
+
+fn seal_with_nonce(
     ring: &RelayKeyRing,
     channel: &str,
     line: &RelayLine,
@@ -380,34 +389,38 @@ pub(crate) fn open(
 }
 
 /// The bounded per-World de-duplication set (CHAT-0 §5): a `message_id` seen inside the freshness
-/// window is refused, so a captured line cannot be sent again.
+/// window is refused, so a captured line cannot be sent again. An entry lives exactly until its
+/// line's own freshness deadline (`sent_at + 30 s`), the last instant [`open`] still accepts it,
+/// and expiry does not depend on arrival order.
 #[derive(Debug, Default)]
 pub(crate) struct ReplayWindow {
-    seen: HashMap<[u8; ID_BYTES], u64>,
-    order: VecDeque<([u8; ID_BYTES], u64)>,
+    expiry_of: HashMap<[u8; ID_BYTES], u64>,
+    by_expiry: BTreeSet<(u64, [u8; ID_BYTES])>,
 }
 
 impl ReplayWindow {
-    /// Admits the line once. `now_micros` is the node's database-time reading.
+    /// Admits the line once. `now_micros` is the node's database-time reading. A line outside the
+    /// freshness window is `Stale` here too, so nothing already expired is ever stored.
     pub(crate) fn admit(&mut self, line: &RelayLine, now_micros: u64) -> Result<(), RelayError> {
-        // An entry stays for the window plus the future skew `open` allows, so a line admitted
-        // up to 30 s ahead of this node's clock cannot return once its entry is gone.
-        let keep_micros = FRESHNESS_MICROS * 2;
-        while let Some(&(id, at)) = self.order.front() {
-            if now_micros.saturating_sub(at) <= keep_micros {
+        while let Some(&(expiry, id)) = self.by_expiry.first() {
+            if expiry >= now_micros {
                 break;
             }
-            self.order.pop_front();
-            self.seen.remove(&id);
+            self.by_expiry.remove(&(expiry, id));
+            self.expiry_of.remove(&id);
         }
-        if self.seen.contains_key(&line.message_id) {
+        if now_micros.abs_diff(line.sent_at_micros) > FRESHNESS_MICROS {
+            return Err(RelayError::Stale);
+        }
+        if self.expiry_of.contains_key(&line.message_id) {
             return Err(RelayError::Replayed);
         }
-        if self.seen.len() >= REPLAY_WINDOW_LINES {
+        if self.expiry_of.len() >= REPLAY_WINDOW_LINES {
             return Err(RelayError::Saturated);
         }
-        self.seen.insert(line.message_id, line.sent_at_micros);
-        self.order.push_back((line.message_id, line.sent_at_micros));
+        let expiry = line.sent_at_micros.saturating_add(FRESHNESS_MICROS);
+        self.expiry_of.insert(line.message_id, expiry);
+        self.by_expiry.insert((expiry, line.message_id));
         Ok(())
     }
 }
