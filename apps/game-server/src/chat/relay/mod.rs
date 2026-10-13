@@ -61,6 +61,9 @@ pub(crate) enum RelayError {
     BadPayload,
     /// `sent_at` is outside the freshness window.
     Stale,
+    /// The line was sent before this process started listening. Nothing sent then was ever
+    /// delivered to it, so only a replay of a captured line can arrive here.
+    BeforeStart,
     /// The `message_id` was seen inside the window.
     Replayed,
     /// The de-duplication window is full of fresh lines.
@@ -80,6 +83,7 @@ impl Display for RelayError {
             Self::Unauthentic => "chat relay line failed authentication",
             Self::BadPayload => "chat relay payload is malformed",
             Self::Stale => "chat relay line is outside the freshness window",
+            Self::BeforeStart => "chat relay line predates the listener",
             Self::Replayed => "chat relay line was already seen",
             Self::Saturated => "chat relay de-duplication window is full",
             Self::Random => "chat relay random source failed",
@@ -416,16 +420,47 @@ fn open(
 /// window is refused, so a captured line cannot be sent again. An entry lives exactly until its
 /// line's own freshness deadline (`sent_at + 30 s`), the last instant [`open`] still accepts it,
 /// and expiry does not depend on arrival order.
-#[derive(Debug, Default)]
+///
+/// The window is process memory and starts empty, so it is created once per listener, at the
+/// moment `LISTEN` is established, with [`startup_floor`]: a line sent before that instant is
+/// `BeforeStart`, so a restart cannot make a captured line admissible again, and the clock starts
+/// at the floor, so a key retired before the restart stays retired.
+#[derive(Debug)]
 pub(crate) struct ReplayWindow {
-    /// The newest clock reading seen. Time never runs backwards here, so a database clock stepped
-    /// back cannot make an evicted `message_id` admissible again.
+    /// Lines sent before this instant are refused: the listener was not up to receive them.
+    floor: u64,
+    /// The newest clock reading seen, starting at `floor`. Time never runs backwards here, so a
+    /// database clock stepped back cannot make an evicted `message_id` admissible again or revive
+    /// a retired key.
     high_water: u64,
     expiry_of: HashMap<[u8; ID_BYTES], u64>,
     by_expiry: BTreeSet<(u64, [u8; ID_BYTES])>,
 }
 
+/// The clock floor for a new [`ReplayWindow`]: the later of the database reading taken when the
+/// listener became ready and this host's wall clock, so one clock stepped back across a restart
+/// does not lower it. Both clocks stepped back together is outside this threat model; the key
+/// material of a retired key is removed from the environment after its overlap (CHAT0-RL-12).
+pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
+    let wall = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_micros()).unwrap_or(u64::MAX)
+        });
+    db_now_micros.max(wall)
+}
+
 impl ReplayWindow {
+    /// An empty window for a listener that became ready at `floor` ([`startup_floor`]).
+    pub(crate) fn starting_at(floor_micros: u64) -> Self {
+        Self {
+            floor: floor_micros,
+            high_water: floor_micros,
+            expiry_of: HashMap::new(),
+            by_expiry: BTreeSet::new(),
+        }
+    }
+
     /// Receives one `NOTIFY` text: opens it and admits it once, on a clock that never runs
     /// backwards. `now_micros` is the node's database-time reading, raised to the highest reading
     /// seen, so a database clock stepped back can neither revive a retired key nor re-admit an
@@ -458,6 +493,9 @@ impl ReplayWindow {
             }
             self.by_expiry.remove(&(expiry, id));
             self.expiry_of.remove(&id);
+        }
+        if line.sent_at_micros < self.floor {
+            return Err(RelayError::BeforeStart);
         }
         if now_micros.abs_diff(line.sent_at_micros) > FRESHNESS_MICROS {
             return Err(RelayError::Stale);

@@ -209,7 +209,7 @@ fn a_line_outside_the_freshness_window_is_stale() {
 
 #[test]
 fn a_message_id_is_admitted_once_inside_the_window() {
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW);
     let line = room_line(1, NOW);
     assert_eq!(window.admit(&line, NOW), Ok(()));
     assert_eq!(window.admit(&line, NOW + 1), Err(RelayError::Replayed));
@@ -218,7 +218,7 @@ fn a_message_id_is_admitted_once_inside_the_window() {
 
 #[test]
 fn a_replay_is_still_refused_until_it_would_be_stale_anyway() {
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW);
     let ring = ring(&[(1, 0)]);
     let line = room_line(1, NOW);
     let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
@@ -238,7 +238,7 @@ fn a_replay_is_still_refused_until_it_would_be_stale_anyway() {
 
 #[test]
 fn expiry_follows_each_lines_own_deadline_not_arrival_order() {
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW - FRESHNESS_MICROS);
     let late = room_line(1, NOW + 20_000_000);
     let early = room_line(2, NOW - 20_000_000);
     window.admit(&late, NOW).expect("late-stamped first");
@@ -253,7 +253,7 @@ fn expiry_follows_each_lines_own_deadline_not_arrival_order() {
 
 #[test]
 fn a_clock_stepped_back_does_not_readmit_an_evicted_id() {
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW);
     let line = room_line(1, NOW);
     window.admit(&line, NOW).expect("first");
     let after = NOW + FRESHNESS_MICROS + 1;
@@ -266,7 +266,7 @@ fn a_clock_stepped_back_does_not_readmit_an_evicted_id() {
 
 #[test]
 fn a_full_window_refuses_instead_of_forgetting() {
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW);
     for n in 0..REPLAY_WINDOW_LINES {
         let mut line = room_line(0, NOW);
         line.message_id[..8].copy_from_slice(&(n as u64).to_be_bytes());
@@ -354,7 +354,7 @@ fn a_retired_key_stays_retired_when_the_clock_steps_back() {
     let at_expiry = added + KEY_OVERLAP_MICROS;
     let old_text =
         seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
-    let mut window = ReplayWindow::default();
+    let mut window = ReplayWindow::starting_at(NOW);
     // Inside the overlap the old key still opens; at its expiry it is retired.
     assert!(
         window
@@ -375,4 +375,55 @@ fn a_retired_key_stays_retired_when_the_clock_steps_back() {
         window.receive(&ring, CHANNEL, &other, added),
         Err(RelayError::UnknownKey)
     );
+}
+
+#[test]
+fn a_restart_does_not_make_a_captured_line_admissible_again() {
+    let ring = ring(&[(1, 0)]);
+    let line = room_line(1, NOW);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    let mut before = ReplayWindow::starting_at(NOW - 1);
+    assert_eq!(before.receive(&ring, CHANNEL, &text, NOW), Ok(line));
+    assert_eq!(
+        before.receive(&ring, CHANNEL, &text, NOW + 1),
+        Err(RelayError::Replayed)
+    );
+    // The node restarts within the freshness window; its new listener is ready after the line was
+    // sent, and the replayed ciphertext is still inside the 30 s window.
+    let ready = NOW + 5_000_000;
+    let mut after = ReplayWindow::starting_at(ready);
+    assert_eq!(
+        after.receive(&ring, CHANNEL, &text, ready + 1),
+        Err(RelayError::BeforeStart)
+    );
+    // A line sent after the listener is ready is admitted.
+    let fresh = room_line(2, ready + 2);
+    let fresh_text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
+    assert_eq!(
+        after.receive(&ring, CHANNEL, &fresh_text, ready + 3),
+        Ok(fresh)
+    );
+}
+
+#[test]
+fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
+    let added = NOW;
+    let ring = ring(&[(1, 0), (2, added)]);
+    let old_only = self::ring(&[(1, 0)]);
+    let at_expiry = added + KEY_OVERLAP_MICROS;
+    let text = seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
+    // The process restarts after the expiry with the database clock rolled back before it; the
+    // host wall clock still reads past the expiry, so the floor does too.
+    let rolled_back = added;
+    let mut window = ReplayWindow::starting_at(at_expiry.max(rolled_back));
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &text, rolled_back),
+        Err(RelayError::UnknownKey)
+    );
+}
+
+#[test]
+fn the_startup_floor_never_lowers_the_database_reading() {
+    assert_eq!(startup_floor(u64::MAX), u64::MAX);
+    assert!(startup_floor(0) > NOW, "the host wall clock sets the floor");
 }
