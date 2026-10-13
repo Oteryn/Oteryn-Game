@@ -274,3 +274,17 @@ fn forgetting_a_session_drops_its_rate_window() {
     conversations.forget(session);
     assert!(conversations.sessions.lock().expect("lock").is_empty());
 }
+
+#[test]
+fn a_malformed_intent_spends_the_rate_allowance() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let chat = chat_of(session);
+    let conversations = NpcConversations::default();
+    let malformed = intent(npc, "");
+    for _ in 0..MAX_TALK_INTENTS_PER_SECOND {
+        let outcome = conversations.talk(&chat, &runtime, actor, session, &malformed, at(BASE));
+        assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
+    }
+    let outcome = conversations.talk(&chat, &runtime, actor, session, &malformed, at(BASE));
+    assert_eq!(outcome.disposition, NpcIntentDisposition::RateLimited);
+}

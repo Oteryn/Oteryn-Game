@@ -2331,16 +2331,19 @@ where
                 Err(_) => Dispatch::Unregistered,
             }
         } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
-            // NPC-CMD-1a: a malformed intent is REJECTED; the talk limit is the session's.
-            match decode_npc_talk_intent(command.payload) {
-                Ok(intent) => {
-                    let outcome = authority
-                        .npc_talk(actor, admitted.game_session_id, intent)
-                        .await;
-                    Dispatch::Npc(outcome.disposition, outcome.conversation)
-                }
-                Err(_) => Dispatch::Npc(NpcIntentDisposition::Rejected, None),
-            }
+            // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's
+            // NPC0-RL-04 allowance: it reaches the limiter as an intent with no text.
+            let intent = decode_npc_talk_intent(command.payload).unwrap_or(NpcTalkIntent {
+                npc_actor: WireEntityRef {
+                    identity: Default::default(),
+                    generation: 0,
+                },
+                text: String::new(),
+            });
+            let outcome = authority
+                .npc_talk(actor, admitted.game_session_id, intent)
+                .await;
+            Dispatch::Npc(outcome.disposition, outcome.conversation)
         } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
             // NPC-CMD-1a: trade is NPC-CMD-1b; the window is closed, so no intent can be valid.
             let _ = decode_npc_trade_intent(command.payload);
