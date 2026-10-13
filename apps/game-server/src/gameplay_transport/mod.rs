@@ -2873,7 +2873,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    ) -> Option<oteryn_protocol_oteryn::npc_service::NpcConversation> {
+    ) -> Option<npc_command::NpcUpdate> {
         let runtime = self.runtime.lock().await;
         self.npc_conversations
             .follow(&self.chat, &runtime, actor, session, shown)
@@ -2886,13 +2886,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
         let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk(
+        self.npc_conversations.talk_in(
             &self.chat,
             &runtime,
             actor,
             session,
             &intent,
             self.owner_now(),
+            item_ref_admission::pinned_index(&runtime, self.active_generation),
         )
     }
 

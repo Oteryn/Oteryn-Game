@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use super::*;
+use crate::content::item_ref::ItemDefinitionIndex;
+use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
 use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
 use crate::gameplay_transport::NpcTalkBook;
 use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
@@ -240,7 +242,8 @@ fn a_chat_greeting_and_a_command_share_one_conversation() {
     );
     assert_eq!(topic.disposition, NpcIntentDisposition::Ok);
     let shown = conversations.follow(&chat, &runtime, actor, session, None);
-    assert_eq!(shown.expect("payload").open.map(|(n, _)| n), Some(npc));
+    let shown = shown.expect("payload").conversation.expect("conversation");
+    assert_eq!(shown.open.map(|(n, _)| n), Some(npc));
 }
 
 #[test]
@@ -252,7 +255,7 @@ fn walking_out_of_range_closes_the_conversation_with_the_farewell() {
     chat.converse(session, |engaged| *engaged = Some(npc_actor))
         .expect("session");
     let closed = conversations.follow(&chat, &runtime, actor, session, Some(npc));
-    let closed = closed.expect("payload");
+    let closed = closed.expect("payload").conversation.expect("conversation");
     assert_eq!(closed.open, None);
     assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
     assert!(chat.engaged(session).is_none());
@@ -348,4 +351,236 @@ fn an_unanswered_command_to_another_npc_keeps_the_current_conversation() {
     assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
     assert!(outcome.conversation.is_none());
     assert_eq!(chat.engaged(session), Some(actor));
+}
+
+const SWORD: &str = "oteryn:item.tibia.sword";
+const ROPE: &str = "oteryn:item.tibia.rope";
+
+fn items() -> ItemDefinitionIndex {
+    ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": crate::content::item_ref::ITEM_KEYS_SCHEMA,
+            "records": [[ROPE, "definition-r1"], [SWORD, "definition-r1"]],
+        }))
+        .expect("json"),
+    )
+    .expect("index")
+}
+
+fn offer(
+    key: &str,
+    revision: &str,
+    direction: ProjectV2ServiceOfferDirection,
+    unit_price: u64,
+    count: Option<u32>,
+) -> ProjectV2ServiceOffer {
+    ProjectV2ServiceOffer {
+        item: ProjectV2DefinitionRef {
+            family: ProjectV2Family::Item,
+            key: key.to_owned(),
+            revision: revision.to_owned(),
+        },
+        direction,
+        unit_price,
+        currency: None,
+        count,
+        sub_type: None,
+        parity_pending: false,
+    }
+}
+
+fn trader_chat(session: GameSessionId, offers: Vec<ProjectV2ServiceOffer>) -> ChatRuntime {
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(NpcTalkBook::default().with(
+        "oteryn:npc.alice",
+        NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(offers),
+    )));
+    chat
+}
+
+#[test]
+fn offers_project_in_order_with_the_player_side_and_drop_what_does_not_resolve() {
+    use ProjectV2ServiceOfferDirection::{BuyFromPlayer, SellToPlayer};
+    let projected = project_offers(
+        &[
+            offer(SWORD, "definition-r1", SellToPlayer, 500, None),
+            offer(ROPE, "definition-r1", BuyFromPlayer, 15, Some(2)),
+            offer(
+                "oteryn:item.tibia.unknown",
+                "definition-r1",
+                SellToPlayer,
+                1,
+                None,
+            ),
+            offer(ROPE, "definition-r9", SellToPlayer, 1, None),
+            offer(
+                ROPE,
+                "definition-r1",
+                SellToPlayer,
+                u64::from(u32::MAX) + 1,
+                None,
+            ),
+        ],
+        &items(),
+    );
+    assert_eq!(
+        projected,
+        vec![
+            NpcOffer {
+                item_definition_ref: 2,
+                side: NpcTradeSide::Buy,
+                count: 1,
+                unit_price: 500
+            },
+            NpcOffer {
+                item_definition_ref: 1,
+                side: NpcTradeSide::Sell,
+                count: 2,
+                unit_price: 15
+            },
+        ]
+    );
+}
+
+#[test]
+fn trade_opens_the_window_for_the_speaker_and_a_farewell_closes_it() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = trader_chat(
+        session,
+        vec![offer(
+            SWORD,
+            "definition-r1",
+            ProjectV2ServiceOfferDirection::SellToPlayer,
+            500,
+            None,
+        )],
+    );
+    let index = items();
+    let say = |text: &str, micros| {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(micros),
+            Some(&index),
+        )
+    };
+    assert!(say("hello", BASE).window.is_none());
+    let opened = say("trade", BASE + 300_000).window.expect("window");
+    assert_eq!(
+        opened.open,
+        Some((npc, chat.npc_talk().expect("book").catalogue_revision()))
+    );
+    assert_eq!(opened.offers.len(), 1);
+    assert!(say("job", BASE + 600_000).window.is_none());
+    let closed = say("bye", BASE + 900_000).window.expect("closed");
+    assert_eq!(closed, NpcTradeWindow::default());
+}
+
+#[test]
+fn no_window_without_offers_or_a_pinned_index() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let index = items();
+    let bare = trader_chat(session, Vec::new());
+    for (chat, items, micros) in [(&bare, Some(&index), BASE)] {
+        conversations.talk_in(
+            chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, "hello"),
+            at(micros),
+            items,
+        );
+        let outcome = conversations.talk_in(
+            chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, "trade"),
+            at(micros + 300_000),
+            items,
+        );
+        assert!(outcome.window.is_none());
+    }
+    let stocked = trader_chat(
+        session,
+        vec![offer(
+            SWORD,
+            "definition-r1",
+            ProjectV2ServiceOfferDirection::SellToPlayer,
+            500,
+            None,
+        )],
+    );
+    let other = NpcConversations::default();
+    other.talk_in(
+        &stocked,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hello"),
+        at(BASE),
+        None,
+    );
+    let outcome = other.talk_in(
+        &stocked,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "trade"),
+        at(BASE + 300_000),
+        None,
+    );
+    assert!(outcome.window.is_none());
+}
+
+#[test]
+fn walking_away_closes_the_window_with_the_conversation() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = trader_chat(
+        session,
+        vec![offer(
+            SWORD,
+            "definition-r1",
+            ProjectV2ServiceOfferDirection::SellToPlayer,
+            500,
+            None,
+        )],
+    );
+    let index = items();
+    for (text, micros) in [("hello", BASE), ("trade", BASE + 300_000)] {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(micros),
+            Some(&index),
+        );
+    }
+    // The follow tick sees the conversation intact, so nothing changes.
+    assert!(
+        conversations
+            .follow(&chat, &runtime, actor, session, Some(npc))
+            .is_none()
+    );
+    chat.end_engagement(session, runtime.visible_entities().npcs[0].actor);
+    let update = conversations
+        .follow(&chat, &runtime, actor, session, Some(npc))
+        .expect("update");
+    assert_eq!(update.window, Some(NpcTradeWindow::default()));
+    assert!(
+        conversations
+            .follow(&chat, &runtime, actor, session, None)
+            .is_none()
+    );
 }
