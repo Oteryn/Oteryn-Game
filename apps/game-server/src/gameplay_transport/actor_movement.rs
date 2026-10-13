@@ -294,8 +294,13 @@ fn bundle_step(
     speed: Option<u16>,
     expected: MovementPositionSnapshot,
 ) -> StepInChannel {
+    // WORLD-INTERACTION-0 §6.6: a teleport landing reads the actor's PZ block (PARTY-PVP-0
+    // §8.1). PVP-RT-1 owns that block (conformance case PVP-CC-03); no runtime path sets one
+    // yet, so no actor is under a PZ block here. The floor resolver already refuses a
+    // protection-zone landing to a blocked actor.
+    let pz_blocked = false;
     let proof = crate::map::floor::prepare_bundle_step(
-        runtime, cells, actor, session, expected, direction,
+        runtime, cells, actor, session, expected, direction, pz_blocked,
     )?;
     let onto = proof.destination();
     if blocking.contains(&cell(onto)) {
@@ -593,24 +598,24 @@ mod tests {
             bundle_owner_of(crate::map::boot::tests::teleport_bundle);
         // The proof carries the teleport destination, not the entered tile.
         let expected = runtime.borrow_movement_position().read(actor).unwrap();
-        let proof = crate::map::floor::prepare_bundle_step(
-            &runtime,
-            &cells,
-            actor,
-            session,
-            expected,
-            CardinalStep::South,
-        )
-        .unwrap();
-        assert_eq!(
-            (
-                proof.destination().x,
-                proof.destination().y,
-                proof.destination().floor
-            ),
-            (5, 1, 8)
-        );
-        drop(proof);
+        let destination = |pz_blocked| {
+            let onto = crate::map::floor::prepare_bundle_step(
+                &runtime,
+                &cells,
+                actor,
+                session,
+                expected,
+                CardinalStep::South,
+                pz_blocked,
+            )
+            .unwrap()
+            .destination();
+            (onto.x, onto.y, onto.floor)
+        };
+        assert_eq!(destination(false), (5, 1, 8));
+        // WORLD-INTERACTION-0 §6.6: the destination is a protection-zone tile, so an actor under
+        // a PZ block stays on the teleport tile.
+        assert_eq!(destination(true), (0, 1, 8));
         // A door closed on the destination refuses the whole step.
         let closed = std::collections::BTreeSet::from([LogicalCell { x: 5, y: 1, z: 8 }]);
         assert!(matches!(
@@ -662,6 +667,7 @@ mod tests {
                 session,
                 expected,
                 CardinalStep::South,
+                false,
             )
             .is_err()
         );
@@ -717,6 +723,7 @@ mod tests {
             session,
             expected,
             CardinalStep::East,
+            false,
         )
         .unwrap();
         assert_eq!(proof.destination().floor, 7);

@@ -881,7 +881,7 @@ pub(crate) mod tests {
 
     /// NEWHAVEN-TELEPORT-1: [`floor_bundle`], plus a row of teleports (palette Item `i37001`)
     /// on `z` 8 at `y` 1: (0, 1) to (5, 1), (3, 1) to the missing tile (9, 1) and (4, 1) to (6, 1)
-    /// under a solid box; (5, 1) is plain grass.
+    /// under a solid box; (5, 1) is plain grass in a protection zone (tile flag bit 0).
     pub(crate) fn teleport_bundle() -> (Vec<u8>, BundlePins) {
         floor_bundle_of(false, true)
     }
@@ -987,7 +987,10 @@ pub(crate) mod tests {
                 teleport(0, (5, 1)),
                 teleport(3, (9, 1)),
                 teleport(4, (6, 1)),
-                tile(5, 1, &[0]),
+                Tile {
+                    flags: 1,
+                    ..tile(5, 1, &[0])
+                },
                 tile(6, 1, &[0, 3]),
             ]);
         }
