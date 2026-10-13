@@ -9,7 +9,8 @@
 --     existing order trigger (an UPDATE must strictly raise the key and keep the Character and
 --     its World), the World guard, the no-TRUNCATE trigger and the grants of migration 0080
 --     cover them unchanged;
---   * both columns are NULL or both are set. NULL means "start at the maxima" (SPELL-D2): a
+--   * both columns are NULL or both are set (the bounded arm names IS NOT NULL: a CHECK also
+--     accepts an unknown result, so `health = 5, mana = NULL` would otherwise pass). NULL means "start at the maxima" (SPELL-D2): a
 --     respawn placement, an actor saved at its maxima, and every row written before this
 --     migration;
 --   * a saved actor is alive: health is 1..2^28-1 and mana 0..2^28-1 (`MAX_VITAL_POOL`, the
@@ -24,5 +25,8 @@ ALTER TABLE game_character_last_positions
     ADD COLUMN mana INTEGER NULL,
     ADD CONSTRAINT game_character_last_positions_vitals CHECK (
         (health IS NULL AND mana IS NULL)
-        OR (health BETWEEN 1 AND 268435455 AND mana BETWEEN 0 AND 268435455)
+        OR (
+            health IS NOT NULL AND mana IS NOT NULL
+            AND health BETWEEN 1 AND 268435455 AND mana BETWEEN 0 AND 268435455
+        )
     );

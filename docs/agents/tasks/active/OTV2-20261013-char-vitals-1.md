@@ -34,7 +34,7 @@ public_contracts: []
 depends_on: ["CHAR-POSITION-1 (#2006)"]
 external_repositories: []
 blocked: []
-next_action: "CP: post the Codex review on the PR head and route the acceptance of CHAR-VITALS-0 in a separate PR; the author fixes CI and the complete review in one commit"
+next_action: "CP: accept CHAR-VITALS-0 in a separate PR (Codex P1, governance gate, not self-acceptable by the author); then trigger the Codex re-review on the new head"
 ```
 
 ## Outcome
