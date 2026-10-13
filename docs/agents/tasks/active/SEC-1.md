@@ -85,7 +85,7 @@ Proposed paths, not owned until the control plane allocates them (after the PVP-
 
 ## PR and closeout
 
-- PR #2078 carries this record only; no code until the control plane answers
+- PR #2079 carries this record (follow-up to merged #2078, which carried the superseded earlier version at docs/agents/tasks/SEC-1.md); no code until the control plane answers
 
 ## Context checkpoint
 
