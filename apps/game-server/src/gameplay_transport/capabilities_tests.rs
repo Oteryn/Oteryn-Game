@@ -1423,7 +1423,6 @@ mod chat_wire {
             let authority = ChatAuthority {
                 runtime: RefCell::new(runtime),
                 chat: ChatRuntime::default(),
-                npc_conversations: Default::default(),
                 names: vec![(speaker_session, "Aela"), (near.1, "Bryn"), (far.1, "Cade")],
             };
             let say = encode_chat_intent(&ChatIntent::Say {

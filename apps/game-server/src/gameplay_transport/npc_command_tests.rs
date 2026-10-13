@@ -26,7 +26,7 @@ fn fixture(distance: u32) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId, En
             placements: vec![NpcPlacement {
                 floor: -i8::try_from(spot.floor).expect("floor"),
                 y: u16::try_from(spot.y).expect("y"),
-                x: u16::try_from(spot.x + distance).expect("x"),
+                x: u16::try_from(spot.x + i32::try_from(distance).expect("distance")).expect("x"),
                 direction: MovementFacing::South,
             }],
         }],
