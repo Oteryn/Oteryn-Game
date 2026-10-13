@@ -582,3 +582,235 @@ fn walking_away_closes_the_window_with_the_conversation() {
             .is_none()
     );
 }
+
+/// A conversation with the trader, its window open on `offers`.
+fn trading(
+    offers: Vec<ProjectV2ServiceOffer>,
+) -> (
+    ChannelRuntimeV1,
+    ExactActorRef,
+    GameSessionId,
+    EntityRef,
+    ChatRuntime,
+    NpcConversations,
+) {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = trader_chat(session, offers);
+    let index = items();
+    for (text, micros) in [("hello", BASE), ("trade", BASE + 300_000)] {
+        conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, text),
+            at(micros),
+            Some(&index),
+        );
+    }
+    (runtime, actor, session, npc, chat, conversations)
+}
+
+fn stock() -> Vec<ProjectV2ServiceOffer> {
+    use ProjectV2ServiceOfferDirection::{BuyFromPlayer, SellToPlayer};
+    vec![
+        // Does not resolve, so it is not shown and does not take an index.
+        offer(ROPE, "definition-r9", SellToPlayer, 1, None),
+        offer(SWORD, "definition-r1", SellToPlayer, 500, None),
+        offer(ROPE, "definition-r1", BuyFromPlayer, 15, Some(2)),
+    ]
+}
+
+fn trade(npc_actor: EntityRef, revision: u64) -> NpcTradeIntent {
+    NpcTradeIntent {
+        npc_actor,
+        catalogue_revision: revision,
+        offer_index: 1,
+        side: NpcTradeSide::Sell,
+        quantity: 3,
+        expected_unit_price: 15,
+    }
+}
+
+#[test]
+fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
+    let (runtime, actor, session, npc, chat, conversations) = trading(stock());
+    let revision = chat.npc_talk().expect("book").catalogue_revision();
+    let index = items();
+    let offer = conversations
+        .trade_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &trade(npc, revision),
+            Some(&index),
+        )
+        .unwrap_or_else(|_| panic!("offer"));
+    assert_eq!(
+        offer,
+        NpcTradeOffer {
+            npc_key: "oteryn:npc.alice".to_owned(),
+            catalogue_revision: revision,
+            offer_index: 1,
+            side: NpcTradeSide::Sell,
+            quantity: 3,
+            count: 2,
+            unit_price: 15,
+            item_key: ROPE.to_owned(),
+            item_revision: "definition-r1".to_owned(),
+        }
+    );
+}
+
+#[test]
+fn a_mismatched_trade_intent_is_stale_and_re_projects_the_window() {
+    let (runtime, actor, session, npc, chat, conversations) = trading(stock());
+    let revision = chat.npc_talk().expect("book").catalogue_revision();
+    let index = items();
+    let shown = conversations
+        .talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, "trade"),
+            at(BASE + 600_000),
+            Some(&index),
+        )
+        .window
+        .expect("window");
+    for wrong in [
+        NpcTradeIntent {
+            catalogue_revision: revision + 1,
+            ..trade(npc, revision)
+        },
+        NpcTradeIntent {
+            offer_index: 2,
+            ..trade(npc, revision)
+        },
+        NpcTradeIntent {
+            side: NpcTradeSide::Buy,
+            ..trade(npc, revision)
+        },
+        NpcTradeIntent {
+            expected_unit_price: 14,
+            ..trade(npc, revision)
+        },
+    ] {
+        let Err(refusal) =
+            conversations.trade_in(&chat, &runtime, actor, session, &wrong, Some(&index))
+        else {
+            panic!("{wrong:?} is refused");
+        };
+        assert_eq!(refusal.disposition, NpcIntentDisposition::Stale);
+        assert!(refusal.update.conversation.is_none());
+        assert_eq!(refusal.update.window.as_ref(), Some(&shown), "{wrong:?}");
+    }
+    for quantity in [0, 101] {
+        let wrong = NpcTradeIntent {
+            quantity,
+            ..trade(npc, revision)
+        };
+        let Err(refusal) =
+            conversations.trade_in(&chat, &runtime, actor, session, &wrong, Some(&index))
+        else {
+            panic!("{wrong:?} is refused");
+        };
+        assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+        assert!(refusal.update.window.is_none());
+    }
+}
+
+#[test]
+fn a_charged_fluid_or_foreign_currency_offer_is_rejected() {
+    use ProjectV2ServiceOfferDirection::SellToPlayer;
+    let mut fluid = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
+    fluid.sub_type = Some(1);
+    let mut foreign = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
+    foreign.currency = Some(foreign.item.clone());
+    for odd in [fluid, foreign] {
+        let (runtime, actor, session, npc, chat, conversations) = trading(vec![odd]);
+        let revision = chat.npc_talk().expect("book").catalogue_revision();
+        let intent = NpcTradeIntent {
+            offer_index: 0,
+            side: NpcTradeSide::Buy,
+            quantity: 1,
+            expected_unit_price: 500,
+            ..trade(npc, revision)
+        };
+        let Err(refusal) =
+            conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()))
+        else {
+            panic!("refused");
+        };
+        assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+    }
+}
+
+#[test]
+fn a_trade_intent_needs_the_conversation_its_window_and_the_npc_in_range() {
+    let (runtime, actor, session, npc, chat, conversations) = trading(stock());
+    let revision = chat.npc_talk().expect("book").catalogue_revision();
+    let index = items();
+    let refused = |chat: &ChatRuntime,
+                   runtime: &ChannelRuntimeV1,
+                   conversations: &NpcConversations,
+                   intent: NpcTradeIntent| {
+        match conversations.trade_in(chat, runtime, actor, session, &intent, Some(&index)) {
+            Ok(_) => panic!("{intent:?} is refused"),
+            Err(refusal) => refusal,
+        }
+    };
+    let stale = refused(
+        &chat,
+        &runtime,
+        &conversations,
+        trade(
+            EntityRef {
+                generation: npc.generation + 1,
+                ..npc
+            },
+            revision,
+        ),
+    );
+    assert_eq!(stale.disposition, NpcIntentDisposition::Stale);
+
+    // A conversation without the window: nothing to re-project.
+    let talking = NpcConversations::default();
+    talking.talk_in(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hello"),
+        at(BASE),
+        Some(&index),
+    );
+    let closed = refused(&chat, &runtime, &talking, trade(npc, revision));
+    assert_eq!(closed.disposition, NpcIntentDisposition::Rejected);
+    assert!(closed.update.window.is_none());
+
+    chat.end_engagement(session, runtime.visible_entities().npcs[0].actor);
+    let ended = refused(&chat, &runtime, &conversations, trade(npc, revision));
+    assert_eq!(ended.disposition, NpcIntentDisposition::NoConversation);
+
+    // Held with an NPC five tiles away.
+    let (far_runtime, far_actor, far_session, far_npc) = fixture(5);
+    let far_chat = trader_chat(far_session, stock());
+    let placed = far_runtime.visible_entities().npcs[0].actor;
+    far_chat.converse(far_session, |engaged| *engaged = Some(placed));
+    let far = match NpcConversations::default().trade_in(
+        &far_chat,
+        &far_runtime,
+        far_actor,
+        far_session,
+        &trade(far_npc, revision),
+        Some(&index),
+    ) {
+        Ok(_) => panic!("out of range"),
+        Err(refusal) => refusal,
+    };
+    assert_eq!(far.disposition, NpcIntentDisposition::NotInRange);
+}

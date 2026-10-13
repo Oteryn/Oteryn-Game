@@ -29,6 +29,7 @@ mod monster_ai_cycle;
 mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
+mod npc_trade_command;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
@@ -2895,6 +2896,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.owner_now(),
             item_ref_admission::pinned_index(&runtime, self.active_generation),
         )
+    }
+
+    async fn npc_trade(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> npc_trade_command::NpcTradeStep {
+        npc_trade_command::npc_trade(self, actor, command, intent).await
     }
 
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
