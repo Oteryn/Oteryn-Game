@@ -1907,6 +1907,36 @@ fn bundle_channel_pin(
     ))
 }
 
+/// BUNDLE-COMBAT-ENABLE-1: the combat room of a bundle World, the qualified room's bundle view
+/// over the Channel's bundle `cells` with the bundle's frame binding, map revision and start,
+/// exactly as [`bundle_channel_pin`] puts them on the Channel pin. `None` (combat stays closed,
+/// the World still serves) when the view does not bind.
+fn bundle_combat_room(
+    room: &crate::content::QualifiedNativeEntryRoom,
+    world: &crate::map::boot::BundleWorld,
+    world_id: WorldId,
+    cells: &crate::content::NativeEntryMovementCells,
+) -> Option<crate::content::QualifiedNativeEntryRoom> {
+    let start = world.start();
+    let view = start.floor.checked_neg().and_then(|floor| {
+        room.bundle_view(
+            cells.clone(),
+            world.frame_binding_digest(world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: i16::from(floor),
+            },
+        )
+    });
+    event(&format!(
+        "event=bundle_combat state={}",
+        if view.is_some() { "enabled" } else { "disabled" }
+    ));
+    view
+}
+
 /// SPAWN-1a (CREATURE-AI-0 §6.2): the fixture World's spawn source is realized at Channel
 /// activation, before the listener binds. A bundle World has no fixture spawn source.
 fn realize_fixture_spawns(
@@ -2075,6 +2105,13 @@ async fn boot_and_serve(
                 .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?,
         ),
         None => (channel_pin, movement_cells),
+    };
+    // BUNDLE-COMBAT-ENABLE-1: player auto-attack and native combat casts read the qualified
+    // room; a bundle World serves them the room's bundle view, whose identities are the bundle
+    // pin's. Every other `qualified_room` consumer stays closed for a bundle World (§1.2).
+    let combat_room = match &bundle {
+        Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
+        None => Some(qualified_room.clone()),
     };
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
@@ -2282,6 +2319,7 @@ async fn boot_and_serve(
         active_generation: active_content.active(),
         premium_coordinator: None,
         qualified_room: bundle.is_none().then_some(&qualified_room),
+        combat_room: combat_room.as_ref(),
         achievements: &achievements,
         imported_charms: &imported_charms,
         quest_catalogue: &quest_catalogue,

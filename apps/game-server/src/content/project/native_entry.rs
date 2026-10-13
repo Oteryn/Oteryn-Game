@@ -725,6 +725,48 @@ pub struct NativeEntryStart {
 }
 
 impl QualifiedNativeEntryRoom {
+    /// BUNDLE-COMBAT-ENABLE-1: the qualified room as a bundle World's Channel serves it. The
+    /// compiled Content (and so the server and client digests) and the door content stay this
+    /// room's own; the cells, frame binding, map revision and start are the bundle's, the same
+    /// identities [`crate::map::boot::BundleWorld`] gives the Channel pin. `cells` must be
+    /// bundle cells (MAP-CUTOVER-1a) of this room's World and compiled generation, or `None`.
+    ///
+    /// Every consumer that compares the room with the Channel pin therefore reads the bundle's
+    /// identities. The entry door content keeps the entry coordinate frame, so a consumer that
+    /// binds the entry door runtime against the room's cells still refuses a bundle World.
+    pub(crate) fn bundle_view(
+        &self,
+        cells: NativeEntryMovementCells,
+        frame_binding_digest: [u8; 32],
+        map_revision_digest: [u8; 32],
+        start: NativeEntryStart,
+    ) -> Option<Self> {
+        let entry = self.movement_cells.scope();
+        let bundle = cells.scope();
+        if !matches!(
+            cells.index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ) || bundle.world_id != entry.world_id
+            || bundle.generation_digest != entry.generation_digest
+            || bundle.generation_digest != self.compiled.server_digest()
+            || bundle.coordinate_frame == entry.coordinate_frame
+        {
+            return None;
+        }
+        Some(Self {
+            compiled: self.compiled.clone(),
+            frame_binding: NativeEntryFrameBinding {
+                frame: self.frame_binding.frame.clone(),
+                digest: frame_binding_digest,
+            },
+            entry_start: start,
+            map_revision_digest,
+            movement_cells: cells,
+            door: self.door.clone(),
+            spawn_source: None,
+        })
+    }
+
     pub(crate) fn source_world(
         &self,
     ) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {

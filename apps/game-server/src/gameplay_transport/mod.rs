@@ -393,6 +393,10 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
     pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// BUNDLE-COMBAT-ENABLE-1: the room player auto-attack and native combat casts read. The
+    /// qualified room itself, or for a bundle World its bundle view
+    /// (`QualifiedNativeEntryRoom::bundle_view`), whose identities match the bundle pin.
+    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
@@ -506,6 +510,7 @@ pub async fn serve_gameplay(
         active_generation: owners.active_generation,
         premium_coordinator: owners.premium_coordinator,
         qualified_room: owners.qualified_room,
+        combat_room: owners.combat_room,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
@@ -674,6 +679,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
     pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// See [`GameplaySeamOwners::combat_room`].
+    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
@@ -3434,7 +3441,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.attack.lock().await.set_target(
             &runtime,
-            self.qualified_room,
+            self.combat_room,
             actor,
             game_session_id,
             now,

@@ -202,6 +202,7 @@ impl Dependencies {
             active_generation: None,
             premium_coordinator: None,
             qualified_room: None,
+            combat_room: None,
             achievements: &self.achievements,
             imported_charms: &self.charms,
             spell_states: Mutex::default(),
