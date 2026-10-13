@@ -106,7 +106,9 @@ impl ChatLimiter {
             });
         }
         self.refill(now);
-        if self.lines == 0 {
+        // An empty bucket starts the offence here only for a say; a yell is left to
+        // `admit_local`, which checks the level first so an under-level yell is not a mute.
+        if self.lines == 0 && mode != SpeechMode::Yell {
             let until = self.offend(now);
             return Err(ChatRefusal::Muted {
                 seconds: seconds_until(now, until),
