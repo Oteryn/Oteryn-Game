@@ -55,3 +55,7 @@ delta pacer (WORLD-INTERACTION-0 §10.2, §11; WORLDINT0-RL-16..18). Capability 
 
 Registry JSON parses and is pinned by `registry_binds_the_clock_wire_ids_and_limits`; encoder and decoder
 refuse the same values; the pacer never sends before a snapshot.
+
+## Review follow-up
+
+Codex P1: `apps/game-server/src/gameplay_transport/capabilities.rs::GATED` gained capability 19 / domain 18 (no commands), outside the listed owned paths but required by `the_gated_commands_and_domains_are_the_registry_ones`; capability 19 stays out of the offered sets. Reported to CP.
