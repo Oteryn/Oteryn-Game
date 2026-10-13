@@ -32,7 +32,7 @@ fn fixture(distance: u32) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId, En
         }],
     };
     runtime.place_npcs(&table, |_| true, true).expect("placed");
-    let npc = runtime.visible_entities().npcs[0].clone();
+    let npc = runtime.visible_entities().npcs[0];
     let reference = EntityRef {
         identity: npc.actor.placement_identity(),
         generation: npc.generation,
@@ -143,8 +143,8 @@ fn a_stale_generation_is_stale_and_ends_the_conversation() {
         at(BASE + 1),
     );
     assert_eq!(outcome.disposition, NpcIntentDisposition::Stale);
-    // The conversation was with another reference: it stays.
-    assert!(outcome.conversation.is_none());
+    // The conversation was held with that NPC: it ends, with an empty domain 7 payload.
+    assert_eq!(outcome.conversation, Some(NpcConversation::default()));
 }
 
 #[test]
