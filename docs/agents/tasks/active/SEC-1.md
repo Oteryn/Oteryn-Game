@@ -7,7 +7,8 @@ mode: IMPLEMENT
 status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/sec-1-20261013
+branch: claude/sec-1-record-20261013
+issue: 2054
 pr: null
 base_sha: null
 head_sha: null
@@ -18,13 +19,10 @@ created_at: 2026-10-13
 updated_at: 2026-10-13
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/fresh_evidence.rs
-  - apps/game-server/src/gameplay_transport/field_step_ingress.rs
-  - apps/game-server/src/gameplay_transport/actor_movement.rs
-  - apps/game-server/tests/authority_invariants.rs
-  - docs/agents/tasks/SEC-1.md
+  - docs/agents/tasks/active/SEC-1.md
 public_contracts: []
-depends_on: []
+depends_on:
+  - PVP-RT-1b (or the live owner of field_step_ingress.rs; PVP-RT-1 is archived and handed the movement hook wiring to PVP-RT-1b; recheck at allocation)
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -59,9 +57,14 @@ Protocol/registry, migrations, `movement/`, the client (#1942), sanctions (OPS-G
 ## Implementation / findings
 
 Gap: no localized bot-control target in the owned paths.
-Proposed scope (b): server-authoritative step integrity in `actor_movement.rs` and `field_step_ingress.rs`: a step is committed only
-when origin, destination and pacing agree with server facts; impossible or out-of-order steps are refused and counted as a
-bounded, non-sanctioning signal; negative cases in `authority_invariants.rs`, one invariant changed per case.
+Proposed scope (b), narrowed to failures that reach the owned modules: server-authoritative step integrity in `actor_movement.rs`
+and `field_step_ingress.rs`: a step is committed only when origin, destination and the SPEED-1 duration agree with server facts;
+refusals there are counted as a bounded, non-sanctioning signal; negative cases in `authority_invariants.rs`, one invariant
+changed per case. Sequence gaps and early/buffered steps are decided in `connection.rs` (about lines 2035-2051 and 2093-2113)
+before `paced_step`; counting them needs `connection.rs` added to the allocation, which the control plane must decide.
+Proposed paths, not owned until the control plane allocates them (after the PVP-RT-1b ownership check):
+`apps/game-server/src/gameplay_transport/{fresh_evidence,field_step_ingress,actor_movement}.rs` and
+`apps/game-server/tests/authority_invariants.rs`.
 
 ## Validation
 
@@ -82,14 +85,14 @@ bounded, non-sanctioning signal; negative cases in `authority_invariants.rs`, on
 
 ## PR and closeout
 
-- no PR until the control plane answers
+- PR #2078 carries this record only; no code until the control plane answers
 
 ## Context checkpoint
 
 ```yaml
 last_progress: gap record written; control plane chose option (c)
 status: blocked
-branch: claude/sec-1-20261013
+branch: claude/sec-1-record-20261013
 head_sha: null
 pr: null
 owner_action_required: null
