@@ -146,6 +146,8 @@ pub struct Registry {
     /// Item keys whose native profile says they do not block movement, set by
     /// [`Registry::seal`].
     open: BTreeSet<String>,
+    /// Item keys whose native profile says they block movement, set by [`Registry::seal`].
+    closed: BTreeSet<String>,
     /// Compact ids, set by [`Registry::seal`]; nothing resolves before it.
     ids: BTreeMap<String, (Family, u32)>,
 }
@@ -275,6 +277,8 @@ impl Registry {
             });
             if profile.is_some_and(|p| p.attributes.blocks_movement == Some(false)) {
                 self.open.insert(key.clone());
+            } else if profile.is_some_and(|p| p.attributes.blocks_movement == Some(true)) {
+                self.closed.insert(key.clone());
             }
         }
         let too_many = || Error::Limit("more than 2^32 keys in one family".into());
@@ -441,5 +445,9 @@ impl KeyResolver for Registry {
 
     fn solid(&self, key: &str) -> bool {
         !self.open.contains(key)
+    }
+
+    fn solid_stated(&self, key: &str) -> bool {
+        self.closed.contains(key)
     }
 }

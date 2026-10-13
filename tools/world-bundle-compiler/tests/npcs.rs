@@ -553,11 +553,12 @@ fn positions_outside_the_world_and_duplicate_keys_fail_compilation() -> TestResu
 /// which `solid` reports as blocking; they must not hold an NPC placement by themselves.
 struct ItemFloors;
 
-const FLOOR_PALETTE: [&str; 4] = [
+const FLOOR_PALETTE: [&str; 5] = [
     "item:ground",
     "item:border",
     "item:border_unknown",
     "item:crate",
+    "item:ground_closed",
 ];
 
 impl KeyResolver for ItemFloors {
@@ -570,7 +571,7 @@ impl KeyResolver for ItemFloors {
 
     fn terrain(&self, key: &str) -> Result<Option<Terrain>, Error> {
         let (kind, walkable) = match key {
-            "item:ground" => (TerrainKind::Ground, Some(true)),
+            "item:ground" | "item:ground_closed" => (TerrainKind::Ground, Some(true)),
             "item:border" => (TerrainKind::Border, Some(true)),
             "item:border_unknown" => (TerrainKind::Border, None),
             _ => return Ok(None),
@@ -589,6 +590,10 @@ impl KeyResolver for ItemFloors {
     fn solid(&self, _key: &str) -> bool {
         true
     }
+
+    fn solid_stated(&self, key: &str) -> bool {
+        key == "item:ground_closed"
+    }
 }
 
 #[test]
@@ -598,6 +603,8 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
         tile(2, vec![item(0, 0), item(1, 0)], 0),
         tile(3, vec![item(0, 0), item(2, 0)], 0),
         tile(4, vec![item(0, 0), item(3, 0)], 0),
+        // A ground whose profile states that it blocks keeps blocking (the server keeps it).
+        tile(6, vec![item(4, 0)], 0),
     ];
     let regions = vec![region(7, &tiles)?];
     let palette: Vec<String> = FLOOR_PALETTE.map(String::from).to_vec();
@@ -607,6 +614,7 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
         placement("border", "sam", 2),
         placement("unknown-border", "tom", 3),
         placement("crate", "sam", 4),
+        placement("closed-ground", "tom", 6),
     ];
     let input = input(&regions, &palette, &families, BuildClass::NonProduction);
     let (spawns, _) = realize_spawns(&input, &ItemFloors)?;
@@ -615,7 +623,11 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     let held: Vec<_> = report.held.iter().map(|h| (h.cell.0, h.reason)).collect();
     assert_eq!(
         held,
-        [(3, HoldReason::BlockSolid), (4, HoldReason::BlockSolid)]
+        [
+            (3, HoldReason::BlockSolid),
+            (4, HoldReason::BlockSolid),
+            (6, HoldReason::BlockSolid)
+        ]
     );
     Ok(())
 }

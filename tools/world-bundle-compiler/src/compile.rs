@@ -44,6 +44,12 @@ pub trait KeyResolver {
     fn solid(&self, _key: &str) -> bool {
         true
     }
+
+    /// Whether a native profile states that the Item blocks movement. The game server keeps
+    /// that value; it derives walkability from the Terrain only when the profile says nothing.
+    fn solid_stated(&self, _key: &str) -> bool {
+        false
+    }
 }
 
 pub struct Input<'a> {
@@ -280,6 +286,7 @@ fn cell_facts(
                 resolver.terrain(key),
                 resolver.floor_change(key),
                 family == Family::Item && resolver.solid(key),
+                resolver.solid_stated(key),
             )),
             _ => None,
         })
@@ -302,7 +309,8 @@ fn cell_facts(
                 if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
                     cell.teleport = true;
                 }
-                let Some(Some((terrain, change, solid))) = kinds.get(item.palette as usize) else {
+                let Some(Some((terrain, change, solid, stated))) = kinds.get(item.palette as usize)
+                else {
                     continue;
                 };
                 cell.floor_change |= *change;
@@ -315,7 +323,7 @@ fn cell_facts(
                     bundle::TerrainKind::Border => t.walkable == Some(true),
                     _ => false,
                 });
-                cell.block_solid |= top && *solid && !floor;
+                cell.block_solid |= top && *solid && (*stated || !floor);
                 match terrain {
                     Err(_) => cell.unclassified = true,
                     Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {

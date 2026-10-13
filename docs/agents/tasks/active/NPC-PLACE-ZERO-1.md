@@ -4,16 +4,20 @@
 task_id: NPC-PLACE-ZERO-1
 title: "NPC-PLACE-ZERO-1: World Bundle compiler wrote 0 NPC placements (ground items counted as solid)"
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 implementation_branch: claude/xp-kill-1-20261013
+issue: 1622
+pr: 2027
 governing_issue: 1622
 terminal_pr_policy: archive_pending
 owned_paths:
   - tools/world-bundle-compiler/src/compile.rs
   - content/world/pins/oteryn.json
   - deploy/synology-game/preprod-topology.toml
+  - tools/world-bundle-compiler/src/resolve.rs
+  - tools/world-bundle-compiler/tests/npcs.rs
   - docs/agents/tasks/active/NPC-PLACE-ZERO-1.md
 ```
 
