@@ -50,14 +50,23 @@ enum StaticItemFact {
     Unknown,
 }
 fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option<DotElement>> {
+    // The first field wins, but every later Item is still checked: one without qualified
+    // semantics could be the matching field, so it makes the whole tile Unknown.
+    let mut field = Some(None);
+    let mut seen_field = false;
     for fact in facts {
         match fact {
             StaticItemFact::NoPolicy | StaticItemFact::Unknown => return None,
             StaticItemFact::Plain => {}
-            StaticItemFact::Field(element) => return element,
+            StaticItemFact::Field(element) => {
+                if !seen_field {
+                    seen_field = true;
+                    field = element;
+                }
+            }
         }
     }
-    Some(None)
+    field
 }
 /// The field a bundle tile carries as a static top Item: the bundle's fields are not
 /// `game_item_ground_locations` rows. Missing metadata is Unknown, so no damage is consumed.
@@ -432,5 +441,13 @@ mod standing_fact_tests {
             Some(Some(DotElement::Fire))
         );
         assert_eq!(fold_static([Field(None)]), None);
+        let fire = Field(Some(Some(DotElement::Fire)));
+        assert_eq!(fold_static([fire, NoPolicy]), None);
+        assert_eq!(fold_static([fire, Unknown]), None);
+        assert_eq!(fold_static([fire, Plain]), Some(Some(DotElement::Fire)));
+        assert_eq!(
+            fold_static([fire, Field(Some(Some(DotElement::Energy)))]),
+            Some(Some(DotElement::Fire))
+        );
     }
 }
