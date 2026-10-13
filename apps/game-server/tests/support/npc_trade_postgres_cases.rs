@@ -574,6 +574,27 @@ fn the_database_refuses_an_unproven_trade() -> TestResult {
         assert!(error.is_some(), "an unproven coin change commits");
         assert_eq!(harness.item_state(gold).await?, (10, 1));
 
+        // A coin stack that is not in its default state (a timed row) is never paid from.
+        let mut seed = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *seed)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_item_timed_states \
+             VALUES (encode($1,'hex')::uuid, 1, NULL, NULL, 1)",
+        )
+        .bind(gold.as_slice())
+        .execute(&mut *seed)
+        .await?;
+        seed.commit().await?;
+        let before = footprint(&harness).await?;
+        match commit(&harness, &authority, trade(10, NpcTradeSide::Buy, 1, 1)?).await {
+            Err(NpcTradeError::InvalidInput) => {}
+            other => return Err(format!("expected InvalidInput, got {other:?}").into()),
+        }
+        assert_eq!(footprint(&harness).await?, before);
+        assert_eq!(harness.item_state(gold).await?, (10, 1));
+
         drop(authority);
         drop(seal);
         harness.cleanup().await

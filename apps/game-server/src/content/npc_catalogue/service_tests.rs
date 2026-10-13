@@ -193,7 +193,12 @@ fn charged_and_fluid_count_is_charges() {
     for key in ["oteryn:item.rune", "oteryn:item.fluid"] {
         for (count, held) in [(0, true), (1, false), (65_535, false), (65_536, true)] {
             let o = offer(key, Dir::SellToPlayer, 5, Some(count));
-            let want = held.then_some(NpcOfferHeldReason::CountOutOfRange);
+            // A valid count is still held until NPC-TRADE-3 trades charges and sub-types.
+            let want = Some(if held {
+                NpcOfferHeldReason::CountOutOfRange
+            } else {
+                NpcOfferHeldReason::ChargedOrFluidPending
+            });
             assert_eq!(reason_of(o), want, "{key} count {count}");
         }
     }
@@ -208,7 +213,11 @@ fn timed_count_equals_charges() {
         (None, true),
     ] {
         let o = offer("oteryn:item.timed", Dir::SellToPlayer, 5, count);
-        let want = held.then_some(NpcOfferHeldReason::TimedCountMismatch);
+        let want = Some(if held {
+            NpcOfferHeldReason::TimedCountMismatch
+        } else {
+            NpcOfferHeldReason::ChargedOrFluidPending
+        });
         assert_eq!(reason_of(o), want, "count {count:?}");
     }
 }

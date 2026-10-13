@@ -259,6 +259,13 @@ fn a_buy_burns_the_fee_plan_and_mints_change_then_the_item() {
         plan_buy(&value, 1, 1, 20, &stale),
         Err(NpcTradeError::InvalidInput)
     ));
+    // A coin stack with contents or a timed state is never paid from, nor skipped.
+    let mut held = entries.clone();
+    held[2].not_default = true;
+    assert!(matches!(
+        plan_buy(&value, 1, 1, 20, &held),
+        Err(NpcTradeError::InvalidInput)
+    ));
     // 21 one-gold stacks for 21 gold: more than 20 inputs.
     let many: Vec<Entry> = (0..21)
         .map(|n| entry(100 + n, 30 - u64::from(n), coin(Coin::Gold), 1))

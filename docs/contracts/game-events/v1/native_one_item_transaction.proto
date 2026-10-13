@@ -458,9 +458,9 @@ message OneItemNpcTradeV1 {
   uint64 runtime_scope_ownership_generation = 6; // non-zero
   bytes backpack_item_instance_id = 7;           // parent of every line's entry
   uint32 quantity = 8;                           // 1..100 units of the item
-  uint64 unit_price = 9;                         // non-zero
+  uint64 unit_price = 9;                         // 0..20,000,000 (0: NPC-0 §5.3/§5.4)
   uint64 total_gold_units = 10; // unit_price x quantity; BUY <= 20,000,000, SELL <= 1,009,999
   uint64 burned_gold_units = 11; // BUY: worth of the burned coins; SELL: 0
   uint64 minted_gold_units = 12; // BUY: the change; SELL: total_gold_units
-  repeated OneItemNpcTradeLineV1 lines = 13; // BUY 2..23, SELL 2..4
+  repeated OneItemNpcTradeLineV1 lines = 13; // BUY 1..23, SELL 1..4 (price 0: the item line only)
 }

@@ -226,8 +226,9 @@ BEGIN
                         SELECT 1 FROM game_npc_trade_lines n
                          WHERE n.transaction_id = l.transaction_id AND n.line_kind = 1
                            AND n.line_ordinal > l.line_ordinal))
-                     -- The sold item has no contents and its default state (no timed row).
-                     OR (l.line_kind = 3 AND (
+                     -- A burned coin and the sold item have no contents and their default
+                     -- state (no timed row).
+                     OR (l.line_kind IN (1, 3) AND (
                         EXISTS (SELECT 1 FROM game_item_container_entries c
                                  WHERE c.parent_item_instance_id = l.item_instance_id)
                      OR EXISTS (SELECT 1 FROM game_item_timed_states t

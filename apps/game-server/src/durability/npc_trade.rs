@@ -409,6 +409,11 @@ fn plan_buy(
         if entry.definition.revision_ref != request.coins.of(coin).revision_ref {
             return Err(NpcTradeError::InvalidInput);
         }
+        // A burned coin has no contents and its default state; a coin stack that is not
+        // default is refused rather than skipped (the database plan guard counts it).
+        if entry.not_default {
+            return Err(NpcTradeError::InvalidInput);
+        }
         inputs.push((
             CoinStack {
                 coin,

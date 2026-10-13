@@ -117,10 +117,13 @@ pub enum NpcOfferHeldReason {
     SellPriceAboveCoinCapacity,
     ArbitragePaying,
     ParityPending,
+    /// A charged or fluid offer: its count is charges or sub-type, which NPC-TRADE-1 does not
+    /// trade yet (follow-up NPC-TRADE-3).
+    ChargedOrFluidPending,
 }
 
 impl NpcOfferHeldReason {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::NonGoldCurrency,
         Self::UnknownItem,
         Self::CountOutOfRange,
@@ -128,6 +131,7 @@ impl NpcOfferHeldReason {
         Self::SellPriceAboveCoinCapacity,
         Self::ArbitragePaying,
         Self::ParityPending,
+        Self::ChargedOrFluidPending,
     ];
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -138,6 +142,7 @@ impl NpcOfferHeldReason {
             Self::SellPriceAboveCoinCapacity => "SellPriceAboveCoinCapacity",
             Self::ArbitragePaying => "ArbitragePaying",
             Self::ParityPending => "ParityPending",
+            Self::ChargedOrFluidPending => "ChargedOrFluidPending",
         }
     }
 }
@@ -283,6 +288,9 @@ fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<N
     }
     if offer.parity_pending {
         return Some(NpcOfferHeldReason::ParityPending);
+    }
+    if facts.timed_charges(key).is_some() || facts.charged(key) || facts.fluid(key) {
+        return Some(NpcOfferHeldReason::ChargedOrFluidPending);
     }
     None
 }

@@ -30,6 +30,9 @@ owned_paths:
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json      # Type 2 note: operation tag 9
+  - apps/game-server/src/content/npc_catalogue/service.rs     # CP: hold charged/fluid offers
+  - apps/game-server/src/content/npc_catalogue/service_tests.rs
+  - apps/game-server/tests/content_npc_service_model.rs
   - docs/agents/tasks/archive/OTV2-20261013-npc-trade-1.md
 excluded_paths:
   - apps/game-server/src/gameplay_transport/npc_command.rs   # NPC-CMD-1b owns the domain-8 window
@@ -66,7 +69,11 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
   `game_item_fee_burns` row (a fee record needs a CharacterRevision advance; a trade has none).
 - Charged and fluid offers (§5.3/§5.4, `count` as charges or sub-type) are not traded by this
   writer: no durable fluid sub-type exists and a charged item needs the timed-state proof arms.
-  The caller refuses them; the follow-up is raised to the CP (Codex thread on `npc_trade.rs`).
+  Known limitation, CP decision (a)+(b): the writer keeps refusing them (`InvalidInput`) and
+  catalogue admission holds them as `ChargedOrFluidPending` (865 offers; admitted 11,903 ->
+  11,039; the one `ArbitragePaying` offer is among them). Follow-up NPC-TRADE-3 (fluid sub-type
+  persistence and charged timed-state, owning contract from the architect) is opened by the CP
+  after #2040 merges.
 - Over the ~500-line batch guideline: the migration, writer, encoder and tests are one unit.
 
 ## PR and closeout
@@ -79,3 +86,9 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
   0 is free): the writer, the audit check and 0082 (`unit_price`/`total_gold_units` from 0,
   `line_count` from 1, a BUY without a coin BURN only at total 0) admit it, with unit, audit and
   PostgreSQL cases. No admitted offer has price 0 today (0 of 12,234).
+- Codex review on 957dd26e: P1 and P2 fixed in one commit, with the CP's charged/fluid catalogue
+  hold. (P1) A live coin stack with contents or a timed state is refused for a BUY (`InvalidInput`,
+  not skipped: the database plan guard counts every coin stack), and the 0082 consistency guard
+  requires no contents and no timed row for a coin BURN as for the sold item; unit and
+  PostgreSQL cases. (P2) `native_one_item_transaction.proto` documents `unit_price` 0..20,000,000
+  and lines BUY 1..23, SELL 1..4.
