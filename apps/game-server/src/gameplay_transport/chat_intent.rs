@@ -133,8 +133,13 @@ impl ChatRuntime {
         intent: &ChatIntent,
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
-        if !matches!(intent, ChatIntent::Say { .. }) {
+        let ChatIntent::Say { text, .. } = intent else {
             return None;
+        };
+        // Unusable text is refused here too, without the Channel and without a line, so it
+        // cannot be repeated against the locks for free.
+        if ChatText::parse(text).is_err() {
+            return Some(result(ChatDisposition::Rejected));
         }
         let mut sessions = self.sessions.lock().ok()?;
         let entry = sessions.get_mut(&session)?;
@@ -563,6 +568,13 @@ mod tests {
         assert_eq!(refused.disposition, ChatDisposition::Muted);
         assert!(chat.muted_cast(first.1, BASE).is_some());
         assert!(chat.pre_gate(first.1, &say("x"), BASE).is_some());
+        // Unusable text is refused before the Channel and takes no line.
+        assert_eq!(
+            chat.pre_gate(first.1, &say("   "), BASE)
+                .expect("blank")
+                .disposition,
+            ChatDisposition::Rejected
+        );
         // An unknown session and a non-say intent are left to the full path.
         assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
     }
