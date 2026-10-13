@@ -148,19 +148,49 @@ BEGIN
 END;
 $$;
 
--- A point or mark names the victim of the death receipt it cites: the receipt's Character is the
--- row's `victim_character_id`, so a row cannot cite another Character's death.
+-- A point or mark is written by the death transaction of its victim: it cites the victim's death
+-- receipt, created in this same transaction, and its recipient (the earner or the killer) lives
+-- in the World of that death. The database stamps the anchors (`committed_at`, `created_at`,
+-- and `expires_at` = creation + seven days, RL-17), so a caller cannot choose them. A point is
+-- never updated; a mark changes only `avenged_at`, once.
 CREATE FUNCTION game_character_pvp_receipt_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_recipient UUID;
 BEGIN
-    -- A new consequence is written by the victim's death transaction: the receipt it cites was
-    -- created in this same transaction. A later update keeps the victim binding only.
+    IF TG_TABLE_NAME = 'game_character_unjustified_points' THEN
+        IF TG_OP = 'UPDATE' THEN
+            RAISE EXCEPTION 'an unjustified point is never updated' USING ERRCODE = '23514';
+        END IF;
+        v_recipient := NEW.character_id;
+    ELSE
+        IF TG_OP = 'UPDATE' THEN
+            IF (NEW.victim_character_id, NEW.killer_character_id, NEW.death_occurrence_id,
+                NEW.created_at, NEW.expires_at)
+               IS DISTINCT FROM (OLD.victim_character_id, OLD.killer_character_id,
+                OLD.death_occurrence_id, OLD.created_at, OLD.expires_at)
+               OR OLD.avenged_at IS NOT NULL THEN
+                RAISE EXCEPTION 'a revenge mark changes only avenged_at, once'
+                    USING ERRCODE = '23514';
+            END IF;
+            RETURN NEW;
+        END IF;
+        v_recipient := NEW.killer_character_id;
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
+                     JOIN game_character_roots r ON r.character_id = v_recipient
+                                                AND r.world_id = d.death_world_id
                     WHERE d.death_occurrence_id = NEW.death_occurrence_id
                       AND d.character_id = NEW.victim_character_id
-                      AND (TG_OP = 'UPDATE' OR d.created_xact_id = pg_current_xact_id())) THEN
+                      AND d.created_xact_id = pg_current_xact_id()) THEN
         RAISE EXCEPTION 'a PvP consequence is written by the death transaction of its victim'
             USING ERRCODE = '23514';
+    END IF;
+    IF TG_TABLE_NAME = 'game_character_unjustified_points' THEN
+        NEW.committed_at := clock_timestamp();
+    ELSE
+        NEW.created_at := clock_timestamp();
+        NEW.expires_at := NEW.created_at + INTERVAL '7 days';
     END IF;
     RETURN NEW;
 END;
