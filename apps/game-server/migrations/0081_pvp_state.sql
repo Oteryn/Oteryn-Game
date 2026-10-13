@@ -72,10 +72,16 @@ CREATE TABLE game_character_revenge_marks (
     -- PARTYPVP0-RL-17: exactly seven days.
     expires_at TIMESTAMPTZ NOT NULL,
     avenged_at TIMESTAMPTZ,
+    -- The death of the marked killer that closed the mark (one closure per death and victim).
+    avenged_by_occurrence_id UUID REFERENCES game_character_death_receipts (death_occurrence_id),
+    CHECK ((avenged_at IS NULL) = (avenged_by_occurrence_id IS NULL)),
     PRIMARY KEY (victim_character_id, killer_character_id, death_occurrence_id),
     CHECK (victim_character_id <> killer_character_id),
     CHECK (expires_at = created_at + INTERVAL '7 days')
 );
+CREATE UNIQUE INDEX game_character_revenge_marks_avenged_once
+    ON game_character_revenge_marks (victim_character_id, avenged_by_occurrence_id)
+    WHERE avenged_by_occurrence_id IS NOT NULL;
 CREATE INDEX game_character_revenge_marks_expiry
     ON game_character_revenge_marks (expires_at, victim_character_id);
 CREATE INDEX game_character_pvp_ledger_age
@@ -113,7 +119,7 @@ BEGIN
     -- state may be re-evaluated. The Adventurer forfeiture, once set, stays set.
     IF OLD.skull > 0 AND OLD.skull_until > clock_timestamp()
        AND (NEW.skull < OLD.skull
-            OR (NEW.skull = OLD.skull AND NEW.skull_until < OLD.skull_until)) THEN
+            OR NEW.skull_until < OLD.skull_until) THEN
         RAISE EXCEPTION 'an unexpired skull is never lowered or cleared' USING ERRCODE = '23514';
     END IF;
     IF OLD.adventurer_forfeited AND NOT NEW.adventurer_forfeited THEN
@@ -183,11 +189,16 @@ BEGIN
                 RAISE EXCEPTION 'a revenge mark changes only avenged_at, once'
                     USING ERRCODE = '23514';
             END IF;
-            -- The victim avenges by killing the marked killer: that killer's death receipt is
-            -- created in this transaction, and the mark is the oldest open one of the pair.
+            -- The victim avenges by killing the marked killer: the cited death is that killer's,
+            -- created in this transaction, with the victim among the damage contributors of the
+            -- dying killer's ledger; the mark is the oldest open one of the pair.
             IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
-                            WHERE d.character_id = OLD.killer_character_id
+                            WHERE d.death_occurrence_id = NEW.avenged_by_occurrence_id
+                              AND d.character_id = OLD.killer_character_id
                               AND d.created_xact_id = pg_current_xact_id())
+               OR NOT EXISTS (SELECT 1 FROM game_character_pvp_ledger l
+                               WHERE l.victim_character_id = OLD.killer_character_id
+                                 AND l.contributor_character_id = OLD.victim_character_id)
                OR EXISTS (SELECT 1 FROM game_character_revenge_marks m
                            WHERE m.victim_character_id = OLD.victim_character_id
                              AND m.killer_character_id = OLD.killer_character_id

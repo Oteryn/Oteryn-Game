@@ -254,6 +254,7 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
         for change in [
             "skull = 0, skull_until = NULL",
             "skull = 1",
+            "skull = 2, skull_until = skull_until - interval '1 minute'",
             "skull_until = skull_until - interval '1 minute'",
             "adventurer_forfeited = FALSE",
         ] {
@@ -559,26 +560,82 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
             );
         }
         // A newer mark of the same pair, then the avenging rules: the killer's death in this
-        // transaction closes the oldest open mark, once.
+        // transaction, with the marked victim among its contributors, closes the oldest open
+        // mark, once per death.
         let mut tx = h.pool.begin().await?;
         receipt(&mut tx, 113, OTHER).await?;
         mark(&mut tx, OTHER, CHARACTER, 113).await?;
         tx.commit().await?;
-        let avenge = "UPDATE game_character_revenge_marks SET avenged_at = now() \
+        let avenge = "UPDATE game_character_revenge_marks SET avenged_at = now(), \
+                         avenged_by_occurrence_id = encode($2,'hex')::uuid \
                        WHERE death_occurrence_id = encode($1,'hex')::uuid";
-        // Without the killer's death in the transaction, and out of order, it is refused.
+        let set_contributor = async |present: bool| -> TestResult<()> {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            let sql = if present {
+                "INSERT INTO game_character_pvp_ledger (victim_character_id, contributor_character_id, \
+                    buckets, last_at, compact, compact_kind) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, '[]', clock_timestamp(), FALSE, NULL)"
+            } else {
+                "DELETE FROM game_character_pvp_ledger WHERE victim_character_id = encode($1,'hex')::uuid \
+                    AND contributor_character_id = encode($2,'hex')::uuid"
+            };
+            sqlx::query(sql)
+                .bind(id(CHARACTER).as_slice())
+                .bind(id(OTHER).as_slice())
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            Ok(())
+        };
+        // Without the killer's death in the transaction, it is refused.
         assert!(
             sqlx::query(avenge)
                 .bind(death_of(111).as_slice())
+                .bind(death_of(114).as_slice())
                 .execute(&h.pool)
                 .await
                 .is_err()
         );
+        // A death of the killer that the marked victim did not contribute to avenges nothing.
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 114, CHARACTER).await?;
+        assert!(
+            sqlx::query(avenge)
+                .bind(death_of(111).as_slice())
+                .bind(death_of(114).as_slice())
+                .execute(&mut *tx)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
+        set_contributor(true).await?;
+        // Out of order, it is refused.
         let mut tx = h.pool.begin().await?;
         receipt(&mut tx, 114, CHARACTER).await?;
         assert!(
             sqlx::query(avenge)
                 .bind(death_of(113).as_slice())
+                .bind(death_of(114).as_slice())
+                .execute(&mut *tx)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
+        // One death closes one mark: the next-oldest mark cannot cite the same death.
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 114, CHARACTER).await?;
+        sqlx::query(avenge)
+            .bind(death_of(111).as_slice())
+            .bind(death_of(114).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        assert!(
+            sqlx::query(avenge)
+                .bind(death_of(113).as_slice())
+                .bind(death_of(114).as_slice())
                 .execute(&mut *tx)
                 .await
                 .is_err()
@@ -588,6 +645,7 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         receipt(&mut tx, 114, CHARACTER).await?;
         sqlx::query(avenge)
             .bind(death_of(111).as_slice())
+            .bind(death_of(114).as_slice())
             .execute(&mut *tx)
             .await?;
         tx.commit().await?;
@@ -596,11 +654,13 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         assert!(
             sqlx::query(avenge)
                 .bind(death_of(111).as_slice())
+                .bind(death_of(115).as_slice())
                 .execute(&mut *tx)
                 .await
                 .is_err()
         );
         tx.rollback().await?;
+        set_contributor(false).await?;
 
         let lane = crate::durability::spell_owner_commit::SpellLane::new(
             crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
