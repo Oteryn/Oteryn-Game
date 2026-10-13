@@ -4,15 +4,15 @@
 task_id: OPS-SAVE-1
 title: "OPS-SAVE-1: shutdown flush of live monk state (server save / graceful restart)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ops-save-1-20261013
 issue: 2068
-pr: null
+pr: 2073
 base_sha: 4ac13390
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_frozen_at: null
 owner: claude-code-session-019bxZf2wtYm1q9fQkdu8p36
 control_plane: claude-code-session-01XYC239givrMonrYoBwwECV
@@ -23,7 +23,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/monk_save.rs
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
   - apps/game-server/src/gameplay_transport/last_position.rs
-  - docs/agents/tasks/active/OPS-SAVE-1.md
+  - docs/agents/tasks/archive/OPS-SAVE-1.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -82,3 +82,17 @@ Familiar and spell-training saves (`actor_spell.rs`, other lanes); client (#1942
 - `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo +1.95.0 test --locked -p oteryn-game-server --lib node:: gameplay_transport::monk_save`: pass (PostgreSQL 17.11 locally; harness pins 17.6, CI authoritative)
 - `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+## Self-review
+
+- method: implementing agent read the whole diff against owned paths; one extra file (`last_position.rs`, 21 lines) reported to the control plane.
+- material findings: none open.
+
+## Independent review
+
+- required: per the bound review policy, requested by the control plane on the frozen head.
+
+## PR and closeout
+
+- merge commit/result: squash merge of #2073
