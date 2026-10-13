@@ -61,7 +61,8 @@ CREATE TABLE game_item_use_records (
     source_quantity_before BIGINT NOT NULL CHECK (source_quantity_before BETWEEN 1 AND 100),
     source_quantity_after BIGINT NOT NULL CHECK (source_quantity_after = source_quantity_before - 1),
     -- The flask output: a stack E growing by one (shape 3) or a fresh item F (shape 4).
-    flask_item_instance_id UUID NULL REFERENCES game_item_instances (item_instance_id),
+    flask_item_instance_id UUID NULL REFERENCES game_item_instances (item_instance_id)
+        DEFERRABLE INITIALLY DEFERRED,
     flask_definition_family TEXT NULL
         CHECK (octet_length(flask_definition_family) BETWEEN 1 AND 128),
     flask_definition_production_key TEXT NULL

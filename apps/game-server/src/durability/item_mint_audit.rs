@@ -1918,6 +1918,7 @@ pub(super) mod tests {
                 "src/durability/item_mint.rs",
                 "src/durability/item_timed_state.rs",
                 "src/durability/item_transfer.rs",
+                "src/durability/item_use.rs",
                 "src/durability/map_item_mint.rs",
                 "src/durability/reward_claim_mint.rs",
             ]
