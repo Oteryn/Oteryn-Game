@@ -67,9 +67,10 @@ registry, migration or content change here.
 
 ## Validation
 
-- `cargo fmt -p oteryn-game-server --check`: pass
-- `cargo clippy --offline -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --offline -p oteryn-game-server --lib -- chat::relay`: pass (15 passed, 0 failed)
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --quiet`: pass for every target that completed (lib 15 relay tests included, 0 failed); the local run hit its time limit on the last test targets, which are left to exact-head CI
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 
