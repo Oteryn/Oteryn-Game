@@ -30,6 +30,21 @@ Reference facts are retained in `apps/client/UI-REFERENCE-COVERAGE.md`,
 evidence. Missing engine/server mechanisms must remain visibly unavailable and
 must not be claimed as complete.
 
+## Completion continuation — 2026-10-13
+
+Copy consumes the real composer via ordered upstream egui Copy events; hidden,
+read-only, modal and unrelated focus cannot claim it. Linux 210/188/5, strict
+Clippy and formatting pass. Native regression is added but PC access reports
+offline; old Windows evidence is not inherited. Exact-version BSL exceptions
+with provenance fix the actual clipboard CI failure; local cargo-deny passes
+all four checks. Remote CI still needs its own result. REA 6.4.0 and retained
+Ghidra evidence are located; its ELF provider is unavailable, not an analysis
+success. Public staging world/channel now exist and gameplay TLS 1.3/ALPN verify
+with the supplied CA; no account operation or admission is performed. Main
+`0db5c53b` adds no missing active presentation/speed projections. Do not allocate
+them or enable unoffered caps. Details/remaining acceptance are in UI-FIDELITY.md.
+Next unblocked batch: bounded Oteryn-only ZIP import into draft, not auto-Apply.
+
 ## Native login launcher — 2026-10-12
 
 GUI uses PKCE, owned characters, native ticket/Gateway grant and server admission.
@@ -40,8 +55,8 @@ World/Character selection remains the authenticated GUI's responsibility.
 No automatic login, deployment, account mutation or production claim.
 Linux/Windows PowerShell 22 checks and client/Platform login tests 10/13 pass. Data
 is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
-Root/leaf are valid. Last probe: zero directory worlds and gameplay TLS reset;
-no missing-data request. Game/Registry admission still needs actual acceptance.
+Root/leaf are valid. Historical zero-world/TLS-reset probes are superseded above;
+no missing-data request. Game admission still needs actual acceptance.
 Latest source `6c3a884a` builds/audits on Windows (20 pages/78 hashes) and runs
 as verified PID 37844 with preprod settings; installation `gc177231dee65` is intact.
 Exact source, binary/manifest hashes and paths are retained in UI-FIDELITY.md;
@@ -78,31 +93,15 @@ many panels and remaining engine contracts are still absent.
 
 ## Acceptance evidence and next actions
 
-Help ZIP export AUTHORING uses upstream window-owned `rfd`, `zip` and atomic
-`tempfile` replacement, reusing the existing validated Oteryn preferences.
-Linux 209/175/5, strict Clippy, formatting, boundaries and governance pass.
-World input pin `5e2707ac` double-builds the unchanged bundle (`f8b11ebc`).
-Source `7898fdf79a54d969d0114878f1d114cb26d73ee8` passes MSVC 208/179/5,
-strict seven-package Clippy/tests and DX12 20 pages/78 hashes/zero invalid
-entries at 125% DPI; manifest/recovery are retained in UI-FIDELITY.md.
-Actual picker interaction and unknown original ZIP/minimap import remain open.
-Next local batch implements immutable received-output selection/copy with
-per-channel state, actual pointer/Copy regressions and hidden-output focus
-release. Source `34f5921499960120e726df4100211ebe614d5a5d` passes Linux
-209/179/5, MSVC 208/183/5, strict seven-package native checks and DX12
-20 pages/78 verified hashes/zero invalid entries. Evidence is in UI-FIDELITY.md.
-External-link warning policy/remapped Copy remain unknown. Next source-backed
-local batch restores Ok/Apply/Cancel order and Escape cancellation, preserving
-inner key capture and no outer Enter-save action. Source-backed ordinary Reset
-is page-scoped, not global: only implemented controls use Oteryn defaults;
-unavailable intent, bindings, locks and other pages survive. Original factory
-values/profile-table resets remain unverified; those table resets stay disabled.
-Linux 209/184/5, strict Clippy, formatting, workspace boundaries and governance
-pass. Published source `a95a92dccf8deb8ae89ad75e0652dd02ba9e89e0` passes
-MSVC 208/188/5 and strict seven-package native checks; DX12 20 pages/78 hashes,
-zero invalid entries at 125% DPI, owner PID 12896 responsive. Manifest/recovery
-and inspected captures are retained in UI-FIDELITY.md. Physical keyboard/picker,
-original factory/profile Reset semantics, live bundle E2E and final CI remain open.
+Qualified Help ZIP `7898fdf7`, immutable output selection `34f59214` and
+footer/page Reset `a95a92dc` evidence, exact SHAs, Linux/MSVC counts, DX12
+20-page/78-hash manifests and recovery remain in UI-FIDELITY.md. Their code
+is preserved; earlier evidence does not qualify later heads. Help reuses
+window-owned upstream `rfd`/`zip`/`tempfile`; output selection is per-channel
+and immutable. Ordinary Reset affects implemented controls of the current page
+only, preserving unavailable intent, bindings, locks and other pages. Original
+factory/profile defaults, physical picker/clipboard, original ZIP/minimap
+interoperability, live bundle E2E and final CI/review remain open.
 
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,

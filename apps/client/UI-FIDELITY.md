@@ -564,6 +564,37 @@ latest application is running, not server admission, 1:1 completion, full CI or
 final independent review. The prior empty directory/reset evidence remains an
 unresolved backend acceptance gap, not missing connection data.
 
+## Ordered composer Copy and supply-chain repair — 2026-10-13
+
+General `chat.text.copy` now has an actual composer consumer, superseding the
+earlier unsupported-Copy status. Both context maps and remapped bindings resolve;
+the native shell claims it only for a focused, visible, nonmodal, writable
+composer. Recipient fields, received output and other editors keep upstream
+clipboard handling. It appends upstream `egui::Event::Copy` at the native key's
+position in pending egui-winit input, not a previous-frame selection snapshot.
+Actual Unicode/reversed selection and preceding text/selection/Copy/following
+text produce the expected `CopyText` without sending chat, modifying selection
+or stealing focus. Empty/stale selections, hidden/read-only chat and lost focus
+are covered. Linux client tests pass 210/188/5; strict all-target Clippy and
+formatting pass. Native claim/repeat/release regression is added but unexecuted.
+External clipboard transfer, original link-warning semantics and physical
+Windows acceptance remain unqualified: the bounded PC call reports offline.
+Old MSVC/DX12 manifests do not qualify this source change.
+
+The actual red CI cause at `6c3a884a` was BSL-1.0 rejection for the two locked
+Windows clipboard adapters, not draft status. Exact-version exceptions and
+verified provenance are documented in `docs/repository/LICENSING.md`, without
+widening the global license allow-list. Local cargo-deny passes advisories,
+bans, licenses and sources; fresh remote CI still needs its own result.
+
+Read-only backend checks supersede the previous empty-directory/TLS-reset
+observation: the public directory now lists Oteryn Staging and its channel;
+the supplied private-LAN gameplay endpoint completes TLS 1.3 with the supplied
+public CA and ALPN `oteryn-game/1`. This is not sign-in, ticket consumption,
+admission, movement or chat acceptance. Main `0db5c53b` adds no active client
+spell/cooldown/condition/light/sound/speed projections; unallocated candidates
+and unoffered capabilities are not enabled by this client task.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

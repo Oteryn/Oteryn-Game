@@ -103,6 +103,7 @@ pub struct GameUi {
     chat_mode: ChatMode,
     chat_focus_request: Option<bool>,
     chat_select_all_request: bool,
+    chat_copy_request: bool,
     chat_composer_id: Option<egui::Id>,
     chat_recipient_id: Option<egui::Id>,
     chat_output_id: Option<egui::Id>,
@@ -217,6 +218,20 @@ impl GameUi {
         })
     }
 
+    /// Copy acts on the composer only. Other chat editors and received output
+    /// keep their ordinary egui clipboard handling, including the default chord.
+    #[must_use]
+    pub fn chat_copy_routes_keyboard(&self, ctx: &egui::Context) -> bool {
+        !self
+            .chat_read_only
+            .get(self.channel)
+            .copied()
+            .unwrap_or(true)
+            && self
+                .chat_composer_id
+                .is_some_and(|id| ctx.memory(|memory| memory.focused()) == Some(id))
+    }
+
     fn chat_mode_label(&self, english: bool) -> &'static str {
         match (self.chat_mode, english) {
             (ChatMode::Off, true) => "Chat Off",
@@ -264,9 +279,18 @@ impl GameUi {
         self.chat_focus_request = None;
     }
 
+    /// The native shell appends this to upstream egui-winit's pending input at
+    /// the claimed key's position. egui then copies its real current selection
+    /// after earlier text/pointer events, rather than a previous-frame snapshot.
+    pub fn take_chat_copy_event(&mut self, ctx: &egui::Context) -> Option<egui::Event> {
+        (std::mem::take(&mut self.chat_copy_request) && self.chat_copy_routes_keyboard(ctx))
+            .then_some(egui::Event::Copy)
+    }
+
     fn set_chat_mode(&mut self, mode: ChatMode) {
         if mode == ChatMode::Off {
             self.chat_select_all_request = false;
+            self.chat_copy_request = false;
         }
         self.chat_mode = mode;
         self.chat_focus_request = Some(mode != ChatMode::Off);
@@ -476,6 +500,18 @@ impl GameUi {
     }
 
     fn route_chat_text_hotkey(&mut self, action: &str, available: bool, english: bool) -> bool {
+        if action == "chat.text.copy" {
+            // Hidden/unavailable/read-only consoles cannot claim stale draft
+            // selections. Copy itself does not activate chat or change focus.
+            self.chat_copy_request = available
+                && self.chat_composer_id.is_some()
+                && !self
+                    .chat_read_only
+                    .get(self.channel)
+                    .copied()
+                    .unwrap_or(true);
+            return true;
+        }
         if action != "chat.text.select_all" {
             return false;
         }
@@ -2361,12 +2397,272 @@ mod tests {
         );
         assert_eq!(ui.draft, "replacement");
         assert_eq!(ui.recipient, "recipient");
-        assert!(!ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        assert!(!ui.route_chat_text_hotkey("chat.text.unknown", true, true));
         for available in [false, true] {
             ui.chat_read_only[ui.channel] = available;
             assert!(ui.route_chat_text_hotkey("chat.text.select_all", available, true));
             assert!(!ui.chat_select_all_request);
         }
+        Ok(())
+    }
+
+    fn draw_copy_composer(ctx: &egui::Context, ui: &mut super::GameUi) -> Option<egui::Id> {
+        egui::Window::new("copy-chat-test")
+            .show(ctx, |frame_ui| {
+                let recipient = frame_ui.text_edit_singleline(&mut ui.recipient);
+                ui.observe_chat_text_focus(&recipient);
+                let edit = frame_ui.text_edit_singleline(&mut ui.draft);
+                ui.apply_chat_composer_focus(&edit, false);
+                edit.id
+            })
+            .and_then(|window| window.inner)
+    }
+
+    fn chat_copy_fixture() -> Result<(egui::Context, super::GameUi, egui::Id), &'static str> {
+        let ctx = egui::Context::default();
+        let mut ui = super::GameUi {
+            draft: "prefix Zażółć 🦀 suffix".into(),
+            recipient: "recipient".into(),
+            chat_mode: ChatMode::On,
+            ..Default::default()
+        };
+        let (id, _) = frame(&ctx, egui::vec2(400.0, 100.0), Vec::new(), |ctx| {
+            draw_copy_composer(ctx, &mut ui)
+        });
+        Ok((ctx, ui, id.ok_or("composer")?))
+    }
+
+    fn select_copy_text(
+        ctx: &egui::Context,
+        id: egui::Id,
+        start: usize,
+        end: usize,
+    ) -> Result<(), &'static str> {
+        let mut state = egui::TextEdit::load_state(ctx, id).ok_or("selection state")?;
+        state
+            .cursor
+            .set_char_range(Some(egui::text::CCursorRange::two(
+                egui::text::CCursor::new(start),
+                egui::text::CCursor::new(end),
+            )));
+        state.store(ctx, id);
+        ctx.memory_mut(|memory| memory.request_focus(id));
+        Ok(())
+    }
+
+    #[test]
+    fn chat_copy_hotkey_emits_real_unicode_selection_without_editing_or_sending()
+    -> Result<(), &'static str> {
+        let (ctx, mut ui, composer) = chat_copy_fixture()?;
+        // Reversed selection and a four-byte scalar must use character offsets,
+        // not byte slicing or the entire draft/received channel contents.
+        select_copy_text(&ctx, composer, 15, 7)?;
+        let before = ui.draft.clone();
+        assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        let events = ui.take_chat_copy_event(&ctx).into_iter().collect();
+        assert!(!ui.chat_copy_request);
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(composer));
+        let (_, output) = frame(&ctx, egui::vec2(400.0, 100.0), events, |ctx| {
+            draw_copy_composer(ctx, &mut ui)
+        });
+        let copies: Vec<_> = output
+            .platform_output
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                egui::OutputCommand::CopyText(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(copies, vec!["Zażółć 🦀"]);
+        assert_eq!(ui.draft, before);
+        assert_eq!(ui.recipient, "recipient");
+        assert_eq!(ui.chat_mode, ChatMode::On);
+        assert_eq!(ui.chat_focus_request, None);
+        assert_eq!(ui.notice, None);
+        let state = egui::TextEdit::load_state(&ctx, composer).ok_or("selection state")?;
+        assert_eq!(
+            state
+                .cursor
+                .char_range()
+                .ok_or("selection")?
+                .sorted_cursors(),
+            [egui::text::CCursor::new(7), egui::text::CCursor::new(15)]
+        );
+        let (_, repeated) = frame(&ctx, egui::vec2(400.0, 100.0), Vec::new(), |ctx| {
+            draw_copy_composer(ctx, &mut ui)
+        });
+        assert!(
+            repeated
+                .platform_output
+                .commands
+                .iter()
+                .all(|command| { !matches!(command, egui::OutputCommand::CopyText(_)) })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn chat_copy_hotkey_observes_earlier_queued_text_and_selection_in_event_order()
+    -> Result<(), &'static str> {
+        let (ctx, mut ui, composer) = chat_copy_fixture()?;
+        select_copy_text(&ctx, composer, 7, 15)?;
+        assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        let copy = ui.take_chat_copy_event(&ctx).ok_or("native Copy event")?;
+        let (_, output) = frame(
+            &ctx,
+            egui::vec2(400.0, 100.0),
+            vec![
+                egui::Event::Text("updated 🦀".into()),
+                egui::Event::Key {
+                    key: egui::Key::Home,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers {
+                        shift: true,
+                        ..Default::default()
+                    },
+                },
+                copy,
+                egui::Event::Text("after".into()),
+            ],
+            |ctx| draw_copy_composer(ctx, &mut ui),
+        );
+        let copies: Vec<_> = output
+            .platform_output
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                egui::OutputCommand::CopyText(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(copies, vec!["prefix updated 🦀"]);
+        assert_eq!(ui.draft, "after suffix");
+        assert_eq!(ui.recipient, "recipient");
+        assert_eq!(ui.chat_mode, ChatMode::On);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_copy_hotkey_rejects_empty_stale_read_only_and_unavailable_selections()
+    -> Result<(), &'static str> {
+        let (ctx, mut ui, composer) = chat_copy_fixture()?;
+        for (available, read_only, start, end) in [
+            (false, false, 7, 15),
+            (true, true, 7, 15),
+            (true, false, 7, 7),
+        ] {
+            select_copy_text(&ctx, composer, start, end)?;
+            ui.chat_read_only[ui.channel] = read_only;
+            assert!(ui.route_chat_text_hotkey("chat.text.copy", available, true));
+            let events = ui.take_chat_copy_event(&ctx).into_iter().collect();
+            let (_, output) = frame(&ctx, egui::vec2(400.0, 100.0), events, |ctx| {
+                draw_copy_composer(ctx, &mut ui)
+            });
+            assert!(
+                output
+                    .platform_output
+                    .commands
+                    .iter()
+                    .all(|command| { !matches!(command, egui::OutputCommand::CopyText(_)) })
+            );
+            assert!(!ui.chat_copy_request);
+            assert_eq!(ui.draft, "prefix Zażółć 🦀 suffix");
+            assert_eq!(ui.recipient, "recipient");
+            assert_eq!(ui.notice, None);
+        }
+        // Recheck ownership at the native flush even if it changed after claim.
+        ui.chat_read_only[ui.channel] = false;
+        select_copy_text(&ctx, composer, 7, 15)?;
+        assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        ui.chat_read_only[ui.channel] = true;
+        assert_eq!(ui.take_chat_copy_event(&ctx), None);
+        ui.chat_read_only[ui.channel] = false;
+        select_copy_text(&ctx, composer, 7, 15)?;
+        ui.draft.clear();
+        assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        let events = ui.take_chat_copy_event(&ctx).into_iter().collect();
+        let (_, output) = frame(&ctx, egui::vec2(400.0, 100.0), events, |ctx| {
+            draw_copy_composer(ctx, &mut ui)
+        });
+        assert!(
+            output
+                .platform_output
+                .commands
+                .iter()
+                .all(|command| { !matches!(command, egui::OutputCommand::CopyText(_)) })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn chat_copy_hotkey_preserves_other_focus_and_cancels_when_chat_is_hidden()
+    -> Result<(), &'static str> {
+        let (ctx, mut ui, composer) = chat_copy_fixture()?;
+        let recipient = ui.chat_recipient_id.ok_or("recipient")?;
+        let (received, _) = frame(&ctx, egui::vec2(400.0, 100.0), Vec::new(), |ctx| {
+            egui::Area::new("received-copy-test".into())
+                .show(ctx, |frame_ui| {
+                    crate::chat_output::show(
+                        frame_ui,
+                        0,
+                        "received history",
+                        &oteryn_client::settings::ClientSettings::default(),
+                    )
+                })
+                .inner
+                .response
+                .id
+        });
+        for focus in [
+            Some(recipient),
+            Some(received),
+            Some(egui::Id::new("modal-editor")),
+            None,
+        ] {
+            select_copy_text(&ctx, composer, 7, 15)?;
+            ctx.memory_mut(|memory| {
+                memory.surrender_focus(composer);
+                if let Some(id) = focus {
+                    memory.request_focus(id);
+                }
+            });
+            assert!(!ui.chat_copy_routes_keyboard(&ctx));
+            assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+            assert_eq!(ui.take_chat_copy_event(&ctx), None);
+            assert_eq!(ctx.memory(|memory| memory.focused()), focus);
+            let (_, output) = frame(&ctx, egui::vec2(400.0, 100.0), Vec::new(), |ctx| {
+                draw_copy_composer(ctx, &mut ui)
+            });
+            assert!(
+                output
+                    .platform_output
+                    .commands
+                    .iter()
+                    .all(|command| { !matches!(command, egui::OutputCommand::CopyText(_)) })
+            );
+        }
+        select_copy_text(&ctx, composer, 7, 15)?;
+        assert!(ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        assert!(ui.chat_copy_request);
+        ui.relinquish_hidden_chat_focus(&ctx);
+        assert!(!ui.chat_copy_request);
+        assert_eq!(ui.take_chat_copy_event(&ctx), None);
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        let (_, output) = frame(&ctx, egui::vec2(400.0, 100.0), Vec::new(), |ctx| {
+            draw_copy_composer(ctx, &mut ui)
+        });
+        assert!(
+            output
+                .platform_output
+                .commands
+                .iter()
+                .all(|command| { !matches!(command, egui::OutputCommand::CopyText(_)) })
+        );
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        assert_eq!(ui.draft, "prefix Zażółć 🦀 suffix");
         Ok(())
     }
 

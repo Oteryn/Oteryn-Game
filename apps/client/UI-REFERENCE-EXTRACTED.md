@@ -1,5 +1,19 @@
 # Installed-original resource evidence — 2026-10-11
 
+Continuation 2026-10-13: the owner identified the installed REA launcher at
+`/home/kasm-user/.local/bin/rea`, a symlink to `rea-agents/scripts/rea.mjs`.
+Read-only `--help` confirms REA 6.4.0. Existing private Ghidra projects and
+bounded native-handler observations are retained under
+`/home/kasm-user/otclient-track-a/evidence-rea/`; its README records original
+15.33.b21348 source SHA-256
+`065f961b29904f3231b5c82be2f7748d88c7b74f3d324e12b5d5dd50b14afead`.
+Those earlier facts are retained provenance, not newly verified behavior.
+REA's ELF-layout route currently reports `provider_unavailable`: it requires a
+caller-supplied Python with pinned pwntools/pyelftools/Unicorn. Earlier full REA
+analysis timed out; it is not rerun here. Existing Qt/resource and focused
+Ghidra evidence remains usable. No original process/account is started and no
+proprietary code, assets, logs or account configuration are published.
+
 Reference: authorized Linux installation, Tibia **15.33.b21348**. This is an
 independently written semantic inventory, not redistributed original source or
 assets. Initial offline inspection did not modify the installation, apply preferences,

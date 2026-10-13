@@ -41,6 +41,18 @@ allow = ["OFL-1.1", "Ubuntu-font-1.0"]
 crate = "hexf-parse@0.2.1"
 allow = ["CC0-1.0"]
 
+# Unmodified upstream Windows clipboard adapters, reached only through arboard
+# and egui-winit. BSL here is the permissive Boost Software License, not the
+# Business Source License. Exact archive/license provenance and compatibility
+# are recorded in docs/repository/LICENSING.md; other packages stay unchanged.
+[[licenses.exceptions]]
+crate = "clipboard-win@5.4.1"
+allow = ["BSL-1.0"]
+
+[[licenses.exceptions]]
+crate = "error-code@3.4.0"
+allow = ["BSL-1.0"]
+
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"

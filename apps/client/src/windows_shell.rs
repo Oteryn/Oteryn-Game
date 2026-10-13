@@ -101,6 +101,13 @@ const fn forward_event_to_egui(keyboard: bool, claimed: bool) -> bool {
     !keyboard || !claimed
 }
 
+fn retain_chat_copy_owner(actions: &mut Vec<ResolvedHotkey>, composer_owns_keyboard: bool) {
+    actions.retain(|action| {
+        !matches!(action, ResolvedHotkey::General(action) if action == "chat.text.copy")
+            || composer_owns_keyboard
+    });
+}
+
 fn direct_settings_section(action: &str) -> Option<&'static str> {
     match action {
         // The official action is "Open Options - Custom Hotkeys".
@@ -222,7 +229,17 @@ impl Application {
         if gameplay_modal || self.login.is_some() || !self.focused {
             self.movement_repeat.clear();
         }
-        let resolved_hotkeys = self.preferences.hotkeys.resolve(events, chat_on);
+        let mut resolved_hotkeys = self.preferences.hotkeys.resolve(events, chat_on);
+        retain_chat_copy_owner(
+            &mut resolved_hotkeys,
+            self.focused
+                && self.preferences.show_chat
+                && !gameplay_modal
+                && self
+                    .game_ui
+                    .as_ref()
+                    .is_some_and(|ui| self.hud.chat_copy_routes_keyboard(&ui.context)),
+        );
         let configured_action_matched = if let Some(play) = &self.play {
             self.hud.route_actions(
                 events,
@@ -236,6 +253,11 @@ impl Application {
             false
         };
         if let Some(context) = self.game_ui.as_ref().map(|ui| ui.context.clone()) {
+            if let Some(copy) = self.hud.take_chat_copy_event(&context)
+                && let Some(state) = self.ui_state.as_mut()
+            {
+                state.egui_input_mut().events.push(copy);
+            }
             self.hud.apply_chat_focus_transition(&context);
         }
         let general = self.route_general_hotkeys(event_loop, &resolved_hotkeys, gameplay_modal);
@@ -1408,6 +1430,44 @@ mod tests {
         assert!(!super::forward_event_to_egui(true, true));
         assert!(super::forward_event_to_egui(true, false));
         assert!(super::forward_event_to_egui(false, true));
+    }
+
+    #[test]
+    fn copy_hotkey_ownership_controls_native_claim_and_egui_replay()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::{
+            ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent,
+        };
+
+        let preferences = oteryn_client::hotkeys::HotkeyPreferences::default();
+        let event = |state, repeat| -> Result<_, oteryn_input_actions::InputError> {
+            Ok(NormalizedInputEvent::Key {
+                code: KeyCode::new(6)?,
+                state,
+                modifiers: Modifiers::one(Modifier::Control),
+                repeat,
+            })
+        };
+        for composer_owns_keyboard in [false, true] {
+            let pressed = event(ButtonState::Pressed, false)?;
+            let mut actions = preferences.resolve(std::slice::from_ref(&pressed), true);
+            retain_chat_copy_owner(&mut actions, composer_owns_keyboard);
+            assert_eq!(!actions.is_empty(), composer_owns_keyboard);
+            let mut lifecycle = ClaimedKeyLifecycle::default();
+            for (key, claimed) in [
+                (pressed, !actions.is_empty()),
+                (event(ButtonState::Pressed, true)?, false),
+                (event(ButtonState::Released, false)?, false),
+            ] {
+                let suppressed = lifecycle.observe(&[key], claimed);
+                assert_eq!(suppressed, composer_owns_keyboard);
+                assert_eq!(
+                    forward_event_to_egui(true, suppressed),
+                    !composer_owns_keyboard
+                );
+            }
+        }
+        Ok(())
     }
 
     #[test]

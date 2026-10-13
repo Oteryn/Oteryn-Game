@@ -193,6 +193,7 @@ pub fn general_action_supported(action: &str) -> bool {
             | "chat.mode.on"
             | "chat.mode.temporary"
             | "chat.send"
+            | "chat.text.copy"
             | "chat.text.select_all"
             | "dialog.cyclopedia.bestiary"
             | "dialog.cyclopedia.character"
@@ -1281,13 +1282,46 @@ window.vip=19:C,-"#
     }
 
     #[test]
+    fn chat_copy_resolves_both_defaults_and_remapped_contexts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        assert!(general_action_supported("chat.text.copy"));
+        for chat_on in [false, true] {
+            assert_eq!(
+                preferences.resolve(&[pressed(6, true)?], chat_on),
+                vec![ResolvedHotkey::General("chat.text.copy".into())]
+            );
+        }
+        let profile = preferences.active_mut().ok_or("active profile")?;
+        profile.general_chat_on.insert(
+            "chat.text.copy".into(),
+            HotkeyPair {
+                first: Some(binding(30, true)),
+                second: Some(binding(31, true)),
+            },
+        );
+        for key in [30, 31] {
+            assert_eq!(
+                preferences.resolve(&[pressed(key, true)?], true),
+                vec![ResolvedHotkey::General("chat.text.copy".into())]
+            );
+            assert!(
+                preferences
+                    .resolve(&[pressed(key, true)?], false)
+                    .is_empty()
+            );
+        }
+        assert!(preferences.resolve(&[pressed(6, true)?], true).is_empty());
+        Ok(())
+    }
+
+    #[test]
     fn audited_actions_without_behavioral_consumers_remain_unsupported() {
         for action in [
             "chat.loot",
             "chat.npc",
             "chat.server",
             "chat.server_messages",
-            "chat.text.copy",
             "client.bug_report",
             "client.change_character",
             "client.clear_message",
