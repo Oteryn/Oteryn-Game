@@ -28,8 +28,13 @@ external_repositories: []
 
 ## Outcome
 
-Row 20 closes as: fight modes already act (attack factor on the swing, defence factor after a
-swing); chase stays client-driven (client #1942); secure mode has no creature-target effect.
+Row 20 stays PARTIAL (this PR refs #2049, it does not close it). Fight modes already act (attack
+factor on the swing, defence factor after a swing); secure mode has no creature-target effect.
+Server-driven chase (CHASE-1) is NOT implemented here: the RANGED-0 decision
+(`OTERYN_GAME_RANGED0_..._CHASE_DECISION_2026-10-01.md`) specifies server-driven steps through the
+Movement owner, and `CHASE` behaves like `STAND` today. Owner/CP decision 2026-10-13: chase stays
+client-driven (#1942) for now; this PR only pins the target-retention behaviour a client-driven
+chase relies on.
 
 ## Architecture and source of truth
 
@@ -42,7 +47,7 @@ swing); chase stays client-driven (client #1942); secure mode has no creature-ta
 ## Acceptance criteria
 
 - [x] A fleeing target is held through repeated out-of-range polls and swings once in reach; only loss of sight clears it (`a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach`).
-- [x] The attack module doc states that chase is client-driven.
+- [x] The attack module doc states that server-driven chase is not implemented and CHASE behaves like STAND.
 
 ## Excluded scope
 
@@ -50,7 +55,7 @@ No code in `movement/`, no client work, no protocol or migration change.
 
 ## Follow-up (not now)
 
-- Server-driven chase and secure mode against PvP targets: depends on #2041 (STEP-PACE-WIRE-1), LOOP-WORLD-1 and PVP-1 (#2032); needs `actor_movement.rs` in a future owned set.
+- CHASE-1 server-driven chase (the row-20 remainder) and secure mode against PvP targets: depends on #2041 (STEP-PACE-WIRE-1), LOOP-WORLD-1 and PVP-1 (#2032); needs `actor_movement.rs` in a future owned set.
 
 ## Validation
 
