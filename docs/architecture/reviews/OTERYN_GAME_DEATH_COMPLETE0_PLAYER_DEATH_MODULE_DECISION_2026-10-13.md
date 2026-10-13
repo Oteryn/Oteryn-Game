@@ -7,7 +7,8 @@
 - Lifts: the D1022 waiver of DEATH-3 (`OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`,
   Resolution 2026-10-13, §4.4 "Delivery gap")
 - Builds on: the Reference first player death decision (D58-D68), DEATH-0 receipt decision (§3.1,
-  §3.3, §3.4), PARTY-PVP-0 §9-§10, DUR-03 contract §15 and §39, D3 corpse decision
+  §3.3, §3.4), PARTY-PVP-0 §9-§10, DUR-03 contract §15 and §39, D3 corpse decision, GOLD-FEE-1 §4.3
+  with BANK-FEE-0 §§3-4 (blessing payment), PREMIUM-ACTIVATION0 §1.2 (the Premium gate)
 - Admission baseline: `main@59f9fb12`
 - Runtime, registry, migration, protocol and production authority: **NONE**. Each batch below needs its
   own allocation.
@@ -159,14 +160,30 @@ PVP-RT-1b.
 ### 4.7 Blessing state and purchase (batch E)
 
 - A purchase is one atomic PostgreSQL transaction under the Character fence, keyed by a purchase
-  occurrence (UUIDv7), by the GOLD-FEE-1 §4.3 composition (D177): the blessing grant and its Character
-  grant receipt advance `CharacterRevision` exactly once (DUR-02 rule 2), the gold is paid by BURN lines
-  with the new typed sink `BlessingPurchaseCause` (change MINT as the fee composition defines), and the
-  mandatory DUR-03 audit event commits in the same transaction. All or none: a payment never commits
+  occurrence (UUIDv7), by the GOLD-FEE-1 §4.3 composition (D177) as BANK-FEE-0 (GOLD-FEE-2) amends it:
+  the blessing grant and its Character grant receipt advance `CharacterRevision` exactly once (DUR-02
+  rule 2), the price is paid as one fee with the new typed sink `BlessingPurchaseCause`, and the
+  mandatory DUR-03 fee event commits in the same transaction. All or none: a payment never commits
   without its blessing and a blessing never without its payment.
-- The NPC service validates eligibility before the transaction (the 3 Premium blessings need current
-  Premium at purchase, D67; the level price; the blessing not already held) and the transaction
-  re-checks them under the fence.
+- **Payment (BANK-FEE-0 §§3-4).** With `T` the worth of the eligible carried coins and `F` the price:
+  `T >= F` pays by BURN lines with change MINT as GOLD-FEE-1 §4.2 defines, and the bank is not touched;
+  `T < F` for a non-junior payer burns every eligible coin input whole (no change) and debits `F - T`
+  from the payer's (Account, World) bank balance by one `FEE_DEBIT` ledger entry referencing the fee
+  record, carried as the fee event's `FEE_DEBIT` value line; the balance row is locked after the
+  backpack and its coin entries (BANK-0 §4.1). A lower balance, or `T < F` for a junior character
+  (BANK-0 §4.4), is refused as `InsufficientFunds` and writes nothing. The grant receipt binds the bank
+  part (gold fee §4.3 as BANK-FEE-0 §6 amends it). The payment uses the shared fee writer; batch E
+  adds no second gold or bank path.
+- **Premium (PREMIUM-ACTIVATION0 §1.2).** A purchase of one of the 3 Premium blessings (D67) runs inside
+  exactly one `with_premium_gate(account_id, …)` invocation for the admitted controller's Account; the
+  closure refuses unless the status is `Current` (`NotActivated` and `NotCurrent` are refused, the
+  blessings have no pre-delivery behaviour) and otherwise opens the purchase transaction itself and
+  commits it before the closure returns. Premium is never read a second time and never cached across
+  the gate; the purchase transaction takes no gate lock. Until PREM-WIRE-1 provides the gate, batch E
+  refuses the 3 Premium blessings and reads Premium no other way. Non-Premium blessings take no gate.
+- **Eligibility.** The NPC service may pre-check the level price and that the blessing is not already
+  held, as a fast refusal only; the transaction re-checks these durable facts (character level, held
+  blessings) under the Character fence, and that re-check decides.
 - The grant receipt is a further kind in the Character receipt chain (the twelfth at this commit). At this commit the latest full
   guard union is `0073_character_progression_guard_wheel_union.sql` with eleven kinds (XP, death, stance,
   bestiary, charm, monk, build, proficiency, familiar, quest, wheel as that migration lists them). Batch E's
@@ -244,7 +261,7 @@ required_revalidation:
   - "B: a death drop moves one item once per cause; a container keeps its contents and is never split; the amulet burn has a typed sink; replay, conflict and stale fence write nothing; max and max+1 for each registered row"
   - "C: the ladder per blessing count 0-5 at levels 1, 8, 9, 24 and 500; amulet selection and no-selection cases; restart mid-workflow resumes every cause once; no placement before all causes commit; no duplication"
   - "D: a PvP death writes the receipt fields; black skull respawn 40 HP and 0 mana; Twist of Fate and Adventurer's Blessing per PARTY-PVP-0 §10"
-  - "E: payment and grant commit atomically, one revision advance, no payment without grant; Premium blessing without Premium is refused"
+  - "E: payment and grant commit atomically, one revision advance, no payment without grant; coins-only, coins-plus-bank and bank-only payments (non-junior) and the junior refusal; Premium blessing purchase runs in one gate invocation and is refused for NotActivated and NotCurrent"
 remaining_unknowns: [Newhaven exemption, Ground cell limit and decay, blessing prices, amulet item key, container enumeration need]
 next_action: "#1622 routes the independent review, then allocates B after #2039 and #2040."
 ```
