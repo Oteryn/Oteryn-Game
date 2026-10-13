@@ -1974,7 +1974,7 @@ const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
 /// order, on a boot-local monotonic owner clock: the loop waits for the next window boundary
 /// between windows. Any refusal refuses readiness with nothing realized. Returns the creatures
 /// realized and the windows used, or `None` when shutdown was requested meanwhile.
-async fn realize_bundle_spawns(
+pub(crate) async fn realize_bundle_spawns(
     runtime: &mut ChannelRuntimeV1,
     world: &crate::map::boot::BundleWorld,
     signalled: &CancellationToken,

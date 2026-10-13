@@ -51,7 +51,7 @@ use super::world_spatial::{
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
     VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
     decode_step_intent, encode_step_outcome, encode_visibility_delta, encode_visibility_snapshot,
-    encode_world_spatial,
+    encode_world_spatial, moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::foundation::{
@@ -403,6 +403,13 @@ pub(crate) trait FreshAdmissionAuthority {
         direction: StepDirection,
     ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
         async move { (self.step(actor, direction).await, None) }
+    }
+
+    /// STEP-PACE-WIRE-1 rollout switch: whether a capability 13 session's step results carry the
+    /// `step_wait_ms` receipt. Off by default: the process switch
+    /// [`step_wait_receipts_enabled`] (`OTERYN_STEP_WAIT_RECEIPTS=1`). Read once per connection.
+    fn step_wait_receipts(&self) -> bool {
+        step_wait_receipts_enabled()
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
@@ -1665,6 +1672,8 @@ where
     // arrived while the buffer was full and is refused. All of it ends with the connection, so
     // the buffer is dropped at disconnect and a resumed connection starts empty.
     let mut pacer = StepPacer::default();
+    // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
+    let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
     let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
     loop {
@@ -2062,7 +2071,8 @@ where
         // the session's own account: the admitted controller's, never the payload's; a session
         // without a controller binding has none and is REJECTED.
         enum Dispatch {
-            Step(StepOutcome),
+            /// STEP-PACE-WIRE-1: the step and its `step_wait_ms` pacing receipt (0: none).
+            Step(StepOutcome, u32),
             Use(UseOutcome),
             Spell(SpellCastOutcome),
             Achievements(AccountAchievementsReply),
@@ -2095,8 +2105,14 @@ where
             // one-step buffer, without a result yet; one that arrived while the buffer was full is
             // refused and nothing moves.
             match decode_step_intent(command.payload) {
-                Err(_) => Dispatch::Step(StepOutcome::rejected()),
-                Ok(_) if arrived_while_buffered => Dispatch::Step(StepOutcome::too_early()),
+                Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
+                // STEP-PACE-WIRE-1: the receipt is the time left until the pacing clock is due,
+                // after the buffered step ran; none when that step did not move.
+                Ok(_) if arrived_while_buffered => {
+                    let now = tokio::time::Instant::now();
+                    let left = pacer.wait_until(now).map(|due| due.duration_since(now));
+                    Dispatch::Step(StepOutcome::too_early(), too_early_step_wait_ms(left))
+                }
                 Ok(direction) => {
                     let now = tokio::time::Instant::now();
                     if let Some(due) = pacer.wait_until(now) {
@@ -2109,7 +2125,13 @@ where
                     // The clock starts when the step committed, so a slow owner turn never
                     // shortens the next step's wait.
                     pacer.record(tokio::time::Instant::now(), duration);
-                    Dispatch::Step(outcome)
+                    // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
+                    let wait = if outcome.disposition == StepDisposition::Moved {
+                        moved_step_wait_ms(duration)
+                    } else {
+                        0
+                    };
+                    Dispatch::Step(outcome, wait)
                 }
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
@@ -2416,7 +2438,7 @@ where
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
-            Dispatch::Step(outcome) => (
+            Dispatch::Step(outcome, step_wait_ms) => (
                 if matches!(
                     outcome.disposition,
                     StepDisposition::Rejected | StepDisposition::TooEarly
@@ -2425,7 +2447,11 @@ where
                 } else {
                     CommandStatus::Accepted
                 },
-                encode_step_outcome(selected_capabilities.as_slice(), outcome.disposition),
+                encode_step_outcome(
+                    selected_capabilities.as_slice(),
+                    outcome.disposition,
+                    if step_wait_receipts { *step_wait_ms } else { 0 },
+                ),
             ),
             Dispatch::Use(outcome) => {
                 let disposition = negotiated_use_disposition(
@@ -2532,7 +2558,7 @@ where
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
         match dispatch {
-            Dispatch::Step(outcome) => {
+            Dispatch::Step(outcome, _) => {
                 if let Some(observation) = outcome.moved_to {
                     // VIS-3: with capability 6 the step's delta is the interest set's change (a
                     // resync ends the connection); without it, the v1 own-actor delta.
@@ -3975,9 +4001,12 @@ mod tests {
     struct PacedAuthority {
         steps: RefCell<Vec<(StepDirection, tokio::time::Instant)>>,
         turn: std::time::Duration,
+        /// STEP-PACE-WIRE-1: the rollout switch this fixture reports.
+        receipts: bool,
     }
 
-    const PACE: std::time::Duration = std::time::Duration::from_millis(80);
+    /// On the 50 ms beat, so a capability 13 session gets it as its `step_wait_ms` receipt.
+    const PACE: std::time::Duration = std::time::Duration::from_millis(100);
 
     impl FreshAdmissionAuthority for PacedAuthority {
         async fn admit(
@@ -3989,6 +4018,10 @@ mod tests {
 
         async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
             Some(at(0))
+        }
+
+        fn step_wait_receipts(&self) -> bool {
+            self.receipts
         }
 
         async fn paced_step(
@@ -4084,7 +4117,6 @@ mod tests {
     -> Result<(), Box<dyn Error>> {
         run(async {
             let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
-            let moved = encode_step_result(StepDisposition::Moved);
             let delta = |sequence: u64, from: u64| {
                 encode_state_delta(
                     1,
@@ -4097,14 +4129,22 @@ mod tests {
                 )
             };
             // With capability 13 the refusal is TOO_EARLY; without it, REJECTED. Either way it
-            // is a REJECTED command and nothing moves.
-            for (capabilities, refused) in [
-                (&[13][..], StepDisposition::TooEarly),
-                (&[][..], StepDisposition::Rejected),
+            // is a REJECTED command and nothing moves. STEP-PACE-WIRE-1: only with the rollout
+            // switch on AND capability 13 does a MOVED carry the 100 ms step duration (field 2 =
+            // 0x64) and the TOO_EARLY the time left until the clock is due (at most PACE,
+            // rounded up, well above zero); every other session gets today's exact bytes.
+            let receipt = |wait: u8| vec![0x08, 0x04, 0x10, wait];
+            let left: Vec<Vec<u8>> = (50..=100).map(receipt).collect();
+            for (capabilities, receipts, moved, refusals) in [
+                (&[13][..], true, vec![0x08, 0x01, 0x10, 0x64], left),
+                (&[13][..], false, vec![0x08, 0x01], vec![vec![0x08, 0x04]]),
+                (&[][..], true, vec![0x08, 0x01], vec![vec![0x08, 0x03]]),
+                (&[][..], false, vec![0x08, 0x01], vec![vec![0x08, 0x03]]),
             ] {
                 let authority = PacedAuthority {
                     steps: RefCell::new(Vec::new()),
                     turn: std::time::Duration::ZERO,
+                    receipts,
                 };
                 let (end, frames) = drive_open(
                     &authority,
@@ -4123,15 +4163,15 @@ mod tests {
                     delta(2, 1)?,
                     encode_command_result(1, 3, 2, CommandStatus::Accepted, &moved)?,
                     delta(4, 2)?,
-                    encode_command_result(
-                        1,
-                        5,
-                        3,
-                        CommandStatus::Rejected,
-                        &encode_step_result(refused),
-                    )?,
                 ]);
-                assert_eq!(frames, expected);
+                let (refusal, frames) = frames.split_last().ok_or("frames")?;
+                assert_eq!(frames, expected, "{capabilities:?} {receipts}");
+                let mut matched = false;
+                for payload in refusals {
+                    matched |= *refusal
+                        == encode_command_result(1, 5, 3, CommandStatus::Rejected, &payload)?;
+                }
+                assert!(matched, "{capabilities:?} {receipts} {refusal:?}");
                 assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
                 // The first step ran at once; the buffered one only after its duration; the
                 // third never reached Movement.
@@ -4158,6 +4198,7 @@ mod tests {
             let authority = PacedAuthority {
                 steps: RefCell::new(Vec::new()),
                 turn: PACE,
+                receipts: true,
             };
             let (_, frames) = drive_open(
                 &authority,
@@ -4190,6 +4231,7 @@ mod tests {
             let authority = PacedAuthority {
                 steps: RefCell::new(Vec::new()),
                 turn: std::time::Duration::ZERO,
+                receipts: true,
             };
             // Blocked, blocked, then a move: none waits, because only a moved step paces.
             let (_, frames) = drive_open(
@@ -4219,6 +4261,7 @@ mod tests {
             let authority = PacedAuthority {
                 steps: RefCell::new(Vec::new()),
                 turn: std::time::Duration::ZERO,
+                receipts: true,
             };
             // The client closes while the second step waits in the buffer.
             let (end, frames) = drive_session(
@@ -4255,7 +4298,7 @@ mod tests {
                     3,
                     2,
                     CommandStatus::Accepted,
-                    &encode_step_result(StepDisposition::Moved)
+                    &[0x08, 0x01, 0x10, 0x64]
                 )?)
             );
             let steps = authority.steps.borrow();

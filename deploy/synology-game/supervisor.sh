@@ -62,6 +62,11 @@ start() {
   npc_out="$(npc_data_args)" || return 1
   [[ -z "$npc_out" ]] || mapfile -t npc_args <<< "$npc_out"
   install -d -m 0700 "$BASE/run" "$BASE/log"
+  # STEP-PACE-WIRE-1 opt-in that survives the deploy's restart: the owner's marker file BASE/run/step-wait-receipts
+  # holding exactly `1` turns it on. Without the marker the caller's environment decides, as before.
+  if [[ -f "$BASE/run/step-wait-receipts" && ! -L "$BASE/run/step-wait-receipts" && "$(tr -d '\n' < "$BASE/run/step-wait-receipts")" == 1 ]]; then
+    export OTERYN_STEP_WAIT_RECEIPTS=1
+  fi
   # Previous log is kept for diagnosis; the new incarnation starts a fresh one.
   [[ ! -f "$LOG_FILE" ]] || mv -f "$LOG_FILE" "$LOG_FILE.previous"
   nohup "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" ${npc_args[@]+"${npc_args[@]}"} \
