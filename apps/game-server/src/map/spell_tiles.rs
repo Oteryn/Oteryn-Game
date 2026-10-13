@@ -310,7 +310,7 @@ impl BundleSpellTiles {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::content::NativeEntryMovementCells;
@@ -323,7 +323,7 @@ mod tests {
     /// changes*). Their ground id is carried as `ground_source_id`; they are not `floor_change`.
     const ROPE_SPOTS: [u32; 2] = [386, 21965];
 
-    fn id(n: u8) -> [u8; 16] {
+    pub(crate) fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
 
@@ -480,7 +480,8 @@ mod tests {
         })
     }
 
-    fn world() -> BundleWorld {
+    /// The synthetic bundle World of these tests, started at x 1; x 2 is a protection zone.
+    pub(crate) fn world() -> BundleWorld {
         let (bytes, bundle) = bundle();
         let mut revision = String::from("sha256:");
         for byte in bundle.digest {

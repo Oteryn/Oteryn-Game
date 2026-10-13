@@ -60,6 +60,13 @@ CANARY_PINS = {
         "3be385e2088a88bff565997abc89a074d5f6f89ce7fd5be570671f07aae28161",
     ),
 }
+# Pinned TibiaWiki extraction: the digest of every page record (revision, content hash, extracted
+# parameters) and of the potions page record, so one edited parameter cannot keep its recorded
+# revision and content hash.
+WIKI_PINS = {
+    "pages": "571034a94e0abc9561a6e6b55326b1718c244b4c0175d795a557356bc2cbaacb",
+    "potions_page": "9ce669654a55653ba05408e1441685c4d3e9f6fd861a490c74acb1f75a50b55d",
+}
 WIKI_API = "https://tibia.fandom.com/api.php"
 KEY = "oteryn:item.tibia.i"
 REVISION = "definition-r1"
@@ -369,8 +376,16 @@ def verify_canary(snapshot):
             raise SystemExit(f"sources snapshot Canary {name} drift")
 
 
+def verify_wiki(snapshot):
+    wiki = snapshot["tibiawiki"]
+    for name, rows_sha256 in WIKI_PINS.items():
+        if sha256(encode(wiki[name])) != rows_sha256:
+            raise SystemExit(f"sources snapshot TibiaWiki {name} drift")
+
+
 def build(snapshot):
     verify_canary(snapshot)
+    verify_wiki(snapshot)
     world = {int(i): v for i, v in snapshot["world_baseline"].items()}
     xml = items_xml_lines()
     foods = parse_foods(snapshot["canary"]["foods"]["rows"])

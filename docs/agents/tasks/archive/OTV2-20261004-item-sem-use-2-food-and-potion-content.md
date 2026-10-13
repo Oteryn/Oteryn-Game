@@ -82,7 +82,7 @@ agree), not i283.
 ## Validation
 
 - `python3 tools/content-schema/item-authoring/lower_item_consumption_packet.py --check`: OK
-- `python3 -m unittest test_lower_item_consumption_packet` (item-authoring): 7 tests OK
+- `python3 -m unittest test_lower_item_consumption_packet` (item-authoring): 9 tests OK
 - `python3 tools/content-migration/regenerate_content.py`: OK, derived content regenerated
 - `cargo test --locked -p oteryn-game-server --test content_world_project_repository`: 5 passed
 - `cargo test --locked -p oteryn-game-server --test content_reference_artifact`: 9 passed

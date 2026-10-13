@@ -29,6 +29,17 @@ class Consumption(unittest.TestCase):
         with self.assertRaises(SystemExit):
             lane.build(edited)
 
+    def test_an_edited_wiki_row_is_refused(self):
+        edited = json.loads(lane.SNAPSHOT.read_bytes())
+        page = next(
+            p
+            for p in edited["tibiawiki"]["pages"]
+            if p["params"].get("regenseconds") == "360"
+        )
+        page["params"]["regenseconds"] = "361"
+        with self.assertRaises(SystemExit):
+            lane.build(edited)
+
     def test_every_row_names_its_source(self):
         for row in self.facts["rows"]:
             source = row["source"]
