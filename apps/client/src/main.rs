@@ -94,6 +94,16 @@ fn native_entry() -> Result<Option<NativeGameplay>, ()> {
 /// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    let assets = match oteryn_client::map_draw::MapAssetPaths::from_args(
+        std::env::args_os().skip(1),
+        std::env::var_os(oteryn_client::world::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+    ) {
+        Ok(assets) => assets,
+        Err(error) => {
+            eprintln!("Oteryn: {error}");
+            return std::process::ExitCode::from(2);
+        }
+    };
     let audit = match settings_audit::parse_settings_audit_request(std::env::args_os().skip(1)) {
         Ok(audit) => audit,
         Err(error) => {
@@ -117,7 +127,7 @@ fn main() -> std::process::ExitCode {
             Ok(entry) => entry,
             Err(()) => return std::process::ExitCode::FAILURE,
         };
-    match windows_shell::run(entry, audit) {
+    match windows_shell::run(entry, audit, assets) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("Error: {error:?}");

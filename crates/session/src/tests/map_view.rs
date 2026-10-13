@@ -57,7 +57,13 @@ fn map_peer_script(
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let peer = tokio::spawn(async move {
         let result_sequence = if tail.is_some() { 42 } else { 41 };
-        read_frame(&mut server).await?;
+        let bootstrap = read_frame(&mut server).await?;
+        assert_eq!(
+            decode_wire_envelope(&bootstrap)?
+                .client_bootstrap()?
+                .supported_capabilities,
+            CLIENT_SUPPORTED_CAPABILITIES
+        );
         write_frame(
             &mut server,
             &encode_server_accepted(&ServerAcceptedValue {
@@ -135,10 +141,38 @@ fn map_peer_script(
 }
 
 fn map_admission() -> Result<Admission<'static>, BoxError> {
-    Ok(Admission {
-        supported_capabilities: SELECTED,
-        ..admission()?
-    })
+    entity_admission()
+}
+
+#[test]
+fn production_bootstrap_selects_map_or_retains_the_declined_legacy_domain() -> Result<(), BoxError>
+{
+    block_on(async {
+        for selected_map in [true, false] {
+            let (client, peer) = map_peer(
+                if selected_map { SELECTED } else { &[4, 6] },
+                if selected_map {
+                    Some(map_snapshot()?)
+                } else {
+                    None
+                },
+                !selected_map,
+                None,
+                false,
+            );
+            let session = Session::admit(client, entity_admission()?).await?;
+            assert_eq!(session.selected_capabilities().contains(&18), selected_map);
+            assert_eq!(session.world_map_view().is_some(), selected_map);
+            assert_eq!(session.join_snapshot().world_map.is_some(), selected_map);
+            assert_eq!(
+                session.join_snapshot().world_map_revision,
+                if selected_map { 9 } else { 0 }
+            );
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
 }
 
 #[test]

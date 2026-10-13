@@ -37,7 +37,14 @@ fn rebuilds_keep_pending_pixels_and_reset_reuploads_resident_cells()
         glyph: false,
         entity: None,
     };
-    let mut scene = StreamedScene::compose(&map()?, vec![], None, &view, Some(target))?;
+    let mut scene = StreamedScene::compose(
+        &map()?,
+        vec![],
+        Arc::new(Mutex::new(MapDraw::placeholders())),
+        None,
+        &view,
+        Some(target),
+    )?;
     assert_eq!(scene.frame().quads().quad_count(), 1);
     assert_eq!(scene.pending.len(), 1);
     scene.rebuild(&view, Some(target))?;
@@ -70,6 +77,7 @@ fn placeholder_row_contains_owned_pixels_and_empty_actor_is_a_real_quad()
             offset: [0, 0],
             cells: vec![],
         }],
+        Arc::new(Mutex::new(MapDraw::placeholders())),
         None,
         &view,
         None,

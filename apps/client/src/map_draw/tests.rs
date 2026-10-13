@@ -8,6 +8,103 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+#[test]
+fn asset_selection_uses_literal_cli_directory_and_preserves_manifest_pin() -> TestResult {
+    let args = |values: &[&str]| values.iter().map(OsString::from).collect::<Vec<_>>();
+    let default = MapAssetPaths::from_args(args(&[]), None)?;
+    assert_eq!(default.files, PathBuf::from("content/assets/files"));
+    assert_eq!(default.manifest, PathBuf::from(MANIFEST_PATH));
+    let root = PathBuf::from("legacy-root");
+    let legacy = MapAssetPaths::from_args(args(&[]), Some(root.clone()))?;
+    assert_eq!(legacy.files, root.join("content/assets/files"));
+    let cli = MapAssetPaths::from_args(
+        args(&["--smoke", "--assets", "literal-files"]),
+        Some(root.clone()),
+    )?;
+    assert_eq!(cli.files, PathBuf::from("literal-files"));
+    assert_eq!(cli.manifest, root.join(MANIFEST_PATH));
+    for invalid in [
+        args(&["--assets"]),
+        args(&["--assets", "--smoke"]),
+        args(&["--assets", "one", "--assets", "two"]),
+    ] {
+        assert!(MapAssetPaths::from_args(invalid, None).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn custom_files_directory_resolves_the_pinned_appearance_without_local_placements() -> TestResult {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let source = root.join("content/assets/files");
+    let manifest = root.join(MANIFEST_PATH);
+    let store = AssetStore::open_pinned(&source, &manifest, MANIFEST_SHA256)?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    let appearance = index.get(104).ok_or("missing ground appearance")?;
+    let files = tempfile::tempdir()?;
+    let mut names = BTreeSet::from(["catalog-content.json", catalog.appearances_file()]);
+    for &sprite in &appearance.sprite_ids {
+        if sprite != 0 {
+            names.insert(&catalog.locate(sprite).ok_or("missing sheet")?.file);
+        }
+    }
+    for name in names {
+        std::fs::copy(source.join(name), files.path().join(name))?;
+    }
+    let mut draw = MapDraw::load_files(files.path(), &manifest)?;
+    let mut ground = tile(100, 100, -7, 1);
+    ground.items[0].appearance_id = 104;
+    let frame = draw.frame(
+        &map(vec![ground], -7)?,
+        &[],
+        &mut AtlasPage::new(),
+        &view()?,
+    )?;
+    assert_eq!(frame.uploads().len(), 1);
+    assert!(draw.is_ground(104));
+    assert_ne!(
+        draw.cell_rgba(frame.uploads()[0].0)?,
+        crate::world::builtin_rgba()[8192..12288]
+    );
+    let wrong = files.path().join("wrong-manifest.json");
+    std::fs::write(&wrong, b"{}")?;
+    assert!(MapDraw::load_files(files.path(), &wrong).is_err());
+    Ok(())
+}
+
+#[test]
+fn missing_or_mismatched_catalogue_reports_once_and_keeps_same_fallback_provider() -> TestResult {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for corrupt in [false, true] {
+        let files = tempfile::tempdir()?;
+        if corrupt {
+            std::fs::write(files.path().join("catalog-content.json"), b"corrupt")?;
+        }
+        let mut assets = MapAssets::new(MapAssetPaths {
+            files: files.path().to_path_buf(),
+            manifest: root.join(MANIFEST_PATH),
+        });
+        let mut reports = 0;
+        let first = assets.draw_with_report(|_| reports += 1);
+        let reconnect = assets.draw_with_report(|_| reports += 1);
+        assert_eq!(reports, 1);
+        assert!(Arc::ptr_eq(&first, &reconnect));
+        let frame = first.lock().map_err(|_| "poisoned assets")?.frame(
+            &map(vec![tile(100, 100, -7, 1)], -7)?,
+            &[],
+            &mut AtlasPage::new(),
+            &view()?,
+        )?;
+        assert_eq!(frame.quads().quad_count(), 1);
+        assert_eq!(
+            frame.quads().batches()[0][0].uv,
+            AtlasPage::placeholder_uv()
+        );
+    }
+    Ok(())
+}
 fn position(x: i32, y: i32, floor: i16) -> ActorPosition {
     ActorPosition { x, y, floor }
 }

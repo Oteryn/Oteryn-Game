@@ -280,8 +280,7 @@ fn replacement_keeps_only_received_stack_and_no_invented_ground_speed() -> TestR
 }
 
 #[test]
-fn malformed_payload_drops_previous_state_and_map_capability_remains_unadvertised() -> TestResult {
-    assert!(!crate::CLIENT_SUPPORTED_CAPABILITIES.contains(&18));
+fn malformed_payload_drops_previous_state() -> TestResult {
     assert_eq!(
         MapView::new([0; 32]).err(),
         Some(MapViewError::ContentGeneration)

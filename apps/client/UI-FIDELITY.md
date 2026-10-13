@@ -805,6 +805,34 @@ Game/Platform restart, trust-store, deployment or production operation occurs.
 Source/component evidence remains bound to5d; later documentation-only successors
 retain it only for byte-identical code, not final head/CI/review qualification.
 
+## Map activation fixes — 2026-10-13, AUTHORING
+
+Owner continuation retains the existing client writer. CP6146799516 withdraws
+its competing allocation; complete architect criteria are in6146789689. Map18
+may be negotiated before receipt consumption while emission stays OFF and the
+real one-flight guard/strict dual-shape cap13 decoder remain active. No server,
+protocol, deployment or account mutation is included.
+
+Ground clicks now produce real walk intents, including Item-family ground from
+the pinned appearance flag. Roof clicks do not guess a lower-floor destination.
+Shared projected-floor selection rejects covered queued USE: raw duplex proves
+no emitted frame or reserved command ID. Invalid origins request existing FND
+resync, invalidate the map and poison the old session; recovery still requires
+fresh admission. D627 east/north quad order keeps walkers under both endpoint
+tops, including a fully resident atlas, without duplicating entries.
+
+Map assets use default content/assets/files or literal --assets <dir>; legacy
+OTERYN_ASSET_DIR still selects the repository/manifest root. One injected cached
+provider checks the independent manifest pin, logs missing/mismatched catalogue
+once and preserves placeholders. Tests copy only required pinned catalogue,
+appearances and sheets, never placements; actual PlayView upload bytes equal the
+decoded sprite, survive reset and cannot leak after provider replacement.
+Production advertisement is now [4,6,7,13,17,18]. Actual bootstrap/selected18
+domain17 and declined18/legacydomain2 routes are tested; dependencies remain4/6.
+Linux client222/196/5 and Session79, strict selected all-target Clippy/fmt pass.
+New MSVC/DX12 and native gameplay evidence are still pending. Previous page
+captures do not qualify this source or complete map/pacing/native E2E.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

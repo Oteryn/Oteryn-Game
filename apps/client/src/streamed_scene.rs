@@ -2,7 +2,7 @@
 use crate::input::Targetable;
 use crate::map_draw::{MapActor, MapDraw};
 use crate::map_view::MapView;
-use crate::world::{ASSET_DIR_ENV, MARKER_CELL, TARGET_CELL, builtin_rgba};
+use crate::world::{MARKER_CELL, TARGET_CELL, builtin_rgba};
 use oteryn_renderer::{
     AtlasImage, AtlasPage, BatchError, CellKey, PAGE_CELL_PX, PAGE_CELLS_PER_ROW, PlacedCell,
     SpriteFrame, SpritePageUpload, TileView,
@@ -26,6 +26,7 @@ impl StreamedScene {
     pub(crate) fn compose(
         map: &MapView,
         actors: Vec<MapActor>,
+        draw: Arc<Mutex<MapDraw>>,
         previous: Option<Self>,
         view: &TileView,
         target: Option<Targetable>,
@@ -36,20 +37,15 @@ impl StreamedScene {
                 state.actors = actors;
                 state
             }
-            None => {
-                let draw = std::env::var_os(ASSET_DIR_ENV)
-                    .and_then(|root| MapDraw::load(std::path::Path::new(&root)).ok())
-                    .unwrap_or_else(MapDraw::placeholders);
-                Self {
-                    map: map.clone(),
-                    actors,
-                    draw: Arc::new(Mutex::new(draw)),
-                    page: AtlasPage::new(),
-                    atlas: Arc::new(page_atlas()?),
-                    frame: SpriteFrame::new(16),
-                    pending: BTreeMap::new(),
-                }
-            }
+            None => Self {
+                map: map.clone(),
+                actors,
+                draw,
+                page: AtlasPage::new(),
+                atlas: Arc::new(page_atlas()?),
+                frame: SpriteFrame::new(16),
+                pending: BTreeMap::new(),
+            },
         };
         state.rebuild(view, target)?;
         Ok(state)

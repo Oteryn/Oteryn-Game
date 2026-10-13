@@ -156,7 +156,8 @@ impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 /// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
 /// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
 /// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
-/// types 11 and 12, domain 10; requires 6). Add an ID here only
+/// types 11 and 12, domain 10; requires 6), 18 `WORLD_MAP_VIEW_V1` (domain 17;
+/// requires 4 and 6, replaces legacy domain 2 only when selected). Add an ID here only
 /// together with its routing, and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -164,6 +165,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
+    world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -4717,7 +4719,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 snapshot,
@@ -5195,7 +5197,7 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17]);
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 18]);
     }
 
     #[test]
@@ -5792,7 +5794,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 ITEM_SELECTED,
                 &[],
                 snapshot,

@@ -117,6 +117,7 @@ pub struct PlayView {
     entities: Vec<WorldSpatialEntity>,
     /// Latest complete server-composed map; never reconstructed from local placements.
     map: Option<MapView>,
+    map_draw: Arc<Mutex<crate::map_draw::MapDraw>>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
     /// Preserved when pushed session state rebuilds the scene.
@@ -165,6 +166,7 @@ impl PlayView {
             inputs: VecDeque::new(),
             entities: Vec::new(),
             map: None,
+            map_draw: Arc::new(Mutex::new(crate::map_draw::MapDraw::placeholders())),
             combat_line: None,
             target_frame: true,
         };
@@ -259,6 +261,19 @@ impl PlayView {
         self.rebuild()
     }
 
+    /// Changing the provider invalidates atlas residency and all pending old pixels.
+    pub fn set_map_draw(
+        &mut self,
+        draw: Arc<Mutex<crate::map_draw::MapDraw>>,
+    ) -> Result<(), BatchError> {
+        if Arc::ptr_eq(&draw, &self.map_draw) {
+            return Ok(());
+        }
+        self.map_draw = draw;
+        self.scene.streamed = None;
+        self.rebuild()
+    }
+
     #[must_use]
     pub fn marker_count(&self) -> usize {
         self.drawn_markers().count()
@@ -292,7 +307,11 @@ impl PlayView {
                             matches!(
                                 item.definition,
                                 oteryn_session::map_view::MapDefinition::Terrain(_)
-                            )
+                            ) || self
+                                .map_draw
+                                .lock()
+                                .unwrap_or_else(PoisonError::into_inner)
+                                .is_ground(item.appearance_id)
                         })
                 {
                     self.walk
@@ -575,6 +594,7 @@ impl PlayView {
             scene.streamed = Some(crate::streamed_scene::StreamedScene::compose(
                 map,
                 actors,
+                Arc::clone(&self.map_draw),
                 self.scene.streamed.take(),
                 scene.view(),
                 None,
@@ -2108,10 +2128,11 @@ mod tests {
             y: 100,
             floor: -7,
         };
-        for (floor, terrain, expected) in [
-            (-7, true, Some(StepDir::East)),
-            (-6, true, None),
-            (-7, false, None),
+        for (floor, terrain, appearance, expected) in [
+            (-7, true, 0, Some(StepDir::East)),
+            (-6, true, 0, None),
+            (-7, false, 0, None),
+            (-7, false, 104, Some(StepDir::East)),
         ] {
             let shift = i32::from(floor - own.floor);
             let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
@@ -2138,7 +2159,7 @@ mod tests {
                         },
                         count: 1,
                         sub_type: 0,
-                        appearance_id: 0,
+                        appearance_id: appearance,
                         origin: MapOrigin::DisplayOnly,
                     }],
                 }],
@@ -2152,12 +2173,55 @@ mod tests {
                 map: Some(Box::new(map)),
                 ..Pushed::default()
             })?;
+            if appearance == 104 {
+                let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+                let mut draw = crate::map_draw::MapDraw::load(&root)?;
+                assert!(draw.is_ground(appearance));
+                let frame = draw.frame(
+                    view.world_map().ok_or("no map")?,
+                    &[],
+                    &mut oteryn_renderer::AtlasPage::new(),
+                    view.scene().view(),
+                )?;
+                let key = frame.uploads().first().ok_or("no appearance cell")?.0;
+                let expected_pixels = draw.cell_rgba(key)?;
+                assert_ne!(expected_pixels, crate::world::builtin_rgba()[8192..12288]);
+                view.set_map_draw(Arc::new(Mutex::new(draw)))?;
+                let uploads = view.take_page_uploads();
+                assert_eq!(uploads.len(), 1);
+                assert_eq!(uploads[0].rgba, expected_pixels);
+                view.reset_page()?;
+                let reset = view.take_page_uploads();
+                assert_eq!(
+                    reset.iter().map(|u| (u.slot, &u.rgba)).collect::<Vec<_>>(),
+                    uploads
+                        .iter()
+                        .map(|u| (u.slot, &u.rgba))
+                        .collect::<Vec<_>>()
+                );
+            }
             view.click(TileCoord::new(101, 100))?;
             assert_eq!(view.next_step(), expected);
             assert_eq!(
                 view.combat_line,
                 expected.is_none().then_some("That item is out of reach")
             );
+            if appearance == 104 {
+                view.set_map_draw(Arc::new(Mutex::new(
+                    crate::map_draw::MapDraw::placeholders(),
+                )))?;
+                assert!(view.take_page_uploads().is_empty());
+                assert!(
+                    view.scene()
+                        .sprite_frame()
+                        .ok_or("not streamed")?
+                        .quads()
+                        .batches()
+                        .iter()
+                        .flatten()
+                        .all(|quad| quad.uv == oteryn_renderer::AtlasPage::placeholder_uv())
+                );
+            }
         }
         Ok(())
     }

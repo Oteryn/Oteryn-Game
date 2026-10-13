@@ -14,7 +14,76 @@ use oteryn_session::{
     map_view::{MapTile, in_window, tile_order},
 };
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::ffi::OsString;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+
+/// Appearance files are configurable; the manifest/digest remain independently pinned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MapAssetPaths {
+    files: PathBuf,
+    manifest: PathBuf,
+}
+
+impl MapAssetPaths {
+    pub fn from_args(
+        arguments: impl IntoIterator<Item = OsString>,
+        root: Option<PathBuf>,
+    ) -> Result<Self, &'static str> {
+        let root = root.unwrap_or_default();
+        let mut files = None;
+        let mut arguments = arguments.into_iter();
+        while let Some(argument) = arguments.next() {
+            if argument == "--assets" {
+                if files.is_some() {
+                    return Err("--assets must occur only once");
+                }
+                let value = arguments
+                    .next()
+                    .filter(|value| !value.is_empty() && !value.to_string_lossy().starts_with("--"))
+                    .ok_or("--assets requires a files directory")?;
+                files = Some(PathBuf::from(value));
+            }
+        }
+        Ok(Self {
+            files: files.unwrap_or_else(|| root.join("content/assets/files")),
+            manifest: root.join(MANIFEST_PATH),
+        })
+    }
+}
+
+/// One composition-root provider survives redraws and reconnects; failures log once.
+#[derive(Debug)]
+pub struct MapAssets {
+    paths: MapAssetPaths,
+    loaded: Option<Arc<Mutex<MapDraw>>>,
+}
+
+impl MapAssets {
+    #[must_use]
+    pub const fn new(paths: MapAssetPaths) -> Self {
+        Self {
+            paths,
+            loaded: None,
+        }
+    }
+
+    pub fn draw(&mut self) -> Arc<Mutex<MapDraw>> {
+        self.draw_with_report(|error| eprintln!("Oteryn map assets: {error}; using placeholders"))
+    }
+
+    fn draw_with_report(&mut self, report: impl FnOnce(&str)) -> Arc<Mutex<MapDraw>> {
+        Arc::clone(self.loaded.get_or_insert_with(|| {
+            let draw = MapDraw::load_files(&self.paths.files, &self.paths.manifest).unwrap_or_else(
+                |error| {
+                    report(&error);
+                    MapDraw::placeholders()
+                },
+            );
+            Arc::new(Mutex::new(draw))
+        }))
+    }
+}
 
 /// Visual data already resolved by the actor consumer, not a map definition reference.
 #[derive(Debug, Clone)]
@@ -45,17 +114,30 @@ impl MapDraw {
     }
 
     pub fn load(root: &Path) -> Result<Self, String> {
-        let store = AssetStore::open_pinned(
+        Self::load_files(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
-            MANIFEST_SHA256,
         )
-        .map_err(|e| format!("assets: {e}"))?;
+    }
+
+    pub fn load_files(files: &Path, manifest: &Path) -> Result<Self, String> {
+        let store = AssetStore::open_pinned(files, manifest, MANIFEST_SHA256)
+            .map_err(|e| format!("assets: {e}"))?;
         let catalog = Catalog::load(&store).map_err(|e| format!("catalog: {e}"))?;
         let index =
             AppearanceIndex::load(&store, &catalog).map_err(|e| format!("appearances: {e}"))?;
         Ok(Self {
             assets: Some((index, SpriteSheets::new(store, catalog))),
+        })
+    }
+
+    /// A visual ground flag, not a movement speed or server walkability decision.
+    #[must_use]
+    pub fn is_ground(&self, appearance_id: u16) -> bool {
+        self.assets.as_ref().is_some_and(|(index, _)| {
+            index
+                .get(u32::from(appearance_id))
+                .is_some_and(|appearance| appearance.ground)
         })
     }
 

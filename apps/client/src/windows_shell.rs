@@ -1,5 +1,6 @@
 use oteryn_client::hotkeys::{ClaimedKeyLifecycle, ResolvedHotkey};
 use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile};
+use oteryn_client::map_draw::{MapAssetPaths, MapAssets};
 use oteryn_client::play::{BattleTargetSelection, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
@@ -65,6 +66,7 @@ struct Application {
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     /// The map, loaded once the window exists; the offline scene and the play view share it.
     world: Option<Arc<World>>,
+    map_assets: MapAssets,
     /// Without a session: the scene around `offline_own`, which the arrow keys move locally.
     scene: Option<Scene>,
     offline_own: TileCoord,
@@ -121,15 +123,21 @@ impl Application {
         smoke: bool,
         play: Option<(ClientBootstrap, AdmittedSession)>,
         audit_request: Option<crate::settings_audit::SettingsAuditRequest>,
+        assets: MapAssetPaths,
     ) -> Result<Self, ShellError> {
         if audit_request.is_some() && (smoke || play.is_some()) {
             return Err(ShellError::SettingsAudit);
         }
+        let mut map_assets = MapAssets::new(assets);
         let (client, play) = match play {
             Some((client, admitted)) => {
-                let (view, link) = client
+                let (mut view, link) = client
                     .start_play(admitted)
                     .map_err(|_error| ShellError::RendererInitialization)?;
+                if view.world_map().is_some() {
+                    view.set_map_draw(map_assets.draw())
+                        .map_err(|_error| ShellError::RendererInitialization)?;
+                }
                 (
                     Some(client),
                     Some(Play {
@@ -190,6 +198,7 @@ impl Application {
             window: None,
             renderer: None,
             world: None,
+            map_assets,
             scene: None,
             offline_own: TileCoord::new(START.0, START.1),
             offline_facing: StepDir::South,
@@ -1269,6 +1278,12 @@ impl ApplicationHandler for Application {
             }
             match client.start_play(admitted) {
                 Ok((mut view, link)) => {
+                    if view.world_map().is_some()
+                        && view.set_map_draw(self.map_assets.draw()).is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererInitialization);
+                        return;
+                    }
                     if let Some(world) = &self.world
                         && view.set_world(Arc::clone(world)).is_err()
                     {
@@ -1372,10 +1387,11 @@ impl ApplicationHandler for Application {
 pub fn run(
     play: Option<(ClientBootstrap, AdmittedSession)>,
     audit: Option<crate::settings_audit::SettingsAuditRequest>,
+    assets: MapAssetPaths,
 ) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke, play, audit)?;
+    let mut application = Application::new(smoke, play, audit, assets)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);

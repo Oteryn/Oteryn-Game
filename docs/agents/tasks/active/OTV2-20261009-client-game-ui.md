@@ -125,10 +125,13 @@ Current map fixes: same-floor received terrain clicks actually start walking;
 shared projected-floor picking invalidates covered queued USE (raw duplex proves
 no frame/ID); malformed origins request existing resync and fail closed; D627
 east/north walkers stay under both endpoint tops, including resident-atlas quad
-order. Linux client219/196/5 and Session78, strict all-target Clippy pass.
-These fixes are not Windows/E2E qualified. Historical c302/5d native evidence
-stays in UI-FIDELITY.md; never inherit it. Next: explicit pinned asset provider,
-Item-ground routing, bootstrap/default18 proof, then receipt deadline consumer.
+order. Explicit default/--assets selection injects one pinned cached provider;
+missing/mismatched catalogues log once. Actual received Item-ground uploads match
+decoded pixels, survive reset and disappear on provider replacement. Production
+bootstrap now advertises [4,6,7,13,17,18]; raw selected/declined tests cover map17
+versus legacy2. Linux client222/196/5+Session79, strict all-target Clippy/fmt pass.
+These fixes are not Windows/E2E qualified. Historical c302/5d evidence stays in
+UI-FIDELITY.md; never inherit it. Next: MSVC/DX12, then receipt deadline consumer.
 Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
 
 CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
