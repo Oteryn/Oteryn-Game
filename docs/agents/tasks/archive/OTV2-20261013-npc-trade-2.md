@@ -63,8 +63,10 @@ next_action: "NPC-TRADE-3 (charged and fluid offers) is opened by the control pl
 - `cargo fmt --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib`: pass (2923 passed)
-- `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade` (PostgreSQL
-  17.11, 17.6 pins relaxed locally only, not committed): pass (12 passed)
+- `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade`: pass (12
+  passed) on local PostgreSQL 17.11 only, with the repository's 17.6 version pin relaxed locally
+  and not committed; PostgreSQL 17.6 is not available here, so no local result on the pinned
+  version is claimed and 17.6 qualification rests on CI
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
