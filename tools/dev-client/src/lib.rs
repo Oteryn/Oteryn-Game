@@ -1823,6 +1823,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: overlay,
+            gate_message_id: None,
         }
     }
 
@@ -1839,6 +1840,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: spatial,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         }
     }
 

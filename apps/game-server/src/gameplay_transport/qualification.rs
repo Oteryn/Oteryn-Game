@@ -3258,6 +3258,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                     },
                 }),
                 world_object_overlay_delta: None,
+                gate_message_id: None,
             };
         let door_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
             content_generation,
@@ -3274,6 +3275,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             result_server_sequence: result_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         };
         let door_event = |result_sequence: u64, base: u64, state: &str| {
             SessionEvent::WorldObjectOverlay(AppliedDelta {

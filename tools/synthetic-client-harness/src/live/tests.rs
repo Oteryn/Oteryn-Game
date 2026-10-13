@@ -133,6 +133,7 @@ fn step_outcome(disposition: StepDisposition, moved_to: Option<(i32, i32)>) -> S
             value: observation(x, y),
         }),
         world_object_overlay_delta: None,
+        gate_message_id: None,
     }
 }
 
@@ -144,6 +145,7 @@ fn use_outcome(disposition: UseDisposition) -> UseOutcome {
         result_server_sequence: 43,
         world_spatial_delta: None,
         world_object_overlay_delta: None,
+        gate_message_id: None,
     }
 }
 

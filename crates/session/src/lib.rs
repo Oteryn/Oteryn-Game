@@ -609,6 +609,9 @@ pub struct CommandOutcome<D> {
     pub result_server_sequence: u64,
     pub world_spatial_delta: Option<AppliedDelta<WorldSpatialObservation>>,
     pub world_object_overlay_delta: Option<AppliedDelta<WorldObjectOverlayEntry>>,
+    /// The gate message id (1 to 127) of a `SEALED` use result under capability 11, so a client
+    /// can show the gate's own reason; `None` for every other disposition and command.
+    pub gate_message_id: Option<u8>,
 }
 
 /// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
@@ -1868,6 +1871,7 @@ impl<S: SessionStream> Session<S> {
             result_server_sequence: result.server_sequence,
             world_spatial_delta,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         })
     }
 
@@ -1875,7 +1879,8 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let disposition = world_object::decode_use_result(&result.payload)?;
+        let (disposition, gate_message_id) =
+            world_object::decode_use_result_with_gate(&result.payload)?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -1890,6 +1895,7 @@ impl<S: SessionStream> Session<S> {
             result_server_sequence: result.server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
+            gate_message_id,
         })
     }
 
@@ -5563,6 +5569,47 @@ mod tests {
             let result = Session::admit(client, item_admission()?).await;
             drop(peer);
             assert!(matches!(result, Err(SessionError::WorldSpatial(_))));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_sealed_use_result_surfaces_its_gate_message_id_and_others_carry_none()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let sealed = world_object::encode_use_result_with_gate(UseDisposition::Sealed, Some(9))
+                .map_err(|error| format!("{error:?}"))?;
+            let (client, peer) = item_peer(
+                item_snapshot(vec![loot_corpse(1, 40, at(1, 0))])?,
+                vec![],
+                vec![
+                    ItemStep::Expect(
+                        world_object::COMMAND_TYPE_USE_INTENT,
+                        world_object::encode_use_item_intent(handle(40)),
+                    ),
+                    ItemStep::Send(Step::Send(encode_command_result(
+                        1,
+                        41,
+                        7,
+                        CommandStatus::Accepted,
+                        &sealed,
+                    )?)),
+                    ItemStep::Expect(
+                        world_object::COMMAND_TYPE_USE_INTENT,
+                        world_object::encode_use_item_intent(handle(40)),
+                    ),
+                    ItemStep::Send(use_result(42, 8, UseDisposition::NothingToUse)?),
+                ],
+            );
+            let mut session = Session::admit(client, item_admission()?).await?;
+            let used = session.use_item(handle(40)).await?;
+            assert_eq!(used.disposition, UseDisposition::Sealed);
+            assert_eq!(used.gate_message_id, Some(9));
+            let used = session.use_item(handle(40)).await?;
+            assert_eq!(used.disposition, UseDisposition::NothingToUse);
+            assert_eq!(used.gate_message_id, None);
+            drop(session);
+            peer.await??;
             Ok(())
         })?
     }
