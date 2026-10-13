@@ -770,8 +770,40 @@ bytes; governance/60 passes. This does not replace corrected MSVC qualification.
 
 New visible coordinator handoff6145031564 links the actual branch files, exact
 source and four execution needs. Publication is verified, not CP acknowledgment.
-Current MSVC tests, DX12 page captures and final same-head CI/review remain pending
-until the corrected source is built and observed; no account or deployment action.
+CP acknowledgment6145246782 accepts default-OFF server emission and serial
+WIRE-1→MAP-CLIENT-1→STEP-PACE-CLIENT-1→native, with NPC afterward. Its CC report
+link mistakenly points to our original dependency request; fresh read proves no
+CC/MAP-CLIENT-1s allocation there. Correction6145306643 requests the exact source,
+without repeating owner design questions or opening a competing server writer.
+
+Corrected source5d1dee8eea012f7cdf386ce57395f2c033847482 now builds the exact
+Rust1.95 locked x86_64-pc-windows-msvc release and passes strict all-target client/
+Session Clippy. The first unit attempt has eight missing-input failures because
+the sparse checkout omits pinned asset manifests/placements. Add only the accepted
+content/assets/files, content/world/placements and checksum manifest directories;
+the same clean source then passes client216/201/5 and Session76. This is an explicit
+fixture/environment repair, not erasure of the failed attempt or a code bypass.
+
+Private source/build directory:
+`C:\Users\barte\Downloads\oteryn-client-5d1dee8e-20261013-native`.
+Release identity0.1.0+dev.ci.g5d1dee8eea01; executable SHA-256
+90b89b9aeeae0ddd86f1ae6be355a6a15e6a7d8aaf1134006f29a9408934add9.
+Actual DX12 audit passes20pages/78captures/zero invalid page entries at125% DPI,
+with every capture hash independently checked; markers, widths, footer and draft
+non-mutation are checked. Output:
+`C:\Users\barte\Downloads\oteryn-settings-audit-5d1dee8e-20261013`;
+manifest SHA-256d0c1ab2305d520ad86f15fee014dd1ddb52e911500040a75ab20a6038a5ab7d2.
+Help/Graphics captures are visually inspected. This is not original visual parity,
+physical picker/input acceptance, full runtime consumers or live gameplay E2E.
+
+The existing public-only preprod connection files are reused through the exact
+source's validated launcher, with four public child settings and no automatic
+login. Exact executable5d is running asPID37764; path/hash, nonzero native window
+handle, title`Oteryn - logowanie` and responsiveness are verified. Old installation,
+source checkouts, original starters and preferences are preserved. No account,
+Game/Platform restart, trust-store, deployment or production operation occurs.
+Source/component evidence remains bound to5d; later documentation-only successors
+retain it only for byte-identical code, not final head/CI/review qualification.
 
 ## Required evidence per page/panel
 

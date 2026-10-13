@@ -74,9 +74,9 @@ Normal merges preserve accepted maina7a0b374 producers and STEP-PACE-WIRE-0
 Windows9c build exposed the ZIP picker's nonexistent open_file; use upstream
 rfd0.17.2 pick_file. Real duplex tests cover receipt/legacy decoding and poison
 invalid or unselected receipts. Decoder acceptance is not a pacing deadline:
-emission must await STEP-PACE-CLIENT-1. Defaults stay [4,6,7,13,17]. PC online;
-new isolated LF-source MSVC/DX12 qualification pending, old checkouts preserved.
-Visible CP packet: #1622 comment6145031564. Details/history: UI-FIDELITY.md.
+emission must await STEP-PACE-CLIENT-1. Defaults stay [4,6,7,13,17]. Windows5d:
+216/201/5+Session76, release/Clippy and DX12 20pages/78captures pass; PID37764.
+CP6145246782 confirms emission OFF/order; wrong CC link corrected6145306643.
 
 ## Current authoring batch — 2026-10-11
 
