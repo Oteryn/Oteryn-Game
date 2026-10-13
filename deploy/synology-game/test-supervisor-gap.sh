@@ -19,4 +19,13 @@ printf 'event=registering node_id=%s\nevent=registered node_id=%s registration_r
 expect "registered" 0 ""
 printf 'event=registering node_id=%s\nevent=registered node_id=%s registration_revision=7\nevent=registering node_id=%s\n' "$a" "$a" "$b" > "$tmp/log/node.log"
 expect "latest registering lacks its registered line" 1 "$b"
+# Real node.log format: key=value fields, the detail value quoted.
+real() { printf '2026-10-12T08:00:00Z INFO node event=%s trace=0af7651916cd43dd8448eb211c80319c detail="node_id=%s%s"\n' "$1" "$2" "${3:+ $3}"; }
+{ real registering "$a"; real registered "$a" registration_revision=6; } > "$tmp/log/node.log"
+expect "real format: registering+registered" 0 ""
+real registering "$a" > "$tmp/log/node.log"; expect "real format: registering only" 1 "$a"
+{ real registering "$a"; real registered "$a" registration_revision=6; real registering "$b"; } > "$tmp/log/node.log"
+expect "real format: second registering lacks registered" 1 "$b"
+{ real registering "$a"; real registered "$a"; } > "$tmp/log/node.log"
+expect "real format: registered with id as last field" 0 ""
 echo "supervisor registration-gap: ok"
