@@ -488,27 +488,25 @@ fn no_window_without_offers_or_a_pinned_index() {
     let conversations = NpcConversations::default();
     let index = items();
     let bare = trader_chat(session, Vec::new());
-    for (chat, items, micros) in [(&bare, Some(&index), BASE)] {
-        conversations.talk_in(
-            chat,
-            &runtime,
-            actor,
-            session,
-            &intent(npc, "hello"),
-            at(micros),
-            items,
-        );
-        let outcome = conversations.talk_in(
-            chat,
-            &runtime,
-            actor,
-            session,
-            &intent(npc, "trade"),
-            at(micros + 300_000),
-            items,
-        );
-        assert!(outcome.window.is_none());
-    }
+    conversations.talk_in(
+        &bare,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hello"),
+        at(BASE),
+        Some(&index),
+    );
+    let outcome = conversations.talk_in(
+        &bare,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "trade"),
+        at(BASE + 300_000),
+        Some(&index),
+    );
+    assert!(outcome.window.is_none());
     let stocked = trader_chat(
         session,
         vec![offer(
