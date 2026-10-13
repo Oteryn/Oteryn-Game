@@ -1,0 +1,214 @@
+//! PARTY-PVP-0 §8.1 combat lock (logout block, PZ block, kill block) and §8.2 aggression
+//! relations, runtime only. The durable write-ahead and the admission restore need the PVP-1
+//! tables; [`CombatLock::restore`] is the entry point they will call.
+
+use oteryn_simulation_determinism::SemanticTimeMicros;
+
+/// `PARTYPVP0-RL-12`: PZ block and PvP logout block, refreshed by each aggression or hit.
+const BLOCK_MS: u64 = 60_000;
+/// `PARTYPVP0-RL-13`: kill block.
+pub(crate) const KILL_BLOCK_MS: u64 = 15 * 60_000;
+/// `PARTYPVP0-RL-24`: aggression relations per actor.
+pub(crate) const MAX_RELATIONS: usize = 64;
+
+fn after(now: SemanticTimeMicros, ms: u64) -> SemanticTimeMicros {
+    SemanticTimeMicros::from_micros(now.get().saturating_add(ms.saturating_mul(1_000)))
+}
+
+fn raise(slot: &mut Option<SemanticTimeMicros>, to: SemanticTimeMicros) {
+    if slot.is_none_or(|current| current < to) {
+        *slot = Some(to);
+    }
+}
+
+fn running(slot: Option<SemanticTimeMicros>, now: SemanticTimeMicros) -> bool {
+    slot.is_some_and(|until| until > now)
+}
+
+/// The PvP part of one actor's combat lock. A deadline is only ever raised, never lowered.
+/// ATTACK-0's PvE in-fight deadline stays in `AttackState` and is passed to [`Self::blocks_logout`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct CombatLock {
+    logout_until: Option<SemanticTimeMicros>,
+    pz_until: Option<SemanticTimeMicros>,
+    kill_until: Option<SemanticTimeMicros>,
+}
+
+impl CombatLock {
+    /// A PvP hit dealt to or taken from a character: the 60 s logout block (both sides).
+    pub(crate) fn on_pvp_hit(&mut self, now: SemanticTimeMicros) {
+        raise(&mut self.logout_until, after(now, BLOCK_MS));
+    }
+
+    /// Aggression that is not retaliation (or a field rune cast): the 60 s PZ block, which also
+    /// blocks logout.
+    pub(crate) fn on_aggression(&mut self, now: SemanticTimeMicros) {
+        raise(&mut self.pz_until, after(now, BLOCK_MS));
+    }
+
+    /// A kill as a direct or assisting contributor: `until` is the database clock + 15 min
+    /// (`KILL_BLOCK_MS`), committed in the victim's death transaction.
+    pub(crate) fn on_kill(&mut self, until: SemanticTimeMicros) {
+        raise(&mut self.kill_until, until);
+    }
+
+    /// Restore stored deadlines at admission; never shortens a running one.
+    pub(crate) fn restore(
+        &mut self,
+        logout: Option<SemanticTimeMicros>,
+        pz: Option<SemanticTimeMicros>,
+        kill: Option<SemanticTimeMicros>,
+    ) {
+        for (slot, stored) in [
+            (&mut self.logout_until, logout),
+            (&mut self.pz_until, pz),
+            (&mut self.kill_until, kill),
+        ] {
+            if let Some(stored) = stored {
+                raise(slot, stored);
+            }
+        }
+    }
+
+    pub(crate) fn pz_block_running(&self, now: SemanticTimeMicros) -> bool {
+        running(self.pz_until, now)
+    }
+
+    pub(crate) fn kill_block_running(&self, now: SemanticTimeMicros) -> bool {
+        running(self.kill_until, now)
+    }
+
+    /// Logout: any PvP block, the PZ block, the kill block or the PvE in-fight deadline.
+    pub(crate) fn blocks_logout(
+        &self,
+        now: SemanticTimeMicros,
+        pve_in_fight_until: Option<SemanticTimeMicros>,
+    ) -> bool {
+        running(self.logout_until, now)
+            || self.pz_block_running(now)
+            || self.kill_block_running(now)
+            || running(pve_in_fight_until, now)
+    }
+
+    /// Stepping onto a protection-zone tile: the PZ block or the kill block bars it.
+    pub(crate) fn blocks_pz_entry(&self, now: SemanticTimeMicros) -> bool {
+        self.pz_block_running(now) || self.kill_block_running(now)
+    }
+
+    /// A landing (step, teleport, fall) on `destination_is_protection_zone` is refused while a
+    /// PZ-entry block runs. Hook for `map::floor` landing resolution.
+    pub(crate) fn landing_allowed(
+        &self,
+        now: SemanticTimeMicros,
+        destination_is_protection_zone: bool,
+    ) -> bool {
+        !(destination_is_protection_zone && self.blocks_pz_entry(now))
+    }
+
+    /// A voluntary channel switch and leaving a party: blocked by the whole combat lock.
+    pub(crate) fn blocks_voluntary_switch(
+        &self,
+        now: SemanticTimeMicros,
+        pve_in_fight_until: Option<SemanticTimeMicros>,
+    ) -> bool {
+        self.blocks_logout(now, pve_in_fight_until)
+    }
+}
+
+/// What recording an aggression did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AggressionOutcome {
+    /// New aggression: the actor was first; the PZ block applies.
+    Started,
+    /// The target was already an aggressor toward the actor (retaliation) or the relation is
+    /// refreshed: no new PZ block.
+    Retaliation,
+    Refreshed,
+    /// The set is full of unexpired relations.
+    Refused,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Relation<T> {
+    target: T,
+    until: SemanticTimeMicros,
+    first: bool,
+}
+
+/// The characters one actor has aggression toward (§8.2), at most [`MAX_RELATIONS`].
+#[derive(Debug, Clone)]
+pub(crate) struct AggressionRelations<T> {
+    relations: Vec<Relation<T>>,
+}
+
+impl<T> Default for AggressionRelations<T> {
+    fn default() -> Self {
+        Self {
+            relations: Vec::new(),
+        }
+    }
+}
+
+impl<T: Copy + Eq> AggressionRelations<T> {
+    pub(crate) fn has_aggression_toward(&self, target: T, now: SemanticTimeMicros) -> bool {
+        self.relations
+            .iter()
+            .any(|r| r.target == target && r.until > now)
+    }
+
+    /// Whether the actor was first against `target` while that relation runs (yellow skull).
+    pub(crate) fn was_first_against(&self, target: T, now: SemanticTimeMicros) -> bool {
+        self.relations
+            .iter()
+            .any(|r| r.target == target && r.until > now && r.first)
+    }
+
+    /// Record aggression toward `target`; `target_is_aggressor` is whether the target already
+    /// has aggression toward this actor. The oldest expired relation goes first.
+    pub(crate) fn record(
+        &mut self,
+        target: T,
+        target_is_aggressor: bool,
+        now: SemanticTimeMicros,
+    ) -> AggressionOutcome {
+        let until = after(now, BLOCK_MS);
+        if let Some(existing) = self.relations.iter_mut().find(|r| r.target == target) {
+            let was_running = existing.until > now;
+            existing.until = existing.until.max(until);
+            if !was_running {
+                existing.first = !target_is_aggressor;
+            }
+            return if existing.first {
+                AggressionOutcome::Refreshed
+            } else {
+                AggressionOutcome::Retaliation
+            };
+        }
+        if self.relations.len() >= MAX_RELATIONS {
+            let oldest_expired = self
+                .relations
+                .iter()
+                .enumerate()
+                .filter(|(_, r)| r.until <= now)
+                .min_by_key(|(_, r)| r.until)
+                .map(|(i, _)| i);
+            match oldest_expired {
+                Some(i) => {
+                    self.relations.swap_remove(i);
+                }
+                None => return AggressionOutcome::Refused,
+            }
+        }
+        let first = !target_is_aggressor;
+        self.relations.push(Relation {
+            target,
+            until,
+            first,
+        });
+        if first {
+            AggressionOutcome::Started
+        } else {
+            AggressionOutcome::Retaliation
+        }
+    }
+}
