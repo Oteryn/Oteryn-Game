@@ -54,7 +54,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | LOOP-RANGED-1 | 21, 22, 51 | projectile profiles, distance weapons and ammo (a DUR-03 burn), wands/rods, attack spells | BUNDLE-TILES-PROJECTILE-1, LOOP-DAMAGE-1, ITEM-LOOP-1 | hard (ammo burn) | yes | no |
 | LOOP-PROGRESS-1 | 37, 38, 40, 41 | level-up vitals/capacity per vocation, vocations end to end, skill gain on hits, magic level | GAME-CHAR-CMD-0 | hard (Character writes) | yes | no |
 | LOOP-VITALS-1 | 30, 32, 33 | durable regeneration accumulator, food-time ingress, soul regen and soul orb, stamina | ITEM-USE-1 (#2039), LOOP-PROGRESS-1 | hard (Character state) | yes | no |
-| LOOP-TRAIN-1 | 34, 35 | offline training in beds, exercise weapons | LOOP-VITALS-1, LOOP-PROGRESS-1 (skill build state, A13 magic-level training), CHAR-POSITION-1, a slot in the shared guard-rewrite order, WORLDINT-USE-1, HOUSE-ACL-1 (beds), ITEM-TIMED-1 (`charges`), the training statue and dummy content (WO-2, OFFLINE-CONTENT-1, EXERCISE-CONTENT-1; OFFLINE-0 §30-34, EXERCISE-0 §33-35) | hard | yes | no |
+| LOOP-TRAIN-1 | 34, 35 | offline training in beds, exercise weapons | PREMIUM-1 (the statue is Premium), LOOP-VITALS-1, LOOP-PROGRESS-1 (skill build state, A13 magic-level training), CHAR-POSITION-1, a slot in the shared guard-rewrite order, WORLDINT-USE-1, HOUSE-ACL-1 (beds), ITEM-TIMED-1 (`charges`), the training statue and dummy content (WO-2, OFFLINE-CONTENT-1, EXERCISE-CONTENT-1; OFFLINE-0 §30-34, EXERCISE-0 §33-35) | hard | yes | no |
 | LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1, MAGIC-SUMMON-1 | impl | no | no |
 | LOOP-GROUND-1 | 18 | decay of dropped items on Ground (shared with the death drop) | DEATH-DUR-1 | hard (retire) | maybe | no |
 | LOOP-CLOCK-1 | 15 | world clock and day phase, server light state | none | impl | no | yes |
@@ -69,29 +69,29 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | ITEM-TIMED-1 | 69, 72, 73 | charges and repair, imbuing, forge runtime | ITEM-LOOP-1 | hard | yes | no |
 | ITEM-STORAGE-1 | 70, 71, 74 | depot, supply stash, books and papers | ITEM-LOOP-1 | hard | yes | yes |
 | ITEM-LOOK-1 | 75 | look/examine message | none | impl | no | yes |
-| NPC-ECON-1 | 39, 81 | bank, promotion purchase | #2040, BANK-FEE-0 | hard (value) | yes | no |
+| NPC-ECON-1 | 39, 81 | bank, promotion purchase | #2040, BANK-FEE-0, BANK-RET-0 (BANK-1 waits on it) | hard (value) | yes | no |
 | TRADE-PLAYER-1 | 82 | player-to-player trade | ITEM-LOOP-1 | hard | yes | yes |
 | MAIL-1 | 88 | mail and parcels | ITEM-STORAGE-1 | hard | yes | yes |
-| MARKET-1 | 122 | market | ITEM-STORAGE-1, NPC-ECON-1 | hard | yes | yes |
+| MARKET-1 | 122 | market | ITEM-STORAGE-1, NPC-ECON-1, ECON-RET-0 (MARKET-RET-0), PREMIUM-1 | hard | yes | yes |
 | CRAFT-1 | 89, 91 | crafting, fishing, digging, cooking | #2039, ITEM-LOOP-1 | hard (item conversions) | yes | no |
-| HIRE-1 | 90 | hirelings | HOUSE-OWN-1, NPC-ECON-1 | impl | yes | no |
+| HIRE-1 | 90 | hirelings | HOUSE-OWN-1, NPC-ECON-1, PREMIUM-1 | impl | yes | no |
 | QUEST-RT-1 | 86, 87 | quest runtime on the bundle, chest rewards, cap 16 offer | QUEST-LOWER-1, ITEM-LOOP-1 | hard (rewards are mints) | no | yes |
 
 ### Epic 3. Magic and conditions
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | none | impl | no | no |
+| MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | PREMIUM-1 (Premium spell check, PREMIUM-ACTIVATION-0 §4.6) | impl | no | no |
 | MAGIC-COND-1 | 27, 28, 29 | DoT, haste/paralyze/invisibility/outfit, muted/exhaust/infight/pacified/rooted/feared/powerless/agony | BUNDLE-COMBAT-ENABLE-1 | impl | no | no |
 | MAGIC-ITEMS-1 | 55, 56 | rune use with target and conjure | #2039 | hard (DUR-03) | maybe | no |
 | MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields | LOOP-WORLD-1 (field ingress), MAGIC-CAST-1 | impl | no | no |
-| PROG-ADV-1 | 42, 43, 44 | weapon proficiency (PROF-WIRE-0), wheel of destiny, gem atelier | LOOP-PROGRESS-1 | hard | yes | yes |
+| PROG-ADV-1 | 42, 43, 44 | weapon proficiency (PROF-WIRE-0), wheel of destiny, gem atelier | LOOP-PROGRESS-1, PREMIUM-1 | hard | yes | yes |
 
 ### Epic 4. World and NPC
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040, CHAR-POSITION-1 | hard (travel moves a Character) | yes | no |
+| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040, CHAR-POSITION-1, PREMIUM-1 | hard (travel moves a Character) | yes | no |
 | MONSTER-META-1 | 98, 99, 100, 101 | bestiary (CHARM-6), charms, bosstiary, bosses | LOOP-MONSTER-1 | impl | maybe | no |
 | EVENTS-RAID-1 | 102 | raids | LOOP-MONSTER-1 | impl | no | no |
 | EVENTS-WORLD-1 | 103, 104 | world changes, Fury Gates, Nightmare Isles, hazard | EVENTS-RAID-1 | impl | maybe | no |
@@ -105,11 +105,13 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | none | hard (World relay) | maybe | maybe |
 | PARTY-1 | 112 | party membership and state: invite/join/leave, succession, shared-XP toggle, `PartyView` cache (membership only) | CHAT-2 (PARTY-PVP-0 §30-33) | hard (shared state) | yes | yes |
 | PARTY-XP-1 | 59 | shared-XP eligibility and split, party immunity in area effects, party loot right, `party_buff` query and party spells | PARTY-1, the D118 XP lane (LOOP-PROGRESS-1), D3-4 (LOOP-DAMAGE-1) (PARTY-PVP-0 §30-32) | hard (combat, rewards) | maybe | maybe |
-| GUILD-1 | 113 | guilds | PARTY-1 | hard | yes | yes |
-| VIP-1 | 114 | VIP list | none | impl | yes | yes |
-| CHAT-1 | 116 | chat channels beyond the relay | CHAT-2 | impl | maybe | yes |
-| HOUSE-RT-1 | 120 | house interior runtime: enter and furnish a house (HOUSE-RUNTIME-0) | LOOP-WORLD-1, ITEM-LOOP-1 | impl | maybe | no |
-| HOUSE-OWN-1 | 119 | house ownership, auction, rent (HOUSE-OWN-0 §32, 36-37) | HOUSE-RT-1, NPC-ECON-1 (Bank), MAIL-1 (Inbox), custody (HOUSE-CUSTODY-1) | hard (value) | yes | no |
+| GUILD-1 | 113 | guilds | PARTY-1, ECON-RET-0 (GUILD-RET-0), PREMIUM-1 (PREM-WIRE-1), NPC-ECON-1 (BANK-1) (PREMIUM-ACTIVATION-0 §2.2; SOCIAL-MAP packets) | hard (retention, privacy) | yes | yes |
+| VIP-1 | 114 | VIP list | PREMIUM-1 | impl | yes | yes |
+| CHAT-1 | 116 | chat channels beyond the relay | CHAT-2, PREMIUM-1 (yell gate) | impl | maybe | yes |
+| HOUSE-RT-1a | 120 | house interior runtime, first child (HOUSE-RUNTIME-1a) | SCOPE-HANDOFF-1 (HOUSE-CUSTODY-1 merged) | hard (security, persistence review) | maybe | no |
+| HOUSE-RT-1b | 120 | house interior runtime, map-load child (HOUSE-RUNTIME-1b) | HOUSE-RT-1a, MAP-LOAD-1 | hard (security, persistence review) | maybe | no |
+| HOUSE-RT-1c | 120 | house interior runtime, position child (HOUSE-RUNTIME-1c) | HOUSE-RT-1b, CHAR-POSITION-1 | hard (security, persistence review) | maybe | no |
+| HOUSE-OWN-1 | 119 | house ownership, auction, rent (HOUSE-OWN-0 §32, 36-37; the accepted HOUSE-1a packet) | HOUSE-RT-1a, HOUSE-RT-1b and HOUSE-RT-1c, PREMIUM-1 (PREM-WIRE-1), NPC-ECON-1 (BANK-1), MAIL-1 (INBOX-1a), custody (HOUSE-CUSTODY-1, merged) | hard (value) | yes | no |
 | HOUSE-ACL-1 | 121 | house ACL and beds | HOUSE-OWN-1 | impl | maybe | no |
 | SOCIAL-LATE-1 | 118 | marriage and PvP arena | GUILD-1, ARENA-1 | impl | maybe | no |
 
@@ -119,11 +121,11 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 |---|---|---|---|---|---|---|
 | STORE-ENT-1 | 123 | Store, server side only: entitlement grants and item/outfit/mount delivery; purchase and payment stay with Platform | PREMIUM-1, Platform contract | hard (value, authority) | yes | yes |
 | OPS-SAVE-1 | 137 | server save and graceful restart: flush all session-generation fenced writes, drain, resume | none | hard (durability) | maybe | no |
-| PREMIUM-1 | 124 | Premium gating across features | NPC-ECON-1 | impl | no | no |
+| PREMIUM-1 | 124 | Premium gating across features: the PREM-WIRE-1 gate (trusted clock, read seam, `PremiumStatus` in the legality checks), fail closed | none beyond merged PREM-1c-harden; routed first, it releases every Premium-gated batch below | hard (authority, fail closed) | no | maybe |
 | ACH-1 | 125, 129 | achievements, badges, titles | LOOP-PROGRESS-1 | impl | yes | maybe |
 | COSMETIC-1 | 126, 127 | outfit and addon change, mounts | #1942 for the client side | impl | no | yes |
-| HUNT-1 | 45, 46 | prey and hunting tasks | LOOP-MONSTER-1 | hard (rewards) | yes | no |
-| DAILY-1 | 47 | daily reward | NPC-ECON-1, MARKET-1 (CharacterInbox), HUNT-1 (PREY-1 wildcard balance), ADR-0021 World reset epoch | hard (rewards) | yes | no |
+| HUNT-1 | 45, 46 | prey and hunting tasks | LOOP-MONSTER-1, PREMIUM-1 | hard (rewards) | yes | no |
+| DAILY-1 | 47 | daily reward | NPC-ECON-1, MARKET-1 (CharacterInbox), HUNT-1 (PREY-1 wildcard balance), ADR-0021 World reset epoch, PREMIUM-1 | hard (rewards) | yes | no |
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1 | impl | no | no |
 | SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1, ITEM-LOOK-1 (registry order) | impl | no | yes |
 | GM-1 | 136 | GM tools, talkactions, bans | Platform contract | hard (authority) | yes | no |
@@ -146,16 +148,16 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 `Reg`, not by the number of workers.
 
 1. **Wave 0 (in flight):** #2018, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
-2. **Wave 1 (no migration, parallel):** CHAT-2 (before PARTY-1), OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
+2. **Wave 1 (no migration, parallel):** PREMIUM-1 (PREM-WIRE-1, first: releases every Premium-gated batch), ECON-RET-0 and BANK-RET-0 (retention decisions that release GUILD-1, MARKET-1, BANK-1), CHAT-2 (before PARTY-1), OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
    ITEM-LOOK-1, LOOP-CLOCK-1 (SEC-1 moved behind them, registry order CLOCK-1, ITEM-LOOK-1, SEC-1, WEATHER-1). In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
    death module's B and C).
 3. **Wave 2:** LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1, QUEST-RT-1, MAGIC-ITEMS-1,
    MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1, WEATHER-1.
    PVP-1 (#2032) follows PARTY-1 and DEATH-1 and is held until PARTY-1 merges; it is not a Wave 0 item.
 4. **Wave 3:** ITEM-TIMED-1, ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, LOGOUT-1, CRAFT-1, PROG-ADV-1,
-   MONSTER-META-1, HOUSE-RT-1, PARTY-XP-1.
+   MONSTER-META-1, HOUSE-RT-1a, HOUSE-RT-1b, HOUSE-RT-1c (in that order, after SCOPE-HANDOFF-1 and MAP-LOAD-1), PARTY-XP-1.
 5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, GUILD-1, VIP-1, CHAT-1,
-   PREMIUM-1, STORE-ENT-1, HUNT-1, DAILY-1, ACH-1, RANK-1, COSMETIC-1.
+   STORE-ENT-1, HUNT-1, DAILY-1, ACH-1, RANK-1, COSMETIC-1.
 6. **Wave 5:** HOUSE-OWN-1, then HOUSE-ACL-1, HIRE-1 and LOOP-TRAIN-1, EVENTS-*, ARENA-1, SOCIAL-LATE-1, GM-1, SPECTATE-1, TUTORIAL-1.
 
 Waves are an order of dependency, not a schedule; the control plane starts a batch when its dependencies have
