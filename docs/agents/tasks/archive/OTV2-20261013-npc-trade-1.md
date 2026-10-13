@@ -92,3 +92,7 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
   requires no contents and no timed row for a coin BURN as for the sold item; unit and
   PostgreSQL cases. (P2) `native_one_item_transaction.proto` documents `unit_price` 0..20,000,000
   and lines BUY 1..23, SELL 1..4.
+- Codex review on fd70b3c8: P1 fixed. The 0082 consistency guard counts every line of the traded
+  item's kind (BUY item MINT, SELL item BURN), not only the designated identity, and requires
+  exactly one, so a second item line of another identity is refused. npc_trade (12) and fee (35)
+  PostgreSQL cases pass.

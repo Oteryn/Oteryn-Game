@@ -115,6 +115,7 @@ DECLARE
     burned BIGINT;
     minted BIGINT;
     item_lines INTEGER;
+    item_kind_lines INTEGER;
     last_ordinal NUMERIC(20,0);
     last_worth BIGINT;
     first_mint NUMERIC(20,0);
@@ -129,9 +130,10 @@ BEGIN
            count(*) FILTER (WHERE l.line_kind = CASE NEW.side WHEN 1 THEN 4 ELSE 3 END
                               AND l.item_instance_id = NEW.item_instance_id
                               AND abs(l.quantity_after - l.quantity_before) = NEW.item_units),
+           count(*) FILTER (WHERE l.line_kind = CASE NEW.side WHEN 1 THEN 4 ELSE 3 END),
            min(l.placement_ordinal) FILTER (WHERE l.line_kind IN (2, 4)),
            count(*) FILTER (WHERE l.line_kind IN (2, 4))
-      INTO lines, last_line, burned, minted, item_lines, first_mint, mints
+      INTO lines, last_line, burned, minted, item_lines, item_kind_lines, first_mint, mints
       FROM game_npc_trade_lines l
      WHERE l.transaction_id = NEW.transaction_id
        AND l.created_xact_id = pg_current_xact_id();
@@ -145,8 +147,10 @@ BEGIN
        OR burned <> NEW.burned_gold_units
        OR minted <> NEW.minted_gold_units
        -- Exactly one item line: the bought item's MINT or the sold item's BURN, and no line of
-       -- the other side's kind.
+       -- the other side's kind. Every line of the item kind is counted, so a second item line of
+       -- another identity is refused too.
        OR item_lines <> 1
+       OR item_kind_lines <> 1
        OR EXISTS (SELECT 1 FROM game_npc_trade_lines l
                    WHERE l.transaction_id = NEW.transaction_id
                      AND l.line_kind IN (CASE NEW.side WHEN 1 THEN 3 ELSE 1 END,
