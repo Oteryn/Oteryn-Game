@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "5c32d7acdb5c41552a8081edbc09b8009a9b52a1b282c254e0b7254e0a4965e7",
+  "digest": "00e0de0a077c961d3843f461268a2803fff29ef5f842188159090e639b69944c",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "d3-8-cheese-admitted-20261007-r1",
@@ -10,5 +10,5 @@
     "y": 32238,
     "floor": -7
   },
-  "inputs_digest": "0548b5b1ff65d38b1e416817faf5e022950f8461837384994969b10e99ed3e1c"
+  "inputs_digest": "4215d02841c80123fc83f7424b6326de1c85ebcc9a4c87b16a0ce5583e3a6c47"
 }
