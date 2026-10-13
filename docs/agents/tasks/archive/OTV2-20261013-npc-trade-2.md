@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-trade-1-20261013
 issue: 1622
-pr: "the PR of this branch"
+pr: 2077
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-13
 updated_at: 2026-10-13
