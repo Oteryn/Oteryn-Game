@@ -26,22 +26,21 @@ depends_on: []
 
 ## Outcome
 
-`V1_BUNDLES` gains Magic Patch `exura infir`, Ultimate Healing `exura vita` and Wound Cleansing
-`exura ico` (bundles from SPELL-STARTER-1, unchanged). All three are plain self-target instants on the
-`healing` cooldown group, so the existing heal path casts them; no adapter, protocol, registry or
-migration change. Indices 1-3 are unchanged; the new spells take 4-6 (canonical key order).
+`V1_BUNDLES` gains Magic Patch `exura infir` (SPELL-STARTER-1 bundle, unchanged), a plain self-target
+instant on the `healing` cooldown group, so the existing heal path casts it. It takes index 4;
+indices 1-3 are unchanged. No adapter, protocol, registry, migration or client change.
 
-## Decisions and open points
+## Follow-ups (separate PRs after merge, per control plane)
 
-- Bruise Bane `exura infir ico` is NOT added: it sorts first and would move indices 1-3 (SPELL-STARTER-1
-  note). Add it with the index-pinned tests or with SPELL-BOOK-ACTIVATE-1. Knights have no level-1 heal until then.
-- Only the self-heal slice of rows 49-54 is delivered. Parametric, support and summon spells and the
-  `executable_catalog` adapters are not touched; their runtime gaps remain.
-- The control-plane validation command lists several filters before `--`; cargo accepts one. Used
-  `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- spell:: gameplay_transport::parameter_cast gameplay_transport::actor_spell`.
+- Ultimate Healing `exura vita` (index 5) and Wound Cleansing `exura ico` (index 6): the stock client
+  bar has `SPELL_SLOTS = 4` (`apps/client/src/spell.rs`, client-owned #1942), so they are unreachable
+  until the bar grows. Codex P1 on 7b562348.
+- Bruise Bane `exura infir ico`: sorts first and moves indices 1-3; add with the index-pinned tests.
+- Parametric, support and summon spells and the `executable_catalog` adapters (rest of rows 49-54).
+- Validation filters go after `--`: `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- spell:: gameplay_transport::parameter_cast gameplay_transport::actor_spell`.
 
 ## Validation
 
 - `cargo +1.95.0 fmt --all --check`: pass
 - lib filters above: 441 passed; `--test ability_engine`: 74 passed
-- New test: `the_added_self_heals_cast_for_their_vocation_and_share_the_healing_group`.
+- New test: `magic_patch_casts_and_shares_the_healing_group`.

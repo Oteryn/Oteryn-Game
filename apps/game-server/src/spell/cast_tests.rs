@@ -336,7 +336,7 @@ fn wounded(facts: CharacterCastFacts, health: u32) -> PlayerSpellState {
 #[test]
 fn v1_book_holds_the_self_casts_in_canonical_key_order() {
     let book = v1_spell_book().expect("V1 book");
-    let keys: Vec<&str> = (1..=6)
+    let keys: Vec<&str> = (1..=4)
         .map(|spell| book.indexed(index(spell)).expect("indexed").key.as_str())
         .collect();
     assert_eq!(
@@ -346,11 +346,9 @@ fn v1_book_holds_the_self_casts_in_canonical_key_order() {
             "candidate:spell/intense_healing",
             "candidate:spell/light_healing",
             "candidate:spell/magic_patch",
-            "candidate:spell/ultimate_healing",
-            "candidate:spell/wound_cleansing",
         ]
     );
-    assert!(book.indexed(index(7)).is_none());
+    assert!(book.indexed(index(5)).is_none());
     assert!(book.indexed(index(u32::MAX)).is_none());
 }
 
@@ -599,80 +597,34 @@ fn every_core_rejection_maps_to_the_section_3_disposition() {
 }
 
 #[test]
-fn the_added_self_heals_cast_for_their_vocation_and_share_the_healing_group() {
+fn magic_patch_casts_and_shares_the_healing_group() {
     let book = v1_spell_book().expect("V1 book");
-    let knight = CharacterCastFacts {
-        vocation: Vocation::Knight,
-        ..druid(8)
-    };
-    let strong_druid = CharacterCastFacts {
-        max_mana: 200,
-        ..druid(30)
-    };
-    for (spell, facts, mana_cost, key, cooldown_ms) in [
-        (4, druid(8), 6, "candidate:spell/magic_patch", 1000),
-        (
-            5,
-            strong_druid,
-            160,
-            "candidate:spell/ultimate_healing",
-            1000,
-        ),
-        (6, knight, 60, "candidate:spell/wound_cleansing", 2000),
-    ] {
-        let state = wounded(facts, 50);
-        let before = state.mana;
-        let next = run(
-            &book,
-            &state,
-            &intent(spell, SpellTarget::None),
-            at(0),
-            &mut Vec::new(),
-        )
-        .expect(key);
-        assert!(next.health > 50, "{key} heals");
-        assert_eq!(next.mana, before - mana_cost, "{key} pays its mana");
-        assert_eq!(next.cooldowns.spell_ready_at(key), Some(at(cooldown_ms)));
-        assert_eq!(
-            next.cooldowns.group_ready_at("healing"),
-            Some(at(cooldown_ms))
-        );
-        // The shared healing group blocks another healing spell inside the window.
-        let other = if spell == 4 { 3 } else { 4 };
-        let again = run(
+    let state = wounded(druid(8), 50);
+    let next = run(
+        &book,
+        &state,
+        &intent(4, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("exura infir");
+    assert!(next.health > 50);
+    assert_eq!(next.mana, state.mana - 6, "magic patch costs 6 mana");
+    assert_eq!(
+        next.cooldowns.spell_ready_at("candidate:spell/magic_patch"),
+        Some(at(1000))
+    );
+    assert_eq!(next.cooldowns.group_ready_at("healing"), Some(at(1000)));
+    // The shared healing group blocks another healing spell inside the window.
+    assert_eq!(
+        run(
             &book,
             &next,
-            &intent(other, SpellTarget::None),
+            &intent(3, SpellTarget::None),
             at(1),
-            &mut Vec::new(),
-        );
-        assert_eq!(
-            again,
-            Err(SpellCastDisposition::CoolingDown),
-            "{key} group cooldown"
-        );
-    }
-    // Wrong vocation and too low a level are refused by the core checks.
-    let state = wounded(druid(8), 50);
-    assert_eq!(
-        run(
-            &book,
-            &state,
-            &intent(6, SpellTarget::None),
-            at(0),
             &mut Vec::new()
         ),
-        Err(SpellCastDisposition::NotAvailable)
-    );
-    assert_eq!(
-        run(
-            &book,
-            &state,
-            &intent(5, SpellTarget::None),
-            at(0),
-            &mut Vec::new()
-        ),
-        Err(SpellCastDisposition::LevelTooLow)
+        Err(SpellCastDisposition::CoolingDown)
     );
 }
 
@@ -680,7 +632,7 @@ fn the_added_self_heals_cast_for_their_vocation_and_share_the_healing_group() {
 fn a_book_that_does_not_load_fails_closed_and_nothing_is_skipped() {
     let good = V1_BUNDLES[0];
     let book = book_from_bundles(&V1_BUNDLES).expect("book");
-    assert!(book.indexed(index(6)).is_some() && book.indexed(index(7)).is_none());
+    assert!(book.indexed(index(4)).is_some() && book.indexed(index(5)).is_none());
     // Unparseable spell, unparseable dependencies, and a bundle that parses but is no spell.
     assert!(book_from_bundles(&[("not json", good.1)]).is_err());
     assert!(book_from_bundles(&[(good.0, "not json")]).is_err());

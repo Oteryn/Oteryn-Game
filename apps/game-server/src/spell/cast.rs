@@ -46,16 +46,15 @@ macro_rules! starter {
 }
 
 /// The V1 castable set of §6 among the candidate starter bundles: self heal and condition removal
-/// (`exana pox`, `exura gran`, `exura`, `exura infir`, `exura vita`, `exura ico`).
-/// Every member is a plain self-target instant on the `healing` cooldown group; `bruise_bane` sorts
-/// first and would shift the existing indices, so it is left out of this set.
-const V1_BUNDLES: [(&str, &str); 6] = [
+/// (`exana pox`, `exura gran`, `exura`, `exura infir`). Every member is a plain self-target instant
+/// on the `healing` cooldown group. The stock client bar casts index 1-4 only (`SPELL_SLOTS`), so
+/// `ultimate_healing` and `wound_cleansing` (indices 5-6) and `bruise_bane` (sorts first, shifts
+/// indices 1-3) wait for the client bar and the index-pinned tests.
+const V1_BUNDLES: [(&str, &str); 4] = [
     starter!("instant-cure_poison"),
     starter!("instant-intense_healing"),
     starter!("instant-light_healing"),
     starter!("instant-magic_patch"),
-    starter!("instant-ultimate_healing"),
-    starter!("instant-wound_cleansing"),
 ];
 
 /// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
