@@ -103,10 +103,15 @@ contents are not listed in the set: they travel with the container.
   still apply); no draw.
 - **Draw.** Otherwise each equipped item and the backpack is drawn independently against the D62 ladder
   in parts per thousand: backpack 1000/700/450/250/100/0 and equipped item 100/70/45/25/10/0 for 0/1/2/3/4
-  and 5 or more regular blessings. The draw for slot `s` is unbiased: take consecutive 32-bit big-endian words of the SHA-256 stream over
-  (domain tag, death occurrence, policy digest, slot index, counter 0, 1, ...), reject a word at or above
-  4,294,967,000, and use the first accepted word modulo 1000; the item is lost when the draw is below the
-  threshold. No other source of randomness is used. The slot order is
+  and 5 or more regular blessings. The draw for slot `s` reuses the canonical sampler already on `main`
+  (`apps/game-server/src/domain/death.rs`), with no second generator: `deterministic_decision_u64`
+  (`crates/simulation-determinism`: decision domain v1, active profile revision, the World's gameplay
+  decision root, the death occurrence, the purpose `oteryn.death.item_loss.v1`, and the slot's draw
+  index) mapped onto 0..999 by `per_mille_roll`, the 64-bit multiply-shift `(draw · 1000) >> 64`. No
+  modulo is taken; each value has either floor or ceil of 2^64/1000 preimages, a deviation below
+  10^-16 that this decision accepts. The item is lost when the roll is below the threshold. A change
+  to the sampler, its purpose string or the draw indices is a new purpose version with its own
+  decision. No other source of randomness is used. The slot order is
   fixed in the death policy.
 - Everything above is recorded in the receipt and `command_binding`; a retry returns the first result.
 
