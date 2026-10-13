@@ -179,6 +179,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if settled.contains(&session) {
                 continue;
             }
+            // In-memory pre-filter: an actor with nothing to checkpoint costs no store read.
+            if !self.has_training_to_flush(session, actor).await {
+                settled.insert(session);
+                continue;
+            }
             if self.save_spell_training(actor, session, true).await
                 == super::actor_spell::TrainingSave::Unknown
             {
@@ -188,6 +193,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         failed
+    }
+
+    async fn has_training_to_flush(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
+        let runtime = self.runtime.lock().await;
+        self.spell_states
+            .lock()
+            .await
+            .has_training_to_flush(&runtime, actor, session)
     }
 }
 
