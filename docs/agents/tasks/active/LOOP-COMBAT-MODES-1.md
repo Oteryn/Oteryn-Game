@@ -60,4 +60,4 @@ No code in `movement/`, no client work, no protocol or migration change.
 ## Validation
 
 - `cargo +1.95.0 fmt --all --check`
-- `cargo +1.95.0 test --locked -p oteryn-game-server --lib combat:: ai_think gameplay_transport::ordinary_combat`
+- `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- combat:: ai_think gameplay_transport::ordinary_combat`
