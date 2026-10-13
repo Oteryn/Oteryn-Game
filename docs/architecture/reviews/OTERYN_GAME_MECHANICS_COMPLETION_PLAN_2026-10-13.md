@@ -29,7 +29,7 @@ else is a decision first.
 | 20 Fight modes | Offensive/Balanced/Defensive are wired and change the defence factor after a swing. Chase is treated as Stand ("until CHASE-1"). Secure mode is not found. Target-selection effect not verified. | PARTIAL: LOOP-COMBAT-MODES-1 |
 | 37 Level-up stats | The level is computed from experience only; no per-vocation max HP, mana or capacity change on level exists at runtime (vocation vitals are a tooling candidate). | ABSENT at runtime: LOOP-PROGRESS-1. Bundle node not checked. |
 
-## 3. Not Game-owned (owner direction 2026-10-13: weather, Store entitlements and server save/restart are IN scope, see batches WEATHER-1, STORE-ENT-1, OPS-SAVE-1)
+## 3. Not Game-owned (owner direction 2026-10-13: weather and server save/restart are IN scope, see batches WEATHER-1, OPS-SAVE-1; Store entitlements are in scope as a mechanic, but who delivers them across the Game/Platform boundary is OPEN under gap register §32, see STORE-ENT-1)
 
 | Row | Mechanic | Why |
 |---|---|---|
@@ -96,10 +96,10 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | PREMIUM-1 (Premium spell check, PREMIUM-ACTIVATION-0 §4.6); external prerequisites of the brief children: VIS-2, SPELL-D4, ATTACK-1b, COND-1 | impl | no | maybe |
+| MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | PREMIUM-1 (Premium spell check, PREMIUM-ACTIVATION-0 §4.6); external prerequisites of the brief children: VIS-2, SPELL-D4, ATTACK-1b, COND-1, STANCE-1, GAME-AI-01, PARTY-1, SKILLS-0, ITEM-SEM-2b; complete only when every child in App. 7 is complete | hard (child graph, App. 7) | maybe | maybe |
 | MAGIC-COND-1 | 27, 28, 29 | DoT, haste/paralyze/invisibility/outfit, muted/exhaust/infight/pacified/rooted/feared/powerless/agony | BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1, SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (child graph, App. 7) | maybe | maybe |
 | MAGIC-ITEMS-1 | 55, 56 | rune use with target and conjure | #2039; external prerequisites of the brief children: ITEM-USE-WIRE-1, ITEM-SEM-USE, ITEM-USE-1, SPELL-TARGET-1, ATTACK-0, VIS-2, CHAR-BUILD-1, SPELL-D4, COND-1 | hard (DUR-03) | maybe | maybe |
-| MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields | LOOP-WORLD-1 (field ingress), MAGIC-CAST-1; external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1, VIS-2 | hard (child graph, App. 7) | maybe | maybe |
+| MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields; complete only when every child in App. 7 is complete | LOOP-WORLD-1 (field ingress), MAGIC-CAST-1; external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1, VIS-2 | hard (child graph, App. 7) | maybe | maybe |
 | PROG-ADV-1 | 42, 43, 44 | weapon proficiency (PROF-WIRE-0), wheel of destiny, gem atelier | LOOP-PROGRESS-1, PREMIUM-1; external prerequisites of the brief children: PROF-CONTENT-1, PROF-1, FORGE-1a, PROF-WIRE-1, ATTACK-1b, RANGED-1, SKILLS-0, EQUIP-RT-1, CHAR-REV-SEQ-1, GAME-ABILITY-01, CONDITIONS-0, PREM-1, GOLD-FEE-2, WHEEL-GEM-0A, ITEM-USE-0 | hard | yes | yes |
 
 ### Epic 4. World and NPC
@@ -148,7 +148,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| STORE-ENT-1 | 123 | Store, server side only: entitlement grants and item/outfit/mount delivery; purchase and payment stay with Platform | PREMIUM-1, Platform contract | hard (value, authority) | yes | yes |
+| STORE-ENT-1 | 123 | Store delivery: inbox items and cosmetic unlocks (D47, D49). **Delivery owner unassigned (Game or Platform): blocked on the §32 delivery decision** (`MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md` row 'Store delivery'; ACCOUNT_PROGRESS_AND_QUEST_707 §4.5). Fixed already: scope and portability only; entitlement lifecycle (refund, revocation, expiry) is Platform's; a Game record is evidence about Platform authority, never a second commercial authority; an item claim is an idempotent DUR-03 MINT. Purchase and payment stay with Platform. | §32 delivery decision (owner of purchase delivery, entitlement identity and lifecycle, idempotent delivery across a boundary failure); then PREMIUM-1 and the Platform contract | blocked (decision) | unknown until the decision | unknown until the decision |
 | OPS-SAVE-1 | 137 | server save and graceful restart: flush all session-generation fenced writes, drain, resume | none | hard (durability) | maybe | no |
 | PREMIUM-1 | 124 | Premium gating across features: the PREM-WIRE-1 gate (trusted clock, read seam, `PremiumStatus` in the legality checks), fail closed | none beyond merged PREM-1c-harden; routed first, it releases every Premium-gated batch below | hard (authority, fail closed) | no | maybe |
 | ACH-1 | 125, 129 | achievements, badges, titles | LOOP-PROGRESS-1; external prerequisites of the brief children: QUEST-STATE-1, ENC-OUTCOME-1, SKILLS-0, FND-02 | hard (child graph, App. 7) | yes | maybe |
@@ -160,7 +160,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 | DAILY-1 | 47 | daily reward | NPC-ECON-1, MARKET-1 (CharacterInbox), HUNT-1 (PREY-1 wildcard balance), ADR-0021 World reset epoch, PREMIUM-1; external prerequisites of the brief children: WO-1, EXERCISE-CONTENT-1, RUNE-USE, WORLDINT-USE-1 | hard (rewards) | yes | maybe |
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1; external prerequisites of the brief children: CHAR-REV-SEQ-1, GOLD-FEE-1b, SPELL-TARGET-1, ATTACK-0, ITEM-USE-1, ATTACK-1b, CHAR-BUILD-1b, CHARM-1 | hard (child graph, App. 7) | maybe | maybe |
 | SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1, ITEM-LOOK-1 (registry order); external prerequisites of the brief children: PROD-COMPAT-01, ADMIT-CAP-1, ANL-01, DATA-PRIVACY-01, ANL-03 | hard (child graph, App. 7) | no | yes |
-| GM-1 | 136 | GM tools, talkactions, bans | Platform contract | hard (authority) | yes | no |
+| GM-1 | 136 | GM tools, mute, kick, staff audit and reports (Game side of OPS-GM-01, ARCH-LIVE-READINESS-0 §1). Account bans and sanction enforcement across the boundary are a Platform proposal (P1) that binds nothing in Game until Platform accepts; the owner of bans is unassigned until then. Complete only when every child in App. 7 is complete | LOGOUT-1 (LOGOUT-WIRE-1), WRITE-MOD-1; external prerequisites of the brief children: see App. 7 | hard (child graph, App. 7) | yes | yes |
 | SPECTATE-1 | 138 | spectating | LOOP-WORLD-1; external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1, CHAT-1 | hard (child graph, App. 7) | maybe | yes |
 
 ### Death module and in-flight work (not re-planned here)
@@ -189,7 +189,7 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 4. **Wave 3:** ITEM-TIMED-1, ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, CRAFT-1, PROG-ADV-1,
    MONSTER-META-1, HOUSE-RUNTIME-1a, HOUSE-RUNTIME-1b, HOUSE-RUNTIME-1c, MAP-OVERLAY-1a, MAP-OVERLAY-1b, MAP-OVERLAY-1c, MAP-CUTOVER-1a, MAP-CUTOVER-1b (in that order, after SCOPE-HANDOFF-1 and MAP-LOAD-1), PARTY-XP-1.
 5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, GUILD-1, GUILD-BANK-1, GUILD-CHAT-1, VIP-1, ITEM-IMBUE-1, ITEM-FORGE-1,
-   STORE-ENT-1, HUNT-1, DAILY-1, ACH-1, RANK-1, APP-1, APP-2, APP-3, APP-4 (in that order).
+   HUNT-1, DAILY-1, ACH-1, RANK-1, APP-1, APP-2, APP-3, APP-4 (in that order). STORE-ENT-1 is not scheduled: it is blocked on the §32 delivery decision and routes to Game or Platform only after that decision lands.
 6. **Wave 5:** HOUSE-1a, then HOUSE-ACL-1, HOUSE-1b, HOUSE-WIRE-1, BED-1, BED-REGEN-1, GUILDHALL-1, GUILD-WIRE-1, VIP-2, HIRE-1 and LOOP-TRAIN-1, EVENTS-*, ARENA-1, SOCIAL-LATE-1, GM-1, SPECTATE-1, TUTORIAL-1.
 
 Waves are an order of dependency, not a schedule; the control plane starts a batch when its dependencies have
@@ -198,7 +198,7 @@ merged. The death module runs alongside wave 1 and 2 on its own track.
 ## 6. Owner answers (2026-10-13, via the control plane)
 
 1. Start stays in Thais; the tutorial island is a late, non-blocking test epic (TUTORIAL-1).
-2. Weather, Store (server side only) and server save/restart are in scope (WEATHER-1, STORE-ENT-1, OPS-SAVE-1).
+2. Weather and server save/restart are in scope (WEATHER-1, OPS-SAVE-1). The Store is in scope as a mechanic, but the owner direction did not decide the Game/Platform delivery boundary; that stays open under gap register §32 (see STORE-ENT-1 and owner question Q4 below).
 3. Order confirmed.
 
 Original questions, kept for the record:
@@ -209,6 +209,7 @@ Original questions, kept for the record:
    Recommendation: confirm.
 3. **Order.** The plan finishes the game loop first, then economy, magic and conditions, the world, then
    community and meta. Recommendation: confirm; community features (guilds, market, houses) come last.
+4. **Store delivery owner.** Who delivers purchased Store items and cosmetic unlocks across the Game/Platform boundary (gap register §32)? Options: (a) Platform entitlement line that Game reads, (b) Game inbox record. Recommendation: decide in the §32 decision before STORE-ENT-1 is routed; until then it is unassigned and blocked.
 
 ## 7. Decision test
 
@@ -318,6 +319,19 @@ Each row below is its own batch, allocated when its listed dependencies have mer
 | SPELL-PRESENT-1 | SPELL_PRESENT0 | spell lane, combat review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition |
 | COMBAT-PRESENT-1 | SPELL_PRESENT0 | combat lane, combat and determinism review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1b; COND-1 for ticks |
 | PRESENT-CLIENT-1 | SPELL_PRESENT0 | client lane (client owner) |  | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
+| SPELL-RT-SCHED-1 | SPELL_NPC_MAP0 §3 | spell lane, combat and determinism review. Key `delayed_strike` (D.1.5): the spell scheduler, delayed and repeated strikes, cancellation (no scheduler exists on main; this child is the scheduler, never a second runtime) |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 for ticks |
+| SPELL-RT-FIELDBUFF-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `owned_field_buff` (Divine Empowerment, B.1) |  | SPELL-RT-SCHED-1; LOOP-WORLD-1 (field ingress) |
+| SPELL-RT-MONK-1 | SPELL_NPC_MAP0 §2, §3, §5 | spell lane, combat review. Key `monk_focus` and the `harmony_role` field (A.2, S26), the 3 callbacks once (never per spell), the 6 Monk formulas with source types and rounding |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 |
+| SPELL-RT-MONKAI-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `monster_ai_override` (A.3, Balanced Brawl) |  | GAME-AI-01 runtime wiring (#1798); SPELL-RT-MONK-1 |
+| SPELL-RT-STANCE-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `stance_toggle` (C.4), the 27 stance spells |  | STANCE-0; STANCE-1 |
+| SPELL-RT-GUARD-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `cast_restriction` (B.5): the 14 cast guards, Sweeping Takedown, Crystal Heal Friend (`spell/cast.rs` admission) |  | SPELL_NPC_MAP0 decision; S7 reader |
+| SPELL-RT-TARGET-1 | SPELL_NPC_MAP0 §3 | spell lane. Fields `targeting.allowed_targets` and `affects.top_creature` (D.3), the `targeting.parameter` extension (B.3) (`spell/target.rs`) |  | SPELL-TARGET-1; ATTACK-1b |
+| SPELL-RT-CHAIN-1 | SPELL_NPC_MAP0 §3 | spell lane, combat review. S23 chain: several Combat objects in one cast, Forked Glacier and Forked Thorns, Executioner's Throw, Spiritual Outburst (`spell/chain.rs`, `spell/plan.rs`) |  | SPELL-RT-SCHED-1; ATTACK-1b |
+| SPELL-RT-EQUIP-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. D.4 reader additions: `player_expression` Formula with `inputs: skill` and `needs_weapon`, the three shield-spell Ability additions, `outfit_binding` for the Avatars |  | SKILLS-0; ITEM-SEM-2b |
+| SPELL-RT-PARTY-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `party_buff` (C.3) adapter and the 11 party spells (`spell/party.rs`) |  | PARTY-1 for membership reads |
+| SPELL-RT-PREM-1 | PREMIUM_ACTIVATION0 §4.6 | spell lane. Premium spell check at admission through the merged Premium reader, no second Premium runtime |  | PREMIUM-1 |
+
+MAGIC-CAST-1 is complete only when every child in this table is complete. The wheel spells (36) belong to the WHEEL batches (SPELL-WHEEL-GATE-1 first) and the Paralyze caster effect to RUNE-CAST-1 under MAGIC-ITEMS-1; neither is a second copy here.
 
 ### LOOP-VITALS-1, LOOP-TRAIN-1, house beds
 
@@ -348,6 +362,11 @@ Each row below is its own batch, allocated when its listed dependencies have mer
 | SUMMON-WIRE-1 | CREATURE_AI0 | impl, protocol review | yes | VIS-2; SUMMON-1 |
 | FAMILIAR-CONTENT-1 | FAMILIARS0 | content |  | the spell and creature authoring schemas |
 | FAMILIAR-1 | FAMILIARS0 | hard (persistence, combat), persistence and combat review |  | SUMMON-1; FAMILIAR-CONTENT-1 |
+| SPELL-RT-SUMMON-1 | SPELL_NPC_MAP0 §3 | spell lane. Keys `acquire_summon` (C.2) and `summon_named_creature` (B.3); the 17 summon spells |  | SUMMON-1; SUMMON-WIRE-1 |
+| SPELL-RT-FAMILIAR-1 | SPELL_NPC_MAP0 §3 | spell lane. Key `familiar_summon` (C.1), the 5 familiar spells |  | FAMILIAR-1; FAMILIAR-CONTENT-1 |
+| SPELL-RT-WORLD-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. World-control keys `vertical_move`, `locate_message`, `tile_item_operation` (B.1, B.3, D.2), `house_access` (B.2), `creature_appearance` (B.3), `random_item_grant` (B.4); Levitate and Magic Rope helpers belong to WORLD-INTERACTION-0 |  | SPELL_NPC_MAP0 decision; S7 reader; WORLDINT-USE-1; HOUSE-1b for `house_access` |
+
+MAGIC-SUMMON-1 is complete only when every child above, the `owned_field_buff` child of MAGIC-CAST-1 and the SUMMON-1 and SUMMON-WIRE-1 children are complete.
 
 ### ITEM-LOOP-1
 
@@ -625,6 +644,23 @@ Each row below is its own batch, allocated when its listed dependencies have mer
 | ACH-NOTIFY-1 | ACHIEVEMENT0 | impl, protocol review | yes | the FND-02 state-domain path |
 | ACH-COVERAGE-1 | ACHIEVEMENT0 | content |  | none |
 
+### GM-1
+
+Source: ARCH-LIVE-READINESS-0 §1 (OPS-GM-01). Case management, appeals and rollback are not a GM tool. No value-creating staff action exists in either phase (§1 ruling 1).
+
+| Child | Brief | Class | Reg | Depends on (from the brief) |
+|---|---|---|---|---|
+| OPS-GM-AUDIT-1 | ARCH_LIVE_READINESS | hard (authority, audit), security review. ALPHA, first. `staff_action` event, signed requests, `oteryn-game-ops` | yes | none |
+| OPS-GM-SANCTION-2 | ARCH_LIVE_READINESS | hard (authority), migration `character_sanctions`, kick and mute. ALPHA | yes | OPS-GM-AUDIT-1; LOGOUT-WIRE-1 |
+| OPS-GM-REPORT-3 | ARCH_LIVE_READINESS | impl. ALPHA: the issue form first, the `reports` commands after WRITE-MOD-1 |  | WRITE-MOD-1 for the commands |
+| OPS-GM-ROSTER-4 | ARCH_LIVE_READINESS | hard (authority), migration `game_staff_roles`. EXT |  | OPS-GM-AUDIT-1 |
+| OPS-GM-STAFF-5 | ARCH_LIVE_READINESS | impl, protocol review, native client staff panel. EXT | yes | OPS-GM-ROSTER-4 |
+| OPS-GM-PREPORT-6 | ARCH_LIVE_READINESS | hard (privacy), migration `game_player_reports`. EXT | yes | OPS-GM-AUDIT-1 |
+| OPS-GM-P1 | ARCH_LIVE_READINESS | Platform proposal (account bans and signed kick requests); binds nothing in Game until Platform accepts; routed by the control plane. The owner of bans is unassigned until then |  | Platform's own acceptance |
+| ARCH-CONTROL-ANCHOR-0 | ARCH_LIVE_READINESS | architecture decision, EXT gate: no external player before it is delivered |  | ARCH-ALPHA-OPS-0 U7 |
+
+GM-1 is complete only when every Game child above is complete; OPS-GM-P1 and ARCH-CONTROL-ANCHOR-0 are not Game work and gate only the external phase.
+
 ### SEC-1
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
@@ -724,3 +760,4 @@ Every name in a `Depends on` column is one of: a batch in section 4, a child in 
 | CHEST-1, H-1, FND-02, FND-04, GAME-ABILITY-01, GAME-AI-01, VSL-MOVE-01, MOVE-RL-11, PROD-COMPAT-01, PROD-ENTITLEMENTS-01, DATA-PRIVACY-01, ANL-01, ANL-03, PREMIUM-DELIVERY-0, PREMIUM-ACTIVATION-0 | merged foundations, contracts and decisions | outside this plan |
 | ADR-0010, ADR-0021 | ADR | docs/adr |
 | DUR-02, DUR-03, RUNE-USE, SPELL-D3, SPELL-D4 | merged lanes or content facts | outside this plan |
+| WRITE-MOD-1, ARCH-ALPHA-OPS-0, SUMMON-1, SUMMON-WIRE-1, WORLDINT-USE-1, STANCE-0, STANCE-1 | brief children or decisions outside this plan, or listed in App. 7 supporting briefs | the named accepted briefs |
