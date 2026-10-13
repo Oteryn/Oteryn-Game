@@ -29,7 +29,7 @@ Web Design Guidelines and Webapp Testing belong in Oteryn-Platform, which is not
 
 ## Qualification
 
-This is an instruction-level permission gate, not a sandbox or tool-access restriction. Use the catalog referenced by root AGENTS.md as the explicit discovery route, then load a selected entry point only within the user grant. Native automatic discovery is not required for this route and remains unqualified here. No automatic invocation-control metadata is assumed portable across clients.
+This is an instruction-level permission gate, not a sandbox or tool-access restriction. Use the catalog referenced by root AGENTS.md as the explicit discovery route, then load a selected entry point only within the user grant. Automatic skill injection into a CLI model session is not required for this explicit route and remains unqualified here; native registry discovery is separately verified. No automatic invocation-control metadata is assumed portable across clients.
 
 Representative behavior cases (use the same model/effort for baseline and candidate):
 
@@ -46,4 +46,4 @@ Representative behavior cases (use the same model/effort for baseline and candid
 | Worker receives explicit same-task grant | Select within the delegated scope |
 | Backend change without permission | Normal required validation, no optional skill |
 
-Qualification evidence: [evaluation.json](evaluation.json). One baseline and one candidate trial ran on the actual Codex agent evaluation surface with the same inherited model/effort and explicit root/bootstrap/catalog delivery. The candidate selected correctly in all 12 decision cases; the baseline had no project-local optional skills. This is decision-level screening, not a visual-quality test or a guarantee of enforcement. Native CLI auto-discovery is BLOCKED by authentication failure before a model response; token/time telemetry was not exposed. No measured cost-saving or universal enforcement claim is made.
+Qualification evidence: [evaluation.json](evaluation.json). One baseline and one candidate trial ran on the actual Codex agent evaluation surface with the same inherited model/effort and explicit root/bootstrap/catalog delivery. The candidate selected correctly in all 12 decision cases; the baseline had no project-local optional skills. This is decision-level screening, not a visual-quality test or a guarantee of enforcement. Native registry discovery is PASS via local app-server skills/list; full CLI model startup remains BLOCKED by authentication before a response; token/time telemetry was not exposed. No measured cost-saving or universal enforcement claim is made.
