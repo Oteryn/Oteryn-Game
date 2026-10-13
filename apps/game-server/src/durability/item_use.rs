@@ -1,5 +1,5 @@
 //! Durable consumption of one unit of a stack in the main backpack (ITEM-USE-1b, migration
-//! 0081; decision `ITEM-USE-0` §4-§5, DUR-03 item-use amendment).
+//! 0083; decision `ITEM-USE-0` §4-§5, DUR-03 item-use amendment).
 //!
 //! [`DurabilityRoot::commit_item_use`] is one item-only one-item transaction under the holder's
 //! current item fence (composition rule 2: recovery fence, admission relation locks, the
@@ -14,7 +14,7 @@
 //! rows and answers [`ItemUseError::StaleState`] when any of them moved; it never searches
 //! again. Nothing is minted: the unit leaves `S` and a flask unit is added elsewhere in the same
 //! backpack. The record, the item changes, the entry changes and the one audit event (type 2,
-//! `item_use`) commit together; the database guards of 0081 admit each change only with them.
+//! `item_use`) commit together; the database guards of 0083 admit each change only with them.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{

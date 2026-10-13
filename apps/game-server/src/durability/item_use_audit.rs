@@ -222,6 +222,7 @@ fn check_flask(
         || after.definition == source_before.definition
         || entry.parent_item_instance_id != source_entry.parent_item_instance_id
         || entry.parent_item_instance_id == after.item_instance_id
+        || entry.placement_ordinal == source_entry.placement_ordinal
     {
         return Err(AuditError::InvalidInput);
     }
@@ -727,7 +728,7 @@ mod tests {
         fn entry_ordinals_max(&mut self) {
             self.source_entry.as_mut().unwrap().placement_ordinal = u64::MAX;
             let flask = self.flask.as_mut().unwrap();
-            flask.entry.as_mut().unwrap().placement_ordinal = u64::MAX;
+            flask.entry.as_mut().unwrap().placement_ordinal = u64::MAX - 1;
         }
     }
 
@@ -789,6 +790,17 @@ mod tests {
         let mut value = flask_stack();
         value.flask_missing = true;
         cases.push(("a flask and a missing flask", value));
+        let mut value = flask_stack();
+        let ordinal = value.source_entry.as_ref().unwrap().placement_ordinal;
+        value
+            .flask
+            .as_mut()
+            .unwrap()
+            .entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = ordinal;
+        cases.push(("a flask entry at the source ordinal", value));
         let mut value = flask_stack();
         value
             .flask

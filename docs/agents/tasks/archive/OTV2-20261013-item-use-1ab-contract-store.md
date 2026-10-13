@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20261013-item-use-1ab-contract-store
-title: "ITEM-USE-1a+1b: DUR-03 item-use audit contract, migration 0081 and durable store"
+title: "ITEM-USE-1a+1b: DUR-03 item-use audit contract, migration 0083 and durable store"
 mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -23,7 +23,7 @@ owned_paths:
   - apps/game-server/src/durability/item_mint_audit.rs
   - apps/game-server/src/durability/mod.rs
   - apps/game-server/src/durability/item_use.rs
-  - apps/game-server/migrations/0081_item_use.sql
+  - apps/game-server/migrations/0083_item_use.sql
   - apps/game-server/tests/item_use_postgres.rs
   - apps/game-server/tests/support/item_use_postgres_cases.rs
   - docs/agents/tasks/archive/OTV2-20261013-item-use-1ab-contract-store.md
@@ -44,7 +44,7 @@ wire change; the runtime role gains no item write outside a use record.
   bound are checked before encode.
 - **Rows.** `DUR03-RL-01/-02/-04/-06/-07-ITEM-USE*` registered, the byte rows measured on the worst
   case; the ITEMUSE0-RL-01, -02 and -04 rows belong to 1b/1c (runtime and measurement).
-- **Migration 0081 and store.** `game_item_use_records` (one record per CommandRef, forever) with a
+- **Migration 0083 and store.** `game_item_use_records` (one record per CommandRef, forever) with a
   deferred consistency guard; the four shared item guards each re-issued with their 0075 body
   verbatim plus one arm admitting the change only with a record of the same physical transaction.
   `DurabilityRoot::commit_item_use` is the item-only rule 2 writer: replay by CommandRef and
@@ -63,6 +63,15 @@ Two P2 findings, fixed in the next commit: the item-only use no longer takes or 
 CharacterRevision (composition decision §3; the store takes `CurrentCharacterItemFence`, the
 `CharacterRevisionMismatch` error is removed); a replay also requires the committed occurrence
 time. Each has a Postgres case.
+
+## Codex review (head e6d7c04)
+
+Two P2 findings. Fixed: the audit decoder rejects a flask entry at the source entry's ordinal (unit
+case). Not changed: the ABA `state_revision` fence for prepared stacks. A stack restored to the same
+definition, quantity and location yields the same use result, the item state carries no revision and
+sibling item transactions do not fence by it; the path is not worth a new request field (decision
+taken to the CP). Migration renumbered 0081 to 0083 by CP direction (PVP-RT-1 holds 0081,
+NPC-TRADE-1 0082); main merged.
 
 ## Validation
 

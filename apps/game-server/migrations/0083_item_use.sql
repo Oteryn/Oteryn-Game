@@ -201,7 +201,7 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0081: the used stack (and the flask stack it grows) of an item-use record of this same
+    -- 0083: the used stack (and the flask stack it grows) of an item-use record of this same
     -- physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u
                 WHERE u.transaction_id = NEW.last_transaction_id
@@ -280,7 +280,7 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_container_entry_removal_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0081: the entry of a used stack spent to zero, by the item-use record of this same
+    -- 0083: the entry of a used stack spent to zero, by the item-use record of this same
     -- physical transaction.
     IF TG_OP = 'DELETE' AND EXISTS (
         SELECT 1 FROM game_item_use_records u
@@ -368,7 +368,7 @@ CREATE OR REPLACE FUNCTION game_item_placement_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
     IF TG_TABLE_NAME='game_item_container_entries' THEN
-    -- 0081: the fresh flask item of an item-use record of this same physical transaction.
+    -- 0083: the fresh flask item of an item-use record of this same physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u JOIN game_item_instances i ON i.item_instance_id = NEW.item_instance_id
        WHERE u.shape = 4 AND u.flask_item_instance_id = NEW.item_instance_id
          AND u.transaction_id = NEW.placed_transaction_id AND u.character_id = NEW.character_id
@@ -479,7 +479,7 @@ CREATE OR REPLACE FUNCTION game_item_mint_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
 
-    -- 0081: the fresh flask item of an item-use record of this same physical transaction.
+    -- 0083: the fresh flask item of an item-use record of this same physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u
                  JOIN game_item_container_entries e ON e.item_instance_id = NEW.item_instance_id
                 WHERE u.shape = 4 AND u.flask_item_instance_id = NEW.item_instance_id

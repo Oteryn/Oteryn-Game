@@ -1,4 +1,4 @@
-// Shared ITEM-USE-1b cases (migration 0081). Any wrapper that provides the same path-loaded crate
+// Shared ITEM-USE-1b cases (migration 0083). Any wrapper that provides the same path-loaded crate
 // root as `item_use_postgres.rs`, with the Bestiary harness (one bootstrapped Character 41 on a
 // live Channel session in World 42 / Channel 43, held by node 1 at scope ownership generation 1),
 // can include this file.
