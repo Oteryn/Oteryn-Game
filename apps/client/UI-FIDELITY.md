@@ -830,8 +830,19 @@ decoded sprite, survive reset and cannot leak after provider replacement.
 Production advertisement is now [4,6,7,13,17,18]. Actual bootstrap/selected18
 domain17 and declined18/legacydomain2 routes are tested; dependencies remain4/6.
 Linux client222/196/5 and Session79, strict selected all-target Clippy/fmt pass.
-New MSVC/DX12 and native gameplay evidence are still pending. Previous page
-captures do not qualify this source or complete map/pacing/native E2E.
+Map source7335c8b99124ff9d121fa5f789319b9ecfa1e242 passes Rust1.95 MSVC
+client221/201/5+Session79, strict all-target Clippy and release build. The first
+audit correctly refuses the default local release ID; retain that failed attempt.
+Rebuild the same source with release0.1.0+dev.ci.g7335c8b99124: binary SHA256
+4e46bb4e14967e51bed4e0e8e7782604ef6c8bcf68b0c83b1c0d7753d632ad62.
+DX12 then passes20pages/78independently hashed captures/0invalid at125%DPI.
+Private build C:\Users\barte\Downloads\oteryn-client-7335c8b9-20261013-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-7335c8b9-20261013-identity,
+manifest69f7c0d13a9c5b6b0209d0ff1b352b2d77c14d8dae57b2a1738196a9f5e78d48.
+Owner's login PID37764 remains responsive; no login/installation replacement.
+Recovery /workspace/oteryn-client-publication-7335c8b9.bundle SHA256
+2f772ca31228244fd91444353f5ddad3f1c16819f6fedd4182b77ec412ba8d63.
+This is component/page proof, not completed map/pacing/native E2E or rollout.
 
 ## Required evidence per page/panel
 

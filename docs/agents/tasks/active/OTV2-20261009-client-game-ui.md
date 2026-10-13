@@ -128,8 +128,9 @@ missing/mismatched catalogues log once. Actual received Item-ground uploads matc
 decoded pixels, survive reset and disappear on provider replacement. Production
 bootstrap now advertises [4,6,7,13,17,18]; raw selected/declined tests cover map17
 versus legacy2. Linux client222/196/5+Session79, strict all-target Clippy/fmt pass.
-These fixes are not Windows/E2E qualified. Historical c302/5d evidence stays in
-UI-FIDELITY.md; never inherit it. Next: MSVC/DX12, then receipt deadline consumer.
+Map7335c8b9 passes MSVC221/201/5+Session79 and DX12 20pages/78hashes/0invalid;
+hashes/failed-release-ID attempt in UI-FIDELITY.md. PID37764 remains untouched.
+Receipt consumer continues in OTV2-20261013-step-pace-client-1; no E2E claim.
 Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
 
 CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).

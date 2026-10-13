@@ -137,7 +137,7 @@ use std::fmt;
 use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
@@ -653,6 +653,38 @@ pub struct CommandOutcome<D> {
 
 /// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
 pub type StepOutcome = CommandOutcome<StepDisposition>;
+
+/// Validated command-bound timing; the timestamp is captured before any claimed delta wait.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StepReceipt {
+    pub command_id: u64,
+    pub connection_generation: u64,
+    pub received_at: Instant,
+    pub wait_ms: u32,
+}
+
+/// Timing-aware native outcome. The legacy outcome/literals remain source-compatible.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StepReceiptOutcome {
+    pub outcome: StepOutcome,
+    pub receipt: Option<StepReceipt>,
+}
+
+impl std::ops::Deref for StepReceiptOutcome {
+    type Target = StepOutcome;
+    fn deref(&self) -> &Self::Target {
+        &self.outcome
+    }
+}
+
+impl From<StepOutcome> for StepReceiptOutcome {
+    fn from(outcome: StepOutcome) -> Self {
+        Self {
+            outcome,
+            receipt: None,
+        }
+    }
+}
 /// Outcome of `Session::use_object` (USE-WIRE-V1, command type 2).
 pub type UseOutcome = CommandOutcome<UseDisposition>;
 
@@ -1589,6 +1621,11 @@ impl<S: SessionStream> Session<S> {
         self.next_command_id
     }
 
+    /// Generation to which this admitted session's commands and receipts are fenced.
+    pub const fn connection_generation(&self) -> u64 {
+        self.connection_generation
+    }
+
     /// The `server_sequence` of the last frame applied (initially the snapshot's target).
     pub fn last_server_sequence(&self) -> u64 {
         self.last_server_sequence
@@ -1702,6 +1739,17 @@ impl<S: SessionStream> Session<S> {
     /// Sends the FND-02 `ClientCommand` type 1 `WORLD_ACTOR_STEP_INTENT` for `direction` and
     /// decodes its `CommandResult` and, when it `Moved`, the one `WORLD_SPATIAL` delta.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, SessionError> {
+        self.step_with_receipt(direction)
+            .await
+            .map(|result| result.outcome)
+    }
+
+    /// One step with its authoritative receipt, including receipt-bearing TOO_EARLY.
+    /// This low-level API does not rate-limit diagnostic harnesses; native dispatch does.
+    pub async fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepReceiptOutcome, SessionError> {
         self.ensure_usable()?;
         let payload = world_spatial::encode_step_intent(direction);
         let outcome = self.exchange_step(&payload).await;
@@ -1720,6 +1768,28 @@ impl<S: SessionStream> Session<S> {
             let outcome = self.step(direction).await?;
             if outcome.disposition != StepDisposition::TooEarly || attempt >= STEP_RETRY_ATTEMPTS {
                 return Ok(outcome);
+            }
+            tokio::time::sleep(backoff).await;
+            backoff = backoff.saturating_mul(2);
+            attempt += 1;
+        }
+    }
+
+    /// Native compatibility route: only receiptless TOO_EARLY uses legacy backoff.
+    /// A receipt-bearing refusal returns immediately to the client's deadline gate.
+    pub async fn step_retrying_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepReceiptOutcome, SessionError> {
+        let mut backoff = STEP_RETRY_INITIAL_BACKOFF;
+        let mut attempt = 1;
+        loop {
+            let result = self.step_with_receipt(direction).await?;
+            if result.disposition != StepDisposition::TooEarly
+                || result.receipt.is_some()
+                || attempt >= STEP_RETRY_ATTEMPTS
+            {
+                return Ok(result);
             }
             tokio::time::sleep(backoff).await;
             backoff = backoff.saturating_mul(2);
@@ -1969,14 +2039,22 @@ impl<S: SessionStream> Session<S> {
         outcome
     }
 
-    async fn exchange_step(&mut self, payload: &[u8]) -> Result<StepOutcome, SessionError> {
+    async fn exchange_step(&mut self, payload: &[u8]) -> Result<StepReceiptOutcome, SessionError> {
         let result = self
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
-        let disposition = world_spatial::decode_step_result_paced(
+        let received_at = Instant::now();
+        let decoded = world_spatial::decode_step_result_receipt(
             &result.payload,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
+        let disposition = decoded.disposition;
+        let receipt = (decoded.step_wait_ms != 0).then_some(StepReceipt {
+            command_id: result.command_id,
+            connection_generation: self.connection_generation,
+            received_at,
+            wait_ms: decoded.step_wait_ms,
+        });
         check_status_pairing(
             result.command_id,
             result.status,
@@ -2017,13 +2095,16 @@ impl<S: SessionStream> Session<S> {
             } else {
                 None
             };
-        Ok(CommandOutcome {
-            command_id: result.command_id,
-            status: result.status,
-            disposition,
-            result_server_sequence: result.server_sequence,
-            world_spatial_delta,
-            world_object_overlay_delta: None,
+        Ok(StepReceiptOutcome {
+            receipt,
+            outcome: CommandOutcome {
+                command_id: result.command_id,
+                status: result.status,
+                disposition,
+                result_server_sequence: result.server_sequence,
+                world_spatial_delta,
+                world_object_overlay_delta: None,
+            },
         })
     }
 
@@ -3771,6 +3852,117 @@ mod tests {
     }
 
     /// Wire compatibility only: accepting a receipt does not qualify the future deadline consumer.
+    #[test]
+    fn native_receipts_preserve_golden_wait_and_stamp_before_the_claimed_delta()
+    -> Result<(), BoxError> {
+        block_on(async {
+            use std::future::Future as _;
+            use std::task::Poll;
+            for (payload, wait, moved) in [
+                (vec![0x08, 0x01, 0x10, 0x64], Some(100), true),
+                (vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06], Some(111150), true),
+                (vec![0x08, 0x04, 0x10, 0x25], Some(37), false),
+                (vec![0x08, 0x01], None, true),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let (sent, received) = tokio::sync::oneshot::channel();
+                let (allow_delta, delta_permission) = tokio::sync::oneshot::channel();
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], &[13], &[]).await?;
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        7
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            41,
+                            7,
+                            if moved {
+                                CommandStatus::Accepted
+                            } else {
+                                CommandStatus::Rejected
+                            },
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    sent.send(Instant::now()).map_err(|_| "marker dropped")?;
+                    if moved {
+                        delta_permission.await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, 42, 1, 5, 6, 1, &spatial(17))?,
+                        )
+                        .await?;
+                    }
+                    let mut rest = Vec::new();
+                    server.read_to_end(&mut rest).await?;
+                    assert!(
+                        rest.is_empty(),
+                        "receipt-bearing TOO_EARLY must not use legacy retry"
+                    );
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                let mut step = Box::pin(session.step_retrying_with_receipt(StepDirection::East));
+                let before_delta = if moved {
+                    let mut received = Box::pin(received);
+                    std::future::poll_fn(|cx| {
+                        if let Poll::Ready(marker) = received.as_mut().poll(cx) {
+                            return Poll::Ready(marker.map_err(BoxError::from));
+                        }
+                        if step.as_mut().poll(cx).is_ready() {
+                            return Poll::Ready(
+                                Err("step completed before permitted delta".into()),
+                            );
+                        }
+                        Poll::Pending
+                    })
+                    .await?;
+                    // Result bytes are buffered: poll through their decode to the withheld delta.
+                    std::future::poll_fn(|cx| match step.as_mut().poll(cx) {
+                        Poll::Pending => Poll::Ready(Ok::<_, BoxError>(())),
+                        Poll::Ready(_) => {
+                            Poll::Ready(Err("step did not await the claimed delta".into()))
+                        }
+                    })
+                    .await?;
+                    let marker = Instant::now();
+                    allow_delta
+                        .send(())
+                        .map_err(|_| "delta permission dropped")?;
+                    Some(marker)
+                } else {
+                    None
+                };
+                let result = step.await?;
+                assert_eq!(result.receipt.map(|receipt| receipt.wait_ms), wait);
+                if let Some(receipt) = result.receipt {
+                    assert_eq!((receipt.command_id, receipt.connection_generation), (7, 1));
+                    if let Some(marker) = before_delta {
+                        assert!(receipt.received_at <= marker);
+                    }
+                }
+                assert_eq!(
+                    result.disposition,
+                    if moved {
+                        StepDisposition::Moved
+                    } else {
+                        StepDisposition::TooEarly
+                    }
+                );
+                drop(session);
+                peer.await??;
+            }
+            Ok(())
+        })?
+    }
+
     #[test]
     fn admitted_steps_decode_pacing_receipts_and_preserve_legacy_results() -> Result<(), BoxError> {
         block_on(async {
