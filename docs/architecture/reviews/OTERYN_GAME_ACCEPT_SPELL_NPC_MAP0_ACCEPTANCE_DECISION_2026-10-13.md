@@ -19,11 +19,18 @@
   SPELL-RT-PARTY-1 and SPELL-RT-FIELDBUFF-1. Each keeps its own #162 allocation and its other
   dependencies (the S7 reader, ATTACK-1b, COND-1, PARTY-1, SKILLS-0, ITEM-SEM-2b, WORLDINT-ADMIT-1).
   SPELL-RT-PREM-1 still waits for PREMIUM-1.
-- The two amendments the decision words as "pending acceptance" take effect: TRAVEL-0 §4 (the
-  optional `departure_text` route field, M8) and the native-behaviours candidate D.5.3 test 4
-  (the Paralyze caster effect, M4).
-- Rulings M1-M3 and M5-M7, M9 apply accepted decisions and add no contract. M4 and M8 are the
-  only contract rulings; M4 stays `PARITY_PENDING` under S24.
+- The two amendments are approved with the decision, but each stays pending: they amend
+  TRAVEL-0 §4 (the optional `departure_text` route field, M8) and the native-behaviours candidate
+  D.5.3 test 4 (the Paralyze caster effect, M4), and both targets are still CANDIDATE. As
+  ACCEPT-SOCIAL-MAP-0 rules (an amendment whose target is CANDIDATE takes effect in that target
+  when the target is accepted), each takes effect only when its own target is accepted. This
+  packet does not accept either target; the amended documents keep their "pending on
+  acceptance" wording.
+- Scope of the acceptance: rulings M1, M2, M4-M9. The source decision cites "M1-M3" (header and
+  decision test) but has no M3 section: it numbers M1 (§2), M2 (§3), then M4 (§4). This packet
+  does not count M3 as a ruling; the numbering gap is open point 5 of §2. M1, M2 and M5-M7, M9
+  apply accepted decisions and add no contract; M4 and M8 are the only contract rulings, and M4
+  stays `PARITY_PENDING` under S24.
 - The local spell and NPC packets (M9) may merge as data PRs; each stays held and activates nothing.
 
 ## 2. Open points the reviewers must settle before the status flips
@@ -34,12 +41,15 @@
    way no second Premium runtime follows.
 2. **Evidence level of M4.** The Paralyze ruling rests on a donor source (S24 hypothesis). The
    reviewers confirm `PARITY_PENDING` is the right level to accept at.
-3. **Amendments.** The reviewers confirm TRAVEL-0 §4 and D.5.3 test 4 read correctly once the
-   amendments take effect, and that no other accepted text contradicts M4 or M8.
-4. **Dependencies named as accepted.** M1-M3 rely on S7, S23-S27, CONDITIONS-0 (CANDIDATE),
+3. **Amendments.** The reviewers confirm TRAVEL-0 §4 and D.5.3 test 4 read correctly once their
+   targets are accepted, that no other accepted text contradicts M4 or M8, and whether the targets
+   (TRAVEL-0, the native-behaviours candidate) are accepted separately or later.
+4. **Dependencies named as accepted.** M1 and M2 rely on S7, S23-S27, CONDITIONS-0 (CANDIDATE),
    CREATURE-AI-0 §8 (CANDIDATE), FAMILIARS-0 (CANDIDATE) and STANCE-0 (CANDIDATE). The reviewers
    confirm the rulings only cite shapes those documents accepted into S27 or the merged code, and
-   that none of M1-M3 becomes effective ahead of its source.
+   that neither M1 nor M2 becomes effective ahead of its source.
+
+5. **M3 numbering.** The source cites M1-M3 but has no M3. The reviewers confirm no ruling is missing and the source header and decision test are corrected in the follow-up status PR (or by the owner of the decision), not here.
 
 ## 3. Procedure after the owner confirms
 
