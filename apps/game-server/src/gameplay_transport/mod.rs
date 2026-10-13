@@ -2861,6 +2861,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat.drain(session)
     }
 
+    async fn chat_delivered(&self, session: GameSessionId) {
+        self.chat.delivered(session);
+    }
+
     async fn npc_session_open(&self, session: GameSessionId) {
         // A client without chat still has a conversation state, held with the chat session.
         if !self.chat.knows(session) {

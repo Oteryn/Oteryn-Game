@@ -654,3 +654,20 @@ fn egress_bound_is_the_registered_chat0_rl_11_row() {
         Some(EGRESS_MAX_LINES as u64)
     );
 }
+
+#[test]
+fn a_drained_batch_counts_against_the_bound_until_delivered() {
+    let mut egress = ChatEgress::new();
+    for n in 0..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    let batch = egress.drain_batch();
+    assert_eq!(batch.len(), EGRESS_MAX_LINES);
+    // The whole bound is in flight: a new line is dropped and owes one marker.
+    egress.push(room_text(100));
+    assert_eq!(egress.len(), 0);
+    assert!(!egress.is_empty());
+    egress.delivered();
+    egress.push(room_text(101));
+    assert_eq!(drain(&mut egress), vec![ChatLine::Dropped, room_text(101)]);
+}

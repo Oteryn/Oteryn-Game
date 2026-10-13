@@ -1305,6 +1305,10 @@ mod chat_wire {
         async fn chat_drain(&self, session: GameSessionId) -> Vec<ChatLine> {
             self.chat.drain(session)
         }
+
+        async fn chat_delivered(&self, session: GameSessionId) {
+            self.chat.delivered(session);
+        }
     }
 
     fn admitted(

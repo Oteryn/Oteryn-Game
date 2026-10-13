@@ -566,6 +566,12 @@ pub(crate) trait FreshAdmissionAuthority {
         async { Vec::new() }
     }
 
+    /// CHAT-WIRE-1: the batch last returned by `chat_drain` was written to the client; it stops
+    /// counting against `CHAT0-RL-11`.
+    fn chat_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
+        async {}
+    }
+
     /// NPC-CMD-1a: a session with capability 3 starts (or restarts) without a conversation.
     fn npc_session_open(&self, _session: GameSessionId) -> impl Future<Output = ()> {
         async {}
@@ -1878,6 +1884,7 @@ where
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
+                authority.chat_delivered(admitted.game_session_id).await;
                 continue;
             }
             Next::Npc => {
