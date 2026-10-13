@@ -30,7 +30,7 @@ external_repositories: []
 
 ## Outcome
 
-Decision packet `OTERYN_GAME_ATTACK_DIST0_AUTO_ATTACK_DRAW_DECISION_2026-10-13.md`: the uniform draw leaves a mean residual of -69 to -1 on all 1536 rows; a linear-decreasing density reproduces `raw.avg` on every row within +-1/3 (floor rounding). Recommendation B (ATTACK-DIST-1), pending control plane acceptance. No code, no registry number.
+Decision packet `OTERYN_GAME_ATTACK_DIST0_AUTO_ATTACK_DRAW_DECISION_2026-10-13.md`: the uniform draw leaves a mean residual of -69 to -1 on all 1536 rows; a linear-decreasing density lands within +-1/3 of `raw.avg` but is not floor-exact (312/1536 rows fail packet 1.4), so no `MATCHED_TIBIAPAL` relabel follows and attack values stay `PARITY_PENDING`. Recommendation B (ATTACK-DIST-1), pending control plane acceptance and an owner decision on the mean gate. No code, no registry number.
 
 ## Validation
 

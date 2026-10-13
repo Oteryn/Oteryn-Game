@@ -12,15 +12,17 @@ Fixture `content/combat/parity/tibiapal_auto_attack_v1.json` (1536 rows). Each r
 - The engine draws uniformly over `[min, max]` (`gameplay_transport/attack.rs`, `draw % span`). Its mean is `(min + max) / 2 = f + 1.25 v`.
 - Residual `raw.avg - (min + max) / 2` lies in `[-69, -1]` on all 1536 rows. The uniform mean is 0.5 % to 26.5 % above TibiaPal's average.
 - TibiaPal publishes only min, avg and max. No histogram or sample is available, so the shape is **not observable**; only the mean is.
-- A density that falls linearly from `min` to `max` (a triangular distribution with its mode at `min`) has mean `(2 min + max) / 3 = f + v`. The residual `raw.avg - (2 min + max) / 3` lies in `[-1/3, +1/3]` on all 1536 rows, which is the rounding of the three `floor` calls.
+- A density that falls linearly from `min` to `max` (a triangular distribution with its mode at `min`) has mean `(2 min + max) / 3 = f + v` before rounding. The residual `raw.avg - (2 min + max) / 3` lies in `[-1/3, +1/3]` on all 1536 rows (rounding of the three `floor` calls).
 
-So a linear-decreasing density reproduces the published mean on every row. It is the simplest integer-drawable shape that does, but it is a fit to one moment, not a measured distribution.
+This is **not floor-exact**. Packet 1.4 requires `floor(mean) == raw.avg` on every row. That holds on 1224 rows and fails on 312 of 1536, with residual +1/3 (for example min 8, avg 16, max 31: exact mean 47/3 = 15.67, floor 15, raw.avg 16). Because only min, avg and max are published and `raw.avg` is itself floored, no single parametric shape is shown to meet the gate on all rows; no floor-exact construction is demonstrated here.
+
+So a linear-decreasing density is the simplest integer-drawable shape that lands within rounding of the published mean, as a fit to one moment, not a measured distribution. It does not satisfy the 1.4 gate as written.
 
 ## 2. Options
 
 - **A. Keep uniform.** No code change. Average damage stays 0.5 % to 26.5 % above TibiaPal and the attack values stay `PARITY_PENDING` for good.
-- **B. Linear-decreasing draw (recommended).** Over `n = max - min + 1` values, weight `n - k` for offset `k = 0..n-1`, total `T = n(n+1)/2`. Draw `r = draw % T` and take the smallest `k` with `(k + 1)(2n - k)/2 > r`, solved with an integer square root. Integer-only, deterministic from the existing `deterministic_decision_u64`, and its exact mean is `min + (max - min)/3 = (2 min + max) / 3`. The parity test then asserts the exact mean within the rounding band above and the attack values may become `MATCHED_TIBIAPAL` for Offensive.
-- **C. Wait for a measured distribution** (a sampled TibiaPal or official Tibia source). Highest cost, no date.
+- **B. Linear-decreasing draw (recommended).** Over `n = max - min + 1` values, weight `n - k` for offset `k = 0..n-1`, total `T = n(n+1)/2`. Draw `r = draw % T` and take the smallest `k` with `(k + 1)(2n - k)/2 > r`, solved with an integer square root. Integer-only, deterministic from the existing `deterministic_decision_u64`, and its exact mean is `min + (max - min)/3 = (2 min + max) / 3`. The parity test would assert the mean within the +-1/3 rounding band, which is a **tolerance, not the 1.4 floor-equality gate**. Therefore B alone does not relabel anything: the attack values in `parity_by_value` stay `PARITY_PENDING` and nothing becomes `MATCHED_TIBIAPAL`, unless the owner separately accepts the +-1/3 band as the mean gate (an amendment of packet 1.4) or a floor-exact construction is demonstrated.
+- **C. Wait for a measured distribution** (a sampled TibiaPal or official Tibia source). Highest cost, no date. Attack values stay `PARITY_PENDING`.
 
 ## 3. Recommendation and scope of the follow-up
 
@@ -31,3 +33,4 @@ Not in scope: the Balanced and Defensive factors, monk, creature melee, distance
 ## 4. Owner question
 
 1. Accept option B (ATTACK-DIST-1), keep A, or wait for C? Recommendation: B.
+2. Only if B: may packet 1.4 be amended so the mean gate is the +-1/3 band? Recommendation: no relabel without it; default answer keeps the values `PARITY_PENDING`.
