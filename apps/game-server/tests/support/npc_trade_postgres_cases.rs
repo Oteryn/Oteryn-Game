@@ -201,9 +201,10 @@ async fn character_revision(harness: &Harness) -> TestResult<String> {
     .await?)
 }
 
-fn shape(
-    trade: &CommittedNpcTrade,
-) -> Vec<(NpcTradeLineKind, [u8; 16], u64, Option<Coin>, u32, u32)> {
+type LineShape = (NpcTradeLineKind, [u8; 16], u64, Option<Coin>, u32, u32);
+type RefusalCase<'a> = (&'a str, NpcTradeRequest, fn(&NpcTradeError) -> bool);
+
+fn shape(trade: &CommittedNpcTrade) -> Vec<LineShape> {
     trade
         .lines
         .iter()
@@ -449,7 +450,7 @@ fn refusals_write_nothing() -> TestResult {
         stale.item.definition.production_key = "fixture:npc.shield".into();
         let mut coin_offer = trade(60, NpcTradeSide::Buy, 1, 1)?;
         coin_offer.item = stackable(Coin::Gold.production_key());
-        let cases: Vec<(&str, NpcTradeRequest, fn(&NpcTradeError) -> bool)> = vec![
+        let cases: Vec<RefusalCase> = vec![
             (
                 "insufficient funds",
                 trade(10, NpcTradeSide::Buy, 1, 11)?,

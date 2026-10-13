@@ -95,19 +95,20 @@ fn a_request_outside_its_shape_is_invalid() {
         validate(&request(NpcTradeSide::Buy, 2, 50)).unwrap(),
         (100, 2)
     );
-    let mut cases: Vec<(&str, NpcTradeRequest)> = Vec::new();
-    cases.push(("zero quantity", request(NpcTradeSide::Buy, 0, 50)));
-    cases.push(("quantity 101", request(NpcTradeSide::Buy, 101, 1)));
-    cases.push(("zero price", request(NpcTradeSide::Buy, 1, 0)));
-    cases.push((
-        "BUY above 20 crystal stacks",
-        request(NpcTradeSide::Buy, 1, 20_000_001),
-    ));
-    cases.push((
-        "SELL above 3 stacks",
-        request(NpcTradeSide::Sell, 1, 1_010_000),
-    ));
-    cases.push(("price overflow", request(NpcTradeSide::Buy, 2, u64::MAX)));
+    let mut cases: Vec<(&str, NpcTradeRequest)> = vec![
+        ("zero quantity", request(NpcTradeSide::Buy, 0, 50)),
+        ("quantity 101", request(NpcTradeSide::Buy, 101, 1)),
+        ("zero price", request(NpcTradeSide::Buy, 1, 0)),
+        (
+            "BUY above 20 crystal stacks",
+            request(NpcTradeSide::Buy, 1, 20_000_001),
+        ),
+        (
+            "SELL above 3 stacks",
+            request(NpcTradeSide::Sell, 1, 1_010_000),
+        ),
+        ("price overflow", request(NpcTradeSide::Buy, 2, u64::MAX)),
+    ];
     let mut value = request(NpcTradeSide::Buy, 1, 1);
     value.output_item_instance_ids[2] = value.event_id;
     cases.push(("a repeated identity", value));
