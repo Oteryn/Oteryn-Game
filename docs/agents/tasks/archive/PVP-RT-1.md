@@ -56,4 +56,4 @@ Death-transaction skull, points and marks (PVP-DEATH-1), ledger writer, kill cla
 
 ## Review
 
-Codex round on #2032: the World cleanup takes the scope authority and checks it against its transaction; points and marks bind their victim to the cited death receipt; a revenge mark expires exactly seven days after creation. Fixed in one commit with Postgres cases.
+Codex rounds on #2032: the World cleanup takes the scope authority and checks it against its transaction; points and marks bind their victim to a death receipt created in the same transaction (replay of an old receipt refused); a revenge mark expires exactly seven days after creation. Each round fixed in one commit with Postgres cases.

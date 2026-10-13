@@ -376,15 +376,14 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                 .await
                 .is_err()
         );
-        // Points and marks cite a death receipt of their victim: the receipts are fixtures
-        // written with triggers off; the points and marks are written under the real guards.
+        // Points and marks are written by the victim's death transaction: the receipt is a
+        // fixture inserted with triggers off, then the consequence is written under the real
+        // guards in the same transaction.
         let death_of = |n: u8| [n, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n];
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role = replica")
-            .execute(&mut *tx)
-            .await?;
-        for n in 0..102u8 {
-            let victim = if n == 101 { CHARACTER } else { OTHER };
+        let receipt = async |tx: &mut sqlx::PgConnection, n: u8, victim: u8| -> TestResult<()> {
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query(
                 "INSERT INTO game_character_death_receipts (death_occurrence_id, command_binding, \
                     policy_digest, character_id, original_character_revision, \
@@ -405,28 +404,40 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
             .bind(id(WORLD).as_slice())
             .execute(&mut *tx)
             .await?;
-        }
-        tx.commit().await?;
-        let point = async |earner: u8, victim: u8, n: u8| {
-            sqlx::query(
-                "INSERT INTO game_character_unjustified_points (character_id, death_occurrence_id, \
-                    victim_character_id, points_milli, committed_at) \
-                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1000, \
-                    clock_timestamp() - interval '46 days')",
-            )
-            .bind(id(earner).as_slice())
-            .bind(death_of(n).as_slice())
-            .bind(id(victim).as_slice())
-            .execute(&h.pool)
-            .await
+            sqlx::query("SET LOCAL session_replication_role = origin")
+                .execute(&mut *tx)
+                .await?;
+            Ok(())
+        };
+        const POINT: &str = "INSERT INTO game_character_unjustified_points (character_id, \
+            death_occurrence_id, victim_character_id, points_milli, committed_at) \
+            VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1000, \
+            clock_timestamp() - interval '46 days')";
+        let point = async |tx: &mut sqlx::PgConnection, earner: u8, victim: u8, n: u8| {
+            sqlx::query(POINT)
+                .bind(id(earner).as_slice())
+                .bind(death_of(n).as_slice())
+                .bind(id(victim).as_slice())
+                .execute(&mut *tx)
+                .await
         };
         for n in 0..101u8 {
-            point(CHARACTER, OTHER, n).await?;
+            let mut tx = h.pool.begin().await?;
+            receipt(&mut tx, n, OTHER).await?;
+            point(&mut tx, CHARACTER, OTHER, n).await?;
+            tx.commit().await?;
         }
+        // A receipt of the character itself (n = 101), for the mark cases below.
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 101, CHARACTER).await?;
         // A point citing another Character's death is refused.
-        assert!(point(CHARACTER, THIRD, 0).await.is_err());
-        assert!(point(CHARACTER, CHARACTER, 101).await.is_err());
-        let mark = async |expires: &str| {
+        assert!(point(&mut tx, CHARACTER, THIRD, 101).await.is_err());
+        tx.rollback().await?;
+        // A later transaction cannot replay an existing receipt into a consequence.
+        let mut tx = h.pool.begin().await?;
+        assert!(point(&mut tx, CHARACTER, OTHER, 0).await.is_err());
+        tx.rollback().await?;
+        let mark = async |tx: &mut sqlx::PgConnection, victim: u8, expires: &str| {
             let sql = format!(
                 "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
                     death_occurrence_id, created_at, expires_at) \
@@ -434,29 +445,38 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                     now() - interval '8 days', now() - interval '8 days' + interval '{expires}')"
             );
             sqlx::query(sqlx::AssertSqlSafe(sql))
-                .bind(id(CHARACTER).as_slice())
-                .bind(id(OTHER).as_slice())
+                .bind(id(victim).as_slice())
+                .bind(
+                    id(if victim == CHARACTER {
+                        OTHER
+                    } else {
+                        CHARACTER
+                    })
+                    .as_slice(),
+                )
                 .bind(death_of(101).as_slice())
-                .execute(&h.pool)
+                .execute(&mut *tx)
                 .await
         };
-        // The expiry is exactly seven days after creation; a mark of another victim's death is
-        // refused.
-        assert!(mark("6 days").await.is_err());
-        assert!(mark("8 days").await.is_err());
-        sqlx::query(
-            "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
-                death_occurrence_id, created_at, expires_at) \
-             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
-                now() - interval '8 days', now() - interval '1 day')",
-        )
-        .bind(id(OTHER).as_slice())
-        .bind(id(CHARACTER).as_slice())
-        .bind(death_of(101).as_slice())
-        .execute(&h.pool)
-        .await
-        .expect_err("a mark of the wrong victim");
-        mark("7 days").await?;
+        // The expiry is exactly seven days after creation, the mark names the victim of the
+        // receipt, and it is written by the death transaction.
+        for (victim, expires) in [
+            (CHARACTER, "6 days"),
+            (CHARACTER, "8 days"),
+            (OTHER, "7 days"),
+        ] {
+            let mut tx = h.pool.begin().await?;
+            receipt(&mut tx, 101, CHARACTER).await?;
+            assert!(mark(&mut tx, victim, expires).await.is_err());
+            tx.rollback().await?;
+        }
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 101, CHARACTER).await?;
+        mark(&mut tx, CHARACTER, "7 days").await?;
+        tx.commit().await?;
+        let mut tx = h.pool.begin().await?;
+        assert!(mark(&mut tx, CHARACTER, "7 days").await.is_err());
+        tx.rollback().await?;
 
         let lane = crate::durability::spell_owner_commit::SpellLane::new(
             crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,

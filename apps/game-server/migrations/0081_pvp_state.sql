@@ -153,10 +153,13 @@ $$;
 CREATE FUNCTION game_character_pvp_receipt_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- A new consequence is written by the victim's death transaction: the receipt it cites was
+    -- created in this same transaction. A later update keeps the victim binding only.
     IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
                     WHERE d.death_occurrence_id = NEW.death_occurrence_id
-                      AND d.character_id = NEW.victim_character_id) THEN
-        RAISE EXCEPTION 'a PvP consequence names the victim of its death receipt'
+                      AND d.character_id = NEW.victim_character_id
+                      AND (TG_OP = 'UPDATE' OR d.created_xact_id = pg_current_xact_id())) THEN
+        RAISE EXCEPTION 'a PvP consequence is written by the death transaction of its victim'
             USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
