@@ -39,7 +39,9 @@ class Consumption(unittest.TestCase):
             if r["consumption"]["kind"] == "FOOD"
         }
         for row in food.values():
-            self.assertTrue(1 <= row["consumption"]["value"]["regeneration_seconds"] <= 1199)
+            self.assertTrue(
+                1 <= row["consumption"]["value"]["regeneration_seconds"] <= 1199
+            )
         ham = food["oteryn:item.tibia.i3582"]
         self.assertEqual(ham["consumption"]["value"]["regeneration_seconds"], 360)
         self.assertEqual(ham["source"]["tibiawiki"]["regenseconds"], "360")
@@ -83,14 +85,17 @@ class Consumption(unittest.TestCase):
             self.assertFalse(world[item_id]["materializable"])
             self.assertEqual(world[item_id]["stack_class"], "Unknown")
             self.assertEqual(
-                row["stack_max"], lane.STACK_MAX if row["stack_class"] == "STACK_CAPABLE" else None
+                row["stack_max"],
+                lane.STACK_MAX if row["stack_class"] == "STACK_CAPABLE" else None,
             )
             self.assertIn(row["stack_class"], {"STACK_CAPABLE", "NON_STACKABLE"})
             self.assertIn(row["evidence"]["tibiawiki"]["stackable"], {"yes", "no"})
             self.assertEqual(row["evidence"]["canary"]["sha256"], lane.ITEMS_XML_SHA256)
 
     def test_canary_parsers(self):
-        foods = lane.parse_foods([{"line": 3, "text": '\t[3582] = { 30, "Chomp." }, -- ham'}])
+        foods = lane.parse_foods(
+            [{"line": 3, "text": '\t[3582] = { 30, "Chomp." }, -- ham'}]
+        )
         self.assertEqual(foods, {3582: {"value": 30, "line": 3}})
         potions = lane.parse_potions(
             [
@@ -100,7 +105,10 @@ class Consumption(unittest.TestCase):
                     "{ VOCATION.BASE_ID.PALADIN, VOCATION.BASE_ID.MONK }, level = 80, flask = 284, "
                     'description = "x" },',
                 },
-                {"line": 10, "text": "\t[7439] = { vocations = { VOCATION.BASE_ID.KNIGHT }, condition = berserk },"},
+                {
+                    "line": 10,
+                    "text": "\t[7439] = { vocations = { VOCATION.BASE_ID.KNIGHT }, condition = berserk },",
+                },
             ]
         )
         self.assertEqual(

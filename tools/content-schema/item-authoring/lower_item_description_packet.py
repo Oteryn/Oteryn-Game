@@ -93,9 +93,7 @@ def qualify(source, historical, definition, owners, params, admission=None):
         or not historical["xml_description_witnesses"]
         or historical["holds"]
         or definition.get("identity") != target
-        or not same(
-            {k: definition.get(k) for k in HEADERS}, guard
-        )
+        or not same({k: definition.get(k) for k in HEADERS}, guard)
         or movable.leaf(definition, "presentation.name") != source["native_name_guard"]
         or source["native_name_guard"]["state"] != "KNOWN"
     ):

@@ -41,7 +41,9 @@ DECISION = (
     "owner on 2026-10-13: every edible food with a source value and every restore potion and flask"
 )
 CANARY_REVISION = "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
-CANARY_RAW = "https://raw.githubusercontent.com/opentibiabr/canary/" + CANARY_REVISION + "/"
+CANARY_RAW = (
+    "https://raw.githubusercontent.com/opentibiabr/canary/" + CANARY_REVISION + "/"
+)
 FOODS_LUA = "data/scripts/actions/items/foods.lua"
 POTIONS_LUA = "data/scripts/actions/items/potions.lua"
 WIKI_API = "https://tibia.fandom.com/api.php"
@@ -51,7 +53,7 @@ STACK_MAX = 100
 MAX_FOOD_SECONDS = 1199
 CANARY_SECONDS_PER_FOOD_VALUE = 12
 FLASKS = {"Small": 285, "Medium": 283, "Large": 284}
-FLASK_PAGES = tuple("Empty Potion Flask (%s)" % size for size in FLASKS)
+FLASK_PAGES = tuple(f"Empty Potion Flask ({size})" for size in FLASKS)
 # TibiaWiki "Potions" page (revision pinned in the snapshot): the level each potion needs.
 WIKI_LEVELS = {
     236: 50,
@@ -82,7 +84,9 @@ def sha256(data):
 
 
 def fetch(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "oteryn-item-sem-use-2/1"})
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "oteryn-item-sem-use-2/1"}
+    )
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 
@@ -95,7 +99,9 @@ def wiki_query(**parameters):
 def category_members(category):
     titles, extra = [], {}
     while True:
-        data = wiki_query(list="categorymembers", cmtitle=category, cmlimit="500", **extra)
+        data = wiki_query(
+            list="categorymembers", cmtitle=category, cmlimit="500", **extra
+        )
         titles += [m["title"] for m in data["query"]["categorymembers"] if m["ns"] == 0]
         if "continue" not in data:
             return titles
@@ -105,14 +111,16 @@ def category_members(category):
 def infobox_params(content):
     found = {}
     for name in PARAMS:
-        match = re.search(r"^\|\s*%s\s*=[ \t]*([^\n]*)$" % name, content, re.M)
+        match = re.search(rf"^\|\s*{name}\s*=[ \t]*([^\n]*)$", content, re.MULTILINE)
         if match:
             found[name] = match.group(1).strip()
     return found
 
 
 def flask_notes(content):
-    match = re.search(r"^\|\s*notes\s*=(.*?)(?=^\|\s*history|\Z)", content, re.M | re.S)
+    match = re.search(
+        r"^\|\s*notes\s*=(.*?)(?=^\|\s*history|\Z)", content, re.MULTILINE | re.DOTALL
+    )
     return re.findall(r"\[\[([^\]|]+)", match.group(1)) if match else []
 
 
@@ -156,7 +164,9 @@ def canary_file(path):
 
 
 def capture():
-    titles = sorted(set(category_members("Category:Food") + category_members("Category:Potions")))
+    titles = sorted(
+        set(category_members("Category:Food") + category_members("Category:Potions"))
+    )
     titles = sorted(set(titles) | set(FLASK_PAGES) | {"Potions"})
     pages = wiki_pages(titles)
     potions_page = next(p for p in pages if p["title"] == "Potions")
@@ -176,7 +186,9 @@ def capture():
         "task": TASK,
         "tibiawiki": {
             "api": WIKI_API,
-            "potions_page": {k: potions_page[k] for k in ("title", "revision_id", "content_sha256")},
+            "potions_page": {
+                k: potions_page[k] for k in ("title", "revision_id", "content_sha256")
+            },
             "pages": pages,
         },
         "canary": {
@@ -191,7 +203,8 @@ def capture():
 
 def encode(value):
     return (
-        json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")) + "\n"
+        json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+        + "\n"
     ).encode()
 
 
@@ -236,7 +249,10 @@ def items_xml_lines():
             attr = re.search(r'<attribute key="(\w+)" value="([^"]*)"', inner)
             if attr:
                 attrs[attr.group(1)] = attr.group(2)
-        found[int(match.group(1))] = {"lines": "%d-%d" % (number, end), "attributes": attrs}
+        found[int(match.group(1))] = {
+            "lines": f"{number}-{end}",
+            "attributes": attrs,
+        }
     return found
 
 
@@ -245,7 +261,10 @@ def parse_foods(rows):
     for row in rows:
         match = re.match(r"^\t\[(\d+)\] = \{ (\d+), ", row["text"])
         if match:
-            foods[int(match.group(1))] = {"value": int(match.group(2)), "line": row["line"]}
+            foods[int(match.group(1))] = {
+                "value": int(match.group(2)),
+                "line": row["line"],
+            }
     return foods
 
 
@@ -258,12 +277,15 @@ def parse_potions(rows):
             # A multi-line entry (the monk transcendence potion) carries a condition.
             match = re.match(r"^\t\[(\d+)\] = \{$", text)
             if match:
-                potions[int(match.group(1))] = {"line": row["line"], "unsupported": ["condition"]}
+                potions[int(match.group(1))] = {
+                    "line": row["line"],
+                    "unsupported": ["condition"],
+                }
             continue
         body = match.group(2)
         entry = {"line": row["line"]}
         for field in ("health", "mana"):
-            ranges = re.search(r"\b%s = \{ (\d+), (\d+) \}" % field, body)
+            ranges = re.search(rf"\b{field} = \{{ (\d+), (\d+) \}}", body)
             if ranges:
                 entry[field] = [int(ranges.group(1)), int(ranges.group(2))]
         level = re.search(r"\blevel = (\d+)", body)
@@ -272,7 +294,10 @@ def parse_potions(rows):
         vocations = re.search(r"\bvocations = \{ ([^}]*) \}", body)
         if vocations:
             entry["vocations"] = sorted(
-                {v.upper() for v in re.findall(r"VOCATION\.BASE_ID\.(\w+)", vocations.group(1))}
+                {
+                    v.upper()
+                    for v in re.findall(r"VOCATION\.BASE_ID\.(\w+)", vocations.group(1))
+                }
             )
         flask = re.search(r"\bflask = (\d+)", body)
         if flask:
@@ -280,7 +305,7 @@ def parse_potions(rows):
         unsupported = [
             name
             for name in ("transform", "condition", "combat", "func")
-            if re.search(r"\b%s = " % name, body)
+            if re.search(rf"\b{name} = ", body)
         ]
         if unsupported:
             entry["unsupported"] = unsupported
@@ -300,7 +325,7 @@ def squash(name):
 
 
 def target(item_id):
-    return {"family": "Item", "key": "%s%d" % (KEY, item_id), "revision": REVISION}
+    return {"family": "Item", "key": f"{KEY}{item_id}", "revision": REVISION}
 
 
 def build(snapshot):
@@ -331,7 +356,10 @@ def build(snapshot):
         """Return (admission_needed, error) for the Item's stack shape against its sources."""
         wiki = (page or {}).get("params", {}).get("stackable")
         if record["materializable"]:
-            if wiki in ("yes", "no") and record["stack_class"] in ("StackCapable", "NonStackable"):
+            if wiki in ("yes", "no") and record["stack_class"] in (
+                "StackCapable",
+                "NonStackable",
+            ):
                 same = (wiki == "yes") == (record["stack_class"] == "StackCapable")
                 return False, None if same else "stack_conflict"
             return False, None
@@ -363,7 +391,7 @@ def build(snapshot):
             },
         }
         admit[item_id] = {
-            "item_key": "%s%d" % (KEY, item_id),
+            "item_key": f"{KEY}{item_id}",
             "materializable": True,
             "stack_class": shape,
             "stack_max": STACK_MAX if shape == "STACK_CAPABLE" else None,
@@ -392,11 +420,23 @@ def build(snapshot):
             seconds, source = int(wiki_raw), "TIBIAWIKI"
         elif wiki_raw is not None:
             if canary is None:
-                report("FOOD", "wiki_value_not_integer", item_id, page["title"], value=wiki_raw)
+                report(
+                    "FOOD",
+                    "wiki_value_not_integer",
+                    item_id,
+                    page["title"],
+                    value=wiki_raw,
+                )
                 continue
-            seconds, source = canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE, "OTS_HYPOTHESIS_ONLY"
+            seconds, source = (
+                canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE,
+                "OTS_HYPOTHESIS_ONLY",
+            )
         elif canary is not None:
-            seconds, source = canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE, "OTS_HYPOTHESIS_ONLY"
+            seconds, source = (
+                canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE,
+                "OTS_HYPOTHESIS_ONLY",
+            )
         else:
             report("FOOD", "no_source_value", item_id, page and page["title"])
             continue
@@ -404,7 +444,13 @@ def build(snapshot):
             report("FOOD", "non_positive_value", item_id, page and page["title"])
             continue
         if seconds > MAX_FOOD_SECONDS:
-            report("FOOD", "regeneration_1200_seconds_or_more", item_id, page and page["title"], seconds=seconds)
+            report(
+                "FOOD",
+                "regeneration_1200_seconds_or_more",
+                item_id,
+                page and page["title"],
+                seconds=seconds,
+            )
             continue
         if page is None:
             report("FOOD", "no_wiki_page_for_stack_shape", item_id)
@@ -413,7 +459,13 @@ def build(snapshot):
             squash(page["params"].get("name")),
             squash(page["params"].get("actualname")),
         }:
-            report("FOOD", "wiki_name_mismatch", item_id, page["title"], world_name=record["name"])
+            report(
+                "FOOD",
+                "wiki_name_mismatch",
+                item_id,
+                page["title"],
+                world_name=record["name"],
+            )
             continue
         shape, error = stack_shape(item_id, record, page)
         if error:
@@ -432,14 +484,20 @@ def build(snapshot):
                     "regenseconds": wiki_raw,
                 },
                 "canary": (
-                    {"path": FOODS_LUA, "line": canary["line"], "value": canary["value"]}
+                    {
+                        "path": FOODS_LUA,
+                        "line": canary["line"],
+                        "value": canary["value"],
+                    }
                     if canary
                     else None
                 ),
             },
         }
         if canary and wiki_raw is not None and re.fullmatch(r"\d+", wiki_raw):
-            row["source"]["canary_agrees"] = canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE == seconds
+            row["source"]["canary_agrees"] = (
+                canary["value"] * CANARY_SECONDS_PER_FOOD_VALUE == seconds
+            )
         rows.append(row)
         lowered_food[source] += 1
 
@@ -452,7 +510,9 @@ def build(snapshot):
             flask_pages[FLASKS[size]] = page
             for note in page.get("flask_notes", []):
                 flask_of_title[note] = FLASKS[size]
-    wiki_potion_pages = {p["title"]: p for p in pages if p["params"].get("secondarytype") == "Potions"}
+    wiki_potion_pages = {
+        p["title"]: p for p in pages if p["params"].get("secondarytype") == "Potions"
+    }
     admitted_flasks = set()
     flask_stack_error = {}
     for flask_id, page in sorted(flask_pages.items()):
@@ -475,11 +535,27 @@ def build(snapshot):
         page = group[0] if group else None
         title = page["title"] if page else None
         if "health" not in entry and "mana" not in entry:
-            reason = "attribute_or_condition_potion" if entry.get("unsupported") else "no_restore"
-            report("POTION", reason, item_id, title, unsupported=entry.get("unsupported", []))
+            reason = (
+                "attribute_or_condition_potion"
+                if entry.get("unsupported")
+                else "no_restore"
+            )
+            report(
+                "POTION",
+                reason,
+                item_id,
+                title,
+                unsupported=entry.get("unsupported", []),
+            )
             continue
         if entry.get("unsupported"):
-            report("POTION", "restore_with_condition", item_id, title, unsupported=entry["unsupported"])
+            report(
+                "POTION",
+                "restore_with_condition",
+                item_id,
+                title,
+                unsupported=entry["unsupported"],
+            )
             continue
         record = world.get(item_id)
         if record is None:
@@ -492,23 +568,49 @@ def build(snapshot):
             squash(page["params"].get("name")),
             squash(page["params"].get("actualname")),
         }:
-            report("POTION", "wiki_name_mismatch", item_id, title, world_name=record["name"])
+            report(
+                "POTION",
+                "wiki_name_mismatch",
+                item_id,
+                title,
+                world_name=record["name"],
+            )
             continue
         flask_wiki = flask_of_title.get(title)
         flask_canary = entry.get("flask")
         if flask_wiki is None and flask_canary is None:
             report("POTION", "no_flask_source", item_id, title)
             continue
-        if flask_wiki is not None and flask_canary is not None and flask_wiki != flask_canary:
-            report("POTION", "flask_source_conflict", item_id, title, wiki=flask_wiki, canary=flask_canary)
+        if (
+            flask_wiki is not None
+            and flask_canary is not None
+            and flask_wiki != flask_canary
+        ):
+            report(
+                "POTION",
+                "flask_source_conflict",
+                item_id,
+                title,
+                wiki=flask_wiki,
+                canary=flask_canary,
+            )
             continue
         flask = flask_wiki if flask_wiki is not None else flask_canary
-        if flask not in admitted_flasks and not (world.get(flask) or {}).get("materializable"):
+        if flask not in admitted_flasks and not (world.get(flask) or {}).get(
+            "materializable"
+        ):
             report("POTION", "flask_not_materializable", item_id, title, flask=flask)
             continue
         level = entry.get("level")
         if item_id in WIKI_LEVELS and level != WIKI_LEVELS[item_id]:
-            report("POTION", "level_source_conflict", item_id, title, wiki=WIKI_LEVELS[item_id], canary=level)
+            report(
+                "POTION",
+                "level_source_conflict",
+                item_id,
+                title,
+                wiki=WIKI_LEVELS[item_id],
+                canary=level,
+            )
             continue
         vocations = entry.get("vocations")
         if vocations is not None and not set(vocations) <= VOCATIONS:
@@ -523,7 +625,13 @@ def build(snapshot):
             if field in entry:
                 low, high = entry[field]
                 if not 1 <= low <= high <= 10000:
-                    report("POTION", "restore_range_outside_model", item_id, title, field=field)
+                    report(
+                        "POTION",
+                        "restore_range_outside_model",
+                        item_id,
+                        title,
+                        field=field,
+                    )
                     restores = None
                     break
                 restores.append({"resource": resource, "min": low, "max": high})
@@ -536,20 +644,27 @@ def build(snapshot):
                 "kind": "POTION",
                 "value": {
                     "restores": restores,
-                    "empty_flask": {"state": "KNOWN", "value": {"key": target(flask)["key"], "revision": REVISION}},
+                    "empty_flask": {
+                        "state": "KNOWN",
+                        "value": {"key": target(flask)["key"], "revision": REVISION},
+                    },
                 },
             },
             "source": {
                 "kind": "OTS_HYPOTHESIS_ONLY",
                 "tibiawiki": {"title": title, "revision_id": page["revision_id"]},
                 "canary": {"path": POTIONS_LUA, "line": entry["line"]},
-                "flask_basis": "TIBIAWIKI_FLASK_PAGE" if flask_wiki is not None else "CANARY_ONLY",
+                "flask_basis": "TIBIAWIKI_FLASK_PAGE"
+                if flask_wiki is not None
+                else "CANARY_ONLY",
                 "ranges_basis": "CANARY_ONLY",
             },
         }
         if level is not None or vocations is not None:
             row["use_requirements"] = {
-                "min_level": {"state": "KNOWN", "value": level} if level is not None else {"state": "UNKNOWN"},
+                "min_level": {"state": "KNOWN", "value": level}
+                if level is not None
+                else {"state": "UNKNOWN"},
                 "min_magic_level": {"state": "UNKNOWN"},
                 "vocations": {"state": "KNOWN", "value": vocations}
                 if vocations is not None
@@ -578,7 +693,9 @@ def build(snapshot):
         "flasks_admitted_or_present": len(admitted_flasks),
         "admissions": len(admissions),
         "reported": len(reported),
-        "reported_by_reason": {"%s:%s" % k: v for k, v in sorted(reasons.items())},
+        "reported_by_reason": {
+            "{}:{}".format(*k): v for k, v in sorted(reasons.items())
+        },
     }
     facts = {
         "schema": "OTERYN_ITEM_CONSUMPTION_FACTS/v1",
@@ -597,7 +714,10 @@ def build(snapshot):
         "schema": "OTERYN_ITEM_ADMISSION/v3",
         "task": TASK,
         "decision": DECISION,
-        "policy": {"agreement": "PINNED_EVIDENCE_NO_CONFLICT", "scope": "CONSUMABLE_STACK_SHAPE_ONLY"},
+        "policy": {
+            "agreement": "PINNED_EVIDENCE_NO_CONFLICT",
+            "scope": "CONSUMABLE_STACK_SHAPE_ONLY",
+        },
         "admissions": admissions,
     }
     return facts, admission
@@ -605,7 +725,9 @@ def build(snapshot):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--capture", action="store_true", help="refresh the sources snapshot (network)")
+    parser.add_argument(
+        "--capture", action="store_true", help="refresh the sources snapshot (network)"
+    )
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.capture:
@@ -617,7 +739,7 @@ def main():
     if args.check:
         for path, data in outputs:
             if path.read_bytes() != data:
-                raise SystemExit("%s drift" % path.name)
+                raise SystemExit(f"{path.name} drift")
     else:
         for path, data in outputs:
             path.write_bytes(data)
