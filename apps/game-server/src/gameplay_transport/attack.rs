@@ -565,17 +565,18 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 /// The swing as one Ability plan: a client-proposed damage effect on the held target,
-/// committed atomically by the Channel owner under the swing's identity.
+/// committed atomically by the Channel owner under the swing's identity. The target atom is the
+/// creature slot's `target_identity` (its definition key), which the owner commit compares.
 fn swing_plan(
     attacker: ExactActorRef,
-    target: ExactActorRef,
     lineage: CommandRef,
     ordinal: u16,
     magnitude: i64,
     content_digest: &[u8; 32],
+    target_identity: &str,
 ) -> Option<EffectPlan> {
     let issuer = actor_atom(attacker);
-    let target_atom = actor_atom(target);
+    let target_atom = target_identity.to_owned();
     let occurrence_id = format!(
         "auto-attack:{}:{}:{}:{ordinal}",
         hex(&attacker.placement_identity()),
@@ -737,11 +738,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let Some(plan) = swing_plan(
                 entry.actor,
-                target,
                 swing.lineage,
                 ordinal,
                 magnitude,
                 &digest,
+                &race_key,
             ) else {
                 continue;
             };
