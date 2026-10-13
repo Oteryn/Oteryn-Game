@@ -60,8 +60,9 @@ use by definition still finds nothing to use.
 - **Ingress.** `connection.rs` routes a `USE` of a main backpack direct entry to `use_item` only
   under capability 15; every other handle keeps the corpse path.
 - **Rows.** `ITEMUSE0-RL-01`, `-RL-02`, `-RL-02-DB-P99` and `-RL-04` registered; RL-02 and its p99
-  measured by `item_use_commit_throughput_is_measured` (local PostgreSQL 17.6, 99 sequential
-  commits, three runs: 120-133 commits/s, p99 18.7-55.3 ms; worst values registered).
+  measured by `item_use_commit_throughput_is_measured` on the flask shape (FlaskStack; local
+  PostgreSQL 17, 99 sequential commits, three runs: 115-119 commits/s, p99 18.8-31.8 ms; worst
+  values registered: 115 commits/s, 32 ms).
 
 ## High-risk authority/recovery qualification
 

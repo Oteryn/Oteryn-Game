@@ -9914,10 +9914,10 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
       "resource": "Database latency of one item-use commit",
       "unit": "milliseconds (p99)",
-      "hard_maximum": 56,
+      "hard_maximum": 32,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 56
+        "maximum": 32
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Qualification budget, not a runtime cutoff. Far below ITEMUSE0-RL-04 (2,000 ms), after which an outstanding commit is treated as ambiguous.",
@@ -9928,7 +9928,7 @@
       "consumers": [
         "DurabilityRoot::commit_item_use from the Channel owner (ITEM-USE-1c)"
       ],
-      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 with ITEMUSE0-RL-02 on the flask shape: p99 18.8, 27.2 and 31.8 ms over three runs; an earlier one-item Burn measurement peaked at 55.3 ms. The highest observed, rounded up, is registered. Not production hardware."
+      "notes": "Measured by ITEM-USE-1c (#1622) on 2026-10-13 with ITEMUSE0-RL-02 on the ITEM-USE-0 §4.4 flask shape: p99 18.8, 27.2 and 31.8 ms over three runs; the highest, rounded up, is registered. An earlier one-item Burn measurement (up to 55.3 ms) was the cheaper shape and is not the registered evidence. Not production hardware."
     },
     {
       "id": "ITEMUSE0-RL-03",
