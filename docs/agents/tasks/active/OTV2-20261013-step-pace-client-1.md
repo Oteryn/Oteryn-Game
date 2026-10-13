@@ -43,8 +43,12 @@ Stop still cancels retries. Own-actor quads interpolate for the MOVED duration,
 not a speed guess. Corrections/floor changes and session end reset presentation.
 Native idle Notify wakes before any first byte; started frames finish intact.
 Tests cover stored permits, withheld frame bodies and the following aligned frame.
-Full Linux client227/196/5+Session82, strict all-target Clippy/fmt pass. Native
-MSVC/DX12 and same-head CI are next, not inherited from map7335 qualification.
+Full Linux client227/196/5+Session82, strict all-target Clippy/fmt pass. Source
+4ff71216 normally merges acceptedmain8c45d03c (#2042/#2043), without deploy or
+World-pin changes. Exact MSVC226/201/5+Session82, strict Clippy/release and DX12
+20pages/78verified hashes/0invalid at125%DPI pass. Binary/manifest hashes, retained
+failures and paths are in UI-FIDELITY.md. New login PID1372 and old37764 respond;
+no automatic login. Same-head CI is still running without a failed check.
 No gameplay/emission qualification is claimed. Fresh admission/reconnect and
 fatal resync create/reset the actual
 channel; live resume/mid-session snapshot replacement are not implemented and

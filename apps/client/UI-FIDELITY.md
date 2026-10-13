@@ -871,7 +871,28 @@ cases are covered. Linux client227/196/5+Session82 and strict Clippy/fmt pass.
 This simulated bound is not a native network-performance or gameplay E2E claim.
 No new wire IDs/codecs/modules/server/deployment/account changes. Live resume or
 mid-session snapshot replacement remains absent; fresh admission is not its proof.
-Exact-source Windows/DX12 qualification follows; the server switch stays OFF.
+Source4ff71216e45500962f831cff32276bca8b9ba0a7 normally merges acceptedmain
+8c45d03c9f4cf8f5d2fcfa36f781396887cbd97c (#2042/#2043). This imports the approved
+source manifest enabling the World Bundle, not a deployment or live-node proof.
+World c49538eb/inputs86d18a80 remain unchanged. Exact Rust1.95 MSVC client226/201/5
+and Session82, strict all-target Clippy, formatting and release build pass.
+Release0.1.0+dev.ci.g4ff71216e455; binary SHA256
+ad54ede88550993e3b86f9ccb9e8f4fe55260db5fcd1c0a55318828605f0b9ff.
+DX12:20pages/78independently checked captures/0invalid at125%DPI; manifest
+8dc5058714abd1d02756a8fe534c5800255adf480193537d5be716506e7b638a.
+Private build C:\Users\barte\Downloads\oteryn-client-4ff71216-20261013-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-4ff71216-20261013.
+Qualified binary now responds as login PID1372/window3150006, while old37764
+remains responsive. Existing public launcher/CA and explicit asset root reused;
+no automatic sign-in, account/trust/install/start-file mutation or restart.
+Recovery /workspace/oteryn-client-publication-4ff71216.bundle SHA256
+4804935674ca7e9d4c15a9fda78d2a48fdb91558a0cdd51983a39d77bc13a97b.
+Source CI currently runs without failed checks; component/page proof is not
+full original parity, native gameplay/performance E2E, final review or MQ proof.
+The server switch stays OFF. Canonical lookup #1622 through6146799516 supplies
+the complete criteria, but no dedicated QA setup or ON/OFF/harness authority;
+#2041 remains open4f4fbadc. Client work continues under the owner task, not the
+withdrawn competing CP allocation. Older binaries are preserved, not retired.
 
 ## Required evidence per page/panel
 

@@ -136,7 +136,8 @@ Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
 CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
 #2034 is merged; #2041 emission stays OFF. Receipt consumers, native wake and
 animation are implemented in the dedicated Slot2 record, Linux227/196/5+Session82.
-MSVC/DX12 and same-head CI are next; no gameplay/E2E/rollout claim. Bootstrap
+4ff71216 passes MSVC226/201/5+82 and DX12 20/78; CI runs, no E2E/rollout claim.
+Bootstrap
 1007(SessionFatal)/1116(TransportFatal) still reaches update-required without retry.
 Battle window consumes admitted HP, with real egui replacement/filter/empty
 regressions; names and original sorting/visual parity remain unqualified.
