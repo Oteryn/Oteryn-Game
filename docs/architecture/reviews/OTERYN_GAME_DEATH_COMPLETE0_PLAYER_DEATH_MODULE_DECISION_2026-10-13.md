@@ -91,8 +91,11 @@ contents are not listed in the set: they travel with the container.
 - **Exemptions.** No selection and no amulet use for a character at or below level 8 (D65), without a
   vocation, or at or below the level of a verified Global exemption read at the target date.
 - **Amulet of Loss.** Selected when worn, the character has fewer than 5 regular blessings, the character is
-  not exempt and the death is not a red- or black-skull death (PARTY-PVP-0 §10.2: only those bypass the
-  amulet; every other PvP death uses the PvE amulet and ladder rules). It is the necklace slot item with the content key of the
+  not exempt, the death is not a red- or black-skull death, and the death is not an `adventurer_applied`
+  death (PARTY-PVP-0 §10.2: an active Adventurer's Blessing, Open world, level 20 or less, `adventurer_forfeited`
+  false, loses no XP, item or blessing, so it is evaluated before amulet selection and drawing and neither
+  consumes the amulet nor drops items; red/black skull deaths bypass the amulet; every other PvP death uses the PvE
+  amulet and ladder rules). It is the necklace slot item with the content key of the
   amulet. When selected, the lost-item set is empty. When not selected (5 or more blessings, exempt,
   red/black skull death), it stays equipped.
 - **Skull death.** At red or black skull every equipped item and the backpack are lost (D65 exemptions
@@ -164,8 +167,11 @@ PVP-RT-1b.
 - The NPC service validates eligibility before the transaction (the 3 Premium blessings need current
   Premium at purchase, D67; the level price; the blessing not already held) and the transaction
   re-checks them under the fence.
-- The grant receipt is a third kind in the Character receipt chain (after XP and death); the guard
-  change is in batch E's migration and uses the DEATH-0 §3.2 pattern.
+- The grant receipt is a further kind in the Character receipt chain (the twelfth at this commit). At this commit the latest full
+  guard union is `0073_character_progression_guard_wheel_union.sql` with eleven kinds (XP, death, stance,
+  bestiary, charm, monk, build, proficiency, familiar, quest, wheel as that migration lists them). Batch E's
+  migration must extend the then-latest full guard union, preserving every existing arm and adding the
+  grant kind, never the old two-kind DEATH-0 §3.2 shape.
 - The price table and the Twist of Fate acquisition are read at the target date; Twist of Fate is a
   PARTY-PVP-0 matter (`twist_of_fate_used`), not purchased here.
 
@@ -212,7 +218,7 @@ primitives, C owns every use of them.
 - **What becomes harder or impossible later:** the receipt shape and its checks are fixed for good
   (a later item rule needs a new migration, as DEATH-0 showed); a container stays attached to its
   re-keyed entries, so a deeper nesting or a split of contents needs a new decision; one lost-set bound
-  of 10 ties the receipt to the ten equipment slots; the chain gets a third receipt kind with a
+  of 10 ties the receipt to the ten equipment slots; the chain gets a further receipt kind (the twelfth at this commit) with a
   guard change (E) that every later Character receipt kind must keep compatible; the module is
   accepted whole, so a defect in one batch delays enabling all of them.
 - **Superseding evidence:** measured limits from batch B; the Global exemption at the target date; a
