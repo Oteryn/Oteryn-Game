@@ -5,7 +5,7 @@
 //! [`ChatLine::Dropped`] marker is owed; the marker takes no slot and is handed out once, ahead
 //! of the next line. Overflow after it re-arms nothing until a line has been sent, so a flood
 //! can neither grow a session's backlog nor starve its queued lines. A batch handed out by
-//! [`ChatEgress::drain_batch`] stays counted against the bound until [`ChatEgress::delivered`],
+//! [`ChatEgress::drain_batch`] stays counted against the bound until each is [`ChatEgress::delivered`],
 //! so queued plus in-flight lines never exceed [`EGRESS_MAX_LINES`].
 
 use std::collections::VecDeque;
@@ -83,9 +83,9 @@ impl ChatEgress {
         batch
     }
 
-    /// The last [`Self::drain_batch`] was written to the client.
-    pub(crate) fn delivered(&mut self) {
-        self.in_flight = 0;
+    /// `lines` lines of the last [`Self::drain_batch`] were written to the client.
+    pub(crate) fn delivered(&mut self, lines: usize) {
+        self.in_flight = self.in_flight.saturating_sub(lines);
     }
 
     /// Drops every queued line without a marker (a replacement snapshot drops lines).

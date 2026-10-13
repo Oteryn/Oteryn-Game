@@ -667,7 +667,10 @@ fn a_drained_batch_counts_against_the_bound_until_delivered() {
     egress.push(room_text(100));
     assert_eq!(egress.len(), 0);
     assert!(!egress.is_empty());
-    egress.delivered();
+    // Each written line frees one slot at once, before the rest of the batch is written.
+    egress.delivered(1);
     egress.push(room_text(101));
-    assert_eq!(drain(&mut egress), vec![ChatLine::Dropped, room_text(101)]);
+    egress.push(room_text(102));
+    // The second line met the bound again: the oldest queued room line (101) was dropped.
+    assert_eq!(drain(&mut egress), vec![ChatLine::Dropped, room_text(102)]);
 }

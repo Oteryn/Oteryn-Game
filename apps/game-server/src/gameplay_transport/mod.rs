@@ -2861,8 +2861,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat.drain(session)
     }
 
-    async fn chat_delivered(&self, session: GameSessionId) {
-        self.chat.delivered(session);
+    async fn chat_delivered(&self, session: GameSessionId, lines: usize) {
+        self.chat.delivered(session, lines);
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {

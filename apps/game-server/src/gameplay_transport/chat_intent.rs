@@ -174,13 +174,13 @@ impl ChatRuntime {
         entry.egress.drain_batch()
     }
 
-    /// The batch last returned by [`Self::drain`] reached the client: it no longer counts
-    /// against the session's undelivered bound.
-    pub(crate) fn delivered(&self, session: GameSessionId) {
+    /// `lines` lines of the batch last returned by [`Self::drain`] reached the client: they no
+    /// longer count against the session's undelivered bound.
+    pub(crate) fn delivered(&self, session: GameSessionId, lines: usize) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
-            entry.egress.delivered();
+            entry.egress.delivered(lines);
         }
     }
 

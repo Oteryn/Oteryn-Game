@@ -8203,12 +8203,12 @@
         "maximum": 64
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination. A drained batch stays counted until the connection has written it, so queued plus in-flight lines never exceed 64 (a line arriving while all 64 are in flight is dropped and owes the marker).",
+      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination. A drained line stays counted until the connection has written it, so queued plus in-flight lines never exceed 64 (a line arriving while all 64 are in flight is dropped and owes the marker).",
       "client_visible": true,
       "boundary_tests": [
         "max=64: 64 queued lines are all kept and none owes a marker",
         "max+1=65: a 65th line drops the oldest room line and owes exactly one marker; a sent marker covers further overflow until a line is sent",
-        "in flight: after a drain of 64 lines and before delivered, a new line is dropped with one marker owed; after delivered it is queued"
+        "in flight: after a drain of 64 lines and before delivered, a new line is dropped with one marker owed; after a line is delivered, one new line is queued per delivered line"
       ],
       "consumers": [
         "apps/game-server/src/chat/egress.rs EGRESS_MAX_LINES, ChatEgress::push",
