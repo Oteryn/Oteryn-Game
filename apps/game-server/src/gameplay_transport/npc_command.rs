@@ -186,5 +186,6 @@ fn end(state: &mut NpcSession, intent: &NpcTalkIntent) -> Option<NpcConversation
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic, reason = "test fixtures")]
 #[path = "npc_command_tests.rs"]
 mod tests;
