@@ -6,6 +6,9 @@ mod fixture;
 #[path = "monk_save_fresh_fixture.rs"]
 mod fresh_fixture;
 
+#[path = "kill_reward_postgres_e2e_tests.rs"]
+mod kill_reward_e2e;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
