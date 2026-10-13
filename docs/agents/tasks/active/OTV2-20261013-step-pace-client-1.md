@@ -33,11 +33,20 @@ receiptless retries retain the existing bounded doubling backoff.
 Raw golden MOVED100/max111150, TOO_EARLY37 and legacy tests use withheld-delta
 handshakes without sleeps. Existing malformed tests still fail closed.
 
-Next: qualify actual dispatch (not serialization) with at least10,000 fake-clock
-jittered steps, zero early sends and lateness at most20ms, one flight/one buffered
-intent, receipt-relative TOO_EARLY, actual own-actor animation and reset cases.
-Then exact-source MSVC/DX12 and CI. No native gameplay or emission qualification
-is claimed. Fresh admission/reconnect and fatal resync create/reset the actual
+Native dispatch consumes the typed receipt; the mailbox checks its command and
+channel generation before setting a monotonic deadline under the reservation
+lock. Actual channel dispatch runs10,000 jittered simulated outcomes: zero early
+sends, lateness at most20ms, no bursts or input consumption before due. The timed
+run_session bridge explicitly rejects the legacy methods, proving real routing.
+Receipt TOO_EARLY preserves the goal/latest single buffered intent; a drained
+Stop still cancels retries. Own-actor quads interpolate for the MOVED duration,
+not a speed guess. Corrections/floor changes and session end reset presentation.
+Native idle Notify wakes before any first byte; started frames finish intact.
+Tests cover stored permits, withheld frame bodies and the following aligned frame.
+Full Linux client227/196/5+Session82, strict all-target Clippy/fmt pass. Native
+MSVC/DX12 and same-head CI are next, not inherited from map7335 qualification.
+No gameplay/emission qualification is claimed. Fresh admission/reconnect and
+fatal resync create/reset the actual
 channel; live resume/mid-session snapshot replacement are not implemented and
 must not be reported as proven by those fresh-admission cases.
 

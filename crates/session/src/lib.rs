@@ -137,6 +137,7 @@ use std::fmt;
 use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
+use std::task::Poll;
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
@@ -1649,14 +1650,35 @@ impl<S: SessionStream> Session<S> {
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
         self.ensure_usable()?;
         let until = tokio::time::Instant::now() + duration;
-        let outcome = self.serve_liveness_until(until).await;
+        let outcome = self.serve_liveness_until(until, None).await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Native command wake interrupts only an idle first-byte wait, never a started frame.
+    pub async fn service_liveness_interruptible(
+        &mut self,
+        duration: Duration,
+        wake: &tokio::sync::Notify,
+    ) -> Result<(), SessionError> {
+        self.ensure_usable()?;
+        let until = tokio::time::Instant::now() + duration;
+        let outcome = self.serve_liveness_until(until, Some(wake)).await;
         self.poison_on_error(outcome)
     }
 
     async fn serve_liveness_until(
         &mut self,
         until: tokio::time::Instant,
+        wake: Option<&tokio::sync::Notify>,
     ) -> Result<(), SessionError> {
+        // Keep notifications posted during a frame until that frame is fully applied.
+        let mut notified = std::pin::pin!(async {
+            if let Some(wake) = wake {
+                wake.notified().await;
+            } else {
+                std::future::pending::<()>().await;
+            }
+        });
         loop {
             // Tokio may poll a ready read before an expired timeout. A continuously
             // readable peer must not extend the caller's idle window indefinitely.
@@ -1667,11 +1689,22 @@ impl<S: SessionStream> Session<S> {
             // consumes nothing), so the idle window can end without losing part of a frame; the
             // rest of a started frame is then read under the ordinary per-frame deadline.
             let mut first = [0_u8; 1];
-            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
-                Err(_elapsed) => return Ok(()),
-                Ok(Err(error)) => return Err(error.into()),
-                Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
-                Ok(Ok(_)) => {}
+            let result = {
+                let mut read =
+                    std::pin::pin!(tokio::time::timeout_at(until, self.stream.read(&mut first)));
+                std::future::poll_fn(|context| {
+                    if notified.as_mut().poll(context).is_ready() {
+                        return Poll::Ready(None);
+                    }
+                    read.as_mut().poll(context).map(Some)
+                })
+                .await
+            };
+            match result {
+                None | Some(Err(_)) => return Ok(()),
+                Some(Ok(Err(error))) => return Err(error.into()),
+                Some(Ok(Ok(0))) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+                Some(Ok(Ok(_))) => {}
             }
             let frame = bounded(
                 self.deadline,
@@ -3374,6 +3407,91 @@ mod tests {
         Ok(encode_state_delta(
             generation, sequence, domain, base, new, delta_type, payload,
         )?)
+    }
+
+    async fn poll_once<F: Future>(mut future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
+        std::future::poll_fn(|context| Poll::Ready(future.as_mut().poll(context))).await
+    }
+
+    #[test]
+    fn native_idle_wake_returns_without_consuming_a_frame() -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, _peer) = vitals_pair().await?;
+            let wake = tokio::sync::Notify::new();
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 40);
+            assert_eq!(session.next_command_id(), 7);
+            session.ensure_usable()?;
+            wake.notify_one(); // A notification posted before the first poll retains its permit.
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            Ok::<_, BoxError>(())
+        })?
+    }
+
+    #[test]
+    fn native_wake_finishes_a_withheld_frame_body_before_returning() -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, mut peer) = vitals_pair().await?;
+            let wake = tokio::sync::Notify::new();
+            let payload =
+                actor_spell::encode_actor_vitals(&vitals(140, 55)).map_err(|e| format!("{e:?}"))?;
+            let body = vitals_frame(1, 41, 3, 3, 4, 1, &payload)?;
+            let mut framed = u32::try_from(body.len())?.to_be_bytes().to_vec();
+            framed.extend_from_slice(&body);
+            peer.write_all(&framed[..5]).await?;
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                peer.write_all(&framed[5..]).await?;
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 41);
+            assert_eq!(session.vitals_revision, 4);
+            assert_eq!(session.actor_vitals(), Some(&vitals(140, 55)));
+            assert_eq!(session.take_events().len(), 1);
+            session.ensure_usable()?;
+            write_frame(&mut peer, &vitals_frame(1, 42, 3, 4, 5, 1, &payload)?).await?;
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 42);
+            assert_eq!(session.vitals_revision, 5);
+            assert_eq!(session.take_events().len(), 1);
+            Ok::<_, BoxError>(())
+        })?
     }
 
     #[test]

@@ -803,7 +803,9 @@ impl PlayView {
                 Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
                 Input::Stop => link.request_combat(CombatCommand::Stop),
                 Input::UseMap(target) => {
-                    let _ = link.commands.send(PlayCommand::UseMap(target));
+                    if link.commands.send(PlayCommand::UseMap(target)).is_ok() {
+                        lock(&link.mailbox).wake.notify_one();
+                    }
                 }
                 Input::Arrow(_) => {
                     if !link
@@ -900,6 +902,7 @@ struct Mailbox {
     step_pending: bool,
     step_deadline: StepDeadline,
     connection_generation: Option<u64>,
+    wake: Arc<tokio::sync::Notify>,
     pushed: Pushed,
     last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
@@ -1044,6 +1047,7 @@ impl PlayLink {
             return false;
         }
         mailbox.action_pending = Some(command);
+        mailbox.wake.notify_one();
         true
     }
 
@@ -1067,6 +1071,7 @@ impl PlayLink {
             return false;
         }
         mailbox.chat_pending = Some(intent);
+        mailbox.wake.notify_one();
         true
     }
 
@@ -1110,6 +1115,7 @@ impl PlayLink {
             mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
             return Ok(false);
         }
+        mailbox.wake.notify_one();
         Ok(true)
     }
 
@@ -1124,7 +1130,9 @@ impl PlayLink {
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let _ = self.commands.send(PlayCommand::Combat(command));
+        if self.commands.send(PlayCommand::Combat(command)).is_ok() {
+            lock(&self.mailbox).wake.notify_one();
+        }
     }
 
     /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
@@ -1203,6 +1211,13 @@ pub trait Stepper: Send {
         &mut self,
         duration: Duration,
     ) -> impl Future<Output = Result<(), SessionError>> + Send;
+    fn serve_or_wake(
+        &mut self,
+        duration: Duration,
+        _wake: &tokio::sync::Notify,
+    ) -> impl Future<Output = Result<(), SessionError>> + Send {
+        async move { self.serve(duration).await }
+    }
     /// The pushed deltas applied since the last call; the session fails closed when this queue
     /// is left to fill.
     fn drain(&mut self) -> Vec<SessionEvent>;
@@ -1285,6 +1300,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.service_liveness(duration)
     }
 
+    fn serve_or_wake(
+        &mut self,
+        duration: Duration,
+        wake: &tokio::sync::Notify,
+    ) -> impl Future<Output = Result<(), SessionError>> + Send {
+        self.service_liveness_interruptible(duration, wake)
+    }
+
     fn drain(&mut self) -> Vec<SessionEvent> {
         self.take_events()
     }
@@ -1333,6 +1356,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    let wake = Arc::clone(&lock(&outbox.0).wake);
     {
         let mut mailbox = lock(&outbox.0);
         mailbox.game = session.game_state();
@@ -1399,7 +1423,7 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
-                match session.serve(IDLE_SLICE).await {
+                match session.serve_or_wake(IDLE_SLICE, &wake).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);
                         lock(&outbox.0).game = session.game_state();
@@ -1705,6 +1729,97 @@ mod tests {
         let (fresh, _commands, _outbox) = play_channel();
         assert!(fresh.request_step_at(now, || Ok(Some(StepDir::North)))?);
         Ok(())
+    }
+
+    #[test]
+    fn native_task_uses_timed_outcomes_and_command_wakes_instead_of_legacy_methods()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct TimedStepper {
+            received_at: Instant,
+            calls: Arc<AtomicUsize>,
+        }
+        impl Stepper for TimedStepper {
+            fn connection_generation(&self) -> Option<u64> {
+                Some(1)
+            }
+            async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                Err(SessionError::SessionUnusable) // The native task must not discard timing here.
+            }
+            async fn step_with_receipt(
+                &mut self,
+                _: StepDirection,
+            ) -> Result<StepReceiptOutcome, SessionError> {
+                let index = self.calls.fetch_add(1, Ordering::SeqCst);
+                Ok(timed(
+                    moved_to(100, 199, 0),
+                    self.received_at + Duration::from_millis(index as u64 * 100),
+                    100,
+                    false,
+                ))
+            }
+            async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+                Err(SessionError::SessionUnusable) // Old idle polling must not hide the wake.
+            }
+            async fn serve_or_wake(
+                &mut self,
+                _: Duration,
+                wake: &tokio::sync::Notify,
+            ) -> Result<(), SessionError> {
+                wake.notified().await;
+                Ok(())
+            }
+            fn drain(&mut self) -> Vec<SessionEvent> {
+                vec![]
+            }
+            async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+        }
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let (link, commands, outbox) = play_channel();
+            let calls = Arc::new(AtomicUsize::new(0));
+            let received = Instant::now();
+            let mut task = std::pin::pin!(run_session(
+                TimedStepper {
+                    received_at: received,
+                    calls: Arc::clone(&calls),
+                },
+                commands,
+                outbox
+            ));
+            let first =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(first.is_pending()); // Native idle future has registered its command wake.
+            assert!(link.request_step_at(received, || Ok(Some(StepDir::North)))?);
+            let next =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(next.is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            assert!(
+                matches!(link.poll(), Some(PlayEvent::Stepped(result)) if result.receipt.is_some())
+            );
+            assert!(
+                !link.request_step_at(received + Duration::from_millis(99), || Err(
+                    BatchError::InvalidView
+                ))?
+            );
+            assert!(
+                link.request_step_at(received + Duration::from_millis(100), || Ok(Some(
+                    StepDir::North
+                )))?
+            );
+            let next =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(next.is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 2);
+            assert!(
+                matches!(link.poll(), Some(PlayEvent::Stepped(result)) if result.receipt.is_some())
+            );
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
     }
 
     #[test]

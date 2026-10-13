@@ -844,6 +844,35 @@ Recovery /workspace/oteryn-client-publication-7335c8b9.bundle SHA256
 2f772ca31228244fd91444353f5ddad3f1c16819f6fedd4182b77ec412ba8d63.
 This is component/page proof, not completed map/pacing/native E2E or rollout.
 
+## Authoritative step-receipt consumer — 2026-10-13, AUTHORING
+
+StepReceiptOutcome wraps the source-compatible legacy StepOutcome, carrying the
+validated wait plus command/generation and monotonic receipt time. Session stamps
+the result before awaiting its claimed delta. Native routing retains the receipt;
+the real run_session bridge test makes legacy methods fail if accidentally used.
+Receipt-bearing TOO_EARLY returns immediately, without old doubling backoff.
+The receiptless path retains that exact existing compatibility behavior.
+
+The native mailbox fences timing and checks the deadline before consuming view
+input, including direct callers. One step stays reserved through outcome draining;
+receipt-aware movement keeps only the latest buffered arrow. TOO_EARLY preserves
+the goal, uses the remaining37ms exactly and cannot resurrect a previously drained
+Stop. Native wake-up includes the deadline; command Notify interrupts only the
+idle first-byte wait. A started frame must finish, validate and apply intact.
+Own actor quads actually interpolate for MOVED100/max111150 from receipt time;
+the authoritative position is never interpolated. Corrections/teleports, floor
+changes and terminal/fresh-channel boundaries reset the visual/clock state.
+
+Tests exercise10,000 real channel dispatches on a jittered fake clock (no sleeps),
+zero early/burst sends, no early input consumption and simulated lateness<=20ms.
+Raw golden100/max111150/37/legacy, withheld claimed delta, idle wake/partial frame,
+actual animated quads, generation/command fencing and existing malformed/poison
+cases are covered. Linux client227/196/5+Session82 and strict Clippy/fmt pass.
+This simulated bound is not a native network-performance or gameplay E2E claim.
+No new wire IDs/codecs/modules/server/deployment/account changes. Live resume or
+mid-session snapshot replacement remains absent; fresh admission is not its proof.
+Exact-source Windows/DX12 qualification follows; the server switch stays OFF.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

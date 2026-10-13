@@ -134,13 +134,10 @@ Receipt consumer continues in OTV2-20261013-step-pace-client-1; no E2E claim.
 Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
 
 CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
-#2034 owns STEP-PACE-WIRE-0; server emission precedes map18 activation, receipt
-consumption and native E2E. This batch changes no protocol/registry or offered
-capability. PlayLink now gates actual queued/undrained steps and latches end;
-strict bootstrap1007/1116 reaches update-required without login retry. Independent
-wire and delayed-task regressions pass: client217/194/5, Session74. Canonical
-1007 is SessionFatal, N8/1116 TransportFatal. Design resolved, runtime proof
-pending. PC offline; Windows/E2E/CI/review remain open. Details: UI-FIDELITY.md.
+#2034 is merged; #2041 emission stays OFF. Receipt consumers, native wake and
+animation are implemented in the dedicated Slot2 record, Linux227/196/5+Session82.
+MSVC/DX12 and same-head CI are next; no gameplay/E2E/rollout claim. Bootstrap
+1007(SessionFatal)/1116(TransportFatal) still reaches update-required without retry.
 Battle window consumes admitted HP, with real egui replacement/filter/empty
 regressions; names and original sorting/visual parity remain unqualified.
 
