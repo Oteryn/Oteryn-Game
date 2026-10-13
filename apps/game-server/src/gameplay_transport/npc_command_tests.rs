@@ -665,20 +665,6 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
 }
 
 #[test]
-fn a_trade_intent_actor_resolves_to_its_npc_key_only_in_its_generation() {
-    let (runtime, _, _, npc, _, _) = trading(stock());
-    assert_eq!(
-        npc_key_of(&runtime, npc).as_deref(),
-        Some("oteryn:npc.alice")
-    );
-    let other = EntityRef {
-        generation: npc.generation + 1,
-        ..npc
-    };
-    assert_eq!(npc_key_of(&runtime, other), None);
-}
-
-#[test]
 fn a_mismatched_trade_intent_is_stale_and_re_projects_the_window() {
     let (runtime, actor, session, npc, chat, conversations) = trading(stock());
     let revision = chat.npc_talk().expect("book").catalogue_revision();

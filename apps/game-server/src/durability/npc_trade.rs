@@ -587,11 +587,11 @@ async fn lock_occurrence(
 }
 
 impl DurabilityRoot {
-    /// NPC-TRADE-2 replay first: the intent the trade of `occurrence` answered when it was bound
-    /// to `command` of the Character `character_id`, else `None`. The occurrence lock waits for
-    /// any in-flight attempt, so `None` proves nothing committed for it; a trade of the
-    /// occurrence bound to another CommandRef is `ConflictingOccurrence`. Read-only; never
-    /// reacquires session authority.
+    /// NPC-TRADE-2 replay first: the intent the trade of `command` of the Character
+    /// `character_id` answered when it committed as `occurrence`, else `None`. The occurrence lock
+    /// waits for any in-flight attempt, so `None` proves nothing committed for it; a trade of the
+    /// command committed as another occurrence (the occurrence binds the intent's NPC actor) is
+    /// `ConflictingOccurrence`. Read-only; never reacquires session authority.
     pub async fn read_npc_trade(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -609,14 +609,15 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_occurrence(&mut tx, &occurrence).await?;
                     let Some(row) = sqlx::query(
-                        "SELECT game_session_id::text, command_id::text, npc_key, \
-                                catalogue_revision::text, offer_index, side, quantity, \
-                                unit_price::text \
+                        "SELECT occurrence_id::text, npc_key, catalogue_revision::text, \
+                                offer_index, side, quantity, unit_price::text \
                            FROM game_npc_trades \
-                          WHERE occurrence_id = encode($1,'hex')::uuid \
-                            AND character_id = encode($2,'hex')::uuid",
+                          WHERE game_session_id = encode($1,'hex')::uuid \
+                            AND command_id = $2::text::numeric(20,0) \
+                            AND character_id = encode($3,'hex')::uuid",
                     )
-                    .bind(occurrence.as_slice())
+                    .bind(command.game_session_id().as_bytes().as_slice())
+                    .bind(command.command_id().get().to_string())
                     .bind(character_id.as_bytes().as_slice())
                     .fetch_optional(&mut *tx)
                     .await?
@@ -624,10 +625,7 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
-                    let session = uuid_text(&row.try_get::<String, _>("game_session_id")?)?;
-                    if session != *command.game_session_id().as_bytes()
-                        || numeric_u64(&row, "command_id")? != command.command_id().get()
-                    {
+                    if uuid_text(&row.try_get::<String, _>("occurrence_id")?)? != occurrence {
                         return Ok(Err(NpcTradeError::ConflictingOccurrence));
                     }
                     let side = match row.try_get::<i16, _>("side")? {

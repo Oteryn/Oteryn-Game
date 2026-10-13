@@ -310,7 +310,7 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
         assert!(matches!(
             harness
                 .root
-                .read_npc_trade(&authority, character_id, command(11)?, id(10))
+                .read_npc_trade(&authority, character_id, command(10)?, id(91))
                 .await,
             Err(NpcTradeError::ConflictingOccurrence)
         ));

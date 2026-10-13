@@ -2,20 +2,22 @@
 //!
 //! The command's occurrence, TransactionId, EventId and output identities are derived from its
 //! CommandRef, so every retry of one command reuses them and the occurrence is bound 1:1 to the
-//! CommandRef. Replay comes first: a trade the occurrence already committed answers `OK` when the
-//! intent names what it committed, before any conversation or window check, because a reconnect
-//! closes both. Otherwise [`NpcConversations::trade_in`](super::npc_command::NpcConversations)
+//! CommandRef; the occurrence also binds the intent's NPC actor. Replay comes first and reads the
+//! stored trade, never the live NPC: a trade the command committed answers `OK` when it is the
+//! occurrence of this actor and the intent names what it committed, before any conversation or
+//! window check, because a reconnect closes both. Otherwise [`NpcConversations::trade_in`](super::npc_command::NpcConversations)
 //! resolves the offer from the server catalogue under the runtime lock, and the trade commits under
 //! the session's Character item fence. A storage failure leaves the outcome unknown: the connection
 //! ends before the CommandId is sequenced and the resend is answered by replay.
 
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeIntent, NpcTradeSide};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
 use super::item_ref_admission::{generation_item_facts, pinned_index};
-use super::npc_command::{NpcTradeRefusal, npc_key_of};
+use super::npc_command::NpcTradeRefusal;
 use crate::content::ActiveGeneration;
 use crate::content::item_ref::ITEM_FAMILY;
 use crate::domain::currency::{COIN_DEFINITION_FAMILY, Coin};
@@ -49,6 +51,10 @@ fn derived(tag: &[u8], session: GameSessionId, command_id: u64) -> [u8; 16] {
         .chain_update(session.as_bytes())
         .chain_update(command_id.to_be_bytes())
         .finalize();
+    uuid_v7_shaped(&hash)
+}
+
+fn uuid_v7_shaped(hash: &[u8]) -> [u8; 16] {
     let mut id = [0; 16];
     id.copy_from_slice(&hash[..16]);
     id[6] = (id[6] & 0x0f) | 0x70;
@@ -56,9 +62,22 @@ fn derived(tag: &[u8], session: GameSessionId, command_id: u64) -> [u8; 16] {
     id
 }
 
-/// The occurrence of command 8 `command_id` of `session` (NPC-0 §4: one per command).
-pub(super) fn occurrence(session: GameSessionId, command_id: u64) -> [u8; 16] {
-    derived(b"oteryn:npc-trade-occurrence:v1", session, command_id)
+/// The occurrence of command 8 `command_id` of `session` (NPC-0 §4: one per command), bound to
+/// the NPC actor the intent names: the stored occurrence is the immutable record of that actor, so
+/// a resend naming another actor is another occurrence and never replays this one's trade.
+pub(super) fn occurrence(
+    session: GameSessionId,
+    command_id: u64,
+    npc_actor: EntityRef,
+) -> [u8; 16] {
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:npc-trade-occurrence:v2")
+        .chain_update(session.as_bytes())
+        .chain_update(command_id.to_be_bytes())
+        .chain_update(npc_actor.identity)
+        .chain_update(npc_actor.generation.to_be_bytes())
+        .finalize();
+    uuid_v7_shaped(&hash)
 }
 
 const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
@@ -68,11 +87,10 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
     }
 }
 
-/// Whether the committed trade answered this intent: the same NPC (`npc_key`, the production key
-/// the intent's actor resolves to now), offer, side, quantity and price.
-fn answers(receipt: &NpcTradeReceipt, npc_key: Option<&str>, intent: &NpcTradeIntent) -> bool {
-    npc_key == Some(receipt.npc_key.as_str())
-        && receipt.catalogue_revision == intent.catalogue_revision
+/// Whether the committed trade answered this intent: the same offer, side, quantity and price (the
+/// occurrence already binds the NPC actor).
+fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent) -> bool {
+    receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)
         && receipt.quantity == intent.quantity
@@ -102,7 +120,7 @@ pub(super) async fn npc_trade(
         return NpcTradeStep::rejected();
     };
     let command_ref = CommandRef::new(session, command_id);
-    let occurrence = occurrence(session, command.command_id);
+    let occurrence = occurrence(session, command.command_id, intent.npc_actor);
     match admission
         .root
         .read_npc_trade(
@@ -113,17 +131,10 @@ pub(super) async fn npc_trade(
         )
         .await
     {
-        Ok(Some(receipt)) => {
-            let npc_key = npc_key_of(&*admission.runtime.lock().await, intent.npc_actor);
-            return if answers(&receipt, npc_key.as_deref(), &intent) {
-                NpcTradeStep::Traded
-            } else {
-                NpcTradeStep::rejected()
-            };
-        }
+        Ok(Some(receipt)) if answers(&receipt, &intent) => return NpcTradeStep::Traded,
         Ok(None) => {}
         Err(NpcTradeError::Unavailable(_)) => return NpcTradeStep::Unknown,
-        Err(_) => return NpcTradeStep::rejected(),
+        Ok(Some(_)) | Err(_) => return NpcTradeStep::rejected(),
     }
 
     let (offer, coins) = {

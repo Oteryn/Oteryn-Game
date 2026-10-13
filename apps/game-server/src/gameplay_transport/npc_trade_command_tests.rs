@@ -37,10 +37,33 @@ fn receipt() -> NpcTradeReceipt {
 #[test]
 fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
     let (first, second) = (session(1), session(2));
-    let occurrence_of = occurrence(first, 5);
-    assert_eq!(occurrence_of, occurrence(first, 5), "a retry reuses it");
-    assert_ne!(occurrence_of, occurrence(first, 6));
-    assert_ne!(occurrence_of, occurrence(second, 5));
+    let npc = intent().npc_actor;
+    let occurrence_of = occurrence(first, 5, npc);
+    assert_eq!(
+        occurrence_of,
+        occurrence(first, 5, npc),
+        "a retry reuses it"
+    );
+    assert_ne!(occurrence_of, occurrence(first, 6, npc));
+    assert_ne!(occurrence_of, occurrence(second, 5, npc));
+    let other_npc = EntityRef {
+        identity: [9; 16],
+        ..npc
+    };
+    let next_generation = EntityRef {
+        generation: npc.generation + 1,
+        ..npc
+    };
+    assert_ne!(
+        occurrence_of,
+        occurrence(first, 5, other_npc),
+        "bound to the NPC"
+    );
+    assert_ne!(
+        occurrence_of,
+        occurrence(first, 5, next_generation),
+        "and to its generation"
+    );
     let ids = [
         occurrence_of,
         derived(b"oteryn:npc-trade-transaction:v1", first, 5),
@@ -58,16 +81,7 @@ fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
 
 #[test]
 fn replay_answers_only_the_intent_it_committed() {
-    let key = receipt().npc_key;
-    assert!(answers(&receipt(), Some(&key), &intent()));
-    assert!(
-        !answers(&receipt(), Some("fixture:npc.other"), &intent()),
-        "another NPC under the same offer"
-    );
-    assert!(
-        !answers(&receipt(), None, &intent()),
-        "an NPC that no longer resolves"
-    );
+    assert!(answers(&receipt(), &intent()));
     let changed = [
         NpcTradeIntent {
             catalogue_revision: 10,
@@ -91,7 +105,7 @@ fn replay_answers_only_the_intent_it_committed() {
         },
     ];
     for intent in changed {
-        assert!(!answers(&receipt(), Some(&key), &intent), "{intent:?}");
+        assert!(!answers(&receipt(), &intent), "{intent:?}");
     }
 }
 
