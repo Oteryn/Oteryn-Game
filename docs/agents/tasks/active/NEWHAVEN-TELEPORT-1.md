@@ -140,6 +140,9 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
   without a solidity fact (OTV2-20261012-bundle-start-tile-1, host follow-up), which the node
   blocks, so on the real bundle the forcefield leaves the player on the teleport tile until that
   Item gets a served walkable fact.
+- Owner decisions (2026-10-13): the PZ block input stays `false` until PVP-RT-1 (option a). The
+  i19394 landing is not repaired here: the start town is Thais, and the New Haven forcefield
+  landing is a follow-up for a later manual check.
 
 ## Self-review
 
@@ -165,6 +168,6 @@ branch: claude/newhaven-teleport-20261012
 head_sha: 858a91c28
 pr: 2018
 final_head_sha: null
-blocker: "the separate pin commit (pin inputs_digest and digest, preprod topology) needs the lead's go; the World bundle check fails until it lands"
+blocker: "the owner-approved separate pin commit (pin inputs_digest from pin-check) was refused by the session permission system; the World bundle check fails until it lands"
 next_action: the lead authorizes the separate pin commit; then requalify the exact head
 ```
