@@ -427,6 +427,17 @@ pub(crate) trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// ITEM-USE-1c: one `USE` of the main backpack direct entry `item` (food or a potion) under
+    /// capability 15. `command` is as for [`Self::use_object`].
+    fn use_item(
+        &self,
+        _actor: ExactActorRef,
+        _use: UseCommand,
+        _item: ItemKey,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
+    }
+
     /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
     /// (`read_character_backpack`) for domain 9, read for the snapshot and after each committed
     /// `USE`. `None` when it cannot be read: a session that selected capability 4 then fails
@@ -2187,11 +2198,36 @@ where
                             ContainerObservation::Container { .. } | ContainerObservation::TooFar
                         )
                     });
-                    let observation = match key.filter(|_| container.is_none()) {
+                    // ITEM-USE-1c: under capability 15 a main backpack entry that opens nothing
+                    // is used (food, a potion); every other handle keeps the corpse path.
+                    let consumable = container.is_none()
+                        && matches!(key, Some(ItemKey::Instance(_)))
+                        && admitted
+                            .continuity
+                            .selected_capabilities
+                            .contains(CAPABILITY_ITEM_USE_V1)
+                        && item_view
+                            .as_ref()
+                            .zip(key)
+                            .is_some_and(|(view, key)| view.is_backpack_entry(&key));
+                    let observation = match key.filter(|_| container.is_none() && !consumable) {
                         Some(key) => authority.observe_item_target(actor, key).await,
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
+                        (_, Some(key), _) if consumable => Dispatch::Use(
+                            authority
+                                .use_item(
+                                    actor,
+                                    UseCommand {
+                                        game_session_id: admitted.game_session_id,
+                                        command_id: command.command_id,
+                                        item_fence: admitted.item_fence,
+                                    },
+                                    key,
+                                )
+                                .await,
+                        ),
                         (Some(view), Some(key), _) if container.is_some() => {
                             let Some(views) = container_views.as_mut() else {
                                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -2767,6 +2803,31 @@ where
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
+                }
+                // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
+                // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
+                if outcome.disposition == UseDisposition::Committed
+                    && admitted.continuity.vitals_revision != 0
+                    && let Some((to, value)) = authority
+                        .observe_vitals(actor, admitted.game_session_id)
+                        .await
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    admitted.continuity.vitals_revision = to;
                 }
                 // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
                 // per-connection: its "from" revision is always the committed entry's own

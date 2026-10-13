@@ -15,6 +15,7 @@ mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod item_move;
 mod item_ref_admission;
+mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
@@ -3155,6 +3156,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
+    async fn use_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> UseOutcome {
+        self.use_backpack_item(actor, command, item).await
     }
 
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
