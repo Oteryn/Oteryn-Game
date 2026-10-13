@@ -116,6 +116,17 @@
       "offer_gate": "ANALYSER-EMIT-1: the server does not offer this capability before the first emitter ships. Without it selected, domain 15 is never sent."
     },
     {
+      "id": 11,
+      "name": "WORLD_INTERACTION_V1",
+      "owner_decision": "WORLD-INTERACTION-0 \u00a710.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md); number and command type 15 leased to LOOP-WORLD-1 (WORLDINT-WIRE-1) by the #1622 control plane",
+      "owner": "current ChannelRuntime (the World object use and push rules)",
+      "requires": [15, 18],
+      "command_types": [15],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, USE field 6 and the dispositions 11 to 17 are never sent and command type 15 is refused."
+    },
+    {
       "id": 12,
       "name": "ITEM_EQUIP_DROP_V1",
       "owner_decision": "ITEM-MOVE-WIRE-1 §3 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md, #162 5912405163); number allocated by the #1622 control plane and registered by ITEM-EQUIP-WIRE-1",
@@ -318,6 +329,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentResultV1",
       "max_payload_bytes": 1148,
       "max_result_payload_bytes": 8
+    },
+    {
+      "id": 15,
+      "name": "PUSH_INTENT",
+      "owner_decision": "WORLD-INTERACTION-0 \u00a710.1 and WORLDINT0-RL-21 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md); number leased to LOOP-WORLD-1 by the #1622 control plane",
+      "capability": 11,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushResultV1",
+      "max_payload_bytes": 49,
+      "max_result_payload_bytes": 4
     },
     {
       "id": 21,

@@ -41,9 +41,10 @@ use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
-    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
-    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_USE_INTENT,
+    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+    STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
+    WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
@@ -2163,16 +2164,24 @@ where
                 // and a use by definition finds nothing to use.
                 Ok(UseIntent {
                     use_with: Some(_), ..
+                })
+                // WORLDINT-WIRE-1: field 6 decodes only under capability 11, which is not offered
+                // before WORLDINT-USE-1 composes the interaction gate.
+                | Ok(UseIntent {
+                    use_with_map_item: Some(_),
+                    ..
                 }) => Dispatch::Use(UseOutcome::rejected()),
                 Ok(UseIntent {
                     target: UseTarget::ItemByDefinition(_),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => Dispatch::UseItem(OpenDecision::NothingToUse, None),
                 // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
                 // call; opening writes nothing.
                 Ok(UseIntent {
                     target: UseTarget::Item(handle),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => {
                     let key = item_view.as_ref().and_then(|view| view.resolve(handle));
                     // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
@@ -2230,6 +2239,7 @@ where
                 Ok(UseIntent {
                     target: UseTarget::WorldObject(target),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => Dispatch::Use(
                     authority
                         .use_object(
@@ -2520,6 +2530,7 @@ where
             Dispatch::Use(outcome) => {
                 let disposition = negotiated_use_disposition(
                     selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
+                    selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
                     outcome.disposition,
                 );
                 (
@@ -2996,8 +3007,16 @@ where
 /// sequence after `sequence`; `None` on an encoding fault. The complete value
 /// may coalesce multiple actual owner changes from the last transmitted revision.
 /// Dispositions 7 to 10 exist only under capability 15 (ITEM-USE-0 §3): a session without it
-/// gets `Rejected`, the one refusal it can decode, for any of them.
-fn negotiated_use_disposition(item_use: bool, disposition: UseDisposition) -> UseDisposition {
+/// gets `Rejected`, the one refusal it can decode, for any of them. So does a session without
+/// capability 11 for the dispositions 11 to 17 (WORLD-INTERACTION-0 §10.1).
+fn negotiated_use_disposition(
+    item_use: bool,
+    world_interaction: bool,
+    disposition: UseDisposition,
+) -> UseDisposition {
+    if disposition.needs_world_interaction() && !world_interaction {
+        return UseDisposition::Rejected;
+    }
     match disposition {
         UseDisposition::RequirementNotMet
         | UseDisposition::Exhausted
@@ -3233,8 +3252,20 @@ mod tests {
     fn use_dispositions_7_to_10_need_capability_15() {
         use UseDisposition as D;
         for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
-            assert_eq!(negotiated_use_disposition(false, d), D::Rejected);
-            assert_eq!(negotiated_use_disposition(true, d), d);
+            assert_eq!(negotiated_use_disposition(false, false, d), D::Rejected);
+            assert_eq!(negotiated_use_disposition(true, false, d), d);
+        }
+        for d in [
+            D::Locked,
+            D::KeyMismatch,
+            D::Sealed,
+            D::PzBlocked,
+            D::NotMovable,
+            D::NoRoom,
+            D::NotPossible,
+        ] {
+            assert_eq!(negotiated_use_disposition(true, false, d), D::Rejected);
+            assert_eq!(negotiated_use_disposition(true, true, d), d);
         }
         for d in [
             D::Committed,
@@ -3243,7 +3274,7 @@ mod tests {
             D::StaleState,
             D::TooFar,
         ] {
-            assert_eq!(negotiated_use_disposition(false, d), d);
+            assert_eq!(negotiated_use_disposition(false, false, d), d);
         }
     }
 

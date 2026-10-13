@@ -536,7 +536,7 @@ fn decode_sint32(value: u64) -> WireResult<i32> {
     Ok(((zigzag >> 1) as i32) ^ -((zigzag & 1) as i32))
 }
 
-fn encode_position(position: WorldTilePosition) -> Vec<u8> {
+pub(crate) fn encode_position(position: WorldTilePosition) -> Vec<u8> {
     let mut output = Vec::with_capacity(MAX_WORLD_TILE_POSITION_BYTES);
     push_sint32(&mut output, 1, position.x);
     push_sint32(&mut output, 2, position.y);
@@ -545,7 +545,7 @@ fn encode_position(position: WorldTilePosition) -> Vec<u8> {
 }
 
 /// Absent coordinates are 0 (proto3); a floor outside the int16 range fails closed.
-fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
+pub(crate) fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
     if input.len() > MAX_WORLD_TILE_POSITION_BYTES {
         return Err(ItemViewWireError::LimitExceeded);
     }

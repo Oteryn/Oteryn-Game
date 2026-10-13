@@ -34,6 +34,9 @@ message UseIntentV1 {
     ItemByDefinitionV1 item_by_definition = 5;
   }
   oteryn.protocol.v1.world_spatial.EntityRefV1 use_with = 4;
+  // WORLDINT-WIRE-1 (capability 11 WORLD_INTERACTION_V1): the map item a tool or key is used on.
+  // Valid only with field 2 or 5, never with field 4, at most once. The handle is non-zero.
+  oteryn.protocol.v1.item_view.ItemTargetV1 use_with_map_item = 6;
   reserved 3;
 }
 
@@ -56,6 +59,14 @@ enum UseDispositionV1 {
   USE_DISPOSITION_EXHAUSTED = 8;
   USE_DISPOSITION_FULL = 9;
   USE_DISPOSITION_NO_TARGET = 10;
+  // 11 to 17 are sent only to a session that selected capability 11 WORLD_INTERACTION_V1.
+  USE_DISPOSITION_LOCKED = 11;
+  USE_DISPOSITION_KEY_MISMATCH = 12;
+  USE_DISPOSITION_SEALED = 13;
+  USE_DISPOSITION_PZ_BLOCKED = 14;
+  USE_DISPOSITION_NOT_MOVABLE = 15;
+  USE_DISPOSITION_NO_ROOM = 16;
+  USE_DISPOSITION_NOT_POSSIBLE = 17;
 }
 
 // CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.

@@ -1,0 +1,29 @@
+// WORLD-INTERACTION-0 §10.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md):
+// typed payloads of capability 11 WORLD_INTERACTION_V1 (requires 15 ITEM_USE_V1 and 18
+// WORLD_MAP_VIEW_V1) and command type 15 PUSH_INTENT. Numbers leased to WORLDINT-WIRE-1 by the
+// #1622 control plane. The capability also extends two existing messages and owns no domain:
+// world_object_v1.proto UseIntentV1 field 6 use_with_map_item and UseDispositionV1 values 11 to
+// 17, and command type 9 (item_view_v1.proto), whose source handle may name a movable base item
+// or a Ground item under this capability, with the GROUND destination it already has. Unknown and
+// repeated fields, zero and unknown enum values, an identity other than 16 bytes, a zero
+// generation and a payload over its bound all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_interaction;
+
+import "item_view_v1.proto";
+import "world_object_v1.proto";
+import "world_spatial_v1.proto";
+
+// ClientCommand.payload of command type 15. A creature or player the session sees in
+// WORLD_SPATIAL_ENTITIES and the tile it is pushed to. At most 49 bytes: the target
+// (1 + 1 + 29) and the tile (1 + 1 + 16). Non-durable.
+message PushIntentV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 target = 1;
+  oteryn.protocol.v1.item_view.WorldTilePositionV1 to = 2;
+}
+
+// CommandResult.payload of command type 15. At most 4 bytes. Uses the USE dispositions.
+message PushResultV1 {
+  oteryn.protocol.v1.world_object.UseDispositionV1 disposition = 1;
+}

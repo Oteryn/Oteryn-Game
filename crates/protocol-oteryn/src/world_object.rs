@@ -29,6 +29,9 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 pub const CAPABILITY_ITEM_USE_V1: u32 = 15;
 /// The registry `requires` of capability 15.
 pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+/// Registered capability `WORLD_INTERACTION_V1` (WORLDINT-WIRE-1); see `world_interaction.rs`. It
+/// extends command type 2 with field 6 and the dispositions 11 to 17.
+pub use crate::world_interaction::CAPABILITY_WORLD_INTERACTION_V1;
 
 pub const COMMAND_TYPE_USE_INTENT: u32 = 2;
 pub const STATE_DOMAIN_WORLD_OBJECT_OVERLAY: u32 = 2;
@@ -93,10 +96,13 @@ pub enum UseTarget {
 
 /// A decoded `UseIntentV1`: the target and field 4 `use_with`, the creature a potion is used on
 /// (absent means the user). Field 4 is accepted only under capability 15 and only with field 2 or 5.
+/// Field 6 `use_with_map_item` is the map item a tool or key is used on (WORLD-INTERACTION-0 §10.1):
+/// accepted only under capability 11, only with field 2 or 5, and never together with field 4.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseIntent {
     pub target: UseTarget,
     pub use_with: Option<EntityRef>,
+    pub use_with_map_item: Option<ItemHandle>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,6 +118,21 @@ pub enum UseDisposition {
     Exhausted = 8,
     Full = 9,
     NoTarget = 10,
+    /// Dispositions 11 to 17 are sent only under capability 11 (WORLD-INTERACTION-0 §10.1).
+    Locked = 11,
+    KeyMismatch = 12,
+    Sealed = 13,
+    PzBlocked = 14,
+    NotMovable = 15,
+    NoRoom = 16,
+    NotPossible = 17,
+}
+
+impl UseDisposition {
+    /// The dispositions a session without capability 11 cannot decode.
+    pub fn needs_world_interaction(self) -> bool {
+        (self as u32) >= (Self::Locked as u32)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -254,7 +275,11 @@ pub fn encode_use_item_intent(handle: ItemHandle) -> Vec<u8> {
 /// target, and a `use_with` whose generation is zero.
 pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObjectError> {
     let mut output = match &intent.target {
-        UseTarget::WorldObject(target) if intent.use_with.is_none() => encode_use_intent(target)?,
+        UseTarget::WorldObject(target)
+            if intent.use_with.is_none() && intent.use_with_map_item.is_none() =>
+        {
+            encode_use_intent(target)?
+        }
         UseTarget::WorldObject(_) => return Err(WorldObjectError::Malformed),
         UseTarget::Item(handle) => encode_use_item_intent(*handle),
         UseTarget::ItemByDefinition(index) => {
@@ -273,6 +298,12 @@ pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObject
         push_bytes_field(&mut inner, 1, &creature.identity);
         push_varint_field(&mut inner, 2, creature.generation);
         push_bytes_field(&mut output, 4, &inner);
+    }
+    if let Some(handle) = intent.use_with_map_item {
+        if intent.use_with.is_some() {
+            return Err(WorldObjectError::Malformed);
+        }
+        push_bytes_field(&mut output, 6, &encode_item_target(handle));
     }
     Ok(output)
 }
@@ -330,7 +361,7 @@ fn decode_use_with(input: &[u8]) -> Result<EntityRef, WorldObjectError> {
 /// Exactly one target. Field 2 is accepted only when the session selected capability 4, and fields
 /// 4 and 5 only when it selected capability 15 (ITEM-USE-0 §3); without them, and always for the
 /// reserved field 3, the intent fails closed. Field 4 needs field 2 or 5: alone or with field 1 it
-/// fails closed.
+/// fails closed. Field 6 follows the same rule under capabilities 15 and 11 and excludes field 4.
 pub fn decode_use_intent_target(
     selected_capabilities: &[u32],
     payload: &[u8],
@@ -340,13 +371,17 @@ pub fn decode_use_intent_target(
     }
     let item_targets = selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1);
     let item_use = item_targets && selected_capabilities.contains(&CAPABILITY_ITEM_USE_V1);
+    let map_item_use = item_use && selected_capabilities.contains(&CAPABILITY_WORLD_INTERACTION_V1);
     let mut cursor = 0;
-    let (mut target, mut use_with) = (None, None);
+    let (mut target, mut use_with, mut use_with_map_item) = (None, None, None);
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         match key {
             0x22 if item_use && use_with.is_none() => {
                 use_with = Some(decode_use_with(read_bytes(payload, &mut cursor)?)?);
+            }
+            0x32 if map_item_use && use_with_map_item.is_none() => {
+                use_with_map_item = Some(map_item_handle(read_bytes(payload, &mut cursor)?)?);
             }
             0x2a if item_use && target.is_none() => {
                 target = Some(UseTarget::ItemByDefinition(decode_item_by_definition(
@@ -359,27 +394,34 @@ pub fn decode_use_intent_target(
                 )?));
             }
             0x12 if item_targets && target.is_none() => {
-                let handle =
-                    decode_item_target(read_bytes(payload, &mut cursor)?).map_err(|error| {
-                        match error {
-                            crate::item_view::ItemViewWireError::LimitExceeded => {
-                                WorldObjectError::LimitExceeded
-                            }
-                            crate::item_view::ItemViewWireError::Malformed => {
-                                WorldObjectError::Malformed
-                            }
-                        }
-                    })?;
-                target = Some(UseTarget::Item(handle));
+                target = Some(UseTarget::Item(map_item_handle(read_bytes(
+                    payload,
+                    &mut cursor,
+                )?)?));
             }
             _ => return Err(WorldObjectError::Malformed),
         }
     }
     let target = target.ok_or(WorldObjectError::Malformed)?;
-    if use_with.is_some() && matches!(target, UseTarget::WorldObject(_)) {
+    let has_use_with = use_with.is_some() || use_with_map_item.is_some();
+    if (has_use_with && matches!(target, UseTarget::WorldObject(_)))
+        || (use_with.is_some() && use_with_map_item.is_some())
+    {
         return Err(WorldObjectError::Malformed);
     }
-    Ok(UseIntent { target, use_with })
+    Ok(UseIntent {
+        target,
+        use_with,
+        use_with_map_item,
+    })
+}
+
+/// `ItemTargetV1` as a handle, with the item view's errors mapped onto this module's.
+fn map_item_handle(input: &[u8]) -> Result<ItemHandle, WorldObjectError> {
+    decode_item_target(input).map_err(|error| match error {
+        crate::item_view::ItemViewWireError::LimitExceeded => WorldObjectError::LimitExceeded,
+        crate::item_view::ItemViewWireError::Malformed => WorldObjectError::Malformed,
+    })
 }
 
 pub fn encode_use_result(disposition: UseDisposition) -> Vec<u8> {
@@ -400,6 +442,13 @@ pub fn decode_use_result(payload: &[u8]) -> Result<UseDisposition, WorldObjectEr
         8 => Ok(UseDisposition::Exhausted),
         9 => Ok(UseDisposition::Full),
         10 => Ok(UseDisposition::NoTarget),
+        11 => Ok(UseDisposition::Locked),
+        12 => Ok(UseDisposition::KeyMismatch),
+        13 => Ok(UseDisposition::Sealed),
+        14 => Ok(UseDisposition::PzBlocked),
+        15 => Ok(UseDisposition::NotMovable),
+        16 => Ok(UseDisposition::NoRoom),
+        17 => Ok(UseDisposition::NotPossible),
         _ => Err(WorldObjectError::Malformed),
     }
 }
@@ -684,6 +733,7 @@ mod tests {
         UseIntent {
             target,
             use_with: None,
+            use_with_map_item: None,
         }
     }
 
@@ -710,10 +760,12 @@ mod tests {
             UseIntent {
                 target: UseTarget::Item(handle),
                 use_with: Some(creature(u64::MAX)),
+                use_with_map_item: None,
             },
             UseIntent {
                 target: definition(u32::MAX),
                 use_with: Some(creature(1)),
+                use_with_map_item: None,
             },
         ] {
             let bytes = encode_item_use_intent(&intent).expect("encode");
@@ -748,6 +800,7 @@ mod tests {
         let worst = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(handle),
             use_with: Some(creature(u64::MAX)),
+            use_with_map_item: None,
         })
         .expect("encode");
         assert_eq!(worst.len(), 44);
@@ -829,6 +882,7 @@ mod tests {
             Ok(UseIntent {
                 target: UseTarget::Item(ItemHandle::MIN),
                 use_with: Some(creature(7)),
+                use_with_map_item: None,
             })
         );
         // The encoder refuses what the decoder refuses.
@@ -836,6 +890,7 @@ mod tests {
             encode_item_use_intent(&UseIntent {
                 target: UseTarget::WorldObject(target(b"door", 3)),
                 use_with: Some(creature(7)),
+                use_with_map_item: None,
             }),
             Err(WorldObjectError::Malformed)
         );
@@ -843,6 +898,7 @@ mod tests {
             encode_item_use_intent(&UseIntent {
                 target: UseTarget::Item(ItemHandle::MIN),
                 use_with: Some(creature(0)),
+                use_with_map_item: None,
             }),
             Err(WorldObjectError::Malformed)
         );
@@ -871,7 +927,7 @@ mod tests {
             Err(WorldObjectError::Malformed)
         );
         assert_eq!(
-            decode_use_result(&[0x08, 0x0b]),
+            decode_use_result(&[0x08, 0x12]),
             Err(WorldObjectError::Malformed)
         );
         assert_eq!(
