@@ -34,7 +34,9 @@ indices 1-3 are unchanged. No adapter, protocol, registry, migration or client c
 
 - Ultimate Healing `exura vita` (index 5) and Wound Cleansing `exura ico` (index 6): the stock client
   bar has `SPELL_SLOTS = 4` (`apps/client/src/spell.rs`, client-owned #1942), so they are unreachable
-  until the bar grows. Codex P1 on 7b562348.
+  until the bar grows. Codex P1 on 7b562348 (reachability): accepted and repaired in f772d2d4 by narrowing
+  the book to the four client-reachable spells; re-reviewed on 5b8e49a6 and f7fed318 with no remaining
+  code finding.
 - Bruise Bane `exura infir ico`: sorts first and moves indices 1-3; add with the index-pinned tests.
 - Parametric, support and summon spells and the `executable_catalog` adapters (rest of rows 49-54).
 - Validation filters go after `--`: `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- spell:: gameplay_transport::parameter_cast gameplay_transport::actor_spell`.
@@ -42,7 +44,9 @@ indices 1-3 are unchanged. No adapter, protocol, registry, migration or client c
 ## Validation
 
 - `cargo +1.95.0 fmt --all --check`: pass
-- lib filters above: 441 passed; `--test ability_engine`: 74 passed
+- `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
+- `cargo +1.95.0 test --locked -p oteryn-game-server --quiet`: pass (lib 2908 passed, 0 failed; `ability_engine` 74 passed)
+- lib filters above: 441 passed
 - New test: `magic_patch_casts_and_shares_the_healing_group`.
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
