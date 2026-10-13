@@ -4,7 +4,7 @@
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP legality and combat lock (pure half)"
 mode: IMPLEMENT
-status: archive_pending
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/pvp-rt-1-20261013
