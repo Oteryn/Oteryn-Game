@@ -177,7 +177,15 @@ def capture():
         wanted.update(ids_of(page["params"]))
     wanted.update(parse_foods(canary_file(FOODS_LUA)["rows"]))
     wanted.update(parse_potions(canary_file(POTIONS_LUA)["rows"]))
-    baseline = {str(i): v for i, v in world_items().items() if i in wanted}
+    # The tracked world already carries the admissions this tool emits, so a refresh keeps the
+    # recorded pre-admission baseline of every id it already holds and reads the world only for ids
+    # that are new to the snapshot.
+    recorded = (
+        json.loads(SNAPSHOT.read_bytes())["world_baseline"] if SNAPSHOT.exists() else {}
+    )
+    baseline = {
+        str(i): recorded.get(str(i), v) for i, v in world_items().items() if i in wanted
+    }
     for value in baseline.values():
         value.pop("consumption", None)
     snapshot = {
