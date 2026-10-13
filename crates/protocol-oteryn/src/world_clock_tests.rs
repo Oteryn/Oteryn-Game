@@ -88,6 +88,7 @@ fn registry_binds_the_clock_wire_ids_and_limits() {
         matches[0].clone()
     };
 
+    assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_WORLD_LIGHT_V1));
     let capability = only("capabilities", CAPABILITY_WORLD_LIGHT_V1);
     assert_eq!(capability["name"], "WORLD_LIGHT_V1");
     assert_eq!(capability["offered"], false);
