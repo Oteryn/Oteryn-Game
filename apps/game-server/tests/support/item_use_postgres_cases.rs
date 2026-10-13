@@ -8,9 +8,11 @@
 // current gameplay fence; the raw guard cases run as a login in the runtime group.
 
 use crate::bestiary_postgres_harness::{
-    CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
+    CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, item_fence,
+    runtime,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
@@ -126,10 +128,15 @@ impl Use {
         }
     }
 
-    /// One use under the Character's fence at `revision`.
-    async fn use_item(
+    /// One use under the Character's item fence.
+    async fn use_item(&self, request: &ItemUseRequest) -> Result<ItemUseOutcome, ItemUseError> {
+        let fence = item_fence().map_err(|_| ItemUseError::InvalidInput)?;
+        self.use_item_under(fence, request).await
+    }
+
+    async fn use_item_under(
         &self,
-        revision: u64,
+        fence: CurrentCharacterItemFence,
         request: &ItemUseRequest,
     ) -> Result<ItemUseOutcome, ItemUseError> {
         let seal = self
@@ -143,7 +150,6 @@ impl Use {
             .open_character_authority(&seal)
             .await
             .map_err(|_| ItemUseError::AuthorityRejected)?;
-        let fence = fence(revision).map_err(|_| ItemUseError::InvalidInput)?;
         self.harness
             .root
             .commit_item_use(&authority, &self.harness.node, fence, request.clone())
@@ -318,7 +324,7 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
         let used = Use::create(admin, "food").await?;
         let first = food(7, 150, 3);
         assert_eq!(
-            used.use_item(1, &first).await.map_err(debug)?,
+            used.use_item(&first).await.map_err(debug)?,
             ItemUseOutcome::Written {
                 shape: ItemUseShape::Burn
             }
@@ -344,7 +350,7 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
 
         // The exact replay answers from the record, even under a stale fence, and burns nothing.
         assert_eq!(
-            used.use_item(9, &first).await.map_err(debug)?,
+            used.use_item(&first).await.map_err(debug)?,
             ItemUseOutcome::AlreadyCommitted {
                 shape: ItemUseShape::Burn
             }
@@ -353,31 +359,38 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
         // The same CommandRef with another request, or another command with the same
         // TransactionId, conflicts and writes nothing.
         assert!(matches!(
-            used.use_item(1, &food(7, 152, 2)).await,
+            used.use_item(&food(7, 152, 2)).await,
             Err(ItemUseError::ConflictingCommand)
         ));
         assert!(matches!(
-            used.use_item(1, &food(8, 150, 2)).await,
+            used.use_item(&food(8, 150, 2)).await,
             Err(ItemUseError::ConflictingCommand)
         ));
         // The same CommandRef and fields under another EventId is not the committed event.
         let mut other_event = food(7, 150, 3);
         other_event.event_id = id(199);
         assert!(matches!(
-            used.use_item(1, &other_event).await,
+            used.use_item(&other_event).await,
+            Err(ItemUseError::ConflictingCommand)
+        ));
+        // The same CommandRef and fields at another occurrence time is not the committed event.
+        let mut other_time = food(7, 150, 3);
+        other_time.occurred_at_unix_ms += 1;
+        assert!(matches!(
+            used.use_item(&other_time).await,
             Err(ItemUseError::ConflictingCommand)
         ));
         // Revisions that are not the fenced root's interpretation are stale, writing nothing.
         let mut stale = food(8, 152, 2);
         stale.content_revision = "content-0".into();
         assert!(matches!(
-            used.use_item(1, &stale).await,
+            used.use_item(&stale).await,
             Err(ItemUseError::StaleState)
         ));
         let mut stale = food(8, 152, 2);
         stale.ruleset_revision = "rules-0".into();
         assert!(matches!(
-            used.use_item(1, &stale).await,
+            used.use_item(&stale).await,
             Err(ItemUseError::StaleState)
         ));
         assert_eq!(used.item(FOOD).await?, (2, 1, Some(1)));
@@ -385,7 +398,7 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
 
         // The next command burns the next unit.
         assert_eq!(
-            used.use_item(1, &food(8, 152, 2)).await.map_err(debug)?,
+            used.use_item(&food(8, 152, 2)).await.map_err(debug)?,
             ItemUseOutcome::Written {
                 shape: ItemUseShape::Burn
             }
@@ -400,7 +413,7 @@ fn the_last_unit_retires_the_stack_and_removes_its_entry() -> TestResult {
     run(async |admin| {
         let used = Use::create(admin, "last").await?;
         assert_eq!(
-            used.use_item(1, &potion(1, 150, LAST_POTION, 1, ItemUseFlaskPlan::None))
+            used.use_item(&potion(1, 150, LAST_POTION, 1, ItemUseFlaskPlan::None))
                 .await
                 .map_err(debug)?,
             ItemUseOutcome::Written {
@@ -423,7 +436,7 @@ fn a_flask_unit_grows_a_compatible_stack_of_the_backpack() -> TestResult {
     run(async |admin| {
         let used = Use::create(admin, "stack").await?;
         assert_eq!(
-            used.use_item(1, &potion(1, 150, POTION, 2, flask_stack(FLASK_STACK, 5)))
+            used.use_item(&potion(1, 150, POTION, 2, flask_stack(FLASK_STACK, 5)))
                 .await
                 .map_err(debug)?,
             ItemUseOutcome::Written {
@@ -450,7 +463,7 @@ fn a_flask_unit_becomes_a_fresh_item_in_a_new_entry_and_nothing_is_minted_twice(
         let used = Use::create(admin, "fresh").await?;
         assert!(!used.item_exists(NEW_FLASK).await?);
         assert_eq!(
-            used.use_item(1, &potion(1, 150, LAST_POTION, 1, flask_new(6)))
+            used.use_item(&potion(1, 150, LAST_POTION, 1, flask_new(6)))
                 .await
                 .map_err(debug)?,
             ItemUseOutcome::Written {
@@ -461,7 +474,7 @@ fn a_flask_unit_becomes_a_fresh_item_in_a_new_entry_and_nothing_is_minted_twice(
         assert_eq!(used.item(NEW_FLASK).await?, (1, 1, Some(6)));
         // The unit is conserved: one potion unit left, one flask unit arrived.
         assert_eq!(
-            used.use_item(1, &potion(1, 150, LAST_POTION, 1, flask_new(6)))
+            used.use_item(&potion(1, 150, LAST_POTION, 1, flask_new(6)))
                 .await
                 .map_err(debug)?,
             ItemUseOutcome::AlreadyCommitted {
@@ -479,7 +492,7 @@ fn a_missing_flask_is_recorded_and_the_unit_still_burns() -> TestResult {
     run(async |admin| {
         let used = Use::create(admin, "missing").await?;
         assert_eq!(
-            used.use_item(1, &potion(1, 150, POTION, 2, ItemUseFlaskPlan::Missing))
+            used.use_item(&potion(1, 150, POTION, 2, ItemUseFlaskPlan::Missing))
                 .await
                 .map_err(debug)?,
             ItemUseOutcome::Written {
@@ -504,49 +517,49 @@ fn a_moved_plan_row_answers_stale_state_and_writes_nothing() -> TestResult {
         let used = Use::create(admin, "stale").await?;
         // The used stack is not at the planned quantity.
         assert!(matches!(
-            used.use_item(1, &food(1, 150, 2)).await,
+            used.use_item(&food(1, 150, 2)).await,
             Err(ItemUseError::StaleState)
         ));
         // The flask stack is not at the planned quantity.
         assert!(matches!(
-            used.use_item(1, &potion(2, 152, POTION, 2, flask_stack(FLASK_STACK, 4)))
+            used.use_item(&potion(2, 152, POTION, 2, flask_stack(FLASK_STACK, 4)))
                 .await,
             Err(ItemUseError::StaleState)
         ));
         // A full flask stack cannot be planned.
         assert!(matches!(
-            used.use_item(
-                1,
-                &potion(3, 154, POTION, 2, flask_stack(FULL_FLASK_STACK, 100))
-            )
+            used.use_item(&potion(
+                3,
+                154,
+                POTION,
+                2,
+                flask_stack(FULL_FLASK_STACK, 100)
+            ))
             .await,
             Err(ItemUseError::InvalidInput)
         ));
         // A fresh flask below the highest ordinal, and one that already exists.
         assert!(matches!(
-            used.use_item(1, &potion(4, 156, LAST_POTION, 1, flask_new(5)))
+            used.use_item(&potion(4, 156, LAST_POTION, 1, flask_new(5)))
                 .await,
             Err(ItemUseError::StaleState)
         ));
         assert!(matches!(
-            used.use_item(1, &potion(5, 158, POTION, 2, flask_stack(NEW_FLASK, 1)))
+            used.use_item(&potion(5, 158, POTION, 2, flask_stack(NEW_FLASK, 1)))
                 .await,
             Err(ItemUseError::StaleState)
         ));
         // A stack that is not in the backpack.
         assert!(matches!(
-            used.use_item(
+            used.use_item(&request(
+                ItemUseKind::Food,
+                6,
+                160,
+                NEW_FLASK,
+                FOOD_KEY,
                 1,
-                &request(
-                    ItemUseKind::Food,
-                    6,
-                    160,
-                    NEW_FLASK,
-                    FOOD_KEY,
-                    1,
-                    ItemUseFlaskPlan::None
-                )
-            )
+                ItemUseFlaskPlan::None
+            ))
             .await,
             Err(ItemUseError::StaleState)
         ));
@@ -560,12 +573,14 @@ fn a_moved_plan_row_answers_stale_state_and_writes_nothing() -> TestResult {
 }
 
 #[test]
-fn a_stale_fence_writes_nothing() -> TestResult {
+fn a_stale_item_fence_writes_nothing() -> TestResult {
     run(async |admin| {
         let used = Use::create(admin, "fence").await?;
+        let mut stale = item_fence().map_err(debug)?;
+        stale.character_lease_generation = 2;
         assert!(matches!(
-            used.use_item(2, &food(1, 150, 3)).await,
-            Err(ItemUseError::CharacterRevisionMismatch)
+            used.use_item_under(stale, &food(1, 150, 3)).await,
+            Err(ItemUseError::AuthorityRejected)
         ));
         assert_eq!(used.item(FOOD).await?, (3, 1, Some(1)));
         assert_eq!(used.records().await?, 0);

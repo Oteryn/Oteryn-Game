@@ -2,7 +2,7 @@
 //! 0081; decision `ITEM-USE-0` §4-§5, DUR-03 item-use amendment).
 //!
 //! [`DurabilityRoot::commit_item_use`] is one item-only one-item transaction under the holder's
-//! current gameplay fence (composition rule 2: recovery fence, admission relation locks, the
+//! current item fence (composition rule 2: recovery fence, admission relation locks, the
 //! live session, lease and scope, the scope assignment held by the current node incarnation).
 //! It never advances the CharacterRevision. One record per CommandRef (game session, command
 //! id) is kept forever: an exact replay answers from the record and never burns twice; the same
@@ -18,8 +18,7 @@
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
-    uuid_text,
+    CharacterProgressionError, assert_item_only_fence, numeric_u64, uuid_text,
 };
 use super::db::{begin_type2_transaction, lock_admission_relations};
 use super::item_mint::TypedDefinitionRef;
@@ -27,7 +26,7 @@ use super::item_mint_audit::{
     self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, SelectedType2Tuple,
     check_technical_text, check_uuid_v7,
 };
-use super::item_transfer::definition_message;
+use super::item_transfer::{CurrentCharacterItemFence, definition_message};
 use super::item_transfer_audit::{
     GAMEITEM01_STACK_QUANTITY_MAX, ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1,
     OneItemContainerEntryV1,
@@ -111,10 +110,8 @@ pub enum ItemUseOutcome {
 #[derive(Debug)]
 pub enum ItemUseError {
     InvalidInput,
-    /// The holder's current gameplay fence does not hold; nothing was written.
+    /// The holder's current item fence does not hold; nothing was written.
     AuthorityRejected,
-    /// The holder's root is not at the fence's expected CharacterRevision.
-    CharacterRevisionMismatch,
     /// A row of the PREPARE plan moved (`STALE_STATE`); nothing was written.
     StaleState,
     /// The CommandRef or the TransactionId was committed by another request.
@@ -139,9 +136,6 @@ impl std::fmt::Display for ItemUseError {
         match self {
             Self::InvalidInput => formatter.write_str("invalid item use input"),
             Self::AuthorityRejected => formatter.write_str("item use authority rejected"),
-            Self::CharacterRevisionMismatch => {
-                formatter.write_str("item use CharacterRevision mismatch")
-            }
             Self::StaleState => formatter.write_str("item use plan is stale"),
             Self::ConflictingCommand => {
                 formatter.write_str("item use command was committed by another request")
@@ -290,14 +284,14 @@ fn shape_from_code(code: i16) -> std::result::Result<ItemUseShape, DurabilityErr
 }
 
 impl DurabilityRoot {
-    /// Commit one item use under its holder's current gameplay fence (see the module
+    /// Commit one item use under its holder's current item fence (see the module
     /// documentation). An exact replay of a committed CommandRef returns its result without
-    /// reacquiring gameplay authority; every refusal writes nothing.
+    /// reacquiring authority; every refusal writes nothing.
     pub async fn commit_item_use(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
+        fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
     ) -> Result<ItemUseOutcome> {
         request.validate()?;
@@ -320,16 +314,13 @@ impl DurabilityRoot {
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     }
-                    match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                    match assert_item_only_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => {
                             if root.content_revision != request.content_revision
                                 || root.ruleset_revision != request.ruleset_revision
                             {
                                 return Ok(Err(ItemUseError::StaleState));
                             }
-                        }
-                        Err(CharacterProgressionError::CharacterRevisionMismatch) => {
-                            return Ok(Err(ItemUseError::CharacterRevisionMismatch));
                         }
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
@@ -353,12 +344,12 @@ impl DurabilityRoot {
 /// committed by another request, or `None` for a new command.
 async fn replay(
     connection: &mut PgConnection,
-    fence: &CurrentCharacterGameplayFence,
+    fence: &CurrentCharacterItemFence,
     request: &ItemUseRequest,
 ) -> Result<Option<ItemUseOutcome>> {
     let rows = sqlx::query(
         "SELECT transaction_id::text AS transaction_id, event_id::text AS event_id, \
-                request_binding, shape, \
+                request_binding, shape, occurred_at, \
                 (game_session_id = encode($1,'hex')::uuid \
                  AND command_id = $2::text::numeric(20,0)) AS same_command \
            FROM game_item_use_records \
@@ -386,6 +377,7 @@ async fn replay(
     if row.try_get::<bool, _>("same_command")?
         && transaction_id == request.transaction_id
         && event_id == request.event_id
+        && row.try_get::<i64, _>("occurred_at")? == request.occurred_at_unix_ms
         && binding.as_slice() == request.binding().as_slice()
     {
         Ok(Some(ItemUseOutcome::AlreadyCommitted {
@@ -454,7 +446,7 @@ async fn lock_stack(
 #[allow(clippy::too_many_lines)]
 async fn write(
     connection: &mut PgConnection,
-    fence: &CurrentCharacterGameplayFence,
+    fence: &CurrentCharacterItemFence,
     request: &ItemUseRequest,
     tuple: SelectedType2Tuple,
 ) -> Result<ItemUseOutcome> {

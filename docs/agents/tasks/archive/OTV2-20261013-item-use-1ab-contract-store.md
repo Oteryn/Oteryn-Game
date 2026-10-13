@@ -57,6 +57,13 @@ Three P2 findings, all fixed in the final authoring commit: request revisions ar
 fenced root (`StaleState` on mismatch); the decoder uses the registered item-use payload and
 envelope ceilings (5,366 / 5,754 B); a replay requires the committed EventId. Each has a test.
 
+## Codex review (head cdfadf3)
+
+Two P2 findings, fixed in the next commit: the item-only use no longer takes or checks an expected
+CharacterRevision (composition decision §3; the store takes `CurrentCharacterItemFence`, the
+`CharacterRevisionMismatch` error is removed); a replay also requires the committed occurrence
+time. Each has a Postgres case.
+
 ## Validation
 
 ### Focused
