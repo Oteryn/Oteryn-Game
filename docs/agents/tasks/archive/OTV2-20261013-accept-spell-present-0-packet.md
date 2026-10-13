@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/magic-cast-1-spell-present0-accept-20261013
-pr: 1
+pr: 2085
 head_sha: "exact frozen head in the report to the control plane"
 final_head_sha: "exact frozen head in the report to the control plane"
 owner: claude-code worker for control plane session_01XYC239givrMonrYoBwwECV
@@ -94,7 +94,7 @@ external_repositories: []
 last_progress: packet written
 status: completed
 branch: claude/magic-cast-1-spell-present0-accept-20261013
-pr: 1
+pr: 2085
 blocker: owner confirmation of acceptance (via the control plane)
 next_action: control plane sends the PR to review
 ```
