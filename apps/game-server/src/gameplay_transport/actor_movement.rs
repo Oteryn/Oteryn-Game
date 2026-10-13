@@ -300,7 +300,7 @@ fn bundle_step(
     // protection-zone landing to a blocked actor.
     let pz_blocked = false;
     let proof = crate::map::floor::prepare_bundle_step(
-        runtime, cells, actor, session, expected, direction, pz_blocked,
+        runtime, cells, actor, session, expected, direction, pz_blocked, blocking,
     )?;
     let onto = proof.destination();
     if blocking.contains(&cell(onto)) {
@@ -607,6 +607,7 @@ mod tests {
                 expected,
                 CardinalStep::South,
                 pz_blocked,
+                &std::collections::BTreeSet::new(),
             )
             .unwrap()
             .destination();
@@ -616,9 +617,10 @@ mod tests {
         // WORLD-INTERACTION-0 §6.6: the destination is a protection-zone tile, so an actor under
         // a PZ block stays on the teleport tile.
         assert_eq!(destination(true), (0, 1, 8));
-        // A door closed on the destination refuses the whole step.
+        // A door closed on the destination refuses the landing like a static block: the actor
+        // stays on the teleport tile (Codex 4255311243).
         let closed = std::collections::BTreeSet::from([LogicalCell { x: 5, y: 1, z: 8 }]);
-        assert!(matches!(
+        assert!(
             step_in_channel(
                 &mut runtime,
                 &mut states,
@@ -629,10 +631,10 @@ mod tests {
                 CardinalStep::South,
                 &closed,
                 None,
-            ),
-            Err(MovementError::Blocked)
-        ));
-        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+            )
+            .is_ok()
+        );
+        assert_eq!(at(&mut runtime, actor), (0, 1, 8));
         // A player without control does not step onto it.
         runtime
             .record_control_loss(
@@ -668,10 +670,11 @@ mod tests {
                 expected,
                 CardinalStep::South,
                 false,
+                &std::collections::BTreeSet::new(),
             )
             .is_err()
         );
-        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        assert_eq!(at(&mut runtime, actor), (0, 1, 8));
     }
 
     #[test]
@@ -724,6 +727,7 @@ mod tests {
             expected,
             CardinalStep::East,
             false,
+            &std::collections::BTreeSet::new(),
         )
         .unwrap();
         assert_eq!(proof.destination().floor, 7);

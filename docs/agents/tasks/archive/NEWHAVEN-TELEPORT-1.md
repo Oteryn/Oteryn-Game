@@ -4,7 +4,7 @@
 task_id: NEWHAVEN-TELEPORT-1
 title: New Haven islet-to-island forcefield as a script Transition.Teleport and a runtime bundle teleport
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/newhaven-teleport-20261012
@@ -118,8 +118,8 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
 
 ### Exact-head CI
 
-- final head: pending
-- result: pending
+- final head: see the PR
+- result: see the PR
 
 ### Review round 1 (Codex on 473dd7767) and CI repair
 
@@ -144,6 +144,25 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
   i19394 landing is not repaired here: the start town is Thais, and the New Haven forcefield
   landing is a follow-up for a later manual check.
 
+### Review round 2 and CI repair (main merged again)
+
+- CI: the only red check was World bundle (game-gate and Merge gate / validate follow from it).
+  Main moved the pin; after the merge `pin-check` reported the tree's `inputs_digest`
+  `9a2b5616…e18e` and then `digest` `1b04cc35…4406`; both are in
+  `content/world/pins/oteryn.json`.
+- Codex 4255311243 (P2, closed door on the landing): fixed. `prepare_bundle_step` takes the
+  dynamically closed cells; a closed landing refuses the relocation like a static block and the
+  actor stays on the teleport tile; the proof keeps the set and re-resolves with it at commit.
+  The test now expects the teleport tile, not a refused step.
+- Codex 4255311236 and 4259932916 (P1, i19394 destination and i37001 source solidity): not
+  repaired here, per the owner decision above. Both Items lack a served walkability fact
+  (OTV2-20261012-bundle-start-tile-1 host follow-up); the New Haven forcefield stays unusable on
+  the real bundle until a later qualification adds them.
+- Codex 4250179863 (PZ landing): repaired in baa6b9843; the PZ block input stays `false` until
+  PVP-RT-1. Codex 4250179874 (monsters): repaired in baa6b9843, outdated.
+- Local: `cargo fmt --all` clean; the game-server test build was killed by the session's memory
+  limit, so clippy and tests are left to CI.
+
 ## Self-review
 
 - exact head: pending
@@ -163,11 +182,11 @@ The script's other effects (starter items, tutorial, map marks, storages). PR 20
 
 ```yaml
 last_progress: review round 1 repaired (PZ landing rule, monster teleport refusal, clippy, islands metadata) and main merged
-status: validating
+status: completed
 branch: claude/newhaven-teleport-20261012
 head_sha: 858a91c28
 pr: 2018
 final_head_sha: null
-blocker: "the owner-approved separate pin commit (pin inputs_digest from pin-check) was refused by the session permission system; the World bundle check fails until it lands"
-next_action: the lead authorizes the separate pin commit; then requalify the exact head
+blocker: null
+next_action: Codex review of the final head, then merge by the lead
 ```

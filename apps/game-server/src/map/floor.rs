@@ -38,7 +38,7 @@ use crate::foundation::{
 };
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 const DOWN: u8 = 1;
 const NORTH: u8 = 2;
@@ -313,13 +313,22 @@ pub(crate) fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -
 
 /// The landing rule's PZ part (WORLD-INTERACTION-0 §3.3, §6.6) over the bundle `cells`: an actor
 /// under a PZ block lands only on a tile whose zone facts are known and not a protection zone.
-fn landable_of(cells: &NativeEntryMovementCells, pz_blocked: bool) -> impl Fn(Cell) -> bool + '_ {
+///
+/// It also reads the dynamic `closed` cells (a closed door): such a landing is refused like a
+/// static block and the actor stays on the teleport (Codex 4255311243).
+fn landable_of<'a>(
+    cells: &'a NativeEntryMovementCells,
+    pz_blocked: bool,
+    closed: &'a BTreeSet<LogicalCell>,
+) -> impl Fn(Cell) -> bool + 'a {
     move |(x, y, z)| {
-        !pz_blocked
-            || cells
-                .spell_tiles()
-                .lookup(cells.scope(), LogicalCell { x, y, z })
-                .is_ok_and(|tile| !tile.flags().protection_zone)
+        let at = LogicalCell { x, y, z };
+        !closed.contains(&at)
+            && (!pz_blocked
+                || cells
+                    .spell_tiles()
+                    .lookup(cells.scope(), at)
+                    .is_ok_and(|tile| !tile.flags().protection_zone))
     }
 }
 
@@ -350,11 +359,13 @@ pub(crate) struct BundleStepProof<'a> {
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     pz_blocked: bool,
+    closed: BTreeSet<LogicalCell>,
     destination: MovementLocalPosition,
 }
 
 /// Proves `actor`'s step `direction` from its current position over the bundle `cells`.
-/// `pz_blocked` is the actor's current PZ block, which the teleport landing rule reads.
+/// `pz_blocked` is the actor's current PZ block, which the teleport landing rule reads; `closed`
+/// holds the dynamically closed cells (doors), where an actor does not land either.
 pub(crate) fn prepare_bundle_step<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
@@ -363,10 +374,18 @@ pub(crate) fn prepare_bundle_step<'a>(
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     pz_blocked: bool,
+    closed: &BTreeSet<LogicalCell>,
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected)?;
-    let destination = destination(cells, table, expected.position(), direction, pz_blocked)?;
+    let destination = destination(
+        cells,
+        table,
+        expected.position(),
+        direction,
+        pz_blocked,
+        closed,
+    )?;
     Ok(BundleStepProof {
         cells,
         table,
@@ -375,6 +394,7 @@ pub(crate) fn prepare_bundle_step<'a>(
         expected,
         direction,
         pz_blocked,
+        closed: closed.clone(),
         destination,
     })
 }
@@ -409,12 +429,13 @@ fn destination(
     origin: MovementLocalPosition,
     direction: CardinalStep,
     pz_blocked: bool,
+    closed: &BTreeSet<LogicalCell>,
 ) -> Result<MovementLocalPosition, MovementError> {
     let floor = i32::from(origin.floor);
     let (x, y, z) = resolve_landing(
         table,
         ground_of(cells),
-        landable_of(cells, pz_blocked),
+        landable_of(cells, pz_blocked, closed),
         (origin.x, origin.y, floor),
         direction,
     )
@@ -439,6 +460,7 @@ impl BundleStepProof<'_> {
             self.expected.position(),
             self.direction,
             self.pz_blocked,
+            &self.closed,
         )?;
         if observed != self.destination {
             return Err(MovementError::SnapshotMismatch);
