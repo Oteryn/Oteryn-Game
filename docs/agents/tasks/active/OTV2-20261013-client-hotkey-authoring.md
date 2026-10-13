@@ -40,7 +40,13 @@ Physical clipboard, original modal-Apply semantics and gameplay are not proved
 by these UI transaction/component tests.
 
 Linux locked all-target client228/199/5 tests, strict Clippy and workspace fmt
-pass; governance60/diff pass. Fresh candidate Windows qualification is next.
+pass; governance60/diff pass. Exact sourcefabf441a1a45a747bad9f82c1a0b994b517d8e95
+passes MSVC227/204/5+Session82, strict all-target Clippy/fmt/release and DX12
+20pages/78independently checked hashes/0invalid at125%DPI. Binary/manifest hashes
+and retained diagnostic failures are in UI-FIDELITY.md. Current loginPID38236,
+window8065072, expected source title and path/hash are verified; old37764 responds.
+No automatic login, account, deployment, restart, install or trust-store mutation.
+Last same-head CI read:7successful/6running/0failed, not final CI/review proof.
 
 ## Dependencies and preserved evidence
 
@@ -49,3 +55,5 @@ proof does not qualify this changed client. E2E execution needs are visible at
 https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6149042654 and in
 OTV2-20261013-step-pace-client-1.md. Work continues on this unblocked batch while
 server2041/ON-OFF authorization and dedicated QA setup remain external needs.
+Latest bounded read: no supplied setup/approval;2041 remains unmerged but now at
+e4ac000cabc760f693847d8d9b80a0ae17d87dd6, superseding the earlier4f4fbadc head.

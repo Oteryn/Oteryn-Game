@@ -46,8 +46,8 @@ Profile naming and auto-switch use the persisted trim/to_lowercase rule;
 same-frame edits are revalidated before confirmation. Legacy unsupported
 Spell/Object bindings remain loadable but cannot claim a physical key in either
 the resolver or native router. Actual modal button transactions and retained
-input/data regressions are part of this batch. Fresh exact-source native
-qualification is required; previous4ff evidence is not inherited. See
+input/data regressions are part of this batch. Exactfabf441a native component
+qualification is recorded below; previous4ff evidence is not inherited. See
 `docs/agents/tasks/active/OTV2-20261013-client-hotkey-authoring.md`.
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
@@ -903,6 +903,43 @@ The server switch stays OFF. Canonical lookup #1622 through6146799516 supplies
 the complete criteria, but no dedicated QA setup or ON/OFF/harness authority;
 #2041 remains open4f4fbadc. Client work continues under the owner task, not the
 withdrawn competing CP allocation. Older binaries are preserved, not retired.
+
+## Supported hotkey/profile batch — 2026-10-13, AUTHORING
+
+One batch fixes text UTF-8/control limits, bounded custom-action/profile creation,
+Unicode duplicate names, retained-name auto-switch matching and unavailable
+legacy Spell/Object key claiming. Modal OK/Apply clicks test64/65emoji,
+128/129two-byte letters, controls/blank input and255/256actions. Refusals retain
+input and valid profile data; own case-only rename and Unicode byte bounds are
+covered. Legacy payloads round-trip unchanged; both chat contexts refuse their
+unavailable keys in the resolver and actual router. Real Text consumers remain.
+
+Sourcefabf441a1a45a747bad9f82c1a0b994b517d8e95 passes Linux228/199/5, strict
+all-target Clippy/fmt, governance60/diff. Exact Rust1.95 MSVC227/204/5+Session82,
+strict all-target Clippy/fmt/release and DX1220pages/78independently rehashed
+captures/0invalid at125%DPI pass. Release0.1.0+dev.ci.gfabf441a1a45;
+binary SHA256a7f2fa3a04114cac439529c56aef92be3f8110c9bceca070f68748c3b615f83e;
+manifest038cff0d364828db276a7dc4927b5da85de5f1eb58285042cbb71606513c2a3f.
+Private build C:\Users\barte\Downloads\oteryn-client-fabf441a-20261013-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-fabf441a-20261013.
+
+Retain outer build/audit PID6600 exit1: all build and audit guards completed,
+then metadata lookup found previous1372 absent. Read-only source/log/manifest
+readback independently verifies the same artifact; no build/audit was repeated.
+The initial window fence used an ASCII hyphen and refused the source's U+2014
+title. Source-correct codepoint fence then verifies currentPID38236 responding,
+window8065072, exact path/hash and login title. Old37764 still responds; neither
+old client/install/checkouts nor trust/account/deployment were changed. Public
+launcher/CA and asset root are reused without automatic login. No personal
+clipboard/input or gameplay proof follows from native unit/page tests.
+
+Guarded recovery /workspace/oteryn-client-publication-fabf441a.bundle SHA256
+5b1c45bb336d526e807c0b66a737f9e9a95e7f6988b1da573542951d9c46288e.
+Same-head CI last read:7successful/6running/0failed. Still draft AUTHORING,
+not100%, final CI/review/MQ, live ON/OFF E2E or a qualified main-channel release.
+Visible execution request6149042654 has no supplied QA/ON-OFF/harness answer;
+server2041 remains unmerged, latest head e4ac000cabc760f693847d8d9b80a0ae17d87dd6.
+Earlier4f4fbadc evidence is historical, not proof of that successor producer.
 
 ## Required evidence per page/panel
 
