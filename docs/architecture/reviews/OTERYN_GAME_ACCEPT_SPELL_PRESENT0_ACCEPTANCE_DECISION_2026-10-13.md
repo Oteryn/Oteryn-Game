@@ -19,8 +19,14 @@
   dependencies (VIS-2, SPELL-D4 composition, ATTACK-1b, COND-1 for ticks). PRESENT-WIRE-1 still
   needs the protocol numbers (capability `PRESENTATION_V1`, domains `WORLD_PRESENTATION` and
   `ACTOR_COOLDOWNS`, rows `SPELLPRES0-RL-01..07`) reserved on #162 before any registry change.
-- The amendments the decision words as "pending on acceptance" take effect: SPELL-D1 §10
-  (pointer and the result `detail`, §8), CHAT-0 §3 (pointer) and ATTACK-0 §3 (pointer).
+- The three pointer amendments are approved with the decision, but each takes effect only when
+  its own target is accepted (ACCEPT-SOCIAL-MAP-0: an amendment whose target is CANDIDATE takes
+  effect in that target when the target is accepted). SPELL-D1 §10 (pointer and the result
+  `detail`, §8) and ATTACK-0 §3 (pointer) have accepted targets, so they take effect with the
+  acceptance of SPELL-PRESENT-0. CHAT-0 §3 (pointer) has a CANDIDATE target (CHAT-0 was reopened
+  by ACCEPT-CHAT-ATTACK-DEATH-0's 2026-10-12 review), so it stays pending until CHAT-0 is
+  accepted. This packet does not accept CHAT-0; the amended documents keep their "pending on
+  acceptance" wording.
 - Owner question P1 is already answered (2026-09-30, #162, option a): the 15.30 client sound
   files are included. Acceptance does not re-ask it.
 
@@ -29,9 +35,9 @@
 1. **Brief names ATTACK-1.** The implementation brief lists COMBAT-PRESENT-1's dependency as
    "ATTACK-1"; the mechanics plan (2026-10-13) names ATTACK-1b. The reviewers confirm which is
    meant and whether the decision text needs the correction.
-2. **CHAT-0 status.** CHAT-0 was reopened as CANDIDATE by ACCEPT-CHAT-ATTACK-DEATH-0's 2026-10-12
-   review. The CHAT-0 §3 pointer amendment (spell words to spectators, range ±8 × ±6) must not
-   take effect ahead of CHAT-0; the reviewers confirm the pointer wording stays valid either way.
+2. **CHAT-0 pending amendment.** The CHAT-0 §3 pointer (spell words to spectators, range ±8 × ±6)
+   stays pending on CHAT-0. The reviewers confirm SPELL-PRESENT-1's spell-words emission (§6) does
+   not depend on the pointer taking effect, or name what must wait for CHAT-0.
 3. **Sound files.** The rights confirmation of 2026-09-30 (P1a) lives in #162. The reviewers
    confirm the quote is recorded where PRESENT-CONTENT-1 can cite it as provenance.
 4. **Bounds.** The §13 rows (1,024 events per session per sync unit, 128 bytes per event, drop on
