@@ -82,9 +82,8 @@ impl ChatLimiter {
     }
 
     /// The cheap gate in front of the Channel lock (CHAT-0 §6): refuses a muted character and
-    /// starts the offence of a line beyond an empty bucket, taking no line. A yell inside its
-    /// cooldown is refused here too, as `admit_local` would. An admitted line still goes
-    /// through [`Self::admit_local`], which takes it.
+    /// starts the offence of a line beyond an empty bucket, taking no line. A yell is left to the full
+    /// path, whose level check comes before its cooldown. An admitted line still goes through [`Self::admit_local`], which takes it.
     pub(crate) fn pre_gate(
         &mut self,
         mode: SpeechMode,
@@ -95,14 +94,6 @@ impl ChatLimiter {
         if let Some(until) = self.muted_until.filter(|until| *until > now) {
             return Err(ChatRefusal::Muted {
                 seconds: seconds_until(now, until),
-            });
-        }
-        if let Some(ready) = self
-            .yell_ready_at
-            .filter(|ready| mode == SpeechMode::Yell && *ready > now)
-        {
-            return Err(ChatRefusal::Exhausted {
-                seconds: seconds_until(now, ready),
             });
         }
         self.refill(now);
