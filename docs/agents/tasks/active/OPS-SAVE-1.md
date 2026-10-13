@@ -8,6 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ops-save-1-20261013
+issue: 2068
 pr: null
 base_sha: 4ac13390
 head_sha: null
