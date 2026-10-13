@@ -24,6 +24,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/actor_spell.rs
   - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - apps/game-server/src/spell/cast.rs
   - apps/game-server/src/spell/native_actor_states.rs
   - apps/game-server/tests/support/item_use_postgres_cases.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json

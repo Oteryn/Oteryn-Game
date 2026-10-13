@@ -187,10 +187,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
         let session = command.game_session_id;
+        // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
+        // item commit and its effect, so no spell stages or commits a successor of this actor's
+        // state meanwhile. `None` is retryable with no side effect while the lane is fenced.
+        let _permit = self
+            .spell_lane_permit()
+            .await
+            .ok_or(UseDisposition::Rejected)?;
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.spell_states.lock().await;
+            // A pending spell commit or a durable spell reserving this actor refuses the use
+            // before anything is burned.
             if states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, session)
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
                     .is_none()
             {

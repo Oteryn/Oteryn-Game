@@ -671,6 +671,18 @@ impl ChannelSpellStates {
             .then_some((gained, revision))
     }
 
+    /// True while no spell commit is pending for the committed player and no durable spell holds
+    /// the actor reserved: nothing then stages a successor of its spell state.
+    pub(in crate::gameplay_transport) fn spell_idle(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        !self.has_pending_spell_commit(actor, game_session_id)
+            && runtime.assert_actor_spell_unreserved(actor).is_ok()
+    }
+
     /// Compare-commit the fed time of one eaten food (ITEM-USE-1c) as the direct successor
     /// revision. `None` when the actor is dead, stale, or eating is refused; nothing changes then.
     pub(in crate::gameplay_transport) fn apply_food(
@@ -1218,6 +1230,7 @@ pub(crate) mod tests {
         states
             .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("initialized");
+        assert!(states.spell_idle(&runtime, actor, session));
         let before = states
             .get(&runtime, actor, session)
             .expect("present")
@@ -1621,6 +1634,7 @@ pub(crate) mod tests {
             .expect("actual logical reservation");
         assert!(!runtime.actor_spell_reserved(actor));
         assert!(states.has_pending_spell_commit(actor, session));
+        assert!(!states.spell_idle(&runtime, actor, session));
         let before = states
             .get(&runtime, actor, session)
             .expect("before")
