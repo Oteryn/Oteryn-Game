@@ -6,7 +6,8 @@ use super::*;
 use crate::charm_wire::{push_message_field, push_varint_field};
 use crate::item_view::ItemHandle;
 use crate::world_object::{
-    UseIntent, UseTarget, decode_use_intent_target, encode_item_use_intent, encode_use_item_intent,
+    UseIntent, UseTarget, WorldObjectError, decode_use_intent_target, encode_item_use_intent,
+    encode_use_item_intent,
 };
 
 const PROTOCOL_REGISTRY: &str =
@@ -16,64 +17,94 @@ const SCHEMA: &str =
 const USE_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
 
-fn push(generation: u64, to: WorldTilePosition) -> PushIntent {
+fn push(generation: u64, to_x: i32, to_y: i32) -> PushIntent {
     PushIntent {
         target: EntityRef {
             identity: [0xab; 16],
             generation,
         },
-        to,
+        to_x,
+        to_y,
     }
-}
-
-fn tile(x: i32, y: i32, floor: i16) -> WorldTilePosition {
-    WorldTilePosition { x, y, floor }
 }
 
 #[test]
 fn a_push_round_trips_and_the_largest_fits_the_bound() {
-    let small = push(1, tile(32_000, 31_000, 7));
+    let small = push(1, 32_000, 31_000);
     let bytes = encode_push_intent(&small).expect("encode");
     assert_eq!(decode_push_intent(&bytes), Ok(small));
-    let largest = push(u64::MAX, tile(i32::MIN, i32::MIN, i16::MIN));
-    let bytes = encode_push_intent(&largest).expect("encode");
-    assert_eq!(bytes.len(), MAX_PUSH_INTENT_BYTES);
-    assert_eq!(decode_push_intent(&bytes), Ok(largest));
+    for largest in [
+        push(
+            u64::from(u32::MAX),
+            MIN_PUSH_COORDINATE,
+            MIN_PUSH_COORDINATE,
+        ),
+        push(
+            u64::from(u32::MAX),
+            MAX_PUSH_COORDINATE,
+            MAX_PUSH_COORDINATE,
+        ),
+    ] {
+        let bytes = encode_push_intent(&largest).expect("encode");
+        assert!(bytes.len() <= MAX_PUSH_INTENT_BYTES);
+        assert_eq!(decode_push_intent(&bytes), Ok(largest));
+    }
+    let bytes =
+        encode_push_intent(&push(u64::from(u32::MAX), MIN_PUSH_COORDINATE, 1_000)).expect("encode");
+    assert_eq!(decode_push_intent(&bytes).expect("decode").to_y, 1_000);
+    // Coordinates 0 are omitted and decode as 0.
+    let origin = push(2, 0, 0);
+    assert_eq!(
+        decode_push_intent(&encode_push_intent(&origin).expect("encode")),
+        Ok(origin)
+    );
+    assert_eq!(MAX_PUSH_INTENT_BYTES, 32);
 }
 
 #[test]
 fn malformed_pushes_fail_closed() {
-    assert_eq!(
-        encode_push_intent(&push(0, tile(1, 1, 7))),
-        Err(WorldInteractionWireError::Malformed)
-    );
-    let good = encode_push_intent(&push(3, tile(1, 1, 7))).expect("encode");
-    let target = &good[..good.iter().position(|b| *b == 0x12).expect("tile")];
+    for bad in [
+        push(0, 1, 1),
+        push(u64::from(u32::MAX) + 1, 1, 1),
+        push(1, MAX_PUSH_COORDINATE + 1, 1),
+        push(1, 1, MIN_PUSH_COORDINATE - 1),
+    ] {
+        assert_eq!(
+            encode_push_intent(&bad),
+            Err(WorldInteractionWireError::Malformed),
+            "{bad:?}"
+        );
+    }
+    let good = encode_push_intent(&push(3, 10, 11)).expect("encode");
+    let mut no_identity = Vec::new();
+    push_varint_field(&mut no_identity, 2, 3);
     let mut zero_generation = Vec::new();
-    let mut inner = Vec::new();
-    push_message_field(&mut inner, 1, &[1; 16]);
-    push_varint_field(&mut inner, 2, 0);
-    push_message_field(&mut zero_generation, 1, &inner);
-    push_message_field(&mut zero_generation, 2, &[]);
+    push_message_field(&mut zero_generation, 1, &[1; 16]);
     let mut short_identity = Vec::new();
-    let mut inner = Vec::new();
-    push_message_field(&mut inner, 1, &[1; 15]);
-    push_varint_field(&mut inner, 2, 1);
-    push_message_field(&mut short_identity, 1, &inner);
-    push_message_field(&mut short_identity, 2, &[]);
-    let mut twice = good.clone();
-    twice.extend_from_slice(&good);
+    push_message_field(&mut short_identity, 1, &[1; 15]);
+    push_varint_field(&mut short_identity, 2, 1);
+    let mut twice_generation = good.clone();
+    push_varint_field(&mut twice_generation, 2, 3);
     let mut unknown = good.clone();
-    push_varint_field(&mut unknown, 3, 1);
+    push_varint_field(&mut unknown, 5, 1);
+    let mut big_generation = Vec::new();
+    push_message_field(&mut big_generation, 1, &[1; 16]);
+    push_varint_field(&mut big_generation, 2, 1 << 32);
+    let mut far = Vec::new();
+    push_message_field(&mut far, 1, &[1; 16]);
+    push_varint_field(&mut far, 2, 1);
+    push_varint_field(&mut far, 3, 1 << 22);
     let mut oversized = good.clone();
     oversized.extend_from_slice(&[0; MAX_PUSH_INTENT_BYTES]);
     for (payload, error) in [
-        (target.to_vec(), WorldInteractionWireError::Malformed),
         (Vec::new(), WorldInteractionWireError::Malformed),
+        (no_identity, WorldInteractionWireError::Malformed),
         (zero_generation, WorldInteractionWireError::Malformed),
         (short_identity, WorldInteractionWireError::Malformed),
-        (twice, WorldInteractionWireError::LimitExceeded),
+        (twice_generation, WorldInteractionWireError::Malformed),
         (unknown, WorldInteractionWireError::Malformed),
+        (big_generation, WorldInteractionWireError::Malformed),
+        (far, WorldInteractionWireError::Malformed),
         (oversized, WorldInteractionWireError::LimitExceeded),
     ] {
         assert_eq!(decode_push_intent(&payload), Err(error), "{payload:?}");
@@ -81,23 +112,49 @@ fn malformed_pushes_fail_closed() {
 }
 
 #[test]
-fn the_result_carries_the_new_dispositions_within_four_bytes() {
+fn the_result_carries_the_new_dispositions_and_the_sealed_gate_message_within_four_bytes() {
     for disposition in [
         UseDisposition::Locked,
         UseDisposition::KeyMismatch,
-        UseDisposition::Sealed,
         UseDisposition::PzBlocked,
         UseDisposition::NotMovable,
         UseDisposition::NoRoom,
         UseDisposition::NotPossible,
     ] {
-        let bytes = encode_push_result(disposition);
+        let bytes = encode_push_result(disposition, None).expect("encode");
         assert!(bytes.len() <= MAX_PUSH_RESULT_BYTES);
-        assert_eq!(decode_push_result(&bytes), Ok(disposition));
+        assert_eq!(decode_push_result(&bytes), Ok((disposition, None)));
         assert!(disposition.needs_world_interaction());
+        assert!(encode_push_result(disposition, Some(1)).is_err());
     }
+    for id in [1, 127] {
+        let bytes = encode_push_result(UseDisposition::Sealed, Some(id)).expect("encode");
+        assert_eq!(bytes.len(), MAX_PUSH_RESULT_BYTES);
+        assert_eq!(
+            decode_push_result(&bytes),
+            Ok((UseDisposition::Sealed, Some(id)))
+        );
+    }
+    // SEALED needs an id in 1 to 127, in both directions; other dispositions refuse one.
+    for id in [None, Some(0), Some(128)] {
+        assert!(encode_push_result(UseDisposition::Sealed, id).is_err());
+    }
+    for payload in [
+        &[0x08, 13][..],
+        &[0x08, 13, 0x10, 0][..],
+        &[0x08, 13, 0x10, 128, 1][..],
+        &[0x08, 11, 0x10, 1][..],
+        &[0x10, 1][..],
+        &[0x08, 13, 0x10, 1, 0x10, 1][..],
+        &[0x08, 18][..],
+    ] {
+        assert!(decode_push_result(payload).is_err(), "{payload:?}");
+    }
+    assert_eq!(
+        decode_push_result(&[0x08, 13, 0x10, 1, 0x10]),
+        Err(WorldObjectError::LimitExceeded)
+    );
     assert!(!UseDisposition::NoTarget.needs_world_interaction());
-    assert!(decode_push_result(&[0x08, 18]).is_err());
 }
 
 #[test]
@@ -181,6 +238,8 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     assert_eq!(command["max_result_payload_bytes"], MAX_PUSH_RESULT_BYTES);
     assert!(SCHEMA.contains("message PushIntentV1 {"));
     assert!(SCHEMA.contains(&format!("At most {MAX_PUSH_INTENT_BYTES} bytes")));
+    assert!(USE_SCHEMA.contains("uint32 gate_message_id = 2;"));
+    assert!(!SCHEMA.contains("command type 9 (item_view_v1.proto), whose"));
     assert!(USE_SCHEMA.contains("ItemTargetV1 use_with_map_item = 6;"));
     assert!(USE_SCHEMA.contains("USE_DISPOSITION_NOT_POSSIBLE = 17;"));
 }

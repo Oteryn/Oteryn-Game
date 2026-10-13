@@ -526,17 +526,17 @@ pub fn decode_open_container(payload: &[u8]) -> WireResult<OpenContainer> {
     Ok(view)
 }
 
-fn push_sint32(output: &mut Vec<u8>, field: u64, value: i32) {
+pub(crate) fn push_sint32(output: &mut Vec<u8>, field: u64, value: i32) {
     let zigzag = ((value << 1) ^ (value >> 31)) as u32;
     push_nonzero_varint_field(output, field, u64::from(zigzag));
 }
 
-fn decode_sint32(value: u64) -> WireResult<i32> {
+pub(crate) fn decode_sint32(value: u64) -> WireResult<i32> {
     let zigzag = u32::try_from(value).map_err(|_| ItemViewWireError::Malformed)?;
     Ok(((zigzag >> 1) as i32) ^ -((zigzag & 1) as i32))
 }
 
-pub(crate) fn encode_position(position: WorldTilePosition) -> Vec<u8> {
+fn encode_position(position: WorldTilePosition) -> Vec<u8> {
     let mut output = Vec::with_capacity(MAX_WORLD_TILE_POSITION_BYTES);
     push_sint32(&mut output, 1, position.x);
     push_sint32(&mut output, 2, position.y);
@@ -545,7 +545,7 @@ pub(crate) fn encode_position(position: WorldTilePosition) -> Vec<u8> {
 }
 
 /// Absent coordinates are 0 (proto3); a floor outside the int16 range fails closed.
-pub(crate) fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
+fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
     if input.len() > MAX_WORLD_TILE_POSITION_BYTES {
         return Err(ItemViewWireError::LimitExceeded);
     }

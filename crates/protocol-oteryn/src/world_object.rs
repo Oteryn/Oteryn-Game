@@ -195,22 +195,6 @@ fn read_bytes<'a>(input: &'a [u8], cursor: &mut usize) -> Result<&'a [u8], World
 }
 
 /// Reads exactly one singular enum field 1 (the only field of the use result).
-fn read_single_enum(input: &[u8], maximum: usize) -> Result<u64, WorldObjectError> {
-    if input.len() > maximum {
-        return Err(WorldObjectError::LimitExceeded);
-    }
-    let mut cursor = 0;
-    let mut value = None;
-    while cursor < input.len() {
-        let key = read_varint(input, &mut cursor)?;
-        if key != (1 << 3) || value.is_some() {
-            return Err(WorldObjectError::Malformed);
-        }
-        value = Some(read_varint(input, &mut cursor)?);
-    }
-    value.ok_or(WorldObjectError::Malformed)
-}
-
 fn encode_world_object_target(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObjectError> {
     if target.placement.len() > MAX_KEY_BYTES {
         return Err(WorldObjectError::LimitExceeded);
@@ -424,33 +408,89 @@ fn map_item_handle(input: &[u8]) -> Result<ItemHandle, WorldObjectError> {
     })
 }
 
+/// `SEALED` carries a gate message id: use `encode_use_result_with_gate` for it.
 pub fn encode_use_result(disposition: UseDisposition) -> Vec<u8> {
     let mut output = Vec::with_capacity(2);
     push_varint_field(&mut output, 1, disposition as u64);
     output
 }
 
-pub fn decode_use_result(payload: &[u8]) -> Result<UseDisposition, WorldObjectError> {
-    match read_single_enum(payload, MAX_USE_RESULT_BYTES)? {
-        1 => Ok(UseDisposition::Committed),
-        2 => Ok(UseDisposition::NothingToUse),
-        3 => Ok(UseDisposition::Occupied),
-        4 => Ok(UseDisposition::StaleState),
-        5 => Ok(UseDisposition::TooFar),
-        6 => Ok(UseDisposition::Rejected),
-        7 => Ok(UseDisposition::RequirementNotMet),
-        8 => Ok(UseDisposition::Exhausted),
-        9 => Ok(UseDisposition::Full),
-        10 => Ok(UseDisposition::NoTarget),
-        11 => Ok(UseDisposition::Locked),
-        12 => Ok(UseDisposition::KeyMismatch),
-        13 => Ok(UseDisposition::Sealed),
-        14 => Ok(UseDisposition::PzBlocked),
-        15 => Ok(UseDisposition::NotMovable),
-        16 => Ok(UseDisposition::NoRoom),
-        17 => Ok(UseDisposition::NotPossible),
-        _ => Err(WorldObjectError::Malformed),
+/// The gate message id of a `SEALED` result: 1 to 127, one varint byte, so the result stays within
+/// `MAX_USE_RESULT_BYTES` (disposition 2 + id 2).
+pub const MAX_GATE_MESSAGE_ID: u8 = 127;
+
+/// A result with a gate message id: `SEALED` requires it and every other disposition refuses it.
+pub fn encode_use_result_with_gate(
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+) -> Result<Vec<u8>, WorldObjectError> {
+    match (disposition, gate_message_id) {
+        (UseDisposition::Sealed, Some(id)) if (1..=MAX_GATE_MESSAGE_ID).contains(&id) => {}
+        (UseDisposition::Sealed, _) | (_, Some(_)) => return Err(WorldObjectError::Malformed),
+        (_, None) => {}
     }
+    let mut output = encode_use_result(disposition);
+    if let Some(id) = gate_message_id {
+        push_varint_field(&mut output, 2, u64::from(id));
+    }
+    Ok(output)
+}
+
+/// Decodes `UseResultV1` and `PushResultV1`: field 2 `gate_message_id` is carried by `SEALED`
+/// alone, and `SEALED` without it fails closed.
+pub fn decode_use_result_with_gate(
+    payload: &[u8],
+) -> Result<(UseDisposition, Option<u8>), WorldObjectError> {
+    if payload.len() > MAX_USE_RESULT_BYTES {
+        return Err(WorldObjectError::LimitExceeded);
+    }
+    let (mut value, mut gate) = (None, None);
+    let mut cursor = 0;
+    while cursor < payload.len() {
+        let slot = match read_varint(payload, &mut cursor)? {
+            0x08 => &mut value,
+            0x10 => &mut gate,
+            _ => return Err(WorldObjectError::Malformed),
+        };
+        if slot.replace(read_varint(payload, &mut cursor)?).is_some() {
+            return Err(WorldObjectError::Malformed);
+        }
+    }
+    let disposition = match value.ok_or(WorldObjectError::Malformed)? {
+        1 => UseDisposition::Committed,
+        2 => UseDisposition::NothingToUse,
+        3 => UseDisposition::Occupied,
+        4 => UseDisposition::StaleState,
+        5 => UseDisposition::TooFar,
+        6 => UseDisposition::Rejected,
+        7 => UseDisposition::RequirementNotMet,
+        8 => UseDisposition::Exhausted,
+        9 => UseDisposition::Full,
+        10 => UseDisposition::NoTarget,
+        11 => UseDisposition::Locked,
+        12 => UseDisposition::KeyMismatch,
+        13 => UseDisposition::Sealed,
+        14 => UseDisposition::PzBlocked,
+        15 => UseDisposition::NotMovable,
+        16 => UseDisposition::NoRoom,
+        17 => UseDisposition::NotPossible,
+        _ => return Err(WorldObjectError::Malformed),
+    };
+    let gate_message_id = match (disposition, gate) {
+        (UseDisposition::Sealed, Some(id)) => Some(
+            u8::try_from(id)
+                .ok()
+                .filter(|id| (1..=MAX_GATE_MESSAGE_ID).contains(id))
+                .ok_or(WorldObjectError::Malformed)?,
+        ),
+        (UseDisposition::Sealed, None) | (_, Some(_)) => return Err(WorldObjectError::Malformed),
+        (_, None) => None,
+    };
+    Ok((disposition, gate_message_id))
+}
+
+pub fn decode_use_result(payload: &[u8]) -> Result<UseDisposition, WorldObjectError> {
+    decode_use_result_with_gate(payload).map(|(disposition, _)| disposition)
 }
 
 /// Refuses to emit a `placement` or `state` over `MAX_KEY_BYTES` rather than publish a
@@ -917,6 +957,8 @@ mod tests {
             UseDisposition::Exhausted,
             UseDisposition::Full,
             UseDisposition::NoTarget,
+            UseDisposition::Locked,
+            UseDisposition::NoRoom,
         ] {
             let bytes = encode_use_result(disposition);
             assert!(bytes.len() <= MAX_USE_RESULT_BYTES);

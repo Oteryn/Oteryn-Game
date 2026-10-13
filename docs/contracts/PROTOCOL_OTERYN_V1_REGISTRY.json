@@ -124,7 +124,7 @@
       "command_types": [15],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, USE field 6 and the dispositions 11 to 17 are never sent and command type 15 is refused."
+      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, USE field 6, the dispositions 11 to 17 and the gate message id are never sent and command type 15 is refused. It changes no other command."
     },
     {
       "id": 12,
@@ -337,7 +337,7 @@
       "capability": 11,
       "payload_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushResultV1",
-      "max_payload_bytes": 49,
+      "max_payload_bytes": 32,
       "max_result_payload_bytes": 4
     },
     {

@@ -72,6 +72,10 @@ enum UseDispositionV1 {
 // CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.
 message UseResultV1 {
   UseDispositionV1 disposition = 1;
+  // Capability 11 only, and only with USE_DISPOSITION_SEALED, which requires it: the gate's
+  // message id, 1 to 127 (a one-byte varint, which keeps the result within 4 bytes). Any other
+  // disposition with this field, and SEALED without it, fail closed.
+  uint32 gate_message_id = 2;
 }
 
 // One world-object overlay entry: the state is a state key, not an Open/Closed enum,
