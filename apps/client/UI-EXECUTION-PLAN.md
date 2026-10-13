@@ -13,19 +13,24 @@ Owner task: `OTV2-20261009-client-game-ui`; branch
 One root writer/publisher. This update plans work; it does not allocate server,
 Platform or operator work or authorize deployments/account mutations.
 
-Starting documentation head: `82efd3df7f65e12eea8d22df6283a42a76e8f8df`;
-qualified runtime: `fabf441a1a45a747bad9f82c1a0b994b517d8e95`.
-Linux client228/199/5 and exact Windows227/204/5+Session82, strict checks/release
-and DX1220pages/78captures/0invalid pass. Full hashes, retained failures and private
+Qualified runtime: `a65e7428fcbd92221997b87ffe22bc70451a7426`.
+Linux client228/200/5 and exact Windows227/206/5+Session82, strict checks/release
+and DX1220pages/78captures/0invalid pass. Both B1 routed transactions and the
+Windows-only toolbar save-failure case execute; all20 initial captures are
+visually inspected. Full hashes, retained failures and private
 paths are in [UI-FIDELITY.md](UI-FIDELITY.md). Page/component acceptance is not
 all-control behavior, native gameplay, original1:1 or release qualification.
 MAP/PACE and the five-defect supported-profile batch are retained, not redone.
+B1's supported transaction packet is component-qualified; physical OS input,
+picker/clipboard/trackpad and full original parity remain open.
 
-Bounded live read: PR head matches82efd3df, still draft AUTHORING. CI has no
-failed checks but is not complete:20successful/1skipped/7running and one
-cancelled governance run; mandatory same-head gates must actually succeed.
-Accepted main is `b4774770a6c7671cea2049a9d6210d1e6865773e`.
-Server2041 remains open/unmerged at `e4ac000cabc760f693847d8d9b80a0ae17d87dd6`.
+Bounded live read: PR head matchesa65e7428, still draft AUTHORING. CI has no
+failed checks but is not complete:13successful/4running; mandatory same-head
+gates must actually succeed. Accepted main is
+`376be56bcda0da6c1c014bc50429c521bec3dcdc`, normally merged into this runtime.
+Server2041 merged at2026-10-13T16:14:38Z, source
+`e4ac000cabc760f693847d8d9b80a0ae17d87dd6`, mergea076a4ff. The source gate is
+fulfilled; live node/QA/switch/harness/retirement gates remain unsupplied.
 These are snapshots to refresh before the relevant mutation/qualification.
 
 ## Acceptance rule
@@ -45,7 +50,8 @@ A prepared control without its consumer is not a completed function.
 
 ## Execution order and batch size
 
-Next: B0 and B1. B2 is the first production-shaped gameplay milestone; it starts
+Next: finish B0 and remaining physical B1 acceptance. B2 is the first
+production-shaped gameplay milestone; it starts
 only when its operator/QA prerequisites are supplied. While waiting, continue
 client-only B1 and targeted reference/projection mapping for later batches.
 After B2, prioritize accepted consumers that unblock real play; graphics, sound
@@ -132,7 +138,8 @@ primitives alone do not authorize or implement BUY/SELL/purchase controls.
 
 Already visible to the coordinator in [6149042654](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6149042654):
 
-1. Server owner/operator: qualify/merge2041; confirm the deployed node/WorldBundle;
+1. Server owner/operator: merged2041 source is fulfilled; confirm its qualified
+   deployed node/WorldBundle;
    grant a testing/preprod `OTERYN_STEP_WAIT_RECEIPTS=1` window and restore-OFF/
    restart proof. Root does not flip switches or deploy.
 2. CP/operator: dedicated QA account/character, seeded USE item, at least six
@@ -146,7 +153,8 @@ Already visible to the coordinator in [6149042654](https://github.com/Oteryn/Ote
    revision for each missing projection/command above, plus legally usable sound/
    artwork and verified help/format evidence. No blanket invented client protocol.
 
-The last canonical read supplies none of1–4. New replies are verified at their
+The last canonical read supplies the2041 source merge only, none of the remaining
+operational/authority prerequisites in1–4. New replies are verified at their
 exact links before consuming them. This plan does not edit STATE/Jira, allocate
 other writers, authorize spending or promise unattended work/monitoring.
 

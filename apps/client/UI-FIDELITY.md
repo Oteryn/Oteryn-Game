@@ -941,16 +941,30 @@ Visible execution request6149042654 has no supplied QA/ON-OFF/harness answer;
 server2041 remains unmerged, latest head e4ac000cabc760f693847d8d9b80a0ae17d87dd6.
 Earlier4f4fbadc evidence is historical, not proof of that successor producer.
 
-## Required evidence per page/panel
+## Supported settings transactions — 2026-10-13, AUTHORING
 
 B1 continuation adds isolated PL/EN production-widget transactions reaching
 actual redraw/repeat, cursor/HUD/Harmony, target-marking, receipt-time chat and
 action-row viewport consumers. Cancel/reload, real staging-write failure and
 visible recovery are covered; unavailable children remain inert. Immediate
 language save now commits only after persistence and preserves unrelated draft
-edits; its actual toolbar test requires Windows. Exact changed-source native
-qualification remains required. The B1 task record retains the acceptance scope;
-component/page tests are not physical clipboard/picker/trackpad or gameplay proof.
+edits. Actual toolbar and routed matrix tests execute on exact Windows source
+a65e7428fcbd92221997b87ffe22bc70451a7426: MSVC227/206/5+Session82, strict checks
+and release pass; post-merge Linux228/200/5+82 and governance60 pass.
+Release0.1.0+dev.ci.ga65e7428fcbd; binary SHA256
+3d4de918e4aaa7271e775a76c84018f6a80cb98ae8bbdb1b17abfe38445a0213;
+DX1220pages/78 independently rehashed captures/0invalid at125%DPI, manifest
+7174e7b965670718f3bb991cd91b0649cfd1e3e32702158c8e49237239bc2078.
+All20 initial captures were visually inspected; automated scrolling checks the
+remaining captures. Exact responding loginPID3008/window3346350 is launched
+without automatic sign-in. Private paths, recovery and remaining boundaries:
+`docs/agents/tasks/active/OTV2-20261013-client-settings-transactions.md`.
+Component/page tests are not physical clipboard/picker/trackpad or gameplay proof.
+Same-a65 CI is13successful/4running/0failed, not final all-green. Producer2041
+is now merged/main376, but no dedicated QA/ON-OFF/harness/retirement reply was
+supplied to6149042654. Registered clock19 stays unoffered; no deployment follows.
+
+## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.
