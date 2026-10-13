@@ -44,3 +44,5 @@ indices 1-3 are unchanged. No adapter, protocol, registry, migration or client c
 - `cargo +1.95.0 fmt --all --check`: pass
 - lib filters above: 441 passed; `--test ability_engine`: 74 passed
 - New test: `magic_patch_casts_and_shares_the_healing_group`.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
