@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "d3-8-cheese-admitted-20261007-r1",
-  "content_lock_digest": "f5bc214210af357d3ad04ab727565cd0a4a7f8391079382085a439824a3b778c",
+  "content_revision": "item-sem-use-2-consumables-20261013-r1",
+  "content_lock_digest": "aecd3e4c85b1765dfe2e80de0f955b593c9318302bbd2780d1c34a9e9b22034a",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:d3-8-cheese-admitted-20261007-r1/33887c569af460fc07131d14804c6b7bff98513683eff2420d5cb27768b9e81b"
+  "provenance_summary": "lock:item-sem-use-2-consumables-20261013-r1/04ee0406501f41ec02943bd0bfe93ca7c7e3187a6e011805f1487d209dacfb22"
 }

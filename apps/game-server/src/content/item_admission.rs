@@ -475,6 +475,196 @@ fn admit_v2(
     Ok(())
 }
 
+/// The pinned v3 packet bytes (ITEM-SEM-USE-2): the consumable stack shapes.
+pub const ITEM_ADMISSION_V3_PACKET: &[u8] =
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20261004-consumable-item-admission.json");
+pub const ITEM_ADMISSION_V3_PACKET_SHA256: &str =
+    "7c85a8171e25d5dd7b098587c9e5e323d61b4fe0b767e83dcb1cc808f63bba8e";
+pub const ITEM_ADMISSION_V3_ITEM_COUNT: usize = 147;
+const SCHEMA_V3: &str = "OTERYN_ITEM_ADMISSION/v3";
+const V3_STACK_MAX: u16 = 100;
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PacketV3 {
+    schema: String,
+    task: String,
+    decision: String,
+    policy: PolicyV2,
+    admissions: Vec<AdmissionV3>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AdmissionV3 {
+    item_key: String,
+    materializable: bool,
+    stack_class: StackClassV2,
+    stack_max: Option<u16>,
+    #[allow(dead_code)]
+    evidence: EvidenceV3,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EvidenceV3 {
+    #[allow(dead_code)]
+    canary: serde_json::Value,
+    #[allow(dead_code)]
+    tibiawiki: serde_json::Value,
+}
+
+/// Apply the pinned ITEM-SEM-USE-2 packet to `draft`: every row is a consumable stack shape
+/// (stack-capable with `stack_max` 100, or non-stackable). Returns the number of admitted Items.
+pub fn apply_item_admission_v3(draft: &mut ProjectV2Draft) -> Result<usize, ItemAdmissionError> {
+    if world_project_sha256(ITEM_ADMISSION_V3_PACKET) != ITEM_ADMISSION_V3_PACKET_SHA256 {
+        return Err(ItemAdmissionError::Digest);
+    }
+    let items = draft
+        .core
+        .records
+        .iter_mut()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item {
+                identity,
+                materializable,
+                stack_class,
+                semantics,
+                ..
+            } => Some((
+                identity.key.as_str(),
+                materializable,
+                stack_class,
+                semantics,
+            )),
+            _ => None,
+        });
+    let admitted = apply_admissions_v3(items, ITEM_ADMISSION_V3_PACKET)?;
+    if admitted != ITEM_ADMISSION_V3_ITEM_COUNT {
+        return Err(ItemAdmissionError::Counts);
+    }
+    Ok(admitted)
+}
+
+fn apply_admissions_v3<'a>(
+    items: impl Iterator<
+        Item = (
+            &'a str,
+            &'a mut bool,
+            &'a mut ItemStackDocument,
+            &'a mut ReferenceItemSemantics,
+        ),
+    >,
+    bytes: &[u8],
+) -> Result<usize, ItemAdmissionError> {
+    let packet: PacketV3 = serde_json::from_slice(bytes)
+        .map_err(|error| ItemAdmissionError::Decode(error.to_string()))?;
+    if packet.schema != SCHEMA_V3
+        || packet.task.is_empty()
+        || packet.decision.is_empty()
+        || packet.policy.agreement != "PINNED_EVIDENCE_NO_CONFLICT"
+        || packet.policy.scope != "CONSUMABLE_STACK_SHAPE_ONLY"
+    {
+        return Err(ItemAdmissionError::Decode("schema".to_owned()));
+    }
+    let mut pending = BTreeSet::new();
+    for admission in &packet.admissions {
+        if !admission.materializable {
+            return Err(item_error(
+                &admission.item_key,
+                "admission must be materializable",
+            ));
+        }
+        if !pending.insert(admission.item_key.as_str()) {
+            return Err(item_error(&admission.item_key, "duplicate admission"));
+        }
+    }
+    let by_key: std::collections::BTreeMap<&str, &AdmissionV3> = packet
+        .admissions
+        .iter()
+        .map(|row| (row.item_key.as_str(), row))
+        .collect();
+    // Plan every admission before mutating: an error leaves the draft untouched.
+    let mut planned = Vec::new();
+    for (key, materializable, stack_class, semantics) in items {
+        if !pending.remove(key) {
+            continue;
+        }
+        let Some(admission) = by_key.get(key) else {
+            continue;
+        };
+        let (class, stack) = plan_v3(admission, materializable, stack_class, semantics)?;
+        planned.push((materializable, stack_class, semantics, class, stack));
+    }
+    if let Some(item_key) = pending.into_iter().next() {
+        return Err(item_error(item_key, "no Item record with this key"));
+    }
+    let admitted = planned.len();
+    for (materializable, stack_class, semantics, class, stack) in planned {
+        *materializable = true;
+        *stack_class = class;
+        semantics.stack = ReferenceItemField::Known(stack);
+    }
+    Ok(admitted)
+}
+
+fn plan_v3(
+    admission: &AdmissionV3,
+    materializable: &bool,
+    stack_class: &ItemStackDocument,
+    semantics: &ReferenceItemSemantics,
+) -> Result<(ItemStackDocument, ReferenceItemStack), ItemAdmissionError> {
+    use ReferenceItemField::{Known, Unknown};
+    let key = admission.item_key.as_str();
+    if *materializable
+        || *stack_class != ItemStackDocument::Unknown
+        || !matches!(semantics.container, Unknown)
+        || !matches!(semantics.equipment, Unknown)
+    {
+        return Err(item_error(key, "baseline is not an identity-only Item"));
+    }
+    // An imported temporal (decay) fact is left untouched; v3 writes only the stack shape.
+    // The imported stack facts may already be Known; they must agree with the admitted shape.
+    let imported_stack = match &semantics.stack {
+        Unknown => None,
+        Known(stack) => Some((&stack.stackable, &stack.stack_max)),
+        _ => return Err(item_error(key, "baseline stack is not Known or Unknown")),
+    };
+    let agrees = |stackable: bool, stack_max: Option<u16>| match imported_stack {
+        None => true,
+        Some((imported_stackable, imported_max)) => {
+            matches!(imported_stackable, Known(value) if *value == stackable)
+                && match (imported_max, stack_max) {
+                    (Unknown, _) => true,
+                    (Known(value), Some(expected)) => *value == expected,
+                    _ => false,
+                }
+        }
+    };
+    match (&admission.stack_class, admission.stack_max) {
+        (StackClassV2::StackCapable, Some(V3_STACK_MAX)) if agrees(true, Some(V3_STACK_MAX)) => {
+            Ok((
+                ItemStackDocument::StackCapable,
+                ReferenceItemStack {
+                    stackable: Known(true),
+                    stack_max: Known(V3_STACK_MAX),
+                },
+            ))
+        }
+        (StackClassV2::NonStackable, None) if agrees(false, None) => Ok((
+            ItemStackDocument::NonStackable,
+            ReferenceItemStack {
+                stackable: Known(false),
+                stack_max: Unknown,
+            },
+        )),
+        _ => Err(item_error(
+            key,
+            "admission shape is neither stack-capable nor non-stackable",
+        )),
+    }
+}
+
 fn item_error(item_key: &str, reason: &'static str) -> ItemAdmissionError {
     ItemAdmissionError::Item {
         item_key: item_key.to_owned(),
@@ -892,5 +1082,202 @@ mod tests {
         let stack = &parsed["r"]["semantics"]["stack"]["value"];
         assert_eq!(stack["stackable"]["value"], candidate["stackable"]);
         assert_eq!(stack["stack_max"]["value"], candidate["stack_max"]);
+    }
+
+    fn apply_v3(
+        packet: &serde_json::Value,
+        key: &str,
+        materializable: &mut bool,
+        stack_class: &mut ItemStackDocument,
+        semantics: &mut ReferenceItemSemantics,
+    ) -> Result<usize, ItemAdmissionError> {
+        let bytes = serde_json::to_vec(packet).expect("encodes");
+        apply_admissions_v3(
+            std::iter::once((key, materializable, stack_class, semantics)),
+            &bytes,
+        )
+    }
+
+    fn consumable_packet() -> serde_json::Value {
+        serde_json::from_slice(ITEM_ADMISSION_V3_PACKET).expect("pinned consumable packet")
+    }
+
+    fn first_row(packet: &serde_json::Value, class: &str) -> (String, serde_json::Value) {
+        let mut one = packet.clone();
+        let row = packet["admissions"]
+            .as_array()
+            .and_then(|rows| rows.iter().find(|row| row["stack_class"] == class))
+            .expect("row of this class")
+            .clone();
+        one["admissions"] = serde_json::json!([row.clone()]);
+        (row["item_key"].as_str().expect("key").to_owned(), one)
+    }
+
+    #[test]
+    fn pinned_v3_packet_digest_and_counts() {
+        assert_eq!(
+            world_project_sha256(ITEM_ADMISSION_V3_PACKET),
+            ITEM_ADMISSION_V3_PACKET_SHA256
+        );
+        let packet = consumable_packet();
+        let rows = packet["admissions"].as_array().expect("rows");
+        assert_eq!(rows.len(), ITEM_ADMISSION_V3_ITEM_COUNT);
+        let capable = rows
+            .iter()
+            .filter(|row| row["stack_class"] == "STACK_CAPABLE")
+            .count();
+        assert_eq!((capable, rows.len() - capable), (144, 3));
+        for row in rows {
+            assert!(row["evidence"]["canary"].is_object());
+            assert!(row["evidence"]["tibiawiki"].is_object());
+        }
+    }
+
+    #[test]
+    fn admits_consumable_shapes_once_and_leaves_other_groups() {
+        let packet = consumable_packet();
+        for (class, stackable, stack_max, stack_class_value) in [
+            (
+                "STACK_CAPABLE",
+                true,
+                ReferenceItemField::Known(100),
+                ItemStackDocument::StackCapable,
+            ),
+            (
+                "NON_STACKABLE",
+                false,
+                ReferenceItemField::Unknown,
+                ItemStackDocument::NonStackable,
+            ),
+        ] {
+            let (key, one) = first_row(&packet, class);
+            let (mut materializable, mut stack_class) = (false, ItemStackDocument::Unknown);
+            let mut semantics = ReferenceItemSemantics::default();
+            assert_eq!(
+                apply_v3(
+                    &one,
+                    &key,
+                    &mut materializable,
+                    &mut stack_class,
+                    &mut semantics
+                ),
+                Ok(1)
+            );
+            assert!(materializable);
+            assert_eq!(stack_class, stack_class_value);
+            assert_eq!(
+                semantics.stack,
+                ReferenceItemField::Known(ReferenceItemStack {
+                    stackable: ReferenceItemField::Known(stackable),
+                    stack_max,
+                })
+            );
+            assert_eq!(semantics.container, ReferenceItemField::Unknown);
+            assert_eq!(semantics.equipment, ReferenceItemField::Unknown);
+            // A second run fails closed: the Item is no longer identity-only.
+            assert_eq!(
+                apply_v3(
+                    &one,
+                    &key,
+                    &mut materializable,
+                    &mut stack_class,
+                    &mut semantics
+                ),
+                Err(item_error(&key, "baseline is not an identity-only Item"))
+            );
+        }
+    }
+
+    #[test]
+    fn imported_stack_facts_must_agree_and_container_must_be_unknown() {
+        let packet = consumable_packet();
+        let (key, one) = first_row(&packet, "STACK_CAPABLE");
+        let stack = |stackable: bool, stack_max: ReferenceItemField<u16>| {
+            ReferenceItemField::Known(ReferenceItemStack {
+                stackable: ReferenceItemField::Known(stackable),
+                stack_max,
+            })
+        };
+        // Agreeing imported facts are accepted.
+        let mut semantics = ReferenceItemSemantics {
+            stack: stack(true, ReferenceItemField::Known(100)),
+            ..ReferenceItemSemantics::default()
+        };
+        let (mut materializable, mut stack_class) = (false, ItemStackDocument::Unknown);
+        assert_eq!(
+            apply_v3(
+                &one,
+                &key,
+                &mut materializable,
+                &mut stack_class,
+                &mut semantics
+            ),
+            Ok(1)
+        );
+        // A disagreeing stackable flag, a disagreeing stack_max and a known container fail.
+        for semantics in [
+            ReferenceItemSemantics {
+                stack: stack(false, ReferenceItemField::Unknown),
+                ..ReferenceItemSemantics::default()
+            },
+            ReferenceItemSemantics {
+                stack: stack(true, ReferenceItemField::Known(50)),
+                ..ReferenceItemSemantics::default()
+            },
+            backpack(),
+        ] {
+            let mut semantics = semantics;
+            let (mut materializable, mut stack_class) = (false, ItemStackDocument::Unknown);
+            assert!(
+                apply_v3(
+                    &one,
+                    &key,
+                    &mut materializable,
+                    &mut stack_class,
+                    &mut semantics
+                )
+                .is_err()
+            );
+            assert!(!materializable);
+            assert_eq!(stack_class, ItemStackDocument::Unknown);
+        }
+    }
+
+    #[test]
+    fn rejects_bad_consumable_admissions() {
+        let packet = consumable_packet();
+        let (key, one) = first_row(&packet, "STACK_CAPABLE");
+        let run = |packet: &serde_json::Value, key: &str| {
+            let (mut materializable, mut stack_class) = (false, ItemStackDocument::Unknown);
+            let mut semantics = ReferenceItemSemantics::default();
+            apply_v3(
+                packet,
+                key,
+                &mut materializable,
+                &mut stack_class,
+                &mut semantics,
+            )
+        };
+        let mut wrong_stack_max = one.clone();
+        wrong_stack_max["admissions"][0]["stack_max"] = serde_json::json!(99);
+        let mut capable_without_max = one.clone();
+        capable_without_max["admissions"][0]["stack_max"] = serde_json::Value::Null;
+        let mut not_materializable = one.clone();
+        not_materializable["admissions"][0]["materializable"] = serde_json::json!(false);
+        let mut wrong_scope = one.clone();
+        wrong_scope["policy"]["scope"] = serde_json::json!("CORPSE");
+        let mut wrong_schema = one.clone();
+        wrong_schema["schema"] = serde_json::json!("OTERYN_ITEM_ADMISSION/v2");
+        for bad in [
+            &wrong_stack_max,
+            &capable_without_max,
+            &not_materializable,
+            &wrong_scope,
+            &wrong_schema,
+        ] {
+            assert!(run(bad, &key).is_err());
+        }
+        // A row whose Item is absent is refused.
+        assert!(run(&one, "oteryn:item.tibia.i0").is_err());
     }
 }
