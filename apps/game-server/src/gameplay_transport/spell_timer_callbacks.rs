@@ -501,7 +501,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let content = active
                         .native_gameplay()
                         .ok_or(DurabilityError::Unavailable)?;
-                    let room = owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
+                    let room = owner.combat_room.ok_or(DurabilityError::Unavailable)?;
                     if !saved.binding.active(owner.spells, runtime)
                         || !saved.current_target(runtime)
                     {
