@@ -1,7 +1,7 @@
 # EQUIP-0 Equipment effects
 
 - Decision: `EQUIP0-EQUIPMENT-EFFECTS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-13, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-EQUIP-0`, `OTERYN_GAME_ACCEPT_EQUIP0_ACCEPTANCE_DECISION_2026-10-13.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (combat and
   determinism) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698, item 2): no decision makes worn
