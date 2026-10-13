@@ -502,6 +502,17 @@ impl NpcConversations {
     }
 }
 
+/// The production key of the visible NPC `npc_actor` names in this generation, if any: replay
+/// accepts a committed trade only for the NPC it was made with.
+pub(crate) fn npc_key_of(runtime: &ChannelRuntimeV1, npc_actor: EntityRef) -> Option<String> {
+    let visible = runtime.visible_entities();
+    let npc = visible.npcs.iter().find(|npc| {
+        npc.actor.placement_identity() == npc_actor.identity
+            && npc.generation == npc_actor.generation
+    })?;
+    runtime.npc_key(npc.actor).map(str::to_owned)
+}
+
 /// The trade window of `npc` for its conversation: its offers at the book's catalogue revision.
 /// `None` when the NPC has no projectable offer or there is no pinned Item index.
 fn open_window(

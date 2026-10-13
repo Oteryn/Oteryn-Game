@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
 use super::item_ref_admission::{generation_item_facts, pinned_index};
-use super::npc_command::NpcTradeRefusal;
+use super::npc_command::{NpcTradeRefusal, npc_key_of};
 use crate::content::ActiveGeneration;
 use crate::content::item_ref::ITEM_FAMILY;
 use crate::domain::currency::{COIN_DEFINITION_FAMILY, Coin};
@@ -68,9 +68,11 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
     }
 }
 
-/// Whether the committed trade answered this intent: the same offer, side, quantity and price.
-fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent) -> bool {
-    receipt.catalogue_revision == intent.catalogue_revision
+/// Whether the committed trade answered this intent: the same NPC (`npc_key`, the production key
+/// the intent's actor resolves to now), offer, side, quantity and price.
+fn answers(receipt: &NpcTradeReceipt, npc_key: Option<&str>, intent: &NpcTradeIntent) -> bool {
+    npc_key == Some(receipt.npc_key.as_str())
+        && receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)
         && receipt.quantity == intent.quantity
@@ -111,10 +113,17 @@ pub(super) async fn npc_trade(
         )
         .await
     {
-        Ok(Some(receipt)) if answers(&receipt, &intent) => return NpcTradeStep::Traded,
+        Ok(Some(receipt)) => {
+            let npc_key = npc_key_of(&*admission.runtime.lock().await, intent.npc_actor);
+            return if answers(&receipt, npc_key.as_deref(), &intent) {
+                NpcTradeStep::Traded
+            } else {
+                NpcTradeStep::rejected()
+            };
+        }
         Ok(None) => {}
         Err(NpcTradeError::Unavailable(_)) => return NpcTradeStep::Unknown,
-        Ok(Some(_)) | Err(_) => return NpcTradeStep::rejected(),
+        Err(_) => return NpcTradeStep::rejected(),
     }
 
     let (offer, coins) = {

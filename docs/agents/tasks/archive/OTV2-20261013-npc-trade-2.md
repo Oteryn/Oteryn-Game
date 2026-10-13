@@ -38,8 +38,10 @@ next_action: "NPC-TRADE-3 (charged and fluid offers) is opened by the control pl
   of the command's CommandRef with distinct tags (UUIDv7-shaped), so every retry of one command
   reuses them and the occurrence is bound 1:1 to the CommandRef (NPC-0 §5.1).
 - Replay first: `read_npc_trade` reads the trade of the occurrence under its advisory lock. A
-  committed trade answers `OK` when the intent names the same revision, offer, side, quantity and
-  price, before any conversation or window check (a reconnect closes both); otherwise `REJECTED`.
+  committed trade answers `OK` when the intent's NPC actor resolves to the trade's NPC key and the
+  intent names the same revision, offer, side, quantity and price, before any conversation or
+  window check (a reconnect closes both); otherwise `REJECTED` (Codex review: replay is bound to
+  the NPC, not only to the offer).
 - `NpcConversations::trade_in` under the runtime lock: a vanished NPC or another generation is
   `STALE`; no conversation with it `NO_CONVERSATION`; beyond the talk range `NOT_IN_RANGE`; no
   window open on it or a quantity outside 1..=100 `REJECTED`; a catalogue revision, offer index,
@@ -57,7 +59,7 @@ next_action: "NPC-TRADE-3 (charged and fluid offers) is opened by the control pl
 
 - `cargo fmt --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test -p oteryn-game-server --lib`: pass (2923 passed)
+- `cargo test -p oteryn-game-server --lib`: pass (2924 passed)
 - `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade` (PostgreSQL
   17.11, 17.6 pins relaxed locally only, not committed): pass (12 passed)
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass

@@ -58,7 +58,16 @@ fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
 
 #[test]
 fn replay_answers_only_the_intent_it_committed() {
-    assert!(answers(&receipt(), &intent()));
+    let key = receipt().npc_key;
+    assert!(answers(&receipt(), Some(&key), &intent()));
+    assert!(
+        !answers(&receipt(), Some("fixture:npc.other"), &intent()),
+        "another NPC under the same offer"
+    );
+    assert!(
+        !answers(&receipt(), None, &intent()),
+        "an NPC that no longer resolves"
+    );
     let changed = [
         NpcTradeIntent {
             catalogue_revision: 10,
@@ -82,7 +91,7 @@ fn replay_answers_only_the_intent_it_committed() {
         },
     ];
     for intent in changed {
-        assert!(!answers(&receipt(), &intent), "{intent:?}");
+        assert!(!answers(&receipt(), Some(&key), &intent), "{intent:?}");
     }
 }
 
