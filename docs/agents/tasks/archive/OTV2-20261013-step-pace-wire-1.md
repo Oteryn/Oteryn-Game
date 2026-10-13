@@ -4,11 +4,11 @@
 task_id: STEP-PACE-WIRE-1
 title: "STEP-PACE-WIRE-1: server emits step_wait_ms (field 2) under capability 13"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/step-pace-wire-1-20261013
-pr: null
+pr: 2041
 base_sha: 59f9fb121562174b71dcd666ae760182c38e63be
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -88,4 +88,18 @@ Movement, `mod.rs`, `actor_movement.rs`; rollout or deployment of the emission.
 
 ## Validation
 
-Recorded in the archived record.
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --quiet --lib`: pass (2911 passed, 0 failed, 29 ignored)
+- Integration targets under `apps/game-server/tests/`: not run locally (memory-bound container), left to CI
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
+
+## Closeout
+
+- PR: #2041 (squash auto-merge; Codex review requested by the control plane).
+- Result: server emission of `step_wait_ms` under capability 13, behind `OTERYN_STEP_WAIT_RECEIPTS`
+  (default off). Merging does not change wire bytes.
+- Open: the operator rollout gate above (enable only after the updated capability 13 decoder
+  client is released); STEP-PACE-CLIENT-1 consumes the receipt.
