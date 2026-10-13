@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        412,
-        "f5bc214210af357d3ad04ab727565cd0a4a7f8391079382085a439824a3b778c",
+        430,
+        "aecd3e4c85b1765dfe2e80de0f955b593c9318302bbd2780d1c34a9e9b22034a",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_238_349,
-        "120c2289384d923546140a17cd25149860e23580ffdfed592a00e08ca867150b",
+        27_269_641,
+        "f72512349bb24e9d814c97271133a4acf077914c6d841459ed9d9fb3f897c5c5",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1955,
-        "ba0c182adb464b12f014726b778e25c35b08800d31a59a7c5a355281528674cf",
+        1961,
+        "2641cdb6f36125392985cf0f0a4f622dd248aa212ba321c9e6543c07c4579550",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        406,
-        "512c93056279f1d2edeef7c5cd22543952a6a2da2f660663a82ff817662432f4",
+        412,
+        "eb23b3236d6aa3ab247a991347ed3e047473ca912f5b74aad6053d0d3f391dbc",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "9765ddf321d887855c381a7dc4d1fb07ceb7186406dc0c129c1b1aadd79383b6";
+const TREE_SHA256: &str = "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -385,7 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "d3-8-cheese-admitted-20261007-r1"
+        "item-sem-use-2-consumables-20261013-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
@@ -2101,6 +2101,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
     let (mut movable_true, mut movable_false) = (0, 0);
     let (mut modifier_vectors, mut modifier_atoms) = (0, 0);
+    let (mut consumption_food, mut consumption_potions, mut consumption_requirements) = (0, 0, 0);
     let mantra_packet: serde_json::Value = serde_json::from_slice(
         item_mantra_bond_modifier_promotion::ITEM_MANTRA_BOND_MODIFIER_PACKET,
     )
@@ -2110,6 +2111,18 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .expect("whole modifier rows");
     assert_eq!(mantra_rows.len(), 49);
     let mut mantra_keys = BTreeSet::new();
+    // ITEM-SEM-USE-2 admits consumables from the pinned v3 packet.
+    let consumable_packet: serde_json::Value =
+        serde_json::from_slice(item_admission::ITEM_ADMISSION_V3_PACKET)
+            .expect("sealed consumable admission packet");
+    let consumable_stack_capable: BTreeSet<&str> = consumable_packet["admissions"]
+        .as_array()
+        .expect("admission rows")
+        .iter()
+        .filter(|row| row["stack_class"] == "STACK_CAPABLE")
+        .map(|row| row["item_key"].as_str().expect("item key"))
+        .collect();
+    assert_eq!(consumable_stack_capable.len(), 144);
     let (mut document_groups, mut readable, mut writeable, mut not_writeable, mut text_lengths) =
         (0, 0, 0, 0, 0);
     for definition in &linked.definitions {
@@ -2137,6 +2150,22 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             movable_true += usize::from(physical.movable == ReferenceItemField::Known(true));
             movable_false += usize::from(physical.movable == ReferenceItemField::Known(false));
         }
+        if let ReferenceItemField::Known(consumption) = &item.semantics.consumption {
+            assert!(item.materializable);
+            match consumption {
+                ReferenceItemConsumption::Food(_) => {
+                    consumption_food += 1;
+                    assert_eq!(item.semantics.use_requirements, ReferenceItemField::Unknown);
+                }
+                ReferenceItemConsumption::Potion(_) => {
+                    consumption_potions += 1;
+                    consumption_requirements += usize::from(matches!(
+                        item.semantics.use_requirements,
+                        ReferenceItemField::Known(_)
+                    ));
+                }
+            }
+        }
         if let ReferenceItemField::Known(stack) = &item.semantics.stack
             && matches!(stack.stackable, ReferenceItemField::Known(true))
         {
@@ -2145,7 +2174,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let admitted = matches!(
                 definition.definition.key().as_str(),
                 "oteryn:item.tibia.i3155" | "oteryn:item.tibia.i3607"
-            );
+            ) || consumable_stack_capable
+                .contains(definition.definition.key().as_str());
             assert_eq!(item.materializable, admitted);
             assert_eq!(
                 (item.physical_class, item.stack_class),
@@ -2230,9 +2260,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
     }
     // D3-8 admits cheese (i3607) with a Known stack of 100: one more positive stack.
+    // ITEM-SEM-USE-2 adds 144 stack-capable consumables, none of them positive before.
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6755, 40, 6513 + 4)
+        (6755, 40 + 144, 6513 + 4)
+    );
+    // ITEM-SEM-USE-2 lowers 137 edible foods and 12 restore potions, all on materializable
+    // Items, and the use requirements only on potions.
+    assert_eq!(
+        (
+            consumption_food,
+            consumption_potions,
+            consumption_requirements
+        ),
+        (137, 12, 9)
     );
     // Portal25051 and ten exact Tentacle source Items add eleven immovable facts.
     assert_eq!((movable_true, movable_false), (5691, 11));

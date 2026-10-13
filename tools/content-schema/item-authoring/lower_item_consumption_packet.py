@@ -536,7 +536,7 @@ def build(snapshot):
                 "kind": "POTION",
                 "value": {
                     "restores": restores,
-                    "empty_flask": {"state": "KNOWN", "value": target(flask)},
+                    "empty_flask": {"state": "KNOWN", "value": {"key": target(flask)["key"], "revision": REVISION}},
                 },
             },
             "source": {

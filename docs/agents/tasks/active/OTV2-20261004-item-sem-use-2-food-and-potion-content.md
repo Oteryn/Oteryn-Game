@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 implementation_branch: claude/use-item-1-20261013
 issue: 1622
-pr: null
+pr: 2031
 depends_on: []
 next_action: "content slice (lowering, v3 admission, group 18/17 promotion, regenerated content), then the ITEM-USE-1 runtime and ingress"
 owned_paths:
