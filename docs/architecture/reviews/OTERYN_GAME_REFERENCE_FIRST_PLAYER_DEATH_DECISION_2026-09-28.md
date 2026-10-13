@@ -230,5 +230,5 @@ required_revalidation:
 remaining_unknowns:
   - the Newhaven low-level exemption at the target date
   - temple positions (content)
-next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates DEATH-0, and DEATH-1 after DEATH-0 and progression readiness."
+next_action: "#162 validates this exact head, routes the independent re-review of the first player death (DEATH-0, DEATH-1 and DEATH-2 are implemented), records the owner acceptance with the D1022 waiver, and keeps DEATH-3 as the only open child for its own allocation."
 ```
