@@ -41,6 +41,11 @@ No gate workflow, node binary or log format change.
 
 bash deploy/synology-game/test-supervisor-gap.sh: pass
 shellcheck, actionlint: not available in the environment
+python tools/repository/validate_repository_policy.py: pass (23 files, 63 workflows)
+python tools/repository/test_*.py: 11 of 13 pass; test_validate_merge_group_pg_sim.py and test_validate_pr_gate_pg_sim.py need a local pwsh and PostgreSQL simulation that this environment lacks, so CI covers them
+python tools/agents/validate_governance.py: pass (author run on f8c8505; CI Agent governance / validate pass on the PR head)
+python -m unittest discover -s tools/agents/tests: 60 tests OK
+git diff --check: clean
 
 ## Review and closeout
 
