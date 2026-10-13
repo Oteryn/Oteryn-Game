@@ -122,6 +122,12 @@ Steps 1 to 10 happen once by hand. Whenever the manifest or any pinned gameplay 
 
 `supervisor.sh health` waits up to 120 s for the process to stay alive and the log to show `awaiting_assignment` or `readiness ready=true`. `awaiting_assignment` is a reported state, not a failure.
 
+## Step pacing receipts (opt-in, default off)
+
+`OTERYN_STEP_WAIT_RECEIPTS` is the STEP-PACE-WIRE-1 rollout switch. With it set to exactly `1` in the environment of the `serve` process, a session that selected capability 13 `PACED_MOVEMENT_V1` gets the `step_wait_ms` receipt (field 2 of the step result): the step duration on `MOVED`, the time left on `TOO_EARLY`. When it is unset or set to any other value, nothing changes, and every step result keeps the bytes it had before. The process reads the switch once, so a change needs a restart: `OTERYN_STEP_WAIT_RECEIPTS=1 BASE/bin/supervisor.sh start`, or set it in the DSM boot-up task next to `OTERYN_NATIVE_GAMEPLAY_MANIFEST`.
+
+Turn it on only after the client with the updated capability 13 step-result decoder (STEP-PACE-WIRE-0, #2034) has been released and every older capability 13 build has been retired. Older builds also advertise capability 13, but they treat field 2 as malformed and stop the session. To roll back, restart without the variable.
+
 ## World Bundle (opt-in)
 
 Without `[world_bundle]` the node serves the fixture room. To boot the pinned World instead (BUNDLE-BUILD-1): download the `world-bundle-<digest>` artifact of the `World bundle` job of a build on `main`, copy its `oteryn-<digest>.otwb` to `BASE/world/world.otbundle` (1001, 0644), set `enabled = true` and `map_revision = "<digest>"` (the bare 64-hex digest) in the root `preprod-topology.toml`, and append the manifest's `[world_bundle]` table (without `enabled`, `<BASE>` replaced) to `node.toml` with the same `map_revision`; `check-setup` refuses any difference from the pin, and the node logs `event=world_bundle state=booted`. `tools/qualification/login_local` does the same with `LOGIN_LOCAL_WORLD_BUNDLE=1`.
