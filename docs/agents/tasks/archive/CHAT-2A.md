@@ -35,8 +35,7 @@ external_repositories: []
 First reviewable batch of sub-issue #2074 (CHAT-2, parent #1622): the pure security core of the
 World relay of CHAT-0 section 5. `chat::relay` holds the fixed binary payload (private and room
 kinds), AES-256-GCM sealing with a random 96-bit nonce and the channel name plus `key_id` as
-associated data, the per-World key ring (send with the newest key, open with any key retired
-within 24 hours, `CHAT0-RL-12`), the 30 s freshness check and the bounded `message_id`
+associated data, the per-World key ring (send with the newest activated key, open with every held key until 24 hours after its successor's activation, `CHAT0-RL-12`), the 30 s freshness check and the bounded `message_id`
 de-duplication window (`CHAT0-RL-13`, a full window refuses rather than forgets), and the
 `oteryn_chat_<WorldId hex>` channel name (the canonical UUID without hyphens). AES-GCM comes from `aws-lc-rs`, already in the lock through
 rustls; no new crate enters `Cargo.lock`.
@@ -45,7 +44,7 @@ rustls; no new crate enters `Cargo.lock`.
 
 - PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` section 5 (layout, sealing, rotation, replay) and section 8 rows `CHAT0-RL-06`, `-12`, `-13`.
 - DERIVED: the channel is `oteryn_chat_<WorldId without hyphens>` (44 bytes) because production WorldIds are canonical UUIDv7 (`node/config.rs`); CHAT-0 section 5 writes `<world_id>` without fixing the encoding.
-- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce. The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
+- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce and 128-bit `message_id`; the replay window keeps a monotonic high-water clock so a clock stepped back cannot re-admit an evicted id. The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
 - Plaintext is at most 1,185 bytes (two-byte length prefixes), sealed at most 1,214, base64 at most 1,624, inside the section 5 figures.
 
 ## Acceptance criteria
@@ -53,7 +52,7 @@ rustls; no new crate enters `Cargo.lock`.
 - [x] Round trip of a room and a private line; the widest line stays within the documented bounds.
 - [x] Oversized fields are `Oversized`, never truncated.
 - [x] Wrong channel, altered ciphertext and a relabelled `key_id` fail authentication.
-- [x] Rotation: newest key sends; the old key opens for 24 hours after its successor was added.
+- [x] Rotation: a key sends once its cluster-wide `activate_at` has passed (the newest activated key); every held key opens, and a key retires 24 hours after its successor's activation.
 - [x] Stale, future-dated and replayed lines are refused; a full window refuses.
 - [x] `Debug` of a line or key never prints text or key bytes.
 
@@ -67,12 +66,15 @@ registry, migration or content change here.
 
 ## Validation
 
-- `cargo fmt --all --check`: pass
-- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server --quiet`: pass for every target that completed (lib 15 relay tests included, 0 failed); the local run hit its time limit on the last test targets, which are left to exact-head CI
-- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
-- `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: pass
+Re-run at the head before this record fix (code unchanged since `3284110`):
+
+- `cargo fmt --all --check`: exit 0
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings` (`CARGO_BUILD_JOBS=1`): exit 0
+- `cargo test --locked -p oteryn-game-server --quiet` (whole package): NOT COMPLETED locally, exit 101. rustc was killed by SIGKILL (signal 9, out of memory) while compiling the lib test target and `apps/game-server/tests/character_authority_postgres.rs`; no test result was produced. Qualification of the whole package = exact-head CI (nieukończony lokalnie, kwalifikacja = CI).
+- `cargo test --locked -p oteryn-game-server --lib --quiet` with `CARGO_BUILD_JOBS=1` (partial substitute, lib target only): exit 0, 2933 passed, 0 failed, 29 ignored, including the 17 `chat::relay` tests. The integration test targets (including the Postgres-backed ones, which need PG 17.6) were not run locally.
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: exit 0, `workspace-boundaries: PASS`
+- `python tools/agents/validate_governance.py`: exit 0, 22 policy documents and 9 lanes validated
+- `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
 
 ### Exact-head CI
 
