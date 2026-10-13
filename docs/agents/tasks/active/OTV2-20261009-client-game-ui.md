@@ -60,10 +60,8 @@ Linux/Windows PowerShell 22 checks and client/Platform login tests 10/13 pass. D
 is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
 Root/leaf are valid. Historical zero-world/TLS-reset probes are superseded above;
 no missing-data request. Game admission still needs actual acceptance.
-Latest source `6c3a884a` builds/audits on Windows (20 pages/78 hashes) and runs
-as verified PID 37844 with preprod settings; installation `gc177231dee65` is intact.
-Exact source, binary/manifest hashes and paths are retained in UI-FIDELITY.md;
-Public connection bundle/starter paths are in UI-FIDELITY.md.
+Historical Windows hashes, captures and public launch paths are in UI-FIDELITY.md.
+Existing installations remain intact; no automatic login or replacement.
 No login/restart. Windows fixes: exact expanded IPv6 loopback and closed-file
 validation on refusal; no weaker TLS or additional insecure origins.
 
