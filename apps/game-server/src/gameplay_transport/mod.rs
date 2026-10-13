@@ -13,6 +13,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod input_gate;
 mod item_move;
 mod item_ref_admission;
 mod item_view;
@@ -536,6 +537,7 @@ pub async fn serve_gameplay(
         wheel_sessions: std::sync::Mutex::default(),
         progression_sessions: std::sync::Mutex::default(),
         last_positions: last_position::LastPositions::default(),
+        input_gate: input_gate::InputGate::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -745,6 +747,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub(crate) last_positions: last_position::LastPositions,
+    /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(crate) input_gate: input_gate::InputGate,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -3577,10 +3581,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         result
     }
 
+    async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
+        self.input_gate.enter().await
+    }
+
     async fn resume(
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(AdmissionRefusal::Unavailable);
+        };
         let admitted = self.resume_lost(attempt).await?;
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
@@ -3626,6 +3638,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(Unavailable);
+        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.

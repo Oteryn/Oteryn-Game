@@ -28,6 +28,7 @@ use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
+use super::input_gate::InputPermit;
 use super::item_move::{
     self, EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
     ItemMoveStep,
@@ -324,6 +325,13 @@ pub(crate) trait FreshAdmissionAuthority {
         _attempt: ResumeAttempt<'_>,
     ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>> {
         async { Err(AdmissionRefusal::Unavailable) }
+    }
+
+    /// OPS-SAVE-2: the permit one player command runs under, or `None` once the node is
+    /// quiescing for its shutdown save: the command then has no effect and gets a rejected
+    /// result. Authorities without a shutdown save never refuse.
+    fn enter_input(&self) -> impl Future<Output = Option<InputPermit<'_>>> {
+        async { Some(InputPermit::ungated()) }
     }
 
     /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
@@ -2094,10 +2102,14 @@ where
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
         // like an unregistered one, before any decode or authority call.
-        let mut dispatch = if !admitted
-            .continuity
-            .selected_capabilities
-            .command_selected(command.command_type)
+        // OPS-SAVE-2: the permit is held while the command runs, not while its result is
+        // written, so the shutdown snapshot waits for the effect only.
+        let input_permit = authority.enter_input().await;
+        let mut dispatch = if input_permit.is_none()
+            || !admitted
+                .continuity
+                .selected_capabilities
+                .command_selected(command.command_type)
         {
             Dispatch::Unregistered
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
@@ -2428,6 +2440,7 @@ where
         } else {
             Dispatch::Unregistered
         };
+        drop(input_permit);
         let (Some(result_sequence), Some(following)) =
             (sequence.checked_add(1), next_command.checked_add(1))
         else {
