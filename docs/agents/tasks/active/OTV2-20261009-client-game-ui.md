@@ -69,14 +69,14 @@ validation on refusal; no weaker TLS or additional insecure origins.
 
 ## Main reconciliation — 2026-10-13
 
-Normal merges preserve earlier c754 history and current protected main2daf1e4c,
-including accepted combat/chat/NPC transport and the NPC-placement repair.
-Only World inputs conflict; main bundle e6451f92/start/identity/topology remain
-intact, merged inputs744b6cad. Release pin-check double-builds25,089,885 bytes.
-Client/Session/protocol/Platform-client/Cargo/toolchain equal guard source1562;
-component proof retains that scope, not fresh Windows/E2E acceptance. Policy
-23files/63workflows, routing and governance/60 pass. Full CI/final review remain
-open. Earlier reconciliation evidence is retained in UI-FIDELITY.md.
+Normal merges preserve earlier history and accepted maina7a0b374: monster AI,
+consumable content and read-only NPC trade join combat/chat/NPC placement.
+Only World inputs conflict; main bundle c49538eb/start/identity/topology remain
+intact, merged inputs86d18a80. Release pin-check double-builds25,089,897 bytes.
+Client/Session/protocol/Platform-client/Cargo/toolchain equal source02170282.
+No new capability or NPC purchase is enabled; bundle admission still requires
+the pending map18 cutover. CI021 was absent due to this conflict, not red tests.
+CI/review/native acceptance remain open; details/history: UI-FIDELITY.md.
 
 ## Current authoring batch — 2026-10-11
 

@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "e6451f923c0bb8934dd442db3962a963ad0d0aca4f2729685511a445944e8e5d",
+  "digest": "c49538eb1ed44e9c02a9a8229e80cf4a169c7afb11803d5120c57dc7eef48524",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "d3-8-cheese-admitted-20261007-r1",
+  "content_revision": "item-sem-use-2-consumables-20261013-r1",
   "production": false,
   "entry_start": {
     "x": 32369,
     "y": 32238,
     "floor": -7
   },
-  "inputs_digest": "744b6cadb305e482132cb3f1ee71f5282f1dc4cd34c04c4880bb31ca497ba393"
+  "inputs_digest": "86d18a80ebe412b8857ee564067f2d646c86c8134a9e2d44515e73e0340b739d"
 }

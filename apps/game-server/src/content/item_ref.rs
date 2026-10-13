@@ -13,7 +13,7 @@ use serde::Deserialize;
 use std::num::NonZeroU32;
 
 pub(crate) const ITEM_KEYS_SCHEMA: &str = "OTERYN_NATIVE_ITEM_KEYS/v1";
-const ITEM_FAMILY: &str = "Item";
+pub(crate) const ITEM_FAMILY: &str = "Item";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

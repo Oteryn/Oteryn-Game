@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use crate::chat::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
 use crate::chat::{ChatPosition, ChatText, GreetingNpc, greeted_npc};
-use crate::content::NpcServiceModel;
+use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 
 /// Words that start a conversation, until an NPC carries its own.
 const GREETINGS: [&str; 3] = ["hi", "hello", "hail"];
@@ -27,9 +27,16 @@ pub(crate) struct NpcTalkEntry {
     farewell_reply: String,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
+    /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
+    offers: Vec<ProjectV2ServiceOffer>,
 }
 
 impl NpcTalkEntry {
+    /// The admitted offers the trade window projects.
+    pub(crate) fn offers(&self) -> &[ProjectV2ServiceOffer] {
+        &self.offers
+    }
+
     /// The line that ends a conversation.
     pub(crate) fn farewell(&self) -> &str {
         &self.farewell_reply
@@ -43,7 +50,14 @@ impl NpcTalkEntry {
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
             topic_reply: topic.map(str::to_owned),
+            offers: Vec::new(),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_offers(mut self, offers: Vec<ProjectV2ServiceOffer>) -> Self {
+        self.offers = offers;
+        self
     }
 }
 
@@ -51,13 +65,19 @@ impl NpcTalkEntry {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct NpcTalkBook {
     npcs: HashMap<String, NpcTalkEntry>,
+    /// The revision the trade windows carry: derived from the catalogue's source tree digest, so
+    /// it changes exactly when the content the offers come from changes. Never 0.
+    catalogue_revision: u64,
 }
 
 impl NpcTalkBook {
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub(crate) fn from_model(model: &NpcServiceModel) -> Self {
-        let mut book = Self::default();
+        let mut book = Self {
+            catalogue_revision: revision_of(model.source_tree_digest()),
+            ..Self::default()
+        };
         for (reference, npc) in model.npcs() {
             let Some(replies) = &npc.generated_replies else {
                 continue;
@@ -76,6 +96,12 @@ impl NpcTalkBook {
                     greeting_reply: replies.greeting.text.clone(),
                     farewell_reply: replies.farewell.text.clone(),
                     topic_reply: (!lines.is_empty()).then(|| lines.join(" ")),
+                    offers: npc
+                        .services
+                        .iter()
+                        .filter_map(|service| model.services().get(service))
+                        .flat_map(|service| service.offers.iter().cloned())
+                        .collect(),
                 },
             );
         }
@@ -91,6 +117,20 @@ impl NpcTalkBook {
     pub(crate) fn get(&self, key: &str) -> Option<&NpcTalkEntry> {
         self.npcs.get(key)
     }
+
+    pub(crate) fn catalogue_revision(&self) -> u64 {
+        self.catalogue_revision.max(1)
+    }
+}
+
+/// FNV-1a over the digest text; 1 in place of 0.
+fn revision_of(digest: &str) -> u64 {
+    let hash = digest
+        .bytes()
+        .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+        });
+    hash.max(1)
 }
 
 /// An NPC the speaker could talk to: where it stands and what it says.
@@ -104,6 +144,11 @@ pub(crate) struct TalkNpc<'a, K> {
 pub(crate) struct NpcReply<K> {
     pub(crate) id: K,
     pub(crate) text: String,
+}
+
+/// Whether `text` asks the NPC to trade: the topic that opens the trade window.
+pub(crate) fn asks_to_trade(text: &ChatText) -> bool {
+    contains_words(&words(text.as_str()), &["trade".to_owned()])
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {

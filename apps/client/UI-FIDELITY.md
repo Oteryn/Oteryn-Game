@@ -706,6 +706,39 @@ A controlled removal of the consumer fails the warmed-window shape test;
 restoring it passes. Headless paint evidence is not a native Windows/reference
 comparison. The PC remains unavailable, and the wider 1:1/module gates stay open.
 
+## Accepted NPC/consumable producer composition — 2026-10-13, AUTHORING
+
+Normal composition of source02170282 with accepted protected maina7a0b374
+preserves all client/Session/protocol/Platform-client/Cargo/toolchain bytes.
+Main adds monster AI (#2036), consumable content (#2031) and read-only NPC trade
+(#2035). The sole conflict is World inputs_digest; the qualified pin route yields
+86d18a80ebe412b8857ee564067f2d646c86c8134a9e2d44515e73e0340b739d.
+The release pin-check double-builds25,089,897 bytes with main's unchanged bundle
+c49538eb1ed44e9c02a9a8229e80cf4a169c7afb11803d5120c57dc7eef48524.
+Main's content revision, entry_start, identity and preprod topology are retained.
+Fresh Linux client217/196/5 and Session74 tests, strict all-target Clippy and
+formatting pass. Repository policy23files/63workflows and governance/60 pass.
+These are source/component checks, not compiled Windows interaction evidence.
+CI on021 had only protected-base audits because this source conflict prevented
+ordinary PR runs; it is not evidence of a failed client test or a green candidate.
+
+The new producer genuinely opens domain8 offers after command7 `trade` in an
+active NPC conversation; ChatIntent::Say is not that command, and command8
+purchase/sale remains rejected. Session has no typed NPC conversation/trade
+stores or talk API yet. Merely advertising capability3 would ignore snapshots
+and reject pushed domains7/8. Bundle admission also requires capability18, whose
+activation remains ordered after STEP-PACE-WIRE-1 by accepted CP decision
+6143183755. Defaults stay [4,6,7,13,17]; no invented item names, buy/sell behavior
+or original NPC-window geometry is claimed. A subsequent allocated consumer must
+route both domains, strict independent revisions and command7 before enabling3.
+
+#2034 remains unmerged and has no integrated server emission; map/pacing/native
+acceptance therefore remains open. Its decoder must reach client artifacts before
+the server emits step_wait_ms: legacy cap13 clients fail closed on that extension.
+This compatibility ordering is recorded for CP in comment6144441159, not a new
+protocol ID or deployment authorization. Existing Windows evidence does not
+qualify this source; physical PC/E2E and final same-head CI/review remain open.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

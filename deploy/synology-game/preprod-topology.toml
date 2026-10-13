@@ -55,10 +55,10 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = false
 path = "<BASE>/world/world.otbundle"
-digest = "e6451f923c0bb8934dd442db3962a963ad0d0aca4f2729685511a445944e8e5d"
+digest = "c49538eb1ed44e9c02a9a8229e80cf4a169c7afb11803d5120c57dc7eef48524"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
-content_revision = "d3-8-cheese-admitted-20261007-r1"
+content_revision = "item-sem-use-2-consumables-20261013-r1"
 production = false
 start_x = 32369
 start_y = 32238

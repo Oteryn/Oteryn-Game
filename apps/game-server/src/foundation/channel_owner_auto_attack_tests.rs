@@ -1213,3 +1213,37 @@ fn a_bundle_protection_zone_refuses_the_target_and_the_attacker() {
     );
     assert_eq!(bundle.owner.held(), None);
 }
+
+/// BUNDLE-MONSTER-AI-1: the monster pass reads the bundle view's tiles for a player target: a
+/// player on an ordinary bundle cell is a target, a player in a bundle protection zone is
+/// protected (the entry room's tiles do not answer for a bundle position).
+#[test]
+fn a_bundle_player_is_a_monster_target_outside_a_protection_zone_only() {
+    use crate::gameplay_transport::monster_ai_cycle::melee_targets;
+    for (player_x, protected) in [(1, false), (2, true)] {
+        let mut bundle = bundle_owner(player_x, 6);
+        let (player, session) = (bundle.owner.player, bundle.owner.session);
+        bundle
+            .owner
+            .attack
+            .record_hit_taken(&bundle.owner.runtime, player, session, at(T0));
+        let states = held_player_states(&mut bundle.owner);
+        let owner = &bundle.owner;
+        let targets = melee_targets(
+            &owner.room,
+            &owner.runtime,
+            &states,
+            &owner.attack,
+            &owner.runtime.positioned_melee_census().unwrap(),
+            T0,
+        );
+        assert_eq!(
+            targets
+                .into_iter()
+                .map(|(actor, _, session, _, protected)| (actor, session, protected))
+                .collect::<Vec<_>>(),
+            [(player, session, protected)],
+            "player at x {player_x}"
+        );
+    }
+}
