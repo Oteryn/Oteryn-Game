@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/pvp-rt-1-20261013
 issue: 1622
 governing_issue: 1622
-pr: null
+pr: 2029
 depends_on:
   - "PVP-1 (tables; not landed): durable write-ahead and admission restore wait for it"
   - "PR 2018 (landing/teleport): the landing hook is CombatLock::landing_allowed, not yet called"
