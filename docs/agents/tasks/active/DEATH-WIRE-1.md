@@ -41,7 +41,7 @@ task records the resolution and the waiver in the decision and leaves DEATH-3 op
 
 ## Validation
 
-`python3 tools/agents/validate_governance.py`, `git diff --check`: pass. Documentation only.
+`python3 tools/agents/validate_governance.py`, `python3 -m unittest discover -s tools/agents/tests` (60 passed), `git diff --check`: pass. Documentation only.
 
 ## Self-review
 
