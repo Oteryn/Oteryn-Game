@@ -391,18 +391,57 @@ fn a_restart_does_not_make_a_captured_line_admissible_again() {
     // The node restarts within the freshness window; its new listener is ready after the line was
     // sent, and the replayed ciphertext is still inside the 30 s window.
     let ready = NOW + 5_000_000;
-    let mut after = ReplayWindow::starting_at(ready);
-    assert_eq!(
+    let mut after = ReplayWindow::starting_at(startup_floor(ready));
+    // The clock starts at the floor, so the old capture is refused as stale or as before the
+    // start; either way it is not delivered.
+    assert!(matches!(
         after.receive(&ring, CHANNEL, &text, ready + 1),
+        Err(RelayError::Stale | RelayError::BeforeStart)
+    ));
+    // A line stamped from the floor on is admitted.
+    let floor = startup_floor(ready);
+    let fresh = room_line(2, floor);
+    let fresh_text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
+    assert_eq!(after.receive(&ring, CHANNEL, &fresh_text, floor), Ok(fresh));
+}
+
+#[test]
+fn a_line_stamped_in_the_future_before_a_restart_is_not_delivered_again() {
+    let ring = ring(&[(1, 0)]);
+    // The old process admitted a line stamped the full future allowance ahead of its clock.
+    let line = room_line(1, NOW + FRESHNESS_MICROS);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    let mut before = ReplayWindow::starting_at(NOW - 1);
+    assert_eq!(before.receive(&ring, CHANNEL, &text, NOW), Ok(line));
+    // It restarts at once, at the same database reading, and the capture is replayed.
+    for ready in [NOW, NOW + 1_000_000, NOW + FRESHNESS_MICROS / 2] {
+        let mut after = ReplayWindow::starting_at(startup_floor(ready));
+        assert_eq!(
+            after.receive(&ring, CHANNEL, &text, ready),
+            Err(RelayError::BeforeStart),
+            "ready at {ready}"
+        );
+    }
+}
+
+#[test]
+fn the_startup_floor_depends_on_the_database_clock_only() {
+    // The floor is a pure function of the database reading, whatever the host clock says.
+    assert_eq!(startup_floor(NOW), NOW + FRESHNESS_MICROS + 1);
+    assert_eq!(startup_floor(u64::MAX), u64::MAX);
+    let ring = ring(&[(1, 0)]);
+    let mut window = ReplayWindow::starting_at(startup_floor(NOW));
+    let floor = startup_floor(NOW);
+    let early = room_line(1, floor - 1);
+    let early_text = seal_with_nonce(&ring, CHANNEL, &early, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &early_text, floor),
         Err(RelayError::BeforeStart)
     );
-    // A line sent after the listener is ready is admitted.
-    let fresh = room_line(2, ready + 2);
-    let fresh_text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
-    assert_eq!(
-        after.receive(&ring, CHANNEL, &fresh_text, ready + 3),
-        Ok(fresh)
-    );
+    // Database time passes the floor: legitimate lines flow with no wall clock involved.
+    let line = room_line(2, floor + 1);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(window.receive(&ring, CHANNEL, &text, floor + 1), Ok(line));
 }
 
 #[test]
@@ -413,17 +452,11 @@ fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
     let at_expiry = added + KEY_OVERLAP_MICROS;
     let text = seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
     // The process restarts after the expiry with the database clock rolled back before it; the
-    // host wall clock still reads past the expiry, so the floor does too.
+    // floor is taken from the reading at readiness, so the clock still starts past the expiry.
     let rolled_back = added;
-    let mut window = ReplayWindow::starting_at(at_expiry.max(rolled_back));
+    let mut window = ReplayWindow::starting_at(startup_floor(at_expiry));
     assert_eq!(
         window.receive(&ring, CHANNEL, &text, rolled_back),
         Err(RelayError::UnknownKey)
     );
-}
-
-#[test]
-fn the_startup_floor_never_lowers_the_database_reading() {
-    assert_eq!(startup_floor(u64::MAX), u64::MAX);
-    assert!(startup_floor(0) > NOW, "the host wall clock sets the floor");
 }

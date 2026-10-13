@@ -422,9 +422,10 @@ fn open(
 /// and expiry does not depend on arrival order.
 ///
 /// The window is process memory and starts empty, so it is created once per listener, at the
-/// moment `LISTEN` is established, with [`startup_floor`]: a line sent before that instant is
-/// `BeforeStart`, so a restart cannot make a captured line admissible again, and the clock starts
-/// at the floor, so a key retired before the restart stays retired.
+/// moment `LISTEN` is established, with [`startup_floor`]: a line stamped before the floor, which
+/// includes every line an earlier process could have admitted, is `BeforeStart`, and the clock
+/// starts at the floor, so a key retired before the restart stays retired (it may retire up to
+/// `FRESHNESS_MICROS` early, which only fails closed).
 #[derive(Debug)]
 pub(crate) struct ReplayWindow {
     /// Lines sent before this instant are refused: the listener was not up to receive them.
@@ -437,17 +438,24 @@ pub(crate) struct ReplayWindow {
     by_expiry: BTreeSet<(u64, [u8; ID_BYTES])>,
 }
 
-/// The clock floor for a new [`ReplayWindow`]: the later of the database reading taken when the
-/// listener became ready and this host's wall clock, so one clock stepped back across a restart
-/// does not lower it. Both clocks stepped back together is outside this threat model; the key
-/// material of a retired key is removed from the environment after its overlap (CHAT0-RL-12).
+/// The clock floor for a new [`ReplayWindow`], from the database reading taken when the listener
+/// became ready and nothing else: the first instant a line may be stamped to be admitted.
+///
+/// A previous process admitted only lines stamped at most `FRESHNESS_MICROS` after its own
+/// database reading, which is at most this reading, so every line it could have admitted is
+/// stamped before the floor and cannot be delivered again. No host wall clock takes part: `sent_at`
+/// and `now_micros` are both database time, and a host clock that disagrees with it must neither
+/// reject legitimate lines nor let a replay through.
+///
+/// Deliberate availability cost: for the first `FRESHNESS_MICROS` after a restart every line is
+/// `BeforeStart`, legitimate ones included. Chat is best-effort and a restart already drops the
+/// connection, so this is accepted rather than persisting replay state. A database clock stepped
+/// back across a restart is outside this threat model, as is a retired key's material, which is
+/// removed from the environment after its overlap (CHAT0-RL-12).
 pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
-    let wall = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| {
-            u64::try_from(elapsed.as_micros()).unwrap_or(u64::MAX)
-        });
-    db_now_micros.max(wall)
+    db_now_micros
+        .saturating_add(FRESHNESS_MICROS)
+        .saturating_add(1)
 }
 
 impl ReplayWindow {
