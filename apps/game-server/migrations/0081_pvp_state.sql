@@ -121,6 +121,8 @@ $$;
 -- first, so concurrent writers of one victim count in order.
 CREATE FUNCTION game_character_pvp_ledger_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_rows BIGINT;
 BEGIN
     PERFORM 1 FROM game_character_pvp_state WHERE character_id = NEW.victim_character_id FOR UPDATE;
     IF NOT EXISTS (SELECT 1
@@ -134,11 +136,11 @@ BEGIN
        OR NEW.contributor_character_id IS DISTINCT FROM OLD.contributor_character_id) THEN
         RAISE EXCEPTION 'a ledger row keeps its victim and contributor' USING ERRCODE = '23514';
     END IF;
-    IF (SELECT count(*) FROM game_character_pvp_ledger l
-         WHERE l.victim_character_id = NEW.victim_character_id
-           AND l.compact = NEW.compact
-           AND l.contributor_character_id <> NEW.contributor_character_id)
-       >= CASE WHEN NEW.compact THEN 64 ELSE 16 END THEN
+    SELECT count(*) INTO v_rows FROM game_character_pvp_ledger l
+     WHERE l.victim_character_id = NEW.victim_character_id
+       AND l.compact = NEW.compact
+       AND l.contributor_character_id <> NEW.contributor_character_id;
+    IF v_rows >= (CASE WHEN NEW.compact THEN 64 ELSE 16 END) THEN
         RAISE EXCEPTION 'a victim ledger holds at most 16 full and 64 compact rows'
             USING ERRCODE = '23514';
     END IF;

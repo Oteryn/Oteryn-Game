@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: PVP-RT-1
-title: "PVP-RT-1: PvP legality and combat lock (pure half)"
+title: "PVP-RT-1: PvP legality, combat lock and PVP-1 state tables"
 mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/pvp-rt-1-20261013
 issue: 1622
 governing_issue: 1622
-pr: 0
+pr: 2032
 migration_lease: "0081"   # apps/game-server/migrations/0081_pvp_state.sql; other packets take 0082 or later
 depends_on:
   - "PVP-1 (tables): taken by this task as its second PR, CP D(2026-10-13); the first PR #2029 merged"
@@ -34,15 +34,16 @@ Governing contracts: PARTY-PVP-0 §7-§8 (accepted); PVP-0 candidate §6.3, §6.
 
 - `combat/pvp/legality.rs`: rules 1-7 in order with 3b (no-PvP tile, fail closed) and 6b (expert mode); damage factor 50% / 100% on black skull.
 - `combat/pvp/lock.rs`: logout, PZ and kill blocks that only rise; `restore`; `landing_allowed`; aggression relations (cap 64, first / retaliation).
+- PVP-1 (PR #2032): migration 0081 with `game_character_pvp_state`, `game_character_pvp_ledger`, `game_character_unjustified_points` and `game_character_revenge_marks` (World and cap guards, deadlines only rise, no CharacterRevision advance); `durability/pvp_state.rs` with the session-fenced deadline write-ahead (database clock + 70 s, at most two targets in CharacterId order), the admission read as remaining time, and the bounded World cleanup (not yet called by a node job).
 - Not wired: PvP stays off until the PVP-0 §8 go-live gate; `attackable_kind` stays creature-only.
 
 ## Remaining scope (PVP-RT-1b, this task stays active)
 
-PVP-RT-1 is NOT complete: this PR is the first of several. The task archives only in its last PR, after the durable write-ahead and restore (needs PVP-1), damage ledger, kill classification, Join Aggression, Adventurer forfeiture, the `resolve_landing`/`bundle_step` hook (after #2018) and the live legality stage (after BUNDLE-COMBAT-ENABLE-1). The go-live gate must not treat PVP-RT-1 as landed on this PR alone.
+PVP-RT-1 is NOT complete: PR #2029 and PR #2032 are the first two of several. The task archives only in its last PR, after the runtime write-ahead and restore wiring, the ledger writer and snapshot restore, kill classification, Join Aggression, Adventurer forfeiture, the `resolve_landing`/`bundle_step` hook (after #2018) and the live legality stage (after BUNDLE-COMBAT-ENABLE-1). The go-live gate must not treat PVP-RT-1 as landed on this PR alone.
 
 ## Not in this slice
 
-Durable write-ahead and restore (PVP-1 tables), damage ledger, kill classification, skull rendering, Join Aggression, Adventurer forfeiture, wire. The `NoPvp` `pvp_zone` field exception is removed (PVP-0 §6.4): `field_step_ingress.rs` now skips a NoPvP-World field hit on a player regardless of `pvp_zone`.
+Death-transaction skull, points and marks (PVP-DEATH-1), ledger writer, kill classification, skull rendering, Join Aggression, Adventurer forfeiture, wire. The `NoPvp` `pvp_zone` field exception is removed (PVP-0 §6.4): `field_step_ingress.rs` now skips a NoPvP-World field hit on a player regardless of `pvp_zone`.
 
 ## Validation
 

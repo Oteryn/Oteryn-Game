@@ -38,15 +38,17 @@ async fn seed_root(h: &Harness, seed: u8, world: u8) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle, \
             character_revision, profile_revision, ruleset_revision, content_revision, \
-            starter_template_revision) \
+            starter_template_revision, name) \
          SELECT encode($2,'hex')::uuid, account_id, encode($3,'hex')::uuid, lifecycle, \
                 character_revision, profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
+                starter_template_revision, \
+                'Pvp' || chr(97 + $4::int / 26) || chr(97 + $4::int % 26) \
            FROM game_character_roots WHERE character_id = encode($1,'hex')::uuid",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(seed).as_slice())
     .bind(id(world).as_slice())
+    .bind(i32::from(seed))
     .execute(&h.pool)
     .await?;
     Ok(())
@@ -66,13 +68,11 @@ async fn remaining(h: &Harness, seed: u8, column: &str) -> TestResult<Option<i64
         "SELECT (extract(epoch FROM ({column} - clock_timestamp())) * 1000)::bigint \
            FROM game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid"
     );
-    Ok(
-        sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
-            .bind(id(seed).as_slice())
-            .fetch_optional(&h.pool)
-            .await?
-            .flatten(),
-    )
+    Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
+        .bind(id(seed).as_slice())
+        .fetch_optional(&h.pool)
+        .await?
+        .flatten())
 }
 
 async fn rows(h: &Harness) -> TestResult<i64> {
@@ -85,11 +85,18 @@ async fn rows(h: &Harness) -> TestResult<i64> {
 #[test]
 fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
     run("pvp_write_ahead", async |h| {
-        seed_root(h, OTHER, WORLD).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        seed_root(h, OTHER, WORLD).await?;
         assert_eq!(
-            h.root.read_pvp_state(&authority, &h.node, fence(1)?).await.map_err(debug)?,
+            h.root
+                .read_pvp_state(&authority, &h.node, fence(1)?)
+                .await
+                .map_err(debug)?,
             None
         );
         h.root
@@ -98,8 +105,14 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
                 &h.node,
                 fence(1)?,
                 vec![
-                    PvpWriteAhead { character_id: character(OTHER)?, kinds: kinds(false, false, true) },
-                    PvpWriteAhead { character_id: character(CHARACTER)?, kinds: kinds(true, true, false) },
+                    PvpWriteAhead {
+                        character_id: character(OTHER)?,
+                        kinds: kinds(false, false, true),
+                    },
+                    PvpWriteAhead {
+                        character_id: character(CHARACTER)?,
+                        kinds: kinds(true, true, false),
+                    },
                 ],
             )
             .await
@@ -114,7 +127,10 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
         assert_eq!(stored.skull, PvpSkull::None);
         assert_eq!(stored.revision, 1);
         assert!(!stored.adventurer_forfeited);
-        for ms in [stored.logout_block_remaining_ms, stored.pz_block_remaining_ms] {
+        for ms in [
+            stored.logout_block_remaining_ms,
+            stored.pz_block_remaining_ms,
+        ] {
             let ms = ms.expect("set");
             assert!((60_000..=70_000).contains(&ms), "{ms}");
         }
@@ -125,17 +141,27 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
         assert_eq!(remaining(h, OTHER, "logout_block_until").await?, None);
 
         // A second write-ahead raises the named column and keeps the rest.
-        let before = remaining(h, CHARACTER, "logout_block_until").await?.expect("set");
+        let before = remaining(h, CHARACTER, "logout_block_until")
+            .await?
+            .expect("set");
         h.root
             .write_ahead_pvp_deadlines(
                 &authority,
                 &h.node,
                 fence(1)?,
-                vec![PvpWriteAhead { character_id: character(CHARACTER)?, kinds: kinds(true, false, false) }],
+                vec![PvpWriteAhead {
+                    character_id: character(CHARACTER)?,
+                    kinds: kinds(true, false, false),
+                }],
             )
             .await
             .map_err(debug)?;
-        assert!(remaining(h, CHARACTER, "logout_block_until").await?.expect("set") >= before - 50);
+        assert!(
+            remaining(h, CHARACTER, "logout_block_until")
+                .await?
+                .expect("set")
+                >= before - 50
+        );
         assert!(remaining(h, CHARACTER, "pz_block_until").await?.is_some());
         let second = h
             .root
@@ -156,13 +182,20 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
 fn the_database_never_lowers_a_deadline() -> TestResult {
     run("pvp_never_lower", async |h| {
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         h.root
             .write_ahead_pvp_deadlines(
                 &authority,
                 &h.node,
                 fence(1)?,
-                vec![PvpWriteAhead { character_id: character(CHARACTER)?, kinds: kinds(true, true, true) }],
+                vec![PvpWriteAhead {
+                    character_id: character(CHARACTER)?,
+                    kinds: kinds(true, true, true),
+                }],
             )
             .await
             .map_err(debug)?;
@@ -172,7 +205,10 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
                     "UPDATE game_character_pvp_state SET {column} = {value}, revision = revision + 1"
                 );
                 assert!(
-                    sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&h.pool).await.is_err(),
+                    sqlx::query(sqlx::AssertSqlSafe(sql))
+                        .execute(&h.pool)
+                        .await
+                        .is_err(),
                     "{column} = {value}"
                 );
             }
@@ -215,19 +251,28 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
 #[test]
 fn refused_write_aheads_write_nothing() -> TestResult {
     run("pvp_refused", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         seed_root(h, OTHER, WORLD).await?;
         seed_root(h, THIRD, WORLD).await?;
         seed_root(h, FOREIGN, FOREIGN_WORLD).await?;
-        let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
-        let write = async |fence, targets: Vec<(u8, PvpDeadlineKinds)>| -> TestResult<
-            Result<(), CharacterProgressionError>,
-        > {
+        let write = async |fence,
+                           targets: Vec<(u8, PvpDeadlineKinds)>|
+               -> TestResult<Result<(), CharacterProgressionError>> {
             let mut list = Vec::new();
             for (seed, kinds) in targets {
-                list.push(PvpWriteAhead { character_id: character(seed)?, kinds });
+                list.push(PvpWriteAhead {
+                    character_id: character(seed)?,
+                    kinds,
+                });
             }
-            Ok(h.root.write_ahead_pvp_deadlines(&authority, &h.node, fence, list).await)
+            Ok(h.root
+                .write_ahead_pvp_deadlines(&authority, &h.node, fence, list)
+                .await)
         };
         let all = kinds(true, true, true);
         // The acting Character must be a target; at most two distinct targets; kinds required.
@@ -244,7 +289,11 @@ fn refused_write_aheads_write_nothing() -> TestResult {
             ));
         }
         // A target of another World refuses the whole write, the actor's row included.
-        assert!(write(fence(1)?, vec![(CHARACTER, all), (FOREIGN, all)]).await?.is_err());
+        assert!(
+            write(fence(1)?, vec![(CHARACTER, all), (FOREIGN, all)])
+                .await?
+                .is_err()
+        );
         // A stale lease writes nothing.
         let mut stale = fence(1)?;
         stale.character_lease_generation = 2;
@@ -261,13 +310,20 @@ fn refused_write_aheads_write_nothing() -> TestResult {
 fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
     run("pvp_ledger_cleanup", async |h| {
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         h.root
             .write_ahead_pvp_deadlines(
                 &authority,
                 &h.node,
                 fence(1)?,
-                vec![PvpWriteAhead { character_id: character(CHARACTER)?, kinds: kinds(true, false, false) }],
+                vec![PvpWriteAhead {
+                    character_id: character(CHARACTER)?,
+                    kinds: kinds(true, false, false),
+                }],
             )
             .await
             .map_err(debug)?;
@@ -292,11 +348,17 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         for seed in 100..116u8 {
             insert(seed, false, "10 minutes").await?;
         }
-        assert!(insert(116, false, "10 minutes").await.is_err(), "17th full row");
+        assert!(
+            insert(116, false, "10 minutes").await.is_err(),
+            "17th full row"
+        );
         for seed in 117..181u8 {
             insert(seed, true, "10 minutes").await?;
         }
-        assert!(insert(181, true, "10 minutes").await.is_err(), "65th compact row");
+        assert!(
+            insert(181, true, "10 minutes").await.is_err(),
+            "65th compact row"
+        );
         // Demoting a 65th row to compact is refused, and a compact row keeps no buckets.
         assert!(
             sqlx::query("UPDATE game_character_pvp_ledger SET compact = TRUE, compact_kind = 1 WHERE contributor_character_id = encode($1,'hex')::uuid")
@@ -313,7 +375,9 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         );
         // Points and marks need a death receipt: write them as the owner with FK triggers off.
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
         for n in 0..101u8 {
             let death = [n, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n];
             sqlx::query(
@@ -332,27 +396,38 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
             "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
                 death_occurrence_id, created_at, expires_at) \
              VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
-                clock_timestamp() - interval '8 days', clock_timestamp() - interval '1 day')",
+                now() - interval '8 days', now() - interval '1 day')",
         )
         .bind(id(CHARACTER).as_slice())
         .bind(id(OTHER).as_slice())
-        .bind([9_u8, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 9].as_slice())
+        .bind(
+            [
+                9_u8, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 9,
+            ]
+            .as_slice(),
+        )
         .execute(&mut *tx)
         .await?;
         tx.commit().await?;
 
         // Another World's pass deletes nothing.
         let mut tx = h.pool.begin().await?;
-        let other = cleanup_pvp_rows_in_transaction(&mut tx, &id(FOREIGN_WORLD)).await.map_err(debug)?;
+        let other = cleanup_pvp_rows_in_transaction(&mut tx, &id(FOREIGN_WORLD))
+            .await
+            .map_err(debug)?;
         tx.commit().await?;
         assert_eq!((other.points, other.marks, other.ledger_rows), (0, 0, 0));
 
         let mut tx = h.pool.begin().await?;
-        let first = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD)).await.map_err(debug)?;
+        let first = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD))
+            .await
+            .map_err(debug)?;
         tx.commit().await?;
         assert_eq!((first.points, first.marks, first.ledger_rows), (100, 1, 80));
         let mut tx = h.pool.begin().await?;
-        let second = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD)).await.map_err(debug)?;
+        let second = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD))
+            .await
+            .map_err(debug)?;
         tx.commit().await?;
         assert_eq!((second.points, second.marks, second.ledger_rows), (1, 0, 0));
         Ok(())
