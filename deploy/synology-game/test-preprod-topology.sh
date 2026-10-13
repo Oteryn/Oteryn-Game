@@ -28,7 +28,9 @@ fill_manifest() {
   # The committed manifest carries the issued staging ids; the fixtures use their own constants.
   sed -i -e "s|^lan_address = .*|lan_address = \"192.168.10.5\"|" -e "s|^host = .*|host = \"192.168.10.5\"|" \
     -e "s|^world_id = .*|world_id = \"$W\"|" -e "s|^channel_id = .*|channel_id = \"$C\"|" -e "s|^channel_key = .*|channel_key = \"ch1\"|" \
-    -e "s|^port = .*|port = \"7172\"|" -e "s|^route_version = .*|route_version = \"1\"|" -e "s|^route_revision = .*|route_revision = \"$RR\"|" "$MANIFEST"
+    -e "s|^port = .*|port = \"7172\"|" -e "s|^route_version = .*|route_version = \"1\"|" -e "s|^route_revision = .*|route_revision = \"$RR\"|" "$MANIFEST"  # The committed manifest enables the World Bundle (map_revision = the bare pinned digest); the plain
+  # fixtures run with the fixture room, the opt-in cases below enable it again with a synthetic bundle.
+  sed -i -e "s|^enabled = true|enabled = false|" -e "s|^map_revision = .*|map_revision = \"map.00112233445566ff\"|" "$MANIFEST"
 }
 render() { # rebuild node.toml, report.toml and scope.env from the manifest values
   r() { toml_get "$MANIFEST" "$1" "$2"; }
@@ -54,6 +56,12 @@ sub() { sed -i "$2" "$1"; } # sub <file> <sed expr>
 
 fill_manifest; expect_ok "matching configuration"
 
+# The shipped manifest enables the World Bundle, and its map_revision is the bare digest of the committed pin.
+pin_digest="$(sed -n 's/.*"digest": *"\([0-9a-f]\{64\}\)".*/\1/p' "$here/../../content/world/pins/oteryn.json" | head -n 1)"
+[ -n "$pin_digest" ] || { echo "FAIL: no digest in content/world/pins/oteryn.json"; exit 1; }
+[ "$(toml_get "$here/preprod-topology.toml" world_bundle enabled)" = true ] || { echo "FAIL: shipped manifest does not enable the World Bundle"; exit 1; }
+[ "$(toml_get "$here/preprod-topology.toml" readiness map_revision)" = "$pin_digest" ] || { echo "FAIL: shipped manifest map_revision is not the pin digest"; exit 1; }
+[ "$(toml_get "$here/preprod-topology.toml" world_bundle digest)" = "$pin_digest" ] || { echo "FAIL: shipped manifest digest is not the pin digest"; exit 1; }
 # The shipped manifest still holds placeholders and must be refused.
 render; cp "$here/preprod-topology.toml" "$MANIFEST"; expect_refused "placeholder manifest"
 fill_manifest; render
