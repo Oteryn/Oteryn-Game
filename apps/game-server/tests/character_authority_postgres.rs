@@ -2327,6 +2327,10 @@ mod character_stance_writer_postgres_cases;
 #[path = "support/character_last_position_postgres_cases.rs"]
 mod character_last_position_postgres_cases;
 
+// PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
+#[path = "support/pvp_state_postgres_cases.rs"]
+mod pvp_state_postgres_cases;
+
 #[path = "support/character_familiar_writer_postgres_cases.rs"]
 mod character_familiar_writer_postgres_cases;
 
