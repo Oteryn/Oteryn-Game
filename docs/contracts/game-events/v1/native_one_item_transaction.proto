@@ -76,6 +76,14 @@ package oteryn.events.v1;
 // once per (World, Channel, base bundle digest, placement key, reset epoch).
 // The pickup that follows is an ordinary B3 TRANSFER event. Its payload and
 // envelope stay within DUR03-RL-07.
+// The item use (operation tag 9, ITEM-USE-1; decision ITEM-USE-0 §4, DUR-03 §15,
+// §39.1 and §39.3 item-use amendment) is one player-originated event per use of
+// one consumable unit (food or potion): a BURN of exactly one unit from the used
+// stack, or, for a potion whose content names an empty flask, one unit-level
+// TRANSFORM whose output is one flask unit added to a compatible stack of the
+// main backpack or planted as a fresh item. At most two items are touched; nothing
+// is minted. Its own rows are DUR03-RL-*-ITEM-USE*; payload and envelope stay
+// within DUR03-RL-07.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -89,6 +97,7 @@ message OneItemTransactionV1 {
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
+    OneItemUseV1 item_use = 9; // ITEM-USE-1 only (see above)
   }
 }
 
@@ -408,4 +417,44 @@ message OneItemMapItemMintV1 {
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
   uint64 connection_generation = 5; // the commanding session's
+}
+
+// Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
+// command's CommandRef, which is the cause's identity.
+message OneItemUseCauseV1 {
+  uint32 kind = 1; // 1 Food, 2 Potion
+  string content_revision = 6;
+  string ruleset_revision = 7;
+  string sim_revision = 8;
+  OneItemCommandRefV1 command_ref = 9;
+}
+
+// The flask unit of a potion use: either a compatible stack E of the main
+// backpack grows by one unit (`before` present, same identity and definition) or
+// a fresh item F (`before` absent) of quantity 1 is planted in a new entry.
+message OneItemUseFlaskV1 {
+  OneItemStateV1 before = 1; // E, LIVE; absent for a fresh flask item
+  OneItemStateV1 after = 2;  // LIVE; E with quantity + 1, or F with quantity 1
+  OneItemContainerEntryV1 entry = 3; // E's entry, or F's new entry
+}
+
+// One item use: exactly one unit of `source_before` leaves (quantity - 1 and
+// the identity kept, or RETIRED at quantity 0) from its container entry. A
+// potion with an empty flask adds `flask` (the TRANSFORM output); `flask_missing`
+// records a flask the character had no room for (burn shape, PARITY_PENDING
+// until ITEM-MOVE-2b); `flask` and `flask_missing` are never both set, and
+// neither is set for Food. Touches 1 ItemInstance (2 with `flask`).
+message OneItemUseV1 {
+  OneItemStateV1 source_before = 1; // LIVE, quantity >= 1
+  OneItemStateV1 source_after = 2;  // same identity, World and definition
+  OneItemContainerEntryV1 source_entry = 3; // the used stack's entry before
+  OneItemUseCauseV1 cause = 4;
+  bytes character_id = 5; // exactly 16-byte non-nil UUIDv7
+  bytes world_id = 6;
+  bytes channel_id = 7;
+  uint64 runtime_scope_ownership_generation = 8; // non-zero
+  uint64 expected_session_generation = 9; // non-zero, the rule 2 fence
+  bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
+  OneItemUseFlaskV1 flask = 11;
+  bool flask_missing = 12;
 }
