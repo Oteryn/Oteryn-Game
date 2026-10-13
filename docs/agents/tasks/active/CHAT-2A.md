@@ -24,6 +24,7 @@ owned_paths:
   - apps/game-server/Cargo.toml
   - Cargo.toml
   - Cargo.lock
+  - content/world/pins/oteryn.json
   - docs/agents/tasks/active/CHAT-2A.md
 public_contracts: []
 external_repositories: []
@@ -84,5 +85,6 @@ Recorded in the PR checks of the frozen head.
 
 ## PR and closeout
 
+- `Merge gate / World bundle` failed on `6e447ee`: `Cargo.toml` and `Cargo.lock` are world-bundle inputs, so the pin `inputs_digest` was refreshed (`pin-check` passes locally).
 - Refs #2074 (does not close it).
 - merge commit/result: pending
