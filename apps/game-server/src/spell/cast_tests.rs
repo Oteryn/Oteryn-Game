@@ -336,7 +336,7 @@ fn wounded(facts: CharacterCastFacts, health: u32) -> PlayerSpellState {
 #[test]
 fn v1_book_holds_the_self_casts_in_canonical_key_order() {
     let book = v1_spell_book().expect("V1 book");
-    let keys: Vec<&str> = (1..=3)
+    let keys: Vec<&str> = (1..=4)
         .map(|spell| book.indexed(index(spell)).expect("indexed").key.as_str())
         .collect();
     assert_eq!(
@@ -345,9 +345,10 @@ fn v1_book_holds_the_self_casts_in_canonical_key_order() {
             "candidate:spell/cure_poison",
             "candidate:spell/intense_healing",
             "candidate:spell/light_healing",
+            "candidate:spell/magic_patch",
         ]
     );
-    assert!(book.indexed(index(4)).is_none());
+    assert!(book.indexed(index(5)).is_none());
     assert!(book.indexed(index(u32::MAX)).is_none());
 }
 
@@ -507,7 +508,7 @@ fn unknown_index_and_position_intent_are_rejected_and_attack_target_casts_on_sel
         run(
             &book,
             &state,
-            &intent(4, SpellTarget::None),
+            &intent(7, SpellTarget::None),
             at(0),
             &mut Vec::new()
         ),
@@ -596,10 +597,42 @@ fn every_core_rejection_maps_to_the_section_3_disposition() {
 }
 
 #[test]
+fn magic_patch_casts_and_shares_the_healing_group() {
+    let book = v1_spell_book().expect("V1 book");
+    let state = wounded(druid(8), 50);
+    let next = run(
+        &book,
+        &state,
+        &intent(4, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("exura infir");
+    assert!(next.health > 50);
+    assert_eq!(next.mana, state.mana - 6, "magic patch costs 6 mana");
+    assert_eq!(
+        next.cooldowns.spell_ready_at("candidate:spell/magic_patch"),
+        Some(at(1000))
+    );
+    assert_eq!(next.cooldowns.group_ready_at("healing"), Some(at(1000)));
+    // The shared healing group blocks another healing spell inside the window.
+    assert_eq!(
+        run(
+            &book,
+            &next,
+            &intent(3, SpellTarget::None),
+            at(1),
+            &mut Vec::new()
+        ),
+        Err(SpellCastDisposition::CoolingDown)
+    );
+}
+
+#[test]
 fn a_book_that_does_not_load_fails_closed_and_nothing_is_skipped() {
     let good = V1_BUNDLES[0];
     let book = book_from_bundles(&V1_BUNDLES).expect("book");
-    assert!(book.indexed(index(3)).is_some() && book.indexed(index(4)).is_none());
+    assert!(book.indexed(index(4)).is_some() && book.indexed(index(5)).is_none());
     // Unparseable spell, unparseable dependencies, and a bundle that parses but is no spell.
     assert!(book_from_bundles(&[("not json", good.1)]).is_err());
     assert!(book_from_bundles(&[(good.0, "not json")]).is_err());
