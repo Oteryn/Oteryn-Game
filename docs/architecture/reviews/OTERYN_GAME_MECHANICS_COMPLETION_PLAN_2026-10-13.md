@@ -53,7 +53,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| LOOP-WORLD-1 | 6, 8, 9, 10 | confirm teleports, keyed/level/quest doors, levers and tile damage on the bundle node | #2018, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1 (the `qualified_room` gate), CHAT-1 (ENC-WORLD-1 child only); external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1 | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-WORLD-1 | 6, 8, 9, 10 | confirm teleports, keyed/level/quest doors, levers and tile damage on the bundle node | #2018, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1 (the `qualified_room` gate), CHAT-1; CHAT-1b-2b (ENC-WORLD-1 child only); external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1 | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-MAP-1 | 13 | close MAP-VIEWPORT-MEASURE-1 and the cap 18 offer decision | #1942 client proof; external prerequisites of the brief children: MAP-LOAD-1, MAP-OVERLAY-1, VIS-2, CHAR-REV-SEQ-1, BANK-FEE-0, SPAWN-1a, SPAWN-1b | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-COMBAT-MODES-1 | 20 | chase mode (CHASE-1), secure mode, fight-mode effect on targeting | none; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, DUR-03, SPEED-1, CREATURE-MOVE-1 | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-DAMAGE-1 | 23, 24, 25, 26 | enable cap 12 (EQUIP-0), resistances, crits/leech, area and chain attacks on the bundle, mana shield | EQUIP-0, BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1, SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (wire) | maybe | yes |
@@ -67,7 +67,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 | LOOP-TRAIN-1 | 34, 35 | offline training (statue) and exercise weapons; beds are BED-1 | PREMIUM-1 (the statue is Premium), LOOP-VITALS-1, LOOP-PROGRESS-1 (skill build state, A13 magic-level training), CHAR-POSITION-1, a slot in the shared guard-rewrite order, WORLDINT-USE-1, OFFLINE-1, STATUE-1, EXERCISE-1 children (Appendix 7), ITEM-TIMED-1 (`charges`), the training statue and dummy content (WO-2, OFFLINE-CONTENT-1, EXERCISE-CONTENT-1; OFFLINE-0 §30-34, EXERCISE-0 §33-35); external prerequisites of the brief children: CHAR-BUILD-1, SKILLS-0, PREY-0, TIMED-CONTENT-1, TIMED-ITEM-0B, ITEM-SEM-2b, HOUSE-RUNTIME-1a, HOUSE-VIEW-1, WORLDINT-WIRE-1, DUR-02 | hard | yes | no |
 | LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1, MAGIC-SUMMON-1; external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1, ATTACK-1b, SPEED-1, VIS-2 | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-GROUND-1 | 18 | decay of dropped items on Ground (shared with the death drop) | DEATH-DUR-1 | hard (retire) | maybe | no |
-| LOOP-CLOCK-1 | 15 | **MERGED (#2071, capability 19, domain 18); the only residue is the `light` field, a separate registry change that is VIS-2.** World clock and day phase, server light state | VIS-2, COND-1 (WORLD_INTERACTION0) | impl | no | yes |
+| LOOP-CLOCK-1 | 15 | **Slice MERGED (#2071: capability 19, domain 18, the pure World clock). Row 15 is not complete without the residual CLOCK-1 batch (Appendix 7): the VIS-2 `light` field, which WORLD-INTERACTION-0 §11 assigns to CLOCK-1 as an amendment of VIS-2 after VIS-2 and COND-1.** World clock and day phase, server light state | CLOCK-1 (residue; behind VIS-2 and COND-1) | impl | no | yes |
 | WEATHER-1 | 17 | weather state and change events | LOOP-CLOCK-1 | impl | no | yes |
 | LOGOUT-WIRE-1 | 109 | the logout command: `LOGOUT_INTENT`, capability `LOGOUT_V1`, `LOGOUT-RL-01`, `TerminalRelease::Logout` (ARCH-KILL-REWARD-LOGOUT-1 §2.2) | ATTACK-1b (#1798, merged); LOGOUT_V1 is not on main; not KILL-REWARD-COMP-1 | hard (fencing; protocol review) | no (`migration_lease: none`) | yes (protocol and resource-limit registries) |
 | KILL-REWARD-COMP-1 | 107 | **MERGED on main@ab7d51ae6 (`gameplay_transport/kill_reward.rs`, `content/creature_reward.rs`, `combat/death_reward.rs`, e2e #2075); a worker confirms only the §2.1 acceptance tests at allocation.** Live loot and XP settlement for a creature kill (ARCH-KILL-REWARD-LOGOUT-1 §2.1) | ATTACK-1b (#1798, merged), D3-7 | hard | no (`migration_lease: none`) | yes (`KILLRW-RL-01`) |
@@ -106,19 +106,19 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040 (merged), CHAR-POSITION-1, PREMIUM-1, CHAT-1 (NPC-VOICE-1); external prerequisites of the brief children: NPC-CONTENT-1, QUEST-CONTENT-1, NPC-TALK-1, GOLD-FEE-1b, DEATH-1, QUEST-PRED-1, PREM-1, PREM-3, NPC-PLACE-1b, CREATURE-MOVE-1, SPEED-1, NPC-WIRE-1, VIS-2 | hard (travel moves a Character) | yes | maybe |
-| MONSTER-META-1 | 98, 99, 100, 101 | bestiary (CHARM-6), charms, bosstiary, bosses | LOOP-MONSTER-1, CHAT-1 (RAID-1), PARTY-XP-1 (BOSS-REWARD-1); external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2 | hard (child graph, App. 7) | maybe | maybe |
-| EVENTS-RAID-1 | 102 | raids | LOOP-MONSTER-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
-| EVENTS-WORLD-1 | 103, 104 | world changes, Fury Gates, Nightmare Isles, hazard | EVENTS-RAID-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
-| ARENA-1 | 106 | Tibiadrome and arenas | LOOP-MONSTER-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
+| NPC-WORLD-1 | 83, 84 | NPC travel, walking, voices, focus | #2040 (merged), CHAR-POSITION-1, PREMIUM-1, CHAT-1; CHAT-1b-2b (NPC-VOICE-1); external prerequisites of the brief children: NPC-CONTENT-1, QUEST-CONTENT-1, NPC-TALK-1, GOLD-FEE-1b, DEATH-1, QUEST-PRED-1, PREM-1, PREM-3, NPC-PLACE-1b, CREATURE-MOVE-1, SPEED-1, NPC-WIRE-1, VIS-2 | hard (travel moves a Character) | yes | maybe |
+| MONSTER-META-1 | 98, 99, 100, 101 | bestiary (CHARM-6), charms, bosstiary, bosses | LOOP-MONSTER-1, CHAT-1; CHAT-1b-2b (RAID-1), PARTY-XP-1 (BOSS-REWARD-1); external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2 | hard (child graph, App. 7) | maybe | maybe |
+| EVENTS-RAID-1 | 102 | raids | LOOP-MONSTER-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1; CHAT-1b-2b, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
+| EVENTS-WORLD-1 | 103, 104 | world changes, Fury Gates, Nightmare Isles, hazard | EVENTS-RAID-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1; CHAT-1b-2b, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
+| ARENA-1 | 106 | Tibiadrome and arenas | LOOP-MONSTER-1; external prerequisites of the brief children: SCOPE-HANDOFF-1, D3-3, CHAR-REV-SEQ-1, GOLD-FEE-1b, GOLD-FEE-2, CHAT-1; CHAT-1b-2b, PARTY-XP-1 | hard (child graph, App. 7) | maybe | maybe |
 | TUTORIAL-1 | 139 | late test epic, not blocking: Newhaven/Rookgaard content after Thais start is tested | Wave 4 done | impl | no | no |
 
 ### Epic 5. Community
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | CHAT-1 (merged); acceptance gate: CHAT-0 is CANDIDATE (reopened by the 2026-10-12 security review: rate gate before the Channel lock, now #2026; cast-path mute, now #2003); CHAT-2 is not allocated until CHAT-0 is re-reviewed and ACCEPTED | hard (World relay) | maybe | maybe |
-| PARTY-1 | 112 | party membership and state: invite/join/leave, succession, shared-XP toggle, `PartyView` cache (membership only) | CHAT-2 (which follows CHAT-1) (PARTY-PVP-0 §30-33) | hard (shared state) | yes | yes |
+| CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | CHAT-1; CHAT-1b-2b (merged); acceptance gate: CHAT-0 is CANDIDATE (reopened by the 2026-10-12 security review: rate gate before the Channel lock, now #2026; cast-path mute, now #2003); CHAT-2 is not allocated until CHAT-0 is re-reviewed and ACCEPTED | hard (World relay) | maybe | maybe |
+| PARTY-1 | 112 | party membership and state: invite/join/leave, succession, shared-XP toggle, `PartyView` cache (membership only) | CHAT-2 (which follows CHAT-1; CHAT-1b-2b) (PARTY-PVP-0 §30-33) | hard (shared state) | yes | yes |
 | PARTY-XP-1 | 59 | shared-XP eligibility and split, party immunity in area effects, party loot right, `party_buff` query and party spells | PARTY-1, the D118 XP lane (LOOP-PROGRESS-1), D3-4 (LOOP-DAMAGE-1) (PARTY-PVP-0 §30-32); external prerequisites of the brief children: DEATH-1, ATTACK-1b, COND-1, DEATH-3, SPEED-1, VIS-2, ATTACK-WIRE-1, CHAT-2 | hard (combat, rewards) | maybe | maybe |
 | GUILD-1 | 113 | guild, rank, member, invitation tables and transactions (GUILD0 §3, §4) | PARTY-1, ECON-RET-0 (GUILD-RET-0), PREMIUM-1 (PREM-WIRE-1), NPC-ECON-1 (BANK-1) (PREMIUM-ACTIVATION-0 l.367-368; SOCIAL_MAP_PACKETS l.122-126) | hard (persistence, security) | yes | yes |
 | GUILD-BANK-1 | 113 | guild balance and ledger, disband payout and custody claims | GUILD-1, NPC-ECON-1 (BANK-1) | hard (persistence, economy) | yes | maybe |
@@ -127,7 +127,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 | GUILD-CHAT-1 | 113, 116 | guild room on the World relay | GUILD-1, CHAT-2 | impl (security review) | maybe | maybe |
 | VIP-1 | 114 | VIP store, receipts, consent lifecycle, caps, wire | VIP-0, PARTY-1, PREMIUM-1 | impl (persistence, protocol, privacy review) | yes | yes |
 | VIP-2 | 114 | VIP presence on the World relay, gated by consent and `vip_status` | VIP-1, CHAT-2 | hard (security, privacy) | maybe | maybe |
-| CHAT-1 | 116 | **MERGED on main@ab7d51ae6 (CHAT-WIRE-1: `gameplay_transport/chat_intent.rs` dispatches local speech, `CHAT_V1` offered; `chat/` has the NPC greeting, spam limiter and mute); nothing left to schedule.** Was: capability `CHAT_V1`, chat command and domain, local speech, NPC greeting, spam limiter, in-memory mute | none (CHAT-0 root; the yell gate calls PREM-WIRE-1 when it lands later) | impl (protocol review) | maybe | yes |
+| CHAT-1 | 116 | **CHAT-WIRE-1 MERGED on main@ab7d51ae6 (`gameplay_transport/chat_intent.rs` dispatches local speech, `CHAT_V1` offered; `chat/` has the NPC greeting, spam limiter and mute). The accepted CORE_LOOP amendment defines CHAT-1 as CHAT-1a, CHAT-1b-1, CHAT-1b-2a and CHAT-1b-2b; CHAT-1b-2b (resource row `CHAT0-RL-11`, absent from the registry, no task record) is the residue, so every dependent waits for CHAT-1 and CHAT-1b-2b. Wave 1.** Was: capability `CHAT_V1`, chat command and domain, local speech, NPC greeting, spam limiter, in-memory mute | none (CHAT-0 root; the yell gate calls PREM-WIRE-1 when it lands later) | impl (protocol review) | maybe | yes |
 | HOUSE-RUNTIME-1a | 120 | house interior runtime, first child (HOUSE-RUNTIME-1a) | SCOPE-HANDOFF-1 (HOUSE-CUSTODY-1 merged) | hard (security, persistence review) | maybe | no |
 | HOUSE-RUNTIME-1b | 120 | house interior runtime, map-load child (HOUSE-RUNTIME-1b) | HOUSE-RUNTIME-1a, MAP-LOAD-1 | hard (security, persistence review) | maybe | no |
 | HOUSE-RUNTIME-1c | 120 | house interior runtime, position child (HOUSE-RUNTIME-1c) | HOUSE-RUNTIME-1b, CHAR-POSITION-1 | hard (security, persistence review) | maybe | no |
@@ -166,7 +166,7 @@ brief's child graph; the row's `Depends on` is only the entry gate of the family
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1; external prerequisites of the brief children: CHAR-REV-SEQ-1, GOLD-FEE-1b, SPELL-TARGET-1, ATTACK-0, ITEM-USE-1c, ATTACK-1b, CHAR-BUILD-1b, CHARM-1 | hard (child graph, App. 7) | maybe | maybe |
 | SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1, ITEM-LOOK-1 (registry order); external prerequisites of the brief children: PROD-COMPAT-01, ADMIT-CAP-1, ANL-01, DATA-PRIVACY-01, ANL-03 | hard (child graph, App. 7) | no | yes |
 | GM-1 | 136 | GM tools, mute, kick, staff audit and reports (Game side of OPS-GM-01, ARCH-LIVE-READINESS-0 §1). Account bans and sanction enforcement across the boundary are a Platform proposal (P1) that binds nothing in Game until Platform accepts; the owner of bans is unassigned until then. Complete only when every child in App. 7 is complete | LOGOUT-WIRE-1 (LOGOUT-WIRE-1), WRITE-MOD-1; external prerequisites of the brief children: see App. 7 | hard (child graph, App. 7) | yes | yes |
-| SPECTATE-1 | 138 | spectating | LOOP-WORLD-1; external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1, CHAT-1 | hard (child graph, App. 7) | maybe | yes |
+| SPECTATE-1 | 138 | spectating | LOOP-WORLD-1; external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1, MONSTER-SUMMON-1, ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1, CHAT-1; CHAT-1b-2b | hard (child graph, App. 7) | maybe | yes |
 
 ### Death module and in-flight work (not re-planned here)
 
@@ -185,13 +185,13 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 `Reg`, not by the number of workers.
 
 1. **Wave 0 (in flight):** #2018, #1867, #2044, ITEM-USE-1c (USE-ITEM worker; #2039 merged only 1a and 1b), NPC-CMD-1b (own branch), ENCOUNTER-RT-0 (a CANDIDATE decision, see section 7 status list). Merged on main@ab7d51ae6 and no longer scheduled: #2039 (ITEM-USE-1a+1b only), #2040 (the NPC trade writer only), #2041 (STEP-PACE-WIRE-1), #2025 (BUNDLE-COMBAT-ENABLE-1), #2032 (PVP-1), #1798 (ATTACK-1b), #2071 (LOOP-CLOCK-1), #2073 (OPS-SAVE-1 monk-state flush).
-2. **Wave 1 (no migration, parallel):** PREMIUM-1 (PREM-WIRE-1, first: releases every Premium-gated batch), ECON-RET-0 and BANK-RET-0 (retention decisions that release GUILD-1, MARKET-1, BANK-1), CHAT-2 (CHAT-1 is merged; CHAT-2 only after the CHAT-0 re-review and owner acceptance; before PARTY-1), LOGOUT-WIRE-1 (KILL-REWARD-COMP-1 is merged on main; LOGOUT-WIRE-1 after ATTACK-1b #1798, merged), MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
+2. **Wave 1 (no migration, parallel):** CHAT-1b-2b (residue of CHAT-1), PREMIUM-1 (PREM-WIRE-1, first: releases every Premium-gated batch), ECON-RET-0 and BANK-RET-0 (retention decisions that release GUILD-1, MARKET-1, BANK-1), CHAT-2 (CHAT-1 is merged; CHAT-2 only after the CHAT-0 re-review and owner acceptance; before PARTY-1), LOGOUT-WIRE-1 (KILL-REWARD-COMP-1 is merged on main; LOGOUT-WIRE-1 after ATTACK-1b #1798, merged), MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
    ITEM-LOOK-1 (LOOP-CLOCK-1 is merged; SEC-1 moved behind ITEM-LOOK-1, registry order ITEM-LOOK-1, SEC-1, WEATHER-1). In sequence for migrations: ITEM-LOOP-1, then CHAR-BUILD-1, then W2b, DAWNPORT-1 and LOOP-PROGRESS-1 (after the
    death module's B and C; DEATH-ML-LOSS-1 after DEATH-1 gates production training).
 3. **Wave 2:** OPS-SAVE-2, ATTACK-2, BUNDLE-GATES-1, LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1 (with NPC-CMD-1b, NPC-TRADE-WIRE-1), QUEST-RT-1, MAGIC-ITEMS-1,
    MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1, WEATHER-1.
    PVP-1 (#2032) is merged; PVP-RT-1 and PVP-DEATH-1 follow PARTY-1 and DEATH-1.
-4. **Wave 3:** LOOP-MAP-1 (after the #1942 client proof), ITEM-TIMED-1 (NPC-TRADE-CHARGED-1 follows TIMED-RT-1c), ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, CRAFT-1, PROG-ADV-1,
+4. **Wave 3:** CLOCK-1 (residue of LOOP-CLOCK-1, after VIS-2 and COND-1), LOOP-MAP-1 (after the #1942 client proof), ITEM-TIMED-1 (NPC-TRADE-CHARGED-1 follows TIMED-RT-1c), ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, CRAFT-1, PROG-ADV-1,
    MONSTER-META-1, HOUSE-RUNTIME-1a, HOUSE-RUNTIME-1b, HOUSE-RUNTIME-1c, MAP-OVERLAY-1a, MAP-OVERLAY-1b, MAP-OVERLAY-1c, MAP-CUTOVER-1a, MAP-CUTOVER-1b, MAP-CUTOVER-1c (in that order, after SCOPE-HANDOFF-1 and MAP-LOAD-1), PARTY-XP-1.
 5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, GUILD-1, GUILD-BANK-1, GUILD-CHAT-1, VIP-1, ITEM-IMBUE-1, ITEM-FORGE-1,
    HUNT-1, DAILY-1, ACH-1, RANK-1, APP-1, APP-2, APP-3, APP-4 (in that order). STORE-ENT-1 is not scheduled: it is blocked on the §32 delivery decision and routes to Game or Platform only after that decision lands.
@@ -267,11 +267,11 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (ENCOUNTER_RT0)
 | WORLDINT-ADMIT-1 | WORLD_INTERACTION0 | hard, protocol and security review with the FND-04 owner |  | FIELD-WIRE-1 |
 | FIELD-2 | WORLD_INTERACTION0 | hard (combat), combat review |  | FIELD-1; WORLDINT-ADMIT-1; PVP-RT-1 |
 | HAZARD-1 | WORLD_INTERACTION0 | impl, combat review |  | LEVER-1; COND-1 |
-| CLOCK-1 | WORLD_INTERACTION0 | impl, determinism and protocol review | yes | VIS-2; COND-1 |
+| CLOCK-1 | WORLD_INTERACTION0 | impl, determinism and protocol review. The clock epoch, the clock and light functions and capability 19 with domain 18 are MERGED (#2071); the residue is the `world_time` predicate and the VIS-2 `light` field (WORLD_INTERACTION0 §11) | yes | VIS-2; COND-1 |
 | WORLDINT-CONTENT-1 | WORLD_INTERACTION0 | content |  | WO-2; WO-3; QUEST-CONTENT-2 |
 | ENC-RT-1 | ENCOUNTER_RT0 | hard (determinism), determinism review |  | CREATURE-AI-1; the typed Encounter profile (E1) |
 | ENC-COMBAT-1 | ENCOUNTER_RT0 | hard (combat), combat review |  | ENC-RT-1; COND-1; MONSTER-SUMMON-1 |
-| ENC-WORLD-1 | ENCOUNTER_RT0 | impl, determinism review |  | ENC-RT-1; LEVER-1; FLOOR-1; CHAT-1; ITEM-USE-1c |
+| ENC-WORLD-1 | ENCOUNTER_RT0 | impl, determinism review |  | ENC-RT-1; LEVER-1; FLOOR-1; CHAT-1; CHAT-1b-2b; ITEM-USE-1c |
 | ENC-OUTCOME-1 | ENCOUNTER_RT0 | hard (persistence), persistence and security review |  | ENC-RT-1; BOSS-REWARD-1; QUEST-STATE-1 |
 | INSTANCE-GROUND-1 | ENCOUNTER_RT0 | hard (persistence), persistence review |  | SCOPE-HANDOFF-1; GROUND-MOVE-1 |
 | BOSS-LEVER-1 | ENCOUNTER_RT0 | impl, security review |  | LEVER-1; BOSS-ROOM-1 |
@@ -588,7 +588,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (TRAVEL0) is al
 | NPC-ACTOR-1 | NPC_BEHAVIOUR0 | impl, determinism review |  | NPC-PLACE-1b; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
 | NPC-TALK-2 | NPC_BEHAVIOUR0 | impl |  | NPC-TALK-1 |
 | NPC-VIS-1 | NPC_BEHAVIOUR0 | impl, protocol review | yes | VIS-2 |
-| NPC-VOICE-1 | NPC_BEHAVIOUR0 | impl |  | CHAT-1; NPC-ACTOR-1 |
+| NPC-VOICE-1 | NPC_BEHAVIOUR0 | impl |  | CHAT-1; CHAT-1b-2b; NPC-ACTOR-1 |
 | NPC-CONTENT-2 | NPC_BEHAVIOUR0 | content |  | NPC-CONTENT-1 |
 
 ### MONSTER-META-1, EVENTS-RAID-1, EVENTS-WORLD-1, ARENA-1
@@ -599,7 +599,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (BOSS_RAID0, MO
 |---|---|---|---|---|
 | MONSTER-D15B-1 | MONSTER_D15 | content |  | this decision |
 | RAID-CONTENT-1 | BOSS_RAID0 | content |  | this decision; the encounter admission (E4) |
-| RAID-1 | BOSS_RAID0 | hard, persistence and concurrency review |  | RAID-CONTENT-1; CHAT-1 |
+| RAID-1 | BOSS_RAID0 | hard, persistence and concurrency review |  | RAID-CONTENT-1; CHAT-1; CHAT-1b-2b |
 | BOSS-1 | BOSS_RAID0 | hard, persistence review |  | this decision |
 | BOSS-ROOM-1 | BOSS_RAID0 | hard, security and durability review |  | BOSS-1; SCOPE-HANDOFF-1; the encounter runtime (§6.5) |
 | BOSS-REWARD-1 | BOSS_RAID0 | hard, persistence, economy and security review |  | BOSS-1; D3-3; PARTY-XP-1 |
@@ -647,7 +647,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHAT0) is allo
 |---|---|---|---|---|
 | CHAT-1 | CHAT0 | impl, protocol review; MERGED (CHAT-WIRE-1 on main@ab7d51ae6) | yes | this decision |
 | CHAT-1b-2b | CHAT0 | hard, protocol review: resource row `CHAT0-RL-11` (undelivered lines per session) and the connection arm, wire lane (CORE_LOOP_PACKETS §1); no task record is on main, a worker confirms against main whether CHAT-WIRE-1 covered it | yes | CHAT-1 |
-| CHAT-2 | CHAT0 | hard, security and privacy review |  | CHAT-1 (merged); CHAT-0 re-review and ACCEPTED (gate) |
+| CHAT-2 | CHAT0 | hard, security and privacy review |  | CHAT-1; CHAT-1b-2b (merged); CHAT-0 re-review and ACCEPTED (gate) |
 
 ### HOUSE-*
 
@@ -809,6 +809,16 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | HOUSE-CUSTODY-1 | HOUSE_CUSTODY0 | One migration: `HouseInterior`, provenance, exclusivity guard, no runtime grants, `_postgr |  | this decision |
 | MAP-OVERLAY-1 | HOUSE_CUSTODY0 | Reset preflight, step-4 recheck, "reset touches only Ground" test (§3.6) |  | ADR-0021 accepted |
 
+### Children found by the umbrella audit (accepted packets and decisions)
+
+| Child | Brief | Class | Reg | Depends |
+|---|---|---|---|---|
+| SPELL-LOCK-2b | SPELL_LOCK2 | hard, combat review (SPELL_LOCK_2 §2.2): the combat, ordinary-combat, companion and world item cast paths read the spell access facts | | SPELL-LOCK-2a (merged); SPELL-TARGET-1 |
+| CHEST-APPEARANCE-ADMIT-1 | CHEST_APPEARANCE_ADMIT | impl, independent identity review: two appearance-only Items, the map-appearance crosswalk rows and two EXACT bindings (ARCH-CHEST-APPEARANCE-ADMIT §2.1) | | #1830 and #1805 (merged); SPAWN-ADMIT-1 (no open head holding `content/world/pins/`) |
+| GOLD-FEE-ACT-2 | GOLD_FEE_ACT1 (CANDIDATE decision: not allocated until accepted) | hard, persistence review: the migration that takes the exclusive fence and inserts the one activation row | | GOLD-FEE-ACT-1 (merged); deploy evidence that every node runs it |
+| OPS-KEY-SEPARATION-2 | REVOKE_REPORT | hard: the Game part of REVOKE_REPORT §16.2; not allocated until Platform confirms (#1419) | | Platform confirmation (open) |
+| PVP-CLIENT-1 | PARTY_PVP0 (PVP gap closure contract is CANDIDATE) | impl, client: party controls for every `PARTY_INTENT` variant, the `PARTY` domain view, expert mode control, skull, frame and shield rendering, PvP refusal text | | PVP-WIRE-1 |
+
 ## 8. Names used in Depends that are not batches of this plan
 
 Every name in a `Depends on` column is one of: a batch in section 4, a child in section 7, or a name in this table. Nothing else is accepted, and a row that needs a name not listed here is a defect.
@@ -821,6 +831,8 @@ Every name in a `Depends on` column is one of: a batch in section 4, a child in 
 | SESSION-PUSH-1, ENTITY-CLIENT-1, CHAT-CLIENT-1, ITEM-CLIENT-1, CHAT-1b-2a, ACH-NOTIFY-2, CHARM-DESC-A2, VIS-3, ITEM-SEM-2b-3, QUEST-CAT-BOOT-1, CHEST-QUEST-BIND-1, CHEST-PLACE-BIND-1, SPELL-BOOK-ACTIVATE-1, MAP-SPRITE-1, PROGRESSION-CONTENT-1, PROGRESSION-OWNER-1, SPAWN-ADMIT-1, WORLD-BUNDLE-CI-1, WORLD-CONTENT-SERVE-1, N2N3-1, N4-1, N5-1, OPS-ASSIGN-REPORT-1, RUNBOOK-1 | packet tasks with a record in `docs/agents/tasks/archive/` | done; listed so a packet ID is never absent from the plan (CORE_CLIENT, CORE_LOOP, D327, ITEM_EQUIP, QUEST_WIRING, SPELL_ATTACK, WORLD_CONTENT_SERVE, MAP_WIRE, PROGRESSION_SOURCE, LOGIN_FIRST packets) |
 | ITEM-SEM-2b-2, N4-P, CLIENT-NEG-1 | packet tasks outside this plan | the ITEM_EQUIP, LOGIN_FIRST and CORE_CLIENT packets; ITEM-SEM-2b-2 is a narrowed #1672 packet |
 | ATTACK-1, SPAWN-1, HOUSE-1, HOUSE-RUNTIME-1, MAP-CUTOVER-1, ITEM-VIEW-1, FORGE-1, TIMED-RT-1, CHAT-1b-2 | superseded parent names | split by their packets into the 1a/1b/1c (or 2a/2b) children named in this plan; the parent name is an alias of the whole set |
+| SPELL-LOCK-2a, GOLD-FEE-ACT-1, ITEM-SEM-BED-1, ITEM-SEM-USE-1, ITEM-SEM-USE-2, MAP-BUNDLE-2, GAME-LCFA-ENABLE-1, OPS-REVOKE-REPORT-1, CHAT-1a, CHAT-1b-1 | packet or decision tasks with a record in `docs/agents/tasks/archive/` | done |
+| GAME-PREPROD-TOPOLOGY-1 | in-flight task, ops | `docs/agents/tasks/OTV2-20261007-game-preprod-topology-1.md`; the topology decision is PROPOSED and outside the mechanics rows |
 | LOGOUT-1 | alias | the earlier plan name of LOGOUT-WIRE-1; the batch is LOGOUT-WIRE-1 |
 | DEATH-DUR-1 | death module batch B | section 4, "Death module and in-flight work" |
 | GAME-CHAR-CMD-0, CHAR-POSITION-1, CHAR-BUILD-1b, CHARM-1, SKILLS-0 | Character-lane contracts and tasks | accepted decisions and merged tasks outside this plan |
