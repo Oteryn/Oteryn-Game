@@ -124,6 +124,32 @@ impl ChatRuntime {
             .then(super::actor_spell::SpellCastOutcome::rejected)
     }
 
+    /// The gate in front of the Channel lock (CHAT-0 §6): a `say` of a muted session, or beyond
+    /// its bucket, is refused here, before the runtime lock and the entity clone, so a flood
+    /// costs the Channel only this map lookup. `None` lets the intent go on.
+    pub(crate) fn pre_gate(
+        &self,
+        session: GameSessionId,
+        intent: &ChatIntent,
+        now: SemanticTimeMicros,
+    ) -> Option<ChatIntentResult> {
+        let ChatIntent::Say { mode, text } = intent else {
+            return None;
+        };
+        // Unusable text is refused here too, without the Channel and without a line, so it
+        // cannot be repeated against the locks for free.
+        if ChatText::parse(text).is_err() {
+            return Some(result(ChatDisposition::Rejected));
+        }
+        let mut sessions = self.sessions.lock().ok()?;
+        let entry = sessions.get_mut(&session)?;
+        entry
+            .limiter
+            .pre_gate(speech_mode(*mode), now)
+            .err()
+            .map(refusal)
+    }
+
     /// Whether `session` is muted at `now`.
     fn is_muted(&self, session: GameSessionId, now: SemanticTimeMicros) -> bool {
         self.sessions
@@ -351,6 +377,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &ChatIntent,
     ) -> ChatIntentResult {
         let now = self.owner_now();
+        if let Some(refused) = self.chat.pre_gate(session, intent, now) {
+            return refused;
+        }
         let runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
         chat_in_channel(&self.chat, &runtime, &states, actor, session, intent, now)
@@ -524,6 +553,34 @@ mod tests {
                 .any(|d| matches!(d, ChatDisposition::Exhausted | ChatDisposition::Muted)),
             "{dispositions:?}"
         );
+    }
+
+    #[test]
+    fn the_pre_gate_refuses_a_flood_without_the_channel_and_takes_no_line() {
+        let (runtime, chat, first, _) = two_players(0);
+        assert!(chat.pre_gate(first.1, &say("x"), BASE).is_none());
+        // The gate takes no line: four lines still pass through the full path.
+        for _ in 0..4 {
+            assert_eq!(
+                speak(&chat, &runtime, first, &say("x"), BASE).disposition,
+                ChatDisposition::Ok
+            );
+        }
+        let refused = chat
+            .pre_gate(first.1, &say("x"), BASE)
+            .expect("empty bucket");
+        assert_eq!(refused.disposition, ChatDisposition::Muted);
+        assert!(chat.muted_cast(first.1, BASE).is_some());
+        assert!(chat.pre_gate(first.1, &say("x"), BASE).is_some());
+        // Unusable text is refused before the Channel and takes no line.
+        assert_eq!(
+            chat.pre_gate(first.1, &say("   "), BASE)
+                .expect("blank")
+                .disposition,
+            ChatDisposition::Rejected
+        );
+        // An unknown session and a non-say intent are left to the full path.
+        assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
     }
 
     #[test]
