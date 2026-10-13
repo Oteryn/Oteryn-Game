@@ -41,6 +41,7 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
+use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
@@ -1881,6 +1882,12 @@ impl<S: SessionStream> Session<S> {
             .await?;
         let (disposition, gate_message_id) =
             world_object::decode_use_result_with_gate(&result.payload)?;
+        // Dispositions 11 to 17 and the gate message id exist only under capability 11.
+        check_use_result_negotiated(
+            disposition,
+            gate_message_id,
+            self.is_selected(world_interaction::CAPABILITY_WORLD_INTERACTION_V1),
+        )?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -2508,6 +2515,23 @@ async fn read_frame_body<S: AsyncRead + Unpin>(
 /// The server sends `ACCEPTED` for every typed disposition except `REJECTED`, which it sends
 /// with `REJECTED` (`connection.rs` `serve_admitted`, both `STEP` and `USE_INTENT`); any other
 /// pairing is a violation.
+/// A server that sends a capability 11 disposition (11 to 17) or a gate message id to a session
+/// that did not select capability 11 broke the negotiation: the result fails closed.
+fn check_use_result_negotiated(
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+    world_interaction_selected: bool,
+) -> Result<(), SessionError> {
+    if (disposition.needs_world_interaction() || gate_message_id.is_some())
+        && !world_interaction_selected
+    {
+        return Err(SessionError::WorldObject(
+            world_object::WorldObjectError::Malformed,
+        ));
+    }
+    Ok(())
+}
+
 fn check_status_pairing(
     command_id: u64,
     status: CommandStatus,
@@ -5574,7 +5598,26 @@ mod tests {
     }
 
     #[test]
-    fn a_sealed_use_result_surfaces_its_gate_message_id_and_others_carry_none()
+    fn capability_11_dispositions_and_the_gate_id_need_the_negotiated_capability() {
+        use UseDisposition as D;
+        for (disposition, gate) in [
+            (D::Sealed, Some(9)),
+            (D::Locked, None),
+            (D::NotPossible, None),
+        ] {
+            assert!(check_use_result_negotiated(disposition, gate, true).is_ok());
+            assert!(matches!(
+                check_use_result_negotiated(disposition, gate, false),
+                Err(SessionError::WorldObject(_))
+            ));
+        }
+        for disposition in [D::Committed, D::NothingToUse, D::NoTarget, D::Rejected] {
+            assert!(check_use_result_negotiated(disposition, None, false).is_ok());
+        }
+    }
+
+    #[test]
+    fn a_sealed_use_result_without_capability_11_fails_closed_and_others_carry_no_gate_id()
     -> Result<(), BoxError> {
         block_on(async {
             let sealed = world_object::encode_use_result_with_gate(UseDisposition::Sealed, Some(9))
@@ -5587,27 +5630,29 @@ mod tests {
                         world_object::COMMAND_TYPE_USE_INTENT,
                         world_object::encode_use_item_intent(handle(40)),
                     ),
-                    ItemStep::Send(Step::Send(encode_command_result(
-                        1,
-                        41,
-                        7,
-                        CommandStatus::Accepted,
-                        &sealed,
-                    )?)),
+                    ItemStep::Send(use_result(41, 7, UseDisposition::NothingToUse)?),
                     ItemStep::Expect(
                         world_object::COMMAND_TYPE_USE_INTENT,
                         world_object::encode_use_item_intent(handle(40)),
                     ),
-                    ItemStep::Send(use_result(42, 8, UseDisposition::NothingToUse)?),
+                    ItemStep::Send(Step::Send(encode_command_result(
+                        1,
+                        42,
+                        8,
+                        CommandStatus::Accepted,
+                        &sealed,
+                    )?)),
                 ],
             );
             let mut session = Session::admit(client, item_admission()?).await?;
             let used = session.use_item(handle(40)).await?;
-            assert_eq!(used.disposition, UseDisposition::Sealed);
-            assert_eq!(used.gate_message_id, Some(9));
-            let used = session.use_item(handle(40)).await?;
             assert_eq!(used.disposition, UseDisposition::NothingToUse);
             assert_eq!(used.gate_message_id, None);
+            // Capability 11 is not selected: the SEALED result is a negotiation fault.
+            assert!(matches!(
+                session.use_item(handle(40)).await,
+                Err(SessionError::WorldObject(_))
+            ));
             drop(session);
             peer.await??;
             Ok(())

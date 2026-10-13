@@ -6,8 +6,8 @@ use super::*;
 use crate::charm_wire::{push_message_field, push_varint_field};
 use crate::item_view::ItemHandle;
 use crate::world_object::{
-    UseIntent, UseTarget, WorldObjectError, decode_use_intent_target, encode_item_use_intent,
-    encode_use_item_intent,
+    MAX_USE_WITH_PLACEMENT_BYTES, MapItemRef, UseIntent, UseTarget, WorldObjectError,
+    WorldObjectTarget, decode_use_intent_target, encode_item_use_intent, encode_use_item_intent,
 };
 
 const PROTOCOL_REGISTRY: &str =
@@ -160,7 +160,7 @@ fn use_field_6_needs_capability_11_and_excludes_field_4() {
     let intent = UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
-        use_with_map_item: Some(ItemHandle::new(7).expect("handle")),
+        use_with_map_item: Some(MapItemRef::Handle(ItemHandle::new(7).expect("handle"))),
     };
     let bytes = encode_item_use_intent(&intent).expect("encode");
     assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
@@ -196,10 +196,60 @@ fn use_field_6_needs_capability_11_and_excludes_field_4() {
                 identity: [1; 16],
                 generation: 1
             }),
-            use_with_map_item: Some(handle),
+            use_with_map_item: Some(MapItemRef::Handle(handle)),
         })
         .is_err()
     );
+}
+
+#[test]
+fn a_tool_or_key_names_a_handleless_map_item_by_placement_in_field_7() {
+    let door = |placement: &[u8], expected_revision| WorldObjectTarget {
+        placement: placement.to_vec(),
+        expected_revision,
+    };
+    let intent = |target: WorldObjectTarget| UseIntent {
+        target: UseTarget::Item(ItemHandle::new(u64::MAX).expect("handle")),
+        use_with: None,
+        use_with_map_item: Some(MapItemRef::WorldObject(target)),
+    };
+    for good in [
+        door(b"oteryn:placement/entry-door", 0),
+        door(b"oteryn:placement/entry-door", u64::MAX),
+        door(&[0xaa; MAX_USE_WITH_PLACEMENT_BYTES], u64::MAX),
+    ] {
+        let value = intent(good);
+        let bytes = encode_item_use_intent(&value).expect("encode");
+        assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
+        assert_eq!(decode_use_intent_target(&[4, 15, 11], &bytes), Ok(value));
+        // Without capability 11 the field fails closed.
+        assert!(decode_use_intent_target(&[4, 15], &bytes).is_err());
+    }
+    assert_eq!(
+        encode_item_use_intent(&intent(door(&[1; MAX_USE_WITH_PLACEMENT_BYTES + 1], 1))),
+        Err(WorldObjectError::LimitExceeded)
+    );
+    assert_eq!(
+        encode_item_use_intent(&intent(door(b"", 1))),
+        Err(WorldObjectError::Malformed)
+    );
+    // Empty placement, both field 6 and 7, field 7 twice, and field 7 with a world object target.
+    let target = encode_use_item_intent(ItemHandle::MIN);
+    let mut empty = target.clone();
+    push_message_field(&mut empty, 7, &[0x10, 1]);
+    let mut both = encode_item_use_intent(&intent(door(b"d", 1))).expect("encode");
+    push_message_field(&mut both, 6, &[0x08, 0x07]);
+    let mut twice = encode_item_use_intent(&intent(door(b"d", 1))).expect("encode");
+    twice.extend_from_slice(&[0x3a, 5, 0x0a, 1, b'd', 0x10, 1]);
+    let mut with_world_object = Vec::new();
+    push_message_field(&mut with_world_object, 1, &[0x0a, 1, b'a']);
+    push_message_field(&mut with_world_object, 7, &[0x0a, 1, b'd']);
+    for payload in [empty, both, twice, with_world_object] {
+        assert!(
+            decode_use_intent_target(&[4, 15, 11], &payload).is_err(),
+            "{payload:?}"
+        );
+    }
 }
 
 #[test]
@@ -238,5 +288,6 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     assert!(USE_SCHEMA.contains("uint32 gate_message_id = 2;"));
     assert!(!SCHEMA.contains("command type 9 (item_view_v1.proto), whose"));
     assert!(USE_SCHEMA.contains("ItemTargetV1 use_with_map_item = 6;"));
+    assert!(USE_SCHEMA.contains("WorldObjectTargetV1 use_with_map_object = 7;"));
     assert!(USE_SCHEMA.contains("USE_DISPOSITION_NOT_POSSIBLE = 17;"));
 }

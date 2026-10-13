@@ -36,7 +36,7 @@ external_repositories: []
 
 Registers capability 11 `WORLD_INTERACTION_V1` (requires 15 and 18, `offered: false`, gate WORLDINT-USE-1)
 and command type 15 `PUSH_INTENT` (`PushIntentV1`, flat, at most 37 bytes; result at most 4 bytes), adds
-`UseIntentV1` field 6 `use_with_map_item` (needs capability 11, excludes field 4) and the USE dispositions
+`UseIntentV1` field 6 `use_with_map_item` (a handle) and field 7 `use_with_map_object` (placement and revision, for handleless map objects such as doors; both need capability 11, at most one, exclude field 4) and the USE dispositions
 11 to 17 (LOCKED, KEY_MISMATCH, SEALED, PZ_BLOCKED, NOT_MOVABLE, NO_ROOM, NOT_POSSIBLE), per
 WORLD-INTERACTION-0 §10.1. The server gates command 15, rejects field 6 and refuses dispositions 11 to 17
 without capability 11. Wire only: no runtime, no migration, nothing offered.
@@ -56,6 +56,13 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
   stays within 4 bytes); other dispositions refuse it and `SEALED` without it fails closed. The server
   carries it from `UseOutcome.gate_message_id` through the gate-aware codec (an invalid pair becomes
   `Rejected`), covered end to end.
+- Field 7 `use_with_map_object` (Codex P1): the map publishes non-movable base entries (doors) as base
+  ordinals without a handle, so a tool or key could not name them by field 6. Field 7 names them as
+  field 1 already does, by placement and revision; placement non-empty and at most 499 bytes so the
+  intent stays within 529 (`WORLDINT0-RL-22`). Open for the CP: a client that holds a base ordinal
+  needs its placement from the overlay; if the ordinal must be addressable instead, that is a map
+  wire change outside this slice.
+- The session crate fails closed on dispositions 11 to 17 or a gate id without a negotiated capability 11.
 - Capability 11 changes no other command: the command 9 map-item and Ground sources are a separate
   registry change, so the capability promises nothing unusable.
 - Command number 15 does not collide with 14 (HIGHSCORES); no BED_SLEEP_INTENT number is used.

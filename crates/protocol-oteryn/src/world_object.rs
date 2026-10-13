@@ -50,6 +50,9 @@ pub const SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1: u32 = 1;
 pub const MAX_USE_INTENT_BYTES: usize = 529;
 /// The encoded `EntityRefV1` of field 4: identity (1 + 1 + 16) and generation (1 + 10).
 const MAX_USE_WITH_BYTES: usize = 29;
+/// Field 7 beside the largest field 2 (13 bytes): 3 (tag, length) + 3 (placement tag, length) + the
+/// placement + 11 (revision) <= 529 - 13, so at most 499 placement bytes.
+pub const MAX_USE_WITH_PLACEMENT_BYTES: usize = 499;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
 /// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs` to keep the repeated-field and
 /// over-bound decode failures distinct in tests.
@@ -94,15 +97,26 @@ pub enum UseTarget {
     ItemByDefinition(NonZeroU32),
 }
 
+/// The map item a tool or key is used on (capability 11): a movable base item by handle (field 6),
+/// or a map object without a handle by placement and revision (field 7), such as a door, which the
+/// map publishes as a base ordinal and which `UseTarget::WorldObject` already names.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MapItemRef {
+    Handle(ItemHandle),
+    WorldObject(WorldObjectTarget),
+}
+
 /// A decoded `UseIntentV1`: the target and field 4 `use_with`, the creature a potion is used on
 /// (absent means the user). Field 4 is accepted only under capability 15 and only with field 2 or 5.
-/// Field 6 `use_with_map_item` is the map item a tool or key is used on (WORLD-INTERACTION-0 §10.1):
-/// accepted only under capability 11, only with field 2 or 5, and never together with field 4.
+/// Fields 6 and 7 are the map item a tool or key is used on (WORLD-INTERACTION-0 §10.1), by handle
+/// or by placement: accepted only under capability 11, only with field 2 or 5, at most one of them
+/// once, and never together with field 4. The placement of field 7 is non-empty and at most
+/// `MAX_USE_WITH_PLACEMENT_BYTES`, so the intent stays within `MAX_USE_INTENT_BYTES`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseIntent {
     pub target: UseTarget,
     pub use_with: Option<EntityRef>,
-    pub use_with_map_item: Option<ItemHandle>,
+    pub use_with_map_item: Option<MapItemRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -283,11 +297,24 @@ pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObject
         push_varint_field(&mut inner, 2, creature.generation);
         push_bytes_field(&mut output, 4, &inner);
     }
-    if let Some(handle) = intent.use_with_map_item {
+    if let Some(map_item) = &intent.use_with_map_item {
         if intent.use_with.is_some() {
             return Err(WorldObjectError::Malformed);
         }
-        push_bytes_field(&mut output, 6, &encode_item_target(handle));
+        match map_item {
+            MapItemRef::Handle(handle) => {
+                push_bytes_field(&mut output, 6, &encode_item_target(*handle));
+            }
+            MapItemRef::WorldObject(target) => {
+                if target.placement.is_empty() {
+                    return Err(WorldObjectError::Malformed);
+                }
+                if target.placement.len() > MAX_USE_WITH_PLACEMENT_BYTES {
+                    return Err(WorldObjectError::LimitExceeded);
+                }
+                push_bytes_field(&mut output, 7, &encode_world_object_target(target)?);
+            }
+        }
     }
     Ok(output)
 }
@@ -365,7 +392,20 @@ pub fn decode_use_intent_target(
                 use_with = Some(decode_use_with(read_bytes(payload, &mut cursor)?)?);
             }
             0x32 if map_item_use && use_with_map_item.is_none() => {
-                use_with_map_item = Some(map_item_handle(read_bytes(payload, &mut cursor)?)?);
+                use_with_map_item = Some(MapItemRef::Handle(map_item_handle(read_bytes(
+                    payload,
+                    &mut cursor,
+                )?)?));
+            }
+            0x3a if map_item_use && use_with_map_item.is_none() => {
+                let target = decode_world_object_target(read_bytes(payload, &mut cursor)?)?;
+                if target.placement.is_empty() {
+                    return Err(WorldObjectError::Malformed);
+                }
+                if target.placement.len() > MAX_USE_WITH_PLACEMENT_BYTES {
+                    return Err(WorldObjectError::LimitExceeded);
+                }
+                use_with_map_item = Some(MapItemRef::WorldObject(target));
             }
             0x2a if item_use && target.is_none() => {
                 target = Some(UseTarget::ItemByDefinition(decode_item_by_definition(

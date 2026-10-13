@@ -37,6 +37,10 @@ message UseIntentV1 {
   // WORLDINT-WIRE-1 (capability 11 WORLD_INTERACTION_V1): the map item a tool or key is used on.
   // Valid only with field 2 or 5, never with field 4, at most once. The handle is non-zero.
   oteryn.protocol.v1.item_view.ItemTargetV1 use_with_map_item = 6;
+  // The same, for a map object that has no handle (a door, published as a base ordinal): its
+  // placement and revision, as field 1 names it. Placement non-empty and at most 499 bytes, so the
+  // intent stays within 529. Same rules as field 6, and at most one of 6 and 7, once.
+  WorldObjectTargetV1 use_with_map_object = 7;
   reserved 3;
 }
 
