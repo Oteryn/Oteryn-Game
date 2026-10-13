@@ -258,12 +258,15 @@ async fn load_pvp_state(
 
 /// §6.2 World job, inside a transaction that already holds the scope authority: at most
 /// [`PVP_CLEANUP_BATCH`] point rows older than 45 days (`PARTYPVP0-RL-23`), expired revenge marks
-/// and ledger rows whose `last_at` is older than 5 minutes (`PARTYPVP0-RL-18`) of the World.
+/// and ledger rows whose `last_at` is older than 5 minutes (`PARTYPVP0-RL-18`) of the authority's
+/// World. The authority must belong to this transaction, as for the World party cleanup.
 #[allow(dead_code)] // The node's World job calls it in the PVP-RT-1b wiring slice.
 pub(crate) async fn cleanup_pvp_rows_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    world: &[u8; 16],
-) -> std::result::Result<PvpCleanup, DurabilityError> {
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+) -> std::result::Result<PvpCleanup, super::spell_item_transaction::SpellItemError> {
+    super::spell_item_transaction::check_scope_transaction(tx, authority).await?;
+    let world = &authority.world_bytes();
     let points = sqlx::query(
         "DELETE FROM game_character_unjustified_points WHERE (character_id, death_occurrence_id) IN \
            (SELECT p.character_id, p.death_occurrence_id FROM game_character_unjustified_points p \
@@ -341,8 +344,9 @@ impl DurabilityRoot {
                         )
                         .await
                         .map_err(|_| super::DurabilityError::Unavailable)?;
-                    let cleaned =
-                        cleanup_pvp_rows_in_transaction(&mut tx, &authority.world_bytes()).await?;
+                    let cleaned = cleanup_pvp_rows_in_transaction(&mut tx, &authority)
+                        .await
+                        .map_err(|_| super::DurabilityError::Unavailable)?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(cleaned)
                 })

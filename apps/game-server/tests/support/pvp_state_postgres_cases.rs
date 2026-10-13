@@ -1,12 +1,13 @@
 //! PVP-1 PvP state on PostgreSQL 17.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
-    CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
+    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
+    scope,
 };
 use crate::domain::CharacterId;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::pvp_state::{
-    PvpDeadlineKinds, PvpSkull, PvpWriteAhead, cleanup_pvp_rows_in_transaction,
+    PvpCleanup, PvpDeadlineKinds, PvpSkull, PvpWriteAhead, cleanup_pvp_rows_in_transaction,
 };
 
 const OTHER: u8 = 60;
@@ -327,6 +328,8 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
             )
             .await
             .map_err(debug)?;
+        seed_root(h, OTHER, WORLD).await?;
+        seed_root(h, THIRD, WORLD).await?;
         // 81 contributors of the victim's World, 100 ledger rows of an old time.
         for seed in 100..=181u8 {
             seed_root(h, seed, WORLD).await?;
@@ -373,62 +376,124 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                 .await
                 .is_err()
         );
-        // Points and marks need a death receipt: write them as the owner with FK triggers off.
+        // Points and marks cite a death receipt of their victim: the receipts are fixtures
+        // written with triggers off; the points and marks are written under the real guards.
+        let death_of = |n: u8| [n, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n];
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
             .execute(&mut *tx)
             .await?;
-        for n in 0..101u8 {
-            let death = [n, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n];
+        for n in 0..102u8 {
+            let victim = if n == 101 { CHARACTER } else { OTHER };
+            sqlx::query(
+                "INSERT INTO game_character_death_receipts (death_occurrence_id, command_binding, \
+                    policy_digest, character_id, original_character_revision, \
+                    committed_character_revision, level_before, level_after, experience_before, \
+                    experience_after, experience_lost, blessings_before, blessings_after, \
+                    lost_item_ids, death_world_id, death_channel_id, death_spatial_position, \
+                    death_map_revision, respawn_position, death_policy_revision, profile_revision, \
+                    ruleset_revision, content_revision, simulation_revision, evidence_revision, \
+                    declaration_revision, policy_revision, reward_revision, committed_at) \
+                 VALUES (encode($1,'hex')::uuid, '\\x01', decode(repeat('00',32),'hex'), \
+                    encode($2,'hex')::uuid, $3, $3 + 1, 1, 1, 0, 0, 0, '{}', '{}', '{}', \
+                    encode($4,'hex')::uuid, encode($4,'hex')::uuid, '\\x01', 'm', '\\x01', \
+                    'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 0)",
+            )
+            .bind(death_of(n).as_slice())
+            .bind(id(victim).as_slice())
+            .bind(1000 + i64::from(n))
+            .bind(id(WORLD).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        let point = async |earner: u8, victim: u8, n: u8| {
             sqlx::query(
                 "INSERT INTO game_character_unjustified_points (character_id, death_occurrence_id, \
                     victim_character_id, points_milli, committed_at) \
                  VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1000, \
                     clock_timestamp() - interval '46 days')",
             )
-            .bind(id(CHARACTER).as_slice())
-            .bind(death.as_slice())
-            .bind(id(OTHER).as_slice())
-            .execute(&mut *tx)
-            .await?;
+            .bind(id(earner).as_slice())
+            .bind(death_of(n).as_slice())
+            .bind(id(victim).as_slice())
+            .execute(&h.pool)
+            .await
+        };
+        for n in 0..101u8 {
+            point(CHARACTER, OTHER, n).await?;
         }
+        // A point citing another Character's death is refused.
+        assert!(point(CHARACTER, THIRD, 0).await.is_err());
+        assert!(point(CHARACTER, CHARACTER, 101).await.is_err());
+        let mark = async |expires: &str| {
+            let sql = format!(
+                "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
+                    death_occurrence_id, created_at, expires_at) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+                    now() - interval '8 days', now() - interval '8 days' + interval '{expires}')"
+            );
+            sqlx::query(sqlx::AssertSqlSafe(sql))
+                .bind(id(CHARACTER).as_slice())
+                .bind(id(OTHER).as_slice())
+                .bind(death_of(101).as_slice())
+                .execute(&h.pool)
+                .await
+        };
+        // The expiry is exactly seven days after creation; a mark of another victim's death is
+        // refused.
+        assert!(mark("6 days").await.is_err());
+        assert!(mark("8 days").await.is_err());
         sqlx::query(
             "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
                 death_occurrence_id, created_at, expires_at) \
              VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                 now() - interval '8 days', now() - interval '1 day')",
         )
-        .bind(id(CHARACTER).as_slice())
         .bind(id(OTHER).as_slice())
-        .bind(
-            [
-                9_u8, 1, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 9,
-            ]
-            .as_slice(),
-        )
-        .execute(&mut *tx)
-        .await?;
-        tx.commit().await?;
+        .bind(id(CHARACTER).as_slice())
+        .bind(death_of(101).as_slice())
+        .execute(&h.pool)
+        .await
+        .expect_err("a mark of the wrong victim");
+        mark("7 days").await?;
 
-        // Another World's pass deletes nothing.
-        let mut tx = h.pool.begin().await?;
-        let other = cleanup_pvp_rows_in_transaction(&mut tx, &id(FOREIGN_WORLD))
-            .await
-            .map_err(debug)?;
-        tx.commit().await?;
-        assert_eq!((other.points, other.marks, other.ledger_rows), (0, 0, 0));
-
-        let mut tx = h.pool.begin().await?;
-        let first = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD))
-            .await
-            .map_err(debug)?;
-        tx.commit().await?;
+        let lane = crate::durability::spell_owner_commit::SpellLane::new(
+            crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        );
+        let permit = lane.acquire().await.map_err(|_| "spell lane unresolved")?;
+        let pass = async || -> TestResult<PvpCleanup> {
+            let mut tx = h.pool.begin().await?;
+            let held =
+                crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &h.root,
+                    &authority,
+                    &h.node,
+                    scope()?,
+                    1,
+                )
+                .await
+                .map_err(debug)?;
+            let cleaned = cleanup_pvp_rows_in_transaction(&mut tx, &held)
+                .await
+                .map_err(debug)?;
+            // The authority is bound to its transaction: another one refuses it.
+            let mut other = h.pool.begin().await?;
+            assert!(
+                cleanup_pvp_rows_in_transaction(&mut other, &held)
+                    .await
+                    .is_err()
+            );
+            other.rollback().await?;
+            tx.commit().await?;
+            Ok(cleaned)
+        };
+        let first = pass().await?;
         assert_eq!((first.points, first.marks, first.ledger_rows), (100, 1, 80));
-        let mut tx = h.pool.begin().await?;
-        let second = cleanup_pvp_rows_in_transaction(&mut tx, &id(WORLD))
-            .await
-            .map_err(debug)?;
-        tx.commit().await?;
+        let second = pass().await?;
         assert_eq!((second.points, second.marks, second.ledger_rows), (1, 0, 0));
         Ok(())
     })

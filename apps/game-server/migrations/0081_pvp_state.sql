@@ -69,12 +69,12 @@ CREATE TABLE game_character_revenge_marks (
     killer_character_id UUID NOT NULL REFERENCES game_character_roots (character_id),
     death_occurrence_id UUID NOT NULL REFERENCES game_character_death_receipts (death_occurrence_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-    -- PARTYPVP0-RL-17: seven days.
+    -- PARTYPVP0-RL-17: exactly seven days.
     expires_at TIMESTAMPTZ NOT NULL,
     avenged_at TIMESTAMPTZ,
     PRIMARY KEY (victim_character_id, killer_character_id, death_occurrence_id),
     CHECK (victim_character_id <> killer_character_id),
-    CHECK (expires_at > created_at AND expires_at <= created_at + INTERVAL '7 days')
+    CHECK (expires_at = created_at + INTERVAL '7 days')
 );
 CREATE INDEX game_character_revenge_marks_expiry
     ON game_character_revenge_marks (expires_at, victim_character_id);
@@ -148,12 +148,33 @@ BEGIN
 END;
 $$;
 
+-- A point or mark names the victim of the death receipt it cites: the receipt's Character is the
+-- row's `victim_character_id`, so a row cannot cite another Character's death.
+CREATE FUNCTION game_character_pvp_receipt_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
+                    WHERE d.death_occurrence_id = NEW.death_occurrence_id
+                      AND d.character_id = NEW.victim_character_id) THEN
+        RAISE EXCEPTION 'a PvP consequence names the victim of its death receipt'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER game_character_pvp_state_guard BEFORE INSERT OR UPDATE
     ON game_character_pvp_state FOR EACH ROW
     EXECUTE FUNCTION game_character_pvp_state_guard();
 CREATE TRIGGER game_character_pvp_ledger_guard BEFORE INSERT OR UPDATE
     ON game_character_pvp_ledger FOR EACH ROW
     EXECUTE FUNCTION game_character_pvp_ledger_guard();
+CREATE TRIGGER game_character_unjustified_points_receipt_guard BEFORE INSERT OR UPDATE
+    ON game_character_unjustified_points FOR EACH ROW
+    EXECUTE FUNCTION game_character_pvp_receipt_guard();
+CREATE TRIGGER game_character_revenge_marks_receipt_guard BEFORE INSERT OR UPDATE
+    ON game_character_revenge_marks FOR EACH ROW
+    EXECUTE FUNCTION game_character_pvp_receipt_guard();
 CREATE TRIGGER game_character_pvp_state_no_truncate BEFORE TRUNCATE
     ON game_character_pvp_state EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_character_pvp_ledger_no_truncate BEFORE TRUNCATE
@@ -169,7 +190,8 @@ DECLARE
 BEGIN
     FOREACH v_function IN ARRAY ARRAY[
         'game_character_pvp_state_guard()',
-        'game_character_pvp_ledger_guard()'
+        'game_character_pvp_ledger_guard()',
+        'game_character_pvp_receipt_guard()'
     ] LOOP
         EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp', v_function, current_schema());
     END LOOP;
@@ -177,8 +199,8 @@ END $$;
 
 REVOKE ALL ON game_character_pvp_state, game_character_pvp_ledger,
     game_character_unjustified_points, game_character_revenge_marks FROM PUBLIC;
-REVOKE ALL ON FUNCTION game_character_pvp_state_guard(), game_character_pvp_ledger_guard()
-FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_character_pvp_state_guard(), game_character_pvp_ledger_guard(),
+    game_character_pvp_receipt_guard() FROM PUBLIC;
 -- The state row is never deleted. Ledger rows are deleted by the victim's death transaction and
 -- the World job; points and marks only by the World job (§6.2).
 GRANT SELECT, INSERT, UPDATE ON game_character_pvp_state TO oteryn_game_runtime;
