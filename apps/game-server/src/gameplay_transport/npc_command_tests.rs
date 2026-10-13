@@ -288,3 +288,22 @@ fn a_malformed_intent_spends_the_rate_allowance() {
     let outcome = conversations.talk(&chat, &runtime, actor, session, &malformed, at(BASE));
     assert_eq!(outcome.disposition, NpcIntentDisposition::RateLimited);
 }
+
+#[test]
+fn a_placed_npc_without_a_talk_entry_is_silent() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(NpcTalkBook::default()));
+    let outcome = NpcConversations::default().talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hello"),
+        at(BASE),
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::NoConversation);
+    assert!(outcome.conversation.is_none());
+}

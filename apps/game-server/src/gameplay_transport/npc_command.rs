@@ -179,7 +179,8 @@ impl NpcConversations {
             floor: npc_floor,
         };
         let Some(entry) = runtime.npc_key(npc.actor).and_then(|key| book.get(key)) else {
-            return NpcTalkOutcome::only(Disposition::Rejected);
+            // A placed NPC with no talk entry (a Dialogue-backed NPC) is silent.
+            return NpcTalkOutcome::only(Disposition::NoConversation);
         };
         if at
             .distance(there)
