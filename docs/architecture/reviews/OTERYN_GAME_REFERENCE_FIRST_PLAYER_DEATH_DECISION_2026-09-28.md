@@ -4,6 +4,7 @@
 - Status: **CANDIDATE with owner decisions D58-D60 and D62-D68 taken (§2)**. Acceptance requires
   exact-head validation, independent review and protected integration.
 - Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): character durability PASS for the DEATH-1 scope, DUR-03 transfers DEFECT (item loss is not implemented, DEATH-3), restart safety DEFECT (the pending respawn is consumed before the actor is placed, so a crash loses the recorded respawn position of §4.5; a missing death policy lets a player respawn without a durable death). The owner's acceptance is not recorded. Reopened as CANDIDATE until these are resolved and re-reviewed.
+- Resolution 2026-10-13 (`DEATH-WIRE-1`, D1022): the two restart-safety defects are fixed by DEATH-RESTART-SAFETY-1 (#2004: the respawn row is kept until the placement is durable; an unbound session never respawns without a durable death). The owner waived DUR-03 item loss (DEATH-3) for this acceptance (D1022, option 2a): a death records an empty lost-item set and selects no Amulet of Loss (§4.4 "Delivery gap"), so no corpse or item workflow is wired and the contract is unchanged. DEATH-3 stays the open child of §5 and re-enters through its own allocation. The acceptance records after the independent re-review.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (target Global Tibia at 2026-09-27, D33)
 - Amends: `OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md` difference 1 (D58). Its
