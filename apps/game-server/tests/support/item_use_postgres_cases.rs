@@ -360,6 +360,26 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
             used.use_item(1, &food(8, 150, 2)).await,
             Err(ItemUseError::ConflictingCommand)
         ));
+        // The same CommandRef and fields under another EventId is not the committed event.
+        let mut other_event = food(7, 150, 3);
+        other_event.event_id = id(199);
+        assert!(matches!(
+            used.use_item(1, &other_event).await,
+            Err(ItemUseError::ConflictingCommand)
+        ));
+        // Revisions that are not the fenced root's interpretation are stale, writing nothing.
+        let mut stale = food(8, 152, 2);
+        stale.content_revision = "content-0".into();
+        assert!(matches!(
+            used.use_item(1, &stale).await,
+            Err(ItemUseError::StaleState)
+        ));
+        let mut stale = food(8, 152, 2);
+        stale.ruleset_revision = "rules-0".into();
+        assert!(matches!(
+            used.use_item(1, &stale).await,
+            Err(ItemUseError::StaleState)
+        ));
         assert_eq!(used.item(FOOD).await?, (2, 1, Some(1)));
         assert_eq!(used.records().await?, 1);
 

@@ -4,16 +4,16 @@
 task_id: OTV2-20261013-item-use-1ab-contract-store
 title: "ITEM-USE-1a+1b: DUR-03 item-use audit contract, migration 0081 and durable store"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 implementation_branch: claude/use-item-1-20261013
 issue: 1622
-pr: 0
+pr: 2039
 depends_on: []
 merge: "pending"
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
-next_action: "open the PR, self-review, wait for the complete Codex review, one fix commit, archive, squash auto-merge; then ITEM-USE-1c (runtime and ingress) under its own record"
+next_action: "none; ITEM-USE-1c (runtime and ingress) follows under its own record"
 owned_paths:
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
   - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json
@@ -26,7 +26,7 @@ owned_paths:
   - apps/game-server/migrations/0081_item_use.sql
   - apps/game-server/tests/item_use_postgres.rs
   - apps/game-server/tests/support/item_use_postgres_cases.rs
-  - docs/agents/tasks/active/OTV2-20261013-item-use-1ab-contract-store.md
+  - docs/agents/tasks/archive/OTV2-20261013-item-use-1ab-contract-store.md
 ```
 
 ## Scope
@@ -51,8 +51,27 @@ wire change; the runtime role gains no item write outside a use record.
   request binding, plan check with `StaleState`, the four shapes, one type 2 audit event.
 - **Contracts.** Foundation registry entry for tag 9; DUR-03 item-use amendment names the tag and rows.
 
+## Codex review (head d11e131)
+
+Three P2 findings, all fixed in the final authoring commit: request revisions are bound to the
+fenced root (`StaleState` on mismatch); the decoder uses the registered item-use payload and
+envelope ceilings (5,366 / 5,754 B); a replay requires the committed EventId. Each has a test.
+
 ## Validation
 
-PostgreSQL cases (`item_use_postgres`, 8) pass on PostgreSQL 17.11 locally; the protected 17.6
-target is CI's. `cargo test --lib durability::` (372), `cargo clippy --all-targets -D warnings` and
-`cargo fmt --all --check` are clean; the governance validators run before freeze.
+### Focused
+
+- `cargo test --lib durability::item_use`: pass
+- `cargo clippy --all-targets -- -D warnings`: pass
+- `cargo fmt --check`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+
+### Component/integration
+
+- `cargo test --test item_use_postgres` (8 item-use cases): pass on PostgreSQL 17.11 locally; the
+  protected 17.6 target is CI's.
+
+### E2E
+
+- `NOT_APPLICABLE`: no runtime or ingress in this slice (ITEM-USE-1c).

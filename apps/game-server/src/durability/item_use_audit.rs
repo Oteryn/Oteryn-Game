@@ -21,8 +21,8 @@
 
 use super::item_mint_audit::{
     self as mint, AuditError, EventEnvelopeV1, ITEM_LIFECYCLE_LIVE, OneItemOperationV1,
-    OneItemStateV1, OneItemTransactionV1, RL07_ENVELOPE_BYTES_MAX, RL07_PAYLOAD_BYTES_MAX,
-    TransactionEventRefV1, check_content_key, check_definition, check_uuid_v7, encode_bounded,
+    OneItemStateV1, OneItemTransactionV1, TransactionEventRefV1, check_content_key,
+    check_definition, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::{
     GAMEITEM01_STACK_QUANTITY_MAX, ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1,
@@ -38,6 +38,9 @@ pub const ITEM_USE_RL04_TRANSFORM_LINES_MAX: u64 = 1;
 pub const ITEM_USE_RL06_PARTICIPANTS_MAX: u64 = 2;
 pub const ITEM_USE_RL06_EFFECT_WORK_UNITS_MAX: u64 = 6;
 pub const ITEM_USE_RL07_EVENTS_MAX: u64 = 1;
+/// Measured worst cases (`DUR03-RL-07-ITEM-USE-PAYLOAD-BYTES` / `-ENVELOPE-BYTES`).
+pub const ITEM_USE_RL07_PAYLOAD_BYTES_MAX: usize = 5_366;
+pub const ITEM_USE_RL07_ENVELOPE_BYTES_MAX: usize = 5_754;
 
 /// `OneItemUseCauseV1.kind` (closed `ItemUseCause`).
 pub const ITEM_USE_CAUSE_FOOD: u32 = 1;
@@ -315,7 +318,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
 /// RL-07 payload gate for `item_use`: size before decode, canonical round trip, closed shape
 /// and per-field bounds.
 pub fn decode_item_use_payload(wire: &[u8]) -> Result<OneItemUseV1, AuditError> {
-    if wire.len() > RL07_PAYLOAD_BYTES_MAX {
+    if wire.len() > ITEM_USE_RL07_PAYLOAD_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
     let value = OneItemTransactionV1::decode(wire).map_err(|_| AuditError::InvalidInput)?;
@@ -336,7 +339,7 @@ pub fn decode_item_use_payload(wire: &[u8]) -> Result<OneItemUseV1, AuditError> 
 pub fn decode_item_use_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, OneItemUseV1), AuditError> {
-    let value = mint::decode_common_envelope(wire)?;
+    let value = mint::decode_common_envelope_within(wire, ITEM_USE_RL07_ENVELOPE_BYTES_MAX)?;
     let item_use = decode_item_use_payload(&value.payload)?;
     let command = item_use
         .cause
@@ -396,7 +399,7 @@ pub fn encode_item_use_event(
             interpretation_revision: mint::INTERPRETATION_REVISION,
             operation: Some(OneItemOperationV1::ItemUse(item_use)),
         },
-        RL07_PAYLOAD_BYTES_MAX,
+        ITEM_USE_RL07_PAYLOAD_BYTES_MAX,
     )?;
     let envelope = EventEnvelopeV1 {
         envelope_revision: mint::ENVELOPE_REVISION,
@@ -428,7 +431,7 @@ pub fn encode_item_use_event(
         payload,
         ..EventEnvelopeV1::default()
     };
-    let wire = encode_bounded(&envelope, RL07_ENVELOPE_BYTES_MAX)?;
+    let wire = encode_bounded(&envelope, ITEM_USE_RL07_ENVELOPE_BYTES_MAX)?;
     let (decoded, _) = decode_item_use_envelope(&wire)?;
     if decoded != envelope {
         return Err(AuditError::InvalidInput);
@@ -619,7 +622,7 @@ mod tests {
             }
             let wire = encode_item_use_event(identity(), value.clone(), mint::Type2EventTuple::V1)
                 .unwrap();
-            assert!(wire.len() <= RL07_ENVELOPE_BYTES_MAX);
+            assert!(wire.len() <= ITEM_USE_RL07_ENVELOPE_BYTES_MAX);
             let (envelope, decoded) = decode_item_use_envelope(&wire).unwrap();
             assert_eq!(decoded, value);
             assert_eq!(envelope.connection_generation, Some(2));
@@ -703,9 +706,13 @@ mod tests {
         identity.server_build_id = "b".repeat(128).leak();
         identity.occurred_at_unix_ms = i64::MAX;
         let wire = encode_item_use_event(identity, value, mint::Type2EventTuple::V1).unwrap();
-        assert!(wire.len() <= RL07_ENVELOPE_BYTES_MAX, "{}", wire.len());
+        assert!(
+            wire.len() <= ITEM_USE_RL07_ENVELOPE_BYTES_MAX,
+            "{}",
+            wire.len()
+        );
         let (envelope, _) = decode_item_use_envelope(&wire).unwrap();
-        assert!(envelope.payload.len() <= RL07_PAYLOAD_BYTES_MAX);
+        assert!(envelope.payload.len() <= ITEM_USE_RL07_PAYLOAD_BYTES_MAX);
         // Registered by DUR03-RL-07-ITEM-USE-PAYLOAD-BYTES / -ENVELOPE-BYTES.
         assert_eq!(
             (envelope.payload.len() as u64, wire.len() as u64),
@@ -886,9 +893,14 @@ mod tests {
 
     #[test]
     fn oversize_and_non_canonical_payloads_are_rejected_before_use() {
-        let wire = vec![0; RL07_PAYLOAD_BYTES_MAX + 1];
+        let wire = vec![0; ITEM_USE_RL07_PAYLOAD_BYTES_MAX + 1];
         assert_eq!(
             decode_item_use_payload(&wire),
+            Err(AuditError::CapacityExceeded)
+        );
+        let wire = vec![0; ITEM_USE_RL07_ENVELOPE_BYTES_MAX + 1];
+        assert_eq!(
+            decode_item_use_envelope(&wire).map(|_| ()),
             Err(AuditError::CapacityExceeded)
         );
         let mut payload = OneItemTransactionV1 {

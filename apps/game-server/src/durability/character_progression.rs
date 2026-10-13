@@ -642,8 +642,8 @@ impl DurabilityRoot {
 pub(super) struct FencedCharacterRoot {
     pub(super) revision: u64,
     profile_revision: String,
-    ruleset_revision: String,
-    content_revision: String,
+    pub(super) ruleset_revision: String,
+    pub(super) content_revision: String,
 }
 
 /// The composition rule 2 session checks of the gameplay fence, with no Character root lock:

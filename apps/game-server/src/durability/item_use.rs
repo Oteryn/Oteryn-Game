@@ -321,7 +321,13 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     }
                     match assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                        Ok(_) => {}
+                        Ok(root) => {
+                            if root.content_revision != request.content_revision
+                                || root.ruleset_revision != request.ruleset_revision
+                            {
+                                return Ok(Err(ItemUseError::StaleState));
+                            }
+                        }
                         Err(CharacterProgressionError::CharacterRevisionMismatch) => {
                             return Ok(Err(ItemUseError::CharacterRevisionMismatch));
                         }
@@ -351,7 +357,8 @@ async fn replay(
     request: &ItemUseRequest,
 ) -> Result<Option<ItemUseOutcome>> {
     let rows = sqlx::query(
-        "SELECT transaction_id::text AS transaction_id, request_binding, shape, \
+        "SELECT transaction_id::text AS transaction_id, event_id::text AS event_id, \
+                request_binding, shape, \
                 (game_session_id = encode($1,'hex')::uuid \
                  AND command_id = $2::text::numeric(20,0)) AS same_command \
            FROM game_item_use_records \
@@ -374,9 +381,11 @@ async fn replay(
         };
     };
     let transaction_id = uuid_text(&row.try_get::<String, _>("transaction_id")?)?;
+    let event_id = uuid_text(&row.try_get::<String, _>("event_id")?)?;
     let binding: Vec<u8> = row.try_get("request_binding")?;
     if row.try_get::<bool, _>("same_command")?
         && transaction_id == request.transaction_id
+        && event_id == request.event_id
         && binding.as_slice() == request.binding().as_slice()
     {
         Ok(Some(ItemUseOutcome::AlreadyCommitted {
