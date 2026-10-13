@@ -230,5 +230,5 @@ required_revalidation:
 remaining_unknowns:
   - the Newhaven low-level exemption at the target date
   - temple positions (content)
-next_action: "#162 validates this exact head, routes the independent re-review of the first player death (DEATH-0, DEATH-1 and DEATH-2 are implemented), records the owner acceptance with the D1022 waiver, and keeps DEATH-3 and DEATH-4 (blessing purchase, after the NPC trade lane) as the open children for their own allocation. The PvP-death parts of §4.1 and §4.5 that PARTY-PVP-0 made effective stay out of this acceptance: they are not activated until PVP-DEATH-1 lands and is reviewed."
+next_action: "#162 validates this exact head, routes the independent re-review of the first player death (DEATH-0, DEATH-1 and DEATH-2 are implemented), integrates the exact reviewed head through Merge Queue, records the owner acceptance with the D1022 waiver, and keeps DEATH-3 and DEATH-4 (blessing purchase, after the NPC trade lane) as the open children for their own allocation. The PvP-death parts of §4.1 and §4.5 that PARTY-PVP-0 made effective stay out of this acceptance: they are not activated until PVP-DEATH-1 lands and is reviewed."
 ```
