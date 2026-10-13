@@ -133,7 +133,7 @@ impl ChatRuntime {
         intent: &ChatIntent,
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
-        let ChatIntent::Say { text, .. } = intent else {
+        let ChatIntent::Say { mode, text } = intent else {
             return None;
         };
         // Unusable text is refused here too, without the Channel and without a line, so it
@@ -143,7 +143,11 @@ impl ChatRuntime {
         }
         let mut sessions = self.sessions.lock().ok()?;
         let entry = sessions.get_mut(&session)?;
-        entry.limiter.pre_gate(now).err().map(refusal)
+        entry
+            .limiter
+            .pre_gate(speech_mode(*mode), now)
+            .err()
+            .map(refusal)
     }
 
     /// Whether `session` is muted at `now`.

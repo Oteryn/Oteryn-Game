@@ -592,3 +592,24 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
     egress.push(room_text(103));
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
 }
+
+#[test]
+fn the_pre_gate_refuses_a_yell_in_its_cooldown_and_takes_no_line() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let premium = YellGate {
+        level: 20,
+        premium_current: false,
+    };
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, premium, at_ms(0)),
+        Ok(())
+    );
+    assert_eq!(
+        limiter.pre_gate(SpeechMode::Yell, at_ms(1_000)),
+        Err(ChatRefusal::Exhausted { seconds: 29 })
+    );
+    // The cooldown does not block say, and the refused yell took no line.
+    assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(1_000)), Ok(()));
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(30_000)), Ok(()));
+}
