@@ -45,7 +45,7 @@ wire change; the runtime role gains no item write outside a use record.
 - **Rows.** `DUR03-RL-01/-02/-04/-06/-07-ITEM-USE*` registered, the byte rows measured on the worst
   case; the ITEMUSE0-RL-01, -02 and -04 rows belong to 1b/1c (runtime and measurement).
 - **Migration 0083 and store.** `game_item_use_records` (one record per CommandRef, forever) with a
-  deferred consistency guard; the four shared item guards each re-issued with their 0075 body
+  deferred consistency guard; the four shared item guards each re-issued with their latest prior body (0075; the MINT guard from 0077)
   verbatim plus one arm admitting the change only with a record of the same physical transaction.
   `DurabilityRoot::commit_item_use` is the item-only rule 2 writer: replay by CommandRef and
   request binding, plan check with `StaleState`, the four shapes, one type 2 audit event.
@@ -91,3 +91,14 @@ NPC-TRADE-1 0082); main merged.
 ### E2E
 
 - `NOT_APPLICABLE`: no runtime or ingress in this slice (ITEM-USE-1c).
+
+## Codex review of adb92d5 and merge-queue repair
+
+- P2 "Persist the character lease generation": declined (CP decision). The payload persists the
+  session id and generation, which bind the lease 1:1; adding the field is a tag 9 wire change.
+- Merge queue run on adb92d5 failed on main's current state: (1) migration 0083 re-issued
+  `game_item_mint_consistency_guard` from its 0075 body and dropped the MAP-OVERLAY-1b arm added
+  by 0077; the guard is now the 0077 body plus the item-use arm (map_item_mint cases pass).
+  (2) `item_use_postgres` was neither a `test = false` wrapper nor included by a CI-run target;
+  it is now listed in `Cargo.toml` and included by `character_authority_postgres`.
+

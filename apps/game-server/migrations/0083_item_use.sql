@@ -18,7 +18,8 @@
 -- replay is answered from the record and never burns twice. The record commits only with its
 -- item changes, its entry changes and its one audit event (event type 2), all in the same
 -- physical transaction; the shared item guards below admit each of those changes only with it.
--- Each replaced function keeps its 0075 body verbatim and only adds one admitting clause.
+-- Each replaced function keeps its latest prior body verbatim (0075; the MINT guard from 0077)
+-- and only adds one admitting clause.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration. Before any record
 -- exists it drops the table, the guard and the four arms. After records exist they are retained
@@ -494,6 +495,7 @@ BEGIN
         RETURN NULL;
     END IF;
 
+
     IF EXISTS(SELECT 1 FROM game_native_map_item_receipts r JOIN game_item_ground_locations g USING(item_instance_id) JOIN game_native_map_item_audit a USING(item_instance_id)
       WHERE r.item_instance_id=NEW.item_instance_id AND r.transaction_id=NEW.minted_transaction_id
       AND r.world_id=NEW.world_id AND r.definition_family=NEW.definition_family AND r.definition_key=NEW.definition_production_key
@@ -623,6 +625,41 @@ BEGIN
            AND l.created_xact_id = pg_current_xact_id()
            AND o.created_xact_id = pg_current_xact_id()
            AND e.placed_transaction_id = o.transaction_id) THEN
+        RETURN NULL;
+    END IF;
+    -- MAP-OVERLAY-1b: a map-item MINT with its Ground line, receipt and audit
+    -- event in this transaction, exactly as reserved.
+    IF EXISTS (
+        SELECT 1
+          FROM game_map_item_mint_receipts r
+          JOIN game_item_ground_locations g ON g.item_instance_id = r.item_instance_id
+          JOIN game_item_audit_outbox a ON a.event_id = r.event_id
+          JOIN game_map_item_mint_reservations v
+            ON (v.game_session_id, v.command_id) = (r.game_session_id, r.command_id)
+         WHERE r.item_instance_id = NEW.item_instance_id
+           AND r.transaction_id = NEW.minted_transaction_id
+           AND r.world_id = NEW.world_id
+           AND r.created_xact_id = pg_current_xact_id()
+           AND (r.definition_family, r.definition_production_key, r.definition_revision_ref)
+               = (NEW.definition_family, NEW.definition_production_key, NEW.definition_revision_ref)
+           AND r.quantity = NEW.quantity
+           AND g.world_id = r.world_id
+           AND g.channel_id = r.channel_id
+           AND g.runtime_scope_ownership_generation = r.runtime_scope_ownership_generation
+           AND g.spatial_position = r.spatial_position
+           AND g.map_revision = r.map_revision
+           AND g.native_room_placement_context = r.base_bundle_digest
+           AND a.transaction_id = r.transaction_id
+           AND a.item_instance_id = r.item_instance_id
+           AND a.occurred_at = r.occurred_at
+           AND a.created_xact_id = pg_current_xact_id()
+           AND sha256(a.envelope) = r.envelope_sha256
+           AND (v.character_id, v.world_id, v.channel_id, v.base_bundle_digest, v.placement_key,
+                v.reset_epoch, v.intent_binding, v.transaction_id, v.event_id,
+                v.item_instance_id, v.occurred_at)
+               = (r.character_id, r.world_id, r.channel_id, r.base_bundle_digest, r.placement_key,
+                  r.reset_epoch, r.intent_binding, r.transaction_id, r.event_id,
+                  r.item_instance_id, r.occurred_at)) THEN
         RETURN NULL;
     END IF;
     RAISE EXCEPTION 'item MINT must commit its location, cause receipt and audit event together as its reserved transaction'

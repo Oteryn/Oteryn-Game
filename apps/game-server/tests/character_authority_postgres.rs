@@ -2223,6 +2223,11 @@ mod character_progression_postgres_cases;
 #[path = "support/item_mint_postgres_cases.rs"]
 mod item_mint_postgres_cases;
 
+// ITEM-USE-1b item use (migration 0083) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/item_use_postgres_cases.rs"]
+mod item_use_postgres_cases;
+
 // B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/item_transfer_postgres_cases.rs"]
