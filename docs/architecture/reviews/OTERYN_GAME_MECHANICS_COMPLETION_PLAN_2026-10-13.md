@@ -29,14 +29,11 @@ else is a decision first.
 | 20 Fight modes | Offensive/Balanced/Defensive are wired and change the defence factor after a swing. Chase is treated as Stand ("until CHASE-1"). Secure mode is not found. Target-selection effect not verified. | PARTIAL: LOOP-COMBAT-MODES-1 |
 | 37 Level-up stats | The level is computed from experience only; no per-vocation max HP, mana or capacity change on level exists at runtime (vocation vitals are a tooling candidate). | ABSENT at runtime: LOOP-PROGRESS-1. Bundle node not checked. |
 
-## 3. Out of scope or not Game
+## 3. Not Game-owned (owner direction 2026-10-13: weather, Store entitlements and server save/restart are IN scope, see batches WEATHER-1, STORE-ENT-1, OPS-SAVE-1)
 
 | Row | Mechanic | Why |
 |---|---|---|
-| 17 | Weather | not in the Reference profile's playable path; revisit with the world clock |
-| 123 | Store | commercial, Platform responsibility (AGENTS.md) |
-| 137 | Server save/restart | operations, not a gameplay mechanic; durability already covers crash safety |
-| 131 | Create/delete/rename character | Platform vs Game, ADR-0012; Game keeps the contract only |
+| 131 | Create/delete/rename character | Platform owns web identity and the account flow (ADR-0012); Game keeps only the character command contract (GAME-CHAR-CMD-0). Re-evaluate if a Game-side gap appears. |
 | 3, 4, 14 | STEP-PACE-WIRE-1 (#2041), auto-walk, minimap | client-owned (#1942). Server dependency: none new for 3 and 4 (the server receives paced steps); 14 needs LOOP-MAP-1 |
 | 16 | Light (utevo lux, torches) | client rendering is client-owned; the server light state comes from LOOP-CLOCK-1 |
 
@@ -61,6 +58,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1, MAGIC-SUMMON-1 | impl | no | no |
 | LOOP-GROUND-1 | 18 | decay of dropped items on Ground (shared with the death drop) | DEATH-DUR-1 | hard (retire) | maybe | no |
 | LOOP-CLOCK-1 | 15 | world clock and day phase, server light state | none | impl | no | yes |
+| WEATHER-1 | 17 | weather state and change events | LOOP-CLOCK-1 | impl | no | yes |
 | LOGOUT-1 | 109 | combat logout and disconnect protection | PVP-RT-1b | hard (fencing) | yes | no |
 
 ### Epic 2. Economy and items
@@ -98,7 +96,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | EVENTS-RAID-1 | 102 | raids | LOOP-MONSTER-1 | impl | no | no |
 | EVENTS-WORLD-1 | 103, 104 | world changes, Fury Gates, Nightmare Isles, hazard | EVENTS-RAID-1 | impl | maybe | no |
 | ARENA-1 | 106 | Tibiadrome and arenas | LOOP-MONSTER-1 | impl | no | no |
-| TUTORIAL-1 | 139 | tutorial island content | owner Q1 | impl | no | no |
+| TUTORIAL-1 | 139 | late test epic, not blocking: Newhaven/Rookgaard content after Thais start is tested | Wave 4 done | impl | no | no |
 
 ### Epic 5. Community
 
@@ -116,6 +114,8 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
+| STORE-ENT-1 | 123 | Store, server side only: entitlement grants and item/outfit/mount delivery; purchase and payment stay with Platform | PREMIUM-1, Platform contract | hard (value, authority) | yes | yes |
+| OPS-SAVE-1 | 137 | server save and graceful restart: flush all session-generation fenced writes, drain, resume | none | hard (durability) | maybe | no |
 | PREMIUM-1 | 124 | Premium gating across features | NPC-ECON-1 | impl | no | no |
 | ACH-1 | 125, 129 | achievements, badges, titles | LOOP-PROGRESS-1 | impl | yes | maybe |
 | COSMETIC-1 | 126, 127 | outfit and addon change, mounts | #1942 for the client side | impl | no | yes |
@@ -139,21 +139,27 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 `Reg`, not by the number of workers.
 
 1. **Wave 0 (in flight):** #2018, #2032, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
-2. **Wave 1 (no migration, parallel):** MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
+2. **Wave 1 (no migration, parallel):** OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
    ITEM-LOOK-1, LOOP-CLOCK-1, SEC-1. In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
    death module's B and C).
 3. **Wave 2:** LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1, QUEST-RT-1, MAGIC-ITEMS-1,
-   MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1.
+   MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1, WEATHER-1.
 4. **Wave 3:** ITEM-TIMED-1, ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, LOGOUT-1, CRAFT-1, PROG-ADV-1,
    MONSTER-META-1, HOUSE-OWN-1.
 5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, HOUSE-INT-1, LOOP-TRAIN-1, GUILD-1, VIP-1, CHAT-1, HIRE-1,
-   PREMIUM-1, HUNT-1, DAILY-1, ACH-1, RANK-1, COSMETIC-1.
+   PREMIUM-1, STORE-ENT-1, HUNT-1, DAILY-1, ACH-1, RANK-1, COSMETIC-1.
 6. **Wave 5:** EVENTS-*, ARENA-1, SOCIAL-LATE-1, GM-1, SPECTATE-1, TUTORIAL-1.
 
 Waves are an order of dependency, not a schedule; the control plane starts a batch when its dependencies have
 merged. The death module runs alongside wave 1 and 2 on its own track.
 
-## 6. Questions to the owner (plain language)
+## 6. Owner answers (2026-10-13, via the control plane)
+
+1. Start stays in Thais; the tutorial island is a late, non-blocking test epic (TUTORIAL-1).
+2. Weather, Store (server side only) and server save/restart are in scope (WEATHER-1, STORE-ENT-1, OPS-SAVE-1).
+3. Order confirmed.
+
+Original questions, kept for the record:
 
 1. **Tutorial.** Do we need a tutorial island (Rookgaard or the newer Newhaven) before the first public release?
    Recommendation: no; start in Thais as today and decide later.
@@ -175,7 +181,7 @@ merged. The death module runs alongside wave 1 and 2 on its own track.
 
 ```yaml
 result: CANDIDATE
-owner_decisions: []   # Q1-Q3 pending, recommendations given
+owner_decisions: [Q1, Q2, Q3 answered 2026-10-13]
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md
 resource_values_changed: false
 production_authority_changed: false
