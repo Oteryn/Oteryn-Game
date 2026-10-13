@@ -96,3 +96,6 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
   item's kind (BUY item MINT, SELL item BURN), not only the designated identity, and requires
   exactly one, so a second item line of another identity is refused. npc_trade (12) and fee (35)
   PostgreSQL cases pass.
+- Codex review on ed558719: P2 fixed. A free BUY (total 0) scans no coin stack, so a coin
+  stack at another revision or not in its default state does not block it; unit and PostgreSQL
+  cases.

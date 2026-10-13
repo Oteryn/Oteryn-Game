@@ -594,6 +594,10 @@ fn the_database_refuses_an_unproven_trade() -> TestResult {
         }
         assert_eq!(footprint(&harness).await?, before);
         assert_eq!(harness.item_state(gold).await?, (10, 1));
+        // A free BUY pays from no coin, so that stack does not block it.
+        let free = committed(&harness, &authority, trade(20, NpcTradeSide::Buy, 1, 0)?).await?;
+        assert_eq!(free.lines.len(), 1);
+        assert_eq!(harness.item_state(gold).await?, (10, 1));
 
         drop(authority);
         drop(seal);

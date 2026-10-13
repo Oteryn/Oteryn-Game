@@ -397,7 +397,8 @@ fn plan_buy(
     entries: &[Entry],
 ) -> Result<Plan> {
     let mut inputs = Vec::new();
-    for entry in entries.iter().filter(|entry| entry.live) {
+    // §5.3: a price of 0 pays from no coin, so no coin stack is an input or refused.
+    for entry in entries.iter().filter(|entry| entry.live && total != 0) {
         let Some(coin) = Coin::from_production_key(&entry.definition.production_key) else {
             continue;
         };

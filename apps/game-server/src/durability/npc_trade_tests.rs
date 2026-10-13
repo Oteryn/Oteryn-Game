@@ -266,6 +266,11 @@ fn a_buy_burns_the_fee_plan_and_mints_change_then_the_item() {
         plan_buy(&value, 1, 1, 20, &held),
         Err(NpcTradeError::InvalidInput)
     ));
+    // A free BUY pays from no coin: neither stack blocks it.
+    for blocked in [&stale, &held] {
+        let plan = plan_buy(&value, 0, 1, 20, blocked).unwrap();
+        assert_eq!(plan.lines.len(), 1);
+    }
     // 21 one-gold stacks for 21 gold: more than 20 inputs.
     let many: Vec<Entry> = (0..21)
         .map(|n| entry(100 + n, 30 - u64::from(n), coin(Coin::Gold), 1))
