@@ -67,6 +67,7 @@ NPC-CMD-1b: trade (domain 8 window, command 8, migration, `NpcTradeCause`, BUY/S
 - `cargo test --locked -p oteryn-game-server --lib gameplay_transport`: pass (515 passed).
 - `cargo test --locked -p oteryn-game-server --lib npc`: pass.
 - `python3 tools/agents/validate_governance.py`: OK (22 documents, 9 lanes).
+- `python3 -m unittest discover -s tools/agents/tests`: OK.
 
 ## Self-review
 

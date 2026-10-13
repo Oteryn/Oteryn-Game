@@ -188,7 +188,12 @@ impl NpcConversations {
         {
             return NpcTalkOutcome {
                 disposition: Disposition::NotInRange,
-                conversation: end(chat, session, intent),
+                // The walk-away closes the conversation here, so the farewell is sent now: the
+                // follow tick sees nothing left to close (NPC-0 section 4.1).
+                conversation: end(chat, session, intent).map(|mut closed| {
+                    closed.lines.push(entry.farewell().to_owned());
+                    closed
+                }),
             };
         }
         let npcs = [TalkNpc {

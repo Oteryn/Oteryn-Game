@@ -307,3 +307,25 @@ fn a_placed_npc_without_a_talk_entry_is_silent() {
     assert_eq!(outcome.disposition, NpcIntentDisposition::NoConversation);
     assert!(outcome.conversation.is_none());
 }
+
+#[test]
+fn a_command_from_out_of_range_closes_with_the_farewell() {
+    let (runtime, actor, session, npc) = fixture(TALK_RANGE_TILES + 1);
+    let chat = chat_of(session);
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    chat.converse(session, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    let outcome = NpcConversations::default().talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE),
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::NotInRange);
+    let closed = outcome.conversation.expect("payload");
+    assert_eq!(closed.open, None);
+    assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
+    assert!(chat.engaged(session).is_none());
+}
