@@ -6,7 +6,10 @@
 //! committed by the physical owner under the swing identity `(character, lease generation,
 //! session, lineage, swing ordinal)`: the lineage is the `CommandRef` of the `ATTACK_TARGET`
 //! command that set the target and the ordinal counts the swings of that lineage from 0.
-//! Player targets (PvP), chase, distance weapons and creature defence/armor are out of scope.
+//! Player targets (PvP), distance weapons and creature defence/armor are out of scope. Server-driven
+//! chase (CHASE-1) is not implemented: today the server only holds the out-of-range target and never
+//! steps the player, so `CHASE` behaves like `STAND`; owner/CP decision (LOOP-COMBAT-MODES-1) keeps
+//! chase client-driven (#1942) until the follow-up. `secure` has no creature-target effect before PvP.
 
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{

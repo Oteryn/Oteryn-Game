@@ -547,6 +547,42 @@ fn waiting_target_is_held_and_cleared_target_is_dropped() {
     );
 }
 
+/// CHASE-1 is client-driven (LOOP-COMBAT-MODES-1): the client walks after its target, so the
+/// server must keep an out-of-range target through every poll while it runs and swing the
+/// moment the client has closed the distance, without spending an interval while it waited.
+#[test]
+fn a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach() {
+    let interval = table().attack_interval_micros();
+    let mut state = AttackState::<u32, u8>::default();
+    state.set_target(9, 0, &facts()).unwrap();
+    for (at, distance) in [(250, 2), (500, 4), (750, 6), (1_000, 5), (1_250, 2)] {
+        let fleeing = TargetFacts {
+            distance,
+            ..facts()
+        };
+        assert_eq!(
+            state.poll_swing(ms(at), interval, &fleeing),
+            SwingPoll::Waiting(SwingWait::OutOfRange),
+            "distance {distance} at {at} ms"
+        );
+        assert_eq!(state.target(), Some(9));
+    }
+    assert_eq!(
+        swing_at(state.poll_swing(ms(1_500), interval, &facts())).0,
+        1_500
+    );
+    // Out of sight is the only way a runaway ends the chase.
+    let gone = TargetFacts {
+        present_and_visible: false,
+        ..facts()
+    };
+    assert_eq!(
+        state.poll_swing(ms(2_000), interval, &gone),
+        SwingPoll::Cleared(TargetCleared::Vanished)
+    );
+    assert_eq!(state.target(), None);
+}
+
 #[test]
 fn swung_within_interval_tracks_the_last_swing() {
     let interval = table().attack_interval_micros();
