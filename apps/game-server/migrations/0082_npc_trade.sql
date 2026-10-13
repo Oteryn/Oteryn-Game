@@ -500,8 +500,10 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_placement_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    -- 0082: the new entry of an NPC trade MINT line of this same physical transaction.
-    IF TG_TABLE_NAME='game_item_container_entries' AND EXISTS(
+    -- 0082: the new entry of an NPC trade MINT line of this same physical transaction. NEW has
+    -- entry fields only on the entries table, so the table test is its own IF.
+    IF TG_TABLE_NAME='game_item_container_entries' THEN
+    IF EXISTS(
        SELECT 1 FROM game_npc_trade_lines l
          JOIN game_npc_trades t ON t.transaction_id = l.transaction_id
          JOIN game_item_instances i ON i.item_instance_id = l.item_instance_id
@@ -519,6 +521,7 @@ BEGIN
            RAISE EXCEPTION 'container entry ceiling exceeded' USING ERRCODE='23514';
        END IF;
        RETURN NULL;
+    END IF;
     END IF;
 
     IF TG_TABLE_NAME='game_item_container_entries' THEN
