@@ -964,6 +964,18 @@ Same-a65 CI is13successful/4running/0failed, not final all-green. Producer2041
 is now merged/main376, but no dedicated QA/ON-OFF/harness/retirement reply was
 supplied to6149042654. Registered clock19 stays unoffered; no deployment follows.
 
+## Existing item-menu safety before B2 — AUTHORING
+
+The already active command9 context path is restricted to received open-container
+entries. Connection/container/handle-stable upstream widget IDs and stale-popup
+cleanup prevent replacement/reordering from selecting a neighbour. Busy and
+closed receivers refuse enqueue visibly, with retry on a busy popup. No new
+drag/preset/capability is activated. Three real-egui regressions use actual
+PlayLink/run_session mailbox dispatch, not a substituted send closure; their
+scripted Unavailable result is not wire/server/delta/live-gameplay proof.
+Current packet: `docs/agents/tasks/active/OTV2-20261013-client-item-menu-safety.md`.
+Changed-runtime native qualification remains pending; do not inherit a65 proof.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

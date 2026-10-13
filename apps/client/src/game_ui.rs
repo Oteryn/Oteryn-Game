@@ -755,6 +755,12 @@ impl GameUi {
         }
         let mut open_settings = false;
         let hud_enabled = !self.blocks_game_input();
+        close_stale_item_menu(
+            ctx,
+            state.container.as_ref(),
+            hud_enabled && settings.show_inventory,
+            link.connection_generation(),
+        );
         self.panels.initialize(&settings.panel_shortcuts);
         let now = ctx.input(|input| input.time);
         if settings.show_minimap && self.minimap.is_none() && now >= self.minimap_retry_at {
@@ -794,6 +800,12 @@ impl GameUi {
         );
         if viewport.is_none() {
             // Oversized underlying HUD Areas must not occlude the recovery button.
+            close_stale_item_menu(
+                ctx,
+                state.container.as_ref(),
+                false,
+                link.connection_generation(),
+            );
             return show_window_recovery(ctx, en);
         }
         if let Some(viewport) = viewport {
@@ -1031,14 +1043,22 @@ impl GameUi {
                             self.panels.shortcuts(ui, en);
                             ui.separator();
                             if settings.show_inventory {
-                                equipment(ui, state.inventory.as_ref(), state.vitals, link, en);
+                                equipment(ui, state.inventory.as_ref(), state.vitals, en);
                                 if let Some(inventory) = &state.inventory {
                                     ui.separator();
                                     panel_heading(ui, tr("Plecak", "Backpack"));
                                     if inventory.entries.is_empty() {
                                         ui.small(tr("Pusty", "Empty"));
                                     }
-                                    item_grid(ui, "main-backpack", &inventory.entries, link, en);
+                                    item_grid(
+                                        ui,
+                                        "main-backpack",
+                                        &inventory.entries,
+                                        None,
+                                        link,
+                                        en,
+                                        &mut self.notice,
+                                    );
                                 } else {
                                     ui.small(tr(
                                         "Brak danych ekwipunku",
@@ -1050,7 +1070,15 @@ impl GameUi {
                                 {
                                     ui.separator();
                                     panel_heading(ui, tr("Otwarty kontener", "Open container"));
-                                    item_grid(ui, "open-container", &container.entries, link, en);
+                                    item_grid(
+                                        ui,
+                                        "open-container",
+                                        &container.entries,
+                                        container.container_handle,
+                                        link,
+                                        en,
+                                        &mut self.notice,
+                                    );
                                 }
                             }
                             if settings.show_battle {
@@ -1602,7 +1630,6 @@ fn equipment(
     ui: &mut egui::Ui,
     inventory: Option<&oteryn_session::CharacterInventory>,
     vitals: Option<oteryn_session::ActorVitals>,
-    link: &PlayLink,
     english: bool,
 ) {
     let slots = [
@@ -1665,7 +1692,6 @@ fn equipment(
                         response
                             .clone()
                             .on_hover_text(item_description(item, english));
-                        item_menu(response, item, link, english);
                     } else {
                         response.on_hover_text(if english {
                             if inventory.is_some() {
@@ -1704,14 +1730,33 @@ fn slot_label(slot: EquipmentSlot, english: bool) -> (&'static str, &'static str
     (id, if english { en } else { pl })
 }
 
-fn item_grid(ui: &mut egui::Ui, id: &str, items: &[ItemEntry], link: &PlayLink, english: bool) {
+fn item_grid(
+    ui: &mut egui::Ui,
+    id: &str,
+    items: &[ItemEntry],
+    container: Option<oteryn_session::ItemHandle>,
+    link: &PlayLink,
+    english: bool,
+    notice: &mut Option<String>,
+) {
     egui::Grid::new(id)
         .num_columns(4)
         .spacing([2.0, 2.0])
         .show(ui, |ui| {
             for (index, item) in items.iter().enumerate() {
-                let response = item_button(ui, item).on_hover_text(item_description(item, english));
-                item_menu(response, item, link, english);
+                let identity = ui.make_persistent_id((
+                    id,
+                    link.connection_generation(),
+                    container,
+                    item.handle,
+                ));
+                ui.scope_builder(egui::UiBuilder::new().id(identity), |ui| {
+                    let response =
+                        item_button(ui, item).on_hover_text(item_description(item, english));
+                    if let Some(container) = container {
+                        item_menu(response, container, item, link, english, notice);
+                    }
+                });
                 if index % 4 == 3 {
                     ui.end_row();
                 }
@@ -1765,24 +1810,85 @@ fn item_description(item: &ItemEntry, english: bool) -> String {
     }
 }
 
-fn item_menu(response: egui::Response, item: &ItemEntry, link: &PlayLink, english: bool) {
+fn item_menu_state_id() -> egui::Id {
+    egui::Id::new("game-item-context-source")
+}
+
+fn close_stale_item_menu(
+    ctx: &egui::Context,
+    container: Option<&oteryn_session::OpenContainer>,
+    enabled: bool,
+    generation: Option<u64>,
+) {
+    let key = item_menu_state_id();
+    if let Some((connection, source, item, popup)) = ctx.data(|data| {
+        data.get_temp::<(
+            Option<u64>,
+            oteryn_session::ItemHandle,
+            oteryn_session::ItemHandle,
+            egui::Id,
+        )>(key)
+    }) && (!enabled
+        || connection != generation
+        || !ctx.input(|input| input.focused)
+        || !container.is_some_and(|current| {
+            current.container_handle == Some(source)
+                && current.entries.iter().any(|entry| entry.handle == item)
+        }))
+    {
+        egui::Popup::close_id(ctx, popup);
+        ctx.data_mut(|data| {
+            data.remove::<(
+                Option<u64>,
+                oteryn_session::ItemHandle,
+                oteryn_session::ItemHandle,
+                egui::Id,
+            )>(key)
+        });
+    }
+}
+
+fn item_menu(
+    response: egui::Response,
+    container: oteryn_session::ItemHandle,
+    item: &ItemEntry,
+    link: &PlayLink,
+    english: bool,
+    notice: &mut Option<String>,
+) {
+    let popup = egui::Popup::default_response_id(&response);
     if !response.enabled() {
-        egui::Popup::close_id(&response.ctx, egui::Popup::default_response_id(&response));
+        egui::Popup::close_id(&response.ctx, popup);
         return;
     }
-    response.context_menu(|ui| {
-        if ui
-            .button(if english {
-                "Move to backpack"
-            } else {
-                "Przenieś do plecaka"
-            })
-            .clicked()
-        {
-            let _ = link.send_action(ActionBarCommand::MoveToBackpack(item.handle));
-            ui.close();
-        }
-    });
+    egui::Popup::context_menu(&response)
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+        .show(|ui| {
+            if ui
+                .button(if english {
+                    "Move to backpack"
+                } else {
+                    "Przenieś do plecaka"
+                })
+                .clicked()
+            {
+                if link.send_action(ActionBarCommand::MoveToBackpack(item.handle)) {
+                    *notice = None;
+                    ui.close();
+                } else {
+                    *notice = Some(action_busy(english).into());
+                    ui.small(action_busy(english));
+                }
+            }
+        });
+    if egui::Popup::is_id_open(&response.ctx, popup) {
+        response.ctx.data_mut(|data| {
+            data.insert_temp(
+                item_menu_state_id(),
+                (link.connection_generation(), container, item.handle, popup),
+            )
+        });
+    }
 }
 
 fn actor_kind(kind: EntityKind, english: bool) -> &'static str {
@@ -1873,6 +1979,380 @@ mod tests {
         item_button, panel_hotkey_destination, settings_with_panel_shortcuts, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    type MenuState = std::sync::Arc<std::sync::Mutex<oteryn_client::play::GameState>>;
+    type MenuActions =
+        std::sync::Arc<std::sync::Mutex<Vec<oteryn_client::action_bar::ActionBarCommand>>>;
+
+    fn menu_lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+        mutex
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    struct ItemMenuFixture {
+        link: oteryn_client::play::PlayLink,
+        state: MenuState,
+        english: bool,
+        enabled: bool,
+        notice: Option<String>,
+    }
+
+    impl ItemMenuFixture {
+        fn show(&mut self, ctx: &egui::Context) {
+            let state = menu_lock(&self.state).clone();
+            super::close_stale_item_menu(
+                ctx,
+                state.container.as_ref(),
+                self.enabled,
+                self.link.connection_generation(),
+            );
+            egui::Window::new("Item command fixture")
+                .fixed_pos(egui::Pos2::ZERO)
+                .show(ctx, |ui| {
+                    if !self.enabled {
+                        ui.disable();
+                    }
+                    super::equipment(ui, state.inventory.as_ref(), None, self.english);
+                    if let Some(inventory) = &state.inventory {
+                        super::item_grid(
+                            ui,
+                            "main-backpack",
+                            &inventory.entries,
+                            None,
+                            &self.link,
+                            self.english,
+                            &mut self.notice,
+                        );
+                    }
+                    if let Some(container) = &state.container {
+                        super::item_grid(
+                            ui,
+                            "open-container",
+                            &container.entries,
+                            container.container_handle,
+                            &self.link,
+                            self.english,
+                            &mut self.notice,
+                        );
+                    }
+                    if let Some(notice) = &self.notice {
+                        ui.small(notice);
+                    }
+                });
+        }
+    }
+
+    struct MenuStepper {
+        state: MenuState,
+        actions: MenuActions,
+        generation: u64,
+    }
+
+    impl oteryn_client::play::Stepper for MenuStepper {
+        fn connection_generation(&self) -> Option<u64> {
+            Some(self.generation)
+        }
+        fn game_state(&self) -> oteryn_client::play::GameState {
+            menu_lock(&self.state).clone()
+        }
+        async fn action(
+            &mut self,
+            command: &oteryn_client::action_bar::ActionBarCommand,
+        ) -> Result<Option<oteryn_client::action_bar::ActionBarOutcome>, oteryn_session::SessionError>
+        {
+            menu_lock(&self.actions).push(command.clone());
+            Ok(Some(
+                oteryn_client::action_bar::ActionBarOutcome::Unavailable,
+            ))
+        }
+        async fn step(
+            &mut self,
+            _: oteryn_session::StepDirection,
+        ) -> Result<oteryn_session::StepOutcome, oteryn_session::SessionError> {
+            Err(oteryn_session::SessionError::SessionUnusable)
+        }
+        async fn serve(
+            &mut self,
+            _: std::time::Duration,
+        ) -> Result<(), oteryn_session::SessionError> {
+            std::future::pending().await
+        }
+        async fn serve_or_wake(
+            &mut self,
+            _: std::time::Duration,
+            wake: &tokio::sync::Notify,
+        ) -> Result<(), oteryn_session::SessionError> {
+            wake.notified().await;
+            Ok(())
+        }
+        fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+            Vec::new()
+        }
+        async fn combat(
+            &mut self,
+            _: oteryn_client::combat_input::CombatCommand,
+        ) -> Result<oteryn_client::combat_input::CombatReport, oteryn_session::SessionError>
+        {
+            Err(oteryn_session::SessionError::SessionUnusable)
+        }
+    }
+
+    fn menu_item(handle: u64, definition: u32) -> Result<oteryn_session::ItemEntry, &'static str> {
+        Ok(oteryn_session::ItemEntry {
+            handle: std::num::NonZeroU64::new(handle).ok_or("fixture handle")?,
+            item_definition_ref: std::num::NonZeroU32::new(definition)
+                .ok_or("fixture definition")?,
+            count: std::num::NonZeroU32::new(if handle == 300 { 3 } else { 1 })
+                .ok_or("fixture count")?,
+            sub_type: 0,
+        })
+    }
+
+    fn menu_fixture(
+        english: bool,
+        generation: u64,
+    ) -> Result<
+        (
+            ItemMenuFixture,
+            impl std::future::Future<Output = ()>,
+            MenuActions,
+        ),
+        &'static str,
+    > {
+        let state = std::sync::Arc::new(std::sync::Mutex::new(oteryn_client::play::GameState {
+            inventory: Some(oteryn_session::CharacterInventory {
+                main_backpack: Some(menu_item(300, 300)?),
+                entries: vec![menu_item(200, 200)?],
+                equipment: Vec::new(),
+            }),
+            container: Some(oteryn_session::OpenContainer {
+                container_handle: std::num::NonZeroU64::new(1000),
+                entries: vec![menu_item(101, 101)?, menu_item(102, 102)?],
+            }),
+            ..Default::default()
+        }));
+        let actions = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let (link, commands, outbox) = oteryn_client::play::play_channel();
+        let task = oteryn_client::play::run_session(
+            MenuStepper {
+                state: state.clone(),
+                actions: actions.clone(),
+                generation,
+            },
+            commands,
+            outbox,
+        );
+        Ok((
+            ItemMenuFixture {
+                link,
+                state,
+                english,
+                enabled: true,
+                notice: None,
+            },
+            task,
+            actions,
+        ))
+    }
+
+    fn poll_menu_task(task: std::pin::Pin<&mut impl std::future::Future<Output = ()>>) {
+        assert!(
+            task.poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
+                .is_pending()
+        );
+    }
+
+    fn open_item_menu(
+        ctx: &egui::Context,
+        fixture: &mut ItemMenuFixture,
+        label: &str,
+    ) -> Result<egui::FullOutput, &'static str> {
+        let size = egui::vec2(900.0, 620.0);
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(ctx, size, vec![], |ctx| fixture.show(ctx)).1;
+        }
+        let pos = button_position(&output, size, label).ok_or("item geometry")?;
+        for pressed in [true, false] {
+            frame(
+                ctx,
+                size,
+                vec![
+                    egui::Event::PointerMoved(pos),
+                    egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Secondary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+                |ctx| fixture.show(ctx),
+            );
+        }
+        Ok(frame(ctx, size, vec![], |ctx| fixture.show(ctx)).1)
+    }
+
+    #[test]
+    fn item_menu_routes_only_received_container_sources_and_reports_refusals()
+    -> Result<(), &'static str> {
+        use oteryn_client::action_bar::ActionBarCommand;
+        let size = egui::vec2(900.0, 620.0);
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let (mut fixture, task, actions) = menu_fixture(english, 42)?;
+            let mut task = Box::pin(task);
+            poll_menu_task(task.as_mut());
+            let label = if english {
+                "Move to backpack"
+            } else {
+                "Przenieś do plecaka"
+            };
+            let original = fixture.link.game_state();
+            for item in ["#200", "3"] {
+                // The paper doll's count is not a move source either.
+                let output = open_item_menu(&ctx, &mut fixture, item)?;
+                assert!(button_position(&output, size, label).is_none(), "{item}");
+                poll_menu_task(task.as_mut());
+                assert!(menu_lock(&actions).is_empty());
+            }
+            let output = open_item_menu(&ctx, &mut fixture, "#101")?;
+            let pos = button_position(&output, size, label).ok_or("move menu")?;
+            click(&ctx, size, pos, |ctx| fixture.show(ctx));
+            assert!(fixture.notice.is_none());
+            assert_eq!(fixture.link.game_state(), original); // No optimistic count mutation.
+            poll_menu_task(task.as_mut());
+            assert_eq!(
+                *menu_lock(&actions),
+                [ActionBarCommand::MoveToBackpack(
+                    menu_item(101, 101)?.handle
+                )]
+            );
+            assert_eq!(fixture.link.game_state(), original);
+            let pending = ActionBarCommand::OpenItem(menu_item(999, 999)?.handle);
+            assert!(fixture.link.send_action(pending.clone()));
+            let output = open_item_menu(&ctx, &mut fixture, "#101")?;
+            let pos = button_position(&output, size, label).ok_or("busy menu")?;
+            click(&ctx, size, pos, |ctx| fixture.show(ctx));
+            assert_eq!(fixture.notice.as_deref(), Some(super::action_busy(english)));
+            let output = frame(&ctx, size, vec![], |ctx| fixture.show(ctx)).1;
+            assert!(button_position(&output, size, super::action_busy(english)).is_some());
+            assert!(button_position(&output, size, label).is_some()); // Refusal stays retryable.
+            poll_menu_task(task.as_mut());
+            assert_eq!(menu_lock(&actions).len(), 2);
+            assert_eq!(menu_lock(&actions)[1], pending);
+            click(&ctx, size, pos, |ctx| fixture.show(ctx));
+            poll_menu_task(task.as_mut());
+            assert_eq!(menu_lock(&actions).len(), 3);
+            drop(task); // Real receiver closure, not a synthetic send closure.
+            let output = open_item_menu(&ctx, &mut fixture, "#101")?;
+            let pos = button_position(&output, size, label).ok_or("ended menu")?;
+            click(&ctx, size, pos, |ctx| fixture.show(ctx));
+            assert_eq!(fixture.notice.as_deref(), Some(super::action_busy(english)));
+            assert_eq!(menu_lock(&actions).len(), 3);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn item_menu_cannot_retarget_replaced_removed_or_unavailable_sources()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(900.0, 620.0);
+        for english in [false, true] {
+            for change in [
+                "replacement",
+                "removal",
+                "closed",
+                "container",
+                "modal",
+                "focus",
+                "connection",
+            ] {
+                let ctx = egui::Context::default();
+                let (mut fixture, task, actions) = menu_fixture(english, 42)?;
+                let mut task = Box::pin(task);
+                poll_menu_task(task.as_mut());
+                let label = if english {
+                    "Move to backpack"
+                } else {
+                    "Przenieś do plecaka"
+                };
+                let output = open_item_menu(&ctx, &mut fixture, "#101")?;
+                let old = button_position(&output, size, label).ok_or("stale menu")?;
+                {
+                    let mut state = menu_lock(&fixture.state);
+                    let container = state.container.as_mut().ok_or("fixture container")?;
+                    match change {
+                        "replacement" => container.entries[0] = menu_item(103, 103)?,
+                        "removal" => {
+                            container.entries.remove(0);
+                        }
+                        "closed" => state.container = None,
+                        "container" => container.container_handle = std::num::NonZeroU64::new(1001),
+                        "modal" => fixture.enabled = false,
+                        _ => {}
+                    }
+                }
+                let mut new_task = None;
+                if change == "connection" {
+                    let (next, next_task, next_actions) = menu_fixture(english, 43)?;
+                    fixture = next;
+                    let mut next_task = Box::pin(next_task);
+                    poll_menu_task(next_task.as_mut());
+                    new_task = Some((next_task, next_actions));
+                }
+                let output = if change == "focus" {
+                    ctx.begin_pass(egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                        focused: false,
+                        ..Default::default()
+                    });
+                    fixture.show(&ctx);
+                    ctx.end_pass()
+                } else {
+                    frame(&ctx, size, vec![], |ctx| fixture.show(ctx)).1
+                };
+                assert!(button_position(&output, size, label).is_none(), "{change}");
+                click(&ctx, size, old, |ctx| fixture.show(ctx));
+                if change != "connection" {
+                    poll_menu_task(task.as_mut());
+                }
+                if let Some((next_task, next_actions)) = &mut new_task {
+                    poll_menu_task(next_task.as_mut());
+                    assert!(menu_lock(next_actions).is_empty(), "new connection");
+                }
+                assert!(menu_lock(&actions).is_empty(), "{change}");
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn item_menu_keeps_the_original_handle_after_received_reordering() -> Result<(), &'static str> {
+        let size = egui::vec2(900.0, 620.0);
+        let ctx = egui::Context::default();
+        let (mut fixture, task, actions) = menu_fixture(true, 42)?;
+        let mut task = Box::pin(task);
+        poll_menu_task(task.as_mut());
+        open_item_menu(&ctx, &mut fixture, "#101")?;
+        menu_lock(&fixture.state)
+            .container
+            .as_mut()
+            .ok_or("fixture container")?
+            .entries
+            .reverse();
+        let output = frame(&ctx, size, vec![], |ctx| fixture.show(ctx)).1;
+        let pos = button_position(&output, size, "Move to backpack").ok_or("reordered menu")?;
+        click(&ctx, size, pos, |ctx| fixture.show(ctx));
+        poll_menu_task(task.as_mut());
+        assert_eq!(
+            *menu_lock(&actions),
+            [oteryn_client::action_bar::ActionBarCommand::MoveToBackpack(
+                menu_item(101, 101)?.handle
+            )]
+        );
+        Ok(())
+    }
 
     #[test]
     fn routed_settings_transactions_reach_consumers_and_preserve_failed_saves()

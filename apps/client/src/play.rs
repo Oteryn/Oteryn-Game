@@ -1040,9 +1040,18 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
+    /// Fences transient UI intent to the admitted connection, not reused item handles.
+    #[must_use]
+    pub fn connection_generation(&self) -> Option<u64> {
+        lock(&self.mailbox).connection_generation
+    }
+
     /// One pending action shared by mouse activation and physical shortcuts.
     pub fn send_action(&self, command: crate::action_bar::ActionBarCommand) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
+        }
         if mailbox.ended.is_some() || mailbox.action_pending.is_some() {
             return false;
         }

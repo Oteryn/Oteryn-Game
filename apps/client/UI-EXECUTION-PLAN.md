@@ -86,6 +86,9 @@ Cover PL/EN, dependencies/retained values, Apply/Cancel/reload/failure and focus
 across the supported page families. Batch discovered defects once.
 Current B1 packet/evidence:
 `docs/agents/tasks/active/OTV2-20261013-client-settings-transactions.md`.
+Before B2, repair only the already active command9 context path's source/identity
+and refusal defects; this is stability work, not activation of B3 drag/presets.
+Packet: `docs/agents/tasks/active/OTV2-20261013-client-item-menu-safety.md`.
 
 Native picker/clipboard/slider/trackpad/cursor checks need private fixtures and
 an agreed safe isolation of preferences/output. Do not inspect or overwrite the
