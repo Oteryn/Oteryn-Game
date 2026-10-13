@@ -51,6 +51,7 @@ Original/minimap formats, native picker/DX12 and missing server inputs remain op
 
 Supported-profile batch: `OTV2-20261013-client-hotkey-authoring.md` retains
 the grouped behavior fixes and exact qualification boundary.
+Plan: `apps/client/UI-EXECUTION-PLAN.md`.
 
 ## Native login launcher — 2026-10-12
 
