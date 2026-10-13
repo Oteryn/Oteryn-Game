@@ -20,7 +20,7 @@
   dependencies (the S7 reader, ATTACK-1b, COND-1, PARTY-1, SKILLS-0, ITEM-SEM-2b, WORLDINT-ADMIT-1).
   SPELL-RT-PREM-1 still waits for PREMIUM-1.
 - **Amendment rule (one rule, both packets).** An amendment is approved when its source decision
-  is accepted, and its wording is then final: the follow-up changes the source's status line only,
+  is accepted, and its wording is then final: the follow-up changes the source's status line (and, for SPELL-NPC-MAP-0, the two M3 references of §3 step 2),
   and the amended documents keep their "pending on acceptance" wording (ACCEPT-CHAT-ATTACK-DEATH-0
   §1). It becomes part of the target's effective text when the target is ACCEPTED: at once if the
   target already is, otherwise when the target is accepted (ACCEPT-SOCIAL-MAP-0 §1: "takes effect
@@ -35,7 +35,7 @@
   does not count M3 as a ruling; the numbering gap is open point 5 of §2. M1, M2 and M5-M7, M9
   apply accepted decisions and add no contract; M4 and M8 are the only contract rulings, and M4
   stays `PARITY_PENDING` under S24.
-- The local spell and NPC packets (M9) may merge as data PRs; each stays held and activates nothing.
+- Every local batch that §9 of the source gates (the spell batches r59-r62 and any of r28-r58 not on main, the NPC combined patch, the travel data and the item candidates) may merge as a data PR; each stays held and activates nothing.
 
 ## 2. Open points the reviewers must settle before the status flips
 
@@ -53,12 +53,12 @@
    confirm the rulings only cite shapes those documents accepted into S27 or the merged code, and
    that neither M1 nor M2 becomes effective ahead of its source.
 
-5. **M3 numbering.** The source cites M1-M3 but has no M3. The reviewers confirm no ruling is missing and the source header and decision test are corrected in the follow-up status PR (or by the owner of the decision), not here.
+5. **M3 numbering.** The source cites M1-M3 but has no M3. The reviewers confirm no ruling is missing and the source header and decision test are corrected in the follow-up PR before or with the status flip (§3 step 2), not here.
 
 ## 3. Procedure after the owner confirms
 
 1. The owner confirms the acceptance directly to the control plane (not through a worker report).
-2. A follow-up PR changes only the Status line of the decision to ACCEPTED, pointing here, and
+2. A follow-up PR changes the Status line of the decision to ACCEPTED, pointing here, and corrects the two references to the nonexistent M3 (the header line "Rulings M1-M3 and M9" becomes "M1, M2 and M9"; the decision test line "M1-M3 and M5-M7, M9" becomes "M1, M2, M5-M7 and M9"), with no other edit to the decision, and
    replaces this packet's Status with the conditional wording used by ACCEPT-CHAR-POSITION-0.
 3. Exact-head independent review (spell and content), CI and protected integration, then the
    control plane lifts the MAGIC-CAST-1 gate line for the children of §1.
