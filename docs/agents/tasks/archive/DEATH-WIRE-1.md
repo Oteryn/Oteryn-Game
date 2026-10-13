@@ -4,21 +4,22 @@
 task_id: DEATH-WIRE-1
 title: "DEATH-WIRE-1: first player death defects closed; DEATH-3 waived (D1022)"
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death-wire-1-20261013
 issue: 1622
 governing_issue: 1622
-pr: null
+pr: 2028
 base_sha: 0db5c53b
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+merge_commit: "squash merge of #2028"
 created_at: 2026-10-13
 updated_at: 2026-10-13
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md
-  - docs/agents/tasks/active/DEATH-WIRE-1.md
+  - docs/agents/tasks/archive/DEATH-WIRE-1.md
 public_contracts: []
 external_repositories: []
 ```
