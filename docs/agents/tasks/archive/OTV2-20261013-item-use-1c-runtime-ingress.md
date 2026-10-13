@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/use-item-1-20261013
 issue: 1622
-pr: null
+pr: 2082
 base_sha: ab7d51ae
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 final_head_sha: null
