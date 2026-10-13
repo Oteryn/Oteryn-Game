@@ -202,6 +202,15 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- 0082: the BURN line of an NPC trade of this same physical transaction.
+    IF EXISTS(SELECT 1 FROM game_npc_trade_lines l
+          JOIN game_npc_trades t ON t.transaction_id = l.transaction_id
+                                AND t.created_xact_id = pg_current_xact_id()
+         WHERE l.transaction_id = NEW.last_transaction_id
+           AND l.item_instance_id = NEW.item_instance_id
+           AND l.line_kind IN (1, 3)
+           AND l.created_xact_id = pg_current_xact_id()) THEN RETURN NULL; END IF;
+
     -- 0083: the used stack (and the flask stack it grows) of an item-use record of this same
     -- physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u
@@ -281,6 +290,21 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_container_entry_removal_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- 0082: the whole BURN of an NPC trade line of this same physical transaction (NPC-0 §5.5).
+    IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_npc_trade_lines l
+          JOIN game_npc_trades t ON t.transaction_id = l.transaction_id
+          JOIN game_item_instances i ON i.item_instance_id = l.item_instance_id
+         WHERE l.item_instance_id = OLD.item_instance_id
+           AND l.line_kind IN (1, 3)
+           AND l.quantity_after = 0
+           AND l.placement_ordinal = OLD.placement_ordinal
+           AND t.character_id = OLD.character_id
+           AND t.backpack_item_instance_id = OLD.parent_item_instance_id
+           AND i.last_transaction_id = l.transaction_id
+           AND i.lifecycle = 2
+           AND l.created_xact_id = pg_current_xact_id()
+           AND t.created_xact_id = pg_current_xact_id()) THEN RETURN NULL; END IF;
+
     -- 0083: the entry of a used stack spent to zero, by the item-use record of this same
     -- physical transaction.
     IF TG_OP = 'DELETE' AND EXISTS (
@@ -369,6 +393,26 @@ CREATE OR REPLACE FUNCTION game_item_placement_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
     IF TG_TABLE_NAME='game_item_container_entries' THEN
+    -- 0082: the new entry of an NPC trade MINT line of this same physical transaction.
+    IF EXISTS(
+       SELECT 1 FROM game_npc_trade_lines l
+         JOIN game_npc_trades t ON t.transaction_id = l.transaction_id
+         JOIN game_item_instances i ON i.item_instance_id = l.item_instance_id
+        WHERE l.transaction_id = NEW.placed_transaction_id
+          AND l.item_instance_id = NEW.item_instance_id
+          AND l.line_kind IN (2, 4)
+          AND l.placement_ordinal = NEW.placement_ordinal
+          AND t.character_id = NEW.character_id
+          AND t.backpack_item_instance_id = NEW.parent_item_instance_id
+          AND i.lifecycle = 1
+          AND l.created_xact_id = pg_current_xact_id()
+          AND t.created_xact_id = pg_current_xact_id()) THEN
+       PERFORM 1 FROM game_item_container_slots WHERE item_instance_id=NEW.parent_item_instance_id FOR UPDATE;
+       IF (SELECT count(*) FROM game_item_container_entries e WHERE e.parent_item_instance_id=NEW.parent_item_instance_id)>20 THEN
+           RAISE EXCEPTION 'container entry ceiling exceeded' USING ERRCODE='23514';
+       END IF;
+       RETURN NULL;
+    END IF;
     -- 0083: the fresh flask item of an item-use record of this same physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u JOIN game_item_instances i ON i.item_instance_id = NEW.item_instance_id
        WHERE u.shape = 4 AND u.flask_item_instance_id = NEW.item_instance_id
@@ -479,6 +523,16 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_mint_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- 0082: an NPC trade MINT line of this same physical transaction, placed in its new entry.
+    IF EXISTS(SELECT 1 FROM game_npc_trade_lines l
+         JOIN game_npc_trades t ON t.transaction_id = l.transaction_id
+         JOIN game_item_container_entries e ON e.item_instance_id = l.item_instance_id
+        WHERE l.item_instance_id = NEW.item_instance_id
+          AND l.transaction_id = NEW.minted_transaction_id
+          AND l.line_kind IN (2, 4)
+          AND e.placed_transaction_id = l.transaction_id
+          AND l.created_xact_id = pg_current_xact_id()
+          AND t.created_xact_id = pg_current_xact_id()) THEN RETURN NULL; END IF;
 
     -- 0083: the fresh flask item of an item-use record of this same physical transaction.
     IF EXISTS (SELECT 1 FROM game_item_use_records u
