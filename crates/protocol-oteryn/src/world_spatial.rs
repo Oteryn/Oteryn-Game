@@ -13,12 +13,21 @@ pub const STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY: u32 = 1;
 pub const DELTA_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 /// Capability 13 `PACED_MOVEMENT_V1` (SPEED-1, CONDITIONS-0 §4.3): extends the command type 1
-/// result with [`StepDisposition::TooEarly`] and owns no command type or domain.
+/// result with [`StepDisposition::TooEarly`] and the `step_wait_ms` pacing receipt
+/// (STEP-PACE-WIRE-0), and owns no command type or domain.
 pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
 
 /// First-child semantic bounds (#642 packet 5853255180).
 pub const MAX_STEP_INTENT_BYTES: usize = 4;
+/// The command type 1 result bound of a session without capability 13.
 pub const MAX_STEP_RESULT_BYTES: usize = 4;
+/// The command type 1 result bound under capability 13 (the registry `max_result_payload_bytes`):
+/// the disposition (2 B) and `step_wait_ms` (tag 1 B, varint at most 3 B), with slack.
+pub const MAX_PACED_STEP_RESULT_BYTES: usize = 8;
+/// The largest `step_wait_ms`: the step-speed table maximum (speed 10, ground speed 1000).
+pub const MAX_STEP_WAIT_MS: u32 = 111_150;
+/// A `MOVED` step duration is a whole number of server beats.
+pub const STEP_WAIT_BEAT_MS: u32 = 50;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
 pub(crate) const CONTENT_GENERATION_BYTES: usize = 32;
 
@@ -43,6 +52,16 @@ pub enum StepDisposition {
     Rejected = 3,
     /// A second early step while one waits in the pacing buffer; only under capability 13.
     TooEarly = 4,
+}
+
+/// The command type 1 result with its capability 13 pacing receipt (STEP-PACE-WIRE-0).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StepResult {
+    pub disposition: StepDisposition,
+    /// Field 2; 0 when absent (no receipt). On `Moved` the committed step duration, a non-zero
+    /// multiple of [`STEP_WAIT_BEAT_MS`]; on `TooEarly` the milliseconds left until the server
+    /// deadline; never on `Blocked` or `Rejected`. At most [`MAX_STEP_WAIT_MS`].
+    pub step_wait_ms: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,7 +129,7 @@ pub(crate) fn read_bytes<'a>(
     Ok(value)
 }
 
-/// Reads exactly one singular enum field 1 (the only field of the step intent and result).
+/// Reads exactly one singular enum field 1 (the only field of the step intent).
 fn read_single_enum(input: &[u8], maximum: usize) -> Result<u64, WorldSpatialError> {
     if input.len() > maximum {
         return Err(WorldSpatialError::LimitExceeded);
@@ -144,6 +163,7 @@ pub fn encode_step_intent(direction: StepDirection) -> Vec<u8> {
     output
 }
 
+/// The command type 1 result without a pacing receipt (field 2 absent).
 pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
     let mut output = Vec::with_capacity(2);
     push_tag(&mut output, 1, 0);
@@ -151,24 +171,105 @@ pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
     output
 }
 
-/// The command type 1 result of a session without capability 13: `TOO_EARLY` fails closed.
+/// Whether `result` may be sent to a session; `paced` is whether it selected capability 13.
+fn check_step_result(result: StepResult, paced: bool) -> Result<(), WorldSpatialError> {
+    let wait = result.step_wait_ms;
+    let valid = match result.disposition {
+        StepDisposition::Blocked | StepDisposition::Rejected => wait == 0,
+        StepDisposition::Moved => {
+            wait == 0
+                || (paced && wait <= MAX_STEP_WAIT_MS && wait.is_multiple_of(STEP_WAIT_BEAT_MS))
+        }
+        StepDisposition::TooEarly => paced && wait <= MAX_STEP_WAIT_MS,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(WorldSpatialError::Malformed)
+    }
+}
+
+/// The command type 1 result with its pacing receipt (STEP-PACE-WIRE-0). `paced` is whether the
+/// session selected capability 13 `PACED_MOVEMENT_V1`; a receipt or `TOO_EARLY` without it, a
+/// receipt on `BLOCKED` or `REJECTED`, a `MOVED` duration off the 50 ms beat and any value above
+/// [`MAX_STEP_WAIT_MS`] are refused. A zero `step_wait_ms` is not written.
+pub fn encode_step_result_paced(
+    result: StepResult,
+    paced: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    check_step_result(result, paced)?;
+    let mut output = encode_step_result(result.disposition);
+    if result.step_wait_ms != 0 {
+        push_tag(&mut output, 2, 0);
+        push_varint(&mut output, u64::from(result.step_wait_ms));
+    }
+    Ok(output)
+}
+
+/// The command type 1 result of a session without capability 13: `TOO_EARLY` and field 2 fail
+/// closed.
 pub fn decode_step_result(payload: &[u8]) -> Result<StepDisposition, WorldSpatialError> {
     decode_step_result_paced(payload, false)
 }
 
-/// The command type 1 result; `paced` is whether the session selected capability 13
-/// `PACED_MOVEMENT_V1`, the only case in which `TOO_EARLY` (4) is admitted.
+/// The command type 1 result's disposition; `paced` is whether the session selected capability
+/// 13 `PACED_MOVEMENT_V1`, the only case in which `TOO_EARLY` (4) and `step_wait_ms` are
+/// admitted. See [`decode_step_result_receipt`] for the receipt itself.
 pub fn decode_step_result_paced(
     payload: &[u8],
     paced: bool,
 ) -> Result<StepDisposition, WorldSpatialError> {
-    match read_single_enum(payload, MAX_STEP_RESULT_BYTES)? {
-        1 => Ok(StepDisposition::Moved),
-        2 => Ok(StepDisposition::Blocked),
-        3 => Ok(StepDisposition::Rejected),
-        4 if paced => Ok(StepDisposition::TooEarly),
-        _ => Err(WorldSpatialError::Malformed),
+    decode_step_result_receipt(payload, paced).map(|result| result.disposition)
+}
+
+/// The command type 1 result with its pacing receipt. Without capability 13 (`paced` false) the
+/// bound is [`MAX_STEP_RESULT_BYTES`] and field 2 fails closed; with it the bound is
+/// [`MAX_PACED_STEP_RESULT_BYTES`]. An explicit zero, a repeated field, a receipt on `BLOCKED` or
+/// `REJECTED`, a `MOVED` duration off the 50 ms beat and a value above [`MAX_STEP_WAIT_MS`] fail
+/// closed.
+pub fn decode_step_result_receipt(
+    payload: &[u8],
+    paced: bool,
+) -> Result<StepResult, WorldSpatialError> {
+    let maximum = if paced {
+        MAX_PACED_STEP_RESULT_BYTES
+    } else {
+        MAX_STEP_RESULT_BYTES
+    };
+    if payload.len() > maximum {
+        return Err(WorldSpatialError::LimitExceeded);
     }
+    let mut cursor = 0;
+    let (mut disposition, mut wait) = (None, None);
+    while cursor < payload.len() {
+        let slot = match read_varint(payload, &mut cursor)? {
+            0x08 => &mut disposition,
+            0x10 if paced => &mut wait,
+            _ => return Err(WorldSpatialError::Malformed),
+        };
+        if slot.is_some() {
+            return Err(WorldSpatialError::Malformed);
+        }
+        *slot = Some(read_varint(payload, &mut cursor)?);
+    }
+    let disposition = match disposition.ok_or(WorldSpatialError::Malformed)? {
+        1 => StepDisposition::Moved,
+        2 => StepDisposition::Blocked,
+        3 => StepDisposition::Rejected,
+        4 if paced => StepDisposition::TooEarly,
+        _ => return Err(WorldSpatialError::Malformed),
+    };
+    let step_wait_ms = match wait {
+        None => 0,
+        Some(0) => return Err(WorldSpatialError::Malformed),
+        Some(value) => u32::try_from(value).map_err(|_| WorldSpatialError::Malformed)?,
+    };
+    let result = StepResult {
+        disposition,
+        step_wait_ms,
+    };
+    check_step_result(result, paced)?;
+    Ok(result)
 }
 
 pub(crate) fn encode_position(position: &ActorPosition) -> Vec<u8> {
@@ -351,6 +452,143 @@ mod tests {
         }
     }
 
+    fn paced(disposition: StepDisposition, step_wait_ms: u32) -> StepResult {
+        StepResult {
+            disposition,
+            step_wait_ms,
+        }
+    }
+
+    /// A raw result: disposition `disposition`, then field 2 holding `wait` as written.
+    fn raw_result(disposition: u64, wait: u64) -> Vec<u8> {
+        let mut bytes = vec![0x08];
+        push_varint(&mut bytes, disposition);
+        push_tag(&mut bytes, 2, 0);
+        push_varint(&mut bytes, wait);
+        bytes
+    }
+
+    #[test]
+    fn step_wait_ms_round_trips_under_capability_13() {
+        for result in [
+            paced(StepDisposition::Moved, 0),
+            paced(StepDisposition::Moved, STEP_WAIT_BEAT_MS),
+            paced(StepDisposition::Moved, 550),
+            paced(StepDisposition::Moved, MAX_STEP_WAIT_MS),
+            paced(StepDisposition::TooEarly, 0),
+            paced(StepDisposition::TooEarly, 1),
+            paced(StepDisposition::TooEarly, 499),
+            paced(StepDisposition::TooEarly, MAX_STEP_WAIT_MS),
+            paced(StepDisposition::Blocked, 0),
+            paced(StepDisposition::Rejected, 0),
+        ] {
+            let bytes = encode_step_result_paced(result, true).expect("valid receipt");
+            assert!(bytes.len() <= MAX_PACED_STEP_RESULT_BYTES, "{result:?}");
+            assert_eq!(decode_step_result_receipt(&bytes, true), Ok(result));
+            // The disposition-only decoder a capability 13 session already uses admits it.
+            assert_eq!(
+                decode_step_result_paced(&bytes, true),
+                Ok(result.disposition)
+            );
+        }
+        // A zero receipt is not written: the result is byte-identical to the receipt-less one.
+        assert_eq!(
+            encode_step_result_paced(paced(StepDisposition::Moved, 0), true),
+            Ok(encode_step_result(StepDisposition::Moved))
+        );
+        // The largest receipt is 6 bytes (tag, disposition, tag, 3-byte varint).
+        assert_eq!(
+            encode_step_result_paced(paced(StepDisposition::Moved, MAX_STEP_WAIT_MS), true),
+            Ok(vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06])
+        );
+        // Field order is free on the wire.
+        assert_eq!(
+            decode_step_result_receipt(&[0x10, 0x32, 0x08, 0x01], true),
+            Ok(paced(StepDisposition::Moved, 50))
+        );
+        // Receipt-less results of a session without capability 13 decode unchanged.
+        for disposition in [
+            StepDisposition::Moved,
+            StepDisposition::Blocked,
+            StepDisposition::Rejected,
+        ] {
+            let bytes = encode_step_result_paced(paced(disposition, 0), false).expect("plain");
+            assert!(bytes.len() <= MAX_STEP_RESULT_BYTES);
+            assert_eq!(
+                decode_step_result_receipt(&bytes, false),
+                Ok(paced(disposition, 0))
+            );
+        }
+    }
+
+    #[test]
+    fn step_wait_ms_refuses_adversarial_results() {
+        let over = u64::from(MAX_STEP_WAIT_MS);
+        for (bytes, paced_session) in [
+            (raw_result(1, 50), false),           // receipt without capability 13
+            (raw_result(4, 1), false),            // TOO_EARLY without capability 13
+            (raw_result(2, 50), true),            // receipt on BLOCKED
+            (raw_result(3, 50), true),            // receipt on REJECTED
+            (raw_result(0, 50), true),            // receipt on UNSPECIFIED
+            (raw_result(5, 50), true),            // unknown disposition
+            (raw_result(1, 0), true),             // explicit zero on MOVED
+            (raw_result(4, 0), true),             // explicit zero on TOO_EARLY
+            (raw_result(1, 75), true),            // MOVED off the 50 ms beat
+            (raw_result(1, over + 50), true),     // MOVED above the table maximum
+            (raw_result(4, over + 1), true),      // TOO_EARLY above the table maximum
+            (raw_result(1, 1 << 32), true),       // beyond uint32
+            (vec![0x10, 0x32], true),             // missing disposition
+            (vec![0x08, 0x01, 0x10], true),       // truncated tag only
+            (vec![0x08, 0x01, 0x10, 0xb2], true), // truncated varint
+            (vec![0x08, 0x01, 0x12, 0x01, 0x32], true), // field 2 as bytes
+            (vec![0x08, 0x01, 0x18, 0x01], true), // unknown field 3
+            (vec![0x08, 0x01, 0x10, 0x32, 0x10, 0x32], true), // repeated field 2
+            (vec![0x08, 0x01, 0x08, 0x01, 0x10, 0x32], true), // repeated field 1
+        ] {
+            assert!(bytes.len() <= MAX_PACED_STEP_RESULT_BYTES, "{bytes:?}");
+            assert_eq!(
+                decode_step_result_receipt(&bytes, paced_session),
+                Err(WorldSpatialError::Malformed),
+                "{bytes:?}"
+            );
+            assert_eq!(
+                decode_step_result_paced(&bytes, paced_session),
+                Err(WorldSpatialError::Malformed),
+                "{bytes:?}"
+            );
+        }
+        // Over-bound: 5 bytes without capability 13, 9 bytes with it.
+        assert_eq!(
+            decode_step_result(&raw_result(1, 128)),
+            Err(WorldSpatialError::LimitExceeded)
+        );
+        let mut long = raw_result(1, 50);
+        long.extend_from_slice(&[0x80, 0x80, 0x80, 0x80, 0x00]);
+        long[3] |= 0x80;
+        assert_eq!(long.len(), MAX_PACED_STEP_RESULT_BYTES + 1);
+        assert_eq!(
+            decode_step_result_receipt(&long, true),
+            Err(WorldSpatialError::LimitExceeded)
+        );
+        // The encoder refuses everything the decoder refuses.
+        for (result, paced_session) in [
+            (paced(StepDisposition::Moved, 50), false),
+            (paced(StepDisposition::TooEarly, 0), false),
+            (paced(StepDisposition::TooEarly, 1), false),
+            (paced(StepDisposition::Blocked, 50), true),
+            (paced(StepDisposition::Rejected, 1), true),
+            (paced(StepDisposition::Moved, 75), true),
+            (paced(StepDisposition::Moved, MAX_STEP_WAIT_MS + 50), true),
+            (paced(StepDisposition::TooEarly, MAX_STEP_WAIT_MS + 1), true),
+        ] {
+            assert_eq!(
+                encode_step_result_paced(result, paced_session),
+                Err(WorldSpatialError::Malformed),
+                "{result:?}"
+            );
+        }
+    }
+
     #[test]
     fn world_spatial_round_trips_within_bound_and_refuses_malformed() {
         for value in [
@@ -417,6 +655,30 @@ mod tests {
             .find(|command| command["id"] == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT)
             .expect("WORLD_ACTOR_STEP_INTENT registered");
         assert_eq!(command["name"], "WORLD_ACTOR_STEP_INTENT");
+        assert_eq!(command["max_payload_bytes"], MAX_STEP_INTENT_BYTES as u64);
+        // STEP-PACE-WIRE-0: the registered result bound is the one under capability 13; the
+        // capability's offer gate states the 4-byte bound without it.
+        assert_eq!(
+            command["max_result_payload_bytes"],
+            MAX_PACED_STEP_RESULT_BYTES as u64
+        );
+        let capability = protocol["capabilities"]
+            .as_array()
+            .expect("capabilities")
+            .iter()
+            .find(|capability| capability["id"] == CAPABILITY_PACED_MOVEMENT_V1)
+            .expect("PACED_MOVEMENT_V1 registered");
+        assert_eq!(capability["name"], "PACED_MOVEMENT_V1");
+        assert_eq!(capability["command_types"], serde_json::json!([]));
+        assert_eq!(capability["state_domains"], serde_json::json!([]));
+        let gate = capability["offer_gate"].as_str().expect("offer_gate");
+        assert!(gate.contains("step_wait_ms (field 2)"), "{gate}");
+        assert!(
+            gate.contains(&format!(
+                "command type 1 result is at most {MAX_STEP_RESULT_BYTES} bytes"
+            )),
+            "{gate}"
+        );
         let domains = protocol["state_domains"].as_array().expect("state_domains");
         let domain = domains
             .iter()
