@@ -122,7 +122,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | HUNT-1 | 45, 46 | prey and hunting tasks | LOOP-MONSTER-1 | hard (rewards) | yes | no |
 | DAILY-1 | 47 | daily reward | NPC-ECON-1 | hard (rewards) | yes | no |
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1 | impl | no | no |
-| SEC-1 | 135 | server-side integrity checks (bot controls); the 9c/6c3 retirement is separate | none | impl | no | no |
+| SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1, ITEM-LOOK-1 (registry order) | impl | no | yes |
 | GM-1 | 136 | GM tools, talkactions, bans | Platform contract | hard (authority) | yes | no |
 | SPECTATE-1 | 138 | spectating | LOOP-WORLD-1 | impl | no | yes |
 
@@ -140,7 +140,7 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 
 1. **Wave 0 (in flight):** #2018, #2032, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
 2. **Wave 1 (no migration, parallel):** OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
-   ITEM-LOOK-1, LOOP-CLOCK-1, SEC-1. In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
+   ITEM-LOOK-1, LOOP-CLOCK-1 (SEC-1 moved behind them, registry order CLOCK-1, ITEM-LOOK-1, SEC-1, WEATHER-1). In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
    death module's B and C).
 3. **Wave 2:** LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1, QUEST-RT-1, MAGIC-ITEMS-1,
    MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1, WEATHER-1.
