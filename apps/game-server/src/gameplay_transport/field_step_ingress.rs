@@ -205,36 +205,12 @@ impl StepIngressRead<'_, '_> {
                             // equipment absorption or initial HP application.
                             continue;
                         }
+                        // PVP-0 §6.4: a `pvp_zone` tile grants nothing until ARENA-0, so a
+                        // NoPvP World keeps no field-only exception.
                         if world.mode()
                             == crate::durability::spell_field_policy::FieldWorldType::NoPvp
                         {
-                            let current = runtime
-                                .read_actor_position(creator.actor)
-                                .map_err(MovementError::Actor)?;
-                            if current.context() != runtime.pinned_movement_context() {
-                                return Err(MovementError::NotQualified);
-                            }
-                            let position = current.position();
-                            let creator_tile = room
-                                .movement_cells()
-                                .spell_tiles()
-                                .lookup(
-                                    room.movement_cells().scope(),
-                                    crate::content::LogicalCell {
-                                        x: position.x,
-                                        y: position.y,
-                                        z: i32::from(position.floor),
-                                    },
-                                )
-                                .map_err(|_| MovementError::NotQualified)?;
-                            let source_pvp =
-                                creator_tile.pvp_zone().ok_or(MovementError::NotQualified)?;
-                            let target_pvp = tile.pvp_zone().ok_or(MovementError::NotQualified)?;
-                            // Source NoPvP worlds still permit combat when both
-                            // actual current tiles are PvP zones.
-                            if !(source_pvp && target_pvp) {
-                                continue;
-                            }
+                            continue;
                         }
                         let origin = item
                             .field_origin

@@ -607,7 +607,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
-        let Some(room) = self.qualified_room else {
+        let Some(room) = self.combat_room else {
             return;
         };
         let Some(content) = self

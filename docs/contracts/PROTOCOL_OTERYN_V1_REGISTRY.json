@@ -60,7 +60,7 @@
       "command_types": [7, 8],
       "state_domains": [7, 8],
       "offered": false,
-      "offer_gate": "NPC-TALK-1: the server does not offer this capability before the NPC conversation owner, the domain 7 and 8 send path and the revision stream are composed. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
+      "offer_gate": "NPC-TALK-1: NPC-CMD-1a composes it; only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 7 and domain 7 are served (the conversation owner, the whole-domain delta after each talk result and the revision stream); domain 8 is sent as a closed window and command type 8 answers REJECTED until NPC-CMD-1b composes trade. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
     },
     {
       "id": 4,
@@ -129,12 +129,12 @@
     {
       "id": 13,
       "name": "PACED_MOVEMENT_V1",
-      "owner_decision": "CONDITIONS-0 §4.3 (docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md, as amended by CREATURE-AI-0 §5.1); number allocated by the #1622 control plane and registered by SPEED-1",
+      "owner_decision": "CONDITIONS-0 §4.3 (docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md, as amended by CREATURE-AI-0 §5.1); number allocated by the #1622 control plane and registered by SPEED-1; result field step_wait_ms by the owner's acceptance of OQ-1 (CLIENT-COMPLETION R1), registered by STEP-PACE-WIRE-0",
       "owner": "current ChannelRuntime (Movement owner step pacing)",
       "command_types": [],
       "state_domains": [],
       "offered": true,
-      "offer_gate": "SPEED-1: offered. It extends the result of command type 1 with STEP_DISPOSITION_TOO_EARLY = 4 and owns no command type or domain. Every player step is paced whether or not it is selected: one early step waits in a one-step buffer, and a second early request is TOO_EARLY with this capability selected and REJECTED without it."
+      "offer_gate": "SPEED-1: offered. It extends the result of command type 1 with STEP_DISPOSITION_TOO_EARLY = 4 and owns no command type or domain. Every player step is paced whether or not it is selected: one early step waits in a one-step buffer, and a second early request is TOO_EARLY with this capability selected and REJECTED without it. STEP-PACE-WIRE-0: the result also carries step_wait_ms (field 2), the pacing receipt: on MOVED the duration of the step just committed (a multiple of 50 ms, 50 to 111,150), on TOO_EARLY the milliseconds left until the server deadline, rounded up (1 to 111,150), never on BLOCKED or REJECTED. It is written only when non-zero, and it is not state (no revision, no snapshot). Without this capability selected, field 2 fails closed and the command type 1 result is at most 4 bytes; the command type 1 max_result_payload_bytes is the bound under this capability."
     },
     {
       "id": 14,
@@ -199,7 +199,7 @@
       "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepResultV1",
       "max_payload_bytes": 4,
-      "max_result_payload_bytes": 4
+      "max_result_payload_bytes": 8
     },
     {
       "id": 2,

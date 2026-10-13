@@ -81,6 +81,43 @@ impl ChatLimiter {
         self.muted_until.is_some_and(|until| until > now)
     }
 
+    /// The cheap gate in front of the Channel lock (CHAT-0 §6): refuses a muted character and
+    /// starts the offence of a line beyond an empty bucket, taking no line. A yell inside its
+    /// cooldown is refused here too, before the level is known (it needs no Channel state); a
+    /// speaker who lost the level meanwhile reads `Exhausted` instead of `LevelTooLow`. An admitted line still goes
+    /// through [`Self::admit_local`], which takes it.
+    pub(crate) fn pre_gate(
+        &mut self,
+        mode: SpeechMode,
+        now: SemanticTimeMicros,
+    ) -> Result<(), ChatRefusal> {
+        let now = now.max(self.last_seen);
+        self.last_seen = now;
+        if let Some(until) = self.muted_until.filter(|until| *until > now) {
+            return Err(ChatRefusal::Muted {
+                seconds: seconds_until(now, until),
+            });
+        }
+        if let Some(ready) = self
+            .yell_ready_at
+            .filter(|ready| mode == SpeechMode::Yell && *ready > now)
+        {
+            return Err(ChatRefusal::Exhausted {
+                seconds: seconds_until(now, ready),
+            });
+        }
+        self.refill(now);
+        // An empty bucket starts the offence here only for a say; a yell is left to
+        // `admit_local`, which checks the level first so an under-level yell is not a mute.
+        if self.lines == 0 && mode != SpeechMode::Yell {
+            let until = self.offend(now);
+            return Err(ChatRefusal::Muted {
+                seconds: seconds_until(now, until),
+            });
+        }
+        Ok(())
+    }
+
     /// Admits one local line at `now`, in the order: mute, yell gate, yell cooldown, bucket. An
     /// admitted line takes one line from the bucket and, for a yell, starts the cooldown. A line
     /// beyond the bucket is dropped and starts a mute.
