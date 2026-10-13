@@ -247,7 +247,7 @@ pub(crate) fn choose_source(
             "Importuj ZIP ustawień Oteryn..."
         })
         .add_filter("Oteryn options ZIP", &["zip"])
-        .open_file()
+        .pick_file()
 }
 
 #[cfg(test)]

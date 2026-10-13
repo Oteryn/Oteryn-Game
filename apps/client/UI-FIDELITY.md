@@ -739,6 +739,40 @@ This compatibility ordering is recorded for CP in comment6144441159, not a new
 protocol ID or deployment authorization. Existing Windows evidence does not
 qualify this source; physical PC/E2E and final same-head CI/review remain open.
 
+## Windows picker repair and accepted receipt codec — 2026-10-13, AUTHORING
+
+The PC connectivity check now succeeds. Exact source9c342779 is fetched into a
+separate detached sparse worktree; the owner's dirty checkout and old installation
+are not touched. The first physical attempt fails formatting before compilation
+because inherited core.autocrlf writes CRLF. Preserve that directory and create
+another owned worktree with worktree-only core.autocrlf=false/core.eol=lf; LF fmt
+passes. The next real MSVC release build fails E0599: the import ZIP picker calls
+FileDialog.open_file, which does not exist in pinned upstream rfd0.17.2. Replace
+only that call with its supported pick_file API. Native sibling API inspection
+finds no other mismatch; Linux tests did not compile this Windows-only call.
+Failed attempts remain evidence, not successful Windows qualification.
+
+Accepted STEP-PACE-WIRE-0 (#2034) is now merged at59f9fb12 and is normally composed
+without editing its protocol/registry bytes. Current Session automatically uses
+the strict extended cap13 decoder. Independent raw duplex fixtures exercise the
+maximum111150 MOVED receipt with its actual claimed spatial delta, TOO_EARLY1,
+legacy selected/unselected results and sequence/command state. Wrong capability,
+BLOCKED/REJECTED receipts, explicit0, offbeat/over-max/duplicate/unknown fields and
+over-bound payloads must poison Session and reject further steps locally.
+No second positive step is sent by these decoder tests: StepOutcome still discards
+wait and retrying still uses its historical backoff. Full receipt-time deadline,
+resets, smooth map interpolation and native gameplay proof remain the separately
+allocated consumer; syntactic decoder compatibility is not emission readiness.
+The c49538eb bundle/pin and current default capabilities are unchanged.
+Fresh Linux client217/196/5, Session76 and protocol216 tests, strict all-target
+Clippy and formatting pass. Pin-check again double-builds25,089,897 identical
+bytes; governance/60 passes. This does not replace corrected MSVC qualification.
+
+New visible coordinator handoff6145031564 links the actual branch files, exact
+source and four execution needs. Publication is verified, not CP acknowledgment.
+Current MSVC tests, DX12 page captures and final same-head CI/review remain pending
+until the corrected source is built and observed; no account or deployment action.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

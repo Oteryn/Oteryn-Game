@@ -3767,6 +3767,154 @@ mod tests {
         })
     }
 
+    /// Wire compatibility only: accepting a receipt does not qualify the future deadline consumer.
+    #[test]
+    fn admitted_steps_decode_pacing_receipts_and_preserve_legacy_results() -> Result<(), BoxError> {
+        block_on(async {
+            for (selected, payload, disposition, status) in [
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x04, 0x10, 0x01],
+                    StepDisposition::TooEarly,
+                    CommandStatus::Rejected,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x04],
+                    StepDisposition::TooEarly,
+                    CommandStatus::Rejected,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x01],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    false,
+                    vec![0x08, 0x01],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x02],
+                    StepDisposition::Blocked,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    false,
+                    vec![0x08, 0x02],
+                    StepDisposition::Blocked,
+                    CommandStatus::Accepted,
+                ),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], if selected { &[13] } else { &[] }, &[]).await?;
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        7
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, status, &payload)?,
+                    )
+                    .await?;
+                    if disposition == StepDisposition::Moved {
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, 42, 1, 5, 6, 1, &spatial(17))?,
+                        )
+                        .await?;
+                    }
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                let result = session.step(StepDirection::East).await?;
+                peer.await??;
+                assert_eq!(result.disposition, disposition);
+                assert_eq!(result.status, status);
+                let moved = disposition == StepDisposition::Moved;
+                assert_eq!(
+                    result
+                        .world_spatial_delta
+                        .as_ref()
+                        .map(|delta| delta.value.actor_position.x),
+                    moved.then_some(17)
+                );
+                assert_eq!(session.last_server_sequence(), if moved { 42 } else { 41 });
+                assert_eq!(session.next_command_id(), 8);
+                session.ensure_usable()?;
+                // No second step is sent: the allocation for receipt-based timing is still open.
+            }
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn malformed_or_unselected_pacing_receipts_poison_the_admitted_session() -> Result<(), BoxError>
+    {
+        block_on(async {
+            for (selected, payload, status) in [
+                (false, vec![0x08, 0x01, 0x10, 0x32], CommandStatus::Accepted),
+                (true, vec![0x08, 0x02, 0x10, 0x32], CommandStatus::Accepted),
+                (true, vec![0x08, 0x03, 0x10, 0x01], CommandStatus::Rejected),
+                (true, vec![0x08, 0x04, 0x10, 0x00], CommandStatus::Rejected),
+                (true, vec![0x08, 0x01, 0x10, 0x33], CommandStatus::Accepted),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0xaf, 0xe4, 0x06],
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0x32, 0x10, 0x32],
+                    CommandStatus::Accepted,
+                ),
+                (true, vec![0x08, 0x01, 0x18, 0x32], CommandStatus::Accepted),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0x32, 0x18, 1, 0x20, 1, 0x28, 1],
+                    CommandStatus::Accepted,
+                ),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], if selected { &[13] } else { &[] }, &[]).await?;
+                    read_frame(&mut server).await?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, status, &payload)?,
+                    )
+                    .await?;
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                assert!(matches!(
+                    session.step(StepDirection::East).await,
+                    Err(SessionError::WorldSpatial(_))
+                ));
+                peer.await??;
+                assert!(matches!(
+                    session.step(StepDirection::East).await,
+                    Err(SessionError::SessionUnusable)
+                ));
+                assert_eq!(session.next_command_id(), 8);
+            }
+            Ok(())
+        })?
+    }
+
     #[test]
     fn a_too_early_step_is_retried_with_backoff_and_needs_capability_13() -> Result<(), BoxError> {
         block_on(async {

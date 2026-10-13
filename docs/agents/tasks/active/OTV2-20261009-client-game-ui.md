@@ -69,14 +69,14 @@ validation on refusal; no weaker TLS or additional insecure origins.
 
 ## Main reconciliation — 2026-10-13
 
-Normal merges preserve earlier history and accepted maina7a0b374: monster AI,
-consumable content and read-only NPC trade join combat/chat/NPC placement.
-Only World inputs conflict; main bundle c49538eb/start/identity/topology remain
-intact, merged inputs86d18a80. Release pin-check double-builds25,089,897 bytes.
-Client/Session/protocol/Platform-client/Cargo/toolchain equal source02170282.
-No new capability or NPC purchase is enabled; bundle admission still requires
-the pending map18 cutover. CI021 was absent due to this conflict, not red tests.
-CI/review/native acceptance remain open; details/history: UI-FIDELITY.md.
+Normal merges preserve accepted maina7a0b374 producers and STEP-PACE-WIRE-0
+59f9fb12. Bundle c49538eb/start/identity/topology and inputs86d18a80 stay intact.
+Windows9c build exposed the ZIP picker's nonexistent open_file; use upstream
+rfd0.17.2 pick_file. Real duplex tests cover receipt/legacy decoding and poison
+invalid or unselected receipts. Decoder acceptance is not a pacing deadline:
+emission must await STEP-PACE-CLIENT-1. Defaults stay [4,6,7,13,17]. PC online;
+new isolated LF-source MSVC/DX12 qualification pending, old checkouts preserved.
+Visible CP packet: #1622 comment6145031564. Details/history: UI-FIDELITY.md.
 
 ## Current authoring batch — 2026-10-11
 
