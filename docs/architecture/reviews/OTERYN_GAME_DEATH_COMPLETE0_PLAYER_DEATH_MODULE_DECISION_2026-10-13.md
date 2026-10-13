@@ -90,15 +90,19 @@ contents are not listed in the set: they travel with the container.
 
 - **Exemptions.** No selection and no amulet use for a character at or below level 8 (D65), without a
   vocation, or at or below the level of a verified Global exemption read at the target date.
-- **Amulet of Loss.** Selected when worn, the character has fewer than 5 regular blessings, the death is
-  not PvP and the character is not exempt. It is the necklace slot item with the content key of the
-  amulet. When selected, the lost-item set is empty. When not selected (5 or more blessings, exempt, PvP
-  skull rule of PARTY-PVP-0 §10), it stays equipped.
+- **Amulet of Loss.** Selected when worn, the character has fewer than 5 regular blessings, the character is
+  not exempt and the death is not a red- or black-skull death (PARTY-PVP-0 §10.2: only those bypass the
+  amulet; every other PvP death uses the PvE amulet and ladder rules). It is the necklace slot item with the content key of the
+  amulet. When selected, the lost-item set is empty. When not selected (5 or more blessings, exempt,
+  red/black skull death), it stays equipped.
+- **Skull death.** At red or black skull every equipped item and the backpack are lost (D65 exemptions
+  still apply); no draw.
 - **Draw.** Otherwise each equipped item and the backpack is drawn independently against the D62 ladder
   in parts per thousand: backpack 1000/700/450/250/100/0 and equipped item 100/70/45/25/10/0 for 0/1/2/3/4
-  and 5 or more regular blessings. The draw for slot `s` is the first 16 bits (modulo 1000) of a
-  domain-separated SHA-256 over the death occurrence, the policy digest and the slot index; the item is
-  lost when the draw is below the threshold. No other source of randomness is used. The slot order is
+  and 5 or more regular blessings. The draw for slot `s` is unbiased: take consecutive 32-bit big-endian words of the SHA-256 stream over
+  (domain tag, death occurrence, policy digest, slot index, counter 0, 1, ...), reject a word at or above
+  4,294,967,000, and use the first accepted word modulo 1000; the item is lost when the draw is below the
+  threshold. No other source of randomness is used. The slot order is
   fixed in the death policy.
 - Everything above is recorded in the receipt and `command_binding`; a retry returns the first result.
 
@@ -151,14 +155,17 @@ PVP-RT-1b.
 
 ### 4.7 Blessing state and purchase (batch E)
 
-- A purchase is a composed workflow keyed by a purchase occurrence (UUIDv7): (1) the NPC service
-  validates eligibility (the 3 Premium blessings need current Premium at purchase, D67), the level price
-  and the blessing not already held; (2) payment through a DUR-03 burn with a new typed sink
-  `BlessingPurchaseCause` (BANK-FEE0 gold rules, no silent deletion); (3) one Character transaction
-  inserts the blessing with provenance and a grant receipt keyed by the purchase occurrence. It does not
-  advance `CharacterRevision` (DEATH-0 §3.3).
-- Order and recovery: the grant is written only after the payment committed. A committed payment without
-  a grant is completed on retry. A grant without payment never exists.
+- A purchase is one atomic PostgreSQL transaction under the Character fence, keyed by a purchase
+  occurrence (UUIDv7), by the GOLD-FEE-1 §4.3 composition (D177): the blessing grant and its Character
+  grant receipt advance `CharacterRevision` exactly once (DUR-02 rule 2), the gold is paid by BURN lines
+  with the new typed sink `BlessingPurchaseCause` (change MINT as the fee composition defines), and the
+  mandatory DUR-03 audit event commits in the same transaction. All or none: a payment never commits
+  without its blessing and a blessing never without its payment.
+- The NPC service validates eligibility before the transaction (the 3 Premium blessings need current
+  Premium at purchase, D67; the level price; the blessing not already held) and the transaction
+  re-checks them under the fence.
+- The grant receipt is a third kind in the Character receipt chain (after XP and death); the guard
+  change is in batch E's migration and uses the DEATH-0 §3.2 pattern.
 - The price table and the Twist of Fate acquisition are read at the target date; Twist of Fate is a
   PARTY-PVP-0 matter (`twist_of_fate_used`), not purchased here.
 
@@ -168,7 +175,7 @@ PVP-RT-1b.
   single registry PR, after the first client end-to-end proof.
 - Event, proto and resource registries: batch B only, after #2039 and #2040 merge.
 - Migrations: one for B (storage change of container entries), one for C (receipt), one for E (grant
-  receipt); D needs none (§4.2). Numbers are leased by the control plane after 0083; one migration PR at a
+  receipt kind and chain guard); D needs none (§4.2). Numbers are leased by the control plane after 0083; one migration PR at a
   time, in merge order.
 
 ## 5. Delivery: minimum batches
@@ -202,6 +209,12 @@ primitives, C owns every use of them.
   rules (one receipt change, the container rule, the gate).
 - **Minimum sufficient:** reuse the existing receipt columns, one new cause per item operation, no corpse
   Item, one migration per storage concern.
+- **What becomes harder or impossible later:** the receipt shape and its checks are fixed for good
+  (a later item rule needs a new migration, as DEATH-0 showed); a container stays attached to its
+  re-keyed entries, so a deeper nesting or a split of contents needs a new decision; one lost-set bound
+  of 10 ties the receipt to the ten equipment slots; the chain gets a third receipt kind with a
+  guard change (E) that every later Character receipt kind must keep compatible; the module is
+  accepted whole, so a defect in one batch delays enabling all of them.
 - **Superseding evidence:** measured limits from batch B; the Global exemption at the target date; a
   decision on the corpse sprite.
 
@@ -225,7 +238,7 @@ required_revalidation:
   - "B: a death drop moves one item once per cause; a container keeps its contents and is never split; the amulet burn has a typed sink; replay, conflict and stale fence write nothing; max and max+1 for each registered row"
   - "C: the ladder per blessing count 0-5 at levels 1, 8, 9, 24 and 500; amulet selection and no-selection cases; restart mid-workflow resumes every cause once; no placement before all causes commit; no duplication"
   - "D: a PvP death writes the receipt fields; black skull respawn 40 HP and 0 mana; Twist of Fate and Adventurer's Blessing per PARTY-PVP-0 §10"
-  - "E: payment before grant; retry completes a paid purchase; Premium blessing without Premium is refused"
+  - "E: payment and grant commit atomically, one revision advance, no payment without grant; Premium blessing without Premium is refused"
 remaining_unknowns: [Newhaven exemption, Ground cell limit and decay, blessing prices, amulet item key, container enumeration need]
 next_action: "#1622 routes the independent review, then allocates B after #2039 and #2040."
 ```
