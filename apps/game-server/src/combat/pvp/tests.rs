@@ -307,6 +307,10 @@ fn aggression_relations_track_first_and_retaliation_and_cap() {
     // The target's aggression lapsed while the retaliation relation still runs: new aggression.
     assert_eq!(rel.record(2, false, t(30_000)), AggressionOutcome::Started);
     assert!(rel.was_first_against(2, t(30_000)));
+    // The first aggressor keeps the yellow-skull bit while the target answers.
+    assert_eq!(rel.record(1, false, t(20)), AggressionOutcome::Refreshed);
+    assert_eq!(rel.record(1, true, t(30)), AggressionOutcome::Retaliation);
+    assert!(rel.was_first_against(1, t(40)));
     // A relation that expired and restarts as first aggression is a new PZ block.
     assert_eq!(rel.record(1, false, t(70_000)), AggressionOutcome::Started);
 

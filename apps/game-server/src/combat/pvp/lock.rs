@@ -175,15 +175,26 @@ impl<T: Copy + Eq> AggressionRelations<T> {
         if let Some(existing) = self.relations.iter_mut().find(|r| r.target == target) {
             let was_running = existing.until > now;
             existing.until = existing.until.max(until);
-            // Classify from the current counter-relation, not the stored bit: a retaliation
-            // whose justification has lapsed is new aggression (§8.1 PZ block).
-            let was_first = existing.first;
-            existing.first = !target_is_aggressor;
-            return if !existing.first {
+            // A running relation keeps its first-aggressor bit (yellow skull) while it runs;
+            // only a lapsed retaliation (no counter-relation any more) becomes new aggression
+            // (§8.1 PZ block). An expired relation restarts from the current counter-relation.
+            return if !was_running {
+                existing.first = !target_is_aggressor;
+                if existing.first {
+                    AggressionOutcome::Started
+                } else {
+                    AggressionOutcome::Retaliation
+                }
+            } else if existing.first {
+                if target_is_aggressor {
+                    AggressionOutcome::Retaliation
+                } else {
+                    AggressionOutcome::Refreshed
+                }
+            } else if target_is_aggressor {
                 AggressionOutcome::Retaliation
-            } else if was_running && was_first {
-                AggressionOutcome::Refreshed
             } else {
+                existing.first = true;
                 AggressionOutcome::Started
             };
         }
