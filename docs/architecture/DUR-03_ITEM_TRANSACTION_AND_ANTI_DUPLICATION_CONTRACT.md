@@ -1691,7 +1691,7 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   instance changes type. At most two items. Nothing is minted.
 - **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, mint into an
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
-  event per use, `OneItemTransactionV1` operation tag 9 `item_use` (`OneItemUseV1`, with the closed
+  event per use, `OneItemTransactionV1` operation tag 10 `item_use` (`OneItemUseV1`, with the closed
   `OneItemUseCauseV1` whose identity is the CommandRef, a flask unit as `OneItemUseFlaskV1` and the
   `PARITY_PENDING` `flask_missing` burn), committed before the use's effect, with its own rows
   `DUR03-RL-01/-02/-04/-06/-07-ITEM-USE*` (registered by ITEM-USE-1a); its payload and envelope stay

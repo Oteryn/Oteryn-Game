@@ -1,5 +1,5 @@
 -- ITEM-USE-1b (control-plane lease; decision `reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md`
--- §4-§5; DUR-03 item-use amendment, Type 2 operation tag 9 `item_use`).
+-- §4-§5; DUR-03 item-use amendment, Type 2 operation tag 10 `item_use`).
 --
 -- Scope of this migration only: the durable record of one consumed unit of a stack in the
 -- character's main backpack (food or a potion), in four shapes:

@@ -14,6 +14,7 @@
 - Runtime, migration and production authority: **NONE**. The migration belongs to the DEATH-0
   implementation allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+- Amended by DEATH-COMPLETE-0 (`OTERYN_GAME_DEATH_COMPLETE0_PLAYER_DEATH_MODULE_DECISION_2026-10-13.md` §4.2): the DEATH-3 migration replaces the two `until_death3` checks and adds the PARTY-PVP-0 fields once. Takes effect when DEATH-COMPLETE-0 is accepted.
 - Amended by A13 (`OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md` §4.6): §3.1
   death receipt build fields. The amendment takes effect only when A13 is accepted. The chain now
   has further kinds (stance, build) beyond the two named in §3.1.

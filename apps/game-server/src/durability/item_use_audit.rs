@@ -1,6 +1,6 @@
 //! DUR-03 shapes of an item use and its durable-audit encoding (ITEM-USE-1; decision
 //! `ITEM-USE-0` §4, DUR-03 §15, §39.1 and §39.3 item-use amendment): event type 2
-//! (`oteryn.events.v1.OneItemTransactionV1`, operation `item_use`, oneof tag 9) in the
+//! (`oteryn.events.v1.OneItemTransactionV1`, operation `item_use`, oneof tag 10) in the
 //! normative ANL-01 `EventEnvelope`.
 //!
 //! One event per use of one consumable unit (food or potion), under the closed

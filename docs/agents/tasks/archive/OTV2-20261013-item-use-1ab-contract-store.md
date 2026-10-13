@@ -37,7 +37,7 @@ wire change; the runtime role gains no item write outside a use record.
 
 ## Outcome
 
-- **Proto and codec.** `OneItemTransactionV1` operation tag 9 `item_use` (`OneItemUseV1`), closed
+- **Proto and codec.** `OneItemTransactionV1` operation tag 10 `item_use` (`OneItemUseV1`), closed
   `OneItemUseCauseV1 { Food, Potion }` whose identity is the CommandRef, `OneItemUseFlaskV1` and
   the `PARITY_PENDING` `flask_missing` burn. `item_use_audit.rs` encodes and decodes it with the
   shared envelope gate (player command, rule 2 fence); unit conservation, closed shapes and every
@@ -49,7 +49,7 @@ wire change; the runtime role gains no item write outside a use record.
   verbatim plus one arm admitting the change only with a record of the same physical transaction.
   `DurabilityRoot::commit_item_use` is the item-only rule 2 writer: replay by CommandRef and
   request binding, plan check with `StaleState`, the four shapes, one type 2 audit event.
-- **Contracts.** Foundation registry entry for tag 9; DUR-03 item-use amendment names the tag and rows.
+- **Contracts.** Foundation registry entry for tag 10; DUR-03 item-use amendment names the tag and rows.
 
 ## Codex review (head d11e131)
 
@@ -95,7 +95,7 @@ NPC-TRADE-1 0082); main merged.
 ## Codex review of adb92d5 and merge-queue repair
 
 - P2 "Persist the character lease generation": declined (CP decision). The payload persists the
-  session id and generation, which bind the lease 1:1; adding the field is a tag 9 wire change.
+  session id and generation, which bind the lease 1:1; adding the field is a tag 10 wire change.
 - Merge queue run on adb92d5 failed on main's current state: (1) migration 0083 re-issued
   `game_item_mint_consistency_guard` from its 0075 body and dropped the MAP-OVERLAY-1b arm added
   by 0077; the guard is now the 0077 body plus the item-use arm (map_item_mint cases pass).
@@ -109,3 +109,7 @@ P2 (replay accepted another `server_build_id`): the request binding now includes
 ## Codex review of 39350b4
 
 P2 (identity already in the shared item outbox answered Unavailable): the replay read now checks `game_item_audit_outbox` for the TransactionId/EventId of a new command and answers ConflictingCommand, as the transfer path does; covered in the focused Postgres case.
+
+## Merge with main (NPC-TRADE-1)
+
+Main took oneof tag 9 for `npc_trade` (migration 0082), so `item_use` moved to tag 10; migration 0083 and the lease numbers are unchanged.
