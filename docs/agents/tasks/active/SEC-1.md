@@ -22,7 +22,7 @@ owned_paths:
   - docs/agents/tasks/active/SEC-1.md
 public_contracts: []
 depends_on:
-  - PVP-RT-1 (must not hold field_step_ingress.rs when code is allocated; recheck at allocation)
+  - PVP-RT-1b (or the live owner of field_step_ingress.rs; PVP-RT-1 is archived and handed the movement hook wiring to PVP-RT-1b; recheck at allocation)
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -62,7 +62,7 @@ and `field_step_ingress.rs`: a step is committed only when origin, destination a
 refusals there are counted as a bounded, non-sanctioning signal; negative cases in `authority_invariants.rs`, one invariant
 changed per case. Sequence gaps and early/buffered steps are decided in `connection.rs` (about lines 2035-2051 and 2093-2113)
 before `paced_step`; counting them needs `connection.rs` added to the allocation, which the control plane must decide.
-Proposed paths, not owned until the control plane allocates them (after the PVP-RT-1 ownership check):
+Proposed paths, not owned until the control plane allocates them (after the PVP-RT-1b ownership check):
 `apps/game-server/src/gameplay_transport/{fresh_evidence,field_step_ingress,actor_movement}.rs` and
 `apps/game-server/tests/authority_invariants.rs`.
 
