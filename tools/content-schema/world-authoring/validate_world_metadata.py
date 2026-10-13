@@ -14,6 +14,8 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+from convert_world_metadata import SCRIPT_TELEPORTS
+
 HERE = Path(__file__).resolve().parent
 SCHEMA = json.loads((HERE / "world-metadata.schema.json").read_text(encoding="utf-8"))
 SUMMARY = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
@@ -223,6 +225,10 @@ def hunting_places(
         errors.append("Area.HuntingPlace: capture counts differ from the records")
 
 
+def _coordinates(position: dict) -> tuple[int, int, int]:
+    return (position["x"], position["y"], position["floor"])
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     summary = load(root, SUMMARY)
@@ -289,10 +295,41 @@ def validate(root: Path) -> list[str]:
         errors.append(
             "Transition.Teleport: script teleport count differs from the capture"
         )
-    if scripted and not any(
-        row["path"].endswith(".lua") for row in summary["source"].get("files", [])
-    ):
-        errors.append("Transition.Teleport: script teleports without a pinned script")
+    pinned_files = {
+        (row["path"], row["sha256"]) for row in summary["source"].get("files", [])
+    }
+    expected_scripts = {}
+    for entry in SCRIPT_TELEPORTS:
+        x, y, z = entry["from"]
+        expected_scripts[f"{x},{y},{z}:{entry['item']}"] = entry
+        if (entry["path"], entry["sha256"]) not in pinned_files:
+            errors.append(
+                f"Transition.Teleport: pinned script {entry['path']} missing from the capture"
+            )
+    seen_scripts = set()
+    for record in scripted:
+        key = record["declaration"]["identity"]["key"]
+        external_id = record["source_bindings"][0]["external_id"]
+        entry = expected_scripts.get(external_id)
+        if entry is None:
+            errors.append(f"{key}: scripted teleport {external_id} is not pinned")
+            continue
+        seen_scripts.add(external_id)
+        declaration = record["declaration"]
+        x, y, z = entry["from"]
+        if (
+            declaration["identity"]["key"]
+            != f"oteryn:transition.teleport.x{x}_y{y}_z{z}"
+            or _coordinates(declaration["from"]) != entry["from"]
+            or _coordinates(declaration["to"]) != entry["to"]
+        ):
+            errors.append(
+                f"{key}: scripted teleport differs from its pinned entry {entry['from']} -> {entry['to']}"
+            )
+    for external_id in sorted(set(expected_scripts) - seen_scripts):
+        errors.append(
+            f"Transition.Teleport: pinned script teleport {external_id} missing"
+        )
     if summary.get("teleport_object_families") != used:
         errors.append(
             "Transition.Teleport: object family counts differ from the capture"

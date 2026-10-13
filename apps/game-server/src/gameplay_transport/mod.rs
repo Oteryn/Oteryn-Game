@@ -3085,9 +3085,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let blocking = if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
             std::collections::BTreeSet::new()
+        } else if let Some(map) = self.bundle_map() {
+            // The closed bundle doors, read live: a teleport landing never relocates a player
+            // onto one (WORLD-INTERACTION-0 §6.6). The native floor is the legacy `z` negated.
+            map.facts
+                .doors()
+                .solid_tiles()
+                .into_iter()
+                .map(|tile| crate::content::LogicalCell {
+                    x: i32::from(tile.x),
+                    y: i32::from(tile.y),
+                    z: -i32::from(tile.floor),
+                })
+                .collect()
         } else {
             self.door.lock().await.blocking_cells().clone()
         };

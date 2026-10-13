@@ -10,6 +10,7 @@ import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import convert_hunting_places as hunting
 import convert_world_metadata as convert
@@ -225,11 +226,18 @@ class ReaderTest(unittest.TestCase):
 
 
 class ConvertAndValidateTest(unittest.TestCase):
+    def pin_scripts(self, entries):
+        """The scripted teleports the validator compares the committed records against."""
+        patch = mock.patch.object(validate, "SCRIPT_TELEPORTS", entries)
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def setUp(self):
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
         }
         self.root = Path(tempfile.mkdtemp())
+        self.pin_scripts(())
         add_areas(self.root)
         self.out = convert.build(blobs, self.root, scripts=())
         for path, data in self.out.items():
@@ -381,8 +389,10 @@ class ConvertAndValidateTest(unittest.TestCase):
     def test_script_teleport_becomes_a_transition_of_its_own_namespace(self):
         data = script_text()
         add_areas(self.root, (), (TELEPORT_ITEM,))
-        out = self.script_build(script_entry(data), data)
+        entry = script_entry(data)
+        out = self.script_build(entry, data)
         self.assertEqual(convert.apply(out, False, self.root), 0)
+        self.pin_scripts((entry,))
         self.assertEqual(validate.validate(self.root), [])
         summary = json.loads(out[str(convert.SUMMARY.relative_to(convert.ROOT))])
         self.assertEqual(summary["families"], {"Transition.Teleport": 2})
@@ -422,6 +432,27 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertTrue(
             any("script teleport count" in e for e in validate.validate(self.root))
         )
+        summary["script_teleports"] = 1
+        (self.root / convert.SUMMARY.relative_to(convert.ROOT)).write_bytes(
+            convert.canonical(summary)
+        )
+        self.assertEqual(validate.validate(self.root), [])
+        # each scripted record is compared with its exact pinned entry
+        for drift in (
+            {**entry, "to": (1001, 1002, 7)},
+            {**entry, "from": (1001, 1001, 7)},
+            {**entry, "item": entry["item"] + 1},
+            {**entry, "sha256": "0" * 64},
+            {**entry, "path": "data-global/scripts/other.lua"},
+        ):
+            self.pin_scripts((drift,))
+            self.assertTrue(
+                any(
+                    "scripted teleport" in e or "pinned script" in e
+                    for e in validate.validate(self.root)
+                ),
+                drift,
+            )
 
     def test_script_teleport_fails_closed(self):
         add_areas(self.root, (), (TELEPORT_ITEM,))
@@ -647,6 +678,9 @@ class HuntingParseTest(unittest.TestCase):
 class HuntingPlaceEndToEndTest(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
+        patch = mock.patch.object(validate, "SCRIPT_TELEPORTS", ())
+        patch.start()
+        self.addCleanup(patch.stop)
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
         }
