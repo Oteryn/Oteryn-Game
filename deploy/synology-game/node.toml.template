@@ -20,6 +20,11 @@ database = "<DB_NAME>"
 username = "<RUNTIME_ROLE>"
 password_file = "<BASE>/node/secrets/pg-password"
 root_ca_file = "<BASE>/node/secrets/db-ca.pem"
+# Optional (NODE-BOOT-DEADLINE-1): the PostgreSQL pass deadline for the boot durability steps only
+# (S2 custody read/claim/descriptor, Character authority open), 2000..=60000 ms, default 2000 when
+# the table is absent. Gameplay passes keep the fixed 2 s deadline. A loaded host needs the margin.
+[boot]
+pass_deadline_ms = 15000
 [character]
 fence_directory = "<BASE>/fence-parent/fence"
 authority_scope_id = "character-primary"

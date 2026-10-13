@@ -310,6 +310,9 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 pub struct FreshAdmissionStore {
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
+    /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
+    /// own transaction, before `session_state` becomes 3. `None` writes nothing.
+    final_position: Option<super::character_last_position::FinalLastPosition>,
 }
 impl FreshAdmissionStore {
     #[cfg(test)]
@@ -330,11 +333,29 @@ impl FreshAdmissionStore {
         Ok(Self::from_root(root))
     }
 
+    /// CHAR-POSITION-0 §3.2 "At logout": this store with `final_position`, which its terminal
+    /// release (`release_expired_loss`, `release_abandoned_session`,
+    /// `release_capability_mismatch`, `release`) upserts inside the release transaction, before
+    /// the session becomes TERMINAL, under the released session's Character lease key. A
+    /// release of a non-Channel scope, a World other than the record's, a pending respawn or a
+    /// later stored key writes nothing; the release itself is unchanged by it.
+    #[must_use]
+    pub fn with_final_position(
+        &self,
+        final_position: super::character_last_position::FinalLastPosition,
+    ) -> Self {
+        Self {
+            final_position: Some(final_position),
+            ..self.clone()
+        }
+    }
+
     #[must_use]
     pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            final_position: None,
         }
     }
 
@@ -1765,6 +1786,38 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// CHAR-POSITION-1 (`CHARPOS0-RL-01`): the current session of each of `sessions`, read as
+    /// [`Self::current_session_at`] reads one, but all in one root pass, so a periodic
+    /// last-position write pass reads a bounded number of passes whatever the number of its
+    /// sessions. One entry per session, in order; `None` when that session's read failed. A
+    /// storage error of the pass itself fails all of them.
+    pub async fn current_sessions_at(
+        &self,
+        sessions: Vec<GameSessionId>,
+    ) -> Result<Vec<Option<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>>>> {
+        if sessions.is_empty() {
+            return Ok(Vec::new());
+        }
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut current = Vec::with_capacity(sessions.len());
+                    for session in sessions {
+                        current.push(store.current_session_locked(&mut tx, session).await.ok());
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(current)
+                })
+            })
+            .await
+    }
+
     pub async fn reconcile_lifecycle(
         &self,
         evidence: &AdmissionClaimLifecycleEvidenceV1,
@@ -1811,6 +1864,9 @@ impl FreshAdmissionStore {
             let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
             let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
             let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            if let Some(final_position) = store.final_position {
+                write_final_position(&mut tx, &current, &final_position).await?;
+            }
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
             if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
@@ -1823,6 +1879,37 @@ impl FreshAdmissionStore {
             Ok(decided_at)
         })).await
     }
+}
+
+/// CHAR-POSITION-0 §3.2 "At logout": the final last-position upsert of the session being
+/// released, in the release transaction (which holds the admission relation locks and has just
+/// revalidated the session), before `session_state` becomes 3. Only a Channel scope of the
+/// record's World writes; the upsert itself skips a pending respawn and a later stored key.
+async fn write_final_position(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    final_position: &super::character_last_position::FinalLastPosition,
+) -> Result<()> {
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
+        current.current_runtime_scope()
+    else {
+        return Ok(());
+    };
+    if world_id != final_position.record.world_id || final_position.write_sequence == 0 {
+        return Ok(());
+    }
+    let lease = current.current_character_lease();
+    super::character_last_position::upsert_last_position(
+        tx,
+        lease.character_id().as_bytes(),
+        super::character_last_position::LastPositionKey {
+            character_lease_generation: lease.generation(),
+            write_sequence: final_position.write_sequence,
+        },
+        &final_position.record,
+    )
+    .await?;
+    Ok(())
 }
 
 /// Outcome of one grace-expiry release attempt for a lost GameSession.
@@ -2061,6 +2148,7 @@ impl FreshAdmissionStore {
                 maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            final_position: None,
         }
     }
     pub(super) async fn replacement_claim_replay(

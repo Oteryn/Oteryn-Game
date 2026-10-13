@@ -10,6 +10,7 @@ use crate::content::static_cell_engine::EngineeringStaticCellScope;
 use crate::content::{FirstProductionCell, LogicalCell};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 pub const NATIVE_SPELL_TILE_SCHEMA: &str = "OTERYN_NATIVE_SPELL_TILES/v1";
 
@@ -135,6 +136,23 @@ impl QualifiedSpellTile {
             }),
         }
     }
+    /// A world bundle tile (BUNDLE-TILES-1, [`crate::map::spell_tiles`]): `ground` is the
+    /// ground item's source id and stored speed. A bundle has no source step facts, so
+    /// [`Self::source_step`], [`Self::no_pvp_zone`] and [`Self::pvp_zone`] stay unknown.
+    pub(crate) fn from_bundle(
+        ground: Option<(u32, u16)>,
+        top_source_ids: Vec<u32>,
+        flags: NativeSpellTileFlags,
+    ) -> Self {
+        Self {
+            ground_present: ground.is_some(),
+            ground_source_id: ground.map(|(id, _)| id),
+            ground_speed: ground.map(|(_, speed)| speed),
+            top_source_ids,
+            flags,
+            source_step: None,
+        }
+    }
     pub(crate) const fn ground_present(&self) -> bool {
         self.ground_present
     }
@@ -175,6 +193,8 @@ pub struct QualifiedSpellTiles {
     tiles: Option<BTreeMap<LogicalCell, QualifiedSpellTile>>,
     unknown_cells: BTreeSet<LogicalCell>,
     source_bounds: Option<[i32; 6]>,
+    /// A world bundle's tiles (BUNDLE-TILES-1); when set, every lookup under `scope` reads them.
+    bundle: Option<Arc<crate::map::spell_tiles::BundleSpellTiles>>,
 }
 
 impl QualifiedSpellTiles {
@@ -198,6 +218,7 @@ impl QualifiedSpellTiles {
             tiles: Some(tiles),
             unknown_cells,
             source_bounds: Some(world.native_bounds()),
+            bundle: None,
         }
     }
     /// Only the native project qualification path can create this index. The
@@ -224,6 +245,7 @@ impl QualifiedSpellTiles {
                 tiles: None,
                 unknown_cells: BTreeSet::new(),
                 source_bounds: None,
+                bundle: None,
             });
         };
         if document.schema != NATIVE_SPELL_TILE_SCHEMA {
@@ -332,7 +354,22 @@ impl QualifiedSpellTiles {
             tiles: Some(tiles),
             unknown_cells: BTreeSet::new(),
             source_bounds: None,
+            bundle: None,
         })
+    }
+
+    /// The spell tiles of a world bundle Channel under its bundle `scope` (BUNDLE-TILES-1).
+    pub(super) fn from_bundle(
+        scope: EngineeringStaticCellScope,
+        bundle: Arc<crate::map::spell_tiles::BundleSpellTiles>,
+    ) -> Self {
+        Self {
+            scope,
+            tiles: None,
+            unknown_cells: BTreeSet::new(),
+            source_bounds: None,
+            bundle: Some(bundle),
+        }
     }
 
     /// The scope is independently checked against the current runtime pin by the
@@ -345,6 +382,9 @@ impl QualifiedSpellTiles {
     ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
         if active_scope != &self.scope {
             return Err(SpellTileLookupError::ScopeMismatch);
+        }
+        if let Some(bundle) = &self.bundle {
+            return bundle.lookup(cell);
         }
         if self.unknown_cells.contains(&cell)
             || self

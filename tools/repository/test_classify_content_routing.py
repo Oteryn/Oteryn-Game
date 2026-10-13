@@ -2,9 +2,13 @@
 """Regressions for content/import exact-consumer impact routing."""
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
+import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path, PurePosixPath
 
@@ -221,6 +225,126 @@ def test_exact_candidate_scan_finds_existing_content_world_consumer(module):
     assert consumers["content/items/index.json"] == set(), consumers
 
 
+def classify_deferred(module, paths, consumers):
+    records = [{"filename": path, "status": "modified"} for path in paths]
+    return module.classify(
+        records,
+        len(records),
+        fixture(),
+        candidate_modes_verified=True,
+        reference_consumers=consumers,
+        defer_content_consumers=True,
+    )
+
+
+def test_pr_content_deferral_is_explicit_and_narrow(module):
+    deferred = {
+        "rust": False,
+        "windows": False,
+        "surface": "content",
+        "reason": module.CONTENT_DEFERRED_REASON,
+    }
+    world = "content/world/pins/world-bundle.json"
+    items = "content/items/index.json"
+    task = "docs/agents/tasks/active/OTV2-20261012-example.md"
+
+    # Merge Queue and post-merge routing never defer: the default stays exact-consumer.
+    result = classify(module, [world], consumers={world: {module.SERVER}})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+
+    # Pull-request routing defers server-, client- and mixed-consumed Content data.
+    for consumers in ({module.SERVER}, {"oteryn-client"}, {module.SERVER, "oteryn-foundation"}):
+        result = classify_deferred(module, [world, task], {world: consumers, task: set()})
+        assert result == deferred, (consumers, result)
+    result = classify_deferred(module, [items], {items: {"oteryn-client"}})
+    assert result == deferred, result
+
+    # Never deferred: canonical-control consumers, Rust or build files, Rust sources
+    # in the same change, unknown consumers and non-Content consumed inputs.
+    result = classify_deferred(module, [world], {world: {module.CONTROL_CONSUMER}})
+    assert result["rust"] is True and result["reason"] == "canonical-control-consumer-affected", result
+    rust_file = "content/world/generated.rs"
+    result = classify_deferred(module, [rust_file], {rust_file: {module.SERVER}})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+    for build in ("content/world/build.rs", "content/world/Cargo.toml"):
+        result = classify_deferred(module, [build], {build: set()})
+        assert result["rust"] is True and result["windows"] is True, (build, result)
+    server_source = "apps/game-server/src/lib.rs"
+    result = classify_deferred(module, [world, server_source], {world: {module.SERVER}, server_source: set()})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+    result = classify_deferred(module, [world], {world: {"not-a-workspace-package"}})
+    assert result["rust"] is True and result["reason"] == "unverified-reference-consumers", result
+    evidence = "docs/agents/evidence/runtime-input.json"
+    result = classify_deferred(module, [world, evidence], {world: {module.SERVER}, evidence: {module.SERVER}})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+    result = classify_deferred(module, [world], {world: set()})
+    assert result["reason"] == "unconsumed-auxiliary-inputs", result
+
+
+def test_deploy_inputs_use_exact_consumer_routing(module):
+    script = "deploy/synology-game/deploy-ops.sh"
+    result = classify(module, [script])
+    assert result["rust"] is False and result["windows"] is False, result
+    assert result["reason"] == "unconsumed-auxiliary-inputs", result
+
+    topology = "deploy/synology-game/preprod-topology.toml"
+    result = classify(module, [topology], consumers={topology: {module.SERVER}})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+
+    # Deferral is Content-only: a consumed deploy input is never deferred.
+    result = classify_deferred(module, [topology], {topology: {module.SERVER}})
+    assert result["rust"] is True and result["reason"] == "server-only-exact-consumer-closure", result
+
+
+def run_main(module, event_name):
+    world = "content/world/project.json"
+    saved = (module.pr_file_records, module.candidate_modes_safe, module.candidate_reference_consumers)
+    keys = ("GITHUB_EVENT_NAME", "GITHUB_OUTPUT", "EXPECTED_HEAD")
+    previous_env = {key: os.environ.get(key) for key in keys}
+    previous_argv = sys.argv
+    with tempfile.TemporaryDirectory() as directory:
+        metadata = Path(directory) / "metadata.json"
+        metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+        output = Path(directory) / "output"
+        output.write_text("", encoding="utf-8")
+        try:
+            module.pr_file_records = lambda: ([{"filename": world, "status": "modified"}], 1, True)
+            module.candidate_modes_safe = lambda sha: True
+            module.candidate_reference_consumers = lambda metadata, sha, paths: {
+                path: {module.SERVER, "oteryn-foundation"} for path in paths
+            }
+            os.environ.update(GITHUB_OUTPUT=str(output), EXPECTED_HEAD="a" * 40)
+            if event_name is None:
+                os.environ.pop("GITHUB_EVENT_NAME", None)
+            else:
+                os.environ["GITHUB_EVENT_NAME"] = event_name
+            sys.argv = ["classify_pr_test_lanes.py", str(metadata)]
+            with contextlib.redirect_stdout(io.StringIO()):
+                assert module.main() == 0
+            lines = output.read_text(encoding="utf-8").splitlines()
+        finally:
+            module.pr_file_records, module.candidate_modes_safe, module.candidate_reference_consumers = saved
+            sys.argv = previous_argv
+            for key, value in previous_env.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+    return dict(line.split("=", 1) for line in lines)
+
+
+def test_main_defers_content_only_for_pull_request_events(module):
+    outputs = run_main(module, "pull_request")
+    assert outputs["rust"] == "false" and outputs["windows"] == "false", outputs
+    assert outputs["reason"] == module.CONTENT_DEFERRED_REASON, outputs
+    assert outputs["world_bundle"] == "true", outputs
+    assert outputs["routing_health"] == "modelled", outputs
+    for event_name in ("merge_group", "push", "pull_request_target", None):
+        outputs = run_main(module, event_name)
+        assert outputs["rust"] == "true" and outputs["windows"] == "true", (event_name, outputs)
+        assert outputs["reason"] == "windows-consumer-affected", (event_name, outputs)
+
+
 def main() -> int:
     module = load_module()
     tests = (
@@ -228,6 +352,9 @@ def main() -> int:
         test_content_real_consumers_still_select_product_lanes,
         test_unknown_inputs_remain_fail_closed,
         test_exact_candidate_scan_finds_existing_content_world_consumer,
+        test_pr_content_deferral_is_explicit_and_narrow,
+        test_deploy_inputs_use_exact_consumer_routing,
+        test_main_defers_content_only_for_pull_request_events,
     )
     for test in tests:
         test(module)

@@ -20,6 +20,7 @@ pub mod facts;
 pub mod floor;
 mod floor_catalogue;
 pub mod overlay;
+pub(crate) mod spell_tiles;
 pub mod view;
 
 /// What a World expects of its bundle (§1.1): the bundle digest it pinned, the schema versions
@@ -269,6 +270,15 @@ impl WorldBase {
 
     /// The tile at native `floor`, `(x, y)`; `None` for a position the bundle holds no tile at.
     pub fn tile(&self, x: u16, y: u16, floor: i8) -> Option<TileView<'_>> {
+        let tile = self.tiles[self.tile_index(x, y, floor)?];
+        Some(TileView { base: self, tile })
+    }
+
+    /// The index in `0..tile_count()` of the tile at native `floor`, `(x, y)`, in [`tiles`]
+    /// order; `None` for a position the bundle holds no tile at.
+    ///
+    /// [`tiles`]: Self::tiles
+    pub(crate) fn tile_index(&self, x: u16, y: u16, floor: i8) -> Option<usize> {
         let key = sector_key(floor, x / SECTOR_SIZE, y / SECTOR_SIZE)?;
         let row = (key >> 11) as usize;
         let start = self.rows[row] as usize;
@@ -284,8 +294,7 @@ impl WorldBase {
         }
         let below =
             u32::from(sector.rank[word]) + (sector.occupied[word] & ((1 << bit) - 1)).count_ones();
-        let tile = self.tiles[(sector.first_tile + below) as usize];
-        Some(TileView { base: self, tile })
+        Some((sector.first_tile + below) as usize)
     }
 
     /// The ground speed a step onto native `floor`, `(x, y)` paces with (§1.3): 0 where the

@@ -306,6 +306,51 @@ fn walkable_floor_change(key: &str) -> bool {
     })
 }
 
+/// The `border` Terrain records whose catalogue `walkable` fact is not KNOWN true (ascending
+/// Tibia appearance ids; kept equal to `content/world/terrain` by a test): shorelines, cliffs and
+/// other borders that must keep blocking when the bundle states no solidity for them.
+const UNWALKABLE_BORDERS: &[u16] = &[
+    439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 568, 569, 570, 4633, 4634, 4635,
+    4636, 4637, 4638, 4639, 4640, 4641, 4642, 4643, 4644, 4645, 4646, 4647, 4648, 4649, 4650, 4651,
+    4652, 6562, 6563, 6627, 6628, 6629, 6630, 6631, 6632, 6633, 6634, 6635, 6636, 6637, 6638, 6639,
+    6640, 6641, 6642, 6643, 6644, 6645, 6646, 6647, 6648, 6649, 6650, 6651, 6652, 6653, 6654, 6655,
+    6656, 6657, 6658, 6659, 6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668, 6669, 6670, 6671,
+    6672, 6673, 6674, 6675, 6676, 6677, 6678, 6679, 6680, 6681, 6682, 6687, 6688, 6689, 6690, 6691,
+    6692, 6693, 6694, 7186, 8317, 8318, 11337, 11349, 11350, 11351, 11516, 11518, 11519, 11520,
+    11522, 11523, 11524, 11525, 11527, 11528, 11531, 11534, 11535, 11536, 11537, 11538, 12583,
+    12584, 12585, 12586, 12587, 12588, 12589, 12590, 12591, 12592, 12593, 12594, 15597, 15598,
+    15599, 15600, 15605, 15606, 15607, 15608, 15612, 15613, 15614, 15615, 15876, 15877, 15886,
+    15887, 20168, 21159, 21265, 21266, 21267, 21268, 21269, 21270, 21271, 21272, 21273, 21274,
+    21276, 21277, 21278, 21279, 21964, 24889, 24898, 24899, 25643, 26143, 28854, 28912, 30614,
+    30615, 31171, 31172, 31173, 31174, 31175, 31176, 31177, 31178, 31179, 31180, 31181, 31182,
+    31454, 31455, 31456, 31457, 31458, 31459, 31460, 31461, 32418, 32572, 32726, 38112, 38113,
+    38115, 38116, 38117, 38118, 38119, 38120, 38121, 38122, 38123, 38124, 38125, 38126, 38127,
+    38128, 38129, 38130, 38131, 38132, 38133, 38134, 38135, 38136, 38137, 38138, 38140, 38141,
+    38142, 38143, 38144, 38724, 38725, 38726, 38727, 38728, 38729, 38730, 38731, 38732, 38733,
+    38734, 38735,
+];
+
+/// Whether the bundle routes the Item entry to a Terrain record that does not block by itself:
+/// the compiler routes the World's grounds and borders to Item keys whose production definitions
+/// leave them without a solidity fact. A `ground` never blocks by itself (the base tile's ground
+/// already decides whether the cell can be walked on); a `border` only when the terrain
+/// catalogue proves it walkable (`UNWALKABLE_BORDERS`), so an unwalkable or unknown border, a
+/// wall, any other Terrain kind and every other Item without the fact still block.
+fn terrain_floor(entry: &PaletteEntry) -> bool {
+    let Some(terrain) = entry.terrain.as_ref() else {
+        return false;
+    };
+    match terrain.kind {
+        TerrainKind::Ground => true,
+        TerrainKind::Border => {
+            terrain.walkable != Some(false)
+                && palette_appearance(&entry.key)
+                    .is_some_and(|id| UNWALKABLE_BORDERS.binary_search(&id).is_err())
+        }
+        _ => false,
+    }
+}
+
 fn palette_facts(
     entry: &PaletteEntry,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
@@ -339,7 +384,7 @@ fn palette_facts(
         facts.pickupable = definition.pickupable;
         solid = definition
             .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key));
+            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
@@ -477,6 +522,114 @@ mod tests {
         assert!(item_solid("oteryn:item.tibia.i100"));
         assert!(!item_solid("oteryn:item.tibia.i1950"));
         assert!(!item_solid("oteryn:item.tibia.i293"));
+    }
+
+    /// An Item entry routed to a `ground` Terrain record, or to a `border` the terrain catalogue
+    /// proves walkable, does not block without a solidity fact (BOOT_WORLD_BUNDLE_REFUSED on the
+    /// real World, where every ground is an Item key); an unwalkable or unknown border, a wall,
+    /// any other Terrain kind and a stated solidity keep blocking.
+    #[test]
+    fn terrain_routed_grounds_and_walkable_borders_without_a_solidity_fact_do_not_block() {
+        let facts = |key: &str, kind: Option<TerrainKind>, walkable: Option<bool>| {
+            let solid = |solid: Option<bool>| {
+                let entry = PaletteEntry {
+                    key: key.into(),
+                    family: Family::Item,
+                    id: 0,
+                    terrain: kind.map(|kind| oteryn_world_bundle::bundle::Terrain {
+                        kind,
+                        walkable,
+                        ground_speed: (kind == TerrainKind::Ground).then_some(150),
+                    }),
+                };
+                let definition = move |_: &str| {
+                    Some(ItemDefinition {
+                        reference: NonZeroU32::MIN,
+                        solid,
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+                };
+                palette_facts(&entry, &definition).expect("facts").solid
+            };
+            assert!(solid(Some(true)), "stated solid {key} {kind:?}");
+            solid(None)
+        };
+        let ground = Some(TerrainKind::Ground);
+        let border = Some(TerrainKind::Border);
+        assert!(
+            !facts("oteryn:item.tibia.i4408", ground, Some(true)),
+            "ground"
+        );
+        assert!(
+            !facts("oteryn:item.tibia.i1109", border, None),
+            "walkable border"
+        );
+        // The catalogue says these borders are not walkable: they keep blocking.
+        for id in [30614, 4633, 439] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            assert!(facts(&key, border, None), "unwalkable border {id}");
+        }
+        assert!(
+            facts("oteryn:item.tibia.i1109", border, Some(false)),
+            "stated unwalkable"
+        );
+        assert!(
+            facts("item:border", border, None),
+            "border without a catalogue id"
+        );
+        for kind in [
+            TerrainKind::Wall,
+            TerrainKind::Roof,
+            TerrainKind::Field,
+            TerrainKind::Common,
+        ] {
+            assert!(
+                facts("oteryn:item.tibia.i4408", Some(kind), None),
+                "{kind:?}"
+            );
+        }
+        assert!(facts("oteryn:item.tibia.i4408", None, None), "plain item");
+    }
+
+    /// The unwalkable-border list equals the terrain catalogue's `border` records whose
+    /// `walkable` fact is not KNOWN true.
+    #[test]
+    fn unwalkable_border_list_matches_content() {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/terrain");
+        let (mut found, mut borders) = (Vec::new(), 0);
+        for entry in std::fs::read_dir(dir).expect("dir") {
+            let path = entry.expect("entry").path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if !(name.starts_with("terrain-") && name.ends_with(".json")) {
+                continue;
+            }
+            let value: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&path).expect("read")).expect("json");
+            for record in value["records"].as_array().expect("records") {
+                if record["kind"]["value"] != "border" {
+                    continue;
+                }
+                borders += 1;
+                let walkable = &record["walkable"];
+                if walkable["state"] == "KNOWN" && walkable["value"] == true {
+                    continue;
+                }
+                let key = record["identity"]["key"].as_str().expect("key");
+                found.push(
+                    key.rsplit_once(".i")
+                        .expect("id")
+                        .1
+                        .parse::<u16>()
+                        .expect("n"),
+                );
+            }
+        }
+        found.sort_unstable();
+        assert!(borders > found.len(), "borders {borders}");
+        assert_eq!(found.as_slice(), UNWALKABLE_BORDERS);
     }
 
     /// The solid list equals the JSON catalogue's `blocks_movement` floor-change objects.

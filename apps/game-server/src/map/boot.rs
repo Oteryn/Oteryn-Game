@@ -11,6 +11,7 @@
 use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
 use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
+use super::spell_tiles::{BundleSpellTiles, SpellTilesBuilder};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{
@@ -186,7 +187,9 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        let (facts, blocked, floors) = scan(&self.data, &item)?;
+        let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
+        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
             return Err(BootRefusal::StartNotEnterable);
@@ -217,6 +220,7 @@ impl CheckedBundle {
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
                 floors,
+                spell_tiles,
             }),
             base: self.base,
             map_revision: self.map_revision,
@@ -230,10 +234,12 @@ impl CheckedBundle {
 /// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
 /// a `wall` Terrain or an Item whose definition is solid (a usable door is not among them, since
 /// its state decides: [`BundleFacts::doors`]), and the tiles whose top-level entries carry a
-/// catalogue `floor_change` fact (MAP-FLOOR-1).
+/// catalogue `floor_change` fact (MAP-FLOOR-1). `spell_tiles` collects the spell tile facts of
+/// the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
+    spell_tiles: &mut SpellTilesBuilder,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
     let mut masks: Vec<u8> = Vec::new();
@@ -280,6 +286,7 @@ fn scan(
             );
         }
         facts.push(manifest, &sector, &mut blocked);
+        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -319,7 +326,7 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
 }
 
 /// The native tile of a movement cell: `z` is legacy `z` in `0..=15`, native floor `-z`.
-fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
+pub(super) fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     let z = i8::try_from(cell.z).ok().filter(|z| (0..=15).contains(z))?;
     Some(TilePos {
         x: u16::try_from(cell.x).ok()?,
@@ -466,7 +473,12 @@ impl BundleWorld {
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
         };
-        Ok(NativeEntryMovementCells::from_bundle(entry, scope, index))
+        Ok(NativeEntryMovementCells::from_bundle(
+            entry,
+            scope,
+            index,
+            Arc::clone(&self.map.spell_tiles),
+        ))
     }
 }
 
@@ -477,6 +489,8 @@ pub(crate) struct BundleMap {
     pub(crate) overlay: ChannelOverlay,
     pub(crate) facts: BundleFacts,
     pub(crate) floors: FloorTable,
+    /// The spell tile facts of the bundle (BUNDLE-TILES-1).
+    pub(crate) spell_tiles: Arc<BundleSpellTiles>,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -720,6 +734,23 @@ pub(crate) mod tests {
         coin_id: u32,
         door_house: u32,
     ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+    }
+
+    /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
+    /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
+    pub(crate) fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
+        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+    }
+
+    fn bundle_with_grass(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+        item_grass: Option<(&str, u32)>,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -761,7 +792,13 @@ pub(crate) mod tests {
                 floors: vec![-7],
             },
             palette: vec![
-                terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                match item_grass {
+                    Some((key, id)) => PaletteEntry {
+                        family: Family::Item,
+                        ..terrain(key, id, TerrainKind::Ground, Some(true))
+                    },
+                    None => terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                },
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
                 item(boxed, boxed_id),
@@ -1175,6 +1212,41 @@ pub(crate) mod tests {
             y: 0,
             floor: -7
         }));
+        Ok(())
+    }
+
+    /// The real World routes its grounds to Item keys whose served definitions carry no
+    /// solidity fact: such a ground does not block the start, a plain Item without the fact on
+    /// the same ground still blocks and a stated solid Item blocks.
+    #[test]
+    fn an_item_ground_without_a_solidity_fact_is_enterable() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle_with_item_grass();
+        let world = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "item:grass" => Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(3)?,
+                    solid: None,
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                }),
+                "item:coin" => items(key).map(|definition| ItemDefinition {
+                    solid: None,
+                    ..definition
+                }),
+                _ => items(key),
+            },
+        )?;
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        assert!(world.enterable(at(1)), "start on an Item ground");
+        assert!(!world.enterable(at(4)), "lava");
+        assert!(!world.enterable(at(5)), "wall");
+        assert!(!world.enterable(at(6)), "solid box");
+        assert!(!world.enterable(at(7)), "coin without a solidity fact");
         Ok(())
     }
 

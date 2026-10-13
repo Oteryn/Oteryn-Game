@@ -28,10 +28,13 @@ use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
-use super::item_move::{self, ItemMoveStep};
+use super::item_move::{
+    self, EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
+    ItemMoveStep,
+};
 use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
-    ItemViewDelta, OpenDecision, SessionItemView,
+    ItemViewDelta, OpenDecision, SessionItemView, ViewItem,
 };
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
@@ -82,7 +85,7 @@ use oteryn_protocol_oteryn::container_tree::{
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
-    CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveOutcome,
+    CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
     ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_with_equip_drop,
 };
 use oteryn_protocol_oteryn::quest_log::{
@@ -410,6 +413,41 @@ pub(crate) trait FreshAdmissionAuthority {
         _game_session_id: GameSessionId,
     ) -> impl Future<Output = Option<InventoryItems>> {
         async { None }
+    }
+
+    /// EQUIP-WIRE-1: the admitted Character's occupied equipment slots for domain 9 under
+    /// capability 12, in ascending slot order, read for the snapshot and after each commit that
+    /// may change domain 9. `None` when they cannot be read: the session then fails closed.
+    fn observe_character_equipment(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<Vec<(EquipmentSlot, ViewItem)>>> {
+        async { None }
+    }
+
+    /// EQUIP-WIRE-1 replay first: the equipment receipt of this command 9's CommandRef, read
+    /// after the TRANSFER replay and before its handle is resolved. `None` when it cannot be
+    /// read: the connection ends before the CommandId is sequenced.
+    fn committed_equipment_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> impl Future<Output = Option<EquipmentMoveReplay>> {
+        async { Some(EquipmentMoveReplay::Absent) }
+    }
+
+    /// EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4): one equip or unequip through the equipment owner,
+    /// keyed by this command 9's CommandRef. The connection has checked that the source is shown
+    /// where the move needs it and that the destination slot is shown free; the owner decides the
+    /// rest in one transaction.
+    fn move_equipment(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _request: EquipmentMove,
+    ) -> impl Future<Output = EquipmentMoveResult> {
+        async { EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected) }
     }
 
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
@@ -1245,9 +1283,15 @@ where
         {
             view = view.with_map_view();
         }
-        let Some(inventory) = authority
-            .observe_character_inventory(actor, admitted.game_session_id)
-            .await
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ITEM_EQUIP_DROP_V1)
+        {
+            view = view.with_equip_drop();
+        }
+        let Some(inventory) =
+            item_move::observe_inventory(authority, actor, admitted.game_session_id, &view).await
         else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -2438,9 +2482,13 @@ where
                 if outcome.disposition == UseDisposition::Committed
                     && let Some(view) = item_view.as_mut()
                 {
-                    let Some(inventory) = authority
-                        .observe_character_inventory(actor, admitted.game_session_id)
-                        .await
+                    let Some(inventory) = item_move::observe_inventory(
+                        authority,
+                        actor,
+                        admitted.game_session_id,
+                        view,
+                    )
+                    .await
                     else {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };

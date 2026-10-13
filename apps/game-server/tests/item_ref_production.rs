@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used)]
 // Dedicated PostgreSQL 17 qualification for MAP-ITEM-REF-1 Part B (the capability-4 corpse
-// read and take over a bound corpse MINT). Ordinary workspace runs report
+// read and take over a bound corpse MINT) and for EQUIP-WIRE-1 (command 9's equip and unequip
+// through the equipment owner). Ordinary workspace runs report
 // PRE-ROUTING/NONCANONICAL when the routed database is absent; the protected lane runs the same
 // cases through character_authority_postgres.
 extern crate oteryn_game_server as production_server;
@@ -32,3 +33,6 @@ mod corpse_transfer_postgres_cases;
 
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+#[path = "support/equipment_move_postgres_cases.rs"]
+mod equipment_move_postgres_cases;
