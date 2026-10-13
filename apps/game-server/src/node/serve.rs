@@ -2284,6 +2284,7 @@ async fn boot_and_serve(
         qualified_room: bundle.is_none().then_some(&qualified_room),
         achievements: &achievements,
         imported_charms: &imported_charms,
+        npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
         last_position_flush: Some(&last_position_flush),
     };

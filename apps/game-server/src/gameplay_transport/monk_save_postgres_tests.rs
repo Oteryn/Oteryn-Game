@@ -214,6 +214,7 @@ impl Dependencies {
             quest_catalogue: None,
             quest_sessions: std::sync::Mutex::default(),
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
+            npc_conversations: Default::default(),
             wheel_ruleset: None,
             wheel_sessions: std::sync::Mutex::default(),
             progression_sessions: std::sync::Mutex::default(),

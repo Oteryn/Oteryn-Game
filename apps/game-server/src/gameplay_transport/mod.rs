@@ -27,7 +27,9 @@ mod monster_ai_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod npc_command;
 mod npc_talk;
+pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
 #[cfg(test)]
@@ -396,6 +398,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
+    /// NPC-CMD-1a: what the NPCs of the Channel say; `None` while no NPC catalogue is loaded.
+    pub(crate) npc_talk: Option<std::sync::Arc<NpcTalkBook>>,
     /// Complete immutable Charm data imported at boot. This reference supplies no current
     /// generation authority or effect availability; gameplay composition is a separate step.
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
@@ -518,6 +522,7 @@ pub async fn serve_gameplay(
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
         quest_sessions: std::sync::Mutex::default(),
         chat: chat_intent::ChatRuntime::default(),
+        npc_conversations: npc_command::NpcConversations::default(),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
         wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
             .ok()
@@ -534,6 +539,9 @@ pub async fn serve_gameplay(
             owners.channel_id,
         ),
     };
+    if let Some(book) = owners.npc_talk {
+        authority.chat.install_npc_talk(book);
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -706,6 +714,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
         std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub(crate) chat: chat_intent::ChatRuntime,
+    /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
+    pub(crate) npc_conversations: npc_command::NpcConversations,
     /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
     /// read, and every Wheel load then fails closed.
     pub(crate) wheel_ruleset:
@@ -2840,6 +2850,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Vec<oteryn_protocol_oteryn::chat::ChatLine> {
         self.chat.drain(session)
+    }
+
+    async fn npc_session_open(&self, session: GameSessionId) {
+        self.npc_conversations.reset(session);
+    }
+
+    async fn npc_talk(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
+    ) -> npc_command::NpcTalkOutcome {
+        let runtime = self.runtime.lock().await;
+        self.npc_conversations.talk(
+            self.chat.npc_talk(),
+            &runtime,
+            actor,
+            session,
+            &intent,
+            self.owner_now(),
+        )
     }
 
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits

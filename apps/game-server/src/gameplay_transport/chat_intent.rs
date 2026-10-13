@@ -72,12 +72,13 @@ impl ChatRuntime {
     }
 
     /// Installs the NPC talk of the Channel once; a second install is ignored.
-    #[allow(
-        dead_code,
-        reason = "boot wiring follows NPC-PLACE-1b (no runtime NPC before it)"
-    )]
     pub(crate) fn install_npc_talk(&self, book: Arc<NpcTalkBook>) {
         let _ = self.npc_talk.set(book);
+    }
+
+    /// What the NPCs of the Channel say, once installed.
+    pub(crate) fn npc_talk(&self) -> Option<&NpcTalkBook> {
+        self.npc_talk.get().map(AsRef::as_ref)
     }
 
     pub(crate) fn knows(&self, session: GameSessionId) -> bool {

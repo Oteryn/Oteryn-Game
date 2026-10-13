@@ -51,10 +51,6 @@ pub(crate) struct NpcTalkBook {
 impl NpcTalkBook {
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
-    #[allow(
-        dead_code,
-        reason = "boot wiring follows NPC-PLACE-1b (no runtime NPC before it)"
-    )]
     pub(crate) fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self::default();
         for (reference, npc) in model.npcs() {

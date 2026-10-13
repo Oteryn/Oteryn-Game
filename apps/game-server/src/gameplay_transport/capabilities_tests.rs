@@ -655,13 +655,21 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
+fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
     // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
     // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
-    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    let (last, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
+    assert_eq!(
+        (npc.id, npc.requires),
+        (
+            oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+            &[][..]
+        )
+    );
     assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
     assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
     assert_eq!(last.requires, [4, 6]);
@@ -1415,6 +1423,7 @@ mod chat_wire {
             let authority = ChatAuthority {
                 runtime: RefCell::new(runtime),
                 chat: ChatRuntime::default(),
+                npc_conversations: Default::default(),
                 names: vec![(speaker_session, "Aela"), (near.1, "Bryn"), (far.1, "Cade")],
             };
             let say = encode_chat_intent(&ChatIntent::Say {
