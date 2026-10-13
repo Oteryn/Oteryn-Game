@@ -462,7 +462,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (DEPOT0, SUPPLY
 | DEPOT-WIRE-1 | DEPOT0 | impl, protocol review | yes | ITEM-VIEW-1b; MAP-LOAD-1; MAP-WIRE-1 |
 | DEPOT-1 | DEPOT0 | hard, persistence review |  | HOUSE-CUSTODY-1 (the exclusivity guard, not yet built); ITEM-MOVE-2a (backpack entry deletion by TRANSFER) |
 | DEPOT-CONTENT-1 | DEPOT0 | content |  | WO-1; MAP-LOAD-1 |
-| STASH-1 | SUPPLY_STASH0 | hard (persistence), persistence and value review |  | DEPOT-1; BANK-RET-0 (the `ECONOMY_LEDGER` retention profile); ITEM-MOVE-2a |
+| STASH-1 | SUPPLY_STASH0 | hard (persistence), persistence and value review |  | DEPOT-1; BANK-RET-0 (merged, #1748) (the `ECONOMY_LEDGER` retention profile); ITEM-MOVE-2a |
 | STASH-WIRE-1 | SUPPLY_STASH0 | impl, protocol review | yes | DEPOT-WIRE-1; STASH-1 |
 | STASH-CONTENT-1 | SUPPLY_STASH0 | content |  | MARKET-CONTENT-1 |
 | WRITE-CONTENT-1 | WRITE0 | content |  | ITEM-SEM-2b; WO-1 |
@@ -486,11 +486,11 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (BANK_FEE0, NPC
 | NPC-CMD-1b | NPC0 | impl; IN FLIGHT on its own branch: the read-only domain-8 window that supplies the bound catalogue revision |  | NPC-WIRE-1 |
 | NPC-TRADE-WIRE-1 | NPC0 | impl, persistence review: wire the trade intent (command 8) to the merged writer |  | NPC-CMD-1b; NPC-TRADE-1 (writer merged, #2040) |
 | NPC-TRADE-CHARGED-1 | NPC0 | hard, persistence review: trade charged and fluid items (held now as `ChargedOrFluidPending`, 865 offers) |  | NPC-TRADE-WIRE-1; TIMED-RT-1c |
-| NPC-TRAVEL-1 | NPC0 | hard, persistence review |  | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | NPC0; TRAVEL0 (widened: "widened" describes the TRAVEL0 amendment of this one child, it is not a second batch) | hard, persistence review. Acceptance gates: NPC0 and TRAVEL0 are both CANDIDATE, so the child is not allocated until both are ACCEPTED |  | NPC-TALK-1 (merged); GOLD-FEE-1b (merged); DEATH-1 admission consumption (DEATH-1 merged); QUEST-PRED-1 (merged); CHAR-POSITION-1 |
 | BANK-RET-0 | BANK0 | **MERGED (#1748).** control plane routes; privacy review | yes | this decision |
-| BANK-1 | BANK0 | **MERGED (#1766).** hard, persistence review |  | GOLD-FEE-1b (three coins, change guards; BANK-1 rewrites the same guard functions after it); BANK-RET-0 |
+| BANK-1 | BANK0 | **MERGED (#1766).** hard, persistence review |  | GOLD-FEE-1b (three coins, change guards; BANK-1 rewrites the same guard functions after it); BANK-RET-0 (merged, #1748) |
 | BANK-NPC-1 | BANK0 | impl, content review |  | BANK-1; NPC-CONTENT-1; NPC-TALK-1 |
-| GOLD-FEE-2 | BANK_FEE0 | **MERGED (#1781).** hard, persistence review |  | BANK-1; BANK-RET-0; GOLD-FEE-1b; for BUY and travel, NPC-TRADE-1 and NPC-TRAVEL-1 (whichever lands later takes the bank part) |
+| GOLD-FEE-2 | BANK_FEE0 | **MERGED (#1781).** hard, persistence review |  | BANK-1; BANK-RET-0 (merged, #1748); GOLD-FEE-1b; for BUY and travel, NPC-TRADE-1 and NPC-TRAVEL-1 (whichever lands later takes the bank part) |
 
 ### TRADE-PLAYER-1, MAIL-1, MARKET-1
 
@@ -568,7 +568,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (PROFICIENCY1, 
 | W-3 | WHEEL0 | client owner: Wheel window |  | W-2 |
 | GEM-R | WHEEL_GEM0 | impl, content review |  | W-R |
 | GEM-CONTENT-1 | WHEEL_GEM0 | content |  | none |
-| GEM-1 | WHEEL_GEM0 | hard, persistence and economy review |  | W-1; GEM-R; GOLD-FEE-2; WHEEL-GEM-0A accepted (its §5 ordering rule) |
+| GEM-1 | WHEEL_GEM0 | hard, persistence and economy review |  | W-1; GEM-R; GOLD-FEE-2; WHEEL-GEM-0A (its §5 ordering rule; the WHEEL_GEM0 brief is CANDIDATE, so the acceptance gate applies) |
 | GEM-VESSEL-1 | WHEEL_GEM0 | hard, persistence review |  | W-1; GEM-1 |
 | GEM-WIRE-1 | WHEEL_GEM0 | impl, protocol review | yes | W-2; GEM-1; GEM-VESSEL-1 |
 | GEM-FX-1 | WHEEL_GEM0 | hard, combat review |  | W-FX-1; GEM-VESSEL-1 |
@@ -582,7 +582,6 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (TRAVEL0) is al
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
 | TRAVEL-CONTENT-1 | TRAVEL0 | impl (NPC content lane), content review |  | NPC-CONTENT-1; QUEST-CONTENT-1 for gate and discount tracks |
-| NPC-TRAVEL-1 (widened) | TRAVEL0 | hard, persistence review |  | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission; QUEST-PRED-1; CHAR-POSITION-1 |
 | NPC-TRAVEL-2 | TRAVEL0 | impl, persistence review |  | NPC-TRAVEL-1; PREM-1; PREM-3 |
 | NPC-ACTOR-1 | NPC_BEHAVIOUR0 | impl, determinism review |  | NPC-PLACE-1b; CREATURE-MOVE-1; SPEED-1; NPC-WIRE-1 |
 | NPC-TALK-2 | NPC_BEHAVIOUR0 | impl |  | NPC-TALK-1 |
@@ -794,7 +793,7 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | MKTCOIN-WIRE-1 | MARKET_COINS0 | Game, impl; protocol review | yes | MARKET-WIRE-1; MKTCOIN-1 |
 | MKTCOIN-E2E-1 | MARKET_COINS0 | Game and Platform; security and cross-repository review |  | MKTCOIN-1; MKTCOIN-P |
 | PROF-CONTENT-1 | PROFICIENCY0 | **MERGED (#1342).** Definitions, perk map, `profile_binding` only, removal of the inline profile, the crosswal |  | this decision; ITEM-ID-1 keys |
-| PROF-1 | PROFICIENCY0 | **MERGED (#1322).** Migration, writer, reconcile, guards, integrity verifier, grants, admission load (§4.2-§4. |  | this decision; A13 accepted; `0018`-`0020`; CHAR-BUILD-1 (merged); H-1 |
+| PROF-1 | PROFICIENCY0 | **MERGED (#1322).** Migration, writer, reconcile, guards, integrity verifier, grants, admission load (§4.2-§4. |  | this decision; A13 (CANDIDATE; its migrations `0018`-`0020` are merged); CHAR-BUILD-1 (merged); H-1 |
 | PROF-2 | PROFICIENCY0; PROF_EFFECT0 (amended) | Accrual, level-up, selection and clearing, perk effects, checkpoints, measurement (PROFICIENCY0), merged with the former separate `PROF-2 (amended)` row of PROF_EFFECT0 (hard (combat), combat and determinism review), so there is one PROF-2 row and PROF-PARITY-1 and PROF-WIRE-1 depend on all of it. The ruleset slice (thresholds, Mastery, kill accrual) is MERGED (#1374); the rest is this row |  | PROF-CONTENT-1 (merged), PROF-1 (merged); ATTACK-1b (merged); RANGED-1; SKILLS-0's live skill read; EQUIP-RT-1 |
 | PROF-WIRE-1 | PROFICIENCY0 | Capability row shape, domain, command, `.proto`, client view | yes | owner acceptance of §4.4; PROF-2 |
 | PROFICIENCY-1 | PROFICIENCY0 | **MERGED (#1475).** Modification, rank, catalysts (decision) |  | Reference evidence for costs |
@@ -808,7 +807,7 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | HOUSE-CUSTODY-1 | HOUSE_CUSTODY0 | **MERGED (archive record OTV2-20260930-house-custody-1).** One migration: `HouseInterior`, provenance, exclusivity guard, no runtime grants, `_postgr |  | this decision |
 | MAP-OVERLAY-1 | HOUSE_CUSTODY0 | Reset preflight, step-4 recheck, "reset touches only Ground" test (§3.6) |  | ADR-0021 accepted |
 
-### Children found by the umbrella audit (accepted packets and decisions)
+### Children found by the umbrella audit (packets and decisions; the acceptance gate applies to CANDIDATE ones)
 
 | Child | Brief | Class | Reg | Depends |
 |---|---|---|---|---|
@@ -834,10 +833,13 @@ Every name in a `Depends on` column is one of: a batch in section 4, a child in 
 | GAME-PREPROD-TOPOLOGY-1 | in-flight task, ops | `docs/agents/tasks/OTV2-20261007-game-preprod-topology-1.md`; the topology decision is PROPOSED and outside the mechanics rows |
 | LOGOUT-1 | alias | the earlier plan name of LOGOUT-WIRE-1; the batch is LOGOUT-WIRE-1 |
 | DEATH-DUR-1 | death module batch B | section 4, "Death module and in-flight work" |
-| GAME-CHAR-CMD-0, CHAR-POSITION-1, CHAR-BUILD-1b, CHARM-1, SKILLS-0 | Character-lane contracts and tasks | accepted decisions and merged tasks outside this plan |
+| GAME-CHAR-CMD-0, CHAR-POSITION-1, CHAR-BUILD-1b, CHARM-1, SKILLS-0 | Character-lane contracts and tasks | contracts and tasks outside this plan (status per their own records, not per the section 7 status list) |
 | MAP-LOAD-1, MAP-WIRE-1, MAP-BUNDLE-1, MAP-ITEM-REF-1, MAP-VIEWPORT-PERF-1, N8-1 | map and login tracks | MAP_TRACK_PACKETS and MAP_WIRE_PACKETS, owned outside this plan |
-| CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1, ITEM-ID-1, ITEM-MOVE-WIRE-1, ITEM-USE-0, ITEM-SEM-2b, USE-WIRE-V1, EQUIP-0, EXERCISE-0, OFFLINE-0, CHAT-0, PARTY-PVP-0, BANK-FEE-0, HOUSE-CUSTODY-0, TIMED-ITEM-0B, WHEEL-GEM-0A, VIP-0, PREY-0, CONDITIONS-0, ATTACK-0 | accepted decisions | docs/architecture/reviews; their children are in section 7 |
+| ITEM-USE-0, PARTY-PVP-0, HOUSE-CUSTODY-0, ATTACK-0 | decisions with ACCEPTED briefs (ITEM_USE0, PARTY_PVP0, HOUSE_CUSTODY0, ATTACK0 in the section 7 status list) | docs/architecture/reviews; their children are in section 7 |
+| EQUIP-0, EXERCISE-0, OFFLINE-0, CHAT-0, BANK-FEE-0, TIMED-ITEM-0B, VIP-0, PREY-0, CONDITIONS-0 | CANDIDATE decisions (CHAT-0 was reopened by the 2026-10-12 review; EQUIP0, EXERCISE0, OFFLINE0, CHAT0, BANK_FEE0, TIMED_ITEM0B, VIP0, PREY0, CONDITIONS0 in the section 7 status list) | docs/architecture/reviews; their children are in section 7 and carry the acceptance gate |
+| ITEM-ID-1, ITEM-MOVE-WIRE-1, WHEEL-GEM-0A | decisions or tasks whose briefs (ITEM_IDENTITY, ITEM_MOVE_WIRE1, WHEEL_GEM0) are CANDIDATE | docs/architecture/reviews; children carry the acceptance gate |
+| CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1, ITEM-SEM-2b, USE-WIRE-V1 | protocol and item tasks or decisions with no brief in the status list | status per their own records |
 | CHEST-1, H-1, FND-02, FND-04, GAME-ABILITY-01, GAME-AI-01, VSL-MOVE-01, MOVE-RL-11, PROD-COMPAT-01, PROD-ENTITLEMENTS-01, DATA-PRIVACY-01, ANL-01, ANL-03, PREMIUM-DELIVERY-0, PREMIUM-ACTIVATION-0 | merged foundations, contracts and decisions | outside this plan |
 | ADR-0010, ADR-0021 | ADR | docs/adr |
 | DUR-02, DUR-03, RUNE-USE, SPELL-D3, SPELL-D4 | merged lanes or content facts | outside this plan |
-| WRITE-MOD-1, ARCH-ALPHA-OPS-0, SUMMON-1, SUMMON-WIRE-1, WORLDINT-USE-1, STANCE-0, STANCE-1 | brief children or decisions outside this plan, or listed in App. 7 supporting briefs | the named accepted briefs |
+| WRITE-MOD-1, ARCH-ALPHA-OPS-0, SUMMON-1, SUMMON-WIRE-1, WORLDINT-USE-1, STANCE-0, STANCE-1 | brief children or decisions outside this plan, or listed in App. 7 supporting briefs | the named briefs (their status is in the section 7 status list; STANCE0 is CANDIDATE) |
