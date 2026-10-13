@@ -2198,7 +2198,7 @@ impl<S: SessionStream> Session<S> {
         Ok(())
     }
 
-    /// A mismatched map binding requests the existing FND resync, then fails closed.
+    /// A mismatched binding or malformed map requests existing FND resync, then fails closed.
     /// Recovery uses a fresh admission snapshot, not an invented mid-session snapshot route.
     async fn apply_inbound_delta(
         &mut self,
@@ -2214,6 +2214,7 @@ impl<S: SessionStream> Session<S> {
                 result,
                 Err(SessionError::WorldMap(
                     world_map::WorldMapWireError::BindingMismatch
+                        | world_map::WorldMapWireError::Malformed
                 ))
             ) {
                 let frame = oteryn_protocol_oteryn::encode_resync_request(

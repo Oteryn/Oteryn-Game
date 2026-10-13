@@ -162,6 +162,7 @@ fn departed_tile_removes_handle_and_hidden_upper_floor_cannot_capture_actor_clic
     .map_err(|e| format!("{e:?}"))?;
     map.apply_delta(&roof).map_err(|e| format!("{e:?}"))?;
     assert!(map_actor_target(&map, &[actor], point).is_none());
+    assert!(!map.contains_target(MapTarget::Item(handle())));
     let previous = next;
     next.origin.x += 1;
     let clear = encode_world_map_delta(

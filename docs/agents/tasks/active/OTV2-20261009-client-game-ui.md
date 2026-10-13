@@ -118,21 +118,18 @@ never publish original assets/account data and qualify each new source head.
 
 ## Map consumer continuation — AUTHORING
 
-Source `c302e2555c83aeeb51481d324663603304420140` is committed/published:
-Session admits and maintains the complete bounded domain-17 map; mismatched
-bindings request existing FND resync and invalidate drawing/targets. Pinned
-appearance/sheet resolution, floor/stack phases, bounded four-batch GPU uploads
-and texture recreation reuse the existing renderer. Play coalesces complete map
-projections, renders them through the Windows page/capture path and never anchors
-them to the local start area. Native secondary USE clicks pick the highest visible
-floor/top received entry and derive authority only from its origin. Session checks
-queued targets again; stale inputs send no frame or command ID. Duplex tests
-verify exact base-key/revision and item-handle payloads. Actor visuals without an
-accepted binding remain placeholders; this does not enable all mouse/loot presets.
-
-Map source Linux/MSVC/Clippy/DX12 qualification, 20 pages/78 verified capture
-hashes at 125% DPI and preserved owner PID 12896 are retained in UI-FIDELITY.md.
-Same-head protected-base audit is not full CI, independent review or bundle E2E.
+Owner continuation retains this single client writer; CP6146799516 withdraws
+the competing CP allocation, not this owner task. Architect6146789689 supplies
+the complete MAP/receipt/native criteria. No server/protocol/deployment writes.
+Current map fixes: same-floor received terrain clicks actually start walking;
+shared projected-floor picking invalidates covered queued USE (raw duplex proves
+no frame/ID); malformed origins request existing resync and fail closed; D627
+east/north walkers stay under both endpoint tops, including resident-atlas quad
+order. Linux client219/196/5 and Session78, strict all-target Clippy pass.
+These fixes are not Windows/E2E qualified. Historical c302/5d native evidence
+stays in UI-FIDELITY.md; never inherit it. Next: explicit pinned asset provider,
+Item-ground routing, bootstrap/default18 proof, then receipt deadline consumer.
+Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
 
 CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
 #2034 owns STEP-PACE-WIRE-0; server emission precedes map18 activation, receipt

@@ -13,7 +13,7 @@ use oteryn_session::{
     ActorPosition, MAX_SNAPSHOT_ENTITIES,
     map_view::{MapTile, in_window, tile_order},
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 /// Visual data already resolved by the actor consumer, not a map definition reference.
@@ -129,14 +129,19 @@ pub(crate) fn projected(position: ActorPosition, origin: ActorPosition) -> Optio
     ))
 }
 
+fn walking_source(actor: &MapActor) -> Option<ActorPosition> {
+    actor.previous.filter(|previous| {
+        previous.floor == actor.position.floor
+            && previous
+                .x
+                .abs_diff(actor.position.x)
+                .max(previous.y.abs_diff(actor.position.y))
+                <= 1
+    })
+}
+
 fn actor_phase(actor: &MapActor) -> ActorPosition {
-    if let Some(previous) = actor.previous
-        && previous.floor == actor.position.floor
-        && previous
-            .x
-            .abs_diff(actor.position.x)
-            .max(previous.y.abs_diff(actor.position.y))
-            <= 1
+    if let Some(previous) = walking_source(actor)
         && tile_order(&previous) > tile_order(&actor.position)
     {
         previous
@@ -194,6 +199,29 @@ fn compose(
             positions.insert(tile_order(&position));
         }
     }
+    // A walking actor belongs to the later creature phase, but must remain under
+    // BOTH endpoints' on-top items. Only defer affected tops, never unrelated tiles.
+    let mut top_phases: BTreeMap<_, (i16, i32, i32)> = BTreeMap::new();
+    for actor in actors {
+        let Some(previous) = walking_source(actor) else {
+            continue;
+        };
+        let phase = actor_phase(actor);
+        let last = tile_order(&phase);
+        if !positions.contains(&last)
+            || projected(phase, header.origin).is_none_or(|tile| !expanded.contains(tile))
+        {
+            continue;
+        }
+        let first = tile_order(&previous).min(tile_order(&actor.position));
+        if first < last {
+            top_phases
+                .entry(first)
+                .and_modify(|phase: &mut _| *phase = (*phase).max(last))
+                .or_insert(last);
+        }
+    }
+    let mut on_top: BTreeMap<_, Vec<(TileCoord, Option<ResolvedEntry>, i32)>> = BTreeMap::new();
     for (floor, y, x) in positions {
         let position = ActorPosition { x, y, floor };
         let Some(tile) = projected(position, header.origin) else {
@@ -213,6 +241,7 @@ fn compose(
         }));
         let push = |frame: &mut SpriteFrame,
                     page: &mut AtlasPage,
+                    tile: TileCoord,
                     entry: Option<&ResolvedEntry>,
                     lift: i32| {
             let Some(entry) = entry else {
@@ -239,7 +268,7 @@ fn compose(
             .zip(&lifts)
             .filter(|(entry, _)| layer(entry.as_ref()) != 4)
         {
-            push(&mut frame, page, entry.as_ref(), lift);
+            push(&mut frame, page, tile, entry.as_ref(), lift);
         }
         for actor in actors.iter().filter(|actor| actor_phase(actor) == position) {
             let dx = actor.position.x - position.x;
@@ -283,12 +312,20 @@ fn compose(
                 .collect();
             frame.push_entry(page, &expanded, tile, &cells);
         }
-        for (entry, &lift) in items
-            .iter()
-            .zip(&lifts)
-            .filter(|(entry, _)| layer(entry.as_ref()) == 4)
-        {
-            push(&mut frame, page, entry.as_ref(), lift);
+        let key = tile_order(&position);
+        let release = top_phases.get(&key).copied().unwrap_or(key);
+        for (entry, lift) in items.into_iter().zip(lifts) {
+            if layer(entry.as_ref()) == 4 {
+                on_top
+                    .entry(release)
+                    .or_insert_with(Vec::new)
+                    .push((tile, entry, lift));
+            }
+        }
+        if let Some(entries) = on_top.remove(&key) {
+            for (anchor, entry, lift) in entries {
+                push(&mut frame, page, anchor, entry.as_ref(), lift);
+            }
         }
     }
     Ok(frame)

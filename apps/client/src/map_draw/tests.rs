@@ -4,6 +4,7 @@ use oteryn_session::map_view::{
     MapDefinition, MapItem, MapOrigin, MapViewHeader, WorldMapViewSnapshot,
     encode_world_map_snapshot,
 };
+use std::collections::BTreeMap;
 use std::num::NonZeroU32;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -184,6 +185,73 @@ fn actor_on_omitted_tile_draws_and_walking_uses_later_source_or_destination_phas
     let quads = &frame.quads().batches()[0];
     assert_eq!(quads[2].position, [224.0, 144.0]);
     assert_eq!(quads[3].position, [256.0, 160.0]);
+    Ok(())
+}
+
+#[test]
+fn walking_actor_stays_under_both_tiles_on_top_even_with_a_resident_atlas() -> TestResult {
+    for north in [false, true] {
+        let earlier = position(100, if north { 99 } else { 100 }, -7);
+        let later = position(if north { 100 } else { 101 }, 100, -7);
+        let map = map(
+            vec![
+                tile(earlier.x, earlier.y, -7, 3),
+                tile(later.x, later.y, -7, 3),
+            ],
+            -7,
+        )?;
+        let mut walker = actor(
+            if north { earlier.x } else { later.x },
+            if north { earlier.y } else { later.y },
+            -7,
+            7,
+        );
+        walker.previous = Some(if north { later } else { earlier });
+        walker.offset = if north { [0, 16] } else { [-16, 0] };
+        let mut page = AtlasPage::new();
+        let mut slots = BTreeMap::new();
+        for resident in [false, true] {
+            let frame = compose(
+                &map,
+                std::slice::from_ref(&walker),
+                &mut page,
+                &view()?,
+                |tile| {
+                    let base = if tile.position == earlier { 0 } else { 3 };
+                    vec![
+                        resolved(base + 1, 0),
+                        resolved(base + 2, 3),
+                        resolved(base + 3, 4),
+                    ]
+                },
+            )?;
+            if resident {
+                assert!(frame.uploads().is_empty());
+            }
+            slots.extend(
+                frame
+                    .uploads()
+                    .iter()
+                    .map(|(key, slot)| (key.sprite_id, *slot)),
+            );
+            let quads = frame.quads().batches().iter().flatten().collect::<Vec<_>>();
+            assert_eq!(quads.len(), 7);
+            for (quad, id) in quads.iter().zip([1, 2, 4, 5, 7, 3, 6]) {
+                assert_eq!(
+                    quad.uv,
+                    AtlasPage::uv_rect(*slots.get(&id).ok_or("missing slot")?)
+                );
+            }
+            assert_eq!(
+                quads[4].position,
+                if north {
+                    [224.0, 144.0]
+                } else {
+                    [240.0, 160.0]
+                }
+            );
+        }
+    }
     Ok(())
 }
 

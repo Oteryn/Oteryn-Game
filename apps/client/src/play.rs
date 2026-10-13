@@ -284,7 +284,20 @@ impl PlayView {
             }
             if let Some(picked) = crate::input::map_pick(map, tile) {
                 self.scene.select_map_tile(tile)?;
-                if picked.target.is_none() {
+                if picked.position.floor == self.floor
+                    && map
+                        .tile(picked.position)
+                        .and_then(|tile| tile.items.last())
+                        .is_some_and(|item| {
+                            matches!(
+                                item.definition,
+                                oteryn_session::map_view::MapDefinition::Terrain(_)
+                            )
+                        })
+                {
+                    self.walk
+                        .set_goal(TileCoord::new(picked.position.x, picked.position.y));
+                } else if picked.target.is_none() {
                     self.combat_line = Some("That item is out of reach");
                 }
                 return Ok(());
@@ -2080,6 +2093,72 @@ mod tests {
         let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
         assert_eq!(view.marker_count(), 1);
         assert_eq!(view.scene().sprites().len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn streamed_ground_click_walks_but_roof_click_does_not_guess_a_lower_floor()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader, WorldMapViewSnapshot,
+            encode_world_map_snapshot,
+        };
+        let own = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        for (floor, terrain, expected) in [
+            (-7, true, Some(StepDir::East)),
+            (-6, true, None),
+            (-7, false, None),
+        ] {
+            let shift = i32::from(floor - own.floor);
+            let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    content_generation: [1; 32],
+                    bundle_digest: [2; 32],
+                    reset_epoch: 1,
+                    origin: own,
+                    first_visible_floor: 0,
+                },
+                tiles: vec![MapTile {
+                    position: ActorPosition {
+                        x: 101 + shift,
+                        y: 100 + shift,
+                        floor,
+                    },
+                    more: false,
+                    ground_speed: 150,
+                    items: vec![MapItem {
+                        definition: if terrain {
+                            MapDefinition::Terrain(std::num::NonZeroU32::MIN)
+                        } else {
+                            MapDefinition::Item(std::num::NonZeroU32::MIN)
+                        },
+                        count: 1,
+                        sub_type: 0,
+                        appearance_id: 0,
+                        origin: MapOrigin::DisplayOnly,
+                    }],
+                }],
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+            map.replace_snapshot(&payload)
+                .map_err(|e| format!("{e:?}"))?;
+            let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+            view.apply_pushed(&Pushed {
+                map: Some(Box::new(map)),
+                ..Pushed::default()
+            })?;
+            view.click(TileCoord::new(101, 100))?;
+            assert_eq!(view.next_step(), expected);
+            assert_eq!(
+                view.combat_line,
+                expected.is_none().then_some("That item is out of reach")
+            );
+        }
         Ok(())
     }
 

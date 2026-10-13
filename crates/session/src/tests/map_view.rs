@@ -56,6 +56,7 @@ fn map_peer_script(
 ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let peer = tokio::spawn(async move {
+        let result_sequence = if tail.is_some() { 42 } else { 41 };
         read_frame(&mut server).await?;
         write_frame(
             &mut server,
@@ -118,7 +119,7 @@ fn map_peer_script(
                 &mut server,
                 &encode_command_result(
                     1,
-                    41,
+                    result_sequence,
                     7,
                     CommandStatus::Accepted,
                     &world_object::encode_use_result(UseDisposition::Committed),
@@ -200,6 +201,66 @@ fn live_map_origin_selects_exact_use_payload_and_stale_target_sends_nothing() ->
             drop(session);
             peer.await??;
         }
+        Ok(())
+    })?
+}
+
+#[test]
+fn header_only_roof_delta_invalidates_queued_use_without_reserving_a_command_id()
+-> Result<(), BoxError> {
+    block_on(async {
+        let lower = std::num::NonZeroU64::MIN;
+        let upper = std::num::NonZeroU64::new(2).ok_or("zero handle")?;
+        let mut snapshot =
+            world_map::decode_world_map_snapshot(&map_snapshot()?).map_err(|e| format!("{e:?}"))?;
+        snapshot.header.origin.floor = -1;
+        snapshot.header.first_visible_floor = -1;
+        snapshot.tiles[0].position.floor = -1;
+        snapshot.tiles[0].items[0].origin = MapOrigin::Handle(lower);
+        let mut roof = snapshot.tiles[0].clone();
+        roof.position = ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 0,
+        };
+        roof.items[0].origin = MapOrigin::Handle(upper);
+        snapshot.tiles.push(roof);
+        let mut next = snapshot.header;
+        next.first_visible_floor = 0;
+        let delta = world_map::encode_world_map_delta(
+            &snapshot.header,
+            &WorldMapViewDelta {
+                header: next,
+                cleared: vec![],
+                tiles: vec![],
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let bytes =
+            world_map::encode_world_map_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+        let (client, peer) = map_peer_script(
+            SELECTED,
+            Some(bytes),
+            false,
+            Some(encode_state_delta(1, 41, 17, 9, 10, 1, &delta)?),
+            false,
+            Some(world_object::encode_use_item_intent(upper)),
+        );
+        let mut session = Session::admit(client, map_admission()?).await?;
+        session.service_liveness(Duration::from_millis(50)).await?;
+        assert!(
+            session
+                .use_map_target(crate::map_view::MapTarget::Item(lower))
+                .await?
+                .is_none()
+        );
+        let outcome = session
+            .use_map_target(crate::map_view::MapTarget::Item(upper))
+            .await?
+            .ok_or("visible roof target disappeared")?;
+        assert_eq!(outcome.command_id, 7);
+        drop(session);
+        peer.await??;
         Ok(())
     })?
 }
@@ -349,6 +410,50 @@ fn refused_map_revision_invalidates_all_map_targets() -> Result<(), BoxError> {
         assert!(session.join_snapshot().world_map.is_none());
         assert!(session.take_events().is_empty());
         assert_eq!(session.world_map_revision(), 9);
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
+fn malformed_map_origin_requests_resync_and_cannot_reuse_old_targets() -> Result<(), BoxError> {
+    block_on(async {
+        let mut value =
+            world_map::decode_world_map_snapshot(&map_snapshot()?).map_err(|e| format!("{e:?}"))?;
+        value.tiles[0].position = at(1, 0);
+        let mut payload = world_map::encode_world_map_delta(
+            &header(),
+            &WorldMapViewDelta {
+                header: header(),
+                tiles: value.tiles,
+                cleared: vec![],
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        // The encoded display_only oneof is 30 01; zero is not a valid origin.
+        let flag = payload
+            .windows(2)
+            .rposition(|bytes| bytes == [0x30, 1])
+            .ok_or("no display-only origin")?;
+        payload[flag + 1] = 0;
+        let frame = encode_state_delta(1, 41, 17, 9, 10, 1, &payload)?;
+        let (client, peer) = map_peer(SELECTED, Some(map_snapshot()?), false, Some(frame), true);
+        let mut session = Session::admit(client, map_admission()?).await?;
+        assert!(matches!(
+            session.service_liveness(Duration::from_millis(50)).await,
+            Err(SessionError::WorldMap(
+                world_map::WorldMapWireError::Malformed
+            ))
+        ));
+        assert_eq!(session.map_revision, 9);
+        assert!(session.world_map_view().is_none());
+        assert!(session.join_snapshot().world_map.is_none());
+        assert!(session.take_events().is_empty());
+        assert!(matches!(
+            session.step(StepDirection::East).await,
+            Err(SessionError::SessionUnusable)
+        ));
         drop(session);
         peer.await??;
         Ok(())

@@ -317,13 +317,7 @@ pub struct MapPick {
 /// Highest drawn floor and its topmost received entry; never reconstructs a hidden stack.
 #[must_use]
 pub fn map_pick(map: &crate::map_view::MapView, screen_tile: TileCoord) -> Option<MapPick> {
-    let header = map.header()?;
-    let tile = map
-        .visible_tiles()
-        .filter(|tile| {
-            crate::map_draw::projected(tile.position, header.origin) == Some(screen_tile)
-        })
-        .max_by_key(|tile| tile.position.floor)?;
+    let tile = map.visible_tile_at(screen_tile.x, screen_tile.y)?;
     Some(MapPick {
         position: tile.position,
         target: map.target(tile.position, tile.items.len().checked_sub(1)?),

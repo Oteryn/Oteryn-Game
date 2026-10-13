@@ -145,6 +145,20 @@ impl MapView {
         })
     }
 
+    /// The highest drawn floor at a perspective-projected world coordinate.
+    /// Drawing/picking and queued target validation must not fall through a covering tile.
+    #[must_use]
+    pub fn visible_tile_at(&self, x: i32, y: i32) -> Option<&MapTile> {
+        let header = self.header?;
+        self.visible_tiles()
+            .filter(|tile| {
+                let shift = i32::from(tile.position.floor) - i32::from(header.origin.floor);
+                tile.position.x.checked_sub(shift) == Some(x)
+                    && tile.position.y.checked_sub(shift) == Some(y)
+            })
+            .max_by_key(|tile| tile.position.floor)
+    }
+
     #[must_use]
     pub fn tile(&self, position: ActorPosition) -> Option<&MapTile> {
         self.tiles.get(&tile_order(&position))
@@ -193,11 +207,26 @@ impl MapView {
     /// A queued input must still name a visible current entry when the session sends it.
     #[must_use]
     pub fn contains_target(&self, target: MapTarget) -> bool {
+        let Some(header) = self.header else {
+            return false;
+        };
         self.visible_tiles().any(|tile| {
-            tile.items
+            let matches = tile
+                .items
                 .len()
                 .checked_sub(1)
-                .is_some_and(|index| self.target(tile.position, index) == Some(target))
+                .is_some_and(|index| self.target(tile.position, index) == Some(target));
+            let shift = i32::from(tile.position.floor) - i32::from(header.origin.floor);
+            let projected = tile
+                .position
+                .x
+                .checked_sub(shift)
+                .zip(tile.position.y.checked_sub(shift));
+            matches
+                && projected.is_some_and(|(x, y)| {
+                    self.visible_tile_at(x, y)
+                        .is_some_and(|top| top.position == tile.position)
+                })
         })
     }
 }
