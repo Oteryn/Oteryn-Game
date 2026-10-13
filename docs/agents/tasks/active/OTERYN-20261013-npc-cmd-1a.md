@@ -4,17 +4,18 @@
 task_id: NPC-CMD-1a
 title: "NPC-CMD-1a: NPC_TALK_INTENT (command 7) and domain 7 NPC_CONVERSATION on bundle Worlds"
 mode: IMPLEMENT
-status: archive_pending
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-cmd-1-20261013
-pr: null
+pr: 2030
 base_sha: null
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 owner: claude-code-session-01GVsJCTNfwAsCUr72htmidv
 control_plane: "#1622 (plan comment 6139230459)"
 governing_issue: 1622
+issue: 1622
 created_at: 2026-10-13
 updated_at: 2026-10-13
 execution_policy: continuous_progress
