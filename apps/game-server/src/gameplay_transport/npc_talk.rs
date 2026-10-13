@@ -30,6 +30,11 @@ pub(crate) struct NpcTalkEntry {
 }
 
 impl NpcTalkEntry {
+    /// The line that ends a conversation.
+    pub(crate) fn farewell(&self) -> &str {
+        &self.farewell_reply
+    }
+
     #[cfg(test)]
     pub(crate) fn new(name: &str, topic: Option<&str>) -> Self {
         Self {

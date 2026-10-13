@@ -14,9 +14,11 @@ use oteryn_protocol_oteryn::npc_service::{
     MAX_TALK_INTENTS_PER_SECOND, NpcConversation, NpcConversationState, NpcIntentDisposition,
     NpcTalkIntent, TALK_RANGE_TILES,
 };
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
-use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
+use super::chat_intent::ChatRuntime;
+use super::npc_talk::{TalkNpc, talk};
 use crate::chat::{ChatPosition, ChatText};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 
@@ -33,19 +35,14 @@ pub(crate) struct NpcContinuity {
     pub(crate) window_revision: u64,
 }
 
-#[derive(Default)]
-struct NpcSession {
-    /// The NPC this session is in conversation with.
-    engaged: Option<ExactActorRef>,
-    /// The instants of the intents of the last second.
-    recent: VecDeque<u64>,
-}
+/// The instants of the talk intents of the last second of one session.
+type RecentIntents = VecDeque<u64>;
 
 /// The NPC conversations of the admitted sessions of one Channel. The lock is never held across
 /// an await and is taken after the runtime lock.
 #[derive(Default)]
 pub(crate) struct NpcConversations {
-    sessions: Mutex<HashMap<GameSessionId, NpcSession>>,
+    sessions: Mutex<HashMap<GameSessionId, RecentIntents>>,
 }
 
 /// The answer to one talk intent: its disposition and the domain 7 payload to send after the
@@ -65,18 +62,66 @@ impl NpcTalkOutcome {
 }
 
 impl NpcConversations {
-    /// A fresh snapshot (admission, reconnect or transfer) shows no conversation: the session
-    /// starts without one and keeps its rate window.
-    pub(crate) fn reset(&self, session: GameSessionId) {
+    /// The session is retired: its rate window goes with it. The conversation itself lives in
+    /// the chat state of the session, shared with the chat path.
+    pub(crate) fn forget(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.sessions.lock() {
-            sessions.entry(session).or_default().engaged = None;
+            sessions.remove(&session);
         }
+    }
+
+    /// The domain 7 payload when the conversation of `session` differs from `shown`, the NPC the
+    /// connection last showed: a conversation the chat path opened, or one whose NPC is gone or
+    /// out of `NPC0-RL-07` range, which ends here (NPC-0 section 4.1).
+    pub(crate) fn follow(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        shown: Option<EntityRef>,
+    ) -> Option<NpcConversation> {
+        let engaged = chat.engaged(session);
+        let mut current = None;
+        let mut farewell = None;
+        if let Some(npc_ref) = engaged {
+            let visible = runtime.visible_entities();
+            let near = visible
+                .npcs
+                .iter()
+                .find(|npc| npc.actor == npc_ref)
+                .zip(visible.players.iter().find(|entry| entry.actor == actor))
+                .filter(|(npc, speaker)| {
+                    speaker.position.floor == npc.position.floor
+                        && speaker.position.x.abs_diff(npc.position.x) <= TALK_RANGE_TILES
+                        && speaker.position.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES
+                });
+            if let Some((npc, _)) = near {
+                current = Some(EntityRef {
+                    identity: npc.actor.placement_identity(),
+                    generation: npc.generation,
+                });
+            } else {
+                chat.end_engagement(session, npc_ref);
+                farewell = chat
+                    .npc_talk()
+                    .and_then(|book| runtime.npc_key(npc_ref).and_then(|key| book.get(key)))
+                    .map(|entry| entry.farewell().to_owned());
+            }
+        }
+        if current == shown {
+            return None;
+        }
+        Some(NpcConversation {
+            open: current.map(|npc| (npc, NpcConversationState::Open)),
+            lines: farewell.into_iter().collect(),
+        })
     }
 
     /// One talk intent of the admitted `actor`, under the runtime lock the caller holds.
     pub(crate) fn talk(
         &self,
-        book: Option<&NpcTalkBook>,
+        chat: &ChatRuntime,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -87,21 +132,20 @@ impl NpcConversations {
         let Ok(mut sessions) = self.sessions.lock() else {
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
-        let state = sessions.entry(session).or_default();
+        let recent = sessions.entry(session).or_default();
         let now = now.get();
-        while state
-            .recent
+        while recent
             .front()
             .is_some_and(|at| now.saturating_sub(*at) >= RATE_WINDOW_MICROS)
         {
-            state.recent.pop_front();
+            recent.pop_front();
         }
-        if state.recent.len() >= MAX_TALK_INTENTS_PER_SECOND as usize {
+        if recent.len() >= MAX_TALK_INTENTS_PER_SECOND as usize {
             return NpcTalkOutcome::only(Disposition::RateLimited);
         }
-        state.recent.push_back(now);
+        recent.push_back(now);
 
-        let (Some(book), Ok(text)) = (book, ChatText::parse(&intent.text)) else {
+        let (Some(book), Ok(text)) = (chat.npc_talk(), ChatText::parse(&intent.text)) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
         let visible = runtime.visible_entities();
@@ -115,7 +159,7 @@ impl NpcConversations {
             // The NPC is gone or is another generation: any conversation with it is over.
             return NpcTalkOutcome {
                 disposition: Disposition::Stale,
-                conversation: end(state, intent),
+                conversation: end(chat, session, intent),
             };
         };
         let (Ok(speaker_floor), Ok(npc_floor)) = (
@@ -143,26 +187,31 @@ impl NpcConversations {
         {
             return NpcTalkOutcome {
                 disposition: Disposition::NotInRange,
-                conversation: end(state, intent),
+                conversation: end(chat, session, intent),
             };
         }
-        let had = state.engaged;
         let npcs = [TalkNpc {
             id: npc.actor,
             position: there,
             entry,
         }];
-        let Some(reply) = talk(at, &text, &npcs, &mut state.engaged) else {
+        let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
+            let had = engaged.is_some();
+            let reply = talk(at, &text, &npcs, engaged);
+            (reply, had, engaged.is_some())
+        }) else {
+            // An unknown session, or an NPC already serving `NPC0-RL-05` customers.
+            return NpcTalkOutcome::only(Disposition::Rejected);
+        };
+        let Some(reply) = reply else {
             // Nothing recognised: without a conversation there is nobody to answer.
-            return NpcTalkOutcome::only(if had.is_some() {
+            return NpcTalkOutcome::only(if had {
                 Disposition::Ok
             } else {
                 Disposition::NoConversation
             });
         };
-        let open = state
-            .engaged
-            .map(|_| (intent.npc_actor, NpcConversationState::Open));
+        let open = engaged.then_some((intent.npc_actor, NpcConversationState::Open));
         NpcTalkOutcome {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
@@ -173,16 +222,18 @@ impl NpcConversations {
     }
 }
 
-/// Ends the conversation of `state` when the intent named the NPC it was held with; returns the
+/// Ends the conversation of `session` when the intent named the NPC it was held with; returns the
 /// closing payload then.
-fn end(state: &mut NpcSession, intent: &NpcTalkIntent) -> Option<NpcConversation> {
-    let held_with_it = state
-        .engaged
-        .is_some_and(|engaged| engaged.placement_identity() == intent.npc_actor.identity);
-    if held_with_it {
-        state.engaged = None;
-    }
-    held_with_it.then(NpcConversation::default)
+fn end(
+    chat: &ChatRuntime,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+) -> Option<NpcConversation> {
+    let engaged = chat
+        .engaged(session)
+        .filter(|engaged| engaged.placement_identity() == intent.npc_actor.identity)?;
+    chat.end_engagement(session, engaged)
+        .then(NpcConversation::default)
 }
 
 #[cfg(test)]

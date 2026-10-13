@@ -4,7 +4,7 @@
 task_id: NPC-CMD-1a
 title: "NPC-CMD-1a: NPC_TALK_INTENT (command 7) and domain 7 NPC_CONVERSATION on bundle Worlds"
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-cmd-1-20261013

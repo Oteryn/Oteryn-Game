@@ -1807,6 +1807,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     fn forget_quest_session(&self, session: GameSessionId) {
         self.chat.forget(session);
+        self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
         }
@@ -2853,7 +2854,22 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {
-        self.npc_conversations.reset(session);
+        // A client without chat still has a conversation state, held with the chat session.
+        if !self.chat.knows(session) {
+            self.chat_open(session).await;
+        }
+        self.chat.set_npc_service(session);
+    }
+
+    async fn npc_follow(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    ) -> Option<oteryn_protocol_oteryn::npc_service::NpcConversation> {
+        let runtime = self.runtime.lock().await;
+        self.npc_conversations
+            .follow(&self.chat, &runtime, actor, session, shown)
     }
 
     async fn npc_talk(
@@ -2864,7 +2880,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let runtime = self.runtime.lock().await;
         self.npc_conversations.talk(
-            self.chat.npc_talk(),
+            &self.chat,
             &runtime,
             actor,
             session,

@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use super::*;
 use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+use crate::gameplay_transport::NpcTalkBook;
 use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
 use crate::gameplay_transport::npc_talk::NpcTalkEntry;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -47,6 +50,15 @@ fn book() -> NpcTalkBook {
     )
 }
 
+/// The chat state of the session: admitted, serving capability 3, with the NPC book installed.
+fn chat_of(session: GameSessionId) -> ChatRuntime {
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(book()));
+    chat
+}
+
 fn intent(npc_actor: EntityRef, text: &str) -> NpcTalkIntent {
     NpcTalkIntent {
         npc_actor,
@@ -58,10 +70,10 @@ fn intent(npc_actor: EntityRef, text: &str) -> NpcTalkIntent {
 fn a_conversation_opens_answers_and_closes() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
-    let book = book();
+    let chat = chat_of(session);
     let say = |text: &str, micros| {
         conversations.talk(
-            Some(&book),
+            &chat,
             &runtime,
             actor,
             session,
@@ -92,7 +104,7 @@ fn a_conversation_opens_answers_and_closes() {
 fn a_topic_without_a_greeting_has_no_conversation() {
     let (runtime, actor, session, npc) = fixture(2);
     let outcome = NpcConversations::default().talk(
-        Some(&book()),
+        &chat_of(session),
         &runtime,
         actor,
         session,
@@ -107,7 +119,7 @@ fn a_topic_without_a_greeting_has_no_conversation() {
 fn an_npc_out_of_range_is_not_in_range() {
     let (runtime, actor, session, npc) = fixture(TALK_RANGE_TILES + 1);
     let outcome = NpcConversations::default().talk(
-        Some(&book()),
+        &chat_of(session),
         &runtime,
         actor,
         session,
@@ -121,9 +133,9 @@ fn an_npc_out_of_range_is_not_in_range() {
 fn a_stale_generation_is_stale_and_ends_the_conversation() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
-    let book = book();
+    let chat = chat_of(session);
     conversations.talk(
-        Some(&book),
+        &chat,
         &runtime,
         actor,
         session,
@@ -135,7 +147,7 @@ fn a_stale_generation_is_stale_and_ends_the_conversation() {
         ..npc
     };
     let outcome = conversations.talk(
-        Some(&book),
+        &chat,
         &runtime,
         actor,
         session,
@@ -151,11 +163,11 @@ fn a_stale_generation_is_stale_and_ends_the_conversation() {
 fn the_fifth_intent_in_a_second_is_rate_limited_and_the_window_slides() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
-    let book = book();
+    let chat = chat_of(session);
     let say = |micros| {
         conversations
             .talk(
-                Some(&book),
+                &chat,
                 &runtime,
                 actor,
                 session,
@@ -178,10 +190,13 @@ fn the_fifth_intent_in_a_second_is_rate_limited_and_the_window_slides() {
 fn no_book_or_empty_text_is_rejected() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
+    let bare = ChatRuntime::default();
+    bare.admit(session, "Aela", at(BASE));
+    bare.set_npc_service(session);
     assert_eq!(
         conversations
             .talk(
-                None,
+                &bare,
                 &runtime,
                 actor,
                 session,
@@ -194,7 +209,7 @@ fn no_book_or_empty_text_is_rejected() {
     assert_eq!(
         conversations
             .talk(
-                Some(&book()),
+                &chat_of(session),
                 &runtime,
                 actor,
                 session,
@@ -204,4 +219,58 @@ fn no_book_or_empty_text_is_rejected() {
             .disposition,
         NpcIntentDisposition::Rejected
     );
+}
+
+#[test]
+fn a_chat_greeting_and_a_command_share_one_conversation() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let chat = chat_of(session);
+    let conversations = NpcConversations::default();
+    // As if a chat `say` had greeted the NPC.
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    chat.converse(session, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    let topic = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE + 300_000),
+    );
+    assert_eq!(topic.disposition, NpcIntentDisposition::Ok);
+    let shown = conversations.follow(&chat, &runtime, actor, session, None);
+    assert_eq!(shown.expect("payload").open.map(|(n, _)| n), Some(npc));
+}
+
+#[test]
+fn walking_out_of_range_closes_the_conversation_with_the_farewell() {
+    let (runtime, actor, session, npc) = fixture(TALK_RANGE_TILES + 1);
+    let chat = chat_of(session);
+    let conversations = NpcConversations::default();
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    chat.converse(session, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    let closed = conversations.follow(&chat, &runtime, actor, session, Some(npc));
+    let closed = closed.expect("payload");
+    assert_eq!(closed.open, None);
+    assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
+    assert!(chat.engaged(session).is_none());
+}
+
+#[test]
+fn forgetting_a_session_drops_its_rate_window() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let chat = chat_of(session);
+    let conversations = NpcConversations::default();
+    conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hello"),
+        at(BASE),
+    );
+    conversations.forget(session);
+    assert!(conversations.sessions.lock().expect("lock").is_empty());
 }

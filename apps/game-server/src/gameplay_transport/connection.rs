@@ -563,6 +563,17 @@ pub(crate) trait FreshAdmissionAuthority {
         async {}
     }
 
+    /// NPC-CMD-1a: the domain 7 payload when the conversation differs from the NPC `shown` to
+    /// the client: one opened from chat, or ended by walking out of range.
+    fn npc_follow(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _shown: Option<WireEntityRef>,
+    ) -> impl Future<Output = Option<NpcConversation>> {
+        async { None }
+    }
+
     /// NPC-CMD-1a: one `NPC_TALK_INTENT` (command 7) of the admitted actor.
     fn npc_talk(
         &self,
@@ -1621,6 +1632,15 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    // NPC-CMD-1a: a session with domain 7 follows its conversation (chat greeting, walking away).
+    let mut npc_refresh = npc_snapshots.is_some().then(|| {
+        let mut refresh =
+            tokio::time::interval_at(tokio::time::Instant::now() + CHAT_REFRESH, CHAT_REFRESH);
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
+    // The NPC domain 7 shows as the conversation partner; a fresh snapshot shows none.
+    let mut npc_shown: Option<WireEntityRef> = None;
     // ATTACK-1b: only a session with domain 10 drives swings and follows its combat state.
     let mut combat_refresh = combat_snapshot.is_some().then(|| {
         let mut refresh =
@@ -1658,6 +1678,7 @@ where
             Chat,
             Visibility,
             Combat,
+            Npc,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
@@ -1704,6 +1725,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut npc_tick = std::pin::pin!(async {
+                match npc_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut combat_tick = std::pin::pin!(async {
                 match combat_refresh.as_mut() {
                     Some(refresh) => refresh.tick().await,
@@ -1728,6 +1755,9 @@ where
                 }
                 if combat_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Combat);
+                }
+                if npc_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Npc);
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
@@ -1821,6 +1851,30 @@ where
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                }
+                continue;
+            }
+            Next::Npc => {
+                let Some(conversation) = authority
+                    .npc_follow(actor, admitted.game_session_id, npc_shown)
+                    .await
+                else {
+                    continue;
+                };
+                let Some((delta_sequence, frame, revision)) = npc_conversation_delta(
+                    generation,
+                    sequence,
+                    admitted.continuity.npc.conversation_revision,
+                    &conversation,
+                ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                admitted.continuity.npc.conversation_revision = revision;
+                npc_shown = conversation.open.map(|(npc, _)| npc);
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 continue;
             }
@@ -2772,6 +2826,7 @@ where
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
                 admitted.continuity.npc.conversation_revision = revision;
+                npc_shown = conversation.open.map(|(npc, _)| npc);
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
