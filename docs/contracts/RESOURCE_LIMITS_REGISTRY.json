@@ -8195,7 +8195,7 @@
     {
       "id": "CHAT0-RL-11",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
-      "resource": "Undelivered chat lines queued for one session",
+      "resource": "Undelivered chat lines queued for one session (the egress queue, not counting the batch a connection has already drained and is writing)",
       "unit": "lines per session",
       "hard_maximum": 64,
       "configurable_range": {
@@ -8203,7 +8203,7 @@
         "maximum": 64
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination.",
+      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination. A connection drains the whole queue (at most 64 lines and one marker) and writes that batch before its next drain, so while one write is stalled a session holds at most 64 lines and a marker in flight plus 64 queued, so 128 lines in all.",
       "client_visible": true,
       "boundary_tests": [
         "max=64: 64 queued lines are all kept and none owes a marker",
