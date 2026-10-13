@@ -116,6 +116,29 @@ fn another_channel_or_an_altered_line_fails_authentication() {
 }
 
 #[test]
+fn a_new_key_is_sent_only_after_its_cluster_wide_activation() {
+    let activate = NOW + 1_000;
+    let updated = ring(&[(1, 0), (2, activate)]);
+    let stale_node = ring(&[(1, 0)]);
+    // Before activation the updated node still sends the old key every node holds.
+    let before =
+        seal_with_nonce(&updated, CHANNEL, &room_line(1, activate - 1), NONCE).expect("seal");
+    assert_eq!(STANDARD.decode(&before).expect("base64")[0], 1);
+    assert!(open(&stale_node, CHANNEL, &before, activate - 1).is_ok());
+    // From activation it sends the new key; both keys stay openable on the updated node.
+    let after = seal_with_nonce(&updated, CHANNEL, &room_line(2, activate), NONCE).expect("seal");
+    assert_eq!(STANDARD.decode(&after).expect("base64")[0], 2);
+    assert!(open(&updated, CHANNEL, &before, activate).is_ok());
+    assert!(open(&updated, CHANNEL, &after, activate).is_ok());
+    // No key activated yet at the line's time: nothing to send with.
+    let future = self::ring(&[(3, activate)]);
+    assert_eq!(
+        seal_with_nonce(&future, CHANNEL, &room_line(3, activate - 1), NONCE),
+        Err(RelayError::NoKey)
+    );
+}
+
+#[test]
 fn garbage_is_malformed_and_an_unheld_key_is_unknown() {
     let ring = ring(&[(1, 0)]);
     assert_eq!(open(&ring, CHANNEL, "!!!", NOW), Err(RelayError::Malformed));

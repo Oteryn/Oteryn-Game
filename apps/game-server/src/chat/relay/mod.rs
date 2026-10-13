@@ -226,15 +226,18 @@ pub(crate) fn channel_name(world_id: &str) -> Result<String, RelayError> {
 #[derive(Clone)]
 pub(crate) struct RelayKey {
     key_id: u8,
-    added_at_micros: u64,
+    /// The cluster-wide instant from which the key is used to send. Every node opens with the key
+    /// as soon as it holds it, but sends with it only from here, set after the whole cluster has
+    /// the key, so a rolling update never sends a key a node does not hold yet.
+    activate_at_micros: u64,
     key: [u8; KEY_BYTES],
 }
 
 impl RelayKey {
-    pub(crate) fn new(key_id: u8, added_at_micros: u64, key: [u8; KEY_BYTES]) -> Self {
+    pub(crate) fn new(key_id: u8, activate_at_micros: u64, key: [u8; KEY_BYTES]) -> Self {
         Self {
             key_id,
-            added_at_micros,
+            activate_at_micros,
             key,
         }
     }
@@ -248,11 +251,11 @@ impl fmt::Debug for RelayKey {
     }
 }
 
-/// The keys a node holds for one World. It sends with the newest key and opens with the newest
-/// and with any key retired (superseded by a newer one) within `CHAT0-RL-12`.
+/// The keys a node holds for one World. It sends with the newest key already activated and opens
+/// with every key held except one retired (superseded by an activated key) over `CHAT0-RL-12`.
 #[derive(Debug, Clone)]
 pub(crate) struct RelayKeyRing {
-    /// Sorted by `added_at_micros`; `key_id`s are distinct.
+    /// Sorted by `activate_at_micros`; `key_id`s are distinct.
     keys: Vec<RelayKey>,
 }
 
@@ -261,7 +264,7 @@ impl RelayKeyRing {
         if keys.is_empty() {
             return Err(RelayError::NoKey);
         }
-        keys.sort_by_key(|key| (key.added_at_micros, key.key_id));
+        keys.sort_by_key(|key| (key.activate_at_micros, key.key_id));
         let mut ids: Vec<u8> = keys.iter().map(|key| key.key_id).collect();
         ids.sort_unstable();
         ids.dedup();
@@ -271,8 +274,12 @@ impl RelayKeyRing {
         Ok(Self { keys })
     }
 
-    fn sending(&self) -> Result<&RelayKey, RelayError> {
-        self.keys.last().ok_or(RelayError::NoKey)
+    fn sending(&self, now_micros: u64) -> Result<&RelayKey, RelayError> {
+        self.keys
+            .iter()
+            .rev()
+            .find(|key| key.activate_at_micros <= now_micros)
+            .ok_or(RelayError::NoKey)
     }
 
     fn opening(&self, key_id: u8, now_micros: u64) -> Result<&RelayKey, RelayError> {
@@ -281,9 +288,9 @@ impl RelayKeyRing {
             .iter()
             .position(|key| key.key_id == key_id)
             .ok_or(RelayError::UnknownKey)?;
-        // A key is retired when the next one is added and opens lines for 24 hours after that.
+        // A key is retired when the next one is activated and opens lines for 24 hours after that.
         if let Some(next) = self.keys.get(index + 1)
-            && now_micros >= next.added_at_micros.saturating_add(KEY_OVERLAP_MICROS)
+            && now_micros >= next.activate_at_micros.saturating_add(KEY_OVERLAP_MICROS)
         {
             return Err(RelayError::UnknownKey);
         }
@@ -345,7 +352,7 @@ fn seal_with_nonce(
     line: &RelayLine,
     nonce: [u8; NONCE_BYTES],
 ) -> Result<String, RelayError> {
-    let key = ring.sending()?;
+    let key = ring.sending(line.sent_at_micros)?;
     let mut buffer = line.encode()?;
     let sealing = aead_key(key)?;
     let aad = [channel.as_bytes(), &[key.key_id]].concat();
