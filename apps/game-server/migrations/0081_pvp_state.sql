@@ -198,6 +198,7 @@ BEGIN
     IF TG_TABLE_NAME = 'game_character_unjustified_points' THEN
         NEW.committed_at := clock_timestamp();
     ELSE
+        NEW.avenged_at := NULL;
         NEW.created_at := clock_timestamp();
         NEW.expires_at := NEW.created_at + INTERVAL '7 days';
     END IF;
@@ -276,9 +277,17 @@ REVOKE ALL ON FUNCTION game_character_pvp_state_guard(), game_character_pvp_ledg
     game_character_pvp_receipt_guard(), game_character_pvp_delete_guard() FROM PUBLIC;
 -- The state row is never deleted. Ledger rows are deleted by the victim's death transaction and
 -- the World job; points and marks only by the World job (§6.2).
-GRANT SELECT, INSERT, UPDATE ON game_character_pvp_state TO oteryn_game_runtime;
+-- The runtime may write only what the session-fenced write-ahead writes: the three block/white-skull
+-- deadlines (skull, kill block and forfeiture arrive with their fenced writers, PVP-RT-1b/PVP-DEATH-1).
+GRANT SELECT ON game_character_pvp_state TO oteryn_game_runtime;
+GRANT INSERT (character_id, world_id, logout_block_until, pz_block_until, white_skull_until)
+    ON game_character_pvp_state TO oteryn_game_runtime;
+GRANT UPDATE (logout_block_until, pz_block_until, white_skull_until, revision)
+    ON game_character_pvp_state TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON game_character_pvp_ledger TO oteryn_game_runtime;
-GRANT SELECT, INSERT, UPDATE, DELETE ON game_character_unjustified_points,
+-- Points and marks have no runtime writer until the PVP-DEATH-1 death transaction, which grants INSERT
+-- together with the unjustified-classification evidence; here the runtime only reads and ages them out.
+GRANT SELECT, DELETE ON game_character_unjustified_points,
     game_character_revenge_marks TO oteryn_game_runtime;
 GRANT SELECT ON game_character_pvp_state, game_character_pvp_ledger,
     game_character_unjustified_points, game_character_revenge_marks TO oteryn_game_control;

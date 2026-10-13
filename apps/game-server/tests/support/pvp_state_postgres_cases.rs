@@ -600,6 +600,25 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                 .is_err()
         );
         tx.rollback().await?;
+        // The runtime role has no direct writer for skull, forfeiture, points or marks yet.
+        for sql in [
+            "UPDATE game_character_pvp_state SET skull = 2, skull_until = now() + interval '1 day'",
+            "UPDATE game_character_pvp_state SET adventurer_forfeited = TRUE",
+            "UPDATE game_character_pvp_state SET kill_block_until = now() + interval '1 day'",
+            "INSERT INTO game_character_unjustified_points (character_id, death_occurrence_id, \
+                victim_character_id, points_milli) SELECT character_id, character_id, character_id, 1 \
+                FROM game_character_pvp_state",
+            "INSERT INTO game_character_revenge_marks (victim_character_id, killer_character_id, \
+                death_occurrence_id) SELECT character_id, character_id, character_id \
+                FROM game_character_pvp_state",
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            assert!(sqlx::query(sql).execute(&mut *tx).await.is_err(), "{sql}");
+            tx.rollback().await?;
+        }
         // Unexpired rows are not deleted, by any runtime path.
         for table in [
             "game_character_unjustified_points",
