@@ -300,26 +300,30 @@ END;
 $$;
 
 -- 0023's envelope guard: a trade event of this transaction is admitted up to the trade shape's
--- registered envelope row, like a fee event.
+-- registered envelope row (27,408 B, `DUR03-RL-07-NPC-TRADE-ENVELOPE-BYTES`); a fee event keeps
+-- its own row (25,712 B, formerly the column bound) and every other event the one-item row.
 CREATE OR REPLACE FUNCTION game_item_audit_envelope_size_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    IF octet_length(NEW.envelope) > 9216 AND EXISTS (
+    IF octet_length(NEW.envelope) <= 9216 THEN
+        RETURN NULL;
+    END IF;
+    IF octet_length(NEW.envelope) <= 27408 AND EXISTS (
         SELECT 1 FROM game_npc_trades t
          WHERE t.event_id = NEW.event_id
            AND t.transaction_id = NEW.transaction_id
            AND t.created_xact_id = pg_current_xact_id()) THEN
         RETURN NULL;
     END IF;
-    IF octet_length(NEW.envelope) > 9216 AND NOT EXISTS (
+    IF octet_length(NEW.envelope) <= 25712 AND EXISTS (
         SELECT 1 FROM game_item_fee_burns f
          WHERE f.event_id = NEW.event_id
            AND f.transaction_id = NEW.transaction_id
            AND f.created_xact_id = pg_current_xact_id()) THEN
-        RAISE EXCEPTION 'DUR-03 audit envelope exceeds its registered shape ceiling'
-            USING ERRCODE = '23514';
+        RETURN NULL;
     END IF;
-    RETURN NULL;
+    RAISE EXCEPTION 'DUR-03 audit envelope exceeds its registered shape ceiling'
+        USING ERRCODE = '23514';
 END;
 $$;
 
@@ -803,7 +807,7 @@ $$;
 ALTER TABLE game_item_audit_outbox DROP CONSTRAINT game_item_audit_outbox_envelope_check;
 ALTER TABLE game_item_audit_outbox
     ADD CONSTRAINT game_item_audit_outbox_envelope_check
-        CHECK (octet_length(envelope) BETWEEN 1 AND 60000);
+        CHECK (octet_length(envelope) BETWEEN 1 AND 27408);
 
 CREATE CONSTRAINT TRIGGER game_npc_trade_consistent
     AFTER INSERT ON game_npc_trades

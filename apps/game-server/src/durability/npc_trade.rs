@@ -145,9 +145,14 @@ impl NpcTradeLineKind {
     }
 
     fn of(code: i16) -> Option<Self> {
-        [Self::CoinBurn, Self::CoinMint, Self::ItemBurn, Self::ItemMint]
-            .into_iter()
-            .find(|kind| i64::from(kind.code()) == i64::from(code))
+        [
+            Self::CoinBurn,
+            Self::CoinMint,
+            Self::ItemBurn,
+            Self::ItemMint,
+        ]
+        .into_iter()
+        .find(|kind| i64::from(kind.code()) == i64::from(code))
     }
 
     const fn is_burn(self) -> bool {
@@ -445,7 +450,11 @@ fn plan_buy(
     for (coin, quantity) in change {
         lines.push(NpcTradeLine {
             kind: NpcTradeLineKind::CoinMint,
-            item_instance_id: if coin == Coin::Platinum { platinum } else { gold },
+            item_instance_id: if coin == Coin::Platinum {
+                platinum
+            } else {
+                gold
+            },
             placement_ordinal: ordinal,
             coin: Some(coin),
             quantity_before: 0,
@@ -650,9 +659,7 @@ impl DurabilityRoot {
                     let entries = lock_entries(&mut tx, &backpack, world_id).await?;
                     let plan = match request.cause.side {
                         NpcTradeSide::Buy => plan_buy(&request, total, units, capacity, &entries),
-                        NpcTradeSide::Sell => {
-                            plan_sell(&request, total, units, capacity, &entries)
-                        }
+                        NpcTradeSide::Sell => plan_sell(&request, total, units, capacity, &entries),
                     };
                     let plan = match plan {
                         Ok(plan) => plan,
@@ -819,7 +826,10 @@ fn trade_message(
     }
 }
 
-#[allow(clippy::too_many_arguments, reason = "one write of the materialized trade")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one write of the materialized trade"
+)]
 async fn apply_trade(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterItemFence,

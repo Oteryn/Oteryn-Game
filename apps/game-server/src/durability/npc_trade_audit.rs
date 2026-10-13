@@ -38,8 +38,8 @@ pub const SELL_RL06_EFFECT_WORK_UNITS_MAX: u64 = 9;
 pub const NPC_TRADE_RL07_EVENTS_MAX: u64 = 1;
 /// Measured worst case of this schema (the `worst_case_*` test), D50 method: a BUY of 20 whole
 /// coin burns, the largest change and an item MINT, every key and revision at 512 bytes.
-pub const NPC_TRADE_RL07_PAYLOAD_BYTES_MAX: usize = 29_449;
-pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 29_763;
+pub const NPC_TRADE_RL07_PAYLOAD_BYTES_MAX: usize = 27_094;
+pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 27_408;
 
 /// The largest BUY price: what 20 stacks of 100 crystal coins hold (NPC-0 §5.3).
 pub const NPC_TRADE_BUY_GOLD_UNITS_MAX: u64 = 20_000_000;
@@ -188,7 +188,10 @@ pub fn sell_coins(value: u64) -> Option<Vec<(Coin, u32)>> {
     Some(
         [
             (Coin::Crystal, crystal),
-            (Coin::Platinum, value % Coin::Crystal.worth() / Coin::Platinum.worth()),
+            (
+                Coin::Platinum,
+                value % Coin::Crystal.worth() / Coin::Platinum.worth(),
+            ),
             (Coin::Gold, value % Coin::Platinum.worth()),
         ]
         .into_iter()
@@ -291,8 +294,16 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.backpack_item_instance_id)?;
     let side = cause.side;
     let (burn_kind, mint_kinds, total_max) = match side {
-        SIDE_BUY => (LINE_COIN_BURN, [LINE_COIN_MINT, LINE_ITEM_MINT], NPC_TRADE_BUY_GOLD_UNITS_MAX),
-        SIDE_SELL => (LINE_ITEM_BURN, [LINE_COIN_MINT, LINE_COIN_MINT], NPC_TRADE_SELL_GOLD_UNITS_MAX),
+        SIDE_BUY => (
+            LINE_COIN_BURN,
+            [LINE_COIN_MINT, LINE_ITEM_MINT],
+            NPC_TRADE_BUY_GOLD_UNITS_MAX,
+        ),
+        SIDE_SELL => (
+            LINE_ITEM_BURN,
+            [LINE_COIN_MINT, LINE_COIN_MINT],
+            NPC_TRADE_SELL_GOLD_UNITS_MAX,
+        ),
         _ => return Err(AuditError::InvalidInput),
     };
     if command.command_id == 0
