@@ -1601,6 +1601,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             qualified_room: spell_input.as_ref().map(|_| &room),
             combat_room: spell_input.as_ref().map(|_| &room),
             achievements: &achievements,
+            npc_talk: None,
             imported_charms: &imported_charms,
             quest_catalogue: &quest_catalogue,
             last_position_flush: None,
