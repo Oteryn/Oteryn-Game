@@ -27,7 +27,7 @@ Preprod logged `event=npc_actors state=placed npcs=0 placements=0 actors=0`: the
 
 ## Fix
 
-`cell_facts` applies the same exemption; `Registry::terrain_of` keeps a known `walkable` fact on borders, and an explicit solid profile on a ground Item still blocks. 20 of 25 placements are now written (5 remain held `BlockSolid`). The pin `digest`/`inputs_digest` and the preprod topology digest are refreshed.
+`cell_facts` applies the same exemption; `Registry::terrain_of` keeps a known `walkable` fact on borders, and an explicit solid profile on a ground Item still blocks. 21 of 25 placements are now written (4 remain held `BlockSolid`). The pin `digest`/`inputs_digest` and the preprod topology digest are refreshed.
 
 ## Proposal (workflow not edited)
 
@@ -35,4 +35,11 @@ The deploy gate greps only `state=placed`; require `npcs>0` as well (`event=npc_
 
 ## Validation
 
-PENDING
+cargo fmt --check (tools/world-bundle-compiler): pass
+cargo clippy --all-targets (tools/world-bundle-compiler): pass
+cargo test (tools/world-bundle-compiler): pass
+pin-check (oteryn): OK
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK
+
+Review: Codex P2 (explicit solid profile) and P2 (walkable borders) fixed; P1 (archive record) done here.
