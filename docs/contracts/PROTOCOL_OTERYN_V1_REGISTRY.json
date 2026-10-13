@@ -60,7 +60,7 @@
       "command_types": [7, 8],
       "state_domains": [7, 8],
       "offered": false,
-      "offer_gate": "NPC-CMD-1a: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 7 and domain 7 are served (the conversation owner, the whole-domain delta after each talk result and the revision stream); domain 8 is sent as a closed window and command type 8 answers REJECTED until NPC-CMD-1b composes trade. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
+      "offer_gate": "NPC-TALK-1: NPC-CMD-1a composes it; only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 7 and domain 7 are served (the conversation owner, the whole-domain delta after each talk result and the revision stream); domain 8 is sent as a closed window and command type 8 answers REJECTED until NPC-CMD-1b composes trade. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
     },
     {
       "id": 4,
