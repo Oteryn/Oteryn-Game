@@ -304,6 +304,11 @@ fn aggression_relations_track_first_and_retaliation_and_cap() {
     // Answering an aggressor is retaliation: no new PZ block for the caller to apply.
     assert_eq!(rel.record(2, true, t(0)), AggressionOutcome::Retaliation);
     assert!(!rel.was_first_against(2, t(0)));
+    // The target's aggression lapsed while the retaliation relation still runs: new aggression.
+    assert_eq!(rel.record(2, false, t(30_000)), AggressionOutcome::Started);
+    assert!(rel.was_first_against(2, t(30_000)));
+    // A relation that expired and restarts as first aggression is a new PZ block.
+    assert_eq!(rel.record(1, false, t(70_000)), AggressionOutcome::Started);
 
     let mut full = AggressionRelations::<u32>::default();
     for id in 0..64 {

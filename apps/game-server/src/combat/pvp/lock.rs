@@ -175,13 +175,16 @@ impl<T: Copy + Eq> AggressionRelations<T> {
         if let Some(existing) = self.relations.iter_mut().find(|r| r.target == target) {
             let was_running = existing.until > now;
             existing.until = existing.until.max(until);
-            if !was_running {
-                existing.first = !target_is_aggressor;
-            }
-            return if existing.first {
+            // Classify from the current counter-relation, not the stored bit: a retaliation
+            // whose justification has lapsed is new aggression (§8.1 PZ block).
+            let was_first = existing.first;
+            existing.first = !target_is_aggressor;
+            return if !existing.first {
+                AggressionOutcome::Retaliation
+            } else if was_running && was_first {
                 AggressionOutcome::Refreshed
             } else {
-                AggressionOutcome::Retaliation
+                AggressionOutcome::Started
             };
         }
         if self.relations.len() >= MAX_RELATIONS {
