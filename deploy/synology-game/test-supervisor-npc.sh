@@ -9,6 +9,7 @@ export BASE="$tmp/base" OTERYN_NATIVE_GAMEPLAY_MANIFEST=/nonexistent
 mkdir -p "$BASE/bin" "$BASE/node" "$BASE/run" "$BASE/log"
 cat > "$BASE/bin/oteryn-game-server" <<'S'
 #!/usr/bin/env bash
+printf '%s' "${OTERYN_STEP_WAIT_RECEIPTS-unset}" > "$BASE/run/env"
 printf '%s\n' "$@" > "$BASE/run/args.tmp" && mv "$BASE/run/args.tmp" "$BASE/run/args"
 S
 chmod 755 "$BASE/bin/oteryn-game-server"
@@ -46,4 +47,9 @@ stage; mv "$npc/PROJECT_SHA256" "$tmp/pin"; ln -s "$tmp/pin" "$npc/PROJECT_SHA25
 rm -rf "$npc"; mkdir "$tmp/elsewhere"; ln -s "$tmp/elsewhere" "$npc"; launch "symlinked npc-data refused" 1
 rm -f "$npc"; : > "$npc"; launch "npc-data file refused" 1
 rm -f "$npc"; launch "removed staging: no flags again" 0 "${base_args[@]}"
+receipts="$BASE/run/step-wait-receipts"
+launch "no marker" 0 "${base_args[@]}"; [[ "$(cat "$BASE/run/env")" = unset ]] || fail "receipts env set without marker"
+printf '1\n' > "$receipts"; launch "marker 1" 0 "${base_args[@]}"; [[ "$(cat "$BASE/run/env")" = 1 ]] || fail "marker did not enable receipts"
+printf '0\n' > "$receipts"; launch "marker 0" 0 "${base_args[@]}"; [[ "$(cat "$BASE/run/env")" = unset ]] || fail "marker 0 enabled receipts"
+rm -f "$receipts"
 echo "supervisor npc-data flags: ok"
