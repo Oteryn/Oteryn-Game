@@ -19,13 +19,17 @@
   SPELL-RT-PARTY-1 and SPELL-RT-FIELDBUFF-1. Each keeps its own #162 allocation and its other
   dependencies (the S7 reader, ATTACK-1b, COND-1, PARTY-1, SKILLS-0, ITEM-SEM-2b, WORLDINT-ADMIT-1).
   SPELL-RT-PREM-1 still waits for PREMIUM-1.
-- The two amendments are approved with the decision, but each stays pending: they amend
-  TRAVEL-0 §4 (the optional `departure_text` route field, M8) and the native-behaviours candidate
-  D.5.3 test 4 (the Paralyze caster effect, M4), and both targets are still CANDIDATE. As
-  ACCEPT-SOCIAL-MAP-0 rules (an amendment whose target is CANDIDATE takes effect in that target
-  when the target is accepted), each takes effect only when its own target is accepted. This
-  packet does not accept either target; the amended documents keep their "pending on
-  acceptance" wording.
+- **Amendment rule (one rule, both packets).** An amendment is approved when its source decision
+  is accepted, and its wording is then final: the follow-up changes the source's status line only,
+  and the amended documents keep their "pending on acceptance" wording (ACCEPT-CHAT-ATTACK-DEATH-0
+  §1). It becomes part of the target's effective text when the target is ACCEPTED: at once if the
+  target already is, otherwise when the target is accepted (ACCEPT-SOCIAL-MAP-0 §1: "takes effect
+  in that target when the target is accepted"). Accepting a source never accepts its CANDIDATE
+  targets.
+- Applied: the TRAVEL-0 §4 amendment (the optional `departure_text` route field, M8) and the
+  native-behaviours candidate D.5.3 test 4 amendment (the Paralyze caster effect, M4) both have
+  CANDIDATE targets, so each is approved and final but not effective until its target is accepted.
+  This packet accepts neither target.
 - Scope of the acceptance: rulings M1, M2, M4-M9. The source decision cites "M1-M3" (header and
   decision test) but has no M3 section: it numbers M1 (§2), M2 (§3), then M4 (§4). This packet
   does not count M3 as a ruling; the numbering gap is open point 5 of §2. M1, M2 and M5-M7, M9
