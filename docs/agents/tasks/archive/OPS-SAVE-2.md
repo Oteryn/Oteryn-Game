@@ -4,12 +4,12 @@
 task_id: OPS-SAVE-2
 title: "OPS-SAVE-2: quiesce admissions and input before the shutdown snapshot; flush spell training"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ops-save-2-20261013
 issue: 1622
-pr: null
+pr: 2083
 base_sha: 574bcd31
 owner: claude-code-session-017fjxzdaPfpqwDKCiU8ZzKw
 control_plane: claude-code-session-01XYC239givrMonrYoBwwECV
@@ -23,7 +23,9 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
-  - docs/agents/tasks/active/OPS-SAVE-2.md
+  - apps/game-server/src/gameplay_transport/actor_spell.rs
+  - apps/game-server/src/spell/mana_training.rs
+  - docs/agents/tasks/archive/OPS-SAVE-2.md
 public_contracts: []
 depends_on: [OPS-SAVE-1]
 blocks: []
@@ -50,7 +52,15 @@ snapshots while admissions and player commands still ran, and it did not write s
 - Server-driven work (monster AI, cadences) is not input and keeps running; it cannot move a
   player's saved values except through already-fenced paths.
 - No migration, no registry change.
+- Codex P1 (serial store reads per idle actor): the training flush pre-filters on an in-memory,
+  read-only `has_training_to_flush` (retained checkpoint or unbanked mana); fixed in one commit.
 
 ## Validation
 
-See PR description; results recorded at freeze.
+- `cargo +1.95.0 fmt --all`: pass
+- `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- node:: gameplay_transport::`: pass (584 passed, 6 ignored)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+Review: Codex complete, one P1 fixed and resolved. Postgres-backed tests are CI-authoritative.
