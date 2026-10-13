@@ -101,3 +101,7 @@ NPC-TRADE-1 0082); main merged.
   by 0077; the guard is now the 0077 body plus the item-use arm (map_item_mint cases pass).
   (2) `item_use_postgres` was neither a `test = false` wrapper nor included by a CI-run target;
   it is now listed in `Cargo.toml` and included by `character_authority_postgres`.
+
+## Codex review of a787725
+
+P2 (replay accepted another `server_build_id`): the request binding now includes `server_build_id`, so a retry under another build is a ConflictingCommand; covered in the focused Postgres case.

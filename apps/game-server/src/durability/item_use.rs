@@ -224,6 +224,7 @@ impl ItemUseRequest {
         text(&mut hasher, &self.content_revision);
         text(&mut hasher, &self.ruleset_revision);
         text(&mut hasher, &self.sim_revision);
+        text(&mut hasher, &self.server_build_id);
         hasher.update(self.source_item_instance_id);
         definition(&mut hasher, &self.source_definition);
         hasher.update(self.source_quantity_before.to_be_bytes());

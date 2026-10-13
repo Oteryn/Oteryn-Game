@@ -380,6 +380,13 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
             used.use_item(&other_time).await,
             Err(ItemUseError::ConflictingCommand)
         ));
+        // The same CommandRef and fields under another server build is not the committed envelope.
+        let mut other_build = food(7, 150, 3);
+        other_build.server_build_id = "oteryn-game-server/other".into();
+        assert!(matches!(
+            used.use_item(&other_build).await,
+            Err(ItemUseError::ConflictingCommand)
+        ));
         // Revisions that are not the fenced root's interpretation are stale, writing nothing.
         let mut stale = food(8, 152, 2);
         stale.content_revision = "content-0".into();
