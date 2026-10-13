@@ -142,6 +142,8 @@ strict bootstrap1007/1116 reaches update-required without login retry. Independe
 wire and delayed-task regressions pass: client217/194/5, Session74. Canonical
 1007 is SessionFatal, N8/1116 TransportFatal. Design resolved, runtime proof
 pending. PC offline; Windows/E2E/CI/review remain open. Details: UI-FIDELITY.md.
+Battle window consumes admitted HP, with real egui replacement/filter/empty
+regressions; names and original sorting/visual parity remain unqualified.
 
 Historical scissor `08495a50`, integral scaling `1b3a3be5`, repeat
 `5bf89893`/`597fda90` and pointer `5b784e60` MSVC/Clippy/DX12 evidence remains

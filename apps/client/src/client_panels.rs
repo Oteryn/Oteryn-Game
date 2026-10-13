@@ -812,20 +812,154 @@ fn battle_entries(
                 entity.position.x, entity.position.y, entity.position.floor
             ));
         });
+        if let EntityDetail::Actor { health_percent, .. } = entity.detail {
+            ui.add(
+                egui::ProgressBar::new(f32::from(health_percent) / 100.0)
+                    .desired_width(ui.available_width())
+                    .desired_height(4.0)
+                    .fill(Color32::from_rgb(55, 172, 47)),
+            );
+        }
     }
     if !matched {
         ui.label(RichText::new("—").color(Color32::from_gray(145)));
     }
     ui.separator();
-    ui.small(tr(
-        "Nazwy i zdrowie oczekują na dane gry.",
-        "Names and health await game data.",
-    ));
+    ui.small(tr("Nazwy oczekują na dane gry.", "Names await game data."));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn actor(kind: EntityKind, health_percent: u8, id: u8) -> oteryn_session::WorldSpatialEntity {
+        oteryn_session::WorldSpatialEntity {
+            kind,
+            entity: oteryn_session::EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            position: oteryn_session::ActorPosition {
+                x: i32::from(id),
+                y: 50,
+                floor: -7,
+            },
+            detail: EntityDetail::Actor {
+                direction: oteryn_session::StepDirection::North,
+                appearance_ref: 1,
+                health_percent,
+            },
+        }
+    }
+
+    fn health_rects(shape: &egui::epaint::Shape, rects: &mut Vec<egui::Rect>) {
+        match shape {
+            egui::epaint::Shape::Rect(shape)
+                if shape.fill == Color32::from_rgb(55, 172, 47)
+                    && (shape.rect.height() - 4.0).abs() < 0.01 =>
+            {
+                rects.push(shape.rect)
+            }
+            egui::epaint::Shape::Vec(shapes) => {
+                for shape in shapes {
+                    health_rects(shape, rects);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn draw_battle(
+        ctx: &egui::Context,
+        panels: &mut ClientPanels,
+        state: &GameState,
+    ) -> Vec<egui::Rect> {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(900.0, 700.0),
+                )),
+                time: Some(ctx.cumulative_pass_nr() as f64),
+                ..Default::default()
+            },
+            |root| panels.show(root.ctx(), state, true),
+        );
+        output.textures_delta.clear();
+        let mut rects = Vec::new();
+        for shape in output.shapes {
+            health_rects(&shape.shape, &mut rects);
+        }
+        rects
+    }
+
+    #[test]
+    fn reachable_battle_panel_draws_received_health_and_live_replacements() {
+        let ctx = egui::Context::default();
+        let mut panels = ClientPanels::default();
+        assert!(panels.open("battle"));
+        let mut state = GameState {
+            entities: vec![
+                actor(EntityKind::Player, 0, 1),
+                actor(EntityKind::Creature, 37, 2),
+                actor(EntityKind::Npc, 100, 3),
+            ],
+            ..Default::default()
+        };
+        for _ in 0..3 {
+            let _ = draw_battle(&ctx, &mut panels, &state);
+        }
+        let bars = draw_battle(&ctx, &mut panels, &state);
+        assert_eq!(bars.len(), 3);
+        // Upstream's rounded bar retains a 4-point cap at zero, not invented health.
+        assert!((bars[0].width() - 4.0).abs() < 0.01);
+        assert!((bars[1].width() / bars[2].width() - 0.37).abs() < 0.001);
+        state.entities[1].detail = actor(EntityKind::Creature, 81, 2).detail;
+        let updated = draw_battle(&ctx, &mut panels, &state);
+        assert!((updated[1].width() / updated[2].width() - 0.81).abs() < 0.001);
+        state.entities.clear();
+        assert!(draw_battle(&ctx, &mut panels, &state).is_empty());
+    }
+
+    #[test]
+    fn battle_health_respects_actor_filters_search_and_object_exclusion() {
+        let ctx = egui::Context::default();
+        let mut panels = ClientPanels::default();
+        assert!(panels.open("battle"));
+        let mut object = actor(EntityKind::GroundItem, 100, 4);
+        object.entity.generation = 0;
+        object.detail = EntityDetail::Object {
+            item_definition_ref: 1,
+            quantity: 1,
+            item_handle: None,
+        };
+        let state = GameState {
+            entities: vec![
+                actor(EntityKind::Player, 24, 1),
+                actor(EntityKind::Creature, 67, 2),
+                actor(EntityKind::Npc, 100, 3),
+                object,
+            ],
+            ..Default::default()
+        };
+        for _ in 0..3 {
+            let _ = draw_battle(&ctx, &mut panels, &state);
+        }
+        let all = draw_battle(&ctx, &mut panels, &state);
+        assert_eq!(all.len(), 3);
+        for (filter, fraction) in [(1, 0.24), (2, 0.67), (3, 1.0)] {
+            panels.contents.entry("battle").or_default().actor_filter = filter;
+            let filtered = draw_battle(&ctx, &mut panels, &state);
+            assert_eq!(filtered.len(), 1);
+            assert!((filtered[0].width() / all[2].width() - fraction).abs() < 0.001);
+        }
+        let contents = panels.contents.entry("battle").or_default();
+        contents.actor_filter = 0;
+        contents.query = "creature".into();
+        assert_eq!(draw_battle(&ctx, &mut panels, &state).len(), 1);
+        panels.contents.entry("battle").or_default().query = "absent".into();
+        assert!(draw_battle(&ctx, &mut panels, &state).is_empty());
+    }
 
     #[test]
     fn applied_shortcuts_refresh_without_overwriting_unconsumed_manager_edits() {

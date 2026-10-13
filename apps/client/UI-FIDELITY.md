@@ -690,6 +690,22 @@ supply-chain gate; those results do not qualify this successor. Fresh physical
 Windows acceptance is unavailable: the bounded PC connectivity call reports
 offline. Existing binaries, preferences and native captures are unchanged.
 
+## Received Battle-panel health — 2026-10-13, AUTHORING
+
+The reachable shortcut/hotkey Battle window now renders the admitted capability-6
+Actor.health_percent instead of claiming health is missing. It reuses the existing
+primary HUD's upstream 4-point progress-bar style, retains type/search filters,
+and does not retain bars after actor removal. Names remain explicitly unavailable;
+original populated-row geometry, colours and eight sort semantics are not claimed
+complete. No fabricated name, default, clock or new capability is introduced.
+
+Actual egui output through ClientPanels.open/show verifies 0/37/100 percent,
+replacement to 81, removals, different player/creature/NPC fractions, search and
+object exclusion. NPC fixtures obey the accepted codec's mandatory 100 percent.
+A controlled removal of the consumer fails the warmed-window shape test;
+restoring it passes. Headless paint evidence is not a native Windows/reference
+comparison. The PC remains unavailable, and the wider 1:1/module gates stay open.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
