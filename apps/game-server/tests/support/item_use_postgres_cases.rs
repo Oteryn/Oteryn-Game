@@ -691,3 +691,73 @@ fn the_runtime_role_cannot_change_items_without_a_use_record() -> TestResult {
         used.cleanup().await
     })
 }
+
+/// ITEM-USE-1c, `ITEMUSE0-RL-02`: sequential one-item use commits on one Character, the
+/// qualification evidence of the per-Channel commit budget. Measures; asserts only the outcomes.
+#[test]
+fn item_use_commit_throughput_is_measured() -> TestResult {
+    const COMMITS: u16 = 99;
+    run(async |admin| {
+        let used = Use::create(admin, "throughput").await?;
+        let mut tx = used.harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE game_item_instances SET quantity = 100 WHERE item_instance_id = {};",
+            uuid(FOOD)
+        )))
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        let seal = used.harness.recovery.seal_current().map_err(debug)?;
+        let authority = used
+            .harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let fence = item_fence()?;
+        let mut latencies = Vec::new();
+        let started = std::time::Instant::now();
+        for n in 0..COMMITS {
+            let [high, low] = n.to_be_bytes();
+            let fresh = |tag: u8| {
+                [
+                    0xA0, high, low, tag, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 0xA0,
+                ]
+            };
+            let mut request = food(u64::from(n) + 1_000, 150, 100 - u32::from(n));
+            request.transaction_id = fresh(1);
+            request.event_id = fresh(2);
+            let commit = std::time::Instant::now();
+            let outcome = used
+                .harness
+                .root
+                .commit_item_use(&authority, &used.harness.node, fence, request)
+                .await
+                .map_err(debug)?;
+            latencies.push(commit.elapsed());
+            assert_eq!(
+                outcome,
+                ItemUseOutcome::Written {
+                    shape: ItemUseShape::Burn
+                }
+            );
+        }
+        let total = started.elapsed();
+        latencies.sort();
+        let p99 = latencies[(latencies.len() * 99).div_ceil(100) - 1];
+        eprintln!(
+            "ITEMUSE0-RL-02 evidence: {COMMITS} sequential commits in {} ms, {:.0} commits/s, \
+             p99 {} us",
+            total.as_millis(),
+            f64::from(COMMITS) / total.as_secs_f64(),
+            p99.as_micros(),
+        );
+        drop(authority);
+        drop(seal);
+        assert_eq!(used.item(FOOD).await?, (1, 1, Some(1)));
+        used.cleanup().await
+    })
+}

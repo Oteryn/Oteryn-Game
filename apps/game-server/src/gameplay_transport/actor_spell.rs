@@ -98,6 +98,8 @@ pub(crate) struct ChannelSpellStates {
     >,
     pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
     pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
+    /// ITEM-USE-1c: the item-use gate of each present actor (cooldowns, the one use in flight).
+    pub(in crate::gameplay_transport) item_uses: super::item_use::ItemUseGates,
     pub(crate) pending_native: Vec<
         PendingSpellMarker<
             native_combat_cast::NativeMarkerIntent,
@@ -247,6 +249,7 @@ impl Default for ChannelSpellStates {
             pending_familiars: Default::default(),
             pending_familiar_lifecycle: Default::default(),
             pending_familiar_logouts: Default::default(),
+            item_uses: Default::default(),
             pending_native: Default::default(),
             pending_world_items: Default::default(),
             pending_parameters: Default::default(),
@@ -625,10 +628,6 @@ impl ChannelSpellStates {
     /// Commit a resolved health credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_health_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -652,10 +651,6 @@ impl ChannelSpellStates {
     /// Commit a resolved mana credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_mana_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
