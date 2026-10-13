@@ -42,13 +42,15 @@ Optional project-local design/performance aids require a user grant for the curr
 - Upstream SHA-256 provenance and license verification — pass.
 - `git diff --check` — pass.
 - Product E2E: NOT_APPLICABLE because no runtime UI or gameplay behavior changes.
-- Actual client discovery and behavioral trials: NOT_EVALUATED (0 trials).
+- Explicit bootstrap/catalog model qualification: pass, one baseline and one candidate trial, 12 cases each; candidate 12/12 intended selections. Native CLI auto-discovery: BLOCKED by HTTP 401 before a response. No token/time or universal-enforcement claim.
 - Exact final SHA, CI, queue evidence and merge result belong in live PR #2081 after freeze; no self-referential head is recorded here.
 
 ## Review
 
-Self-review required. Independent AI review not selected: bounded optional-aid documentation narrows selection and changes no autonomous write/integration authority, runtime security, CI or trust boundary. Actual discovery/model behavior NOT_EVALUATED; representative cases are in the skill catalog.
+Self-review required. Independent AI review not selected: bounded optional-aid documentation narrows selection and changes no autonomous write/integration authority, runtime security, CI or trust boundary. Actual explicit bootstrap/catalog delivery and decision behavior qualified by paired Codex-agent trials; native CLI auto-discovery remains BLOCKED. Evidence is in .agents/skills/evaluation.json.
 
 ## PR and closeout
 
 PR: https://github.com/Oteryn/Oteryn-Game/pull/2081 . Complete changed-file self-review: pass. Exact-head checks/queue pending in live PR at authoring time. Merge commit/result: squash merge of #2081, conditional on governed terminal integration. Source branch disposition: auto_delete_after_merge if configured; verify before releasing ownership. This packet is archived in the final authoring delta per archive/README.md; it reaches main only on merge.
+
+Automatic review r4262239375: addressed with actual Codex-agent paired trials and verifiable root quote/input hashes. Qualification is limited to explicit bootstrap/catalog delivery and selection decisions; no unsupported native discovery claim.
