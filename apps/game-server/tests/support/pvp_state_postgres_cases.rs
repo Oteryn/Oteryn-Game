@@ -243,6 +243,32 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
                 .await
                 .is_err()
         );
+        // An unexpired skull is not cleared, shortened or downgraded; forfeiture is permanent.
+        assert!(
+            sqlx::query("UPDATE game_character_pvp_state SET skull = 2, skull_until = clock_timestamp() + interval '1 hour', adventurer_forfeited = TRUE, revision = revision + 1 WHERE character_id = encode($1,'hex')::uuid")
+                .bind(id(CHARACTER).as_slice())
+                .execute(&h.pool)
+                .await
+                .is_ok()
+        );
+        for change in [
+            "skull = 0, skull_until = NULL",
+            "skull = 1",
+            "skull_until = skull_until - interval '1 minute'",
+            "adventurer_forfeited = FALSE",
+        ] {
+            assert!(
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "UPDATE game_character_pvp_state SET {change}, revision = revision + 1 \
+                      WHERE character_id = encode($1,'hex')::uuid"
+                )))
+                .bind(id(CHARACTER).as_slice())
+                .execute(&h.pool)
+                .await
+                .is_err(),
+                "{change}"
+            );
+        }
         Ok(())
     })
 }
@@ -532,19 +558,49 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                 .is_err()
             );
         }
+        // A newer mark of the same pair, then the avenging rules: the killer's death in this
+        // transaction closes the oldest open mark, once.
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 113, OTHER).await?;
+        mark(&mut tx, OTHER, CHARACTER, 113).await?;
+        tx.commit().await?;
         let avenge = "UPDATE game_character_revenge_marks SET avenged_at = now() \
-                       WHERE killer_character_id = encode($1,'hex')::uuid";
-        sqlx::query(avenge)
-            .bind(id(CHARACTER).as_slice())
-            .execute(&h.pool)
-            .await?;
+                       WHERE death_occurrence_id = encode($1,'hex')::uuid";
+        // Without the killer's death in the transaction, and out of order, it is refused.
         assert!(
             sqlx::query(avenge)
-                .bind(id(CHARACTER).as_slice())
+                .bind(death_of(111).as_slice())
                 .execute(&h.pool)
                 .await
                 .is_err()
         );
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 114, CHARACTER).await?;
+        assert!(
+            sqlx::query(avenge)
+                .bind(death_of(113).as_slice())
+                .execute(&mut *tx)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 114, CHARACTER).await?;
+        sqlx::query(avenge)
+            .bind(death_of(111).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        let mut tx = h.pool.begin().await?;
+        receipt(&mut tx, 115, CHARACTER).await?;
+        assert!(
+            sqlx::query(avenge)
+                .bind(death_of(111).as_slice())
+                .execute(&mut *tx)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
 
         let lane = crate::durability::spell_owner_commit::SpellLane::new(
             crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,

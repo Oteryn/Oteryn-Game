@@ -213,17 +213,17 @@ async fn load_pvp_state(
     // Milliseconds still to run on the database clock; NULL when unset or elapsed.
     let row = sqlx::query(
         "SELECT skull, adventurer_forfeited, revision::text AS revision, \
-            CASE WHEN skull_until > clock_timestamp() THEN \
-                ceil(extract(epoch FROM (skull_until - clock_timestamp())) * 1000)::bigint END AS skull_ms, \
-            CASE WHEN kill_block_until > clock_timestamp() THEN \
-                ceil(extract(epoch FROM (kill_block_until - clock_timestamp())) * 1000)::bigint END AS kill_ms, \
-            CASE WHEN logout_block_until > clock_timestamp() THEN \
-                ceil(extract(epoch FROM (logout_block_until - clock_timestamp())) * 1000)::bigint END AS logout_ms, \
-            CASE WHEN pz_block_until > clock_timestamp() THEN \
-                ceil(extract(epoch FROM (pz_block_until - clock_timestamp())) * 1000)::bigint END AS pz_ms, \
-            CASE WHEN white_skull_until > clock_timestamp() THEN \
-                ceil(extract(epoch FROM (white_skull_until - clock_timestamp())) * 1000)::bigint END AS white_ms \
-           FROM game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid",
+            CASE WHEN skull_until > c.now THEN \
+                ceil(extract(epoch FROM (skull_until - c.now)) * 1000)::bigint END AS skull_ms, \
+            CASE WHEN kill_block_until > c.now THEN \
+                ceil(extract(epoch FROM (kill_block_until - c.now)) * 1000)::bigint END AS kill_ms, \
+            CASE WHEN logout_block_until > c.now THEN \
+                ceil(extract(epoch FROM (logout_block_until - c.now)) * 1000)::bigint END AS logout_ms, \
+            CASE WHEN pz_block_until > c.now THEN \
+                ceil(extract(epoch FROM (pz_block_until - c.now)) * 1000)::bigint END AS pz_ms, \
+            CASE WHEN white_skull_until > c.now THEN \
+                ceil(extract(epoch FROM (white_skull_until - c.now)) * 1000)::bigint END AS white_ms \
+           FROM (SELECT clock_timestamp() AS now) c, game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid",
     )
         .bind(character_id.as_bytes().as_slice())
         .fetch_optional(&mut **tx)

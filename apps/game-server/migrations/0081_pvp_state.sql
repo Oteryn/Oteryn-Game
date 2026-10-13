@@ -109,6 +109,16 @@ BEGIN
             AND NEW.white_skull_until IS DISTINCT FROM GREATEST(OLD.white_skull_until, NEW.white_skull_until)) THEN
         RAISE EXCEPTION 'a PvP deadline is never lowered or cleared' USING ERRCODE = '23514';
     END IF;
+    -- An unexpired skull is neither cleared nor shortened nor downgraded; after its end the
+    -- state may be re-evaluated. The Adventurer forfeiture, once set, stays set.
+    IF OLD.skull > 0 AND OLD.skull_until > clock_timestamp()
+       AND (NEW.skull < OLD.skull
+            OR (NEW.skull = OLD.skull AND NEW.skull_until < OLD.skull_until)) THEN
+        RAISE EXCEPTION 'an unexpired skull is never lowered or cleared' USING ERRCODE = '23514';
+    END IF;
+    IF OLD.adventurer_forfeited AND NOT NEW.adventurer_forfeited THEN
+        RAISE EXCEPTION 'the Adventurer forfeiture is permanent' USING ERRCODE = '23514';
+    END IF;
     IF NEW.revision <> OLD.revision + 1 THEN
         RAISE EXCEPTION 'a PvP state advances its revision by one' USING ERRCODE = '23514';
     END IF;
@@ -169,8 +179,22 @@ BEGIN
                 NEW.created_at, NEW.expires_at)
                IS DISTINCT FROM (OLD.victim_character_id, OLD.killer_character_id,
                 OLD.death_occurrence_id, OLD.created_at, OLD.expires_at)
-               OR OLD.avenged_at IS NOT NULL THEN
+               OR OLD.avenged_at IS NOT NULL OR NEW.avenged_at IS NULL THEN
                 RAISE EXCEPTION 'a revenge mark changes only avenged_at, once'
+                    USING ERRCODE = '23514';
+            END IF;
+            -- The victim avenges by killing the marked killer: that killer's death receipt is
+            -- created in this transaction, and the mark is the oldest open one of the pair.
+            IF NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
+                            WHERE d.character_id = OLD.killer_character_id
+                              AND d.created_xact_id = pg_current_xact_id())
+               OR EXISTS (SELECT 1 FROM game_character_revenge_marks m
+                           WHERE m.victim_character_id = OLD.victim_character_id
+                             AND m.killer_character_id = OLD.killer_character_id
+                             AND m.avenged_at IS NULL
+                             AND m.expires_at > clock_timestamp()
+                             AND m.created_at < OLD.created_at) THEN
+                RAISE EXCEPTION 'a revenge mark is closed by the death of its killer, oldest first'
                     USING ERRCODE = '23514';
             END IF;
             RETURN NEW;
