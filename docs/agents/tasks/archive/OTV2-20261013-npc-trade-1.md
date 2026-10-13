@@ -4,12 +4,12 @@
 task_id: NPC-TRADE-1
 title: "NPC-TRADE-1: the NPC BUY/SELL commit as one item-only DUR-03 transaction"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-trade-1-20261013
 issue: 1622
-pr: none
+pr: 2040
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-13
 updated_at: 2026-10-13
@@ -29,13 +29,13 @@ owned_paths:
   - apps/game-server/tests/support/npc_trade_postgres_cases.rs
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-  - docs/agents/tasks/active/OTV2-20261013-npc-trade-1.md
+  - docs/agents/tasks/archive/OTV2-20261013-npc-trade-1.md
 excluded_paths:
   - apps/game-server/src/gameplay_transport/npc_command.rs   # NPC-CMD-1b owns the domain-8 window
 public_contracts: [docs/contracts/game-events/v1/native_one_item_transaction.proto]
 depends_on: ["NPC-TALK-1", "GOLD-FEE-1b (#1410)"]
 external_repositories: []
-next_action: "author the durable half; command-8 wiring after NPC-CMD-1b merges (assumption, CP question 2)"
+next_action: "NPC-TRADE-2: wire command 8 in npc_command.rs to this writer after NPC-CMD-1b (#2035) merges, reusing project_offers for the offer index"
 ```
 
 ## Assumptions sent to the control plane
@@ -44,3 +44,28 @@ next_action: "author the durable half; command-8 wiring after NPC-CMD-1b merges 
 2. Split (a): this PR is the durable writer, its migration, audit, RL rows and PostgreSQL tests;
    command 8 is wired to it once NPC-CMD-1b supplies the bound catalogue revision.
 3. Coins only: the BANK-FEE-0 bank part of NPC-0 §5.1 stays pending its acceptance.
+
+CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring is NPC-TRADE-2;
+3. coins only.
+
+## Validation
+
+- `cargo fmt --check -p oteryn-game-server`: pass
+- `cargo clippy -p oteryn-game-server --all-targets`: pass
+- `cargo test -p oteryn-game-server --lib`: pass (2903 passed)
+- `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade` (PostgreSQL 17): pass (11 passed)
+- `cargo test -p oteryn-game-server --test character_authority_postgres` (PostgreSQL 17.11, 17.6 pins relaxed locally only): 1416 passed, 1 failed on a src-side 17.6 version pin; CI runs 17.6
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+## Deviations
+
+- `FeeBurnCause::NpcTrade` is the BUY coin BURN lines under the trade cause record, not a
+  `game_item_fee_burns` row (a fee record needs a CharacterRevision advance; a trade has none).
+- Over the ~500-line batch guideline: the migration, writer, encoder and tests are one unit.
+
+## PR and closeout
+
+- merge commit/result: squash merge of #2040 (pending)
+- review: Codex review on d085fe6b found no issues; independent persistence review requested from the CP
