@@ -408,7 +408,29 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 ];
                 let rows = guards.load(&keys).await?;
                 assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: Some(_), .. })));
-                let ExpiredLossReleaseV1::Released { .. } = reloaded.release_capability_mismatch(id, account, epoch).await? else { return Err("capability mismatch was not released".into()); };
+                // CHAR-POSITION-0 §3.2 "At logout": the release writes the final position inside its
+                // own transaction, before the session ends. The Character root it names is seeded
+                // here, under a UUIDv7 account of its own.
+                let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } = session.current_runtime_scope() else { return Err("Channel session expected".into()); };
+                sqlx::query("INSERT INTO game_character_interpretations VALUES (1,'profile-1','ruleset-1','content-1','starter-1',1)").execute(&pool).await?;
+                sqlx::query("INSERT INTO game_character_account_guards VALUES ('019a0000-0000-7000-8000-000000000040')").execute(&pool).await?;
+                sqlx::query("INSERT INTO game_character_roots SELECT character_id, '019a0000-0000-7000-8000-000000000040', world_id, 1, 1, 'profile-1', 'ruleset-1', 'content-1', 'starter-1', 'Fixture Hero' FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid").bind(id.as_bytes().as_slice()).execute(&pool).await?;
+                let final_position = durability::character_last_position::FinalLastPosition {
+                    record: durability::character_last_position::LastPositionRecord {
+                        world_id,
+                        cell: durability::character_last_position::LastPositionCell { x: 31, y: 32, floor: 7 },
+                        coordinate_frame_digest: [1; 32], map_revision_digest: [2; 32], server_artifact_digest: [3; 32],
+                    },
+                    write_sequence: 70,
+                };
+                let ExpiredLossReleaseV1::Released { .. } = reloaded.with_final_position(final_position).release_capability_mismatch(id, account, epoch).await? else { return Err("capability mismatch was not released".into()); };
+                let last_position = || sqlx::query_scalar::<_, String>("SELECT concat_ws('|', tile_x, tile_y, tile_floor, character_lease_generation::text, write_sequence::text) FROM game_character_last_positions").fetch_optional(&pool);
+                let lease = session.current_character_lease().generation();
+                assert_eq!(last_position().await?, Some(format!("31|32|7|{lease}|70")));
+                // A replay ends nothing more and writes nothing.
+                let later = durability::character_last_position::FinalLastPosition { write_sequence: 71, ..final_position };
+                assert_eq!(reloaded.with_final_position(later).release_capability_mismatch(id, account, epoch).await?, ExpiredLossReleaseV1::Terminal);
+                assert_eq!(last_position().await?, Some(format!("31|32|7|{lease}|70")));
                 // Terminal, with no replacement: the session id is unchanged and
                 // the claims are free, while the lease generation is kept.
                 let (released, _) = store.current_session_at(id).await?;

@@ -749,6 +749,23 @@ pub(crate) mod tests {
         coin_id: u32,
         door_house: u32,
     ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+    }
+
+    /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
+    /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
+    pub(crate) fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
+        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+    }
+
+    fn bundle_with_grass(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+        item_grass: Option<(&str, u32)>,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -790,7 +807,13 @@ pub(crate) mod tests {
                 floors: vec![-7],
             },
             palette: vec![
-                terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                match item_grass {
+                    Some((key, id)) => PaletteEntry {
+                        family: Family::Item,
+                        ..terrain(key, id, TerrainKind::Ground, Some(true))
+                    },
+                    None => terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                },
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
                 item(boxed, boxed_id),
@@ -1267,6 +1290,41 @@ pub(crate) mod tests {
             y: 0,
             floor: -7
         }));
+        Ok(())
+    }
+
+    /// The real World routes its grounds to Item keys whose served definitions carry no
+    /// solidity fact: such a ground does not block the start, a plain Item without the fact on
+    /// the same ground still blocks and a stated solid Item blocks.
+    #[test]
+    fn an_item_ground_without_a_solidity_fact_is_enterable() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle_with_item_grass();
+        let world = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "item:grass" => Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(3)?,
+                    solid: None,
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                }),
+                "item:coin" => items(key).map(|definition| ItemDefinition {
+                    solid: None,
+                    ..definition
+                }),
+                _ => items(key),
+            },
+        )?;
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        assert!(world.enterable(at(1)), "start on an Item ground");
+        assert!(!world.enterable(at(4)), "lava");
+        assert!(!world.enterable(at(5)), "wall");
+        assert!(!world.enterable(at(6)), "solid box");
+        assert!(!world.enterable(at(7)), "coin without a solidity fact");
         Ok(())
     }
 

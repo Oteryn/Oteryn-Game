@@ -17,6 +17,8 @@ mod item_move;
 mod item_ref_admission;
 mod item_view;
 mod kill_reward;
+mod last_position;
+pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
@@ -400,6 +402,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
     pub(crate) quest_catalogue:
         &'a std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+    /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
+    /// caller never withdraws readiness through it.
+    pub(crate) last_position_flush: Option<&'a LastPositionFlush>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -520,6 +525,7 @@ pub async fn serve_gameplay(
             .map(std::sync::Arc::new),
         wheel_sessions: std::sync::Mutex::default(),
         progression_sessions: std::sync::Mutex::default(),
+        last_positions: last_position::LastPositions::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -558,9 +564,25 @@ pub async fn serve_gameplay(
     );
     let mut serving = pin!(serving);
     let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
+    // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
+    // deadlines, so no other cadence work delays them.
+    let mut positions = pin!(authority.run_last_position_writes(shutdown));
+    // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
+    let mut flush = pin!(async {
+        match owners.last_position_flush {
+            Some(flush) => flush.serve(&authority).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
+    let mut flush_done = false;
     poll_fn(|context| {
+        if !flush_done && flush.as_mut().poll(context).is_ready() {
+            flush_done = true;
+        }
+        // Never ends on its own; it parks once shutdown is requested.
+        let _ = positions.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -703,6 +725,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// (`settle_session_death`), which leaves the session unbound. An unbound session has no
     /// entry. Never held across an await.
     pub(crate) progression_sessions: ProgressionSessions,
+    /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
+    /// sequence generator (CHAR-POSITION-0 §3.2).
+    pub(crate) last_positions: last_position::LastPositions,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -1347,19 +1372,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): resolve the session's current fences
     /// and, in the Character's revision slot, place the dead actor while PostgreSQL holds them
-    /// ([`DurabilityRoot::place_and_consume_pending_respawn`]): the placement runs inside the
-    /// fenced transaction, so a session that turns terminal or is superseded, a moved lease, a
+    /// ([`DurabilityRoot::place_and_consume_pending_respawn_placed`]): the placement runs inside
+    /// the fenced transaction, so a session that turns terminal or is superseded, a moved lease, a
     /// moved scope assignment or a revoked node incarnation commits either before the fence is
     /// asserted, and nothing is placed, or after the placement. A settle that replayed a retained
     /// receipt checked none of them. The owner step itself revalidates the owner's binding
     /// ([`place_authorized_respawn`]) and decides from the pending row read under the fence whether
     /// it may be consumed ([`settled_respawn_disposition`]); the row is deleted only after the
-    /// placement, in the same transaction. No I/O runs while the runtime lock is held. `false` (no
-    /// current fence, a failed cursor read, a refused fence or placement, a recorded cell no
-    /// admission reproduces or a failed write) keeps the actor dead; the row stays for the next
-    /// attempt or, after a restart, for the next admission.
+    /// placement, in the same transaction, which also upserts the placed respawn cell as the
+    /// Character's last position (CHAR-POSITION-0 §3.3 step 1), so a crash right after the
+    /// placement never puts the Character back at its death cell. No I/O runs while the runtime
+    /// lock is held. `false` (no current fence, a failed cursor read, a refused fence or
+    /// placement, a recorded cell no admission reproduces or a failed write) keeps the actor dead;
+    /// the row stays for the next attempt or, after a restart, for the next admission.
     ///
-    /// [`DurabilityRoot::place_and_consume_pending_respawn`]: crate::durability::DurabilityRoot::place_and_consume_pending_respawn
+    /// [`DurabilityRoot::place_and_consume_pending_respawn_placed`]: crate::durability::DurabilityRoot::place_and_consume_pending_respawn_placed
     async fn place_and_consume_settled_respawn(
         &self,
         actor: ExactActorRef,
@@ -1378,10 +1405,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             lease_generation: fence.character_lease_generation,
             scope_generation: fence.scope_ownership_generation,
         };
+        // CHAR-POSITION-0 §3.2-§3.3: the respawn cell the placement puts the actor at, upserted as
+        // the last position in the transaction that consumes the respawn. Its sequence is taken
+        // after the death, and a dead actor is never captured, so no capture of the living actor
+        // orders after it.
+        let respawned = {
+            let runtime = self.runtime.lock().await;
+            self.placed_record(&runtime, runtime.respawn_position())
+        };
         let runtime = &self.runtime;
         let placed = self
             .root
-            .place_and_consume_pending_respawn(
+            .place_and_consume_pending_respawn_placed(
                 self.character,
                 self.holder,
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
@@ -1389,9 +1424,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..fence
                 },
                 occurrence,
+                respawned,
                 move |pending| async move {
                     let mut runtime = runtime.lock().await;
                     let admission_cell = runtime.respawn_position();
+                    if !last_position::respawn_cell_recorded(admission_cell, &respawned) {
+                        operator_event("settled_respawn_placement_refused reason=cell_changed");
+                        return false;
+                    }
                     match settled_respawn_disposition(occurrence, admission_cell, pending.as_ref())
                     {
                         SettledRespawn::Kept => {
@@ -1409,7 +1449,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         drop(slot);
         match placed {
-            Ok(placed) => placed,
+            Ok(placed) => {
+                if placed {
+                    self.last_positions
+                        .respawned(session, respawned.record.cell);
+                }
+                placed
+            }
             Err(error) => {
                 operator_event(&format!("settled_respawn_placement_failed reason={error}"));
                 false
@@ -1495,12 +1541,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// committed before the previous actor ended. In the Character's revision slot and under the
     /// admitted session's fences, before the session's other Character writes, its pending
     /// respawn is read, the new actor is placed at the recorded respawn position, and only then
-    /// is the obligation consumed. A recorded cell that is not valid or not free uses the
-    /// CHAR-POSITION-0 §3.3 fallback, so a placement is always defined. A placement that cannot
-    /// complete or a failed read or write leaves the row for the next admission; the Character
-    /// writers refuse with `RespawnPending` until then. `true` only when no respawn is pending or
-    /// exactly the placed one was consumed.
-    async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
+    /// is the obligation consumed. The first-entry owner step already placed the actor for the
+    /// respawn it read (`decided`, CHAR-POSITION-0 §3.3); only a respawn it did not see is placed
+    /// here. A recorded cell that is not valid or not free uses the CHAR-POSITION-0 §3.3
+    /// fallback, so a placement is always defined. A placement that cannot complete or a failed
+    /// read or write leaves the row for the next admission; the Character writers refuse with
+    /// `RespawnPending` until then. `true` only when exactly the placed respawn was consumed, or
+    /// no respawn is pending and the first entry was placed from a successful last-position read
+    /// (CHAR-POSITION-0 §3.3 steps 3 and 4): a failed read or placement leaves this admission not
+    /// playable, as an unplaced respawn does.
+    async fn consume_admitted_respawn(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        decided: Option<&last_position::AdmissionPosition>,
+    ) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
@@ -1518,23 +1573,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(pending)) => pending,
-            Ok(None) => return true,
+            Ok(None) => {
+                // CHAR-POSITION-0 §3.3 steps 3 and 4: no pending respawn, so the last position
+                // the first-entry step was placed by. An entry without a successful read, or one
+                // placed for a respawn that is gone, keeps the admission not playable.
+                drop(slot);
+                return decided
+                    .is_some_and(|decided| self.track_restored(session, actor, decided, fence));
+            }
             Err(error) => {
                 operator_event(&format!("pending_respawn_read_failed reason={error}"));
                 return false;
             }
         };
-        if !self
-            .place_admitted_respawn(session, actor, &pending.respawn_position)
-            .await
+        let placed_at_entry = matches!(
+            decided,
+            Some(last_position::AdmissionPosition::Respawn(placed))
+                if placed.occurrence == pending.occurrence
+        );
+        if !placed_at_entry
+            && !self
+                .place_admitted_respawn(session, actor, &pending.respawn_position)
+                .await
         {
             operator_event("pending_respawn_placement_failed");
             return false;
         }
+        // CHAR-POSITION-0 §3.3: the consumption upserts the placed cell as the last position, in
+        // the same transaction, under the new lease's key.
+        // A placed actor whose cell cannot be read back (stale or gone) consumes nothing: the
+        // obligation stays for the next admission rather than be consumed without its cell.
+        let Some(placed) = self.respawn_last_position(actor).await else {
+            operator_event("pending_respawn_placed_cell_unavailable");
+            return false;
+        };
         let consumed = self
             .root
-            .consume_pending_respawn(self.character, self.holder, fence, Some(pending.occurrence))
+            .consume_pending_respawn_placed(
+                self.character,
+                self.holder,
+                fence,
+                Some(pending.occurrence),
+                placed,
+            )
             .await;
+        if matches!(&consumed, Ok(Some(consumed)) if consumed.occurrence == pending.occurrence) {
+            self.track_respawned(session, actor, &placed, fence);
+        }
         if let Err(error) = &consumed {
             operator_event(&format!(
                 "pending_respawn_consumption_failed reason={error}"
@@ -1959,7 +2044,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 KillRelease::Send(mark) => mark,
                 KillRelease::Deferred => return GraceExpiryResult::Unknown,
             };
-            let pause = match store.release_expired_loss(session, &account_id).await {
+            // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
+            let pause = match self
+                .final_position_store(&store, session, actor)
+                .await
+                .release_expired_loss(session, &account_id)
+                .await
+            {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
@@ -2079,6 +2170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.fence_holders.forget(session);
                 self.forget_quest_session(session);
                 self.forget_progression_session(session);
+                self.last_positions.forget(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -2243,14 +2335,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
             };
+            // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
+            let releasing = self.final_position_store(&store, session, actor).await;
             let outcome = match release {
                 TerminalRelease::Abandoned(transport) => {
-                    store
+                    releasing
                         .release_abandoned_session(session, &account_id, transport)
                         .await
                 }
                 TerminalRelease::CapabilityMismatch(epoch) => {
-                    store
+                    releasing
                         .release_capability_mismatch(session, &account_id, epoch)
                         .await
                 }
@@ -3673,7 +3767,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // release or tick) can briefly hold; the attempt wrote no runtime state, so it is
         // repeated from fresh reads, bounded, before the actor is left unpositioned.
         let mut attempt_round = 0;
-        let (first_entry, item_fence) = loop {
+        let (first_entry, item_fence, decided) = loop {
             attempt_round += 1;
             let result = self
                 .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
@@ -3722,7 +3816,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         ) {
             let settled = self
-                .consume_admitted_respawn(admitted.game_session_id, actor)
+                .consume_admitted_respawn(admitted.game_session_id, actor, decided.as_ref())
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
@@ -4096,7 +4190,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
-    ) -> (FirstEntryOutcome, Option<CurrentCharacterItemFence>) {
+    ) -> (
+        FirstEntryOutcome,
+        Option<CurrentCharacterItemFence>,
+        Option<last_position::AdmissionPosition>,
+    ) {
         #[cfg(test)]
         let stage = |name: &str| {
             if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
@@ -4108,22 +4206,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
-            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
         match self.reserve_precondition().await {
             Ok(()) => {}
             Err(AdmissionRefusal::Unavailable) => {
-                return (FirstEntryOutcome::RefusedUnavailable, None);
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
-            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
+            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
         // SPELL-D8 §8.2: a new runtime actor loads the durable Harmony and remaining forced
         // Serene time, read before the Channel-owner lock; a failed or corrupt load fails closed.
         let character_id =
             match domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()) {
                 Ok(character_id) => character_id,
-                Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+                Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
         let (facts, character_revision) = match spell_character_facts::load_character_cast_facts(
             self.root,
@@ -4140,7 +4238,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (None, character_revision)
             }
             spell_character_facts::CastFactsLoad::Unavailable => {
-                return (FirstEntryOutcome::RefusedUnavailable, None);
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
         #[cfg(test)]
@@ -4150,11 +4248,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(character_id) =
                     domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
                 else {
-                    return (FirstEntryOutcome::RefusedUnavailable, None);
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 };
                 match self.load_monk_state(character_id).await {
                     Some(values) => values,
-                    None => return (FirstEntryOutcome::RefusedUnavailable, None),
+                    None => return (FirstEntryOutcome::RefusedUnavailable, None, None),
                 }
             }
             None => (0, 0),
@@ -4165,7 +4263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(build) => build,
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
         let stance = match self
             .root
@@ -4173,14 +4271,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(stance) => stance,
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
         if let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         {
             let Some(fence) = item_fence_of(current) else {
-                return (FirstEntryOutcome::RefusedStaleAuthority, None);
+                return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
             };
             #[cfg(test)]
             stage("equipment_initialize");
@@ -4197,7 +4295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 #[cfg(test)]
                 stage(&format!("equipment_refused:{_error:?}"));
-                return (FirstEntryOutcome::RefusedUnavailable, None);
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
             let gameplay =
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
@@ -4218,7 +4316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 #[cfg(test)]
                 stage(&format!("familiar_refused:{_error:?}"));
-                return (FirstEntryOutcome::RefusedUnavailable, None);
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         }
         // Character facts, monk and stance loads are data reads, never current session authority.
@@ -4228,18 +4326,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_current_character(self.character, character_id)
             .await
         else {
-            return (FirstEntryOutcome::RefusedUnavailable, None);
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         if latest_character.revision != character_revision {
-            return (FirstEntryOutcome::RefusedStaleAuthority, None);
+            return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
-            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
         if current.commit().character_id().as_bytes() != character_id.as_bytes() {
-            return (FirstEntryOutcome::RefusedStaleAuthority, None);
+            return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
         let key = AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id());
         let character = match AdmissionGuardStore::from_root(self.root.clone())
@@ -4247,14 +4345,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(rows) => rows.into_iter().next().flatten().map(|row| row.state),
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        // CHAR-POSITION-0 §3.3: the durable position replaces `entry_start` as the input of the
+        // owner step below, so it is read now, under this admission's session fence and before
+        // the Channel-owner lock: party presence and the familiar's login placement, which run
+        // after that step, then read the placed cell. A failed read leaves the actor unpositioned.
+        let position_fence =
+            crate::durability::character_progression::CurrentCharacterGameplayFence {
+                character_id,
+                game_session_id,
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+                expected_character_revision: character_revision,
+            };
+        let Ok(decided) = self.read_admission_position(position_fence).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
+        #[cfg(test)]
+        stage("durable_position_read");
         match self.reserve_precondition().await {
             Ok(()) => {}
             Err(AdmissionRefusal::Unavailable) => {
-                return (FirstEntryOutcome::RefusedUnavailable, None);
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
-            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
+            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
@@ -4267,7 +4384,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope_generation: runtime.binding().scope_generation(),
         };
         if !first_entry_authority_is_current(&expected, current, character.as_ref()) {
-            return (FirstEntryOutcome::RefusedStaleAuthority, None);
+            return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
         // A2 (D295 item 4): bind the admitted session's lease to its slot in this owner step,
         // from the read that just proved it current. No damage write is admitted before.
@@ -4275,12 +4392,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .bind_attacker_lease(actor, game_session_id, current.current_character_lease())
             .is_err()
         {
-            return (FirstEntryOutcome::RefusedByChannel, None);
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        let outcome = match runtime.initialize_first_entry_position(actor) {
+        // CHAR-POSITION-0 §3.3: initialized and placed at the durable position in this one
+        // owner step, before the lock is released and any owner reads the actor's position.
+        let outcome = match self
+            .initialize_admitted_position(&mut runtime, actor, game_session_id, &decided)
+            .await
+        {
             Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
             Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
-            Err(_) => return (FirstEntryOutcome::RefusedByChannel, None),
+            Err(_) => return (FirstEntryOutcome::RefusedByChannel, None, None),
         };
         #[cfg(test)]
         stage("position_initialized");
@@ -4305,7 +4427,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .is_none()
         {
-            return (FirstEntryOutcome::RefusedByChannel, None);
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
         if facts.is_some()
             && !self.spell_states.lock().await.load_owned_stance(
@@ -4316,7 +4438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.spells,
             )
         {
-            return (FirstEntryOutcome::RefusedByChannel, None);
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
         if facts.is_some()
             && !self.spell_states.lock().await.load_owned_build(
@@ -4326,7 +4448,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &build,
             )
         {
-            return (FirstEntryOutcome::RefusedByChannel, None);
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
         if facts.is_some()
             && let Some(formula) = self
@@ -4339,7 +4461,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get_mut(&runtime, actor, game_session_id)
                 .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
             {
-                return (FirstEntryOutcome::RefusedByChannel, None);
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
         }
         drop(runtime);
@@ -4366,7 +4488,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
                 .await;
         }
-        (outcome, item_fence)
+        (outcome, item_fence, Some(decided))
     }
 
     async fn rollback_runtime_player(

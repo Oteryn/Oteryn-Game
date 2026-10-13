@@ -73,6 +73,8 @@ const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
+/// The share of [`SHUTDOWN_BUDGET`] the shutdown last-position write may take (CHAR-POSITION-1).
+const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
@@ -2264,6 +2266,7 @@ async fn boot_and_serve(
             .map_err(|_| BootError::Serve)?,
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
+    let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2282,6 +2285,7 @@ async fn boot_and_serve(
         achievements: &achievements,
         imported_charms: &imported_charms,
         quest_catalogue: &quest_catalogue,
+        last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
@@ -2347,6 +2351,36 @@ async fn boot_and_serve(
     // loops keep being driven meanwhile, so work already inside a durability
     // pass finishes and releases the holder the withdrawal needs.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
+    // CHAR-POSITION-0 §3.2: the tracked last positions are written while the sessions are still
+    // fenced in, so before the withdrawal, within its own share of the budget.
+    if !gameplay_done {
+        last_position_flush.request();
+        let mut flushed = pin!(first(
+            last_position_flush.done(),
+            tokio::time::sleep(LAST_POSITION_FLUSH_BUDGET),
+        ));
+        poll_fn(|context| {
+            if flushed.as_mut().poll(context).is_ready() {
+                return Poll::Ready(());
+            }
+            if let Poll::Ready(result) = gameplay.as_mut().poll(context) {
+                serve_error = result.err();
+                gameplay_done = true;
+                return Poll::Ready(());
+            }
+            if !control_done && control_task.as_mut().poll(context).is_ready() {
+                control_done = true;
+            }
+            if !expiry_done && expiry.as_mut().poll(context).is_ready() {
+                expiry_done = true;
+            }
+            if !projection_done && projection.as_mut().poll(context).is_ready() {
+                projection_done = true;
+            }
+            Poll::Pending
+        })
+        .await;
+    }
     let mut withdrawal = pin!(readiness.publish(false, Some(budget)));
     let withdrawn = poll_fn(|context| {
         if let Poll::Ready(result) = withdrawal.as_mut().poll(context) {
