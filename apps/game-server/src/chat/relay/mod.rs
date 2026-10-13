@@ -377,10 +377,11 @@ fn seal_with_nonce(
     Ok(text)
 }
 
-/// Opens a `NOTIFY` text received on `channel`: authenticity, layout and freshness. The caller
-/// then passes the line through [`ReplayWindow::admit`]. Any `Err` drops the line (counted by the
-/// caller); nothing is logged here.
-pub(crate) fn open(
+/// Opens a `NOTIFY` text received on `channel`: authenticity, layout and freshness. `now_micros`
+/// must be the monotonic reading of [`ReplayWindow::receive`], the only caller outside tests, so
+/// key retirement and freshness never see the clock run backwards. Any `Err` drops the line
+/// (counted by the caller); nothing is logged here.
+fn open(
     ring: &RelayKeyRing,
     channel: &str,
     notify_text: &str,
@@ -425,12 +426,32 @@ pub(crate) struct ReplayWindow {
 }
 
 impl ReplayWindow {
-    /// Admits the line once. `now_micros` is the node's database-time reading, raised to the
-    /// highest reading seen. A line outside the freshness window is `Stale` here too, so nothing
+    /// Receives one `NOTIFY` text: opens it and admits it once, on a clock that never runs
+    /// backwards. `now_micros` is the node's database-time reading, raised to the highest reading
+    /// seen, so a database clock stepped back can neither revive a retired key nor re-admit an
+    /// evicted `message_id` or an expired line.
+    pub(crate) fn receive(
+        &mut self,
+        ring: &RelayKeyRing,
+        channel: &str,
+        notify_text: &str,
+        now_micros: u64,
+    ) -> Result<RelayLine, RelayError> {
+        let now_micros = self.observe(now_micros);
+        let line = open(ring, channel, notify_text, now_micros)?;
+        self.admit(&line, now_micros)?;
+        Ok(line)
+    }
+
+    fn observe(&mut self, now_micros: u64) -> u64 {
+        self.high_water = now_micros.max(self.high_water);
+        self.high_water
+    }
+
+    /// Admits the line once. A line outside the freshness window is `Stale` here too, so nothing
     /// already expired is ever stored.
-    pub(crate) fn admit(&mut self, line: &RelayLine, now_micros: u64) -> Result<(), RelayError> {
-        let now_micros = now_micros.max(self.high_water);
-        self.high_water = now_micros;
+    fn admit(&mut self, line: &RelayLine, now_micros: u64) -> Result<(), RelayError> {
+        let now_micros = self.observe(now_micros);
         while let Some(&(expiry, id)) = self.by_expiry.first() {
             if expiry >= now_micros {
                 break;

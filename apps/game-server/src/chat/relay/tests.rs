@@ -345,3 +345,34 @@ fn randomness_differs_and_debug_never_shows_text_or_key() {
     assert!(!format!("{line:?}").contains("secret"));
     assert!(!format!("{:?}", RelayKey::new(1, 0, [0xab; KEY_BYTES])).contains("171"));
 }
+
+#[test]
+fn a_retired_key_stays_retired_when_the_clock_steps_back() {
+    let added = NOW;
+    let ring = ring(&[(1, 0), (2, added)]);
+    let old_only = self::ring(&[(1, 0)]);
+    let at_expiry = added + KEY_OVERLAP_MICROS;
+    let old_text =
+        seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
+    let mut window = ReplayWindow::default();
+    // Inside the overlap the old key still opens; at its expiry it is retired.
+    assert!(
+        window
+            .receive(&ring, CHANNEL, &old_text, at_expiry - 1)
+            .is_ok()
+    );
+    let other = seal_with_nonce(&old_only, CHANNEL, &room_line(2, at_expiry), NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &other, at_expiry),
+        Err(RelayError::UnknownKey)
+    );
+    // The database clock steps back to before the expiry: the key must stay retired.
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &other, at_expiry - 1),
+        Err(RelayError::UnknownKey)
+    );
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &other, added),
+        Err(RelayError::UnknownKey)
+    );
+}
