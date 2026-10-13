@@ -3,7 +3,7 @@
 - Decision: `CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   security and privacy) and protected integration.
-- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed. Both are resolved in code and text (the cast-path mute by CHAT-MUTE-CAST-1 #2003; the pre-lock gate by DEATH-WIRE-1 and §6 "Gate before the Channel lock"); the acceptance (D1021, no waiver) waits for the re-review.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to finish the playable game (2026-09-30); players cannot talk
   today
@@ -167,6 +167,11 @@ does not use the sender's spam bucket, which MAIL-0's posting rate replaces.
   character is muted for 5 s × n², n being its offences in the last 30 minutes (`CHAT0-RL-04`, an
   Oteryn choice: the sources say "recently"). More than 20 distinct private recipients in 10 minutes
   mutes the same way. After a mute the bucket refills to full.
+- **Gate before the Channel lock.** A `say` is first checked against the speaker's limiter
+  (mute, then an empty bucket) before the Channel runtime lock is taken and before any entity
+  list is cloned, so a flooding or muted character costs the Channel one map lookup. The gate
+  takes no line and starts the offence of a line beyond an empty bucket; an admitted line takes
+  its line, and the yell gate and cooldown, in the full path (`CHAT-DEFECT-RATE-GATE`).
 - **A muted character can neither chat nor cast any spell** (the manual): the spell path (command 3)
   reads the same mute.
 - **Durable mute.** `game_character_chat_mutes` (CharacterId, the last 16 offence times, muted
