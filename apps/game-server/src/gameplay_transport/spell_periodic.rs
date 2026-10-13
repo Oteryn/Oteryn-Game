@@ -73,19 +73,6 @@ fn combine_elements(
         (None, None) => Some(None),
     }
 }
-#[cfg(test)]
-mod standing_fact_tests {
-    use super::*;
-    #[test]
-    fn static_bundle_field_is_not_lost_and_unknown_stays_unknown() {
-        let fire = Some(Some(DotElement::Fire));
-        assert_eq!(combine_elements(Some(None), fire), fire);
-        assert_eq!(combine_elements(fire, Some(None)), fire);
-        assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
-        assert_eq!(combine_elements(None, fire), None);
-        assert_eq!(combine_elements(fire, None), None);
-    }
-}
 impl ChannelSpellStates {
     /// A preview is read-only. Canonical Creature-origin damage is consumed by
     /// the existing HP/conditions/death owner, including after its creator dies.
@@ -389,5 +376,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now,
             &read,
         )
+    }
+}
+
+#[cfg(test)]
+mod standing_fact_tests {
+    use super::*;
+    #[test]
+    fn static_bundle_field_is_not_lost_and_unknown_stays_unknown() {
+        let fire = Some(Some(DotElement::Fire));
+        assert_eq!(combine_elements(Some(None), fire), fire);
+        assert_eq!(combine_elements(fire, Some(None)), fire);
+        assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
+        assert_eq!(combine_elements(None, fire), None);
+        assert_eq!(combine_elements(fire, None), None);
     }
 }
