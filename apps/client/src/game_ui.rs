@@ -1875,6 +1875,375 @@ mod tests {
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
     #[test]
+    fn routed_settings_transactions_reach_consumers_and_preserve_failed_saves()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::settings_ui::SettingsPanel;
+        use oteryn_client::{settings::ClientSettings, settings_catalog::FutureValue};
+        const FIXTURE: &str = "OTERYN_SETTINGS_TRANSACTION_FIXTURE";
+        let Some(fixture) = std::env::var_os(FIXTURE) else {
+            let directory = tempfile::tempdir()?;
+            let output = std::process::Command::new(std::env::current_exe()?)
+                .args(["--exact", "game_ui::tests::routed_settings_transactions_reach_consumers_and_preserve_failed_saves", "--nocapture"])
+                .env(FIXTURE, directory.path()).env("LOCALAPPDATA", directory.path()).output()?;
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Ok(());
+        };
+        let path = std::path::PathBuf::from(fixture).join("Oteryn/settings.json");
+        assert_eq!(ClientSettings::path(), Some(path.clone()));
+        fn click_control(
+            ctx: &egui::Context,
+            panel: &mut SettingsPanel,
+            page: &str,
+            label: &str,
+        ) -> Result<(), Box<dyn std::error::Error>> {
+            let size = egui::vec2(900.0, 620.0);
+            assert!(panel.open_complete_section(page));
+            let mut output = egui::FullOutput::default();
+            for _ in 0..4 {
+                output = frame(ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+            }
+            if button_position(&output, size, label).is_none() {
+                let (body, _) = crate::preferences_browser::test_support::scroll_geometry(
+                    ctx,
+                    "all-preferences-body-geometry",
+                )
+                .ok_or("settings body")?;
+                output = crate::preferences_browser::test_support::reveal(
+                    ctx,
+                    size,
+                    label,
+                    body.center(),
+                    |ctx| panel.show(ctx, None, None),
+                );
+            }
+            let position = button_position(&output, size, label).ok_or_else(|| {
+                std::io::Error::other(format!("routed control not visible: {page}/{label}"))
+            })?;
+            click(ctx, size, position, |ctx| panel.show(ctx, None, None));
+            Ok(())
+        }
+        fn assert_consumers(
+            settings: &ClientSettings,
+            changed: bool,
+            ctx: &egui::Context,
+        ) -> Result<(), Box<dyn std::error::Error>> {
+            assert_eq!(settings.redraw_fps(true), if changed { 0 } else { 144 });
+            assert_eq!(settings.last_frame_limit, 144);
+            assert_eq!(settings.target_frame_enabled(), !changed);
+            assert_eq!(settings.target_highlight_enabled(), !changed);
+            let delay = settings.movement_repeat_delay().ok_or("repeat delay")?;
+            assert_eq!(delay.as_millis(), if changed { 38 } else { 250 });
+            let mut repeat = oteryn_client::input::MovementRepeat::default();
+            let now = std::time::Instant::now();
+            repeat.pressed(
+                oteryn_input_actions::KeyCode::new(26)?,
+                oteryn_client::input::StepDir::North,
+                now,
+            );
+            assert!(
+                repeat
+                    .poll(now + delay - std::time::Duration::from_millis(1), delay)
+                    .is_none()
+            );
+            assert_eq!(
+                repeat.poll(now + delay, delay),
+                Some(oteryn_client::input::StepDir::North)
+            );
+            let output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(900.0, 620.0),
+                    )),
+                    focused: true,
+                    events: vec![egui::Event::PointerMoved(egui::pos2(20.0, 20.0))],
+                    ..Default::default()
+                },
+                |ui| {
+                    crate::mouse_cursor::show(ui.ctx(), settings);
+                    crate::actor_hud::show(
+                        ui.ctx(),
+                        egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(480.0, 352.0)),
+                        [200.0, 160.0],
+                        settings,
+                        Some(oteryn_session::ActorVitals {
+                            health: 75,
+                            max_health: 100,
+                            harmony: 7,
+                            ..Default::default()
+                        }),
+                        None,
+                    );
+                },
+            );
+            assert_eq!(
+                output.platform_output.cursor_icon,
+                if changed {
+                    egui::CursorIcon::None
+                } else {
+                    egui::CursorIcon::Default
+                }
+            );
+            let arrow = output.shapes.iter().find_map(|shape| match &shape.shape {
+                egui::Shape::Mesh(mesh) if mesh.vertices.len() == 7 => Some(mesh.calc_bounds()),
+                _ => None,
+            });
+            if changed {
+                assert_eq!(
+                    arrow.ok_or("actual cursor mesh")?.size(),
+                    egui::vec2(38.0, 54.0)
+                );
+            } else {
+                assert!(arrow.is_none());
+            }
+            let harmony = output.shapes.iter().find_map(|shape| match &shape.shape {
+                egui::Shape::Text(text) if text.galley.job.text == "7" => {
+                    Some(text.visual_bounding_rect().center().x)
+                }
+                _ => None,
+            });
+            if changed {
+                let scale = 480.0
+                    / (oteryn_client::scene::SCENE_COLUMNS * oteryn_client::scene::SCENE_TILE_PX)
+                        as f32;
+                let center = (200.0 + oteryn_client::scene::SCENE_TILE_PX as f32 / 2.0) * scale;
+                assert_eq!(settings.stored_choice("hud.harmony_position"), Some("mana"));
+                assert!(harmony.ok_or("actual Harmony text")? > center);
+            } else {
+                assert!(harmony.is_none());
+            }
+            assert_eq!(output.shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Rect(rect) if rect.fill == egui::Color32::from_rgb(55,183,61))), changed);
+            let chat = oteryn_session::ChatLog::default();
+            let receipts = [oteryn_client::play::ChatReceipt {
+                server_sequence: 1,
+                local_time: Some([9, 7, 3]),
+                line: oteryn_session::ChatLine::Private {
+                    speaker_name: "Peer".into(),
+                    text: "received".into(),
+                },
+            }];
+            assert_eq!(
+                chat_rows(&chat, &receipts, 5, settings.english, settings, None),
+                [if changed {
+                    "09:07:03 Peer: received"
+                } else {
+                    "Peer: received"
+                }]
+            );
+            assert_eq!(settings.action_bar.row_is_visible(0), !changed);
+            let before = ClientSettings {
+                action_bar: oteryn_client::action_bar::ActionBarPreferences::default(),
+                ..settings.clone()
+            };
+            let original =
+                oteryn_client::layout::GameViewport::for_settings(1125.0, 775.0, 1.25, &before)
+                    .ok_or("original viewport")?;
+            let actual =
+                oteryn_client::layout::GameViewport::for_settings(1125.0, 775.0, 1.25, settings)
+                    .ok_or("actual viewport")?;
+            if changed {
+                assert!(actual.height > original.height);
+            } else {
+                assert_eq!(actual, original);
+            }
+            Ok(())
+        }
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let consumer_context = egui::Context::default();
+            let mut current = ClientSettings {
+                english,
+                fps: 144,
+                last_frame_limit: 144,
+                ..Default::default()
+            };
+            for (key, value) in [
+                (
+                    "controls.controls.default_key_delay",
+                    FutureValue::Bool(true),
+                ),
+                ("controls.controls.key_delay_ms", FutureValue::Int(37)),
+                ("interface.interface.system_cursor", FutureValue::Bool(true)),
+                (
+                    "game_window.window.target_marking",
+                    FutureValue::Choice("frame_and_highlight".into()),
+                ),
+            ] {
+                current.future_preferences.insert(key.into(), value);
+            }
+            current.save(&path)?;
+            let original_file = std::fs::read(&path)?;
+            let mut panel = SettingsPanel::for_settings_audit(current.clone());
+            assert_consumers(&current, false, &consumer_context)?;
+            for (page, pl, en) in [
+                (
+                    "interface",
+                    "Pokaż animowany kursor",
+                    "Show Animated Mouse Cursor",
+                ),
+                ("hud", "Pokaż zdrowie", "Show Health"),
+                (
+                    "console",
+                    "Sekundy w znacznikach czasu",
+                    "Show Seconds in Timestamps",
+                ),
+            ] {
+                click_control(&ctx, &mut panel, page, if english { en } else { pl })?;
+                assert_eq!(panel.audit_draft(), &current);
+                assert_eq!(panel.current, current);
+                assert_eq!(std::fs::read(&path)?, original_file);
+            }
+            assert!(panel.open_complete_section("controls"));
+            for _ in 0..4 {
+                frame(&ctx, egui::vec2(900.0, 620.0), vec![], |ctx| {
+                    panel.show(ctx, None, None)
+                });
+            }
+            let arrow = ctx
+                .data(|data| data.get_temp::<egui::Rect>(egui::Id::new(("slider-arrow", true))))
+                .ok_or("disabled delay arrow")?;
+            click(&ctx, egui::vec2(900.0, 620.0), arrow.center(), |ctx| {
+                panel.show(ctx, None, None)
+            });
+            assert_eq!(panel.audit_draft(), &current);
+            let stage = |ctx: &egui::Context,
+                         panel: &mut SettingsPanel|
+             -> Result<(), Box<dyn std::error::Error>> {
+                for (page, pl, en) in [
+                    ("graphics", "Bez limitu FPS", "No Frame Rate Limit"),
+                    (
+                        "interface",
+                        "Używaj kursora systemowego",
+                        "Use Native Mouse Cursor",
+                    ),
+                    ("interface", "Pokaż duży kursor", "Show Big Mouse Cursor"),
+                    (
+                        "controls",
+                        "Używaj domyślnego opóźnienia klawiatury (250 ms)",
+                        "Use Default Keyboard Delay (250 ms)",
+                    ),
+                    (
+                        "hud",
+                        "Pokaż HUD własnej postaci",
+                        "Show HUD for Own Character",
+                    ),
+                    ("hud", "Pokaż paski", "Show Bars"),
+                    ("hud", "Pokaż zdrowie", "Show Health"),
+                    ("hud", "Pokaż harmonię", "Show Harmony"),
+                    ("hud", "obok łuku many", "next to Mana Arc"),
+                    ("console", "Znaczniki czasu", "Show Timestamps"),
+                    (
+                        "console",
+                        "Sekundy w znacznikach czasu",
+                        "Show Seconds in Timestamps",
+                    ),
+                    ("action_bars", "Wszystkie", "All"),
+                ] {
+                    click_control(ctx, panel, page, if english { en } else { pl })?;
+                }
+                assert!(panel.open_complete_section("controls"));
+                for _ in 0..4 {
+                    frame(ctx, egui::vec2(900.0, 620.0), vec![], |ctx| {
+                        panel.show(ctx, None, None)
+                    });
+                }
+                let arrow = ctx
+                    .data(|data| data.get_temp::<egui::Rect>(egui::Id::new(("slider-arrow", true))))
+                    .ok_or("delay increase arrow")?;
+                click(ctx, egui::vec2(900.0, 620.0), arrow.center(), |ctx| {
+                    panel.show(ctx, None, None)
+                });
+                click_control(
+                    ctx,
+                    panel,
+                    "game_window",
+                    if english {
+                        "Frame & Highlight"
+                    } else {
+                        "Ramka i wyróżnienie"
+                    },
+                )?;
+                click_control(
+                    ctx,
+                    panel,
+                    "game_window",
+                    if english { "None" } else { "Brak" },
+                )?;
+                Ok(())
+            };
+            stage(&ctx, &mut panel)?;
+            assert_eq!(panel.current, current);
+            assert!(!panel.applied);
+            assert_eq!(std::fs::read(&path)?, original_file);
+            assert_consumers(panel.audit_draft(), true, &consumer_context)?;
+            let staged = panel.audit_draft().clone();
+            click_control(
+                &ctx,
+                &mut panel,
+                "graphics",
+                if english { "Cancel" } else { "Anuluj" },
+            )?;
+            assert_eq!(panel.audit_draft(), &current);
+            assert!(!panel.open && !panel.applied);
+            assert_consumers(&panel.current, false, &consumer_context)?;
+            stage(&ctx, &mut panel)?;
+            assert_eq!(panel.audit_draft(), &staged);
+            click_control(
+                &ctx,
+                &mut panel,
+                "graphics",
+                if english { "Apply" } else { "Zastosuj" },
+            )?;
+            assert!(panel.open && panel.applied);
+            assert_consumers(&panel.current, true, &consumer_context)?;
+            assert_consumers(&ClientSettings::load(&path)?, true, &consumer_context)?;
+            let committed = panel.current.clone();
+            let committed_file = std::fs::read(&path)?;
+            panel.applied = false;
+            click_control(
+                &ctx,
+                &mut panel,
+                "graphics",
+                if english {
+                    "No Frame Rate Limit"
+                } else {
+                    "Bez limitu FPS"
+                },
+            )?;
+            let rejected = panel.audit_draft().clone();
+            let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
+            std::fs::create_dir(&temporary)?;
+            click_control(
+                &ctx,
+                &mut panel,
+                "graphics",
+                if english { "Apply" } else { "Zastosuj" },
+            )?;
+            assert_eq!(panel.current, committed);
+            assert_eq!(panel.audit_draft(), &rejected);
+            assert!(panel.open && !panel.applied);
+            let error_frame = frame(&ctx, egui::vec2(900.0, 620.0), vec![], |ctx| {
+                panel.show(ctx, None, None)
+            })
+            .1;
+            assert!(error_frame.shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Text(text) if text.galley.job.text.starts_with(if english { "Not saved." } else { "Nie zapisano." }))));
+            assert_eq!(std::fs::read(&path)?, committed_file);
+            assert_consumers(&panel.current, true, &consumer_context)?;
+            std::fs::remove_dir(&temporary)?;
+            click_control(&ctx, &mut panel, "graphics", "Ok")?;
+            assert!(!panel.open && panel.applied);
+            assert_eq!(panel.current.redraw_fps(true), 144);
+            assert_eq!(ClientSettings::load(&path)?.redraw_fps(true), 144);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn chat_channel_cycle_uses_only_local_open_rooms_and_private() {
         let mut rooms = oteryn_session::ChatRoomSet::default();
         rooms.insert(oteryn_session::ChatRoom::World);

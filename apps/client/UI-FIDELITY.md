@@ -943,6 +943,15 @@ Earlier4f4fbadc evidence is historical, not proof of that successor producer.
 
 ## Required evidence per page/panel
 
+B1 continuation adds isolated PL/EN production-widget transactions reaching
+actual redraw/repeat, cursor/HUD/Harmony, target-marking, receipt-time chat and
+action-row viewport consumers. Cancel/reload, real staging-write failure and
+visible recovery are covered; unavailable children remain inert. Immediate
+language save now commits only after persistence and preserves unrelated draft
+edits; its actual toolbar test requires Windows. Exact changed-source native
+qualification remains required. The B1 task record retains the acceptance scope;
+component/page tests are not physical clipboard/picker/trackpad or gameplay proof.
+
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.
 - Unknown settings remain unset; simply drawing a page must not persist defaults.

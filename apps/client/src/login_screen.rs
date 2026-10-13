@@ -451,6 +451,7 @@ impl LoginScreen {
             });
         if self.english != previous_language {
             self.settings.set_language(self.english);
+            self.english = self.settings.current.english;
         }
         egui::Area::new(egui::Id::new("settings-button"))
             .anchor(Align2::LEFT_BOTTOM, [18.0, -36.0])
@@ -996,5 +997,88 @@ fn public_error(error: GameplayEntryError, english: bool) -> String {
 impl Drop for LoginScreen {
     fn drop(&mut self) {
         self.cancel();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn toolbar_language_failure_rolls_back_without_applying_other_draft_edits()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const FIXTURE: &str = "OTERYN_LANGUAGE_TRANSACTION_FIXTURE";
+        let Some(fixture) = std::env::var_os(FIXTURE) else {
+            let directory = tempfile::tempdir()?;
+            let output = std::process::Command::new(std::env::current_exe()?)
+                .args(["--exact", "login_screen::tests::toolbar_language_failure_rolls_back_without_applying_other_draft_edits", "--nocapture"])
+                .env(FIXTURE, directory.path()).env("LOCALAPPDATA", directory.path()).output()?;
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Ok(());
+        };
+        let path = std::path::PathBuf::from(fixture).join("Oteryn/settings.json");
+        assert_eq!(
+            oteryn_client::settings::ClientSettings::path(),
+            Some(path.clone())
+        );
+        let current = oteryn_client::settings::ClientSettings::default();
+        current.save(&path)?;
+        let original_file = std::fs::read(&path)?;
+        let mut login = LoginScreen::new_for_settings_audit(current.clone());
+        let ctx = login.context.clone();
+        let size = egui::vec2(900.0, 620.0);
+        assert!(login.settings.open_complete_section("graphics"));
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                login.settings.show(ctx, None, None)
+            })
+            .1;
+        }
+        let unlimited = button_position(&output, size, "Bez limitu FPS").ok_or("limit control")?;
+        click(&ctx, size, unlimited, |ctx| {
+            login.settings.show(ctx, None, None)
+        });
+        assert_eq!(login.settings.audit_draft().fps, 0);
+        let draft = login.settings.audit_draft().clone();
+        let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
+        std::fs::create_dir(&temporary)?;
+        for blocked in [true, false] {
+            if !blocked {
+                std::fs::remove_dir(&temporary)?;
+            }
+            for _ in 0..3 {
+                output = frame(&ctx, size, vec![], |ctx| login.toolbar(ctx)).1;
+            }
+            let chooser = button_position(&output, size, "Polski").ok_or("language chooser")?;
+            click(&ctx, size, chooser, |ctx| login.toolbar(ctx));
+            output = frame(&ctx, size, vec![], |ctx| login.toolbar(ctx)).1;
+            let english = button_position(&output, size, "English").ok_or("English choice")?;
+            click(&ctx, size, english, |ctx| login.toolbar(ctx));
+            assert_eq!(login.english, !blocked);
+            assert_eq!(login.settings.current.english, !blocked);
+            assert_eq!(login.settings.applied, !blocked);
+            let mut expected_draft = draft.clone();
+            expected_draft.english = !blocked;
+            assert_eq!(login.settings.audit_draft(), &expected_draft);
+            let mut expected_current = current.clone();
+            expected_current.english = !blocked;
+            assert_eq!(login.settings.current, expected_current);
+            assert_eq!(
+                oteryn_client::settings::ClientSettings::load(&path)?,
+                expected_current
+            );
+            if blocked {
+                assert_eq!(std::fs::read(&path)?, original_file);
+            }
+        }
+        assert!(login.config.is_none() && login.account.is_none() && login.directory.is_none());
+        Ok(())
     }
 }

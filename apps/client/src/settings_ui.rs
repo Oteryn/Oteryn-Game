@@ -207,14 +207,19 @@ impl SettingsPanel {
     }
 
     pub fn set_language(&mut self, english: bool) {
+        let mut candidate = self.current.clone();
+        candidate.english = english;
+        let result = ClientSettings::path()
+            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
+            .and_then(|path| candidate.save(&path));
+        if result.is_err() {
+            self.message = Some("Nie zapisano języka. / Language was not saved.".into());
+            return;
+        }
         self.current.english = english;
         self.draft.english = english;
         self.applied = true;
-        if let Some(path) = ClientSettings::path()
-            && self.current.save(&path).is_err()
-        {
-            self.message = Some("Nie zapisano języka. / Language was not saved.".into());
-        }
+        self.message = None;
     }
 
     pub fn show(
