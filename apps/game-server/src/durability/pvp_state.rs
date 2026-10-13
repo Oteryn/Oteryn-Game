@@ -238,7 +238,7 @@ async fn load_pvp_state(
     let skull = match (row.try_get::<i16, _>("skull")?, skull_remaining_ms) {
         (1, Some(_)) => PvpSkull::Red,
         (2, Some(_)) => PvpSkull::Black,
-        (0 | 1 | 2, _) => PvpSkull::None,
+        (0..=2, _) => PvpSkull::None,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
     Ok(Some(StoredPvpState {
