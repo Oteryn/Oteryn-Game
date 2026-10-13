@@ -113,9 +113,19 @@ impl ChatRuntime {
         std::iter::from_fn(|| entry.egress.pop()).collect()
     }
 
-    /// Whether `session` is muted at `now` (read by the cast path).
-    #[allow(dead_code, reason = "read by the cast path when it takes the mute")]
-    pub(crate) fn is_muted(&self, session: GameSessionId, now: SemanticTimeMicros) -> bool {
+    /// The answer of a cast by a muted `session` (CHAT-0 §6: a muted character cannot cast any
+    /// spell; the existing rejected disposition, no new one). `None` when the cast may go on.
+    pub(crate) fn muted_cast(
+        &self,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<super::actor_spell::SpellCastOutcome> {
+        self.is_muted(session, now)
+            .then(super::actor_spell::SpellCastOutcome::rejected)
+    }
+
+    /// Whether `session` is muted at `now`.
+    fn is_muted(&self, session: GameSessionId, now: SemanticTimeMicros) -> bool {
         self.sessions
             .lock()
             .ok()
@@ -514,6 +524,25 @@ mod tests {
                 .any(|d| matches!(d, ChatDisposition::Exhausted | ChatDisposition::Muted)),
             "{dispositions:?}"
         );
+    }
+
+    #[test]
+    fn a_muted_session_cannot_cast_until_the_mute_ends() {
+        let (runtime, chat, first, second) = two_players(0);
+        assert!(chat.muted_cast(first.1, BASE).is_none());
+        for _ in 0..8 {
+            speak(&chat, &runtime, first, &say("x"), BASE);
+        }
+        let outcome = chat.muted_cast(first.1, BASE).expect("muted cast");
+        assert_eq!(
+            outcome.disposition,
+            oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Rejected
+        );
+        // Only the spammer is muted, and an unknown session is never held back.
+        assert!(chat.muted_cast(second.1, BASE).is_none());
+        assert!(chat.muted_cast(session_of(0x7f), BASE).is_none());
+        let later = SemanticTimeMicros::from_micros(BASE.get() + 600_000_000);
+        assert!(chat.muted_cast(first.1, later).is_none());
     }
 
     #[test]

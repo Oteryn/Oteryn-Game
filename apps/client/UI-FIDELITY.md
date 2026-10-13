@@ -625,6 +625,24 @@ REA Ghidra is available with command-scoped `GHIDRA_INSTALL_DIR` pointing to the
 existing 12.1.4 installation. The ELF/pwntools route remains unconfigured; no
 full auto-analysis timeout is repeated and no new original behavior is claimed.
 
+## Main conflict reconciliation — 2026-10-13, AUTHORING
+
+After the two published client batches, PR #1942 reports mergeability `dirty`.
+Ordinary pull_request workflows do not run on conflicted heads; successful
+pull_request_target authority audits did not establish full CI. A normal merge
+of protected main `c754f847b9a69084afa2d401712b13b663885347` preserves every client
+change. The sole textual conflict is the World input digest. Main's accepted
+bundle/content/entry start are retained, and inputs are recalculated from the
+merged Git index to `718013fb67a60b5359fd7e540a59860e19149a77ac908f2c5aeb48e26f8156b6`.
+Release pin-check double-builds the unchanged `5c32d7ac` bundle, 25,097,259 bytes.
+
+Staged comparison proves client, Session, protocol, Platform client and
+Cargo/toolchain bytes unchanged from `11d92f90`. Existing focused local evidence
+retains that limited scope; native Windows/E2E/final CI/review still need their
+own qualification. New main producer work is reused without enabling unoffered
+capabilities or inventing missing presentation/speed data. Earlier main/pin
+qualifications remain historical evidence, not the current integration state.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

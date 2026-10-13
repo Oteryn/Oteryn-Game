@@ -11,6 +11,7 @@
 use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
 use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
+use super::spell_tiles::{BundleSpellTiles, SpellTilesBuilder};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{
@@ -108,6 +109,7 @@ pub struct BundleWorld {
     map_revision: String,
     start: TilePos,
     blocked: Arc<BTreeSet<TilePos>>,
+    spawns: Arc<oteryn_world_bundle::spawn::Table>,
 }
 
 /// Two boots of the same pins are equal: the same bundle, revision, start, blocked tiles and
@@ -147,7 +149,8 @@ pub fn boot(
 /// bundle loads with its pins, `map_revision` is the bundle's and the start tile's ground is
 /// walkable.
 pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal> {
-    let base = Arc::new(super::load(&data, &pins.bundle)?);
+    let (base, spawns) = super::load_spawns(&data, &pins.bundle)?;
+    let base = Arc::new(base);
     let revision = map_revision(&base);
     if revision != pins.map_revision {
         return Err(BootRefusal::MapRevision);
@@ -160,6 +163,7 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         base,
         map_revision: revision,
         start: pins.start,
+        spawns,
     })
 }
 
@@ -170,6 +174,7 @@ pub struct CheckedBundle {
     base: Arc<WorldBase>,
     map_revision: String,
     start: TilePos,
+    spawns: oteryn_world_bundle::spawn::Table,
 }
 
 impl CheckedBundle {
@@ -182,7 +187,9 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        let (facts, blocked, floors) = scan(&self.data, &item)?;
+        let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
+        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
             return Err(BootRefusal::StartNotEnterable);
@@ -213,11 +220,13 @@ impl CheckedBundle {
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
                 floors,
+                spell_tiles,
             }),
             base: self.base,
             map_revision: self.map_revision,
             start: self.start,
             blocked,
+            spawns: Arc::new(self.spawns),
         })
     }
 }
@@ -225,10 +234,12 @@ impl CheckedBundle {
 /// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
 /// a `wall` Terrain or an Item whose definition is solid (a usable door is not among them, since
 /// its state decides: [`BundleFacts::doors`]), and the tiles whose top-level entries carry a
-/// catalogue `floor_change` fact (MAP-FLOOR-1).
+/// catalogue `floor_change` fact (MAP-FLOOR-1). `spell_tiles` collects the spell tile facts of
+/// the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
+    spell_tiles: &mut SpellTilesBuilder,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
     let mut masks: Vec<u8> = Vec::new();
@@ -275,6 +286,7 @@ fn scan(
             );
         }
         facts.push(manifest, &sector, &mut blocked);
+        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -314,7 +326,7 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
 }
 
 /// The native tile of a movement cell: `z` is legacy `z` in `0..=15`, native floor `-z`.
-fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
+pub(super) fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     let z = i8::try_from(cell.z).ok().filter(|z| (0..=15).contains(z))?;
     Some(TilePos {
         x: u16::try_from(cell.x).ok()?,
@@ -323,7 +335,71 @@ fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     })
 }
 
+/// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
+/// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
+/// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
+/// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
+pub(crate) type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
+
+/// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
+pub(crate) type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+
+/// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
+pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
+
+/// CREATURE-AI-0 §6.1: each bundle source is one runtime source (one `CREATUREAI0-RL-02`
+/// count), in canonical (source key, point ordinal) order, whatever creatures and respawn
+/// delays its points mix. A point whose creature has a period other than `All` is outside the
+/// activation set, and a source left with no point is not activated. `profile` gives a
+/// creature key's initial health and `blocked_by_nearby_players`; a creature it does not serve
+/// refuses the whole family (`None`). The point direction is not realized yet.
+pub(crate) fn table_activation_spawns(
+    table: &oteryn_world_bundle::spawn::Table,
+    profile: impl Fn(&str) -> Option<(u64, bool)>,
+) -> Option<Vec<BundleSpawnFacts>> {
+    use oteryn_world_bundle::spawn::Period;
+    // Each creature's profile is resolved once, on its first active point.
+    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
+    let mut out = Vec::with_capacity(table.sources.len());
+    for source in &table.sources {
+        let z = i16::from(source.floor).checked_neg()?;
+        let mut points = Vec::with_capacity(source.points.len());
+        for point in &source.points {
+            let index = usize::try_from(point.creature).ok()?;
+            let creature = table.creatures.get(index)?;
+            if creature.period != Period::All {
+                continue;
+            }
+            let resolved = profiles.get_mut(index)?;
+            let (health, blockable) = match *resolved {
+                Some(known) => known,
+                None => *resolved.insert(profile(&creature.key)?),
+            };
+            points.push((
+                (i32::from(point.x), i32::from(point.y), z),
+                u64::from(point.respawn_ms),
+                creature.key.clone(),
+                health,
+                blockable,
+            ));
+        }
+        if !points.is_empty() {
+            out.push((points, BUNDLE_OCCUPANCY_RETRY_MS));
+        }
+    }
+    Some(out)
+}
+
 impl BundleWorld {
+    /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
+    /// [`table_activation_spawns`].
+    pub(crate) fn activation_spawns(
+        &self,
+        profile: impl Fn(&str) -> Option<(u64, bool)>,
+    ) -> Option<Vec<BundleSpawnFacts>> {
+        table_activation_spawns(&self.spawns, profile)
+    }
+
     pub fn base(&self) -> &Arc<WorldBase> {
         &self.base
     }
@@ -397,7 +473,12 @@ impl BundleWorld {
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
         };
-        Ok(NativeEntryMovementCells::from_bundle(entry, scope, index))
+        Ok(NativeEntryMovementCells::from_bundle(
+            entry,
+            scope,
+            index,
+            Arc::clone(&self.map.spell_tiles),
+        ))
     }
 }
 
@@ -408,6 +489,8 @@ pub(crate) struct BundleMap {
     pub(crate) overlay: ChannelOverlay,
     pub(crate) facts: BundleFacts,
     pub(crate) floors: FloorTable,
+    /// The spell tile facts of the bundle (BUNDLE-TILES-1).
+    pub(crate) spell_tiles: Arc<BundleSpellTiles>,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -472,6 +555,154 @@ pub(crate) mod tests {
     use std::error::Error;
     use std::num::NonZeroUsize;
 
+    /// SPAWN-1b (Codex P1 on #1981): a bundle source stays one runtime source whatever its
+    /// points mix; night points and sources left with no point are outside the activation.
+    #[test]
+    fn spawn1b_keeps_each_bundle_source_whole_and_skips_night_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let creature = |key: &str, period| Creature {
+            key: key.into(),
+            period,
+        };
+        let source = |key: &str, floor, points| Source {
+            key: key.into(),
+            floor,
+            x: 3,
+            y: 5,
+            points,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature.bat", Period::Night),
+                creature("oteryn:creature.rat", Period::All),
+                creature("oteryn:creature.wolf", Period::All),
+            ],
+            sources: vec![
+                source(
+                    "oteryn:spawn/a",
+                    -7,
+                    vec![
+                        point(1, 1, 60_000),
+                        point(0, 2, 60_000),
+                        point(1, 3, 60_000),
+                        point(2, 4, 30_000),
+                        point(1, 5, 30_000),
+                    ],
+                ),
+                source("oteryn:spawn/b", -7, vec![point(0, 6, 60_000)]),
+                source("oteryn:spawn/c", -6, vec![point(2, 7, 45_000)]),
+            ],
+        };
+        let calls = std::cell::Cell::new(0);
+        let profile = |key: &str| {
+            calls.set(calls.get() + 1);
+            match key {
+                "oteryn:creature.rat" => Some((20, false)),
+                "oteryn:creature.wolf" => Some((35, true)),
+                _ => None,
+            }
+        };
+        let facts = table_activation_spawns(&table, profile).expect("facts");
+        let rat = |x, respawn_ms| {
+            (
+                (x, 5, 7),
+                respawn_ms,
+                "oteryn:creature.rat".to_string(),
+                20,
+                false,
+            )
+        };
+        let wolf = |x, z, respawn_ms| {
+            (
+                (x, 5, z),
+                respawn_ms,
+                "oteryn:creature.wolf".to_string(),
+                35,
+                true,
+            )
+        };
+        assert_eq!(
+            facts,
+            vec![
+                (
+                    vec![
+                        rat(1, 60_000),
+                        rat(3, 60_000),
+                        wolf(4, 7, 30_000),
+                        rat(5, 30_000)
+                    ],
+                    BUNDLE_OCCUPANCY_RETRY_MS,
+                ),
+                (vec![wolf(7, 6, 45_000)], BUNDLE_OCCUPANCY_RETRY_MS),
+            ]
+        );
+        // Each served creature's profile is read once; the night creature's never.
+        assert_eq!(calls.get(), 2);
+        // A creature the content does not serve refuses the family.
+        assert!(table_activation_spawns(&table, |_| None).is_none());
+        assert!(
+            table_activation_spawns(&table, |key| (key == "oteryn:creature.rat")
+                .then_some((20, false)))
+            .is_none()
+        );
+        assert_eq!(
+            table_activation_spawns(&Table::default(), profile),
+            Some(vec![])
+        );
+    }
+
+    /// SPAWN-1b: interleaved creatures keep their authored point order inside their source.
+    #[test]
+    fn spawn1b_keeps_point_order_for_interleaved_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms: 60_000,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature.bat"),
+                creature("oteryn:creature.rat"),
+            ],
+            sources: vec![Source {
+                key: "oteryn:spawn/a".into(),
+                floor: -7,
+                x: 3,
+                y: 5,
+                points: vec![point(1, 1), point(0, 2), point(1, 3)],
+            }],
+        };
+        let facts = table_activation_spawns(&table, |_| Some((20, false))).expect("facts");
+        assert_eq!(facts.len(), 1);
+        let order: Vec<(&str, i32)> = facts[0]
+            .0
+            .iter()
+            .map(|point| (point.2.as_str(), point.0.0))
+            .collect();
+        assert_eq!(
+            order,
+            vec![
+                ("oteryn:creature.rat", 1),
+                ("oteryn:creature.bat", 2),
+                ("oteryn:creature.rat", 3),
+            ]
+        );
+    }
+
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
@@ -502,6 +733,23 @@ pub(crate) mod tests {
         coin: &str,
         coin_id: u32,
         door_house: u32,
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+    }
+
+    /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
+    /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
+    pub(crate) fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
+        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+    }
+
+    fn bundle_with_grass(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+        item_grass: Option<(&str, u32)>,
     ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
@@ -544,7 +792,13 @@ pub(crate) mod tests {
                 floors: vec![-7],
             },
             palette: vec![
-                terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                match item_grass {
+                    Some((key, id)) => PaletteEntry {
+                        family: Family::Item,
+                        ..terrain(key, id, TerrainKind::Ground, Some(true))
+                    },
+                    None => terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                },
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
                 item(boxed, boxed_id),
@@ -958,6 +1212,41 @@ pub(crate) mod tests {
             y: 0,
             floor: -7
         }));
+        Ok(())
+    }
+
+    /// The real World routes its grounds to Item keys whose served definitions carry no
+    /// solidity fact: such a ground does not block the start, a plain Item without the fact on
+    /// the same ground still blocks and a stated solid Item blocks.
+    #[test]
+    fn an_item_ground_without_a_solidity_fact_is_enterable() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle_with_item_grass();
+        let world = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "item:grass" => Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(3)?,
+                    solid: None,
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                }),
+                "item:coin" => items(key).map(|definition| ItemDefinition {
+                    solid: None,
+                    ..definition
+                }),
+                _ => items(key),
+            },
+        )?;
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        assert!(world.enterable(at(1)), "start on an Item ground");
+        assert!(!world.enterable(at(4)), "lava");
+        assert!(!world.enterable(at(5)), "wall");
+        assert!(!world.enterable(at(6)), "solid box");
+        assert!(!world.enterable(at(7)), "coin without a solidity fact");
         Ok(())
     }
 

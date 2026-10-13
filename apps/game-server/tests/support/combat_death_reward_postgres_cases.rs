@@ -1261,11 +1261,13 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         )
         .await
         .map_err(debug)?;
+        // The refusal carries the replayed corpse, so the Channel still binds it.
         assert!(matches!(
-            outcome.loot,
+            &outcome.loot,
             Err(CombatDeathRewardLootError::Mint(
-                ItemMintError::AuthorityRejected
-            ))
+                ItemMintError::AuthorityRejected,
+                corpse
+            )) if *corpse == first.corpse
         ));
         assert_eq!(harness.count("game_item_instances").await?, 2);
         assert_eq!(harness.ground_items().await?, 1);

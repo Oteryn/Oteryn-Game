@@ -67,18 +67,18 @@ Public connection bundle/starter paths are in UI-FIDELITY.md.
 No login/restart. Windows fixes: exact expanded IPv6 loopback and closed-file
 validation on refusal; no weaker TLS or additional insecure origins.
 
-## Main merge — 2026-10-12
+## Main reconciliation — 2026-10-13
 
-`origin/main` `08e13f7dea83c43c13df85f901caf1e032ef3cd9` (including #1943/#1944,
-the Rust 1.95 CI migration) is merged normally into this branch. Only the World
-pin conflicted: it takes main's bundle digest `5c32d7ac` and content revision and
-re-pins only `inputs_digest` to the merged tree (`51b3af96`); `pin-check`
-double-builds `5c32d7ac`. The earlier branch pin `5e2707ac` was stale against
-the branch lockfile. No client, Session or play source changed in the merge.
-Linux 1.95.0: `cargo fmt --all --check` pass; strict all-target Clippy for
-`oteryn-platform-client` and `oteryn-client` pass; their tests pass
-(209/184/5/16) and `oteryn-identity` 9 pass. Native MSVC/DX12 qualification,
-full CI and independent review of the merged head remain open.
+PR reports `mergeable=false/dirty`; ordinary pull_request CI does not run on
+conflicting heads, while pull_request_target audit can pass. Main
+`c754f847b9a69084afa2d401712b13b663885347` is merged normally, preserving all
+client work. Only World `inputs_digest` conflicts: main's digest/content/start
+are retained, and the merged index re-pins inputs to `718013fb`. Release
+pin-check double-builds unchanged bundle `5c32d7ac` (25,097,259 bytes). Client,
+Session, protocol, Platform client and Cargo/toolchain bytes are unchanged from
+`11d92f90`; their local tests retain that scope, not fresh native qualification.
+Oct12 merge `08e13f7d`/input `51b3af96` is historical, superseded only for this
+integration state. MSVC/DX12, actual E2E, full CI/final review remain open.
 
 ## Current authoring batch — 2026-10-11
 

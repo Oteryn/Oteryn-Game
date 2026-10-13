@@ -20,7 +20,7 @@ use std::process::{Command, ExitCode};
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{
-    self, BuildClass, Extent, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
+    self, BuildClass, Extent, Family, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
     TerrainKind,
 };
 use oteryn_world_bundle_compiler::compile::{
@@ -532,7 +532,11 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
 }
 
 /// `entry_start` must be a walkable, non-blocking base cell inside the World bounds: the first
-/// ground of its top-level entries is a walkable Terrain ground and none of them is a wall.
+/// ground of its top-level entries is a walkable Terrain ground, none of them is a wall and none
+/// is a plain Item (an Item entry without a Terrain record). The node decides a plain Item's
+/// solidity from the served Item definitions, where one without a stated `blocks_movement`
+/// blocks (`map::facts`), so the compiler cannot prove a plain Item there walkable and refuses
+/// it; an Item key routed to a `ground` or `border` Terrain record does not block.
 fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
     let bad = |what: &str| Error::Format(format!("entry_start: {what}"));
     let mut found = None;
@@ -542,17 +546,19 @@ fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
             && sector.sy == at.y / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
             && let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (at.x, at.y))
         {
-            let (mut ground, mut wall) = (None, false);
+            let (mut ground, mut wall, mut item_entry) = (None, false, false);
             for item in tile.items.iter().filter(|item| item.depth == 0) {
-                let terrain = manifest.palette[item.palette as usize].terrain;
+                let entry = &manifest.palette[item.palette as usize];
+                let terrain = entry.terrain;
                 if ground.is_none()
                     && let Some(t) = terrain.filter(|t| t.kind == TerrainKind::Ground)
                 {
                     ground = t.walkable;
                 }
                 wall |= terrain.is_some_and(|t| t.kind == TerrainKind::Wall);
+                item_entry |= entry.family == Family::Item && terrain.is_none();
             }
-            found = Some((ground == Some(true), wall));
+            found = Some((ground == Some(true), wall, item_entry));
         }
         Ok(())
     })?;
@@ -561,9 +567,10 @@ fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
     }
     match found {
         None => Err(bad("the bundle has no tile there")),
-        Some((false, _)) => Err(bad("the cell has no walkable ground")),
-        Some((true, true)) => Err(bad("the cell holds a blocking wall")),
-        Some((true, false)) => Ok(()),
+        Some((false, ..)) => Err(bad("the cell has no walkable ground")),
+        Some((true, true, _)) => Err(bad("the cell holds a blocking wall")),
+        Some((true, false, true)) => Err(bad("the cell holds a plain Item")),
+        Some((true, false, false)) => Ok(()),
     }
 }
 

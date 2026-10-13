@@ -60,6 +60,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
+mod bundle_npcs;
+
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;
 const TRANSPORT_PROFILE: u64 = 1;
@@ -71,6 +73,8 @@ const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
+/// The share of [`SHUTDOWN_BUDGET`] the shutdown last-position write may take (CHAR-POSITION-1).
+const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
@@ -932,26 +936,99 @@ fn s2_parts(
     ))
 }
 
-/// Retry an S2 operation through transient unavailability, a bounded number
-/// of times. Definite rejections surface as errors.
-async fn with_retries<T, F, Fut>(root: &DurabilityRoot, mut operation: F) -> Option<T>
+/// Whether a boot durability step that failed with `error` may run again
+/// (NODE-BOOT-DEADLINE-1): only when no definite answer came back. The holder was not
+/// ready (no transaction ran), the pass deadline expired, or the commit outcome is unknown.
+/// Any database answer, refusal or stored-state failure is definite and ends the boot.
+fn boot_step_retryable(error: &crate::durability::DurabilityError) -> bool {
+    use crate::durability::DurabilityError;
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitOutcomeUnknown
+    )
+}
+
+/// [`boot_step_retryable`] for the Character authority open.
+fn character_authority_retryable(
+    error: &crate::durability::character_authority::CharacterAuthorityError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::character_authority::CharacterAuthorityError::Unavailable(inner)
+            if boot_step_retryable(inner)
+    )
+}
+
+/// Run one boot durability step under the boot pass deadline, retrying it a bounded
+/// number of times while `retryable` holds; the last error is returned.
+///
+/// Only idempotent steps are wrapped: the S2 registration read and the Character
+/// authority open are read-only, the custody claim writes nothing when custody is
+/// already this incarnation's, and the descriptor registration writes nothing when the
+/// same descriptor is already current. Each re-run first re-reads the stored row under
+/// its lock, so an attempt that committed although its outcome was unknown (or its
+/// deadline expired) is confirmed by that read, never applied twice.
+async fn with_retries<T, E, F, Fut>(
+    root: &DurabilityRoot,
+    step: &str,
+    deadline: Duration,
+    retryable: impl Fn(&E) -> bool,
+    mut operation: F,
+) -> Result<T, E>
 where
+    E: std::fmt::Debug,
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, crate::durability::DurabilityError>>,
+    Fut: Future<Output = Result<T, E>>,
 {
     let mut attempt = 0;
-    for _ in 0..PENDING_RECONCILE_ATTEMPTS {
-        match operation().await {
-            Ok(value) => return Some(value),
-            Err(crate::durability::DurabilityError::RootUnavailable) => {
-                root.request_ready();
-                let _ = root.maintain_ready_once().await;
-                backoff(&mut attempt).await;
-            }
-            Err(_) => return None,
+    let mut runs = 0;
+    loop {
+        let result = {
+            let _boot = root.boot_pass_deadline(deadline);
+            operation().await
+        };
+        let error = match result {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        runs += 1;
+        if runs >= PENDING_RECONCILE_ATTEMPTS || !retryable(&error) {
+            boot_step_failed(step, &error);
+            return Err(error);
         }
+        event(&boot_step_retry_line(step, runs, &error));
+        root.request_ready();
+        let _ = root.maintain_ready_once().await;
+        backoff(&mut attempt).await;
     }
-    None
+}
+
+/// The class of a boot step's error, from the durability error's own form: no SQL text,
+/// parameter or credential is ever part of it.
+fn boot_step_detail(step: &str, error: &impl std::fmt::Debug) -> String {
+    format!("step=\"{step}\" error={error:?}")
+}
+
+fn boot_step_retry_line(step: &str, runs: u32, error: &impl std::fmt::Debug) -> String {
+    format!(
+        "event=boot_step_retry run={runs} {}",
+        boot_step_detail(step, error)
+    )
+}
+
+/// A warn line (always written) naming the failed boot step and its error class, written
+/// before `boot_failed`, whose detail carries only the stage.
+fn boot_step_failed(step: &str, error: &impl std::fmt::Debug) {
+    let detail = boot_step_detail(step, error);
+    let mut line =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "node", "boot_step_failed")
+            .detail(&detail);
+    if let Some(trace) = BOOT_TRACE.get() {
+        line = line.trace(trace);
+    }
+    emit(PROCESS, &line);
 }
 
 /// D3 step 4: establish S2 custody, confirm the recorded descriptor and
@@ -962,9 +1039,12 @@ async fn establish_custody(
     material: &Material,
     evidence: &FreshEvidenceSource,
 ) -> Result<(), BootError> {
-    let stored = with_retries(root, || root.read_native_admission_source_registration())
-        .await
-        .ok_or(BootError::SourceCustody("read"))?;
+    let deadline = material.config.boot_pass_deadline();
+    let stored = with_retries(root, "read", deadline, boot_step_retryable, || {
+        root.read_native_admission_source_registration()
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("read"))?;
     match (stored, &material.s2) {
         (None, None) => {
             return Err(BootError::SourceCustody(
@@ -973,16 +1053,25 @@ async fn establish_custody(
         }
         (None, Some(file)) => {
             let (provenance, descriptor) = s2_parts(file)?;
-            let initialized = root
-                .initialize_native_admission_source(proof, provenance.clone(), descriptor.clone())
-                .await;
-            if initialized.is_err() {
+            let initialized = {
+                let _boot = root.boot_pass_deadline(deadline);
+                root.initialize_native_admission_source(
+                    proof,
+                    provenance.clone(),
+                    descriptor.clone(),
+                )
+                .await
+            };
+            if let Err(error) = initialized {
                 // An initialization whose response was lost: compare exactly.
-                let after = with_retries(root, || root.read_native_admission_source_registration())
-                    .await
-                    .flatten()
-                    .ok_or(BootError::SourceCustody("initialize"))?;
-                if after != (provenance, descriptor) {
+                let after = with_retries(root, "initialize", deadline, boot_step_retryable, || {
+                    root.read_native_admission_source_registration()
+                })
+                .await
+                .ok()
+                .flatten();
+                if after != Some((provenance, descriptor)) {
+                    boot_step_failed("initialize", &error);
                     return Err(BootError::SourceCustody("initialize"));
                 }
             }
@@ -997,12 +1086,16 @@ async fn establish_custody(
         }
         (Some(_), None) => {}
     }
-    root.claim_native_admission_source_custody(proof)
-        .await
-        .map_err(|_| BootError::SourceCustody("custody claim"))?;
-    root.register_native_admission_descriptor(proof, material.descriptor.clone())
-        .await
-        .map_err(|_| BootError::SourceCustody("descriptor"))?;
+    with_retries(root, "custody claim", deadline, boot_step_retryable, || {
+        root.claim_native_admission_source_custody(proof)
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("custody claim"))?;
+    with_retries(root, "descriptor", deadline, boot_step_retryable, || {
+        root.register_native_admission_descriptor(proof, material.descriptor.clone())
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("descriptor"))?;
     for attempt in 0..PENDING_RECONCILE_ATTEMPTS {
         match evidence.reconcile_retained(root, proof).await {
             Ok(0) => {
@@ -1580,8 +1673,10 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     run_with_npc_data_project(config_path, None).await
 }
 
-/// Optionally retain a pinned NPC authoring catalogue for the process lifetime.
-/// This imports data only; the active world and NPC gameplay capabilities are unchanged.
+/// Optionally retain a pinned NPC authoring catalogue for the process lifetime. With a
+/// `[world_bundle]` World it also decides which of the bundle's NPC placements become NPC
+/// actors at Channel start (NPC-LOAD-1, NPC-PLACE-1 §7, [`bundle_npcs`]); NPC services and
+/// talk stay inactive.
 pub async fn run_with_npc_data_project(
     config_path: &Path,
     npc_data: Option<(&Path, &str)>,
@@ -1608,15 +1703,28 @@ pub async fn run_with_npc_data_project(
         config.scope.world_id, config.scope.channel_id
     ));
     // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
+    let mut npc_frame = None;
     let bundle = world_bundle_gate(config, |path| {
-        Ok(read_file(
+        let data = read_file(
             "world_bundle.path",
             path,
             FileClass::Trusted,
             effective_uid(),
             oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
-        )?)
+        )?;
+        npc_frame = Some(bundle_npcs::read(&data)?);
+        Ok(data)
     })?;
+    let npc_boot = bundle_npcs::prepare(
+        npc_frame,
+        npc_catalogue
+            .as_ref()
+            .zip(npc_data.map(|(project_root, _)| project_root)),
+        config
+            .world_bundle
+            .as_ref()
+            .is_some_and(|bundle| bundle.production),
+    )?;
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
@@ -1629,7 +1737,7 @@ pub async fn run_with_npc_data_project(
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
     let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
-    let result = boot_and_serve(&root, &material, bundle, &signalled).await;
+    let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
@@ -1816,10 +1924,79 @@ fn realize_fixture_spawns(
         .map_err(|_| BootError::Readiness("creature spawn realization"))
 }
 
+/// The Channel owner window an activation realizes at most one spawn window in
+/// (`CREATUREAI0-RL-14`; the carrier's `spawn::OWNER_WINDOW_MICROS`).
+const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
+
+/// SPAWN-1b (CREATURE-AI-0 §6.1, §6.2): a bundle World realizes the spawn family of its bundle
+/// at Channel activation, before the listener binds, each bundle source as one runtime source.
+/// Each creature's initial health is its served definition's maximum health; a creature the
+/// active content does not serve refuses readiness. The served policy does not carry the
+/// creature profile's `blocked_by_nearby_players` yet, so every point keeps the SPAWN-1a
+/// default (not blockable).
+///
+/// The activation is begun once (every registered ceiling checked, nothing admitted) and then
+/// realized one `CREATUREAI0-RL-14` window (4,096 points) per 50 ms owner window, in canonical
+/// order, on a boot-local monotonic owner clock: the loop waits for the next window boundary
+/// between windows. Any refusal refuses readiness with nothing realized. Returns the creatures
+/// realized and the windows used, or `None` when shutdown was requested meanwhile.
+async fn realize_bundle_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    world: &crate::map::boot::BundleWorld,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    let sources = world
+        .activation_spawns(|key| {
+            let policy = runtime.companion_policy(key).ok()?;
+            Some((u64::try_from(policy.maximum_health).ok()?, false))
+        })
+        .ok_or_else(refuse)?;
+    realize_activation_paced(runtime, sources, signalled).await
+}
+
+/// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
+/// 50 ms owner window (see [`realize_bundle_spawns`]).
+async fn realize_activation_paced(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    runtime
+        .begin_activation_spawn_sources(sources)
+        .map_err(|_| refuse())?;
+    let origin = tokio::time::Instant::now();
+    let mut windows = 0u64;
+    loop {
+        let now = u64::try_from(origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+        let progress = runtime
+            .realize_activation_spawn_window(now)
+            .map_err(|_| refuse())?;
+        if progress.realized > 0 {
+            windows += 1;
+        }
+        if progress.remaining == 0 {
+            return Ok(Some((progress.realized_total, windows)));
+        }
+        let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
+            .saturating_add(1)
+            .saturating_mul(SPAWN_ACTIVATION_WINDOW_MICROS);
+        let wake = origin + Duration::from_micros(next);
+        if first(tokio::time::sleep_until(wake), signalled.cancelled())
+            .await
+            .is_none()
+        {
+            return Ok(None);
+        }
+    }
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
     bundle: Option<crate::map::boot::CheckedBundle>,
+    npc_boot: Option<bundle_npcs::NpcBoot>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
@@ -1841,10 +2018,16 @@ async fn boot_and_serve(
     let seal = store
         .seal_current()
         .map_err(|_| BootError::CharacterAuthority)?;
-    let authority = root
-        .open_character_authority(&seal)
-        .await
-        .map_err(|_| BootError::CharacterAuthority)?;
+    let seal = &seal;
+    let authority = with_retries(
+        root,
+        "character authority open",
+        config.boot_pass_deadline(),
+        character_authority_retryable,
+        || root.open_character_authority(seal),
+    )
+    .await
+    .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
     let Some(generation) = first(
         await_assignment(
@@ -1993,10 +2176,23 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
-    let spawned_monsters =
-        realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
+    // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
+    bundle_npcs::place(&mut channel_runtime, npc_boot.as_ref())?;
+    let (spawned_monsters, spawn_windows) = match &bundle {
+        Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
+            Some(realized) => realized,
+            None => {
+                stopped_before_ready();
+                return Ok(());
+            }
+        },
+        None => {
+            let realized = realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?;
+            (realized, u64::from(realized > 0))
+        }
+    };
     event(&format!(
-        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
@@ -2070,6 +2266,7 @@ async fn boot_and_serve(
             .map_err(|_| BootError::Serve)?,
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
+    let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2088,6 +2285,7 @@ async fn boot_and_serve(
         achievements: &achievements,
         imported_charms: &imported_charms,
         quest_catalogue: &quest_catalogue,
+        last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
@@ -2153,6 +2351,36 @@ async fn boot_and_serve(
     // loops keep being driven meanwhile, so work already inside a durability
     // pass finishes and releases the holder the withdrawal needs.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
+    // CHAR-POSITION-0 §3.2: the tracked last positions are written while the sessions are still
+    // fenced in, so before the withdrawal, within its own share of the budget.
+    if !gameplay_done {
+        last_position_flush.request();
+        let mut flushed = pin!(first(
+            last_position_flush.done(),
+            tokio::time::sleep(LAST_POSITION_FLUSH_BUDGET),
+        ));
+        poll_fn(|context| {
+            if flushed.as_mut().poll(context).is_ready() {
+                return Poll::Ready(());
+            }
+            if let Poll::Ready(result) = gameplay.as_mut().poll(context) {
+                serve_error = result.err();
+                gameplay_done = true;
+                return Poll::Ready(());
+            }
+            if !control_done && control_task.as_mut().poll(context).is_ready() {
+                control_done = true;
+            }
+            if !expiry_done && expiry.as_mut().poll(context).is_ready() {
+                expiry_done = true;
+            }
+            if !projection_done && projection.as_mut().poll(context).is_ready() {
+                projection_done = true;
+            }
+            Poll::Pending
+        })
+        .await;
+    }
     let mut withdrawal = pin!(readiness.publish(false, Some(budget)));
     let withdrawn = poll_fn(|context| {
         if let Poll::Ready(result) = withdrawal.as_mut().poll(context) {
@@ -2323,6 +2551,81 @@ mod tests {
     }
 
     #[test]
+    fn boot_steps_retry_only_root_contention_and_deadline_outcomes() {
+        use crate::durability::{
+            DurabilityError, MigrationFailureClass, SchemaCompatibility, SqlxFailureClass,
+        };
+        // The single connection was busy or retired, or the pass ran out of time: the
+        // wrapped steps are idempotent re-reads, so the next run confirms the stored state.
+        for retryable in [
+            DurabilityError::RootUnavailable,
+            DurabilityError::RootPassDeadlineExceeded,
+            DurabilityError::CommitOutcomeUnknown,
+        ] {
+            assert!(boot_step_retryable(&retryable), "{retryable:?}");
+        }
+        // Every other class is a stored-state, schema or configuration verdict: fail closed.
+        for terminal in [
+            DurabilityError::AdmissionGameSessionLedgerExhausted,
+            DurabilityError::Unavailable,
+            DurabilityError::Database(SqlxFailureClass::Database(None)),
+            DurabilityError::Database(SqlxFailureClass::Transport),
+            DurabilityError::Database(SqlxFailureClass::Pool),
+            DurabilityError::Migration(MigrationFailureClass::Dirty),
+            DurabilityError::SchemaIncompatible(SchemaCompatibility::Incompatible),
+            DurabilityError::InvalidConfiguration,
+            DurabilityError::CommitRejected,
+            DurabilityError::RootTaskFailed,
+            DurabilityError::InvalidStoredState,
+        ] {
+            assert!(!boot_step_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn character_authority_open_retries_only_a_retryable_root_cause() {
+        use crate::durability::DurabilityError;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootPassDeadlineExceeded)
+        ));
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)
+        ));
+        for terminal in [
+            CharacterAuthorityError::Rejected,
+            CharacterAuthorityError::Conflict,
+            CharacterAuthorityError::NameUnavailable,
+            CharacterAuthorityError::Unavailable(DurabilityError::Unavailable),
+            CharacterAuthorityError::Unavailable(DurabilityError::InvalidStoredState),
+        ] {
+            assert!(!character_authority_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn boot_step_lines_name_the_step_and_only_the_error_class() {
+        use crate::durability::{DurabilityError, SqlxFailureClass};
+        assert_eq!(
+            boot_step_detail("descriptor", &DurabilityError::RootPassDeadlineExceeded),
+            "step=\"descriptor\" error=RootPassDeadlineExceeded"
+        );
+        assert_eq!(
+            boot_step_detail(
+                "custody claim",
+                &DurabilityError::Database(SqlxFailureClass::Database(None))
+            ),
+            "step=\"custody claim\" error=Database(Database(None))"
+        );
+        let line = boot_step_retry_line("descriptor", 2, &DurabilityError::RootUnavailable);
+        let (level, module, event, detail) = split_event(&line);
+        assert_eq!(level, oteryn_error_codes::Level::Info);
+        assert_eq!(module, "node");
+        assert_eq!(event, "boot_step_retry");
+        assert_eq!(detail, "run=2 step=\"descriptor\" error=RootUnavailable");
+    }
+
+    #[test]
     fn budgeted_backoff_returns_by_the_deadline() {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_time()
@@ -2445,6 +2748,161 @@ mod tests {
             Some(0)
         );
         assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981, `CREATUREAI0-RL-14`): an activation above one window is
+    /// realized one window of at most 4,096 points per 50 ms owner window, not in one turn; a
+    /// shutdown requested meanwhile stops it before readiness.
+    #[test]
+    fn spawn1b_activation_is_paced_one_window_per_owner_window() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                9_000,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        // 131 sources of 63 points: 8,253 points in windows of 4,096, 4,096 and 61.
+        let sources = || -> Vec<crate::map::boot::BundleSpawnFacts> {
+            (0..131)
+                .map(|_| {
+                    let points = (0..63)
+                        .map(|x| {
+                            (
+                                (x, 0, 7),
+                                60_000,
+                                "oteryn:creature/rat".to_string(),
+                                20,
+                                false,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    (points, 5_000)
+                })
+                .collect::<Vec<_>>()
+        };
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        executor.block_on(async {
+            let mut paced = runtime();
+            let started = std::time::Instant::now();
+            let realized =
+                realize_activation_paced(&mut paced, sources(), &CancellationToken::new()).await;
+            assert_eq!(realized.ok(), Some(Some((8_253, 3))));
+            assert!(started.elapsed() >= Duration::from_millis(100));
+            assert_eq!(paced.spawn_point_creatures().len(), 8_253);
+
+            let stopped = CancellationToken::new();
+            stopped.cancel();
+            let mut cancelled = runtime();
+            assert_eq!(
+                realize_activation_paced(&mut cancelled, sources(), &stopped)
+                    .await
+                    .ok(),
+                Some(None)
+            );
+        });
+    }
+
+    /// SPAWN-1b (Codex P1 4243711197 on #1981): a family of the pinned pre-production bundle's
+    /// shape, 51,078 sources with 82,673 active points of which 31,595 sources mix two
+    /// creatures and delays, is 51,078 runtime sources: within `CREATUREAI0-RL-02` (65,536),
+    /// where one runtime source per creature/delay run would be 82,673 and refuse. It realizes
+    /// paced, in 21 owner windows.
+    #[test]
+    fn spawn1b_bundle_scale_family_stays_one_runtime_source_per_bundle_source() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        const SOURCES: usize = 51_078;
+        const POINTS: usize = 82_673;
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature/bat"),
+                creature("oteryn:creature/rat"),
+            ],
+            sources: (0..SOURCES)
+                .map(|index| {
+                    let x = u16::try_from(index % 1_024).expect("small");
+                    let mut points = vec![point(1, x, 60_000)];
+                    if index < POINTS - SOURCES {
+                        points.push(point(0, x, 30_000));
+                    }
+                    Source {
+                        key: format!("oteryn:spawn/{index:05}"),
+                        floor: -7,
+                        x,
+                        y: 5,
+                        points,
+                    }
+                })
+                .collect(),
+        };
+        assert_eq!(table.point_count(), POINTS);
+        let sources = crate::map::boot::table_activation_spawns(&table, |key| {
+            Some((if key.ends_with("rat") { 20 } else { 35 }, false))
+        })
+        .expect("served creatures");
+        drop(table);
+        assert_eq!(sources.len(), SOURCES);
+        assert_eq!(
+            sources.iter().map(|source| source.0.len()).sum::<usize>(),
+            POINTS
+        );
+
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            POINTS + 1_000,
+            crate::foundation::ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        let realized = executor.block_on(realize_activation_paced(
+            &mut runtime,
+            sources,
+            &CancellationToken::new(),
+        ));
+        assert_eq!(realized.ok(), Some(Some((POINTS, 21))));
+        assert_eq!(runtime.spawn_point_creatures().len(), POINTS);
     }
 
     #[test]

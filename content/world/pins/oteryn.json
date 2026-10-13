@@ -6,9 +6,9 @@
   "content_revision": "d3-8-cheese-admitted-20261007-r1",
   "production": false,
   "entry_start": {
-    "x": 10228,
-    "y": 10032,
-    "floor": 0
+    "x": 32369,
+    "y": 32238,
+    "floor": -7
   },
-  "inputs_digest": "51b3af9650ba45adbd42ce2dd76f9f5d03a408841e0830d0f4fa8bc33946e376"
+  "inputs_digest": "718013fb67a60b5359fd7e540a59860e19149a77ac908f2c5aeb48e26f8156b6"
 }

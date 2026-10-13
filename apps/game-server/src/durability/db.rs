@@ -11,13 +11,14 @@ use std::fmt::{self, Write as _};
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
-pub const DB_PASS_DEADLINE: Duration = Duration::from_secs(2);
+const DB_PASS_DEADLINE_MILLIS: u64 = 2_000;
+pub const DB_PASS_DEADLINE: Duration = Duration::from_millis(DB_PASS_DEADLINE_MILLIS);
 pub(crate) const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
@@ -816,10 +817,30 @@ pub struct DurabilityRoot {
     runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
     maintenance: Arc<Mutex<()>>,
+    /// The deadline of the next semantic pass in milliseconds, shared by every clone:
+    /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
+    pass_deadline_millis: Arc<AtomicU64>,
     _root_i_charge: Option<Arc<RootICharge>>,
 }
 
+/// While it lives, every semantic pass of its root runs under the boot deadline
+/// (NODE-BOOT-DEADLINE-1); dropping it restores `DB_PASS_DEADLINE`. Guards do not nest.
+#[must_use = "the boot deadline ends when the guard is dropped"]
+pub(crate) struct BootPassDeadline {
+    pass_deadline_millis: Arc<AtomicU64>,
+}
+
+impl Drop for BootPassDeadline {
+    fn drop(&mut self) {
+        self.pass_deadline_millis
+            .store(DB_PASS_DEADLINE_MILLIS, Ordering::Release);
+    }
+}
+
 impl DurabilityRoot {
+    /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
+    pub const MAX_BOOT_PASS_DEADLINE: Duration = Duration::from_secs(60);
+
     pub fn new(config: DurabilityRootConfig) -> Result<Self, DurabilityError> {
         let production = config.production_admission.is_some();
         let expected_maintenance =
@@ -860,6 +881,7 @@ impl DurabilityRoot {
             runtime,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
+            pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             _root_i_charge: root_i_charge,
         })
     }
@@ -878,6 +900,7 @@ impl DurabilityRoot {
             runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
+            pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             _root_i_charge: None,
         })
     }
@@ -1000,12 +1023,29 @@ impl DurabilityRoot {
         Arc::downgrade(&liveness)
     }
 
+    /// Run the semantic passes issued while the returned guard lives under `deadline`,
+    /// bounded to `DB_PASS_DEADLINE..=MAX_BOOT_PASS_DEADLINE`. Only the sequential boot
+    /// steps take it, before the node serves, so no gameplay pass runs under it; the
+    /// PostgreSQL transaction, statement and lock timeouts follow the same deadline.
+    pub(crate) fn boot_pass_deadline(&self, deadline: Duration) -> BootPassDeadline {
+        let bounded = deadline.clamp(DB_PASS_DEADLINE, Self::MAX_BOOT_PASS_DEADLINE);
+        let millis = u64::try_from(bounded.as_millis()).unwrap_or(DB_PASS_DEADLINE_MILLIS);
+        self.pass_deadline_millis.store(millis, Ordering::Release);
+        BootPassDeadline {
+            pass_deadline_millis: Arc::clone(&self.pass_deadline_millis),
+        }
+    }
+
+    fn pass_deadline(&self) -> Duration {
+        Duration::from_millis(self.pass_deadline_millis.load(Ordering::Acquire))
+    }
+
     pub(crate) fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let holder = self.try_acquire_ready()?;
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
-            deadline: Instant::now() + DB_PASS_DEADLINE,
+            deadline: Instant::now() + self.pass_deadline(),
         })
     }
 }
@@ -1583,6 +1623,36 @@ mod wp3_root_contract_tests {
             Ok::<(), DurabilityError>(())
         })?;
         drop(root);
+        Ok(())
+    }
+
+    #[test]
+    fn boot_pass_deadline_is_bounded_shared_by_clones_and_ends_with_its_guard()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = DurabilityRoot::new(config()?)?;
+        let clone = root.clone();
+        assert_eq!(root.pass_deadline(), DB_PASS_DEADLINE);
+        {
+            let _boot = root.boot_pass_deadline(Duration::from_secs(15));
+            assert_eq!(root.pass_deadline(), Duration::from_secs(15));
+            assert_eq!(clone.pass_deadline(), Duration::from_secs(15));
+        }
+        assert_eq!(root.pass_deadline(), DB_PASS_DEADLINE);
+        assert_eq!(clone.pass_deadline(), DB_PASS_DEADLINE);
+        for (asked, bounded) in [
+            (
+                Duration::from_secs(3_600),
+                DurabilityRoot::MAX_BOOT_PASS_DEADLINE,
+            ),
+            (Duration::MAX, DurabilityRoot::MAX_BOOT_PASS_DEADLINE),
+            (Duration::from_millis(1), DB_PASS_DEADLINE),
+            (Duration::ZERO, DB_PASS_DEADLINE),
+        ] {
+            let boot = clone.boot_pass_deadline(asked);
+            assert_eq!(root.pass_deadline(), bounded);
+            drop(boot);
+            assert_eq!(root.pass_deadline(), DB_PASS_DEADLINE);
+        }
         Ok(())
     }
 }
