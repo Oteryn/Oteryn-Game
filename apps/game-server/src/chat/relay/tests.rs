@@ -229,6 +229,19 @@ fn expiry_follows_each_lines_own_deadline_not_arrival_order() {
 }
 
 #[test]
+fn a_clock_stepped_back_does_not_readmit_an_evicted_id() {
+    let mut window = ReplayWindow::default();
+    let line = room_line(1, NOW);
+    window.admit(&line, NOW).expect("first");
+    let after = NOW + FRESHNESS_MICROS + 1;
+    window
+        .admit(&room_line(2, after), after)
+        .expect("evicts the first");
+    // The database clock steps back to when `line` was fresh; it must still be refused.
+    assert_eq!(window.admit(&line, NOW), Err(RelayError::Stale));
+}
+
+#[test]
 fn a_full_window_refuses_instead_of_forgetting() {
     let mut window = ReplayWindow::default();
     for n in 0..REPLAY_WINDOW_LINES {
@@ -278,6 +291,30 @@ fn a_ring_needs_distinct_key_ids() {
 fn randomness_differs_and_debug_never_shows_text_or_key() {
     assert_ne!(random_nonce(), random_nonce());
     assert_ne!(random_message_id(), random_message_id());
+    let ring = ring(&[(1, 0)]);
+    let outgoing = || OutgoingLine {
+        sent_at_micros: NOW,
+        destination: RelayDestination::Room {
+            room: ChatRoom::English,
+        },
+        sender_name: "Sender".to_owned(),
+        text: "hello".to_owned(),
+    };
+    let a = open(
+        &ring,
+        CHANNEL,
+        &seal(&ring, CHANNEL, outgoing()).expect("a"),
+        NOW,
+    )
+    .expect("open a");
+    let b = open(
+        &ring,
+        CHANNEL,
+        &seal(&ring, CHANNEL, outgoing()).expect("b"),
+        NOW,
+    )
+    .expect("open b");
+    assert_ne!(a.message_id, b.message_id);
     let line = RelayLine {
         text: "secret words".to_owned(),
         ..room_line(1, NOW)

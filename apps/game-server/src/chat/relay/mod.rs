@@ -304,23 +304,39 @@ fn random_nonce() -> Result<[u8; NONCE_BYTES], RelayError> {
     Ok(nonce)
 }
 
-/// A fresh random 128-bit `message_id`.
-pub(crate) fn random_message_id() -> Result<[u8; ID_BYTES], RelayError> {
+/// A fresh random 128-bit `message_id`; only [`seal`] draws one, so no caller can pick or reuse it.
+fn random_message_id() -> Result<[u8; ID_BYTES], RelayError> {
     let mut id = [0_u8; ID_BYTES];
     fill(&mut id).map_err(|_| RelayError::Random)?;
     Ok(id)
 }
 
+/// What a sender supplies for one line; the `message_id` is generated inside [`seal`].
+pub(crate) struct OutgoingLine {
+    /// The sender's database time, microseconds.
+    pub(crate) sent_at_micros: u64,
+    pub(crate) destination: RelayDestination,
+    pub(crate) sender_name: String,
+    pub(crate) text: String,
+}
+
 /// Seals `line` for `channel` with the newest key and a fresh random nonce, and returns the
 /// `NOTIFY` text (standard base64 of `key_id || nonce || ciphertext || tag`). The associated data
 /// is the channel name and the `key_id`. A line over the bound is `Oversized`, never truncated or
-/// split. The nonce is drawn here so no caller can reuse one under a shared key.
+/// split. The `message_id` and the nonce are drawn here so no caller can repeat either.
 pub(crate) fn seal(
     ring: &RelayKeyRing,
     channel: &str,
-    line: &RelayLine,
+    line: OutgoingLine,
 ) -> Result<String, RelayError> {
-    seal_with_nonce(ring, channel, line, random_nonce()?)
+    let line = RelayLine {
+        message_id: random_message_id()?,
+        sent_at_micros: line.sent_at_micros,
+        destination: line.destination,
+        sender_name: line.sender_name,
+        text: line.text,
+    };
+    seal_with_nonce(ring, channel, &line, random_nonce()?)
 }
 
 fn seal_with_nonce(
@@ -394,14 +410,20 @@ pub(crate) fn open(
 /// and expiry does not depend on arrival order.
 #[derive(Debug, Default)]
 pub(crate) struct ReplayWindow {
+    /// The newest clock reading seen. Time never runs backwards here, so a database clock stepped
+    /// back cannot make an evicted `message_id` admissible again.
+    high_water: u64,
     expiry_of: HashMap<[u8; ID_BYTES], u64>,
     by_expiry: BTreeSet<(u64, [u8; ID_BYTES])>,
 }
 
 impl ReplayWindow {
-    /// Admits the line once. `now_micros` is the node's database-time reading. A line outside the
-    /// freshness window is `Stale` here too, so nothing already expired is ever stored.
+    /// Admits the line once. `now_micros` is the node's database-time reading, raised to the
+    /// highest reading seen. A line outside the freshness window is `Stale` here too, so nothing
+    /// already expired is ever stored.
     pub(crate) fn admit(&mut self, line: &RelayLine, now_micros: u64) -> Result<(), RelayError> {
+        let now_micros = now_micros.max(self.high_water);
+        self.high_water = now_micros;
         while let Some(&(expiry, id)) = self.by_expiry.first() {
             if expiry >= now_micros {
                 break;
