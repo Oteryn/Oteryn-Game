@@ -2540,6 +2540,7 @@ pub mod item_view;
 pub mod npc_service;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod world_clock;
 pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
