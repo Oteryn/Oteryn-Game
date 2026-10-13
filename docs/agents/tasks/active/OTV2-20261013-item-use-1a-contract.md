@@ -44,4 +44,4 @@ wire or authority change; registration grants none.
 
 ## Validation
 
-pending
+pending (filled before freeze)
