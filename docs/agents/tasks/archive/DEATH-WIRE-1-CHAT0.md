@@ -4,23 +4,25 @@
 task_id: DEATH-WIRE-1-CHAT0
 title: "DEATH-WIRE-1 (CHAT-0 part): rate gate before the Channel lock for a say"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death-wire-1-chat0-20261013
-pr: null
+pr: 2026
 issue: 1622
 governing_issue: 1622
 base_sha: 0db5c53b
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+merge_commit: "squash merge of #2026"
 created_at: 2026-10-13
 updated_at: 2026-10-13
 owned_paths:
   - apps/game-server/src/chat/spam.rs
+  - apps/game-server/src/chat/tests.rs
   - apps/game-server/src/gameplay_transport/chat_intent.rs
   - docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md
-  - docs/agents/tasks/active/DEATH-WIRE-1-CHAT0.md
+  - docs/agents/tasks/archive/DEATH-WIRE-1-CHAT0.md
 public_contracts: []
 external_repositories: []
 ```
