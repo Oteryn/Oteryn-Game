@@ -4,11 +4,11 @@
 task_id: OTV2-20261013-magic-cond-1-cond-1c-bundle-periodic
 title: MAGIC-COND-1 COND-1c -- open periodic player damage on a bundle World
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/magic-cond-1-cond-1-20261013
-pr: null
+pr: 2086
 base_sha: 39f77b53
 owner: "Oteryn: worker for control plane session_01XYC239givrMonrYoBwwECV"
 created_at: 2026-10-13
@@ -40,3 +40,6 @@ COND-WIRE-1, protocol, migration, `foundation/**` (no change was needed).
 
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
 - PostgreSQL-backed tests: not run (no Docker daemon); no PG-owned code changed.
+- `cargo test --locked -p oteryn-game-server --lib spell`: pass.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
