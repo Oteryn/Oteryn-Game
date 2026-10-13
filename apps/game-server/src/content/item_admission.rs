@@ -584,7 +584,8 @@ fn apply_admissions_v3<'a>(
         .iter()
         .map(|row| (row.item_key.as_str(), row))
         .collect();
-    let mut admitted = 0;
+    // Plan every admission before mutating: an error leaves the draft untouched.
+    let mut planned = Vec::new();
     for (key, materializable, stack_class, semantics) in items {
         if !pending.remove(key) {
             continue;
@@ -592,21 +593,27 @@ fn apply_admissions_v3<'a>(
         let Some(admission) = by_key.get(key) else {
             continue;
         };
-        admit_v3(admission, materializable, stack_class, semantics)?;
-        admitted += 1;
+        let (class, stack) = plan_v3(admission, materializable, stack_class, semantics)?;
+        planned.push((materializable, stack_class, semantics, class, stack));
     }
     if let Some(item_key) = pending.into_iter().next() {
         return Err(item_error(item_key, "no Item record with this key"));
     }
+    let admitted = planned.len();
+    for (materializable, stack_class, semantics, class, stack) in planned {
+        *materializable = true;
+        *stack_class = class;
+        semantics.stack = ReferenceItemField::Known(stack);
+    }
     Ok(admitted)
 }
 
-fn admit_v3(
+fn plan_v3(
     admission: &AdmissionV3,
-    materializable: &mut bool,
-    stack_class: &mut ItemStackDocument,
-    semantics: &mut ReferenceItemSemantics,
-) -> Result<(), ItemAdmissionError> {
+    materializable: &bool,
+    stack_class: &ItemStackDocument,
+    semantics: &ReferenceItemSemantics,
+) -> Result<(ItemStackDocument, ReferenceItemStack), ItemAdmissionError> {
     use ReferenceItemField::{Known, Unknown};
     let key = admission.item_key.as_str();
     if *materializable
@@ -636,29 +643,26 @@ fn admit_v3(
     };
     match (&admission.stack_class, admission.stack_max) {
         (StackClassV2::StackCapable, Some(V3_STACK_MAX)) if agrees(true, Some(V3_STACK_MAX)) => {
-            *materializable = true;
-            *stack_class = ItemStackDocument::StackCapable;
-            semantics.stack = Known(ReferenceItemStack {
-                stackable: Known(true),
-                stack_max: Known(V3_STACK_MAX),
-            });
+            Ok((
+                ItemStackDocument::StackCapable,
+                ReferenceItemStack {
+                    stackable: Known(true),
+                    stack_max: Known(V3_STACK_MAX),
+                },
+            ))
         }
-        (StackClassV2::NonStackable, None) if agrees(false, None) => {
-            *materializable = true;
-            *stack_class = ItemStackDocument::NonStackable;
-            semantics.stack = Known(ReferenceItemStack {
+        (StackClassV2::NonStackable, None) if agrees(false, None) => Ok((
+            ItemStackDocument::NonStackable,
+            ReferenceItemStack {
                 stackable: Known(false),
                 stack_max: Unknown,
-            });
-        }
-        _ => {
-            return Err(item_error(
-                key,
-                "admission shape is neither stack-capable nor non-stackable",
-            ));
-        }
+            },
+        )),
+        _ => Err(item_error(
+            key,
+            "admission shape is neither stack-capable nor non-stackable",
+        )),
     }
-    Ok(())
 }
 
 fn item_error(item_key: &str, reason: &'static str) -> ItemAdmissionError {
