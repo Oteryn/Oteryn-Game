@@ -37,30 +37,56 @@ fn standing_element(
     }
     Some(None)
 }
-/// The field a bundle tile carries as a static top Item (COND-1c): the bundle's fields are not
-/// `game_item_ground_locations` rows. An Item with no policy has no field semantics; one whose
-/// classification is not known is Unknown, so no damage is consumed.
+/// What one static top Item says about a standing field (COND-1c).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StaticItemFact {
+    /// The Item has no qualified policy: its field semantics are missing, so Unknown.
+    NoPolicy,
+    /// A known Item that is not a field.
+    Plain,
+    /// A known field Item; `None` when its element is not resolvable.
+    Field(Option<Option<DotElement>>),
+    /// A classification that is not known.
+    Unknown,
+}
+fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option<DotElement>> {
+    for fact in facts {
+        match fact {
+            StaticItemFact::NoPolicy | StaticItemFact::Unknown => return None,
+            StaticItemFact::Plain => {}
+            StaticItemFact::Field(element) => return element,
+        }
+    }
+    Some(None)
+}
+/// The field a bundle tile carries as a static top Item: the bundle's fields are not
+/// `game_item_ground_locations` rows. Missing metadata is Unknown, so no damage is consumed.
 fn static_element(
     tile: &crate::content::QualifiedSpellTile,
     source: &NativeGameplayState,
 ) -> Option<Option<DotElement>> {
-    for id in tile.top_source_ids() {
+    fold_static(tile.top_source_ids().iter().map(|id| {
         let Some(policy) = source.item_policy_for_source_id(*id) else {
-            continue;
+            return StaticItemFact::NoPolicy;
         };
         let record = policy.record();
         let ReferenceItemField::Known(classification) = &record.semantics.classification else {
-            return None;
+            return StaticItemFact::Unknown;
         };
         match classification.item_type {
-            ReferenceItemField::Known(ReferenceItemType::MagicField) => {
-                return record.attributes.field_condition.as_ref()?.element().ok();
+            ReferenceItemField::Known(ReferenceItemType::MagicField) => StaticItemFact::Field(
+                record
+                    .attributes
+                    .field_condition
+                    .as_ref()
+                    .and_then(|f| f.element().ok()),
+            ),
+            ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {
+                StaticItemFact::Plain
             }
-            ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {}
-            ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
+            ReferenceItemField::Unknown | ReferenceItemField::Conflict => StaticItemFact::Unknown,
         }
-    }
-    Some(None)
+    }))
 }
 /// Ground Items and static bundle Items are two sources of the one standing fact: a known field
 /// wins, Unknown on either side stays Unknown (no damage consumed).
@@ -390,5 +416,21 @@ mod standing_fact_tests {
         assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
         assert_eq!(combine_elements(None, fire), None);
         assert_eq!(combine_elements(fire, None), None);
+    }
+    #[test]
+    fn an_unprofiled_static_item_is_unknown_not_a_known_non_field() {
+        use StaticItemFact::*;
+        assert_eq!(fold_static([Plain, NoPolicy]), None);
+        assert_eq!(
+            fold_static([NoPolicy, Field(Some(Some(DotElement::Fire)))]),
+            None
+        );
+        assert_eq!(fold_static([Plain, Unknown]), None);
+        assert_eq!(fold_static([Plain, Plain]), Some(None));
+        assert_eq!(
+            fold_static([Plain, Field(Some(Some(DotElement::Fire)))]),
+            Some(Some(DotElement::Fire))
+        );
+        assert_eq!(fold_static([Field(None)]), None);
     }
 }
