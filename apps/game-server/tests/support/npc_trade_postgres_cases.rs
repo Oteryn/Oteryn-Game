@@ -8,7 +8,7 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome};
 use crate::durability::npc_trade::{
     CommittedNpcTrade, NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeLineKind,
-    NpcTradeOutcome, NpcTradeRequest, NpcTradeSide,
+    NpcTradeOutcome, NpcTradeReceipt, NpcTradeRequest, NpcTradeSide,
 };
 use crate::durability::npc_trade_audit::decode_npc_trade_envelope;
 use crate::foundation::ConnectionGeneration;
@@ -281,6 +281,39 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
             ),
             (235, 310, 75)
         );
+        // NPC-TRADE-2 replay first: the receipt names what command 8 asked; another occurrence
+        // has none; the occurrence read under another CommandRef conflicts.
+        let character_id = fence()?.character_id;
+        assert_eq!(
+            harness
+                .root
+                .read_npc_trade(&authority, character_id, command(10)?, id(10))
+                .await
+                .map_err(debug)?,
+            Some(NpcTradeReceipt {
+                npc_key: "fixture:npc.trader".into(),
+                catalogue_revision: 1,
+                offer_index: 0,
+                side: NpcTradeSide::Buy,
+                quantity: 5,
+                unit_price: 47,
+            })
+        );
+        assert_eq!(
+            harness
+                .root
+                .read_npc_trade(&authority, character_id, command(90)?, id(90))
+                .await
+                .map_err(debug)?,
+            None
+        );
+        assert!(matches!(
+            harness
+                .root
+                .read_npc_trade(&authority, character_id, command(11)?, id(10))
+                .await,
+            Err(NpcTradeError::ConflictingOccurrence)
+        ));
         assert_eq!(
             entries(&harness, backpack).await?,
             vec![
