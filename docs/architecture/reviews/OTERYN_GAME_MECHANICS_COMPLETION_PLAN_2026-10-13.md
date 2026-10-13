@@ -54,7 +54,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | LOOP-RANGED-1 | 21, 22, 51 | projectile profiles, distance weapons and ammo (a DUR-03 burn), wands/rods, attack spells | BUNDLE-TILES-PROJECTILE-1, LOOP-DAMAGE-1, ITEM-LOOP-1 | hard (ammo burn) | yes | no |
 | LOOP-PROGRESS-1 | 37, 38, 40, 41 | level-up vitals/capacity per vocation, vocations end to end, skill gain on hits, magic level | GAME-CHAR-CMD-0 | hard (Character writes) | yes | no |
 | LOOP-VITALS-1 | 30, 32, 33 | durable regeneration accumulator, food-time ingress, soul regen and soul orb, stamina | ITEM-USE-1 (#2039), LOOP-PROGRESS-1 | hard (Character state) | yes | no |
-| LOOP-TRAIN-1 | 34, 35 | offline training in beds, exercise weapons | LOOP-VITALS-1, HOUSE-INT-1 (beds), ITEM-TIMED-1 | hard | yes | no |
+| LOOP-TRAIN-1 | 34, 35 | offline training in beds, exercise weapons | LOOP-VITALS-1, LOOP-PROGRESS-1 (skill build state, A13 magic-level training), CHAR-POSITION-1, a slot in the shared guard-rewrite order, WORLDINT-USE-1, HOUSE-ACL-1 (beds), ITEM-TIMED-1 (`charges`), the training statue and dummy content (WO-2, OFFLINE-CONTENT-1, EXERCISE-CONTENT-1; OFFLINE-0 §30-34, EXERCISE-0 §33-35) | hard | yes | no |
 | LOOP-MONSTER-1 | 94, 96 | world-owned respawn scheduler independent of sessions; monster ranged, spell and summon AI | LOOP-RANGED-1, MAGIC-CAST-1, MAGIC-SUMMON-1 | impl | no | no |
 | LOOP-GROUND-1 | 18 | decay of dropped items on Ground (shared with the death drop) | DEATH-DUR-1 | hard (retire) | maybe | no |
 | LOOP-CLOCK-1 | 15 | world clock and day phase, server light state | none | impl | no | yes |
@@ -103,12 +103,14 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
 | CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | none | hard (World relay) | maybe | maybe |
-| PARTY-1 | 112, 59 | invite/join/leave, shared XP, party spells | CHAT-2 (PARTY-PVP-0 §30-33); PVP-1 (#2032) is downstream of PARTY-1 and is not its dependency, only its merged base | hard (shared state, rewards) | yes | yes |
+| PARTY-1 | 112 | party membership and state: invite/join/leave, succession, shared-XP toggle, `PartyView` cache (membership only) | CHAT-2 (PARTY-PVP-0 §30-33) | hard (shared state) | yes | yes |
+| PARTY-XP-1 | 59 | shared-XP eligibility and split, party immunity in area effects, party loot right, `party_buff` query and party spells | PARTY-1, the D118 XP lane (LOOP-PROGRESS-1), D3-4 (LOOP-DAMAGE-1) (PARTY-PVP-0 §30-32) | hard (combat, rewards) | maybe | maybe |
 | GUILD-1 | 113 | guilds | PARTY-1 | hard | yes | yes |
 | VIP-1 | 114 | VIP list | none | impl | yes | yes |
 | CHAT-1 | 116 | chat channels beyond the relay | CHAT-2 | impl | maybe | yes |
-| HOUSE-OWN-1 | 119 | house ownership, auction, rent | NPC-ECON-1 | hard (value) | yes | no |
-| HOUSE-INT-1 | 120, 121 | interiors, ACL, beds | HOUSE-OWN-1 | impl | maybe | no |
+| HOUSE-RT-1 | 120 | house interior runtime: enter and furnish a house (HOUSE-RUNTIME-0) | LOOP-WORLD-1, ITEM-LOOP-1 | impl | maybe | no |
+| HOUSE-OWN-1 | 119 | house ownership, auction, rent (HOUSE-OWN-0 §32, 36-37) | HOUSE-RT-1, NPC-ECON-1 (Bank), MAIL-1 (Inbox), custody (HOUSE-CUSTODY-1) | hard (value) | yes | no |
+| HOUSE-ACL-1 | 121 | house ACL and beds | HOUSE-OWN-1 | impl | maybe | no |
 | SOCIAL-LATE-1 | 118 | marriage and PvP arena | GUILD-1, ARENA-1 | impl | maybe | no |
 
 ### Epic 6. Meta
@@ -131,7 +133,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 
 Rows 107 and 108: DEATH-DUR-1 (B), DEATH-3 (C), PVP-DEATH-1 (D), DEATH-4 (E), optional wire F, per the
 DEATH-COMPLETE-0 decision (#2043; fixes in #2044 must land before B, C, E). Row 85 (blessings) is DEATH-4. Rows
-110 and 111: PVP-1 (#2032) and PVP-RT-1b. In-flight PRs: 31 and 76 (#2039), 80 (#2040), 105 (#1867). Rows 6,
+110 and 111: PVP-1 (#2032, which waits for PARTY-1 and is not started or landed before it) and PVP-RT-1b. In-flight PRs: 31 and 76 (#2039), 80 (#2040), 105 (#1867). Rows 6,
 55 and 3 are split, never owned twice: #2018 owns the part of row 6 it implements and LOOP-WORLD-1 owns only the
 residue after #2018 merges (keyed/level/quest doors, levers, tile damage, as listed in its scope); #2039 owns the
 rune item-use part of row 55 and MAGIC-ITEMS-1 only rune use with a target and conjure; the server part of row 3
@@ -143,17 +145,18 @@ residue against the merged PR before it starts.
 Throttles: one migration PR at a time and one protocol-registry PR at a time, so wave width is set by `Mig` and
 `Reg`, not by the number of workers.
 
-1. **Wave 0 (in flight):** #2018, #2032, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
+1. **Wave 0 (in flight):** #2018, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
 2. **Wave 1 (no migration, parallel):** CHAT-2 (before PARTY-1), OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
    ITEM-LOOK-1, LOOP-CLOCK-1 (SEC-1 moved behind them, registry order CLOCK-1, ITEM-LOOK-1, SEC-1, WEATHER-1). In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
    death module's B and C).
 3. **Wave 2:** LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1, QUEST-RT-1, MAGIC-ITEMS-1,
    MAGIC-SUMMON-1, LOOP-MONSTER-1, PARTY-1, WEATHER-1.
+   PVP-1 (#2032) follows PARTY-1 and DEATH-1 and is held until PARTY-1 merges; it is not a Wave 0 item.
 4. **Wave 3:** ITEM-TIMED-1, ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, LOGOUT-1, CRAFT-1, PROG-ADV-1,
-   MONSTER-META-1, HOUSE-OWN-1.
-5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, HOUSE-INT-1, LOOP-TRAIN-1, GUILD-1, VIP-1, CHAT-1, HIRE-1,
+   MONSTER-META-1, HOUSE-RT-1, PARTY-XP-1.
+5. **Wave 4:** TRADE-PLAYER-1, MAIL-1, MARKET-1, GUILD-1, VIP-1, CHAT-1,
    PREMIUM-1, STORE-ENT-1, HUNT-1, DAILY-1, ACH-1, RANK-1, COSMETIC-1.
-6. **Wave 5:** EVENTS-*, ARENA-1, SOCIAL-LATE-1, GM-1, SPECTATE-1, TUTORIAL-1.
+6. **Wave 5:** HOUSE-OWN-1, then HOUSE-ACL-1, HIRE-1 and LOOP-TRAIN-1, EVENTS-*, ARENA-1, SOCIAL-LATE-1, GM-1, SPECTATE-1, TUTORIAL-1.
 
 Waves are an order of dependency, not a schedule; the control plane starts a batch when its dependencies have
 merged. The death module runs alongside wave 1 and 2 on its own track.

@@ -29,5 +29,6 @@ No code, registry or migration change.
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: passed (22 required policy documents, 9 project lanes).
+- `python -m unittest discover -s tools/agents/tests`: OK (60 tests).
 - `git diff --check`: clean.
 - Review: Codex rounds on #2047; findings answered in the follow-up commit. Docs only; no code, registry or migration.
