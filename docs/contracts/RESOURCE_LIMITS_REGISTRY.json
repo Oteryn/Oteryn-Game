@@ -8490,6 +8490,181 @@
       "unit": "work units"
     },
     {
+      "id": "DUR03-RL-01-ITEM-USE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "Item instances touched by one item-use transaction (burn: 1, flask: 2)",
+      "unit": "item instances per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the flask shape is admitted",
+        "max+1=3 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-02-ITEM-USE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "Location lines of one item-use transaction (the retired used stack's entry and a fresh flask's new entry)",
+      "unit": "location lines per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; the stack adjustments of a used stack and of a compatible flask stack are item state, not lines.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the last potion unit with a fresh flask is admitted",
+        "max+1=3 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-04-ITEM-USE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "TRANSFORM lines of one item-use transaction (one unit-level input and output, flask shape)",
+      "unit": "transform lines per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; the burn shape carries none.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: the flask shape is admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-06-ITEM-USE-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "Participating item instances of one item-use transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the flask shape is admitted",
+        "max+1=3 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-06-ITEM-USE-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "Effect work units of one item-use transaction: participants, one write per touched item, the TRANSFORM and the record",
+      "unit": "effect work units per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; measured on the flask shape (2 + 2 + 1 + 1), the burn shape is 3.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6: the flask shape is admitted",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-07-ITEM-USE-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "Audit events of one item-use transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One event per use; checked before any write.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: the use event is admitted",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-07-ITEM-USE-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "One exact OneItemTransactionV1 payload (event type 2, operation item_use) inside EventEnvelope.payload",
+      "unit": "bytes",
+      "hard_maximum": 7000,
+      "configurable_range": {
+        "minimum": 7000,
+        "maximum": 7000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; stays within the one-item payload of 7,936 B (DUR03-RL-07), ANL01-EVENT-PAYLOAD-BYTES still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst case of the registered schema (fresh flask, 512-byte revisions, 128-byte family, maximal integers) is exactly 7000 B and accepted",
+        "7001 bytes within the one-item ceiling decode only as the closed shape"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
+      "id": "DUR03-RL-07-ITEM-USE-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation item_use, including payload",
+      "unit": "bytes",
+      "hard_maximum": 8000,
+      "configurable_range": {
+        "minimum": 8000,
+        "maximum": 8000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; stays within the one-item envelope of 9,216 B.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case envelope (128-byte build id) is exactly 8000 B and accepted"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+      ],
+      "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+    },
+    {
       "id": "ITEMV0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
       "resource": "Items in one CHARACTER_INVENTORY view (domain 9 snapshot type 1 or delta type 1), the main backpack slot included",
