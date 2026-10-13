@@ -102,10 +102,11 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
-| PARTY-1 | 112, 59 | invite/join/leave, shared XP, party spells | #2032 | hard (shared state, rewards) | yes | yes |
+| CHAT-2 | 116 (relay) | the World chat relay that PARTY-1 needs (CHAT-0 §26-32) | none | hard (World relay) | maybe | maybe |
+| PARTY-1 | 112, 59 | invite/join/leave, shared XP, party spells | CHAT-2 (PARTY-PVP-0 §30-33); PVP-1 (#2032) is downstream of PARTY-1 and is not its dependency, only its merged base | hard (shared state, rewards) | yes | yes |
 | GUILD-1 | 113 | guilds | PARTY-1 | hard | yes | yes |
 | VIP-1 | 114 | VIP list | none | impl | yes | yes |
-| CHAT-1 | 116 | chat channels | none | impl | maybe | yes |
+| CHAT-1 | 116 | chat channels beyond the relay | CHAT-2 | impl | maybe | yes |
 | HOUSE-OWN-1 | 119 | house ownership, auction, rent | NPC-ECON-1 | hard (value) | yes | no |
 | HOUSE-INT-1 | 120, 121 | interiors, ACL, beds | HOUSE-OWN-1 | impl | maybe | no |
 | SOCIAL-LATE-1 | 118 | marriage and PvP arena | GUILD-1, ARENA-1 | impl | maybe | no |
@@ -120,7 +121,7 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 | ACH-1 | 125, 129 | achievements, badges, titles | LOOP-PROGRESS-1 | impl | yes | maybe |
 | COSMETIC-1 | 126, 127 | outfit and addon change, mounts | #1942 for the client side | impl | no | yes |
 | HUNT-1 | 45, 46 | prey and hunting tasks | LOOP-MONSTER-1 | hard (rewards) | yes | no |
-| DAILY-1 | 47 | daily reward | NPC-ECON-1 | hard (rewards) | yes | no |
+| DAILY-1 | 47 | daily reward | NPC-ECON-1, MARKET-1 (CharacterInbox), HUNT-1 (PREY-1 wildcard balance), ADR-0021 World reset epoch | hard (rewards) | yes | no |
 | RANK-1 | 48, 128 | highscores and analysers as normalized Game exports (Atlas consumes them) | LOOP-PROGRESS-1 | impl | no | no |
 | SEC-1 | 135 | server-side integrity checks (bot controls: CLIENT_INTEGRITY, INPUT_TELEMETRY); pacing stays in LOOP-WORLD-1; the 9c/6c3 retirement is separate | LOOP-CLOCK-1, ITEM-LOOK-1 (registry order) | impl | no | yes |
 | GM-1 | 136 | GM tools, talkactions, bans | Platform contract | hard (authority) | yes | no |
@@ -130,8 +131,12 @@ review); `impl` = ordinary worker. `Mig` = needs a migration (numbers after 0083
 
 Rows 107 and 108: DEATH-DUR-1 (B), DEATH-3 (C), PVP-DEATH-1 (D), DEATH-4 (E), optional wire F, per the
 DEATH-COMPLETE-0 decision (#2043; fixes in #2044 must land before B, C, E). Row 85 (blessings) is DEATH-4. Rows
-110 and 111: PVP-1 (#2032) and PVP-RT-1b. In-flight PRs: 6 (#2018), 31 and 55 and 76 (#2039), 80 (#2040), 105
-(#1867), 3 (#2041). They are not duplicated here.
+110 and 111: PVP-1 (#2032) and PVP-RT-1b. In-flight PRs: 31 and 76 (#2039), 80 (#2040), 105 (#1867). Rows 6,
+55 and 3 are split, never owned twice: #2018 owns the part of row 6 it implements and LOOP-WORLD-1 owns only the
+residue after #2018 merges (keyed/level/quest doors, levers, tile damage, as listed in its scope); #2039 owns the
+rune item-use part of row 55 and MAGIC-ITEMS-1 only rune use with a target and conjure; the server part of row 3
+is #2041 and the rest of row 3 is client-owned (#1942), so no batch here takes row 3. Each worker confirms the
+residue against the merged PR before it starts.
 
 ## 5. Waves and parallelism
 
@@ -139,7 +144,7 @@ Throttles: one migration PR at a time and one protocol-registry PR at a time, so
 `Reg`, not by the number of workers.
 
 1. **Wave 0 (in flight):** #2018, #2032, #2039, #2040, #2041, #1867, #2044, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1.
-2. **Wave 1 (no migration, parallel):** OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
+2. **Wave 1 (no migration, parallel):** CHAT-2 (before PARTY-1), OPS-SAVE-1, MAGIC-CAST-1, LOOP-COMBAT-MODES-1, LOOP-WORLD-1, MAGIC-COND-1,
    ITEM-LOOK-1, LOOP-CLOCK-1 (SEC-1 moved behind them, registry order CLOCK-1, ITEM-LOOK-1, SEC-1, WEATHER-1). In sequence for migrations: ITEM-LOOP-1, then LOOP-PROGRESS-1 (after the
    death module's B and C).
 3. **Wave 2:** LOOP-DAMAGE-1, LOOP-RANGED-1, LOOP-VITALS-1, NPC-ECON-1, QUEST-RT-1, MAGIC-ITEMS-1,

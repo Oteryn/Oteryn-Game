@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/mechanics-plan-20261013
 issue: 1622
 governing_issue: 1622
-pr: null
+pr: 2047
 base_sha: 4ac13390
 created_at: 2026-10-13
 updated_at: 2026-10-13
@@ -25,3 +25,9 @@ external_repositories: []
 
 Plan only: classifies the control plane's 115 audited rows into batches, waves and owner questions.
 No code, registry or migration change.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: passed (22 required policy documents, 9 project lanes).
+- `git diff --check`: clean.
+- Review: Codex rounds on #2047; findings answered in the follow-up commit. Docs only; no code, registry or migration.
