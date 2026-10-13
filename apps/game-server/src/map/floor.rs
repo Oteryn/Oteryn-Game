@@ -366,6 +366,10 @@ pub(crate) struct BundleStepProof<'a> {
 /// Proves `actor`'s step `direction` from its current position over the bundle `cells`.
 /// `pz_blocked` is the actor's current PZ block, which the teleport landing rule reads; `closed`
 /// holds the dynamically closed cells (doors), where an actor does not land either.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the proof binds every independently resolved fact explicitly"
+)]
 pub(crate) fn prepare_bundle_step<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
