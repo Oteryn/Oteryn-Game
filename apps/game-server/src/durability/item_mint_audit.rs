@@ -329,13 +329,15 @@ pub enum OneItemOperationV1 {
     TimedExpiry(super::item_timed_state_audit::OneItemTimedExpiryV1),
     #[prost(message, tag = "8")]
     MapItemMint(super::map_item_mint_audit::OneItemMapItemMintV1),
+    #[prost(message, tag = "9")]
+    NpcTrade(super::npc_trade_audit::OneItemNpcTradeV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9")]
     pub operation: Option<OneItemOperationV1>,
 }
 

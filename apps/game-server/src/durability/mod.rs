@@ -49,6 +49,8 @@ pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod monk_state;
 pub mod native_admission_source;
+pub mod npc_trade;
+pub mod npc_trade_audit;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
 pub mod premium_fence;
