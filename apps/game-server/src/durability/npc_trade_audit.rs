@@ -309,7 +309,6 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     if command.command_id == 0
         || value.runtime_scope_ownership_generation == 0
         || !(1..=NPC_TRADE_QUANTITY_MAX).contains(&value.quantity)
-        || value.unit_price == 0
         || value.unit_price.checked_mul(u64::from(value.quantity)) != Some(value.total_gold_units)
         || value.total_gold_units > total_max
     {
@@ -321,8 +320,8 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         .take_while(|line| line.kind == burn_kind)
         .count();
     let (burn_lines, mint_lines) = value.lines.split_at(burns);
-    if burns == 0
-        || (side == SIDE_SELL && burns != 1)
+    // A BUY at price 0 burns nothing; conservation below refuses any other BUY without a burn.
+    if (side == SIDE_SELL && burns != 1)
         || burns > FEE_INPUTS_MAX
         || mint_lines
             .iter()

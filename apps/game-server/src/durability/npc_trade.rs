@@ -19,8 +19,10 @@
 //! The cause record is keyed by (occurrence, Character) forever: a replay with the same binding
 //! returns the first outcome without reacquiring session authority, a changed binding conflicts.
 //! Any refusal writes nothing. The caller supplies the offer from the server catalogue at the
-//! bound revision; a charged or fluid definition is deferred by §5.4 and is refused by the caller
-//! before this commit (the database refuses a sold item with a timed state or contents).
+//! bound revision. A charged or fluid offer (§5.3/§5.4 count as charges or sub-type) is outside
+//! this slice: no durable fluid sub-type exists and a charged MINT/BURN needs the timed-state
+//! arms, so the caller refuses it before this commit (the database refuses a sold item with a
+//! timed state or contents).
 
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
@@ -311,7 +313,6 @@ fn validate(request: &NpcTradeRequest) -> Result<(u64, u32)> {
         || ids.iter().any(|id| check_uuid_v7(id).is_err())
         || !distinct
         || !(1..=NPC_TRADE_QUANTITY_MAX).contains(&request.quantity)
-        || request.unit_price == 0
         || total > total_max
         || request.occurred_at_unix_ms <= 0
         || !coin(&request.coins.gold, Coin::Gold)
@@ -418,15 +419,21 @@ fn plan_buy(
         ));
     }
     let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _)| *stack).collect();
-    let plan = match plan_fee_within(total, &stacks, entries.len(), BACKPACK_ENTRIES_MAX) {
-        Ok(plan) => plan,
-        Err(FeePlanError::InsufficientFunds) => return Err(NpcTradeError::InsufficientFunds),
-        Err(FeePlanError::CapacityExceeded) => return Err(NpcTradeError::CapacityExceeded),
-        Err(FeePlanError::ChangeDoesNotFit) => return Err(NpcTradeError::DoesNotFit),
-        Err(FeePlanError::InvalidInput) => return Err(DurabilityError::InvalidStoredState.into()),
+    // §5.3: a price of 0 burns nothing and mints no change.
+    let (burns, change) = if total == 0 {
+        (Vec::new(), 0)
+    } else {
+        match plan_fee_within(total, &stacks, entries.len(), BACKPACK_ENTRIES_MAX) {
+            Ok(plan) => (plan.lines, plan.change),
+            Err(FeePlanError::InsufficientFunds) => return Err(NpcTradeError::InsufficientFunds),
+            Err(FeePlanError::CapacityExceeded) => return Err(NpcTradeError::CapacityExceeded),
+            Err(FeePlanError::ChangeDoesNotFit) => return Err(NpcTradeError::DoesNotFit),
+            Err(FeePlanError::InvalidInput) => {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+        }
     };
-    let mut lines: Vec<NpcTradeLine> = plan
-        .lines
+    let mut lines: Vec<NpcTradeLine> = burns
         .iter()
         .map(|line| {
             let (stack, item) = &inputs[line.input];
@@ -441,14 +448,14 @@ fn plan_buy(
         })
         .collect();
     let whole = lines.iter().filter(|line| line.quantity_after == 0).count();
-    let change = buy_change_coins(plan.change);
+    let change_coins = buy_change_coins(change);
     // §5.3: the change and the item each take a new entry after the burn.
-    if entries.len() - whole + change.len() + 1 > capacity {
+    if entries.len() - whole + change_coins.len() + 1 > capacity {
         return Err(NpcTradeError::DoesNotFit);
     }
     let [platinum, gold, item] = request.output_item_instance_ids;
     let mut ordinal = first_mint_ordinal(entries)?;
-    for (coin, quantity) in change {
+    for (coin, quantity) in change_coins {
         lines.push(NpcTradeLine {
             kind: NpcTradeLineKind::CoinMint,
             item_instance_id: if coin == Coin::Platinum {
@@ -473,8 +480,8 @@ fn plan_buy(
     });
     Ok(Plan {
         lines,
-        burned_gold_units: total + plan.change,
-        minted_gold_units: plan.change,
+        burned_gold_units: total + change,
+        minted_gold_units: change,
         item_instance_id: item,
     })
 }

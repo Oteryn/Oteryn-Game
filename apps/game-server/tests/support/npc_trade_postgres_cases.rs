@@ -406,8 +406,33 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
                 (id(14), 3, 75),
             ]
         );
-        assert_eq!(harness.count("game_npc_trades").await?, 3);
-        assert_eq!(harness.count("game_npc_trade_lines").await?, 4 + 4 + 2);
+        // Price 0 (NPC-0 §5.3, §5.4): a BUY burns no coin and mints only the item; a SELL burns
+        // only the item. The coin stacks stay untouched.
+        let free = committed(&harness, &authority, trade(70, NpcTradeSide::Buy, 1, 0)?).await?;
+        assert_eq!(
+            shape(&free),
+            vec![(NpcTradeLineKind::ItemMint, id(75), 9, None, 0, 1)]
+        );
+        assert_eq!(
+            (
+                free.total_gold_units,
+                free.burned_gold_units,
+                free.minted_gold_units
+            ),
+            (0, 0, 0)
+        );
+        let given = committed(&harness, &authority, trade(90, NpcTradeSide::Sell, 1, 0)?).await?;
+        assert_eq!(
+            shape(&given),
+            vec![(NpcTradeLineKind::ItemBurn, id(75), 9, None, 1, 0)]
+        );
+        assert_eq!(harness.item_state(id(75)).await?, (0, 2));
+        assert_eq!(entries(&harness, backpack).await?.len(), 5);
+        assert_eq!(harness.count("game_npc_trades").await?, 5);
+        assert_eq!(
+            harness.count("game_npc_trade_lines").await?,
+            4 + 4 + 2 + 1 + 1
+        );
         assert_eq!(character_revision(&harness).await?, revision);
 
         drop(authority);

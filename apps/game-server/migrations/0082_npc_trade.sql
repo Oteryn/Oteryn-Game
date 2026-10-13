@@ -49,9 +49,10 @@ CREATE TABLE game_npc_trades (
     -- 1 = BUY, 2 = SELL.
     side SMALLINT NOT NULL CHECK (side IN (1, 2)),
     quantity BIGINT NOT NULL CHECK (quantity BETWEEN 1 AND 100),
-    unit_price BIGINT NOT NULL CHECK (unit_price BETWEEN 1 AND 20000000),
-    -- unit_price x quantity: at most what 20 coin stacks hold (BUY), or three (SELL).
-    total_gold_units BIGINT NOT NULL CHECK (total_gold_units BETWEEN 1 AND 20000000),
+    unit_price BIGINT NOT NULL CHECK (unit_price BETWEEN 0 AND 20000000),
+    -- unit_price x quantity: at most what 20 coin stacks hold (BUY), or three (SELL). A price of
+    -- 0 burns no coin (BUY) or mints none (SELL): NPC-0 §5.3 and §5.4.
+    total_gold_units BIGINT NOT NULL CHECK (total_gold_units BETWEEN 0 AND 20000000),
     item_definition_family TEXT NOT NULL
         CHECK (octet_length(item_definition_family) BETWEEN 1 AND 128),
     item_definition_production_key TEXT NOT NULL
@@ -65,7 +66,7 @@ CREATE TABLE game_npc_trades (
     -- Coins burned (BUY) and minted (BUY change, SELL proceeds), in gold units.
     burned_gold_units BIGINT NOT NULL CHECK (burned_gold_units BETWEEN 0 AND 20000000),
     minted_gold_units BIGINT NOT NULL CHECK (minted_gold_units BETWEEN 0 AND 1009999),
-    line_count SMALLINT NOT NULL CHECK (line_count BETWEEN 2 AND 23),
+    line_count SMALLINT NOT NULL CHECK (line_count BETWEEN 1 AND 23),
     occurred_at BIGINT NOT NULL CHECK (occurred_at > 0),
     envelope_sha256 BYTEA NOT NULL CHECK (octet_length(envelope_sha256) = 32),
     committed_at BIGINT NOT NULL CHECK (committed_at >= 0),
@@ -150,8 +151,10 @@ BEGIN
                    WHERE l.transaction_id = NEW.transaction_id
                      AND l.line_kind IN (CASE NEW.side WHEN 1 THEN 3 ELSE 1 END,
                                          CASE NEW.side WHEN 1 THEN 3 ELSE 4 END))
-       -- BUY burns no unit beyond the price: the change is below the last coin's worth.
-       OR (NEW.side = 1 AND (last_worth IS NULL OR NEW.minted_gold_units >= last_worth))
+       -- BUY burns no unit beyond the price: the change is below the last coin's worth. Only a
+       -- price of 0 burns no coin.
+       OR (NEW.side = 1 AND CASE WHEN last_worth IS NULL THEN NEW.total_gold_units <> 0
+                                 ELSE NEW.minted_gold_units >= last_worth END)
        -- Lines in order: the BURN lines first, then the MINT lines in consecutive new entries
        -- after the highest ordinal the backpack held before the trade.
        OR EXISTS (SELECT 1 FROM game_npc_trade_lines p JOIN game_npc_trade_lines l

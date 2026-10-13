@@ -29,6 +29,7 @@ owned_paths:
   - apps/game-server/tests/support/npc_trade_postgres_cases.rs
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json      # Type 2 note: operation tag 9
   - docs/agents/tasks/archive/OTV2-20261013-npc-trade-1.md
 excluded_paths:
   - apps/game-server/src/gameplay_transport/npc_command.rs   # NPC-CMD-1b owns the domain-8 window
@@ -52,8 +53,8 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
 
 - `cargo fmt --check -p oteryn-game-server`: pass
 - `cargo clippy -p oteryn-game-server --all-targets`: pass
-- `cargo test -p oteryn-game-server --lib`: pass (2903 passed)
-- `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade` (PostgreSQL 17): pass (11 passed)
+- `cargo test -p oteryn-game-server --lib`: pass (2904 passed)
+- `cargo test -p oteryn-game-server --test character_authority_postgres npc_trade` (PostgreSQL 17): pass (12 passed)
 - `cargo test -p oteryn-game-server --test character_authority_postgres` (PostgreSQL 17.11, 17.6 pins relaxed locally only): 1416 passed, 1 failed on a src-side 17.6 version pin; CI runs 17.6
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
 - `python tools/agents/validate_governance.py`: pass
@@ -63,9 +64,18 @@ CP answers (2026-10-13): 1. lease 0082 approved; 2. option (a), command-8 wiring
 
 - `FeeBurnCause::NpcTrade` is the BUY coin BURN lines under the trade cause record, not a
   `game_item_fee_burns` row (a fee record needs a CharacterRevision advance; a trade has none).
+- Charged and fluid offers (§5.3/§5.4, `count` as charges or sub-type) are not traded by this
+  writer: no durable fluid sub-type exists and a charged item needs the timed-state proof arms.
+  The caller refuses them; the follow-up is raised to the CP (Codex thread on `npc_trade.rs`).
 - Over the ~500-line batch guideline: the migration, writer, encoder and tests are one unit.
 
 ## PR and closeout
 
 - merge commit/result: squash merge of #2040 (pending)
 - review: Codex review on d085fe6b found no issues; independent persistence review requested from the CP
+- Codex review on 3b2ec4e8: two P2 findings fixed in one commit. (1) The Type 2 note of
+  `GAME_EVENT_FOUNDATION_REGISTRY.json` names operation tag 9 `npc_trade`. (2) A price of 0 is
+  a valid trade (NPC-0 §5.3 `F = 0` burns nothing, §5.4 `V = 0` mints nothing; travel route price
+  0 is free): the writer, the audit check and 0082 (`unit_price`/`total_gold_units` from 0,
+  `line_count` from 1, a BUY without a coin BURN only at total 0) admit it, with unit, audit and
+  PostgreSQL cases. No admitted offer has price 0 today (0 of 12,234).

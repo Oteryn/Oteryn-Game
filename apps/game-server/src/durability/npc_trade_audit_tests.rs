@@ -217,6 +217,43 @@ fn a_buy_and_a_sell_round_trip() {
     }
 }
 
+/// Price 0 (NPC-0 §5.3, §5.4): a BUY mints only the item, a SELL burns only the item.
+fn free_buy() -> OneItemNpcTradeV1 {
+    let mut value = trade(SIDE_BUY, 1, 0);
+    value.lines = vec![mint_line(LINE_ITEM_MINT, 21, sword("s"), 6, 1)];
+    value
+}
+
+fn free_sell() -> OneItemNpcTradeV1 {
+    let mut value = trade(SIDE_SELL, 2, 0);
+    value.lines = vec![burn(LINE_ITEM_BURN, 10, sword("s"), 3, 5, 3)];
+    value
+}
+
+#[test]
+fn a_free_buy_and_sell_round_trip() {
+    for value in [free_buy(), free_sell()] {
+        let wire = encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V2).unwrap();
+        assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, value);
+    }
+    let mut value = free_buy();
+    value
+        .lines
+        .insert(0, burn(LINE_COIN_BURN, 10, coin(Coin::Gold, "r"), 4, 10, 9));
+    value.lines[1].placement_ordinal = 5;
+    value.burned_gold_units = 1;
+    value.minted_gold_units = 0;
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+    // A priced BUY burns: the item alone does not pay 235.
+    let mut value = free_buy();
+    value.unit_price = 235;
+    value.total_gold_units = 235;
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+    let mut value = free_sell();
+    value.minted_gold_units = 1;
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+}
+
 #[test]
 fn every_broken_invariant_is_rejected() {
     let mut cases: Vec<(&str, OneItemNpcTradeV1)> = Vec::new();

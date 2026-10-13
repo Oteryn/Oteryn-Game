@@ -98,7 +98,6 @@ fn a_request_outside_its_shape_is_invalid() {
     let mut cases: Vec<(&str, NpcTradeRequest)> = vec![
         ("zero quantity", request(NpcTradeSide::Buy, 0, 50)),
         ("quantity 101", request(NpcTradeSide::Buy, 101, 1)),
-        ("zero price", request(NpcTradeSide::Buy, 1, 0)),
         (
             "BUY above 20 crystal stacks",
             request(NpcTradeSide::Buy, 1, 20_000_001),
@@ -145,6 +144,10 @@ fn a_request_outside_its_shape_is_invalid() {
     let mut value = request(NpcTradeSide::Buy, 1, 1);
     value.item.stack = ItemStackClass::NonStackable;
     assert_eq!(validate(&value).unwrap(), (1, 1));
+    // NPC-0 §5.3 and §5.4: a price of 0 is a valid trade on either side.
+    for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
+        assert_eq!(validate(&request(side, 3, 0)).unwrap(), (0, 3));
+    }
     let mut value = request(NpcTradeSide::Buy, 20, 1);
     value.offer_count = 5;
     assert_eq!(item_units(&value).unwrap(), 100);
@@ -235,6 +238,20 @@ fn a_buy_burns_the_fee_plan_and_mints_change_then_the_item() {
         Err(NpcTradeError::DoesNotFit)
     ));
     assert!(plan_buy(&value, 1, 1, 5, &entries).is_ok());
+    // Price 0: no BURN and no change, only the item.
+    let plan = plan_buy(&value, 0, 1, 20, &entries).unwrap();
+    assert_eq!(
+        plan.lines
+            .iter()
+            .map(|line| (line.kind, line.placement_ordinal))
+            .collect::<Vec<_>>(),
+        vec![(NpcTradeLineKind::ItemMint, 7)]
+    );
+    assert_eq!((plan.burned_gold_units, plan.minted_gold_units), (0, 0));
+    assert!(matches!(
+        plan_buy(&value, 0, 1, 4, &entries),
+        Err(NpcTradeError::DoesNotFit)
+    ));
     // A coin stack at another revision is never paid from.
     let mut stale = entries.clone();
     stale[2].definition.revision_ref = "oteryn:rev.0".into();
@@ -326,6 +343,12 @@ fn a_sell_burns_the_first_eligible_entry_and_mints_the_price() {
         plan_sell(&other, 1, 1, 20, &entries),
         Err(NpcTradeError::ItemNotFound)
     ));
+    // Price 0: only the item BURN.
+    let free = request(NpcTradeSide::Sell, 2, 0);
+    let plan = plan_sell(&free, 0, 2, 20, &entries).unwrap();
+    assert_eq!(plan.lines.len(), 1);
+    assert_eq!(plan.lines[0].kind, NpcTradeLineKind::ItemBurn);
+    assert_eq!((plan.burned_gold_units, plan.minted_gold_units), (0, 0));
     assert_eq!(first_mint_ordinal(&[]).unwrap(), 1);
     assert!(matches!(
         first_mint_ordinal(&[entry(1, u64::MAX, sword(), 1)]),
