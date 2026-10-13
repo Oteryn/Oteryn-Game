@@ -46,7 +46,7 @@ Durable mute row, World relay, private messages and rooms (CHAT-2).
 
 ## Validation
 
-Recorded in the PR; see the checks of the frozen head.
+`cargo test --locked -p oteryn-game-server --lib -- chat` (38 passed), `cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`, `validate_governance.py`, `validate_repository_policy.py`, `python3 -m unittest discover -s tools/agents/tests` (60 passed): pass. Exact-head CI in the PR checks.
 
 ## Self-review
 
