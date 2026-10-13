@@ -42,7 +42,16 @@ pub(crate) struct FightModes {
 #[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct PlayerMeleeConstants {
-    pub(crate) damage_coefficient: f64,
+    /// `floor(attack * numerator / denominator)`: the TibiaTools `floor(6 * attack / 5)` step.
+    pub(crate) attack_numerator: u32,
+    pub(crate) attack_denominator: u32,
+    /// `v = stepped attack * (skill + skill_offset) / skill_divisor`.
+    pub(crate) skill_offset: u32,
+    pub(crate) skill_divisor: u32,
+    /// `min = floor(level term + v / minimum_divisor)`.
+    pub(crate) minimum_divisor: u32,
+    /// `max = floor(level term + maximum_multiplier * v)`.
+    pub(crate) maximum_multiplier: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
@@ -95,6 +104,15 @@ pub(crate) struct AttackConstants {
     #[allow(dead_code, reason = "provenance text")]
     source: String,
     parity: String,
+    /// The parity state of each value (ATTACK-PARITY-1 packet 1.4); every value stays pending
+    /// until its comparison passes.
+    #[allow(
+        dead_code,
+        reason = "per-value parity labels are checked by parse and the parity tests"
+    )]
+    parity_by_value: std::collections::BTreeMap<String, String>,
+    #[allow(dead_code, reason = "provenance text")]
+    player_melee_source: String,
     pub(crate) attack_interval_ms: u64,
     pub(crate) in_fight_ms: u64,
     /// The skill every character fights with until CHAR-BUILD-1 and SKILLS-0 ship (§4).
@@ -120,6 +138,10 @@ impl AttackConstants {
         let defence = table.defence;
         let valid = table.schema == TABLE_SCHEMA
             && table.parity == PARITY_PENDING
+            && table
+                .parity_by_value
+                .values()
+                .all(|parity| parity == PARITY_PENDING)
             && table.attack_interval_ms > 0
             && table.in_fight_ms > 0
             && table.block.refill_ms > 0
@@ -127,7 +149,10 @@ impl AttackConstants {
             && modes.iter().all(|mode| {
                 unit_factor(mode.attack_factor) && unit_factor(mode.defence_factor_after_swing)
             })
-            && positive(table.player_melee.damage_coefficient)
+            && table.player_melee.attack_numerator > 0
+            && table.player_melee.attack_denominator > 0
+            && table.player_melee.skill_divisor > 0
+            && table.player_melee.minimum_divisor > 0
             && positive(table.creature_melee.skill_attack_coefficient)
             && positive(table.creature_melee.attack_coefficient)
             && positive(defence.skill_divisor)
