@@ -433,9 +433,9 @@ const fn base_vocation(vocation: Vocation) -> ReferenceBaseVocation {
 }
 
 /// PRIMARY COMMIT of the effect after a known commit (§5). An actor that died or left meanwhile
-/// gets nothing and the unit stays spent. A potion's restore is an ability of origin `ItemUse`
-/// (`HealingOrigin::ItemUse`, outside Sustain's qualified scope, so no stance scales it), drawn
-/// from the owner stream bound to the CommandRef.
+/// gets nothing and the unit stays spent. A potion's restore is drawn from the owner stream bound
+/// to the CommandRef and committed by the same health/mana credit primitives the spell pipeline
+/// uses (`HealingOrigin::ItemUse` marks it outside Sustain's qualified scope: no stance scales it).
 fn apply_effect(
     runtime: &ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -447,12 +447,8 @@ fn apply_effect(
 ) {
     match effect {
         Effect::Food(seconds) => {
-            if !states.is_dead(actor)
-                && let Some(state) = states.get_mut(runtime, actor, session)
-            {
-                // Checked FULL at PREPARE; with one use in flight it cannot have filled since.
-                let _ = eat_food(state, *seconds, now_ms);
-            }
+            // Checked FULL at PREPARE; with one use in flight it cannot have filled since.
+            let _ = states.apply_food(runtime, actor, session, *seconds, now_ms);
         }
         Effect::Potion(restores) => {
             let root =

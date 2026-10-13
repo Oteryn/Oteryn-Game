@@ -671,6 +671,27 @@ impl ChannelSpellStates {
             .then_some((gained, revision))
     }
 
+    /// Compare-commit the fed time of one eaten food (ITEM-USE-1c) as the direct successor
+    /// revision. `None` when the actor is dead, stale, or eating is refused; nothing changes then.
+    pub(in crate::gameplay_transport) fn apply_food(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        regeneration_seconds: u16,
+        now_ms: u64,
+    ) -> Option<u64> {
+        if self.is_dead(actor) {
+            return None;
+        }
+        let next = self
+            .get(runtime, actor, game_session_id)?
+            .after_food(regeneration_seconds, now_ms)?;
+        let revision = next.revision();
+        self.commit(runtime, actor, game_session_id, next)
+            .then_some(revision)
+    }
+
     /// DEATH-2 §4.2: true from the lethal write until the respawn. A dead player takes no input.
     pub(crate) fn is_dead(&self, actor: ExactActorRef) -> bool {
         self.deaths.iter().any(|(dead, _, _)| *dead == actor)
@@ -1187,6 +1208,40 @@ pub(crate) mod tests {
             Some((0, 4))
         );
         assert_eq!(states.get(&runtime, actor, session), Some(&before));
+    }
+
+    #[test]
+    fn eaten_food_commits_as_the_direct_successor_revision() {
+        let (runtime, actor, session) = runtime_with_player(0x77);
+        let mut states = ChannelSpellStates::default();
+        assert_eq!(states.apply_food(&runtime, actor, session, 30, 0), None);
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("present")
+            .revision();
+        assert_eq!(
+            states.apply_food(&runtime, actor, session, 30, 0),
+            Some(before + 1)
+        );
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
+        let full = states.apply_food(&runtime, actor, session, 1_200, 0);
+        assert_eq!(full, None);
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
     }
 
     #[test]
