@@ -105,3 +105,7 @@ NPC-TRADE-1 0082); main merged.
 ## Codex review of a787725
 
 P2 (replay accepted another `server_build_id`): the request binding now includes `server_build_id`, so a retry under another build is a ConflictingCommand; covered in the focused Postgres case.
+
+## Codex review of 39350b4
+
+P2 (identity already in the shared item outbox answered Unavailable): the replay read now checks `game_item_audit_outbox` for the TransactionId/EventId of a new command and answers ConflictingCommand, as the transfer path does; covered in the focused Postgres case.

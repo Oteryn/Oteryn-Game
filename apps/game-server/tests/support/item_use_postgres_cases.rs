@@ -387,6 +387,27 @@ fn food_burns_one_unit_keeps_the_stack_and_replays_without_burning_twice() -> Te
             used.use_item(&other_build).await,
             Err(ItemUseError::ConflictingCommand)
         ));
+        // A TransactionId already in the shared item outbox (another operation) is a conflict
+        // rather than an integrity failure on write.
+        sqlx::query(
+            "INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
+               transaction_count, event_type_id, schema_revision, retention_profile_id, \
+               item_instance_id, occurred_at, expires_at, envelope, envelope_sha256, \
+               publication_state) \
+             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, 2, 1, \
+               'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', encode($3,'hex')::uuid, 1, \
+               7776000001, decode(repeat('ab',16),'hex'), \
+               sha256(decode(repeat('ab',16),'hex')), 1)",
+        )
+        .bind(id(210).as_slice())
+        .bind(id(211).as_slice())
+        .bind(id(FOOD).as_slice())
+        .execute(&used.harness.pool)
+        .await?;
+        assert!(matches!(
+            used.use_item(&food(9, 211, 2)).await,
+            Err(ItemUseError::ConflictingCommand)
+        ));
         // Revisions that are not the fenced root's interpretation are stale, writing nothing.
         let mut stale = food(8, 152, 2);
         stale.content_revision = "content-0".into();

@@ -367,7 +367,21 @@ async fn replay(
     .await?;
     let [row] = rows.as_slice() else {
         return if rows.is_empty() {
-            Ok(None)
+            // An identity committed by another one-item operation is a conflict, not a new command.
+            let identity_reused: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_item_audit_outbox \
+                                 WHERE transaction_id = encode($1,'hex')::uuid \
+                                    OR event_id = encode($2,'hex')::uuid)",
+            )
+            .bind(request.transaction_id.as_slice())
+            .bind(request.event_id.as_slice())
+            .fetch_one(&mut *connection)
+            .await?;
+            if identity_reused {
+                Err(ItemUseError::ConflictingCommand)
+            } else {
+                Ok(None)
+            }
         } else {
             Err(ItemUseError::ConflictingCommand)
         };
