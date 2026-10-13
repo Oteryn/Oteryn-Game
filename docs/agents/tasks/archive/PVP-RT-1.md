@@ -4,7 +4,7 @@
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP legality and combat lock (pure half)"
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/pvp-rt-1-20261013
@@ -18,7 +18,9 @@ depends_on:
 owned_paths:
   - apps/game-server/src/combat/pvp/
   - apps/game-server/src/lib.rs
+  - apps/game-server/src/gameplay_transport/field_step_ingress.rs
   - docs/agents/tasks/active/PVP-RT-1.md
+  - docs/agents/tasks/archive/PVP-RT-1.md
 ```
 
 ## Outcome
@@ -31,4 +33,16 @@ Governing contracts: PARTY-PVP-0 §7-§8 (accepted); PVP-0 candidate §6.3, §6.
 
 ## Not in this slice
 
-Durable write-ahead and restore (PVP-1 tables), damage ledger, kill classification, skull rendering, Join Aggression, Adventurer forfeiture, wire. The `NoPvp` `pvp_zone` field exception named in PVP-0 §6.4 is not on `main` (`field_step_ingress.rs` absent).
+Durable write-ahead and restore (PVP-1 tables), damage ledger, kill classification, skull rendering, Join Aggression, Adventurer forfeiture, wire. The `NoPvp` `pvp_zone` field exception is removed (PVP-0 §6.4): `field_step_ingress.rs` now skips a NoPvP-World field hit on a player regardless of `pvp_zone`.
+
+## Validation
+
+- `cargo fmt --all --check`: pass.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- `cargo test --locked -p oteryn-game-server --lib` (pvp and field_step filters): pass.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+
+## Review
+
+Codex P1 findings on bea2534 (exception removal, archive move) fixed in one commit.
