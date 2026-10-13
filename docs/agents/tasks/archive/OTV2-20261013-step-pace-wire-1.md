@@ -10,8 +10,8 @@ base_branch: main
 branch: claude/step-pace-wire-1-20261013
 pr: 2041
 base_sha: 59f9fb121562174b71dcd666ae760182c38e63be
-head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
-final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+head_sha: 6c5b16387cbd860b541a1ffef5efe72199996a8e
+final_head_sha: 6c5b16387cbd860b541a1ffef5efe72199996a8e
 owner: claude-code-session-01XYC239givrMonrYoBwwECV
 control_plane: "#1622 (CP session_01XYC239givrMonrYoBwwECV)"
 governing_issue: 1622
@@ -23,6 +23,8 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/world_spatial.rs
   - deploy/synology-game/README.md
+  - deploy/synology-game/supervisor.sh
+  - deploy/synology-game/test-supervisor-npc.sh
   - docs/agents/tasks/active/OTV2-20261013-step-pace-wire-1.md
   - docs/agents/tasks/archive/OTV2-20261013-step-pace-wire-1.md
 public_contracts:
