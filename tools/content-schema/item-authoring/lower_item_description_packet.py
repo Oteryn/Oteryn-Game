@@ -62,14 +62,25 @@ def flavor(raw):
     return raw
 
 
-def qualify(source, historical, definition, owners, params, admission=None):
-    target, text = source["target"], flavor(source["description"])
-    guard = dict(source["native_header_guard"])
+def consumable_admissions(root):
+    path = root / CONSUMABLE_ADMISSION
+    return {a["item_key"]: a for a in json.loads(path.read_text())["admissions"]}
+
+
+def admitted_guard(guard, admission):
+    """The source header guard as the tracked definition carries it after the v3 admission."""
+    guard = dict(guard)
     if admission:
         guard.update(
             materializable=admission["materializable"],
             stack_class=STACK_CLASS[admission["stack_class"]],
         )
+    return guard
+
+
+def qualify(source, historical, definition, owners, params, admission=None):
+    target, text = source["target"], flavor(source["description"])
+    guard = admitted_guard(source["native_header_guard"], admission)
     if (
         target != historical["target"]
         or source["source_item_id"] != historical["source_item_id"]
@@ -139,10 +150,7 @@ def build(root=ROOT):
     ):
         raise ValueError("latest official admitted frame drift")
     members = {label: {r[0]: r for r in m["entries"]} for label, m in manifests.items()}
-    consumable = {
-        a["item_key"]: a
-        for a in json.loads((root / CONSUMABLE_ADMISSION).read_text())["admissions"]
-    }
+    consumable = consumable_admissions(root)
     aliases = json.loads((root / "content/items/aliases.json").read_text())["entries"]
     wiki = json.loads((root / base.WIKI).read_text())["records"]
     rows, seen = [], set()
