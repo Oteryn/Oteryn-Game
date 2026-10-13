@@ -978,7 +978,9 @@ mod native_entry {
                         let _ = oteryn_session::read_frame(&mut stream).await;
                         let mut frame = vec![0x08, 0x0e, 0x22, 0x05, 0x08];
                         frame.extend([(code & 0x7f) as u8 | 0x80, (code >> 7) as u8]);
-                        frame.extend([0x10, 0x04]);
+                        // Independent canonical fixture: foundation1007 is SESSION_FATAL,
+                        // unlike the N8 TRANSPORT_FATAL refusals. Do not mirror a consumer bug.
+                        frame.extend([0x10, if code == 1007 { 0x03 } else { 0x04 }]);
                         let _ = oteryn_session::write_frame(&mut stream, &frame).await;
                         let _ = stream.shutdown().await;
                     }
@@ -1244,6 +1246,21 @@ mod native_entry {
             assert_eq!(count(&requests, "GET /v1/client/directory"), 1);
             assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
             stack.finish();
+            Ok(())
+        }
+
+        #[test]
+        fn capability_refusals_show_update_required_without_retry() -> TestResult {
+            for code in [1007, 1116] {
+                let stack = Stack::start(vec![code])?;
+                assert_eq!(
+                    stack.entry(stack.config())?,
+                    GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired)
+                );
+                assert_eq!(stack.admissions.load(Ordering::SeqCst), 1);
+                assert_eq!(count(&stack.requests(), "POST /v1/login"), 1);
+                stack.finish();
+            }
             Ok(())
         }
 

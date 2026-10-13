@@ -77,9 +77,25 @@ pub use oteryn_protocol_oteryn::world_spatial_entities::{
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::{
-    ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass, admission_refusal_class,
+    ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass,
 };
 pub use oteryn_protocol_oteryn::{CharacterId, CommandStatus};
+
+/// Native bootstrap classification (CLIENT-COMPLETION CC-6): the bundle's capability
+/// mismatch is terminal and requires an update, just like N8's capability-required row.
+/// The N8 registry/table stays unchanged; other foundation errors are not reclassified.
+#[must_use]
+pub fn admission_refusal_class(code: u32) -> Option<(AdmissionProgression, AdmissionPublicClass)> {
+    if code == FoundationProtocolError::CapabilityMismatch.code() {
+        Some((
+            AdmissionProgression::Terminal,
+            AdmissionPublicClass::ClientUpdateRequired,
+        ))
+    } else {
+        oteryn_protocol_oteryn::admission_refusal_class(code)
+    }
+}
+
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, ClientCommandValue, Direction, FoundationProtocolError, FrameLength,
     GameSessionId, MessageType, ProtocolDisposition, decode_command_result, decode_liveness_probe,
@@ -290,8 +306,8 @@ pub enum SessionError {
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
-    /// The server refused admission with an N8 code (1100..=1199) in one `ProtocolError`
-    /// (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); `admission_refusal_class` gives its public class.
+    /// The server refused admission with an N8 code or the bundle's capability mismatch
+    /// in one strict bootstrap `ProtocolError`; `admission_refusal_class` gives its public class.
     AdmissionRefused {
         code: u32,
     },
@@ -1003,9 +1019,12 @@ impl<S: SessionStream> Session<S> {
         accepted_envelope.validate(Direction::ServerToClient, false)?;
         if accepted_envelope.message_type() == MessageType::ProtocolError
             && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
-            && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
-            // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
-            && refusal.disposition == ProtocolDisposition::TransportFatal
+            // N8 is TRANSPORT_FATAL; the existing foundation capability mismatch is
+            // SESSION_FATAL. Neither accepts the other disposition or non-zero correlation.
+            && ((ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+                && refusal.disposition == ProtocolDisposition::TransportFatal)
+                || (refusal.error_code == FoundationProtocolError::CapabilityMismatch.code()
+                    && refusal.disposition == FoundationProtocolError::CapabilityMismatch.disposition()))
             && refusal.related_command_id == 0
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
@@ -3481,8 +3500,32 @@ mod tests {
         Ok(result)
     }
 
-    /// N8: a refusal frame with a code in 1100..=1199 surfaces the code, and the code maps to
-    /// its FND-04A class; any other `ProtocolError` stays `NotAdmitted`.
+    #[test]
+    fn capability_refusals_preserve_update_required_without_admitting() -> Result<(), BoxError> {
+        block_on(async {
+            for error in [
+                FoundationProtocolError::CapabilityMismatch,
+                FoundationProtocolError::AdmissionCapabilityRequired,
+            ] {
+                let result = refuse_admission(error).await?;
+                let Err(SessionError::AdmissionRefused { code }) = result else {
+                    return Err(format!("{error:?}: {:?}", result.err()).into());
+                };
+                assert_eq!(code, error.code());
+                assert_eq!(
+                    admission_refusal_class(code),
+                    Some((
+                        AdmissionProgression::Terminal,
+                        AdmissionPublicClass::ClientUpdateRequired,
+                    ))
+                );
+            }
+            Ok(())
+        })?
+    }
+
+    /// N8 codes surface their public class; the bundle capability gate is covered separately.
+    /// Unrelated foundation errors stay `NotAdmitted`.
     #[test]
     fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
         block_on(async {
@@ -3555,34 +3598,69 @@ mod tests {
         })?
     }
 
-    /// N8 fixes the refusal shape: a refusal-range code with any other disposition or with a
-    /// correlation field is not an admission refusal and fails closed as `NotAdmitted`.
+    /// N8 and the capability gate keep the refusal shape: any other disposition or
+    /// correlation fails closed as `NotAdmitted`, not an actionable update/refusal.
     #[test]
     fn a_misshapen_admission_refusal_fails_closed() -> Result<(), BoxError> {
         block_on(async {
-            // Type 14, generation 0; code 1103 (varint cf 08) plus the listed fields.
-            for payload in [
-                &[0x08, 0xcf, 0x08, 0x10, 0x01][..],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x18, 0x01],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x20, 0x01],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x28, 0x01],
+            // Independent wire fixtures: codes 1103, 1007 and 1116, type 14, generation 0.
+            for (code, fatal) in [
+                ([0x08, 0xcf, 0x08], 0x04),
+                ([0x08, 0xef, 0x07], 0x03),
+                ([0x08, 0xdc, 0x08], 0x04),
             ] {
-                let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
-                frame.extend_from_slice(payload);
+                for suffix in [
+                    vec![0x10, 0x01],
+                    vec![0x10, if fatal == 0x04 { 0x03 } else { 0x04 }],
+                    vec![0x10, fatal, 0x18, 0x01],
+                    vec![0x10, fatal, 0x20, 0x01],
+                    vec![0x10, fatal, 0x28, 0x01],
+                ] {
+                    let mut payload = code.to_vec();
+                    payload.extend_from_slice(&suffix);
+                    let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
+                    frame.extend_from_slice(&payload);
+                    let (client, mut server) = tokio::io::duplex(1024);
+                    let peer = tokio::spawn(async move {
+                        read_frame(&mut server).await?;
+                        write_frame(&mut server, &frame).await?;
+                        Ok::<_, BoxError>(())
+                    });
+                    let result = Session::admit(client, admission()?).await;
+                    peer.await??;
+                    assert!(
+                        matches!(
+                            result,
+                            Err(SessionError::NotAdmitted(MessageType::ProtocolError))
+                        ),
+                        "{payload:02x?}: {:?}",
+                        result.err()
+                    );
+                }
+            }
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn capability_refusals_require_the_bootstrap_envelope() -> Result<(), BoxError> {
+        block_on(async {
+            for envelope_extra in [[0x10, 0x01], [0x18, 0x01]] {
                 let (client, mut server) = tokio::io::duplex(1024);
                 let peer = tokio::spawn(async move {
                     read_frame(&mut server).await?;
+                    // A non-zero generation or sequence must fail before code1007 is consumed.
+                    let mut frame = vec![0x08, 0x0e];
+                    frame.extend_from_slice(&envelope_extra);
+                    frame.extend_from_slice(&[0x22, 0x05, 0x08, 0xef, 0x07, 0x10, 0x03]);
                     write_frame(&mut server, &frame).await?;
                     Ok::<_, BoxError>(())
                 });
                 let result = Session::admit(client, admission()?).await;
                 peer.await??;
                 assert!(
-                    matches!(
-                        result,
-                        Err(SessionError::NotAdmitted(MessageType::ProtocolError))
-                    ),
-                    "{payload:02x?}: {:?}",
+                    matches!(result, Err(SessionError::Protocol(_))),
+                    "{:?}",
                     result.err()
                 );
             }

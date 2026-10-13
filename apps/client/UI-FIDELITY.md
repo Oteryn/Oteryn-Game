@@ -643,6 +643,42 @@ own qualification. New main producer work is reused without enabling unoffered
 capabilities or inventing missing presentation/speed data. Earlier main/pin
 qualifications remain historical evidence, not the current integration state.
 
+## Accepted client-completion continuation — 2026-10-13, AUTHORING
+
+Owner/CP [decision 6143183755](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6143183755)
+supersedes the earlier unresolved speed-design question, not its missing runtime
+proof. STEP-PACE-WIRE-0 is separately owned in #2034, followed by server emission,
+map activation, receipt consumption and native E2E in that order. No new wire
+field, protocol ID, capability activation or guessed speed is introduced here.
+
+The actual PlayLink boundary now reserves one step atomically before consuming
+view input. Repeated/direct calls cannot enqueue another step or overwrite the
+single undrained outcome. Completion and unrelated pushes do not release it;
+the shell must consume Stepped first. An ended link remains terminal after its
+one Ended notification, and a closed/enqueue-racing channel fails closed without
+reopening the gate. Pending keyboard/click direction and before/step/after
+projection order are preserved. An actual delayed run_session fixture measures
+one Stepper invocation until the outcome is polled, then permits the second.
+This interim gate is not smooth animation or authoritative step timing.
+
+Independent duplex tests exposed the formerly discarded capability mismatch.
+Session now preserves strict bootstrap code 1007 as terminal update-required,
+like 1116; native local TLS/login composition proves one admission and one
+Gateway login, without automatic retry. Canonical 1007 is SESSION_FATAL, whereas
+N8/1116 is TRANSPORT_FATAL. Crossed dispositions, non-zero correlations and
+non-bootstrap envelopes are refused; the existing protocol registry/table is
+unchanged. A first incorrect shared TransportFatal assumption failed the actual
+Session regression and was repaired using the canonical server encoder and
+independently encoded fixtures. Both queue and refusal defects have RED/GREEN
+evidence, not just serialization tests.
+
+Linux client 217/194/5 and Session 74 tests pass, as do strict all-target Clippy,
+formatting, boundaries, governance validation and all 60 governance tests.
+The predecessor 1bd4a7a5 has green exact-head PR CI, including the repaired
+supply-chain gate; those results do not qualify this successor. Fresh physical
+Windows acceptance is unavailable: the bounded PC connectivity call reports
+offline. Existing binaries, preferences and native captures are unchanged.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

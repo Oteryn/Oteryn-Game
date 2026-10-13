@@ -136,14 +136,14 @@ Map source Linux/MSVC/Clippy/DX12 qualification, 20 pages/78 verified capture
 hashes at 125% DPI and preserved owner PID 12896 are retained in UI-FIDELITY.md.
 Same-head protected-base audit is not full CI, independent review or bundle E2E.
 
-Capability 18 stays unadvertised. The joint ground-speed switch needs an owning
-contract: admitted actor/entity/vitals and step-result codecs expose no effective
-actor speed or step-duration/deadline, while production speed depends on level,
-conditions and equipment. Never substitute 110/150 or switch only the server.
-Finish unblocked settings/reference work, then route missing speed authority with
-the existing spell/condition/light/audio/event projection gaps. Floor/teleport
-snapshot recovery, map drag, bundle E2E and frozen-head independent review remain
-open. Animation/light/minimap are outside the accepted MAP-CLIENT-1 packet.
+CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
+#2034 owns STEP-PACE-WIRE-0; server emission precedes map18 activation, receipt
+consumption and native E2E. This batch changes no protocol/registry or offered
+capability. PlayLink now gates actual queued/undrained steps and latches end;
+strict bootstrap1007/1116 reaches update-required without login retry. Independent
+wire and delayed-task regressions pass: client217/194/5, Session74. Canonical
+1007 is SessionFatal, N8/1116 TransportFatal. Design resolved, runtime proof
+pending. PC offline; Windows/E2E/CI/review remain open. Details: UI-FIDELITY.md.
 
 Historical scissor `08495a50`, integral scaling `1b3a3be5`, repeat
 `5bf89893`/`597fda90` and pointer `5b784e60` MSVC/Clippy/DX12 evidence remains

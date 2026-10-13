@@ -638,24 +638,22 @@ impl PlayView {
                 Input::UseMap(target) => {
                     let _ = link.commands.send(PlayCommand::UseMap(target));
                 }
-                Input::Arrow(_) => match self
-                    .send_step()
-                    .map_err(|_error| PublicClass::SessionUnavailable)?
-                {
-                    Some(direction) => link.request(direction),
-                    None => break,
-                },
+                Input::Arrow(_) => {
+                    if !link
+                        .request_step(|| self.send_step())
+                        .map_err(|_error| PublicClass::SessionUnavailable)?
+                    {
+                        break;
+                    }
+                }
             }
             if !matches!(input, Input::Arrow(_)) {
                 self.inputs.pop_front();
             }
         }
-        if self.inputs.is_empty()
-            && let Some(direction) = self
-                .send_step()
-                .map_err(|_error| PublicClass::SessionUnavailable)?
-        {
-            link.request(direction);
+        if self.inputs.is_empty() {
+            link.request_step(|| self.send_step())
+                .map_err(|_error| PublicClass::SessionUnavailable)?;
         }
         Ok(())
     }
@@ -731,12 +729,15 @@ struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
+    /// Held from enqueue until the shell consumes the outcome, not just until task completion.
+    step_pending: bool,
     pushed: Pushed,
     last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     used: Option<Option<Box<oteryn_session::UseOutcome>>>,
     ended: Option<PublicClass>,
+    end_delivered: bool,
     game: GameState,
     chat_pending: Option<oteryn_session::ChatIntent>,
     chat_result: Option<oteryn_session::ChatOutcome>,
@@ -885,9 +886,34 @@ impl PlayLink {
         lock(&self.mailbox).chat_result.clone()
     }
 
-    pub fn request(&self, direction: StepDir) {
-        // A closed task has already reported or will report `Ended`.
-        let _ = self.commands.send(PlayCommand::Step(direction));
+    /// A busy link rejects another step; no second outcome can overwrite an undrained one.
+    pub fn request(&self, direction: StepDir) -> bool {
+        self.request_step(|| Ok(Some(direction))).unwrap_or(false)
+    }
+
+    /// Reserve the single step before consuming view input. The same lock protects direct
+    /// callers, the shell and the task; pushes and task completion do not release it.
+    fn request_step(
+        &self,
+        next: impl FnOnce() -> Result<Option<StepDir>, BatchError>,
+    ) -> Result<bool, BatchError> {
+        let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
+        }
+        if mailbox.ended.is_some() || mailbox.step_pending {
+            return Ok(false);
+        }
+        let Some(direction) = next()? else {
+            return Ok(false);
+        };
+        mailbox.step_pending = true;
+        if self.commands.send(PlayCommand::Step(direction)).is_err() {
+            mailbox.step_pending = false;
+            mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
+            return Ok(false);
+        }
+        Ok(true)
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
@@ -901,6 +927,7 @@ impl PlayLink {
             return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.before)));
         }
         if let Some(outcome) = mailbox.stepped.take() {
+            mailbox.step_pending = false;
             return Some(PlayEvent::Stepped(outcome));
         }
         if mailbox.pushed != Pushed::default() {
@@ -912,7 +939,12 @@ impl PlayLink {
         if let Some(outcome) = mailbox.used.take() {
             return Some(PlayEvent::Used(outcome));
         }
-        mailbox.ended.take().map(PlayEvent::Ended)
+        let class = mailbox.ended?;
+        if mailbox.end_delivered {
+            return None;
+        }
+        mailbox.end_delivered = true;
+        Some(PlayEvent::Ended(class))
     }
 }
 
@@ -1568,6 +1600,91 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn direct_steps_wait_until_the_previous_outcome_is_consumed() {
+        let (link, mut commands, outbox) = play_channel();
+        link.request(StepDir::North);
+        for _ in 0..100 {
+            link.request(StepDir::East);
+        }
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::North))
+        ));
+        assert!(commands.try_recv().is_err());
+
+        outbox.push(vec![spatial_event(1, 99)]);
+        outbox.stepped(moved_to(100, 199, 0));
+        outbox.push(vec![spatial_event(3, 101)]);
+        // Neither task completion nor an older push releases the reservation.
+        link.request(StepDir::West);
+        assert!(matches!(link.poll(), Some(PlayEvent::Pushed(_))));
+        link.request(StepDir::West);
+        assert!(commands.try_recv().is_err());
+        assert!(matches!(link.poll(), Some(PlayEvent::Stepped(outcome))
+            if outcome.world_spatial_delta.as_ref().is_some_and(|delta| delta.value.actor_position.y == 199)));
+        link.request(StepDir::West);
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::West))
+        ));
+        assert!(matches!(link.poll(), Some(PlayEvent::Pushed(_))));
+        link.request(StepDir::South);
+        assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn consumed_end_stays_terminal_and_cannot_be_replaced() {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.end(PublicClass::ClientUpdateRequired);
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::ClientUpdateRequired))
+        ));
+        outbox.end(PublicClass::SessionUnavailable);
+        assert!(link.poll().is_none());
+        link.request(StepDir::North);
+        assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn closed_step_channel_reports_end_without_consuming_input() -> Result<(), BatchError> {
+        let (link, commands, _outbox) = play_channel();
+        drop(commands);
+        let mut view = view()?;
+        view.arrow(StepDir::North);
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(view.next_step(), Some(StepDir::North));
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        assert!(link.poll().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn a_busy_link_preserves_the_views_waiting_direction() -> Result<(), BatchError> {
+        let (link, mut commands, outbox) = play_channel();
+        let mut view = view()?;
+        link.request(StepDir::East);
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::East))
+        ));
+        view.arrow(StepDir::North);
+        assert_eq!(view.tick(&link), Ok(()));
+        assert!(commands.try_recv().is_err());
+        outbox.stepped(moved_to(101, 200, 0));
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(view.own(), TileCoord::new(101, 200));
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::North))
+        ));
+        Ok(())
+    }
+
     struct Fake {
         serves: Arc<AtomicUsize>,
         fail_step: bool,
@@ -1575,6 +1692,8 @@ mod tests {
         queued: Vec<SessionEvent>,
         drained: Arc<AtomicUsize>,
         combats: Arc<Mutex<Vec<CombatCommand>>>,
+        step_calls: Option<Arc<AtomicUsize>>,
+        step_release: Option<tokio::sync::oneshot::Receiver<()>>,
     }
 
     impl Stepper for Fake {
@@ -1594,6 +1713,12 @@ mod tests {
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
+            if let Some(calls) = &self.step_calls {
+                calls.fetch_add(1, Ordering::SeqCst);
+            }
+            if let Some(release) = self.step_release.take() {
+                release.await.map_err(|_| SessionError::SessionUnusable)?;
+            }
             if self.fail_step {
                 Err(SessionError::SessionUnusable)
             } else {
@@ -1628,6 +1753,8 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::new(Mutex::new(Vec::new())),
+            step_calls: None,
+            step_release: None,
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -1643,6 +1770,78 @@ mod tests {
             std::thread::sleep(Duration::from_millis(5));
         }
         None
+    }
+
+    #[test]
+    fn a_delayed_task_runs_only_one_step_until_the_shell_consumes_it() -> Result<(), String> {
+        let (link, commands, outbox) = play_channel();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let (release, delayed) = tokio::sync::oneshot::channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let fake = Fake {
+            serves: Arc::new(AtomicUsize::new(0)),
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::new(Mutex::new(Vec::new())),
+            step_calls: Some(Arc::clone(&calls)),
+            step_release: Some(delayed),
+        };
+        runtime
+            .spawn(run_session(fake, commands, outbox))
+            .map_err(|error| error.to_string())?;
+        assert!(link.request(StepDir::North));
+        for _ in 0..200 {
+            if calls.load(Ordering::SeqCst) == 1 {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        for _ in 0..100 {
+            assert!(!link.request(StepDir::East));
+        }
+        release
+            .send(())
+            .map_err(|()| "task exited before release")?;
+        for _ in 0..200 {
+            if lock(&link.mailbox).stepped.is_some() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(lock(&link.mailbox).stepped.is_some());
+        assert!(!link.request(StepDir::West));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(matches!(wait_for(&link), Some(PlayEvent::Stepped(_))));
+        assert!(link.request(StepDir::West));
+        assert!(matches!(wait_for(&link), Some(PlayEvent::Stepped(_))));
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn enqueue_close_race_rolls_back_the_step_and_latches_end() -> Result<(), BatchError> {
+        let (link, commands, _outbox) = play_channel();
+        assert!(!link.request_step(|| {
+            drop(commands);
+            Ok(Some(StepDir::North))
+        })?);
+        assert!(!lock(&link.mailbox).step_pending);
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        let consumed = std::cell::Cell::new(false);
+        assert!(!link.request_step(|| {
+            consumed.set(true);
+            Ok(Some(StepDir::East))
+        })?);
+        assert!(!consumed.get());
+        assert!(link.poll().is_none());
+        Ok(())
     }
 
     #[test]
@@ -1669,6 +1868,8 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::clone(&combats),
+            step_calls: None,
+            step_release: None,
         };
         runtime
             .spawn(run_session(fake, commands, events))
