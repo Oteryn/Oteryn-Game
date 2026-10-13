@@ -4,21 +4,27 @@
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP legality and combat lock (pure half)"
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/pvp-rt-1-20261013
 issue: 1622
 governing_issue: 1622
-pr: 2029
+pr: 0
+migration_lease: "0081"   # apps/game-server/migrations/0081_pvp_state.sql; other packets take 0082 or later
 depends_on:
-  - "PVP-1 (tables; not landed): durable write-ahead and admission restore wait for it"
+  - "PVP-1 (tables): taken by this task as its second PR, CP D(2026-10-13); the first PR #2029 merged"
   - "PR 2018 (landing/teleport): the landing hook is CombatLock::landing_allowed, not yet called"
   - "BUNDLE-COMBAT-ENABLE-1 (another worker): live wiring waits for its qualified_room gate"
 owned_paths:
   - apps/game-server/src/combat/pvp/
   - apps/game-server/src/lib.rs
   - apps/game-server/src/gameplay_transport/field_step_ingress.rs
+  - apps/game-server/migrations/0081_pvp_state.sql
+  - apps/game-server/src/durability/pvp_state.rs
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/tests/support/pvp_state_postgres_cases.rs
+  - apps/game-server/tests/character_authority_postgres.rs
   - docs/agents/tasks/active/PVP-RT-1.md
 ```
 
