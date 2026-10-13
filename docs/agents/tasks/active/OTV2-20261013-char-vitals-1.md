@@ -10,7 +10,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/char-vitals-1-20261013
 issue: none
-pr: "opened by this branch"
+pr: 2045
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-13
 updated_at: 2026-10-13
@@ -58,7 +58,7 @@ Health and mana are part of the CHAR-POSITION-0 runtime-state projection (CHAR-V
 
 ## Validation
 
-Candidate: this branch on `origin/main` (59f9fb12).
+Candidate: this branch on `origin/main` (4ac13390).
 
 - `rustfmt --edition 2024 --check` on the changed Rust files: pass
 - `git diff --check`: pass
