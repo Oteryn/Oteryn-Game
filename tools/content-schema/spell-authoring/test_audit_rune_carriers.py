@@ -28,7 +28,7 @@ def conjure(name, item, count):
         'conjure': {'count': count, 'result': {'key': f'candidate:item/{item}'}}}}}}
 
 
-def run(entries, profiles, resolutions=None):
+def run(entries, profiles, resolutions=None, drop=None):
     documents = {'fandom': {'pages': [
         {'template': 'Infobox Object', 'title': name.title(),
          'fields': {'name': name.title(), 'itemid': str(item), 'vocrequired': 'sorcerers'}}
@@ -38,6 +38,8 @@ def run(entries, profiles, resolutions=None):
         for name, item in (('sudden death rune', 3155), ('fire wall rune', 3190), ('great fireball rune', 3191)):
             census[source].append({'spell_type': 'rune', 'name': name, 'registrar': {
                 'runeId': item, 'group': 'attack', 'allowFarUse': True}})
+    if drop:
+        census[drop] = []
     summary, rows = audit.audit({'bundles': entries}, documents, census, {'spells': resolutions or {}},
                                 {'records': profiles})
     return summary, {row['name']: row for row in rows}
@@ -105,9 +107,16 @@ class RuneCarrierAuditTest(unittest.TestCase):
         native = audit.check(False, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
         self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
 
+    def test_both_registrar_records_are_required(self):
+        entries = [carrier('sudden death rune', 3155, 3)]
+        _, rows = run(entries, [profile('candidate:item/3155')], drop='crystal')
+        self.assertEqual(rows['sudden death rune']['failed'], ['registrars'])
+        _, rows = run(entries, [profile('candidate:item/3155')])
+        self.assertEqual(rows['sudden death rune']['checks']['registrars']['present'], ['canary', 'crystal'])
+
     def test_missing_item_evidence_fails(self):
         summary, rows = run([carrier('unknown rune', 9999, 1)], [profile('candidate:item/9999')])
-        self.assertEqual(rows['unknown rune']['failed'], ['group', 'item_id', 'vocations'])
+        self.assertEqual(rows['unknown rune']['failed'], ['group', 'item_id', 'registrars', 'vocations'])
         self.assertEqual(summary['inventory']['unexpected'], ['unknown rune'])
         self.assertIsNone(rows['unknown rune']['section_9_group'])
 

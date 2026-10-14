@@ -85,6 +85,17 @@
      "references": {},
      "verdict": "no_source"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -219,6 +230,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -357,6 +379,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -492,6 +525,17 @@
      "references": {},
      "verdict": "no_source"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": true,
      "pass": true,
@@ -626,6 +670,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -763,6 +818,17 @@
      "references": {},
      "verdict": "no_source"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -897,6 +963,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -1035,6 +1112,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -1171,6 +1259,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -1309,6 +1408,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -1445,6 +1555,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -1583,6 +1704,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -1719,6 +1851,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -1857,6 +2000,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -1993,6 +2147,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -2131,6 +2296,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -2267,6 +2443,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -2405,6 +2592,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -2532,6 +2730,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -2667,6 +2876,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -2810,6 +3030,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -2942,6 +3173,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -3078,6 +3320,17 @@
      "references": {},
      "verdict": "no_source"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -3207,6 +3460,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -3347,6 +3611,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -3481,6 +3756,17 @@
      "references": {},
      "verdict": "no_source"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -3610,6 +3896,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -3748,6 +4045,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -3884,6 +4192,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -4022,6 +4341,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -4158,6 +4488,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -4296,6 +4637,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -4432,6 +4784,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -4570,6 +4933,17 @@
      },
      "verdict": "agree"
     },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
+    },
     "self_target": {
      "ours": false,
      "pass": true,
@@ -4704,6 +5078,17 @@
      "pass": true,
      "references": {},
      "verdict": "no_source"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,
@@ -4845,6 +5230,17 @@
       "tibiopedia": 7
      },
      "verdict": "agree"
+    },
+    "registrars": {
+     "pass": true,
+     "present": [
+      "canary",
+      "crystal"
+     ],
+     "required": [
+      "canary",
+      "crystal"
+     ]
     },
     "self_target": {
      "ours": false,

@@ -6,6 +6,7 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune item ID against the wikis (S3) and the Canary and Crystal registrars;
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
+- that both the Canary and the Crystal registrar records exist;
 - the cooldown group, the targeting flags (aggressive, self target, needs target) and far use against the Canary and Crystal registrars, and the range
   against the wikis; where the references conflict, our value must be the one the catalogue manifest
   records as the winning source (S3/S11/S13/S14), and a value no reference states passes only under a
@@ -45,6 +46,7 @@ DECISION = 'docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION
 AREA_TILES_MAX = 37  # RUNEUSE0-RL-08: victim cap 2 x tiles, absolute ceiling 74
 FIELD_TILES_MAX = 12  # RUNEUSE0-RL-07: fields created by one cast
 STACK_MAX = 100
+REGISTRARS = ('canary', 'crystal')
 # RUNE-USE-0 §9, by the catalogue's rune names.
 GROUPS = {
     'direct': ('RUNE-CAST-1', (
@@ -86,7 +88,7 @@ def area_tiles(ability):
 
 def registrars(census):
     found = {}
-    for source in ('canary', 'crystal'):
+    for source in REGISTRARS:
         for entry in census[source]:
             if entry.get('spell_type') == 'rune':
                 found.setdefault(vs.rune_name(entry['name']), {})[source] = entry['registrar']
@@ -220,6 +222,9 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
     }
     for field, key in TARGETING_FLAGS:
         checks[field] = check(targeting.get(field), flag(key), recorded=recorded(entry, base + 'targeting/' + field))
+    # Every registrar-backed check compares both engines; a carrier with one registrar record stays blocked.
+    checks['registrars'] = {'present': sorted(registrar), 'required': list(REGISTRARS),
+                            'pass': all(source in registrar for source in REGISTRARS)}
     if issues:
         checks['item_id']['pass'] = False
         checks['item_id']['reference_match_issues'] = issues
