@@ -3097,14 +3097,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
-        let blocking = if self
+        // The closed bundle doors are read live per candidate cell, not collected per step: a
+        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
+        let (none, bundle_doors, legacy);
+        let blocking: &dyn crate::map::floor::CellBlocker = if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
-            std::collections::BTreeSet::new()
+            none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+            &none
+        } else if let Some(map) = self.bundle_map() {
+            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            &bundle_doors
         } else {
-            self.door.lock().await.blocking_cells().clone()
+            legacy = self.door.lock().await.blocking_cells().clone();
+            &legacy
         };
         let equipped_speed_delta = equipment
             .as_ref()
@@ -3119,7 +3126,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
                 None,
                 None,
@@ -3133,7 +3140,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
             )
             .await

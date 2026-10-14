@@ -4,10 +4,23 @@
 //! changes floors because an entry placed on it has a `floor_change` fact in the content
 //! catalogue. [`palette_mask`] resolves a palette entry against that catalogue (the generated
 //! [`super::floor_catalogue`] table, kept equal to the JSON by a test), the boot collects the
-//! flags of every tile into a [`FloorTable`], and a step is resolved by [`resolve`], the Canary
-//! `Tile::queryDestination` rules over the table and the bundle collision. The resolved
+//! flags of every tile into a [`FloorTable`], and a step is resolved by [`resolve_landing`], the
+//! Canary `Tile::queryDestination` rules over the table and the bundle collision. The resolved
 //! destination is committed by the owner turn through a sealed [`BundleStepProof`], exactly like
 //! a source-map step, so nothing but an actual step moves a player across floors.
+//!
+//! NEWHAVEN-TELEPORT-1: the table also holds the bundle's teleports, the `teleport` attribute a
+//! top-level entry carries (`OTERYN_WORLD_BUNDLE_FORMAT_V1` §9, matched one to one with a
+//! Transition.Teleport record by the compiler). Like Canary's `Teleport::addThing`, a teleport
+//! acts on the tile the step finally lands on and moves the player to its destination. The
+//! destination is landed as it is, one hop: it is not followed through a further floor change or
+//! teleport. A destination the bundle lacks or that cannot be entered leaves the player on the
+//! teleport tile, as Canary leaves it for a missing destination tile; the runtime never places a
+//! player on a cell it cannot enter. A teleport adds no gate of its own: the step onto it is
+//! qualified exactly like any other step. The landing rule of WORLD-INTERACTION-0 §6.6 applies to
+//! the destination: an actor under a PZ block (PARTY-PVP-0 §8.1) does not land on a
+//! protection-zone tile, nor on a tile whose zone facts are unknown, and stays on the teleport.
+//! Monsters never enter a teleport tile (§6.5, [`is_teleport`]).
 //!
 //! Coordinates here are legacy `z` (`0..=15`, deeper is larger), the runtime floor of a bundle
 //! World; [`TilePos`] keeps the native floor `-z`. Not modelled: the source height-3 climb rule,
@@ -25,7 +38,7 @@ use crate::foundation::{
 };
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 const DOWN: u8 = 1;
 const NORTH: u8 = 2;
@@ -60,10 +73,12 @@ pub(crate) fn palette_mask(family: Family, key: &str) -> u8 {
     }
 }
 
-/// The tiles of a bundle World that change floors, with the OR of the flags of their entries.
+/// The tiles of a bundle World that change floors, with the OR of the flags of their entries,
+/// and the tiles that teleport, with their destination.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FloorTable {
     tiles: BTreeMap<TilePos, u8>,
+    teleports: BTreeMap<TilePos, TilePos>,
 }
 
 impl FloorTable {
@@ -71,6 +86,22 @@ impl FloorTable {
         if mask != 0 {
             *self.tiles.entry(pos).or_insert(0) |= mask;
         }
+    }
+
+    /// Records the teleport of the tile at `from`; the first entry of a tile that teleports
+    /// decides, as Canary's top teleport item does.
+    pub(crate) fn add_teleport(&mut self, from: TilePos, to: TilePos) {
+        self.teleports.entry(from).or_insert(to);
+    }
+
+    /// The destination of the teleport at `pos`, if the tile teleports.
+    pub fn teleport(&self, pos: TilePos) -> Option<TilePos> {
+        self.teleports.get(&pos).copied()
+    }
+
+    /// How many tiles teleport.
+    pub fn teleport_count(&self) -> usize {
+        self.teleports.len()
     }
 
     /// How many tiles change floors.
@@ -102,7 +133,7 @@ impl FloorTable {
         for tile in self.positions() {
             let cell = (i32::from(tile.x), i32::from(tile.y), -i32::from(tile.floor));
             if ground(cell) == Ground::Walkable
-                && follow(self, &ground, cell) == Err(Refusal::Chain)
+                && follow(self, &ground, &|_| true, cell) == Err(Refusal::Chain)
             {
                 return Err(tile);
             }
@@ -113,6 +144,29 @@ impl FloorTable {
 
 /// `(x, y, legacy z)`.
 pub(crate) type Cell = (i32, i32, i32);
+
+/// Whether a cell is closed to an actor by a dynamic fact (a closed door). A bundle step asks
+/// only the few cells it considers, so an implementation answers by lookup, not by a set built
+/// per step.
+pub(crate) trait CellBlocker: Sync {
+    fn blocks(&self, cell: LogicalCell) -> bool;
+}
+
+impl CellBlocker for BTreeSet<LogicalCell> {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        self.contains(&cell)
+    }
+}
+
+/// The closed bundle doors, read live through the indexed door lookup. The native floor is the
+/// legacy `z` negated.
+pub(crate) struct BundleDoors<'a>(pub(crate) &'a super::door::DoorBook);
+
+impl CellBlocker for BundleDoors<'_> {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
+    }
+}
 
 fn pos(x: i32, y: i32, z: i32) -> Option<TilePos> {
     if !(0..=MAX_Z).contains(&z) {
@@ -144,11 +198,24 @@ pub(crate) enum Refusal {
     Chain,
 }
 
-/// The tile a player standing on `origin` ends on after stepping `direction`, following the
-/// floor changes it enters.
+/// [`resolve_landing`] for an actor every enterable teleport destination admits.
+#[cfg(test)]
 pub(crate) fn resolve(
     table: &FloorTable,
     ground: impl Fn(Cell) -> Ground,
+    origin: Cell,
+    direction: CardinalStep,
+) -> Result<Cell, Refusal> {
+    resolve_landing(table, ground, |_| true, origin, direction)
+}
+
+/// The tile a player standing on `origin` ends on after stepping `direction`, following the
+/// floor changes it enters. `landable` says whether the actor may land on an enterable teleport
+/// destination (the PZ part of the landing rule); a refused landing leaves it on the teleport.
+pub(crate) fn resolve_landing(
+    table: &FloorTable,
+    ground: impl Fn(Cell) -> Ground,
+    landable: impl Fn(Cell) -> bool,
     origin: Cell,
     direction: CardinalStep,
 ) -> Result<Cell, Refusal> {
@@ -162,7 +229,7 @@ pub(crate) fn resolve(
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(table, &ground, next),
+        Ground::Walkable => follow(table, &ground, &landable, next),
     }
 }
 
@@ -170,13 +237,17 @@ pub(crate) fn resolve(
 fn follow(
     table: &FloorTable,
     ground: &impl Fn(Cell) -> Ground,
+    landable: &impl Fn(Cell) -> bool,
     mut next: Cell,
 ) -> Result<Cell, Refusal> {
     let land = |cell: Cell| match ground(cell) {
-        Ground::Walkable => Ok(cell),
+        Ground::Walkable => Ok(teleported(table, ground, landable, cell)),
         _ => Err(Refusal::Blocked),
     };
     for _ in 0..MAX_DESTINATIONS {
+        if ground(next) == Ground::Blocked {
+            return Err(Refusal::Blocked);
+        }
         let mask = table.mask(next);
         if mask == 0 {
             return land(next);
@@ -231,11 +302,59 @@ fn follow(
     Err(Refusal::Chain)
 }
 
+/// The tile a player landing on `cell` ends on: the destination of its teleport when the bundle
+/// has that tile, it can be entered and `landable` admits the actor there, otherwise `cell`.
+fn teleported(
+    table: &FloorTable,
+    ground: &impl Fn(Cell) -> Ground,
+    landable: &impl Fn(Cell) -> bool,
+    cell: Cell,
+) -> Cell {
+    let Some(to) = pos(cell.0, cell.1, cell.2).and_then(|from| table.teleport(from)) else {
+        return cell;
+    };
+    let target = (i32::from(to.x), i32::from(to.y), -i32::from(to.floor));
+    if ground(target) == Ground::Walkable && landable(target) {
+        target
+    } else {
+        cell
+    }
+}
+
 /// The floor table of the bundle `cells` run over; `None` on a fixture or source World.
 pub(crate) fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     match cells.index() {
         NativeMovementCollisionIndex::Bundle(index) => Some(&index.map().floors),
         _ => None,
+    }
+}
+
+/// NEWHAVEN-TELEPORT-1 (WORLD-INTERACTION-0 §6.5): whether `cell` of the bundle `cells` run over
+/// teleports. Monsters never enter such a tile; a fixture or source World has no teleports.
+pub(crate) fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool {
+    table_of(cells)
+        .zip(pos(cell.x, cell.y, cell.z))
+        .is_some_and(|(table, at)| table.teleport(at).is_some())
+}
+
+/// The landing rule's PZ part (WORLD-INTERACTION-0 §3.3, §6.6) over the bundle `cells`: an actor
+/// under a PZ block lands only on a tile whose zone facts are known and not a protection zone.
+///
+/// It also reads the dynamic `closed` cells (a closed door): such a landing is refused like a
+/// static block and the actor stays on the teleport (Codex 4255311243).
+fn landable_of<'a>(
+    cells: &'a NativeEntryMovementCells,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+) -> impl Fn(Cell) -> bool + 'a {
+    move |(x, y, z)| {
+        let at = LogicalCell { x, y, z };
+        !closed.blocks(at)
+            && (!pz_blocked
+                || cells
+                    .spell_tiles()
+                    .lookup(cells.scope(), at)
+                    .is_ok_and(|tile| !tile.flags().protection_zone))
     }
 }
 
@@ -265,10 +384,18 @@ pub(crate) struct BundleStepProof<'a> {
     session: GameSessionId,
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
     destination: MovementLocalPosition,
 }
 
 /// Proves `actor`'s step `direction` from its current position over the bundle `cells`.
+/// `pz_blocked` is the actor's current PZ block, which the teleport landing rule reads; `closed`
+/// holds the dynamically closed cells (doors), where an actor does not land either.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the proof binds every independently resolved fact explicitly"
+)]
 pub(crate) fn prepare_bundle_step<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
@@ -276,10 +403,19 @@ pub(crate) fn prepare_bundle_step<'a>(
     session: GameSessionId,
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected)?;
-    let destination = destination(cells, table, expected.position(), direction)?;
+    let destination = destination(
+        cells,
+        table,
+        expected.position(),
+        direction,
+        pz_blocked,
+        closed,
+    )?;
     Ok(BundleStepProof {
         cells,
         table,
@@ -287,6 +423,8 @@ pub(crate) fn prepare_bundle_step<'a>(
         session,
         expected,
         direction,
+        pz_blocked,
+        closed,
         destination,
     })
 }
@@ -320,11 +458,29 @@ fn destination(
     table: &FloorTable,
     origin: MovementLocalPosition,
     direction: CardinalStep,
+    pz_blocked: bool,
+    closed: &dyn CellBlocker,
 ) -> Result<MovementLocalPosition, MovementError> {
     let floor = i32::from(origin.floor);
-    let (x, y, z) = resolve(
+    // A closed door blocks the entered tile and every tile a floor change resolves onto
+    // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
+    // teleport destination.
+    let ground = ground_of(cells);
+    let ground = |cell: Cell| {
+        if closed.blocks(LogicalCell {
+            x: cell.0,
+            y: cell.1,
+            z: cell.2,
+        }) {
+            Ground::Blocked
+        } else {
+            ground(cell)
+        }
+    };
+    let (x, y, z) = resolve_landing(
         table,
-        ground_of(cells),
+        ground,
+        landable_of(cells, pz_blocked, closed),
         (origin.x, origin.y, floor),
         direction,
     )
@@ -348,6 +504,8 @@ impl BundleStepProof<'_> {
             self.table,
             self.expected.position(),
             self.direction,
+            self.pz_blocked,
+            self.closed,
         )?;
         if observed != self.destination {
             return Err(MovementError::SnapshotMismatch);
@@ -521,6 +679,118 @@ mod tests {
                 CardinalStep::North
             ),
             Err(Refusal::Blocked)
+        );
+    }
+
+    fn with_teleport(mut table: FloorTable, from: Cell, to: Cell) -> FloorTable {
+        table.add_teleport(
+            pos(from.0, from.1, from.2).expect("in range"),
+            pos(to.0, to.1, to.2).expect("in range"),
+        );
+        table
+    }
+
+    #[test]
+    fn a_step_onto_a_teleport_lands_on_its_destination() {
+        // NEWHAVEN-TELEPORT-1: the forcefield shape, a teleport a few tiles east on one floor.
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (8, 4, 7));
+        assert_eq!(t.teleport_count(), 1);
+        assert_eq!(t.count(), 0);
+        assert_eq!(
+            resolve(&t, world(&[7], &[]), (2, 3, 7), CardinalStep::East),
+            Ok((8, 4, 7))
+        );
+        // Another floor; the first teleport of a tile decides.
+        let mut t = with_teleport(FloorTable::default(), (3, 3, 7), (5, 5, 8));
+        t.add_teleport(
+            pos(3, 3, 7).expect("in range"),
+            pos(1, 1, 7).expect("in range"),
+        );
+        assert_eq!(
+            resolve(&t, world(&[7, 8], &[]), (3, 4, 7), CardinalStep::North),
+            Ok((5, 5, 8))
+        );
+        // A floor change landing on a teleport follows it.
+        let t = with_teleport(table(&[((3, 3, 7), DOWN)]), (3, 3, 8), (6, 6, 8));
+        assert_eq!(
+            resolve(&t, world(&[7, 8], &[]), (2, 3, 7), CardinalStep::East),
+            Ok((6, 6, 8))
+        );
+        // One hop: the destination's own teleport and floor change are not followed.
+        let t = with_teleport(
+            with_teleport(table(&[((6, 6, 8), NORTH)]), (3, 3, 8), (6, 6, 8)),
+            (6, 6, 8),
+            (1, 1, 8),
+        );
+        assert_eq!(
+            resolve(&t, world(&[7, 8], &[]), (2, 3, 8), CardinalStep::East),
+            Ok((6, 6, 8))
+        );
+    }
+
+    #[test]
+    fn a_blocked_or_absent_teleport_destination_leaves_the_player_on_the_teleport() {
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (8, 4, 7));
+        assert_eq!(
+            resolve(&t, world(&[7], &[(8, 4, 7)]), (2, 3, 7), CardinalStep::East),
+            Ok((3, 3, 7))
+        );
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (12, 4, 7));
+        assert_eq!(
+            resolve(&t, world(&[7], &[]), (2, 3, 7), CardinalStep::East),
+            Ok((3, 3, 7))
+        );
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (3, 3, 9));
+        assert_eq!(
+            resolve(&t, world(&[7], &[]), (2, 3, 7), CardinalStep::East),
+            Ok((3, 3, 7))
+        );
+        // A teleport tile that cannot be entered refuses the step, like any other.
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (8, 4, 7));
+        assert_eq!(
+            resolve(&t, world(&[7], &[(3, 3, 7)]), (2, 3, 7), CardinalStep::East),
+            Err(Refusal::Blocked)
+        );
+    }
+
+    #[test]
+    fn a_pz_blocked_actor_stays_on_a_teleport_to_a_protection_zone() {
+        // WORLD-INTERACTION-0 §3.3, §6.6: the landing refuses a PZ destination to an actor under a
+        // PZ block; the actor stays on the teleport tile.
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (8, 4, 7));
+        let outside_pz = |cell: Cell| cell != (8, 4, 7);
+        assert_eq!(
+            resolve_landing(
+                &t,
+                world(&[7], &[]),
+                outside_pz,
+                (2, 3, 7),
+                CardinalStep::East
+            ),
+            Ok((3, 3, 7))
+        );
+        // Without a block the same teleport lands on its destination.
+        assert_eq!(
+            resolve_landing(
+                &t,
+                world(&[7], &[]),
+                |_| true,
+                (2, 3, 7),
+                CardinalStep::East
+            ),
+            Ok((8, 4, 7))
+        );
+        // A destination outside the zone still admits a blocked actor.
+        let t = with_teleport(FloorTable::default(), (3, 3, 7), (6, 4, 7));
+        assert_eq!(
+            resolve_landing(
+                &t,
+                world(&[7], &[]),
+                outside_pz,
+                (2, 3, 7),
+                CardinalStep::East
+            ),
+            Ok((6, 4, 7))
         );
     }
 
