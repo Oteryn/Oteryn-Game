@@ -172,7 +172,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 - When several gates refuse the same action, the first in the order `muted`, `pacified`, `powerless`
   answers alone (`agony` gates nothing), so a muted actor's attack spell keeps the `MUTED` detail and
   the audit records that one reason.
-- Worst case, counted exhaustively from the closed `ConflictKey` enum on main (`ability/condition.rs:75-88`), with no mutual exclusion between keys: four `Status` keys (`Invisible`, `Drunk`, `Rooted`, `Feared`), `Speed`, eight `Element` keys (poison, fire, energy, bleeding, drown, freezing, dazzled, cursed), `FoodRegeneration`, `Recovery`, `ManaShield`, `Light`, `Attributes`, `SpellSkills(1..=3)`, `SpellRegeneration(1)`, `Invisible` and `Outfit` are 24 keys (`Status(Invisible)` and `Invisible` are distinct keys and both are built in production), plus the four new keys `muted`, `pacified`, `powerless` and `agony`, is 28 simultaneous keys, over 16. `COND0-RL-01` is 32 (28 and headroom for four later keys or sub-ids); a new key or sub-id that would raise the exhaustive count above 32 needs an amendment of this row.
+- Worst case, counted exhaustively from the closed `ConflictKey` enum on main (`ability/condition.rs:75-88`), with no mutual exclusion between keys: four `Status` keys (`Invisible`, `Drunk`, `Rooted`, `Feared`), `Speed`, eight `Element` keys (poison, fire, energy, bleeding, drown, freezing, dazzled, cursed), `FoodRegeneration`, `Recovery`, `ManaShield`, `Light`, `Attributes`, `SpellSkills(0..=3)` (`ConditionDefinition::new` accepts sub-ids 0 to 3), `SpellRegeneration(0..=1)` (sub-ids 0 and 1), `Invisible` and `Outfit` are 26 keys (`Status(Invisible)` and `Invisible` are distinct keys and both are built in production), plus the four new keys `muted`, `pacified`, `powerless` and `agony`, is 30 simultaneous keys, over 16. `COND0-RL-01` is 32 (30 and headroom for two later keys or sub-ids); a new key or sub-id that would raise the exhaustive count above 32 needs an amendment of this row.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
 - Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
@@ -194,8 +194,8 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` ticks (damage and regeneration, as the store on main already counts them, `ability/condition.rs:40-42`; a wording correction, not a rule change) per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 28 today (the exhaustive §3.5
-  count: the 24 keys of the `ConflictKey` enum on main and the four new §3.5 keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
+- **Instance limit.** One instance per conflict key gives at most 30 today (the exhaustive §3.5
+  count: the 26 keys of the `ConflictKey` enum on main and the four new §3.5 keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
   past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
