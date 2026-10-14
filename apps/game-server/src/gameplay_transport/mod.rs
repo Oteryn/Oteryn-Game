@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[cfg(test)]
+mod bundle_gates_tests;
 mod capabilities;
 mod character_progression_binding;
 #[cfg(test)]
