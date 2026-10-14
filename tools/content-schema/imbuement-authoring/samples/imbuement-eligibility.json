@@ -114017,7 +114017,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "4d0f7276b51b6dbef2e18dc257bb23c30fb7148ab638b58948a84bc965b2a9a1",
+        "canonical_definition_sha256": "1219dbb5b0f31be6cbbb31be4d6f47f8ec8895bb9ffcaca8f3f588223988a47a",
         "canonical_name": "chain bolter",
         "wiki_observations": [
           {
@@ -114138,7 +114138,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "02bc4e68087be641ae823be4261571c60642518037ad4f312b0e9e9bb74e4f97",
+        "canonical_definition_sha256": "fb3db905b49a4fd8b3c9ff5fe344dc7f42d0cd3be8cfcdd5d3bb6aee0feaec9a",
         "canonical_name": "royal crossbow",
         "wiki_observations": [
           {
@@ -114457,7 +114457,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "728bc6d60a62de2970e62baa62b2f71a66819283e48cfc5bc2c8232994f658a5",
+        "canonical_definition_sha256": "c2cf923ca7d2da918903679882f1704e1d0e0d2c18b12a548bea509137f69525",
         "canonical_name": "warsinger bow",
         "wiki_observations": [
           {
@@ -114578,7 +114578,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "77f9244701ef25f0bcfd91d4394706643bad66dee49a5036160396346f074ba5",
+        "canonical_definition_sha256": "58811255cfbff1283651f82d9bd2fe7dd934143ca52caa9111a274e7f21dccba",
         "canonical_name": "composite hornbow",
         "wiki_observations": [
           {
@@ -122030,7 +122030,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "16b466c38c649c930da1807b97d4c9ef0a1471047d21bdd57fa21e887ad46ac0",
+        "canonical_definition_sha256": "0da558c60481093a531b45e56a1d9e4d7b0419b3d3c59a902f28c1ebc83c23fb",
         "canonical_name": "hive bow",
         "wiki_observations": [
           {
@@ -122515,7 +122515,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "db8f18600ae47e815dd0418f5b52f4fbcb0279e364a3eacb967c90bbbaf69197",
+        "canonical_definition_sha256": "06f6eb53c94434a983c85d8b12a8c5f4e94f80c39b771a459d021c190bcb0781",
         "canonical_name": "thorn spitter",
         "wiki_observations": [
           {
@@ -123251,7 +123251,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-05500-05999.json",
-        "canonical_definition_sha256": "5a3f10a59eb7a6b16eccd176fb9d5cadca04644795c55a3074572bc8f2afeba0",
+        "canonical_definition_sha256": "51e5ce777cc5f990adc9768c1e3075dafa2c9a8eb397b3c13331803c9dbf8872",
         "canonical_name": "mycological bow",
         "wiki_observations": [
           {
@@ -123956,7 +123956,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-08500-08999.json",
-        "canonical_definition_sha256": "89ec9bd27f8ceb58ca14baa7ac3f6ca916a4678fb87b67715b0cdced965bc9c4",
+        "canonical_definition_sha256": "8d840841dd4ea64aa045dc6bb50cc25d1a36fb9004192dd04d54c4c7c8c6698a",
         "canonical_name": "triple bolt crossbow",
         "wiki_observations": [
           {
@@ -124188,7 +124188,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-08500-08999.json",
-        "canonical_definition_sha256": "2e6972c329919dc36ca234398c1ce86c409d2a7de222796a72617f3aabf24cd7",
+        "canonical_definition_sha256": "de65b65b62d4bf442abdd13bcd24ff7920b6049fcd56d2849a9d8b40b2b1d709",
         "canonical_name": "icicle bow",
         "wiki_observations": [
           {
@@ -126465,7 +126465,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-09000-09499.json",
-        "canonical_definition_sha256": "a668e2eb03446bebc2644fb461ada7d818a861f6e926f1f41058195614a13c08",
+        "canonical_definition_sha256": "2352dc723d601fad7140b0300cd1f6a8f037fe07d1020c50aafcc0432b1b485d",
         "canonical_name": "umbral bow",
         "wiki_observations": [
           {
@@ -126646,7 +126646,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-09000-09499.json",
-        "canonical_definition_sha256": "6cc7a8544cbb6b2893971f5a652e9b4692111f59bf8eb9ef7195d2fb7db0117d",
+        "canonical_definition_sha256": "019f15e446dc002bc57ac6428464edc7e2e49076050990d2bbc5d55db13af5f1",
         "canonical_name": "umbral master bow",
         "wiki_observations": [
           {
@@ -126767,7 +126767,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-09000-09499.json",
-        "canonical_definition_sha256": "b12084c2cd57af1bd28ffdb22f7bd56dea2c21b793117ce3d31cba8af2e296df",
+        "canonical_definition_sha256": "1a9bee343b5711128714c650b13708387455c0ba95dd611e27d4055b4ee9e3fa",
         "canonical_name": "umbral crossbow",
         "wiki_observations": [
           {
@@ -126948,7 +126948,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-09000-09499.json",
-        "canonical_definition_sha256": "f4d2073d2539d1bc8de4e9aaff771594204b546fc755fab14109a1aa904d1285",
+        "canonical_definition_sha256": "53af3203743b67059f52e060dd9d51c56ba34ba214a54816b465450808e6ae4c",
         "canonical_name": "umbral master crossbow",
         "wiki_observations": [
           {
@@ -129282,7 +129282,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-11500-11999.json",
-        "canonical_definition_sha256": "26a492f5368928a4248421c1810549df8d8d25c605d1d4679baa2e28e743d4a1",
+        "canonical_definition_sha256": "2c52f07b6b43504812f31bd8494c0f7e7d05e0a293f4f23a2b42ad28de6de2a2",
         "canonical_name": "rift bow",
         "wiki_observations": [
           {
@@ -129403,7 +129403,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-11500-11999.json",
-        "canonical_definition_sha256": "748f5415ce2d958a98ccd72c9ad6517e62193ccfbf5a62d07104ba047daf02ed",
+        "canonical_definition_sha256": "6ad79a7bf8cd76151beb6f9d499c37c6ea552cacf01d129480d4b4d7ab293f68",
         "canonical_name": "rift crossbow",
         "wiki_observations": [
           {
@@ -132231,7 +132231,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "399a409b094a20934a06cc86e5e7cf97579b47f6842033541c3d4b793c5865db",
+        "canonical_definition_sha256": "1b123f779897a336d38e1570548d0a910080f2567cc036551744e19bafde1b47",
         "canonical_name": "bow of destruction",
         "wiki_observations": [
           {
@@ -132346,7 +132346,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15000-15499.json",
-        "canonical_definition_sha256": "7079254e7a0e5e0ecbca9c8231baa21fc68b486fcab65211bba4c1506033a084",
+        "canonical_definition_sha256": "5b7ae874242d9b9c45bb5334b218a50b91a74b3377c943ce31b00b144d39ecee",
         "canonical_name": "crossbow of destruction",
         "wiki_observations": [
           {
@@ -133881,7 +133881,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-16500-16999.json",
-        "canonical_definition_sha256": "a0dd48ccb5ed66883db5dc033dba9914282c8feb74098f34bba010515a5688a7",
+        "canonical_definition_sha256": "a65a1aa79c143a01167afa2b8ad11baea38d3529aedbb89b7fd69b1a381298cb",
         "canonical_name": "falcon bow",
         "wiki_observations": [
           {
@@ -135449,7 +135449,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17000-17499.json",
-        "canonical_definition_sha256": "bee7937c55e7264e4344e19a060b3d5c3c26bf361033f32091103e4d62eaab66",
+        "canonical_definition_sha256": "8ee7e0c040c5fc4f7fb9b84b8979836650e83eba056fef4fb818f951fa5ecc3d",
         "canonical_name": "living vine bow",
         "wiki_observations": [
           {
@@ -136923,7 +136923,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-17500-17999.json",
-        "canonical_definition_sha256": "a13c7bb1c1d9f6466bda14bbd80750ef670d31edaae9ee8d42db8bf94f0130b0",
+        "canonical_definition_sha256": "56933f664807661323f5cf875e6a1e35deea121540dd1801b3c7efe03f1789c3",
         "canonical_name": "cobra crossbow",
         "wiki_observations": [
           {
@@ -138228,7 +138228,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18500-18999.json",
-        "canonical_definition_sha256": "bb5d766bb2ca87c51be512b9d5b65c45fb655c5caca21515611622023028da6b",
+        "canonical_definition_sha256": "e9487721c63b4f19d6e5b4febfd88714e96ce0a1b3f209ad818a4cf734cfe941",
         "canonical_name": "bow of cataclysm",
         "wiki_observations": [
           {
@@ -139803,7 +139803,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "24ca269b5c0d8f014a0ccb70d6368c92c40b7329f49b30cfcd8abb2009d063a8",
+        "canonical_definition_sha256": "fe38db7fcf36ee15bb90c59a5bf2d4feaf0930a55283a4e91d20f3482dd03d9a",
         "canonical_name": "soulbleeder",
         "wiki_observations": [
           {
@@ -139924,7 +139924,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "a8f4dc72e0721339af89b866799ed060672a33b1a768e4d702f65b3b38f403a0",
+        "canonical_definition_sha256": "b4b43d91e384d3d4de3bb7a4a38c538bb59b54586980489d9dff8d04d7dac70c",
         "canonical_name": "soulpiercer",
         "wiki_observations": [
           {
@@ -140894,7 +140894,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "417d607d7dce605dd7966185efbf51d09fbcffb7026357e4746d9694983ac869",
+        "canonical_definition_sha256": "c766fc8b3e92bb61373995466465b33bf4545e4e19afabe0e4ce536f2908a844",
         "canonical_name": "lion longbow",
         "wiki_observations": [
           {
@@ -142322,7 +142322,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "2d8719a6671795f608d076e3db1a0d73e4f5ceab0bc4f895a3870fe8b6eaa79b",
+        "canonical_definition_sha256": "acdde99bb3b6336e4b119a0e77e12e23966aa442964f5adc75c5af4a487e3fd7",
         "canonical_name": "jungle bow",
         "wiki_observations": [
           {
@@ -143813,7 +143813,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "17446d8f7520dfc1c353a8a252a351725f93029e83cf9be03ee83377de644352",
+        "canonical_definition_sha256": "921c5e087bf1288b51d1a5c2d7f559b43ef0cdc721ad08cd5bf0df338bc13fe7",
         "canonical_name": "eldritch bow",
         "wiki_observations": [
           {
@@ -143934,7 +143934,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21500-21999.json",
-        "canonical_definition_sha256": "c23ae3f2cf164ef0cfb51a427b7480fdb029592a62571ec9774ff1a2b3aae39e",
+        "canonical_definition_sha256": "e056019cc1be3b8816fa69d5d83b52c7270bff0da781e9d764b47e6e7da8b0d0",
         "canonical_name": "gilded eldritch bow",
         "wiki_observations": [
           {
@@ -146696,7 +146696,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-24000-24499.json",
-        "canonical_definition_sha256": "1aab124ce1470335165eedc11e170d539d01c2e4d6a18255d6faffe0a2eb3b26",
+        "canonical_definition_sha256": "8e77a24ee495b5dfda2522de7d41e794a609c53df3bd2adba05cb58e0d8fdc28",
         "canonical_name": "naga crossbow",
         "wiki_observations": [
           {
@@ -149246,7 +149246,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-25500-25999.json",
-        "canonical_definition_sha256": "4030d77edfa5d1390aff0e5bc4f977def25332d5c8a4087bb47de9817367ffdc",
+        "canonical_definition_sha256": "b4d3d2cdf8128f3de2872e4b0c449410c1f15ad408af933b859b2d6068f178e4",
         "canonical_name": "sanguine bow",
         "wiki_observations": [
           {
@@ -149367,7 +149367,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-25500-25999.json",
-        "canonical_definition_sha256": "72da21ddab65b729a37b47354fb503607611395c7b3b7df14497afbfd3a124b6",
+        "canonical_definition_sha256": "6dff74e5e70795dfc177e339fe3d065ab05a77775fbe05752f0f611e7107211b",
         "canonical_name": "grand sanguine bow",
         "wiki_observations": [
           {
@@ -149488,7 +149488,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-25500-25999.json",
-        "canonical_definition_sha256": "eb3a9da29741a55786dd5446c7e6c3ddbf8dd7fe9a0a0f62339d5d93681f634b",
+        "canonical_definition_sha256": "29c4f9303fc4d979a828ad64c4bd757fd4e3ef424b56d63ee0199bffd57a48ec",
         "canonical_name": "sanguine crossbow",
         "wiki_observations": [
           {
@@ -149609,7 +149609,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-25500-25999.json",
-        "canonical_definition_sha256": "4934144e14f7cfb09094df784ab7d44bff09654a6bc16e949984f232e8e2f180",
+        "canonical_definition_sha256": "41dcf8d30c06d0175707da5828e42912b6d1f8653d8a9b51875d2d5bfe7eea81",
         "canonical_name": "grand sanguine crossbow",
         "wiki_observations": [
           {
@@ -152206,7 +152206,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-26000-26499.json",
-        "canonical_definition_sha256": "6b90b2a20fda5ba9b727eececf440bb18c03b65ca60e4478314ea777c9e7b878",
+        "canonical_definition_sha256": "147dd2bf888fd5acdf2a1e73f29bf3d2dba9bb5c66170cc5e5ba731866f630f6",
         "canonical_name": "amber bow",
         "wiki_observations": [
           {
@@ -152830,7 +152830,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-26000-26499.json",
-        "canonical_definition_sha256": "72f6ddd57eb1431867d1d67cf827784191b76724eeb07a86d956f64f99547cfa",
+        "canonical_definition_sha256": "d278f6d819d0b5cb4f7897b2a3c1b5fbbb41403ac79399954d391a3a0e6407c1",
         "canonical_name": "amber crossbow",
         "wiki_observations": [
           {
@@ -153075,7 +153075,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27000-27499.json",
-        "canonical_definition_sha256": "948d8e2fb4619d01d3323c9ee6deb7e85f9add53d1b02d23746dab122f7b41cb",
+        "canonical_definition_sha256": "e857315830af1d9ed97df8c0bbd5760a8ba1f3aee8ef2f16814f41825204ee6b",
         "canonical_name": "inferniarch bow",
         "wiki_observations": [
           {
@@ -153211,7 +153211,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27000-27499.json",
-        "canonical_definition_sha256": "01851851f37f4bf458153fe91620a6dee1198bb51851a71b5cc82af5dd3f593f",
+        "canonical_definition_sha256": "a6978cd50ca26a530430688513ac275a01d78d6002d0ef6e3c18ac3b4b50aaa8",
         "canonical_name": "inferniarch arbalest",
         "wiki_observations": [
           {
@@ -154819,7 +154819,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "d7a62c3f6945bd2db6927a2546ffccb7550323d06fb2e37a4f0c147a7eb3a8af",
+        "canonical_definition_sha256": "df512304a67bdce0f3a017a5545cbe542e0fcb75abb927be76f50de497e96fbf",
         "canonical_name": "rending inferniarch bow",
         "wiki_observations": [
           {
@@ -154958,7 +154958,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "61889174d97e5a31c8ebc886a29c624d1a6bb97a4db4096d1aeafd6675c073e3",
+        "canonical_definition_sha256": "36dc970838ea0c37eb0f07024929ad96bd4ca367eeee15228428e0648e86c697",
         "canonical_name": "draining inferniarch bow",
         "wiki_observations": [
           {
@@ -155103,7 +155103,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "64613483550a3e2dbc86f63cd1079a7d986e7e5c257752f9f3d070336d6f2a8b",
+        "canonical_definition_sha256": "e25748fa2a57308b34d88bdf43d2a53b2c17711e863a1120b7c354dd7e40f4b6",
         "canonical_name": "siphoning inferniarch bow",
         "wiki_observations": [
           {
@@ -155242,7 +155242,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "316dc0a4262a5950f13cef331004dc62e2017525f8f63ad69f2a88eacdee5621",
+        "canonical_definition_sha256": "6e2c91ed8da10098ea19afdc9ca860e6365362caabf45b3ebf26a8656048bf85",
         "canonical_name": "rending inferniarch arbalest",
         "wiki_observations": [
           {
@@ -155393,7 +155393,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "730f9345b4f1baef1b85cdbed4b6f0ac87d652753772c8d2296fb19ab60f396a",
+        "canonical_definition_sha256": "8f7a3e73844022178ba6cc34a41bb7c15f67ea124a2d8949440963106a227472",
         "canonical_name": "draining inferniarch arbalest",
         "wiki_observations": [
           {
@@ -155532,7 +155532,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "5d6c6284e2ff24eb3a6f55c78aac615c84d5449a3789c501334ddf2d322c1fa3",
+        "canonical_definition_sha256": "0278eef470d596fe8b88ecc3de84b2c669f297c07f3b6d341063e72fecc53443",
         "canonical_name": "siphoning inferniarch arbalest",
         "wiki_observations": [
           {

@@ -43,7 +43,12 @@ def row(promotions, item_id):
 
 
 SPEAR = {
-    "top": {"weapontype": "distance", "shoottype": "spear", "range": "3", "maxhitchance": "76"},
+    "top": {
+        "weapontype": "distance",
+        "shoottype": "spear",
+        "range": "3",
+        "maxhitchance": "76",
+    },
     "nested": {"weapontype": "missile", "breakchance": "3"},
 }
 SNOWBALL = {
@@ -77,16 +82,36 @@ def test_kinds_and_on_use():
     promotions, holds, conflicts, counts = run(snapshot(), canary, canary)
     assert (holds, conflicts) == ([], [])
     spear = row(promotions, 1)
-    assert (spear["weapon_kind"], spear["on_use"], spear["break_chance_pct"]) == ("THROWING", "DROP", 3)
-    assert spear["range_tiles"] == 3 and spear["max_hit_chance"] == 76 and spear["missile"] == "spear"
+    assert (spear["weapon_kind"], spear["on_use"], spear["break_chance_pct"]) == (
+        "THROWING",
+        "DROP",
+        3,
+    )
+    assert (
+        spear["range_tiles"] == 3
+        and spear["max_hit_chance"] == 76
+        and spear["missile"] == "spear"
+    )
     assert row(promotions, 2)["on_use"] == "CONSUME"
     bow = row(promotions, 3)
-    assert (bow["weapon_kind"], bow["ammo_type"], bow["on_use"]) == ("DISTANCE", "ARROW", "NONE")
+    assert (bow["weapon_kind"], bow["ammo_type"], bow["on_use"]) == (
+        "DISTANCE",
+        "ARROW",
+        "NONE",
+    )
     assert "missile" not in bow
     arrow = row(promotions, 4)
-    assert (arrow["weapon_kind"], arrow["on_use"], arrow["break_chance_pct"]) == ("AMMUNITION", "CONSUME", 0)
+    assert (arrow["weapon_kind"], arrow["on_use"], arrow["break_chance_pct"]) == (
+        "AMMUNITION",
+        "CONSUME",
+        0,
+    )
     wand = row(promotions, 5)
-    assert (wand["mana_per_shot"], wand["damage_min"], wand["damage_max"]) == (5, 10, 20)
+    assert (wand["mana_per_shot"], wand["damage_min"], wand["damage_max"]) == (
+        5,
+        10,
+        20,
+    )
     assert wand["element"] == "ENERGY" and wand["on_use"] == "NONE"
     assert wand["requirements"] == {"min_level": 7, "vocations": ["SORCERER"]}
     assert counts["kind_THROWING"] == 2 and counts["kind_WAND"] == 1
@@ -107,6 +132,21 @@ def test_wiki_first_with_canary_fallback_and_parity():
     assert bare["sources"]["range_tiles"] == "CANARY"
 
 
+def test_negative_canary_hit_chance_is_kept():
+    devileye = {
+        "top": {
+            "weapontype": "distance",
+            "ammotype": "bolt",
+            "range": "6",
+            "hitchance": "-20",
+        },
+        "nested": {"weapontype": "distance"},
+    }
+    assert row(run(snapshot(), {3: devileye}, {3})[0], 3)["hit_chance"] == -20
+    too_low = {**devileye, "top": {**devileye["top"], "hitchance": "-101"}}
+    assert "hit_chance" not in row(run(snapshot(), {3: too_low}, {3})[0], 3)
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
@@ -119,7 +159,10 @@ def test_conflicts_use_canary_and_are_reported():
 
 
 def test_holds():
-    unregistered = {"top": {"weapontype": "distance", "ammotype": "arrow", "range": "6"}, "nested": None}
+    unregistered = {
+        "top": {"weapontype": "distance", "ammotype": "arrow", "range": "6"},
+        "nested": None,
+    }
     promotions, holds, _, _ = run(snapshot(), {1: unregistered, 2: SPEAR}, {1})
     assert promotions == []
     assert holds[0] == {"item_key": key(1), "reasons": ["no_weapon_registration"]}

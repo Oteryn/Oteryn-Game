@@ -36,7 +36,10 @@ from pathlib import Path
 from lower_equip_abilities_packet import CANARY, canary_pin
 from lower_wiki_stats_packet import ROOT, SNAPSHOT, content_item_ids
 
-OUTPUT = ROOT / "docs" / "agents" / "evidence" / "OTV2-20261013-ranged-weapon-facts-v1.json"
+OUTPUT = (
+    ROOT / "docs" / "agents" / "evidence" / "OTV2-20261013-ranged-weapon-facts-v1.json"
+)
+WEAPON_METADATA_PROOF = "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json"
 SCHEMA = "OTERYN_ITEM_RANGED_PROMOTION/v1"
 TASK_ID = "OTV2-20261013-ranged-content-1"
 COMPILER = "tools/content-schema/item-authoring/lower_ranged_packet.py"
@@ -67,10 +70,18 @@ VOCATIONS = {
 VOCATION_ORDER = ("KNIGHT", "PALADIN", "SORCERER", "DRUID", "NONE")
 MISSILE = re.compile(r"^[a-z0-9_]{1,40}$")
 UINT = re.compile(r"^[0-9]+$")
+SINT = re.compile(r"^-?[0-9]+$")
 
 
 def _key(item_id):
     return f"oteryn:item.tibia.i{item_id}"
+
+
+def _sint(raw, low=-100, high=100):
+    if raw is None or not SINT.match(raw):
+        return None
+    value = int(raw)
+    return value if low <= value <= high else None
 
 
 def _uint(raw, low=0, high=65535):
@@ -125,12 +136,16 @@ def _wiki_value(merged, name, parse, conflicts, item_id):
     if not raws:
         return None
     if len(raws) > 1:
-        conflicts.append({"item_key": _key(item_id), "field": name, "reason": "wiki_pages_disagree"})
+        conflicts.append(
+            {"item_key": _key(item_id), "field": name, "reason": "wiki_pages_disagree"}
+        )
         return None
     (raw,) = raws
     value = parse(raw)
     if value is None:
-        conflicts.append({"item_key": _key(item_id), "field": name, "reason": "wiki_unparseable"})
+        conflicts.append(
+            {"item_key": _key(item_id), "field": name, "reason": "wiki_unparseable"}
+        )
     return value
 
 
@@ -158,7 +173,10 @@ def _parse_element(raw):
 def _parse_vocations(raw):
     """Wiki `vocrequired`: base vocations joined by commas or `and`; `without` is `NONE`."""
     parts = re.split(r",\s*|\s+and\s+", raw.strip().lower())
-    values = [VOCATIONS.get(p[:-1] if p.endswith("s") and p != "without" else p) for p in parts]
+    values = [
+        VOCATIONS.get(p[:-1] if p.endswith("s") and p != "without" else p)
+        for p in parts
+    ]
     if None in values or len(set(values)) != len(values):
         return None
     return sorted(values, key=VOCATION_ORDER.index)
@@ -183,7 +201,13 @@ def _canary_vocations(raw):
     return sorted(values, key=VOCATION_ORDER.index)
 
 
-def build(snapshot, canary, content_ids):
+def closed_weapon_owners():
+    """Item keys whose weapon leaf is pinned by the closed weapon-metadata packet (its native_weapon_guard)."""
+    proof = json.loads((ROOT / WEAPON_METADATA_PROOF).read_text(encoding="utf-8"))
+    return {r["target"]["key"] for r in proof["records"]}
+
+
+def build(snapshot, canary, content_ids, owned=frozenset()):
     """(promotions, holds, conflicts, counts)."""
     wiki = wiki_fields(snapshot)
     promotions, holds, conflicts = [], [], []
@@ -202,14 +226,25 @@ def build(snapshot, canary, content_ids):
         top, nested = c["top"], c["nested"]
         reasons, local_conflicts = [], []
         if item_id not in content_ids:
-            holds.append({"item_key": _key(item_id), "reasons": ["no_content_definition"]})
+            holds.append(
+                {"item_key": _key(item_id), "reasons": ["no_content_definition"]}
+            )
             continue
         wiki_primary = merged.get("primarytype", set())
         is_quiver = "Quivers" in wiki_primary or top.get("primarytype") == "quivers"
-        wiki_kinds = {WIKI_PRIMARY_KINDS[p] for p in wiki_primary if p in WIKI_PRIMARY_KINDS}
+        wiki_kinds = {
+            WIKI_PRIMARY_KINDS[p] for p in wiki_primary if p in WIKI_PRIMARY_KINDS
+        }
         canary_kind = CANARY_KINDS.get(top.get("weapontype"))
         if len(wiki_kinds) > 1:
-            holds.append({"item_key": _key(item_id), "reasons": ["wiki_kind_ambiguous"]})
+            holds.append(
+                {"item_key": _key(item_id), "reasons": ["wiki_kind_ambiguous"]}
+            )
+            continue
+        if not is_quiver and _key(item_id) in owned:
+            holds.append(
+                {"item_key": _key(item_id), "reasons": ["owned_by_weapon_metadata_103"]}
+            )
             continue
         ammo = AMMO_TYPES.get(top.get("ammotype"))
         # Canary decides what the engine can fire; the wiki primary type is the cross-check.
@@ -226,16 +261,25 @@ def build(snapshot, canary, content_ids):
         if kind == "DISTANCE" and ammo is None:
             kind = "THROWING"  # a distance weapon without an ammotype (RANGED-0 section 3.2)
         parity = []
-        wiki_equiv = {"DISTANCE": {"DISTANCE", "AMMUNITION"}, "THROWING": {"DISTANCE", "AMMUNITION"}}
+        wiki_equiv = {
+            "DISTANCE": {"DISTANCE", "AMMUNITION"},
+            "THROWING": {"DISTANCE", "AMMUNITION"},
+        }
         if wiki_kinds and not wiki_kinds & wiki_equiv.get(kind, {kind}):
             local_conflicts.append(
-                {"item_key": _key(item_id), "field": "weapon_kind", "reason": "wiki_" + "_".join(sorted(wiki_kinds))}
+                {
+                    "item_key": _key(item_id),
+                    "field": "weapon_kind",
+                    "reason": "wiki_" + "_".join(sorted(wiki_kinds)),
+                }
             )
             parity.append("weapon_kind")
         sources = {"weapon_kind": "CANARY" if canary_kind else "WIKI"}
         row = {"item_key": _key(item_id), "weapon_kind": kind}
 
-        def pick(field, wiki_value, canary_value):
+        def pick(
+            field, wiki_value, canary_value, parity=parity, row=row, sources=sources
+        ):
             """Wiki first, Canary fallback; both present and different is parity-pending."""
             if wiki_value is not None:
                 if canary_value is not None and canary_value != wiki_value:
@@ -256,15 +300,19 @@ def build(snapshot, canary, content_ids):
         if not registered:
             reasons.append("no_weapon_registration")
 
-        range_tiles = _wiki_value(merged, "range", _parse_range, local_conflicts, item_id)
+        range_tiles = _wiki_value(
+            merged, "range", _parse_range, local_conflicts, item_id
+        )
         pick("range_tiles", range_tiles, _uint(top.get("range"), 1, 7))
         if kind != "AMMUNITION" and "range_tiles" not in row:
             reasons.append("range_tiles_unknown")
         # Canary `hitchance` is the relative bonus a bow or ammunition adds (the tree `hit_chance`);
         # the wiki "Hit chance" and Canary `maxhitchance` are the absolute cap (`max_hit_chance`).
-        pick("hit_chance", None, _uint(top.get("hitchance"), 0, 100))
+        pick("hit_chance", None, _sint(top.get("hitchance")))
         if kind in ("DISTANCE", "THROWING", "AMMUNITION"):
-            cap = _wiki_value(merged, "hit_chance", _parse_percent, local_conflicts, item_id)
+            cap = _wiki_value(
+                merged, "hit_chance", _parse_percent, local_conflicts, item_id
+            )
             pick("max_hit_chance", cap, _uint(top.get("maxhitchance"), 0, 100))
         if kind in ("DISTANCE", "THROWING", "AMMUNITION", "WAND"):
             shoot = top.get("shoottype")
@@ -280,7 +328,9 @@ def build(snapshot, canary, content_ids):
             if row["break_chance_pct"] is None:
                 reasons.append("break_chance_malformed")
             sources["break_chance_pct"] = "CANARY"
-            row["on_use"] = "CONSUME" if nested.get("action") == "removecount" else "DROP"
+            row["on_use"] = (
+                "CONSUME" if nested.get("action") == "removecount" else "DROP"
+            )
             sources["on_use"] = "CANARY"
         elif kind == "AMMUNITION":
             if nested.get("action") != "removecount":
@@ -292,13 +342,25 @@ def build(snapshot, canary, content_ids):
             row["on_use"] = "NONE"
             sources["on_use"] = "DERIVED"
         if kind == "WAND":
-            mana = _wiki_value(merged, "manacost", lambda r: _uint(r, 0, 65535), local_conflicts, item_id)
+            mana = _wiki_value(
+                merged,
+                "manacost",
+                lambda r: _uint(r, 0, 65535),
+                local_conflicts,
+                item_id,
+            )
             pick("mana_per_shot", mana, _uint(nested.get("mana"), 0, 65535))
             if "mana_per_shot" not in row:
                 reasons.append("mana_per_shot_unknown")
-            damage = _wiki_value(merged, "damagerange", _parse_damage, local_conflicts, item_id)
+            damage = _wiki_value(
+                merged, "damagerange", _parse_damage, local_conflicts, item_id
+            )
             low, high = _uint(nested.get("fromdamage")), _uint(nested.get("todamage"))
-            canary_damage = (low, high) if low is not None and high is not None and 0 < low <= high else None
+            canary_damage = (
+                (low, high)
+                if low is not None and high is not None and 0 < low <= high
+                else None
+            )
             if damage is not None:
                 if canary_damage is not None and canary_damage != damage:
                     parity.append("damage")
@@ -309,20 +371,30 @@ def build(snapshot, canary, content_ids):
                 sources["damage"] = "CANARY"
             else:
                 reasons.append("damage_unknown")
-            element = _wiki_value(merged, "damagetype", _parse_element, local_conflicts, item_id)
-            pick("element", element, ELEMENTS.get((nested.get("wandtype") or "").lower()))
+            element = _wiki_value(
+                merged, "damagetype", _parse_element, local_conflicts, item_id
+            )
+            pick(
+                "element", element, ELEMENTS.get((nested.get("wandtype") or "").lower())
+            )
             if "element" not in row:
                 reasons.append("element_unknown")
         requirements = {}
-        level = _wiki_value(merged, "levelrequired", lambda r: _uint(r), local_conflicts, item_id)
+        level = _wiki_value(
+            merged, "levelrequired", lambda r: _uint(r), local_conflicts, item_id
+        )
         canary_level = _uint(nested.get("level"))
         level = level if level is not None else canary_level
         if level:
             requirements["min_level"] = level
-        magic = _wiki_value(merged, "mlrequired", lambda r: _uint(r), local_conflicts, item_id)
+        magic = _wiki_value(
+            merged, "mlrequired", lambda r: _uint(r), local_conflicts, item_id
+        )
         if magic:
             requirements["min_magic_level"] = magic
-        voc = _wiki_value(merged, "vocrequired", _parse_vocations, local_conflicts, item_id)
+        voc = _wiki_value(
+            merged, "vocrequired", _parse_vocations, local_conflicts, item_id
+        )
         voc = voc if voc is not None else _canary_vocations(nested.get("vocation"))
         if voc:
             requirements["vocations"] = voc
@@ -346,11 +418,15 @@ def build(snapshot, canary, content_ids):
             "holds": len(holds),
             "conflicts": len(conflicts),
             "quivers": sum(1 for p in promotions if p.get("quiver")),
-            "parity_pending_items": sum(1 for p in promotions if p.get("parity_pending")),
+            "parity_pending_items": sum(
+                1 for p in promotions if p.get("parity_pending")
+            ),
         }
     )
     for kind in ("DISTANCE", "THROWING", "AMMUNITION", "WAND"):
-        counts[f"kind_{kind}"] = sum(1 for p in promotions if p.get("weapon_kind") == kind)
+        counts[f"kind_{kind}"] = sum(
+            1 for p in promotions if p.get("weapon_kind") == kind
+        )
     return promotions, holds, conflicts, dict(sorted(counts.items()))
 
 
@@ -365,7 +441,9 @@ def _quiver_row(item_id, top, pages):
 
 
 def packet_bytes(snapshot, canary, content_ids, pin):
-    promotions, holds, conflicts, counts = build(snapshot, canary, content_ids)
+    promotions, holds, conflicts, counts = build(
+        snapshot, canary, content_ids, closed_weapon_owners()
+    )
     packet = {
         "schema": SCHEMA,
         "decision": "RANGED-0 section 7",
@@ -390,7 +468,9 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args(argv)
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    data = packet_bytes(snapshot, load_canary_weapons(), content_item_ids(), canary_pin())
+    data = packet_bytes(
+        snapshot, load_canary_weapons(), content_item_ids(), canary_pin()
+    )
     if args.check:
         if args.output.read_bytes() != data:
             print(f"packet drift against {args.output}", file=sys.stderr)

@@ -26,12 +26,12 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_RANGED_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261013-ranged-weapon-facts-v1.json");
 pub const ITEM_RANGED_PACKET_SHA256: &str =
-    "5a7d9df3c979e502d59c211d8451f19a59c2162d14412f3c0b2d780d9d003e93";
-pub const ITEM_RANGED_WEAPON_ROWS: usize = 157;
+    "5788c7d4646317e1576e2a9513cec5d0abf6ac5f745961dcdead11e20549b8ad";
+pub const ITEM_RANGED_WEAPON_ROWS: usize = 90;
 pub const ITEM_RANGED_QUIVER_ROWS: usize = 8;
 /// What the pinned packet does to the consumables-admitted tree (checked on every run).
-pub const ITEM_RANGED_FIELDS_SET: usize = 109;
-pub const ITEM_RANGED_FIELDS_UNCHANGED: usize = 346;
+pub const ITEM_RANGED_FIELDS_SET: usize = 24;
+pub const ITEM_RANGED_FIELDS_UNCHANGED: usize = 184;
 pub const ITEM_RANGED_CONFLICTS: usize = 0;
 const SCHEMA: &str = "OTERYN_ITEM_RANGED_PROMOTION/v1";
 
@@ -73,7 +73,7 @@ struct Row {
     weapon_kind: Option<Kind>,
     ammo_type: Option<Ammo>,
     range_tiles: Option<u16>,
-    hit_chance: Option<u8>,
+    hit_chance: Option<i8>,
     max_hit_chance: Option<u8>,
     break_chance_pct: Option<u8>,
     on_use: Option<String>,
@@ -141,8 +141,8 @@ fn weapon_type(kind: Kind) -> ReferenceWeaponType {
 
 /// The tree holds a hit chance as a reduced fraction of one (6 points is 3/50), like the
 /// relative hit promotion.
-fn percent(points: u8) -> Result<ReferenceRationalPercent, String> {
-    let (mut a, mut b) = (u64::from(points), 100_u64);
+fn percent(points: i16) -> Result<ReferenceRationalPercent, String> {
+    let (mut a, mut b) = (u64::from(points.unsigned_abs()), 100_u64);
     while b != 0 {
         (a, b) = (b, a % b);
     }
@@ -178,7 +178,7 @@ fn proposal(row: &Row, kind: Kind) -> Result<Proposal, String> {
     if row
         .range_tiles
         .is_some_and(|tiles| !(1..=7).contains(&tiles))
-        || row.hit_chance.is_some_and(|points| points > 100)
+        || row.hit_chance.is_some_and(|points| points < -100)
         || row.max_hit_chance.is_some_and(|points| points > 100)
     {
         return Err(format!("{}: field out of range", row.item_key));
@@ -186,8 +186,11 @@ fn proposal(row: &Row, kind: Kind) -> Result<Proposal, String> {
     Ok(Proposal {
         weapon_type: weapon_type(kind),
         range: row.range_tiles.map(ReferenceCells),
-        hit_chance: row.hit_chance.map(percent).transpose()?,
-        max_hit_chance: row.max_hit_chance.map(percent).transpose()?,
+        hit_chance: row.hit_chance.map(|p| percent(i16::from(p))).transpose()?,
+        max_hit_chance: row
+            .max_hit_chance
+            .map(|p| percent(i16::from(p)))
+            .transpose()?,
         ammunition: row.ammo_type.map(|ammo| match ammo {
             Ammo::Arrow => ReferenceAmmoType::Arrow,
             Ammo::Bolt => ReferenceAmmoType::Bolt,
