@@ -1967,6 +1967,7 @@ dependencies = [
 name = "oteryn-game-server"
 version = "0.1.0"
 dependencies = [
+ "aws-lc-rs",
  "base64",
  "cap-fs-ext",
  "cap-std",
