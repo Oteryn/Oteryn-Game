@@ -421,6 +421,11 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
         EntitlementState::NotYetEffective | EntitlementState::Active => {}
     }
     if let Some(now) = now {
+        // True time is at least the authority's issue time. A clock wholly before it was set back
+        // (also across a restart, which resets the clock's high water): no Premium.
+        if now.upper_us < e.authority_issued_at_us {
+            return PremiumClass::AuthorityUnavailable;
+        }
         if now.upper_us >= e.effective_until_us || now.upper_us >= e.authority_valid_until_us {
             return PremiumClass::Expired;
         }
