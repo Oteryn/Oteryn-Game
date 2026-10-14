@@ -29,7 +29,7 @@
 | RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
 | QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b (RANGED-1 itself registers the §6.4 aggregate rows, receipt and audit tables; the missile also needs the SPELL-PRESENT-0 stream and its key to u16 table, §7, and the slot-9 key reconciliation is QUIVER-1's, §3.3) |
-| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09 ordering, AI01-ROUTE-STEPS stays 128 as the route-step bound; `RANGED0-RL-05` is the 12-tile search radius); #2113 lands that shared search module (player chase first, creature reuse by CREATURE-MOVE-1), not a player-only copy; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
+| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-08`, the player chase step source, the per-actor pacing order | ATTACK-1; the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09 ordering, AI01-ROUTE-STEPS stays 128 as the route-step bound; `RANGED0-RL-05` is the 12-tile search radius); #2113 lands that shared search module (player chase first, creature reuse by CREATURE-MOVE-1), not a player-only copy; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
 | RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
@@ -483,6 +483,7 @@ authority until RANGED-1 is allocated.
   | `RANGED0-RL-05` search radius around the chaser (Chebyshev) | 12 tiles (not a route-length cap: AI01-ROUTE-STEPS stays 128, so a detour inside the radius may take more than 12 steps) |
   | `RANGED0-RL-06` searches per player | 1 per second |
   | `RANGED0-RL-07` backoff after a failed search | 2 s (the player holds position and keeps target and mode) |
+  | `RANGED0-RL-08` refused-cell memory per chasing player | 8 cells, each for 2 s (the `RL-07` wait): a cell the Movement owner refused a chase step into as `Blocked` stays out of the next searches until its TTL ends; a ninth cell evicts the oldest; a target or mode change clears the memory; any other refusal only drops the route and remembers nothing |
 
   `RANGED0-RL-04` (1,024 expansions) is the same bound as the accepted creature search (`AI01-PATH-SEARCH-WORK` 1,024, CREATURE-MOVE-1 §5.3, CREATURE-AI-0 §5.3): the shared search takes one cap and the 512-node figure in CREATURE-AI-0 §5 is Canary reference evidence (`astarnodes.hpp:37`), not an Oteryn bound.
 
