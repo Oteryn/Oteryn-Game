@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/clock-1-light-20261014
 issue: 2053
 governing_issue: 1622
-pr: null
+pr: 2114
 base_sha: 67cacb76
 created_at: 2026-10-14
 updated_at: 2026-10-14
@@ -27,6 +27,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - apps/game-server/src/gameplay_transport/connection.rs
   - docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/agents/tasks/archive/CLOCK-1.md
 public_contracts: [PROTOCOL_OTERYN_V1_REGISTRY.json, world_spatial_v1.proto]
 external_repositories: []
@@ -60,8 +61,8 @@ Mechanics #15 (world clock) and #16 (server-side light) are closed from PARTIAL.
   - Equipped items give no light: no item LIGHT content rows exist.
   - Monster content light has no runtime path.
   - The epoch comes from no World ruleset field (default 0, CP-approved).
-- The RL-18 and RL-20 rows in `RESOURCE_LIMITS_REGISTRY.json` are not in owned paths and are left
-  open pending the CP.
+- `RESOURCE_LIMITS_REGISTRY.json` gains only the `WORLDINT0-RL-18` and `WORLDINT0-RL-20` rows
+  (CP grant).
 
 ## Validation
 
