@@ -22,6 +22,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        let saved = self.save_spell_training_once(actor, session, force).await;
+        if saved != TrainingSave::Saved || !self.spell_training_level_due(actor, session).await {
+            return saved;
+        }
+        // A replayed receipt merged the hits resolved while it was retained. A level they
+        // reach is written now, never left to the cadence (SKILLS-0 §3.4).
+        match self.save_spell_training_once(actor, session, force).await {
+            TrainingSave::NotApplicable => TrainingSave::Saved,
+            other => other,
+        }
+    }
+    async fn spell_training_level_due(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let Some(formula) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
+        else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        states
+            .get_mut(&runtime, actor, session)
+            .is_some_and(|state| state.training_level_due(formula))
+    }
+    async fn save_spell_training_once(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> TrainingSave {
         let formula = self
             .active_generation
             .and_then(|active| active.native_gameplay())

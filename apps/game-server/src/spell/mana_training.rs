@@ -240,6 +240,18 @@ impl LiveManaTraining {
         )
         .0 != skill.0)
     }
+    /// Whether pending mana or any pending skill tries reach a level now.
+    fn level_due(&self, formula: &CompiledTrainingFormula) -> bool {
+        let vocation = self.durable.vocation();
+        if formula.required(vocation, 0, 1).is_none() {
+            return false;
+        }
+        let magic = self.durable.magic();
+        advance(formula, vocation, 0, magic, self.pending_mana).0 != magic.0
+            || SkillFamily::ALL
+                .iter()
+                .any(|family| self.skill_level_due(formula, *family).unwrap_or(false))
+    }
     /// The hit streaks the caller resolves a hit with, before it records the tries.
     pub(crate) fn hits_mut(&mut self) -> &mut HitTrainingCounters {
         &mut self.hits
@@ -801,16 +813,18 @@ mod tests {
             .unwrap();
         assert_eq!(state.owned_skills.unwrap()[2], 10);
         assert!(state.has_training_to_flush());
-        // The reached level writes at once, without waiting for the cadence.
+        // The save drains it before reporting `Saved`: the reached level writes at once, without waiting for the cadence.
         let level = state
             .prepare_training_checkpoint(5, &f, occurrence(), false)
             .unwrap()
             .unwrap();
+        assert!(state.training_level_due(&f));
         assert_eq!(level.request.after.skills()[2], (11, 0));
         let receipt = receipt_for(&level, 2);
         state.commit_training_checkpoint(level, &receipt).unwrap();
         assert_eq!(state.owned_skills.unwrap()[2], 11);
         assert!(!state.has_training_to_flush());
+        assert!(!state.training_level_due(&f));
     }
     #[test]
     fn hit_streaks_feed_the_pending_tries() {
@@ -1189,6 +1203,15 @@ impl super::cast::PlayerSpellState {
             tries,
             checkpoint_due,
         })
+    }
+    /// After a replayed receipt merged the hits resolved meanwhile: whether they reach a level
+    /// that must be written now (SKILLS-0 §3.4), before the save reports `Saved`.
+    pub(crate) fn training_level_due(&self, formula: &CompiledTrainingFormula) -> bool {
+        self.training_checkpoint.is_none()
+            && self
+                .training
+                .as_ref()
+                .is_some_and(|value| value.level_due(formula))
     }
     pub(crate) fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()

@@ -29,6 +29,15 @@ pub(crate) enum SkillFamily {
 }
 
 impl SkillFamily {
+    pub(crate) const ALL: [Self; 7] = [
+        Self::Fist,
+        Self::Club,
+        Self::Sword,
+        Self::Axe,
+        Self::Distance,
+        Self::Shielding,
+        Self::Fishing,
+    ];
     /// The index into `DurableBuildState::skills`.
     pub(crate) const fn index(self) -> usize {
         match self {
@@ -172,16 +181,7 @@ mod tests {
 
     #[test]
     fn family_indices_follow_the_build_column_order() {
-        let families = [
-            SkillFamily::Fist,
-            SkillFamily::Club,
-            SkillFamily::Sword,
-            SkillFamily::Axe,
-            SkillFamily::Distance,
-            SkillFamily::Shielding,
-            SkillFamily::Fishing,
-        ];
-        for (index, (family, name)) in families
+        for (index, (family, name)) in SkillFamily::ALL
             .iter()
             .zip(crate::durability::character_build::SKILLS)
             .enumerate()
