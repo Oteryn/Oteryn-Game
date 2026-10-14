@@ -56,7 +56,7 @@
         "disposition": { "const": "EXACT" },
         "external_id": { "type": "string", "minLength": 1, "maxLength": 64 },
         "identity_namespace": {
-          "const": "crystalserver/map-item-position"
+          "enum": ["crystalserver/map-item-position", "crystalserver/script-step-in-teleport"]
         },
         "source_key": { "const": "oteryn:source.crystalserver" },
         "source_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
