@@ -52,7 +52,50 @@ external_repositories: []
 
 ## High-risk authority/recovery qualification
 
-`APPLICABLE` to the contract effects (persistence, combat, movement, protocol), not to this diff. Acceptance still needs all four independent lanes.
+The diff is text only and installs no code path, but it amends the PREPARE/COMMIT fencing and persisted-receipt restart rules (decision §4.2, §6.2, §6.4) that RANGED-1 will implement. The qualification below is therefore completed for the contract text; RANGED-1 carries it into code and tests. Acceptance still needs all four independent lanes.
+
+```yaml
+applicable: true
+model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
+authority_invariants:
+  - "TransactionId is an allocated UUIDv7 frozen at PREPARE; it is never derived from the swing tuple."
+  - "Restart order: the claim commits under the character_root lock and advances the scope and CharacterLease/GameSession generation before any receipt read; only then is the newest receipt read (LIMIT 1) and a new TransactionId allocated."
+  - "At most one outstanding ambiguous TransactionId per character: after the 2,000 ms window the slot is freed for every use except another weapon swing."
+  - "A replay or reconciliation read returns the first outcome and credits nothing."
+  - "Weapon swings stay refused (fail closed) while the restart read fails or a swing is unobserved or ambiguous."
+consumer_boundaries:
+  - "RANGED-1 (WeaponUseAggregateV1 rows, receipt, audit tables; the 7,936 payload and 9,216 envelope caps)"
+  - "STACK-1 (Ground order is the existing stack_ordinal, no merge onto a legacy NULL top)"
+  - "CHASE-1 and CREATURE-MOVE-1 (bounded server-driven chase)"
+mutation_operators:
+  applicable:
+    - "stale or missing generation at PREPARE and at COMMIT"
+    - "duplicate or reordered TransactionId delivery"
+    - "receipt read failure or lost commit acknowledgement after an owner loss"
+    - "second weapon swing while a swing is ambiguous"
+  considered_not_applicable:
+    - "channel-transfer fence changes: unchanged, the slot still waits for its outcome"
+one_invariant_per_negative_case: true
+independent_current_fact_sources:
+  - "persisted receipt row, live CharacterLease/GameSession generation, migration 0034 stack_ordinal"
+record_derived_matching_helper:
+  allowed_for_positive_happy_path: true
+  forbidden_for_negative_authority_or_provenance_cases: true
+finding_family_sweep:
+  sibling_apis: "DUR-03 section 15, 39.1, 39.3, the composition decision, ITEM-MOVE-WIRE-1, MOVE-RL11 and STACK-0 reconciled in this PR"
+  protocol_versions: "no wire change; protocol-oteryn unchanged"
+  direct_and_reconciled_paths: "direct commit and restart reconciliation both specified in section 6.2"
+  fenced_durable_writes: "the receipt and the aggregate commit share one transaction under the fence (section 6.4)"
+  restart_retry_replay_concurrency_pg_reload: "section 6.2 (a)-(e) and section 4.2; the negative tests are RANGED-1 scope and listed in the decision"
+  evidence:
+    - "decision sections 4.2, 6.2, 6.4 and the section 14 blocker table"
+finding_dispositions:
+  p0_p1_accepted_and_repaired:
+    - "Codex P1 on b07ed26f (R7 owner acceptance, LIMIT 1 completeness): repaired in c5d78959"
+  p0_p1_rejected_with_exact_evidence: []
+  p2_fixed_accepted_or_deferred:
+    - "Codex P2 on b07ed26f and c5d78959 (critical-charm hook, wand swings): fixed"
+```
 
 ## Acceptance criteria
 
