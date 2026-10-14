@@ -15,11 +15,19 @@ account, personal-profile or trust mutations.
 
 Accepted main71c014d4 is normally merged in32ee396e, retaining the earlier
 15c6cab7 reconciliation3295351a. Neither refresh changes the client,
-Session or protocol source. Latest remote1942 head00198640 is still draft
-AUTHORING with19/19 successful checks. Subsequent source needs its own checks.
+Session or protocol source. Last remote1942 head6f217f16 is still draft
+AUTHORING with green CI/game-gate; subsequent source needs its own checks.
 The pre-B2 stability packet refreshes already-admitted GameState before step
 completion so interleaved inventory/container/vitals/chat changes cannot remain
 stale until an idle exchange. No later capability or gameplay control activates.
+
+Owner's next local packet adds source-backed Shift+Up/Down sent-text recall and
+repairs Options focus-loss Escape/closed-chat-receiver refusal. Actual production
+widget/mailbox regressions distinguish editing from saving and server success.
+Scoped Linux230/209/5+Session82/strict/fmt/governance60 pass; one combined
+publication retains14d proof then requires new exact Windows qualification.
+Packet: docs/agents/tasks/active/OTV2-20261014-client-local-input.md. Original
+formats/physical picker/clipboard and original history defaults remain unknown.
 
 Fresh293-comment #1622 read:6149042654 is still operationally unanswered;
 6155885167 allocates a different WORLDINT registry lease. Neither that comment

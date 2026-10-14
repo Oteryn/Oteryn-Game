@@ -1076,6 +1076,9 @@ impl PlayLink {
     /// One pending chat intent: repeated UI submissions cannot grow an unbounded queue.
     pub fn send_chat(&self, intent: oteryn_session::ChatIntent) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox.ended.get_or_insert(PublicClass::SessionUnavailable);
+        }
         if mailbox.ended.is_some() || mailbox.chat_pending.is_some() {
             return false;
         }
@@ -1515,6 +1518,21 @@ mod tests {
         assert!(link.send_chat(intent.clone()));
         outbox.end(PublicClass::SessionUnavailable);
         assert!(!link.send_chat(intent));
+    }
+
+    #[test]
+    fn chat_submission_rejects_a_closed_receiver_without_reserving_or_sending() {
+        let (link, commands, _) = play_channel();
+        drop(commands);
+        assert!(!link.send_chat(oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "closed transport".into(),
+        }));
+        assert!(lock(&link.mailbox).chat_pending.is_none());
+        assert_eq!(
+            lock(&link.mailbox).ended,
+            Some(PublicClass::SessionUnavailable)
+        );
     }
 
     #[test]

@@ -695,6 +695,92 @@ mod tests {
     }
 
     #[test]
+    fn local_reset_and_cancel_preserve_drafts_across_unfocused_escape_and_resize()
+    -> Result<(), &'static str> {
+        use oteryn_client::settings_catalog::FutureValue;
+        let size = egui::vec2(900.0, 620.0);
+        for english in [false, true] {
+            for (page, key, changed) in [
+                (
+                    "controls",
+                    "controls.controls.key_delay_ms",
+                    FutureValue::Int(175),
+                ),
+                (
+                    "console",
+                    "console.console.timestamps",
+                    FutureValue::Bool(true),
+                ),
+                (
+                    "screenshots",
+                    "screenshots.capture.game_only",
+                    FutureValue::Bool(true),
+                ),
+            ] {
+                let ctx = egui::Context::default();
+                let current = ClientSettings {
+                    english,
+                    ..Default::default()
+                };
+                let mut panel = SettingsPanel::for_settings_audit(current.clone());
+                assert!(panel.open_complete_section(page));
+                panel.draft.future_preferences.insert(key.into(), changed);
+                panel
+                    .draft
+                    .future_preferences
+                    .insert("sound.sound.master".into(), FutureValue::Int(65));
+                let draft = panel.draft.clone();
+                for _ in 0..3 {
+                    frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None));
+                }
+                ctx.begin_pass(egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                    focused: false,
+                    events: vec![egui::Event::Key {
+                        key: egui::Key::Escape,
+                        physical_key: None,
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                    ..Default::default()
+                });
+                panel.show(&ctx, None, None);
+                let _ = ctx.end_pass();
+                assert!(panel.open, "unfocused Escape must not discard {page}");
+                assert_eq!(panel.draft, draft);
+                frame(&ctx, egui::vec2(190.0, 150.0), vec![], |ctx| {
+                    panel.show(ctx, None, None)
+                });
+                assert_eq!(panel.draft, draft);
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+                }
+                let reset =
+                    button_position(&output, size, "Reset").ok_or("supported page Reset")?;
+                click(&ctx, size, reset, |ctx| panel.show(ctx, None, None));
+                assert_eq!(panel.current, current);
+                assert!(!panel.applied);
+                assert!(!panel.draft.future_preferences.contains_key(key), "{page}");
+                assert_eq!(
+                    panel.draft.future_preferences.get("sound.sound.master"),
+                    Some(&FutureValue::Int(65))
+                );
+                let cancel = if english { "Cancel" } else { "Anuluj" };
+                let output = frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+                let cancel = button_position(&output, size, cancel).ok_or("Cancel")?;
+                click(&ctx, size, cancel, |ctx| panel.show(ctx, None, None));
+                assert!(!panel.open);
+                assert_eq!(panel.draft, current);
+                assert_eq!(panel.current, current);
+                assert!(!panel.applied);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn options_escape_discards_the_draft_but_enter_does_not_save_or_close()
     -> Result<(), &'static str> {
         let ctx = egui::Context::default();

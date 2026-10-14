@@ -96,6 +96,7 @@ fn settings_with_panel_shortcuts(
 pub struct GameUi {
     character_name: Option<String>,
     draft: String,
+    chat_history: ChatHistory,
     recipient: String,
     channel: usize,
     chat_read_only: [bool; 6],
@@ -124,6 +125,71 @@ enum ChatMode {
     Off,
     On,
     Temporary,
+}
+
+// A client memory bound, not an observed Tibia history capacity. No persistence
+// or server-success claim: entries are texts accepted by the existing mailbox.
+const MAX_SENT_CHAT_LINES: usize = 64;
+
+#[derive(Default)]
+struct ChatHistory {
+    lines: std::collections::VecDeque<String>,
+    position: Option<usize>,
+    scratch: Option<String>,
+}
+
+impl ChatHistory {
+    fn stop_browsing(&mut self) {
+        self.position = None;
+        self.scratch = None;
+    }
+
+    fn record(&mut self, text: String) {
+        self.stop_browsing();
+        if self.lines.len() == MAX_SENT_CHAT_LINES {
+            self.lines.pop_front();
+        }
+        self.lines.push_back(text);
+    }
+
+    fn recall(&mut self, older: bool, draft: &str) -> Option<String> {
+        let next = if older {
+            match self.position {
+                Some(0) => return None,
+                Some(position) => position - 1,
+                None => {
+                    let newest = self.lines.len().checked_sub(1)?;
+                    self.scratch = Some(draft.to_owned());
+                    newest
+                }
+            }
+        } else {
+            let position = self.position?;
+            if position + 1 == self.lines.len() {
+                self.position = None;
+                return self.scratch.take();
+            }
+            position + 1
+        };
+        self.position = Some(next);
+        self.lines.get(next).cloned()
+    }
+}
+
+fn chat_history_direction(event: &egui::Event) -> Option<bool> {
+    match event {
+        egui::Event::Key {
+            key,
+            pressed: true,
+            modifiers,
+            ..
+        } if *modifiers == egui::Modifiers::SHIFT => match key {
+            egui::Key::ArrowUp => Some(true),
+            egui::Key::ArrowDown => Some(false),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -352,6 +418,7 @@ impl GameUi {
         if !self.chat_composer_ready(available, english) {
             return false;
         }
+        self.chat_history.stop_browsing();
         self.draft = text.to_owned();
         if self.chat_mode == ChatMode::Off {
             self.set_chat_mode(ChatMode::Temporary);
@@ -390,6 +457,107 @@ impl GameUi {
         if edit.gained_focus() && self.chat_mode == ChatMode::Off {
             self.chat_mode = ChatMode::On;
         }
+    }
+
+    fn chat_composer(
+        &mut self,
+        ui: &mut egui::Ui,
+        enabled: bool,
+        width: f32,
+        hint: &str,
+    ) -> egui::Response {
+        let id = ui.make_persistent_id("chat-composer");
+        let recall = enabled
+            && ui.is_enabled()
+            && !self.blocks_game_input()
+            && self.chat_hotkey_context()
+            && ui.memory(|memory| memory.has_focus(id))
+            && ui.input(|input| {
+                input.focused
+                    && input
+                        .events
+                        .iter()
+                        .any(|event| chat_history_direction(event).is_some())
+            });
+        if !recall {
+            let response = ui.add_enabled(
+                enabled,
+                egui::TextEdit::singleline(&mut self.draft)
+                    .id(id)
+                    .desired_width(width)
+                    .hint_text(hint),
+            );
+            if response.changed() {
+                self.chat_history.stop_browsing();
+            }
+            return response;
+        }
+
+        // Upstream TextEdit owns ordinary edits, selection, IME and clipboard.
+        // Process contiguous input segments around recall chords in order:
+        // Text("x"), Up and Up, Text("x") must have different results. Hidden
+        // intermediate paints use the same editor/rect; only the final text is
+        // drawn. No vendor fork or substitute editing/clipboard implementation.
+        let events = ui.input_mut(|input| std::mem::take(&mut input.events));
+        let mut segments = Vec::new();
+        let mut ordinary = Vec::new();
+        for event in events {
+            if let Some(older) = chat_history_direction(&event) {
+                segments.push((std::mem::take(&mut ordinary), Some(older)));
+            } else {
+                ordinary.push(event);
+            }
+        }
+        segments.push((ordinary, None));
+        let clip = ui.clip_rect();
+        ui.set_clip_rect(egui::Rect::NOTHING);
+        let mut rect = None;
+        let mut remaining = Vec::new();
+        let mut changed = false;
+        for (events, direction) in segments {
+            ui.input_mut(|input| input.events = events);
+            let editor = egui::TextEdit::singleline(&mut self.draft)
+                .id(id)
+                .desired_width(width)
+                .hint_text(hint);
+            let response = match rect {
+                None => ui.add(editor),
+                Some(rect) => ui.place(rect, editor),
+            };
+            rect = Some(response.rect);
+            if response.changed() {
+                self.chat_history.stop_browsing();
+                changed = true;
+            }
+            remaining.extend(ui.input_mut(|input| std::mem::take(&mut input.events)));
+            if let Some(older) = direction
+                && let Some(text) = self.chat_history.recall(older, &self.draft)
+            {
+                self.draft = text;
+                changed = true;
+                if let Some(mut state) = egui::TextEdit::load_state(ui.ctx(), id) {
+                    state
+                        .cursor
+                        .set_char_range(Some(egui::text::CCursorRange::one(
+                            egui::text::CCursor::new(self.draft.chars().count()),
+                        )));
+                    state.store(ui.ctx(), id);
+                }
+            }
+        }
+        ui.set_clip_rect(clip);
+        let mut response = ui.place(
+            rect.unwrap_or_else(|| ui.available_rect_before_wrap()),
+            egui::TextEdit::singleline(&mut self.draft)
+                .id(id)
+                .desired_width(width)
+                .hint_text(hint),
+        );
+        if changed {
+            response.mark_changed();
+        }
+        ui.input_mut(|input| input.events = remaining);
+        response
     }
 
     fn relinquish_hidden_chat_focus(&mut self, ctx: &egui::Context) {
@@ -556,7 +724,7 @@ impl GameUi {
             self.notice = Some(tr("Wiadomość jest zbyt długa", "Message is too long").into());
             return false;
         }
-        let Some(intent) = chat_intent(self.channel, &self.recipient, text) else {
+        let Some(intent) = chat_intent(self.channel, &self.recipient, text.clone()) else {
             self.notice = Some(tr("Podaj prawidłowego odbiorcę", "Enter a valid recipient").into());
             return false;
         };
@@ -564,6 +732,7 @@ impl GameUi {
             self.notice = Some(action_busy(english).into());
             return false;
         }
+        self.chat_history.record(text);
         self.notice = None;
         true
     }
@@ -1271,11 +1440,11 @@ impl GameUi {
                                 self.observe_chat_text_focus(&recipient);
                                 alternate_chat_input_focused = recipient.has_focus();
                             }
-                            let edit = ui.add_enabled(
+                            let edit = self.chat_composer(
+                                ui,
                                 !read_only,
-                                egui::TextEdit::singleline(&mut self.draft)
-                                    .desired_width((ui.available_width() - 65.0).max(30.0))
-                                    .hint_text(tr("Napisz wiadomość", "Write a message")),
+                                (ui.available_width() - 65.0).max(30.0),
+                                tr("Napisz wiadomość", "Write a message"),
                             );
                             let legacy_enter = settings.hotkeys.active().is_none_or(|profile| {
                                 !profile.general_chat_on.contains_key("chat.send")
@@ -2056,6 +2225,15 @@ mod tests {
         fn game_state(&self) -> oteryn_client::play::GameState {
             menu_lock(&self.state).clone()
         }
+        async fn chat(
+            &mut self,
+            intent: &oteryn_session::ChatIntent,
+        ) -> Result<Option<oteryn_session::ChatOutcome>, oteryn_session::SessionError> {
+            menu_lock(&self.actions).push(oteryn_client::action_bar::ActionBarCommand::Chat(
+                intent.clone(),
+            ));
+            Ok(None) // Routing fixture, not a successful server echo.
+        }
         async fn action(
             &mut self,
             command: &oteryn_client::action_bar::ActionBarCommand,
@@ -2161,6 +2339,318 @@ mod tests {
             task.poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
                 .is_pending()
         );
+    }
+
+    struct ChatConsumer {
+        game: super::GameUi,
+        view: oteryn_client::play::PlayView,
+        settings: oteryn_client::settings::ClientSettings,
+    }
+
+    impl ChatConsumer {
+        fn new(fixture: &ItemMenuFixture, english: bool) -> Result<Self, &'static str> {
+            menu_lock(&fixture.state).chat = Some(oteryn_session::ChatLog::default());
+            Ok(Self {
+                game: super::GameUi {
+                    chat_mode: ChatMode::On,
+                    chat_focus_request: Some(true),
+                    ..Default::default()
+                },
+                view: oteryn_client::play::PlayView::new(
+                    oteryn_renderer::TileCoord::new(100, 100),
+                    -7,
+                    &[],
+                )
+                .map_err(|_| "chat fixture scene")?,
+                settings: oteryn_client::settings::ClientSettings {
+                    english,
+                    show_inventory: false,
+                    show_minimap: false,
+                    ..Default::default()
+                },
+            })
+        }
+
+        fn show(&mut self, ctx: &egui::Context, fixture: &ItemMenuFixture) {
+            self.game
+                .show(ctx, &fixture.link, &self.view, &self.settings);
+        }
+    }
+
+    fn recall_key(older: bool) -> egui::Event {
+        egui::Event::Key {
+            key: if older {
+                egui::Key::ArrowUp
+            } else {
+                egui::Key::ArrowDown
+            },
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::SHIFT,
+        }
+    }
+
+    #[test]
+    fn chat_history_actual_composer_recalls_unicode_and_restores_scratch_without_sending()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let (fixture, task, sent) = menu_fixture(english, 42)?;
+            let mut chat = ChatConsumer::new(&fixture, english)?;
+            let mut task = Box::pin(task);
+            poll_menu_task(task.as_mut());
+            for text in ["first 🦀", "Zażółć gęślą"] {
+                chat.game.draft = text.into();
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture)).1;
+                }
+                let send = if english { "Send" } else { "Wyślij" };
+                let position = button_position(&output, size, send).ok_or("actual Send")?;
+                click(&ctx, size, position, |ctx| chat.show(ctx, &fixture));
+                poll_menu_task(task.as_mut());
+                assert!(chat.game.draft.is_empty());
+            }
+            assert_eq!(menu_lock(&sent).len(), 2);
+            assert_eq!(
+                fixture.link.game_state().chat.ok_or("received chat")?.len(),
+                0
+            );
+            chat.game.draft = "  unsent 🦀  ".into();
+            let id = chat.game.chat_composer_id.ok_or("production composer id")?;
+            ctx.memory_mut(|memory| memory.request_focus(id));
+            for (older, expected) in [
+                (true, "Zażółć gęślą"),
+                (true, "first 🦀"),
+                (true, "first 🦀"),
+                (false, "Zażółć gęślą"),
+                (false, "  unsent 🦀  "),
+                (false, "  unsent 🦀  "),
+            ] {
+                let output = frame(&ctx, size, vec![recall_key(older)], |ctx| {
+                    chat.show(ctx, &fixture)
+                })
+                .1;
+                assert_eq!(chat.game.draft, expected);
+                assert!(output.shapes.iter().any(|shape| {
+                    matches!(&shape.shape, egui::Shape::Text(text) if text.galley.job.text == expected)
+                }), "final recalled text is painted");
+                let state = egui::TextEdit::load_state(&ctx, id).ok_or("cursor state")?;
+                let cursor = state.cursor.char_range().ok_or("Unicode cursor")?;
+                assert!(cursor.is_empty());
+                assert_eq!(
+                    cursor.primary.index,
+                    egui::text::CharIndex(expected.chars().count())
+                );
+                poll_menu_task(task.as_mut());
+                assert_eq!(menu_lock(&sent).len(), 2); // Recall never sends.
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_actual_composer_preserves_mixed_event_order_and_edited_recalls()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        for text_first in [false, true] {
+            let ctx = egui::Context::default();
+            let (fixture, task, sent) = menu_fixture(true, 42)?;
+            let mut chat = ChatConsumer::new(&fixture, true)?;
+            let mut task = Box::pin(task);
+            poll_menu_task(task.as_mut());
+            assert!(
+                chat.game
+                    .submit_chat_text("history 🦀".into(), true, true, |intent| {
+                        fixture.link.send_chat(intent)
+                    })
+            );
+            poll_menu_task(task.as_mut());
+            chat.game.draft = "scratch".into();
+            for _ in 0..3 {
+                frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture));
+            }
+            let id = chat.game.chat_composer_id.ok_or("composer")?;
+            ctx.memory_mut(|memory| memory.request_focus(id));
+            let mut events = vec![recall_key(true), egui::Event::Text("x".into())];
+            if text_first {
+                events.reverse();
+            }
+            frame(&ctx, size, events, |ctx| chat.show(ctx, &fixture));
+            assert_eq!(
+                chat.game.draft,
+                if text_first {
+                    "history 🦀"
+                } else {
+                    "history 🦀x"
+                }
+            );
+            frame(&ctx, size, vec![recall_key(false)], |ctx| {
+                chat.show(ctx, &fixture)
+            });
+            assert_eq!(
+                chat.game.draft,
+                if text_first {
+                    "scratchx"
+                } else {
+                    "history 🦀x"
+                }
+            );
+            assert_eq!(menu_lock(&sent).len(), 1);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_is_bounded_and_refused_or_invalid_submissions_are_not_recorded() {
+        let mut game = super::GameUi::default();
+        for i in 0..65 {
+            assert!(game.submit_chat_text(format!("line{i}"), true, true, |_| true));
+        }
+        assert_eq!(game.chat_history.lines.len(), super::MAX_SENT_CHAT_LINES);
+        assert_eq!(
+            game.chat_history.lines.front().map(String::as_str),
+            Some("line1")
+        );
+        let kept = game.chat_history.lines.clone();
+        let mut invalid_sends = 0;
+        for text in [
+            " ".into(),
+            "x".repeat(oteryn_session::MAX_CHAT_TEXT_BYTES + 1),
+        ] {
+            assert!(!game.submit_chat_text(text, true, true, |_| {
+                invalid_sends += 1;
+                true
+            }));
+        }
+        assert!(!game.submit_chat_text("busy".into(), true, true, |_| false));
+        game.channel = 5;
+        assert!(!game.submit_chat_text("private".into(), true, true, |_| {
+            invalid_sends += 1;
+            true
+        }));
+        game.channel = 0;
+        assert!(
+            !game.submit_chat_text("unavailable".into(), false, true, |_| {
+                invalid_sends += 1;
+                true
+            })
+        );
+        game.chat_read_only[0] = true;
+        assert!(!game.submit_chat_text("readonly".into(), true, true, |_| {
+            invalid_sends += 1;
+            true
+        }));
+        assert_eq!(invalid_sends, 0);
+        assert_eq!(game.chat_history.lines, kept);
+    }
+
+    #[test]
+    fn chat_history_busy_or_closed_mailbox_keeps_draft_and_history_retryable()
+    -> Result<(), &'static str> {
+        let (fixture, task, sent) = menu_fixture(true, 42)?;
+        let mut game = super::GameUi {
+            draft: "first".into(),
+            ..Default::default()
+        };
+        let mut task = Box::pin(task);
+        poll_menu_task(task.as_mut());
+        assert!(game.submit_current_chat(true, true, |intent| fixture.link.send_chat(intent)));
+        game.draft = "retry 🦀".into();
+        assert!(!game.submit_current_chat(true, true, |intent| fixture.link.send_chat(intent)));
+        assert_eq!(game.draft, "retry 🦀");
+        assert_eq!(game.chat_history.lines.len(), 1);
+        poll_menu_task(task.as_mut());
+        assert_eq!(menu_lock(&sent).len(), 1);
+        assert!(game.submit_current_chat(true, true, |intent| fixture.link.send_chat(intent)));
+        poll_menu_task(task.as_mut());
+        assert_eq!(menu_lock(&sent).len(), 2);
+        game.draft = "closed".into();
+        drop(task);
+        assert!(!game.submit_current_chat(true, true, |intent| fixture.link.send_chat(intent)));
+        assert_eq!(game.draft, "closed");
+        assert_eq!(game.chat_history.lines.len(), 2);
+        assert_eq!(menu_lock(&sent).len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_actual_composer_does_not_claim_hidden_readonly_modal_or_other_focus()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        for gate in [
+            "hidden",
+            "readonly",
+            "modal",
+            "recipient",
+            "output",
+            "off",
+            "window",
+            "plain",
+            "ctrl",
+        ] {
+            let ctx = egui::Context::default();
+            let (fixture, task, sent) = menu_fixture(true, 42)?;
+            let mut chat = ChatConsumer::new(&fixture, true)?;
+            let mut task = Box::pin(task);
+            poll_menu_task(task.as_mut());
+            assert!(
+                chat.game
+                    .submit_chat_text("history".into(), true, true, |intent| {
+                        fixture.link.send_chat(intent)
+                    })
+            );
+            poll_menu_task(task.as_mut());
+            chat.game.draft = "scratch".into();
+            chat.game.recipient = "Peer".into();
+            if gate == "recipient" {
+                chat.game.channel = 5;
+            }
+            for _ in 0..3 {
+                frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture));
+            }
+            let composer = chat.game.chat_composer_id.ok_or("composer")?;
+            ctx.memory_mut(|memory| memory.request_focus(composer));
+            match gate {
+                "hidden" => chat.settings.show_chat = false,
+                "readonly" => chat.game.chat_read_only[0] = true,
+                "modal" => chat.game.panels.manage = true,
+                "off" => chat.game.set_chat_mode(ChatMode::Off),
+                "recipient" | "output" => {
+                    let id = if gate == "recipient" {
+                        chat.game.chat_recipient_id
+                    } else {
+                        chat.game.chat_output_id
+                    };
+                    ctx.memory_mut(|memory| memory.request_focus(id.unwrap_or(composer)));
+                }
+                _ => {}
+            }
+            let mut key = recall_key(true);
+            if let egui::Event::Key { modifiers, .. } = &mut key {
+                if gate == "plain" {
+                    *modifiers = egui::Modifiers::NONE;
+                }
+                if gate == "ctrl" {
+                    modifiers.ctrl = true;
+                }
+            }
+            ctx.begin_pass(egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                focused: gate != "window",
+                events: vec![key],
+                ..Default::default()
+            });
+            chat.show(&ctx, &fixture);
+            let _ = ctx.end_pass();
+            assert_eq!(chat.game.draft, "scratch", "{gate}");
+            assert!(chat.game.chat_history.position.is_none(), "{gate}");
+            assert_eq!(chat.game.recipient, "Peer");
+            assert_eq!(menu_lock(&sent).len(), 1, "{gate}");
+        }
+        Ok(())
     }
 
     fn open_item_menu(

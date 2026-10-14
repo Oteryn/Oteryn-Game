@@ -169,6 +169,9 @@ impl PreferencesBrowser {
             });
         }
         let escape = ctx.input(|input| {
+            if !input.focused {
+                return None;
+            }
             input.events.iter().find_map(|event| match event {
                 egui::Event::Key {
                     key: egui::Key::Escape,

@@ -1004,6 +1004,30 @@ Canonical #1622 still lacks the dedicated QA/node/ON-OFF/harness/retirement
 setup needed for B2. The Windows PC is online; this is build access, not server
 or account authority. Later gameplay capability activation remains gated.
 
+## Local input continuation — 2026-10-14, AUTHORING
+
+Owner requested the local settings/chat/Windows packet while E2E is blocked.
+Official manual4.2.1 establishes Shift+Up/Down recall. A session-local64-line
+memory bound records text only after real mailbox acceptance, not server Sent.
+Exact focused/enabled chords recall without sending or changing recipient/tab;
+returning past newest restores scratch and editing ends browsing. Unmodified
+egui handles ordinary input segments in order and paints only the final text.
+Actual GameUi.show/Send/mailbox tests cover Unicode/caret, boundaries, mixed
+event order, hidden/read-only/modal/focus and busy/closed/invalid refusal. A
+consumer bypass fails the painted Unicode test; restoration passes.
+
+Two input defects are proved and repaired: unfocused queued Escape no longer
+discards Options drafts; a closed chat receiver refuses without reserving text.
+PL/EN controls/console/screenshots Reset/Cancel tests also survive tiny resize
+and retain unavailable intent. These are real consumer/component checks, not
+new protocol, fake echo, physical clipboard/picker or every original interaction.
+Linux230/209/5+Session82, strict checks/fmt and governance60 pass; exact new
+MSVC release/native20-page audit follows publication. Parent6f has green CI,
+including game-gate; successor needs its own checks. Prior14d native evidence
+is retained/published in the same packet, not relabelled as changed-code proof.
+HUD/graphics remain excluded; B2 and later capability activation remain gated.
+Packet: docs/agents/tasks/active/OTV2-20261014-client-local-input.md.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
