@@ -30,7 +30,7 @@ def conjure(name, item, count):
         'conjure': {'count': count, 'result': {'key': f'candidate:item/{item}'}}}}}}
 
 
-def run(entries, profiles, resolutions=None, drop=None):
+def run(entries, profiles, resolutions=None, drop=None, guards=None):
     documents = {'fandom': {'pages': [
         {'template': 'Infobox Object', 'title': name.title(),
          'fields': {'name': name.title(), 'itemid': str(item), 'vocrequired': 'sorcerers'}}
@@ -43,7 +43,7 @@ def run(entries, profiles, resolutions=None, drop=None):
     if drop:
         census[drop] = []
     summary, rows = audit.audit({'bundles': entries}, documents, census, {'spells': resolutions or {}},
-                                {'records': profiles})
+                                {'records': profiles}, guards)
     return summary, {row['name']: row for row in rows}
 
 
@@ -101,6 +101,12 @@ class RuneCarrierAuditTest(unittest.TestCase):
             {'destination': '/d', 'status': 'mapped', 'source_index': 0},
             {'destination': '/n', 'status': 'resolved_native_behavior', 'source_index': 0, 'resolution': 'S27'}]}}
         self.assertEqual(audit.recorded(entry, '/d'), {'sources': {'fandom'}, 'native': None})
+        # Two mapped registrars recorded agreement; once they diverge Canary decides (S4).
+        both = {'sources': {'canary', 'crystal'}}
+        self.assertFalse(audit.check('attack', {'canary': 'support', 'crystal': 'attack'}, recorded=both)['pass'])
+        self.assertTrue(audit.check('support', {'canary': 'support', 'crystal': 'attack'}, recorded=both)['pass'])
+        wikis = {'sources': {'fandom', 'br'}}
+        self.assertFalse(audit.check(['druid'], found, recorded=wikis)['pass'])
         self.assertEqual(audit.recorded(entry, '/n')['native'], 'S27')
 
     def test_targeting_flags_and_native_resolution(self):
@@ -113,6 +119,17 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
         reverted = audit.check(True, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
         self.assertEqual((reverted['verdict'], reverted['pass']), ('agree', False))
+
+    def test_target_guard(self):
+        guards = {'sudden death rune': {'spell_type': 'rune', 'targeting': {'allowed_targets': 'self_or_own_summons'}}}
+        profiles = [profile('candidate:item/3155')]
+        _, rows = run([carrier('sudden death rune', 3155, 3, allowed_targets='self_or_own_summons')], profiles,
+                      guards=guards)
+        self.assertEqual(rows['sudden death rune']['verdict'], 'checks_pass')
+        _, rows = run([carrier('sudden death rune', 3155, 3, allowed_targets='any')], profiles, guards=guards)
+        self.assertEqual(rows['sudden death rune']['failed'], ['target_guard'])
+        _, rows = run([carrier('sudden death rune', 3155, 3, allowed_targets='self_only')], profiles)
+        self.assertEqual(rows['sudden death rune']['failed'], ['target_guard'])
 
     def test_range_is_checked_against_the_registrars(self):
         row = audit.check(99, {'canary': 5, 'crystal': 5})

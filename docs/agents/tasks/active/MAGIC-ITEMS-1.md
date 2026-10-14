@@ -38,7 +38,8 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
   registrars where no wiki states them), cooldown group, far use and every targeting flag the converter
   maps (`aggressive`, `self_target`, `needs_target`, `needs_direction`, `target_or_direction`, `block_walls`,
-  `allow_on_self`, `check_floor`; registrars), range (wikis and registrars). Where the references
+  `allow_on_self`, `check_floor`; registrars), range (wikis and registrars), and the target restriction
+  `allowed_targets` against the accepted S27 onCastSpell guard (`guard-behaviours.json`). Where the references
   conflict, our value must be that of the source the catalogue manifest records as the winner
   (S3/S11/S13/S14); a recorded native resolution (S27, Disintegrate non-aggressive) requires a value
   that differs from the references;
@@ -88,11 +89,16 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   with the converter defaults (all 36 agree).
 - Codex P2 on b83699ad (duplicate carriers pass the inventory): repaired; the inventory reports duplicate
   names and the tool exits 1 without writing when any exist.
+- Codex P2 on d861cb74 (`allowed_targets` unaudited): repaired; a `target_guard` check requires the S27
+  guard's restriction (Intense and Ultimate Healing `self_or_own_summons`) and none on an unguarded rune.
+- Codex P2 on d861cb74 (several recorded agreeing sources let a new divergence pass): repaired; several
+  recorded sources are agreement provenance, so a new divergence follows the converter's S4 rule (Canary
+  decides between the registrars) and any other such conflict fails.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 11 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 12 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

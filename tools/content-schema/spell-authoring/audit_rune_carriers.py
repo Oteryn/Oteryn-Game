@@ -10,8 +10,11 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the cooldown group, every targeting flag the converter maps (`TARGETING_FLAGS`) and far use against
   the Canary and Crystal registrars, and the range against the wikis and the registrars; where the
   references conflict, our value must be the one the catalogue manifest records as the winning source
-  (S3/S11/S13/S14), and a recorded native resolution (S27) requires a value that differs from the
-  references;
+  (S3/S11/S13/S14), several recorded sources that now diverge follow the converter's S4 rule (Canary
+  decides between the registrars), and a recorded native resolution (S27) requires a value that
+  differs from the references;
+- the target restriction (`allowed_targets`) against the accepted onCastSpell guard of
+  `guard-behaviours.json` (S27); a rune without a guard has none;
 - the dated current rune-use facts of `rune-use-source-resolutions.json`, which replace the field
   they name;
 - `rune.charges` against the conjuring spell's `count` where both exist (§3);
@@ -41,6 +44,7 @@ CATALOGUE = REPO / 'content/abilities/definitions/player-spells.json'
 ITEM_PROFILES = REPO / 'content/items/definitions/spell-native-profiles.json'
 CENSUS = HERE / 'samples/spell-census-canary-99902524-crystal-ff7ede5.json'
 RESOLUTIONS = HERE / 'rune-use-source-resolutions.json'
+GUARDS = HERE / 'guard-behaviours.json'
 OUT = HERE / 'samples/rune-carrier-audit.json'
 DECISION = 'docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md'
 
@@ -103,6 +107,8 @@ def registrars(census):
 def check(ours, found, required=False, recorded=None):
     """Compare our value with its references. On a reference conflict our value must be that of the source the
     catalogue manifest records as the winner of its S3/S11/S13/S14 resolution; matching any reference is not enough.
+    Several recorded sources are agreement provenance, not a winner: when they now diverge, the converter's S4 rule
+    applies (Canary decides a registrar-only conflict) and any other such conflict fails.
     A recorded native resolution (S27) requires our value to differ from the agreeing references; it is the only
     way such a value passes."""
     recorded = recorded or {}
@@ -111,8 +117,12 @@ def check(ours, found, required=False, recorded=None):
     row = {'ours': ours, 'references': found, 'verdict': verdict}
     if verdict == 'sources_disagree':
         row['follows'] = follows
-        row['recorded_winner'] = sorted(recorded.get('sources', ()))
-        passed = bool(set(follows) & recorded.get('sources', set()))
+        winners = recorded.get('sources', set()) & set(found)
+        row['recorded_winner'] = sorted(winners)
+        if len(winners) > 1:
+            passed = winners <= set(REGISTRARS) and 'canary' in follows
+        else:
+            passed = bool(set(follows) & winners)
     if recorded.get('native'):
         # A recorded native override constrains the value whatever the references say: it must differ from them.
         row['resolution'] = recorded['native']
@@ -200,7 +210,7 @@ def stack_facts(profile):
             'pass': stackable is True and stack_max == STACK_MAX and stack_class == 'StackCapable'}
 
 
-def audit_carrier(entry, references, registrar, resolutions, conjures, profiles):
+def audit_carrier(entry, references, registrar, resolutions, conjures, profiles, guard):
     spell = entry['bundle']['spell']
     name = spell['name'].lower()
     item_key = spell['rune']['item']['key']
@@ -231,7 +241,13 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
                                recorded=recorded(entry, base + 'rune/allow_far_use')),
     }
     for field, key in TARGETING_FLAGS:
+        if field in guard:
+            continue  # the S27 guard replaces the registrar value (`convert_spells.Spell.targeting`)
         checks[field] = check(targeting.get(field), flag(key), recorded=recorded(entry, base + 'targeting/' + field))
+    # S27: the accepted onCastSpell guard of a rune fixes its target restriction; without one there is none.
+    expected = {'allowed_targets': None, **guard}
+    checks['target_guard'] = {'ours': {field: targeting.get(field) for field in expected}, 'guard': expected,
+                              'pass': all(targeting.get(field) == value for field, value in expected.items())}
     # Every registrar-backed check compares both engines; a carrier with one registrar record stays blocked.
     checks['registrars'] = {'present': sorted(registrar), 'required': list(REGISTRARS),
                             'pass': all(source in registrar for source in REGISTRARS)}
@@ -267,7 +283,12 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
             'checks': checks, 'failed': failed, 'verdict': 'checks_pass' if not failed and group else 'checks_fail'}
 
 
-def audit(catalogue, documents, census, resolutions, profiles):
+def rune_guard(guard):
+    """The targeting fields of an accepted rune onCastSpell guard (`convert_spells.Spell.guard`), or {}."""
+    return guard.get('targeting', {}) if guard.get('spell_type') == 'rune' else {}
+
+
+def audit(catalogue, documents, census, resolutions, profiles, guards=None):
     references = vs.References(documents)
     regs = registrars(census)
     conjures = {}
@@ -278,7 +299,8 @@ def audit(catalogue, documents, census, resolutions, profiles):
             conjures.setdefault(conjure['result']['key'], {})[spell['name'].lower()] = conjure['count']
     by_item = {profile['authoring']['item']['key']: profile for profile in profiles['records']}
     carriers = [audit_carrier(entry, references, regs.get(vs.rune_name(entry['bundle']['spell']['name']), {}),
-                              resolutions.get('spells', {}), conjures, by_item)
+                              resolutions.get('spells', {}), conjures, by_item,
+                              rune_guard((guards or {}).get(entry['bundle']['spell']['name'].lower(), {})))
                 for entry in catalogue['bundles'] if entry['bundle']['spell']['carrier'] == 'rune']
     carriers.sort(key=lambda row: row['name'])
     names = {row['name'] for row in carriers}
@@ -298,8 +320,9 @@ def audit(catalogue, documents, census, resolutions, profiles):
 def document():
     load = lambda path: json.loads(path.read_text(encoding='utf-8'))
     documents = {name: load(path) for name, path in vs.FACTS.items()}
-    summary, carriers = audit(load(CATALOGUE), documents, load(CENSUS), load(RESOLUTIONS), load(ITEM_PROFILES))
-    inputs = [CATALOGUE, ITEM_PROFILES, CENSUS, RESOLUTIONS, *vs.FACTS.values()]
+    summary, carriers = audit(load(CATALOGUE), documents, load(CENSUS), load(RESOLUTIONS), load(ITEM_PROFILES),
+                              load(GUARDS)['spells'])
+    inputs = [CATALOGUE, ITEM_PROFILES, CENSUS, RESOLUTIONS, GUARDS, *vs.FACTS.values()]
     return {'schema': 'OTERYN_RUNE_CARRIER_AUDIT/v1', 'decision': DECISION,
             'inputs': [str(path.relative_to(REPO)) for path in inputs],
             'limits': {'area_tiles_max': AREA_TILES_MAX, 'victim_cap_max': 2 * AREA_TILES_MAX,

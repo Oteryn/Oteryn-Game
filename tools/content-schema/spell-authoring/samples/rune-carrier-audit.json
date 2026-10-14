@@ -147,6 +147,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -337,6 +346,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -531,6 +549,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -722,6 +749,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -912,6 +948,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -1108,6 +1153,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -1302,6 +1356,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -1494,6 +1557,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -1688,6 +1760,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -1880,6 +1961,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -2074,6 +2164,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -2266,6 +2365,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -2460,6 +2568,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -2652,6 +2769,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -2846,6 +2972,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -3038,6 +3173,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -3232,6 +3376,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -3425,6 +3578,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -3608,6 +3770,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -3799,6 +3970,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": "self_or_own_summons"
+     },
+     "ours": {
+      "allowed_targets": "self_or_own_summons"
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -3998,6 +4178,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -4186,6 +4375,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -4378,6 +4576,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -4563,6 +4770,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -4759,6 +4975,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -4949,6 +5174,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -5134,6 +5368,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -5328,6 +5571,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -5520,6 +5772,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -5714,6 +5975,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -5906,6 +6176,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -6100,6 +6379,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -6292,6 +6580,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -6486,6 +6783,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -6676,6 +6982,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": "self_or_own_summons"
+     },
+     "ours": {
+      "allowed_targets": "self_or_own_summons"
+     },
+     "pass": true
     },
     "target_or_direction": {
      "ours": false,
@@ -6874,6 +7189,15 @@
      "stack_max": 100,
      "stackable": true
     },
+    "target_guard": {
+     "guard": {
+      "allowed_targets": null
+     },
+     "ours": {
+      "allowed_targets": null
+     },
+     "pass": true
+    },
     "target_or_direction": {
      "ours": false,
      "pass": true,
@@ -6916,6 +7240,7 @@
   "content/items/definitions/spell-native-profiles.json",
   "tools/content-schema/spell-authoring/samples/spell-census-canary-99902524-crystal-ff7ede5.json",
   "tools/content-schema/spell-authoring/rune-use-source-resolutions.json",
+  "tools/content-schema/spell-authoring/guard-behaviours.json",
   "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
   "tools/content-schema/spell-authoring/samples/wiki-spell-facts-br-2026-09-27.json",
   "tools/content-schema/spell-authoring/samples/tibiopedia-spell-facts-2026-09-28.json"
