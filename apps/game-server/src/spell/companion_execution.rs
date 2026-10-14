@@ -503,6 +503,7 @@ mod tests {
             condition_immunities: vec![ConditionType::Haste],
             preferred_distance: Some(1),
             reward_boss: Some(false),
+            defense: Some(1),
             armor: Some(10),
             mitigation: None,
             resistances: vec![],

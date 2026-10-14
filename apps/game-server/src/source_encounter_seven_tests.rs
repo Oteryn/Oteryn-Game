@@ -126,6 +126,7 @@ fn policy(d: &ProjectV2Draft, key: &str) -> CompiledCreaturePolicy {
                 _ => panic!("exact source fixture condition"),
             })
             .collect(),
+        defense: Some(detail.defense),
         armor: cp.armor,
         mitigation: cp.mitigation.map(ratio),
         resistances: cp
