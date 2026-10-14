@@ -65,7 +65,10 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
   takes the `WorldObjectTargetV1` that USE field 1 already uses for such objects (placement and
   observed revision), a new field inside `UseWithV1` and so wire-compatible. The placement is
   non-empty and at most 496 bytes, so a u64 tool handle plus the arm stays within the unchanged
-  529-byte `WORLDINT0-RL-22`; `PUSH_INTENT` (41 bytes) is not affected.
+  529-byte `WORLDINT0-RL-22`; `PUSH_INTENT` (41 bytes) is not affected. The #1622 control plane,
+  under the owner's delegation, chose this arm (option 1) on 2026-10-14; WORLD-INTERACTION-0 §10.1
+  is amended with it (and the `WORLDINT0-RL-22` row names both map arms; 529 bytes unchanged).
+- `ITEM_MOVE_OUTCOME_BLOCKED` is annotated as capability 12 or capability 11 (Codex P2).
 - `PUSH_INTENT` is flat: identity, the full `uint64` generation, destination x and y over the full
   `sint32` domain, both always present (zero is an explicit varint; a payload without either fails
   closed). OWNER DECISION (2026-10-14, option A): keep the `uint64` generation and the full `sint32`
@@ -101,6 +104,9 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 - `map_object` arm commit: fmt and clippy pass; `cargo test --locked -p oteryn-protocol-oteryn` pass
   (226); the game-server matches `use_with_map_item` only as `Some(_)`/`None` and was left to CI
   (local disk too small for a game-server build)
+- §10.1 amendment and P2 commit: fmt, clippy `-D warnings` and `cargo test --locked -p
+  oteryn-protocol-oteryn` pass (226, with a schema assert on the BLOCKED annotation); governance
+  validation passes
 - `oteryn-architecture-check workspace .`: pass
 
 ## Self-review

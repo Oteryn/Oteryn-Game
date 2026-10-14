@@ -22,6 +22,8 @@ const SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto");
 const USE_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
+const ITEM_SCHEMA: &str =
+    include_str!("../../../docs/contracts/protocol-oteryn/v1/item_view_v1.proto");
 
 fn push(generation: u64, to_x: i32, to_y: i32) -> PushIntent {
     PushIntent {
@@ -476,6 +478,9 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     assert!(USE_SCHEMA.contains("ItemTargetV1 map_item = 3;"));
     assert!(USE_SCHEMA.contains("WorldObjectTargetV1 map_object = 4;"));
     assert!(USE_SCHEMA.contains("at most 496 bytes"));
+    assert!(ITEM_SCHEMA.contains(
+        "// Capability 12 or capability 11 (a map-item or Ground source, WORLD-INTERACTION-0 §10.1): the\n  // tile does not accept the item, no line of sight, or a limit is reached.\n  ITEM_MOVE_OUTCOME_BLOCKED = 12;"
+    ));
     assert!(
         capability["offer_gate"]
             .as_str()
