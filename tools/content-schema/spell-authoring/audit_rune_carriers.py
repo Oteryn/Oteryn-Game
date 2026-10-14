@@ -7,7 +7,8 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
 - that both the Canary and the Crystal registrar records exist;
-- the cooldown group, every targeting flag the converter maps (`TARGETING_FLAGS`) and far use against
+- the cooldown group, every targeting flag the converter maps (`TARGETING_FLAGS`), the PZ lock and
+  weapon flags (`SPELL_FLAGS`) and far use against
   the Canary and Crystal registrars, and the range against the wikis and the registrars; where the
   references conflict, our value must be the one the catalogue manifest records as the winning source
   (S3/S11/S13/S14), several recorded sources that now diverge follow the converter's S4 rule (Canary
@@ -83,7 +84,10 @@ AUDITED_TARGETING = ({field for field, _ in TARGETING_FLAGS} |
 # The registrar defaults of an omitted call (`convert_spells.DEFAULTS`).
 REGISTRAR_DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
                       'needCasterTargetOrDirection': False, 'blockWalls': True, 'allowOnSelf': True,
-                      'checkFloor': True, 'allowFarUse': False}
+                      'checkFloor': True, 'allowFarUse': False,
+                      'setPzLocked': False, 'needWeapon': False}
+# The top-level spell flags the converter maps from the registrars alone (no wiki states them).
+SPELL_FLAGS = (('pz_locks_caster', 'setPzLocked'), ('needs_weapon', 'needWeapon'))
 
 def group_of(name):
     for group, (needs, names) in GROUPS.items():
@@ -246,6 +250,8 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
         'allow_far_use': check(rune.get('allow_far_use'), flag('allowFarUse'),
                                recorded=recorded(entry, base + 'rune/allow_far_use')),
     }
+    for field, key in SPELL_FLAGS:
+        checks[field] = check(spell.get(field), flag(key), recorded=recorded(entry, base + field))
     for field, key in TARGETING_FLAGS:
         if field in guard:
             continue  # the S27 guard replaces the registrar value (`convert_spells.Spell.targeting`)

@@ -16,7 +16,8 @@ def carrier(name, item, charges, area=None, creates_fields=False, group='attack'
     effects = [{'operation': 'create_item'}] if creates_fields else []
     return {'bundle': {'spell': {
         'name': name, 'carrier': 'rune', 'requirements': {'level': 1, 'vocations': list(vocations)},
-        'costs': {'mana': 0, 'soul': 0}, 'groups': [{'group': group, 'cooldown_ms': 2000}],
+        'costs': {'mana': 0, 'soul': 0}, 'pz_locks_caster': False, 'needs_weapon': False,
+        'groups': [{'group': group, 'cooldown_ms': 2000}],
         'targeting': {'needs_target': False, 'aggressive': aggressive, 'self_target': False, 'needs_direction': False,
                       'target_or_direction': False, 'block_walls': True, 'allow_on_self': True, 'check_floor': True,
                       'parameter': 'none',
@@ -148,6 +149,12 @@ class RuneCarrierAuditTest(unittest.TestCase):
         _, rows = run([carrier('sudden death rune', 3155, 3, new_mode='x')], profiles)
         self.assertEqual(rows['sudden death rune']['failed'], ['targeting_fields'])
         self.assertEqual(rows['sudden death rune']['checks']['targeting_fields']['unaudited'], ['new_mode'])
+
+    def test_spell_flags(self):
+        entry = carrier('sudden death rune', 3155, 3)
+        entry['bundle']['spell']['pz_locks_caster'] = True
+        _, rows = run([entry], [profile('candidate:item/3155')])
+        self.assertEqual(rows['sudden death rune']['failed'], ['pz_locks_caster'])
 
     def test_range_is_checked_against_the_registrars(self):
         row = audit.check(99, {'canary': 5, 'crystal': 5})

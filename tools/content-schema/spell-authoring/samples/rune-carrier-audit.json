@@ -129,10 +129,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -352,10 +370,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -575,10 +611,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -800,10 +854,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -1023,10 +1095,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -1247,10 +1337,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 1,
@@ -1473,10 +1581,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 5,
@@ -1699,10 +1825,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -1924,10 +2068,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -2149,10 +2311,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -2374,10 +2554,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -2599,10 +2797,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -2824,10 +3040,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -3049,10 +3283,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -3274,10 +3526,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -3499,10 +3769,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -3724,10 +4012,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -3949,10 +4255,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -4165,10 +4489,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -4390,10 +4732,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -4618,10 +4978,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -4841,10 +5219,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -5064,10 +5460,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -5282,10 +5696,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -5507,10 +5939,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -5731,10 +6181,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -5947,10 +6415,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -6172,10 +6658,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -6397,10 +6901,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -6622,10 +7144,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -6847,10 +7387,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -7072,10 +7630,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -7297,10 +7873,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -7522,10 +8116,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,
@@ -7747,10 +8359,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": null,
@@ -7974,10 +8604,28 @@
      },
      "verdict": "agree"
     },
+    "needs_weapon": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "parameter": {
      "ours": "none",
      "pass": true,
      "registrars": "none"
+    },
+    "pz_locks_caster": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "range_tiles": {
      "ours": 7,

@@ -38,7 +38,8 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
   registrars where no wiki states them), cooldown group, far use and every targeting flag the converter
   maps (`aggressive`, `self_target`, `needs_target`, `needs_direction`, `target_or_direction`, `block_walls`,
-  `allow_on_self`, `check_floor`; registrars), range (wikis and registrars), and the target restriction
+  `allow_on_self`, `check_floor`; registrars), the PZ-lock and weapon flags (`pz_locks_caster`,
+  `needs_weapon`; registrars), range (wikis and registrars), and the target restriction
   `allowed_targets` against the accepted S27 onCastSpell guard (`guard-behaviours.json`), and the
   `parameter` mode, `cast_at_position` (`optionalTarget`) and `aim_at_target` as the converter derives
   them; any other targeting field fails as unaudited (`targeting_fields`). Where the references
@@ -102,11 +103,14 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - Codex P2 on 87cc5d66 (`cast_at_position` unaudited): repaired at the root; `cast_at_position` and
   `aim_at_target` are checked, and a closed `targeting_fields` check fails any targeting field the audit
   does not cover, so a new converter field cannot pass unaudited.
+- Codex P2 on 34edef0b (`pz_locks_caster` unaudited): repaired; `pz_locks_caster` and `needs_weapon`,
+  the converter's registrar-only spell flags, are checked against both registrars (all 36 agree). The
+  other mapped spell facts are wiki-stated and already compared by `verify_spells.py`.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 14 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 15 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok
