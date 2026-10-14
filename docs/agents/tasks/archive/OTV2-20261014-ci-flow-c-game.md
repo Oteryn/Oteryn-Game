@@ -58,7 +58,7 @@ external_repositories:
 
 ### Focused
 
-- `python -m unittest test_classify_quest_authoring_scope` (tools/repository): OK, 16 tests
+- `python -m unittest test_classify_quest_authoring_scope` (tools/repository): OK, 24 tests in about 28 s (run on 10dfe4b3d, the last code change)
 - `python tools/repository/validate_repository_policy.py`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: OK
