@@ -587,6 +587,8 @@ struct SourceRow {
     world_id: [u8; 16],
     ground: OneItemGroundV1,
     corpse: Option<CorpseEntrySource>,
+    /// KEY-1: the instance's immutable key number, 0 for a non-key.
+    key_number: u32,
 }
 
 struct Admitted {
@@ -1403,9 +1405,11 @@ async fn load_source(
         "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
                 i.definition_revision_ref, i.quantity, g.channel_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
-                g.map_revision, g.content_revision, g.native_room_placement_context \
+                g.map_revision, g.content_revision, g.native_room_placement_context, \
+                COALESCE(k.key_number, 0) AS key_number \
            FROM game_item_instances i \
            JOIN game_item_ground_locations g USING (item_instance_id, world_id) \
+           LEFT JOIN game_item_keys k USING (item_instance_id) \
           WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1 \
           FOR UPDATE OF i",
     )
@@ -1445,6 +1449,10 @@ fn source_row(
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         },
         corpse,
+        key_number: row
+            .try_get::<i32, _>("key_number")?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
     }))
 }
 
@@ -1472,7 +1480,8 @@ async fn load_corpse_entry_source(
                 e.parent_item_instance_id::text AS corpse_id, \
                 e.placement_ordinal::text AS placement_ordinal, g.channel_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
-                g.map_revision, g.content_revision, g.native_room_placement_context \
+                g.map_revision, g.content_revision, g.native_room_placement_context, \
+                COALESCE(k.key_number, 0) AS key_number \
            FROM game_item_instances i \
            JOIN game_item_corpse_container_entries e \
              ON e.item_instance_id = i.item_instance_id AND e.world_id = i.world_id \
@@ -1480,6 +1489,7 @@ async fn load_corpse_entry_source(
              ON g.item_instance_id = e.parent_item_instance_id AND g.world_id = e.world_id \
            JOIN game_item_instances ci \
              ON ci.item_instance_id = e.parent_item_instance_id AND ci.lifecycle = 1 \
+           LEFT JOIN game_item_keys k ON k.item_instance_id = i.item_instance_id \
           WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1",
     )
     .bind(item_instance_id.as_slice())
@@ -1603,6 +1613,7 @@ fn transfer_message(
         definition: Some(definition_message(&source.item.definition)),
         quantity,
         lifecycle,
+        key_number: source.key_number,
     };
     let before = source.item.quantity;
     let (after, entry, slot, receiver) = match admitted.plan {
