@@ -7,7 +7,9 @@
 //! the gameplay reads use:
 //!
 //! - [`PremiumConsumer::premium_current`]: true only for [`PremiumClass::CurrentAuthority`];
-//!   every other class reads as Free. Every Premium check in Game reads it.
+//!   every other class reads as Free. Every Premium check in Game reads it, as the
+//!   [`PremiumGate`] of [`PremiumConsumer::gate`] or, for a spell cast's time-bounded projection,
+//!   [`PremiumConsumer::current_premium`] (PREM-WIRE-1).
 //! - [`PremiumConsumer::premium_entitlement_ended`]: the entitlement itself ended; the only
 //!   input of the login relocation (PREMIUM-ACTIVATION §4.5 as amended). A lapsed lease, missing
 //!   evidence or a failed pull never makes it true.
@@ -27,6 +29,7 @@ pub mod snapshot;
 #[cfg(test)]
 pub mod test_producer;
 
+use crate::domain::premium::PremiumGate;
 use crate::durability::premium_fence::{
     EntitlementState, PremiumAccountRecord, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
 };
@@ -109,6 +112,21 @@ impl TrustedNow {
                 upper_us: now_us.saturating_add(uncertainty_us),
             })
     }
+
+    /// The conservative upper bound of the window, in Unix microseconds.
+    #[must_use]
+    pub const fn upper_us(self) -> i64 {
+        self.upper_us
+    }
+}
+
+/// A `CurrentAuthority` read: the authority revision it rests on and when its benefit ends
+/// without newer accepted evidence, the earliest of `effective_until`, `authority_valid_until`
+/// and `refresh_after` (PREM-P §8.2), in Unix microseconds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CurrentPremium {
+    pub authority_revision: u64,
+    pub benefit_until_us: i64,
 }
 
 /// The ticket of one pull, taken when it starts: increasing across accounts and `release`.
@@ -294,6 +312,48 @@ impl PremiumConsumer {
     /// The one Premium read of Game (PREMIUM-DELIVERY-0 §6).
     pub fn premium_current(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> bool {
         self.class(account_id, now) == PremiumClass::CurrentAuthority
+    }
+
+    /// PREM-WIRE-1: the gate every Premium-gated decision reads (PREMIUM-ACTIVATION §4.1).
+    pub fn gate(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> PremiumGate {
+        PremiumGate::from_fence_read(self.premium_current(account_id, now))
+    }
+
+    /// The same read as [`Self::premium_current`], with what a time-bounded projection needs.
+    /// `None` for every class but `CurrentAuthority`; classified and read under one lock.
+    pub fn current_premium(
+        &self,
+        account_id: [u8; 16],
+        now: Option<TrustedNow>,
+    ) -> Option<CurrentPremium> {
+        let accounts = self.lock();
+        let view = accounts.get(&account_id);
+        if classify(view, now) != PremiumClass::CurrentAuthority {
+            return None;
+        }
+        let latest = &view?.fence.as_ref()?.latest;
+        Some(CurrentPremium {
+            authority_revision: latest.authority_revision,
+            benefit_until_us: latest
+                .effective_until_us
+                .min(latest.authority_valid_until_us)
+                .min(latest.refresh_after_us),
+        })
+    }
+
+    /// Tests outside this module: install `evidence` as proven in this process.
+    #[cfg(test)]
+    pub(crate) fn prove_for_test(&self, evidence: PremiumEvidence) {
+        let ticket = self.ticket();
+        self.update(evidence.account_id, |view| {
+            view.prove(
+                ticket,
+                PremiumFenceView {
+                    latest: evidence,
+                    conflicting: false,
+                },
+            );
+        });
     }
 
     /// True only when the latest accepted evidence says the entitlement itself ended: producer

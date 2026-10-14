@@ -1,30 +1,24 @@
-//! Candidate bounded account coordinator. Only fresh authenticated Platform pulls committed by
-//! the real durable consumer issue a benefit view; restart never reconstructs cached grants.
+//! PREM-WIRE-1: the spell casts read the one Premium fence of Game, the PREM-1
+//! [`PremiumConsumer`] the node's [`PremiumRefresher`](crate::premium::refresh::PremiumRefresher)
+//! pulls, fences and proves (PREMIUM-DELIVERY-0 §6). There is no second Premium store: a view
+//! reads the consumer live at every use, so a failed pull, a revocation, a lapsed lease or a lost
+//! clock closes it at once, and a restart reconstructs nothing.
 //!
-//! PREM-WIRE-1: [`SpellPremiumCoordinator::premium_gate`] is the account-level read of the same
-//! committed view, for Premium-gated decisions that are not spell casts. It is open only while the
-//! view's committed fence read classifies the account as current under a live clock epoch.
-#![allow(
-    dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
-)]
+//! [`SpellPremiumCoordinator::premium_gate`] and [`ComposedFreshAdmission::premium_gate`] are the
+//! account-level reads, for Premium-gated decisions that are not spell casts. Every read needs a
+//! registered trusted clock owner; without one every account reads Free.
 use super::{
     ComposedFreshAdmission,
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
-    spell_entitlements::{PremiumAccessOwner, PremiumSource, TrustedTime},
 };
 use crate::domain::premium::PremiumGate;
-use crate::durability::spell_premium_abi::{AuthenticatedSnapshot, Classification};
 use crate::durability::{
     fresh_admission::FreshAdmissionStore, item_transfer::CurrentCharacterItemFence,
 };
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
-use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding};
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, Weak},
-};
-const MAX_ACCOUNTS: usize = 64;
+use crate::premium::{PremiumConsumer, TrustedNow};
+use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding, CurrentProjection};
+use std::sync::Arc;
 /// Explicit registration from a genuine independent trusted clock owner. SystemTime, database
 /// receipt time and a readiness field with guessed zero uncertainty cannot implement this port.
 pub(crate) mod clock_registration {
@@ -33,62 +27,67 @@ pub(crate) mod clock_registration {
 pub(crate) trait RegisteredPremiumClock:
     clock_registration::Registered + Send + Sync
 {
-    fn read_current_window(&self) -> Option<TrustedTime>;
+    /// The current trusted window (consumer contract §7), or `None` while unsynchronized.
+    fn read_current_window(&self) -> Option<TrustedNow>;
 }
 pub(crate) enum RegisteredSpellAccessOwner {
     Unavailable {
         account: Option<[u8; 16]>,
     },
     Premium {
-        owner: Box<PremiumAccessOwner>,
-        fence: CommittedFenceRead,
-        gate: AccountViewGate,
+        account: [u8; 16],
+        consumer: Arc<PremiumConsumer>,
+        clock: Arc<dyn RegisteredPremiumClock>,
     },
 }
 impl RegisteredSpellAccessOwner {
     pub(crate) fn unavailable() -> Self {
         Self::Unavailable { account: None }
     }
-    /// The account's Premium standing now. Closed for an unavailable view, a revoked epoch, a
-    /// lost clock, and every class but current (PREMIUM-ACTIVATION §4.1).
+    /// The account's Premium standing now. Closed for an unavailable view, a lost clock, and
+    /// every class but current authority (PREMIUM-ACTIVATION §4.1).
     pub(crate) fn premium_gate(&self) -> PremiumGate {
         match self {
             Self::Unavailable { .. } => PremiumGate::CLOSED,
-            Self::Premium { fence, gate, .. } => fence.gate(gate.current_time()),
+            Self::Premium {
+                account,
+                consumer,
+                clock,
+            } => match clock.read_current_window() {
+                Some(now) => consumer.gate(*account, Some(now)),
+                None => PremiumGate::CLOSED,
+            },
         }
     }
 }
-/// The committed fence read a Premium view was issued from: what classifies the account.
-#[derive(Debug, Clone)]
-pub(crate) struct CommittedFenceRead {
-    snapshot: Option<AuthenticatedSnapshot>,
-    conflict: bool,
-    fresh: bool,
-}
-impl CommittedFenceRead {
-    fn gate(&self, time: Option<TrustedTime>) -> PremiumGate {
-        let (Some(snapshot), Some(time)) = (&self.snapshot, time) else {
-            return PremiumGate::CLOSED;
-        };
-        PremiumGate::from_fence_read(
-            match snapshot.classification(time, self.conflict, self.fresh) {
-                Classification::Current => true,
-                Classification::Free
-                | Classification::Revoked
-                | Classification::Expired
-                | Classification::NotYetEffective
-                | Classification::Unavailable
-                | Classification::Conflicting => false,
-            },
-        )
-    }
+/// The Premium projection of `account` for `binding`, read live: present only for current
+/// authority, valid in the owner's monotonic domain (`now`) until the benefit ends. The remaining
+/// time is taken from the conservative upper bound of the trusted window.
+fn premium_projection(
+    consumer: &PremiumConsumer,
+    clock: &dyn RegisteredPremiumClock,
+    account: [u8; 16],
+    binding: &CastFactsBinding,
+    now: u64,
+) -> Option<CurrentProjection<bool>> {
+    let trusted = clock.read_current_window()?;
+    let current = consumer.current_premium(account, Some(trusted))?;
+    let remaining = u64::try_from(current.benefit_until_us.checked_sub(trusted.upper_us())?)
+        .ok()
+        .filter(|remaining| *remaining > 0)?;
+    Some(CurrentProjection {
+        binding: binding.clone(),
+        authority_revision: current.authority_revision,
+        valid_until_micros: now.checked_add(remaining)?,
+        value: true,
+    })
 }
 impl owner_registration::Registered for RegisteredSpellAccessOwner {}
 impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
     fn account_id(&self) -> Option<[u8; 16]> {
         match self {
             Self::Unavailable { account } => *account,
-            Self::Premium { owner, .. } => Some(owner.account()),
+            Self::Premium { account, .. } => Some(*account),
         }
     }
     fn read_current(
@@ -96,13 +95,17 @@ impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
         binding: &CastFactsBinding,
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
-        match self {
-            Self::Unavailable { .. } => Ok(AccessProjections::default()),
-            Self::Premium { owner, gate, .. } => match gate.current_time() {
-                Some(time) => owner.read_current_at_trusted_time(binding, now, time),
-                None => Ok(AccessProjections::default()),
+        Ok(match self {
+            Self::Unavailable { .. } => AccessProjections::default(),
+            Self::Premium {
+                account,
+                consumer,
+                clock,
+            } => AccessProjections {
+                premium: premium_projection(consumer, clock.as_ref(), *account, binding, now),
+                ..AccessProjections::default()
             },
-        }
+        })
     }
 }
 impl owner_registration::Registered for Arc<RegisteredSpellAccessOwner> {}
@@ -118,235 +121,39 @@ impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
         self.as_ref().read_current(binding, now)
     }
 }
-struct Entry {
-    epoch: u64,
-    in_flight: bool,
-    view: Arc<RegisteredSpellAccessOwner>,
-}
-pub(crate) struct AccountViewGate {
-    views: Weak<Mutex<BTreeMap<[u8; 16], Entry>>>,
-    account: [u8; 16],
-    epoch: u64,
-    clock: Arc<dyn RegisteredPremiumClock>,
-}
-impl AccountViewGate {
-    fn current_time(&self) -> Option<TrustedTime> {
-        let views = self.views.upgrade()?;
-        let time = self.clock.read_current_window();
-        let mut views = views.lock().ok()?;
-        let entry = views.get_mut(&self.account)?;
-        if entry.epoch != self.epoch {
-            return None;
-        }
-        if time.is_none() {
-            entry.epoch = entry.epoch.saturating_add(1);
-            entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(self.account),
-            });
-        }
-        time
-    }
-}
+/// The node's Premium reads: the one PREM-1 consumer and the registered trusted clock owner.
 pub(crate) struct SpellPremiumCoordinator {
-    source: Option<Arc<PremiumSource>>,
+    consumer: Arc<PremiumConsumer>,
     clock: Option<Arc<dyn RegisteredPremiumClock>>,
-    views: Arc<Mutex<BTreeMap<[u8; 16], Entry>>>,
 }
 impl SpellPremiumCoordinator {
     pub(crate) fn new(
-        source: Option<Arc<PremiumSource>>,
+        consumer: Arc<PremiumConsumer>,
         clock: Option<Arc<dyn RegisteredPremiumClock>>,
     ) -> Self {
-        Self {
-            source,
-            clock,
-            views: Arc::new(Mutex::new(BTreeMap::new())),
-        }
+        Self { consumer, clock }
     }
-    pub(crate) fn current(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
-        self.views
-            .lock()
-            .ok()
-            .and_then(|views| views.get(&account).map(|entry| Arc::clone(&entry.view)))
-            .unwrap_or_else(|| {
-                Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                })
-            })
+    /// The consumer the node's Premium refresher must pull into: the same fence these reads use.
+    pub(crate) fn consumer(&self) -> Arc<PremiumConsumer> {
+        Arc::clone(&self.consumer)
     }
-    fn deny(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
-        let denied = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-            account: Some(account),
-        });
-        if let Ok(mut views) = self.views.lock()
-            && let Some(entry) = views.get_mut(&account)
-        {
-            entry.epoch = entry.epoch.saturating_add(1);
-            entry.view = Arc::clone(&denied);
-        }
-        denied
-    }
-    /// The account's Premium standing now, from its current view: the one gate a Premium-gated
-    /// decision reads. Closed for an account with no view, so restart and failure deny.
-    pub(crate) fn premium_gate(&self, account: [u8; 16]) -> PremiumGate {
-        self.current(account).premium_gate()
-    }
-    fn finish(
-        &self,
-        account: [u8; 16],
-        owner: PremiumAccessOwner,
-        fence: CommittedFenceRead,
-    ) -> Arc<RegisteredSpellAccessOwner> {
-        let Some(clock) = &self.clock else {
-            return self.deny(account);
-        };
-        let Ok(mut views) = self.views.lock() else {
-            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-        };
-        let Some(entry) = views.get_mut(&account) else {
-            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-        };
-        let Some(epoch) = entry.epoch.checked_add(1).filter(|v| *v < u64::MAX) else {
-            entry.epoch = u64::MAX;
-            entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-            return Arc::clone(&entry.view);
-        };
-        entry.epoch = epoch;
-        let view = Arc::new(RegisteredSpellAccessOwner::Premium {
-            owner: Box::new(owner),
-            fence,
-            gate: AccountViewGate {
-                views: Arc::downgrade(&self.views),
+    /// The live view of `account`. Unavailable without a registered clock owner.
+    pub(crate) fn view(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
+        Arc::new(match &self.clock {
+            Some(clock) => RegisteredSpellAccessOwner::Premium {
                 account,
-                epoch,
+                consumer: Arc::clone(&self.consumer),
                 clock: Arc::clone(clock),
             },
-        });
-        entry.view = Arc::clone(&view);
-        view
+            None => RegisteredSpellAccessOwner::Unavailable {
+                account: Some(account),
+            },
+        })
     }
-    async fn refresh(
-        &self,
-        owner: &ComposedFreshAdmission<'_, '_, '_>,
-        before: PremiumOwnerBinding,
-    ) -> Arc<RegisteredSpellAccessOwner> {
-        let account = before.account;
-        {
-            let Ok(mut views) = self.views.lock() else {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
-            };
-            if !views.contains_key(&account) && views.len() >= MAX_ACCOUNTS {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
-            }
-            let entry = views.entry(account).or_insert_with(|| Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                }),
-            });
-            if entry.in_flight {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
-            }
-            entry.in_flight = true;
-        }
-        struct Guard<'a> {
-            coordinator: &'a SpellPremiumCoordinator,
-            account: [u8; 16],
-            completed: bool,
-        }
-        impl Drop for Guard<'_> {
-            fn drop(&mut self) {
-                if let Ok(mut views) = self.coordinator.views.lock()
-                    && let Some(entry) = views.get_mut(&self.account)
-                {
-                    entry.in_flight = false;
-                    if !self.completed {
-                        entry.epoch = entry.epoch.saturating_add(1);
-                        entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                            account: Some(self.account),
-                        });
-                    }
-                }
-            }
-        }
-        let mut guard = Guard {
-            coordinator: self,
-            account,
-            completed: false,
-        };
-        let Some(source) = &self.source else {
-            return self.deny(account);
-        };
-        let Some(clock) = &self.clock else {
-            return self.deny(account);
-        };
-        if clock.read_current_window().is_none() {
-            return self.deny(account);
-        }
-        let snapshot = match source.pull(account).await {
-            Ok(snapshot) => snapshot,
-            Err(_) => {
-                let _ = owner.root.premium_failed_pull(account).await;
-                return self.deny(account);
-            }
-        };
-        if snapshot.account() != account {
-            return self.deny(account);
-        }
-        let Some(after) = owner
-            .current_premium_binding(before.actor, before.session)
-            .await
-        else {
-            return self.deny(account);
-        };
-        if after != before {
-            return self.deny(account);
-        }
-        let committed = match owner.root.consume_premium_snapshot(snapshot).await {
-            Ok(read) => read,
-            Err(_) => return self.deny(account),
-        };
-        // A lease/root/actor handover during durable consumer commit never installs a live view.
-        let Some(final_binding) = owner
-            .current_premium_binding(before.actor, before.session)
-            .await
-        else {
-            return self.deny(account);
-        };
-        if final_binding != before {
-            return self.deny(account);
-        }
-        let observed = owner.owner_now().get();
-        let Some(time) = clock.read_current_window() else {
-            return self.deny(account);
-        };
-        let fence = CommittedFenceRead {
-            snapshot: committed.snapshot().cloned(),
-            conflict: committed.conflict(),
-            fresh: committed.fresh(),
-        };
-        let access = PremiumAccessOwner::from_committed(
-            committed,
-            time,
-            observed,
-            AccessProjections::default(),
-        );
-        let result = self.finish(account, access, fence);
-        guard.completed = true;
-        result
+    /// The account's Premium standing now: the one gate a Premium-gated decision reads. Closed
+    /// for an account the consumer does not hold proven current, so restart and failure deny.
+    pub(crate) fn premium_gate(&self, account: [u8; 16]) -> PremiumGate {
+        self.view(account).premium_gate()
     }
 }
 /// Private binding produced only by actual session/Character/recovery/node/owner reads below.
@@ -551,250 +358,190 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(coordinator) = self.premium_coordinator else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
-        let Some(before) = self.current_premium_binding(actor, session).await else {
+        let Some(current) = self.current_premium_binding(actor, session).await else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
-        coordinator.refresh(self, before).await
+        coordinator.view(current.account)
+    }
+    /// PREM-WIRE-1: the Premium gate of `account` (MAGIC-CAST-1 §4.6, Premium areas, purchases,
+    /// houses, guilds). Closed on a node without the Premium reads.
+    pub(crate) fn premium_gate(&self, account: [u8; 16]) -> PremiumGate {
+        self.premium_coordinator
+            .map_or(PremiumGate::CLOSED, |coordinator| {
+                coordinator.premium_gate(account)
+            })
+    }
+    /// The Premium gate of the account admitted with `session` on this node: closed for a
+    /// session holding no Premium registration.
+    pub(crate) fn session_premium_gate(&self, session: GameSessionId) -> PremiumGate {
+        let account = self
+            .premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .account_of(session);
+        account.map_or(PremiumGate::CLOSED, |account| self.premium_gate(account))
     }
 }
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    #[test]
-    fn restart_missing_source_and_clock_never_reconstruct_cached_allow() {
-        let first = SpellPremiumCoordinator::new(None, None);
-        let account = [1; 16];
-        assert!(
-            matches!(first.current(account).as_ref(),RegisteredSpellAccessOwner::Unavailable{account:Some(a)} if *a==account)
-        );
-        let second = SpellPremiumCoordinator::new(None, None);
-        assert!(matches!(
-            second.current(account).as_ref(),
-            RegisteredSpellAccessOwner::Unavailable { .. }
-        ));
-    }
-    #[test]
-    fn failure_replaces_owned_view_and_never_changes_another_account() {
-        let owner = SpellPremiumCoordinator::new(None, None);
-        let a = [1; 16];
-        let b = [2; 16];
-        owner.views.lock().unwrap().insert(
-            a,
-            Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable { account: Some(a) }),
-            },
-        );
-        owner.views.lock().unwrap().insert(
-            b,
-            Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable { account: Some(b) }),
-            },
-        );
-        let retained_b = owner.current(b);
-        let denied = owner.deny(a);
-        assert!(Arc::ptr_eq(&denied, &owner.current(a)));
-        assert!(Arc::ptr_eq(&retained_b, &owner.current(b)));
-    }
-    /// 2026-10-01T00:00:00Z, the issue time of every fixture snapshot.
-    const ISSUED: i64 = 1_790_812_800;
-    /// A snapshot through the real decoder: issued at [`ISSUED`], lease one hour.
-    fn snapshot(state: &str, effective_until: &str, build: &str) -> AuthenticatedSnapshot {
-        let account = [1; 16];
-        let nonce = "2".repeat(32);
-        let none = state == "NONE";
-        let body = serde_json::json!({"schema":"oteryn.premium_snapshot.v1",
-            "producer_revision":"1".repeat(40),"producer_profile":"oteryn.entitlement.profile_b.v1",
-            "nonce":nonce,"account_id":crate::durability::spell_premium_abi::uuid(account),
-            "product_id":"oteryn.premium_time","product_version":1,
-            "entitlement_id":(!none).then(|| crate::durability::spell_premium_abi::uuid([9; 16])),
-            "entitlement_state":state,"lifecycle_revision":u64::from(!none),"authority_revision":1,
-            "effective_from":(!none).then_some("2026-09-01T00:00:00Z"),
-            "effective_until":(!none).then_some(effective_until),
-            "authority_issued_at":"2026-10-01T00:00:00Z",
-            "authority_valid_until":"2026-10-01T01:00:00Z","refresh_after":"2026-10-01T00:30:00Z"});
-        crate::durability::spell_premium_abi::decode_authenticated(
-            &serde_json::to_vec(&body).unwrap(),
-            account,
-            &nonce,
-            "configured-platform",
-            &std::collections::BTreeSet::from([build.to_owned()]),
-        )
-        .unwrap()
-    }
-    fn at(seconds_after_issue: i64) -> Option<TrustedTime> {
-        let lower = ISSUED + seconds_after_issue;
-        TrustedTime::from_current_clock_owner(lower, lower + 1).ok()
-    }
-    fn read(
-        snapshot: Option<AuthenticatedSnapshot>,
-        conflict: bool,
-        fresh: bool,
-    ) -> CommittedFenceRead {
-        CommittedFenceRead {
-            snapshot,
-            conflict,
-            fresh,
+    use crate::domain::premium::PremiumRefusal;
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    use std::sync::Mutex;
+
+    const ACCOUNT: [u8; 16] = [1; 16];
+    /// 2026-10-01T00:00:00Z in Unix microseconds.
+    const T0: i64 = 1_790_812_800_000_000;
+    const MINUTE: i64 = 60_000_000;
+
+    struct TestClock(Mutex<Option<TrustedNow>>);
+    impl clock_registration::Registered for TestClock {}
+    impl RegisteredPremiumClock for TestClock {
+        fn read_current_window(&self) -> Option<TrustedNow> {
+            *self.0.lock().unwrap()
         }
     }
-    #[test]
-    fn premium_gate_opens_only_for_a_fresh_current_committed_read() {
-        let active = || Some(snapshot("ACTIVE", "2026-11-01T00:00:00Z", &"1".repeat(40)));
-        assert_eq!(read(active(), false, true).gate(at(60)).require(), Ok(()));
-        assert!(read(active(), false, true).gate(at(60)).premium_current());
+    fn clock_at(now_us: i64) -> Arc<TestClock> {
+        Arc::new(TestClock(Mutex::new(TrustedNow::new(now_us, 1_000_000))))
     }
+    /// Evidence issued at `T0` with a one-hour lease and `refresh_after` at 30 minutes.
+    fn evidence(state: EntitlementState, effective_until_us: i64) -> PremiumEvidence {
+        PremiumEvidence {
+            account_id: ACCOUNT,
+            producer_revision: "1".repeat(40),
+            producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
+            product_id: crate::premium::PRODUCT_ID.to_owned(),
+            product_version: crate::premium::PRODUCT_VERSION,
+            entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
+            state,
+            lifecycle_revision: 1,
+            authority_revision: 7,
+            effective_from_us: T0 - 30 * 24 * 60 * MINUTE,
+            effective_until_us,
+            authority_issued_at_us: T0,
+            authority_valid_until_us: T0 + 60 * MINUTE,
+            refresh_after_us: T0 + 30 * MINUTE,
+        }
+    }
+    fn proven(state: EntitlementState, effective_until_us: i64) -> Arc<PremiumConsumer> {
+        let consumer = Arc::new(PremiumConsumer::default());
+        consumer.prove_for_test(evidence(state, effective_until_us));
+        consumer
+    }
+    fn binding() -> CastFactsBinding {
+        let (_, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(87);
+        CastFactsBinding {
+            actor,
+            session,
+            character: [3; 16],
+            character_revision: 1,
+            lease_generation: 1,
+            connection_generation: 1,
+            player_revision: 1,
+            content_digest: [4; 32],
+            equipment_revision: 1,
+        }
+    }
+    const FAR: i64 = T0 + 30 * 24 * 60 * MINUTE;
+
     #[test]
-    fn premium_gate_fails_closed_for_unknown_expired_and_every_other_class() {
-        use crate::domain::premium::PremiumRefusal;
-        let build = "1".repeat(40);
-        let active = || Some(snapshot("ACTIVE", "2026-11-01T00:00:00Z", &build));
-        let closed = [
-            // No committed evidence, no trusted time.
-            read(None, false, true).gate(at(60)),
-            read(active(), false, true).gate(None),
-            // The entitlement ended: by state, by effective_until, by the authority lease.
-            read(
-                Some(snapshot("EXPIRED", "2026-10-01T00:00:00Z", &build)),
-                false,
-                true,
-            )
-            .gate(at(60)),
-            read(
-                Some(snapshot("ACTIVE", "2026-10-01T00:20:00Z", &build)),
-                false,
-                true,
-            )
-            .gate(at(30 * 60)),
-            read(active(), false, true).gate(at(60 * 60)),
-            read(
-                Some(snapshot("REVOKED", "2026-11-01T00:00:00Z", &build)),
-                false,
-                true,
-            )
-            .gate(at(60)),
-            read(
-                Some(snapshot(
-                    "NOT_YET_EFFECTIVE",
-                    "2026-11-01T00:00:00Z",
-                    &build,
-                )),
-                false,
-                true,
-            )
-            .gate(at(60)),
-            // Free, a stale (not freshly pulled) read, a conflict, an unsupported producer.
-            read(Some(snapshot("NONE", "", &build)), false, true).gate(at(60)),
-            read(active(), false, false).gate(at(60)),
-            read(active(), true, true).gate(at(60)),
-            read(
-                Some(snapshot("ACTIVE", "2026-11-01T00:00:00Z", &"2".repeat(40))),
-                false,
-                true,
-            )
-            .gate(at(60)),
+    fn a_proven_current_account_opens_the_gate_and_the_spell_projection() {
+        let clock = clock_at(T0 + MINUTE);
+        let coordinator =
+            SpellPremiumCoordinator::new(proven(EntitlementState::Active, FAR), Some(clock));
+        assert_eq!(coordinator.premium_gate(ACCOUNT).require(), Ok(()));
+        let view = coordinator.view(ACCOUNT);
+        assert_eq!(view.premium_gate(), coordinator.premium_gate(ACCOUNT));
+        let projection = view
+            .read_current(&binding(), 5_000)
+            .unwrap()
+            .premium
+            .unwrap();
+        assert!(projection.value);
+        assert_eq!(projection.authority_revision, 7);
+        // Valid until `refresh_after`, from the window's upper bound, in the owner's domain.
+        assert_eq!(
+            projection.valid_until_micros,
+            5_000 + u64::try_from(29 * MINUTE - 1_000_000).unwrap()
+        );
+        assert!(projection.current(&binding(), projection.valid_until_micros - 1));
+        assert!(!projection.current(&binding(), projection.valid_until_micros));
+    }
+
+    #[test]
+    fn unknown_expired_and_every_other_class_fail_closed() {
+        let ended = [
+            (EntitlementState::Expired, FAR, T0 + MINUTE),
+            (EntitlementState::Revoked, FAR, T0 + MINUTE),
+            (EntitlementState::None, FAR, T0 + MINUTE),
+            (EntitlementState::NotYetEffective, FAR, T0 + MINUTE),
+            // effective_until passed, refresh_after passed, the authority lease lapsed.
+            (EntitlementState::Active, T0 + 10 * MINUTE, T0 + 10 * MINUTE),
+            (EntitlementState::Active, FAR, T0 + 30 * MINUTE),
+            (EntitlementState::Active, FAR, T0 + 60 * MINUTE),
         ];
-        for gate in closed {
-            assert_eq!(gate.require(), Err(PremiumRefusal::NotCurrent));
-            assert!(!gate.premium_current());
+        for (state, until, now) in ended {
+            let coordinator =
+                SpellPremiumCoordinator::new(proven(state, until), Some(clock_at(now)));
+            assert_eq!(
+                coordinator.premium_gate(ACCOUNT).require(),
+                Err(PremiumRefusal::NotCurrent)
+            );
+            let access = coordinator
+                .view(ACCOUNT)
+                .read_current(&binding(), 1)
+                .unwrap();
+            assert!(access.premium.is_none());
         }
+        // An unknown account, and the same proven account on another account's gate.
+        let coordinator = SpellPremiumCoordinator::new(
+            proven(EntitlementState::Active, FAR),
+            Some(clock_at(T0 + MINUTE)),
+        );
+        assert_eq!(coordinator.premium_gate([2; 16]), PremiumGate::CLOSED);
+        // A failed pull and a released account close it at once, for views already issued.
+        let view = coordinator.view(ACCOUNT);
+        let ticket = coordinator.consumer().ticket();
+        coordinator.consumer().pull_failed(ACCOUNT, ticket);
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
+        assert!(view.read_current(&binding(), 1).unwrap().premium.is_none());
+        let coordinator = SpellPremiumCoordinator::new(
+            proven(EntitlementState::Active, FAR),
+            Some(clock_at(T0 + MINUTE)),
+        );
+        let view = coordinator.view(ACCOUNT);
+        coordinator.consumer().release(ACCOUNT);
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
     }
+
     #[test]
-    fn premium_gate_is_closed_for_an_unknown_or_unavailable_account_and_after_restart() {
-        let coordinator = SpellPremiumCoordinator::new(None, None);
-        assert_eq!(coordinator.premium_gate([7; 16]), PremiumGate::CLOSED);
+    fn no_clock_owner_a_lost_clock_and_a_restart_fail_closed() {
+        // No registered clock owner: every view is unavailable.
+        let unclocked = SpellPremiumCoordinator::new(proven(EntitlementState::Active, FAR), None);
+        assert_eq!(unclocked.premium_gate(ACCOUNT), PremiumGate::CLOSED);
+        assert!(matches!(
+            unclocked.view(ACCOUNT).as_ref(),
+            RegisteredSpellAccessOwner::Unavailable { account: Some(a) } if *a == ACCOUNT
+        ));
         assert_eq!(
             RegisteredSpellAccessOwner::unavailable().premium_gate(),
             PremiumGate::CLOSED
         );
-        coordinator.deny([7; 16]);
-        assert_eq!(coordinator.premium_gate([7; 16]), PremiumGate::CLOSED);
-        let restarted = SpellPremiumCoordinator::new(None, None);
-        assert_eq!(restarted.premium_gate([7; 16]), PremiumGate::CLOSED);
-    }
-    struct TestClock(Mutex<Option<TrustedTime>>);
-    impl clock_registration::Registered for TestClock {}
-    impl RegisteredPremiumClock for TestClock {
-        fn read_current_window(&self) -> Option<TrustedTime> {
-            *self.0.lock().ok()?
-        }
-    }
-    #[test]
-    fn failed_clock_invalidates_retained_epoch_even_if_clock_recovers() {
-        // This fixture tests revocation of the private epoch gate only. It constructs
-        // no Premium snapshot, committed receipt, benefit or production clock registration.
-        let clock = Arc::new(TestClock(Mutex::new(
-            TrustedTime::from_current_clock_owner(100, 101).ok(),
-        )));
-        let views = Arc::new(Mutex::new(BTreeMap::from([(
-            [1; 16],
-            Entry {
-                epoch: 1,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some([1; 16]),
-                }),
-            },
-        )])));
-        let gate = AccountViewGate {
-            views: Arc::downgrade(&views),
-            account: [1; 16],
-            epoch: 1,
-            clock: clock.clone(),
-        };
-        assert!(gate.current_time().is_some());
-        *clock.0.lock().unwrap() = None;
-        assert!(gate.current_time().is_none());
-        *clock.0.lock().unwrap() = TrustedTime::from_current_clock_owner(102, 103).ok();
-        assert!(gate.current_time().is_none());
-        assert_eq!(views.lock().unwrap().get(&[1; 16]).unwrap().epoch, 2);
-    }
-    #[test]
-    fn denied_account_revokes_its_retained_gate_without_revoking_other_accounts() {
-        // Private epoch gate qualification only: no fake grant or Platform source.
-        let clock = Arc::new(TestClock(Mutex::new(
-            TrustedTime::from_current_clock_owner(100, 101).ok(),
-        )));
-        let coordinator = SpellPremiumCoordinator::new(None, Some(clock.clone()));
-        for account in [[1; 16], [2; 16]] {
-            coordinator.views.lock().unwrap().insert(
-                account,
-                Entry {
-                    epoch: 1,
-                    in_flight: false,
-                    view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                        account: Some(account),
-                    }),
-                },
-            );
-        }
-        let gate = |account| AccountViewGate {
-            views: Arc::downgrade(&coordinator.views),
-            account,
-            epoch: 1,
-            clock: clock.clone(),
-        };
-        let first = gate([1; 16]);
-        let second = gate([2; 16]);
-        assert!(first.current_time().is_some());
-        assert!(second.current_time().is_some());
-        coordinator.deny([1; 16]);
-        assert!(first.current_time().is_none());
-        assert!(second.current_time().is_some());
-        assert_eq!(
-            coordinator
-                .views
-                .lock()
-                .unwrap()
-                .get(&[1; 16])
-                .unwrap()
-                .epoch,
-            2
+        // A clock that loses synchronization closes views already issued.
+        let clock = clock_at(T0 + MINUTE);
+        let coordinator = SpellPremiumCoordinator::new(
+            proven(EntitlementState::Active, FAR),
+            Some(clock.clone()),
         );
-        coordinator.views.lock().unwrap().remove(&[2; 16]);
-        assert!(second.current_time().is_none());
+        let view = coordinator.view(ACCOUNT);
+        assert!(view.premium_gate().premium_current());
+        *clock.0.lock().unwrap() = None;
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
+        assert!(view.read_current(&binding(), 1).unwrap().premium.is_none());
+        // A restart: a fresh consumer holds nothing proven.
+        let restarted = SpellPremiumCoordinator::new(Arc::default(), Some(clock_at(T0 + MINUTE)));
+        assert_eq!(restarted.premium_gate(ACCOUNT), PremiumGate::CLOSED);
     }
 }

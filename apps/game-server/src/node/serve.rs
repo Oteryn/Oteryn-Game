@@ -2308,6 +2308,13 @@ async fn boot_and_serve(
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
+    // PREM-WIRE-1: the one Premium fence every Premium gate reads. No trusted clock owner is
+    // registered, so every account reads Free until one is.
+    let premium_reads =
+        crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+            std::sync::Arc::default(),
+            None,
+        );
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2321,7 +2328,7 @@ async fn boot_and_serve(
         chest: &chest,
         spells: &spells,
         active_generation: active_content.active(),
-        premium_coordinator: None,
+        premium_coordinator: Some(&premium_reads),
         qualified_room: bundle.is_none().then_some(&qualified_room),
         combat_room: combat_room.as_ref(),
         achievements: &achievements,

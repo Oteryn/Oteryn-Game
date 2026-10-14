@@ -24,6 +24,7 @@ use crate::chat::{
     local_listeners,
 };
 use crate::domain;
+use crate::domain::premium::PremiumGate;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::chat::ChatRoomSet;
 
@@ -264,13 +265,36 @@ fn refusal(refusal: ChatRefusal) -> ChatIntentResult {
     }
 }
 
-/// One intent of the admitted `actor`, under the runtime and spell-state locks the caller holds.
+/// [`chat_in_premium_channel`] for a speaker without a Premium fence read: it reads as Free.
+#[cfg(test)]
 pub(crate) fn chat_in_channel(
     chat: &ChatRuntime,
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
     actor: ExactActorRef,
     session: GameSessionId,
+    intent: &ChatIntent,
+    now: SemanticTimeMicros,
+) -> ChatIntentResult {
+    chat_in_premium_channel(
+        chat,
+        runtime,
+        states,
+        (actor, session),
+        PremiumGate::CLOSED,
+        intent,
+        now,
+    )
+}
+
+/// One intent of the admitted `actor`, under the runtime and spell-state locks the caller holds.
+/// `premium` is the speaker's Premium gate (PREM-WIRE-1), read for the yell level gate.
+pub(crate) fn chat_in_premium_channel(
+    chat: &ChatRuntime,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    (actor, session): (ExactActorRef, GameSessionId),
+    premium: PremiumGate,
     intent: &ChatIntent,
     now: SemanticTimeMicros,
 ) -> ChatIntentResult {
@@ -306,7 +330,7 @@ pub(crate) fn chat_in_channel(
         level: states
             .get(runtime, actor, session)
             .map_or(1, |state| state.character_facts().level),
-        premium_current: false,
+        premium_current: premium.premium_current(),
     };
     let Ok(mut sessions) = chat.sessions.lock() else {
         return result(ChatDisposition::ChatUnavailable);
@@ -488,9 +512,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(refused) = self.chat.pre_gate(session, intent, now) {
             return refused;
         }
+        let premium = self.session_premium_gate(session);
         let runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
-        chat_in_channel(&self.chat, &runtime, &states, actor, session, intent, now)
+        chat_in_premium_channel(
+            &self.chat,
+            &runtime,
+            &states,
+            (actor, session),
+            premium,
+            intent,
+            now,
+        )
     }
 }
 
