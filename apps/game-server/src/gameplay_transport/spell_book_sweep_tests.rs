@@ -155,7 +155,7 @@ fn owner(vocation: Vocation) -> (PlayerSpellState, CasterState) {
         vocation,
         level: 1000,
         magic_level: 300,
-        premium: true,
+        premium: crate::spell::CasterPremium::Current,
         mana: v.mana,
         max_mana: 50_000,
         soul: v.soul,

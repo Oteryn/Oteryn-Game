@@ -2720,7 +2720,7 @@ mod direct_acquisition_owner_tests {
             vocation: Vocation::Druid,
             level: 100,
             magic_level: 50,
-            premium: true,
+            premium: crate::spell::CasterPremium::Current,
             mana: 500,
             max_mana: 500,
             soul: 100,
