@@ -1,7 +1,10 @@
 # CHAR-VITALS-0 Durable health and mana
 
 - Decision: `CHAR-VITALS0-DURABLE-VITALS-V1`
-- Status: **CANDIDATE**. The control plane accepts it in a separate PR. Acceptance needs exact-head
+- Status: **ACCEPTED**. Accepted by the owner (`blakinio`) on 2026-10-13 via the control plane
+  (`ACCEPT-CHAR-VITALS-0`, `OTERYN_GAME_ACCEPT_CHARVITALS0_ACCEPTANCE_DECISION_2026-10-13.md`),
+  effective only on exact-head review, CI and protected integration; no rule text changes.
+  Original gate: the control plane accepts it in a separate PR. Acceptance needs exact-head
   validation, independent review (persistence) and protected integration.
 - Input: owner decision of 2026-10-13: "persist character HP and mana (restore on login/restart)".
 - Answers: the HP/mana part of CHAR-POSITION-1, blocked there pending this decision (task record
