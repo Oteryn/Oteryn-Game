@@ -124,10 +124,9 @@ rule below is the current rule.
 Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
 actors first as above; items by floor distance, Chebyshev distance, then the canonical tile key
 `(floor, y, x)` in native floor coordinates (`OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1` §11) so
-tiles at equal distance have a total order, then within one tile from the top down (descending
-`ground_ordinal`, then entity identity for legacy rows at ordinal 0). A cutoff inside a tile
+tiles at equal distance have a total order, then within one tile from the top down (`stack_ordinal DESC NULLS FIRST`, the migration 0034 column, then entity identity for legacy rows whose `stack_ordinal` is NULL). A cutoff inside a tile
 therefore drops its bottom items, never its top item. **Emission** (the order the client stacks a
-tile's selected items): ascending `ground_ordinal`, top last. `WorldSpatialEntityV1` carries no
+tile's selected items): the reverse, `stack_ordinal ASC NULLS LAST`, top last. `WorldSpatialEntityV1` carries no
 ordinal, so a delta may add an item to a tile the client already shows only when it lands above
 every shown item of that tile (a new top); any other change of a shown tile's selected items (a
 cutoff moving inside the tile, a lower item entering) is sent as a new snapshot (the "resync"

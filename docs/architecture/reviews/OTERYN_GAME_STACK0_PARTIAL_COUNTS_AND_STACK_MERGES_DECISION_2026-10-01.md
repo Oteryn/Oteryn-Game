@@ -10,7 +10,7 @@
   count field") and §4 ("merging them waits for the partial-count decision") name this decision.
 - Builds on: DUR-03 §7.1, §11-§13, §23, §29, §32, §39; B3 §4.4 (D82, D83); ITEM-MOVE-WIRE-0 §5;
   ITEM-MOVE-WIRE-1 §3-§6; BAGS-0 §4-§6; D3 §4.4-§4.7 (D133, D134, D136); PLAYER-TRADE-0 §4;
-  WORLD-INTERACTION-0 §7.2; RANGED-0 §6.1.2 (the Ground ordinal and the top Ground item; PR #1439,
+  WORLD-INTERACTION-0 §7.2; RANGED-0 §6.1.2 (the existing `stack_ordinal` and the top Ground item; PR #2111,
   accepted first); the composition decision rules 1-4; owner rule 5905825574 (Tibia parity).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -20,7 +20,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | STACK-WIRE-1 | impl, protocol review | capability `ITEM_STACK_COUNT_V1` and the optional `count` of command 9 (§3); the client count dialog | ITEM-EQUIP-WIRE-1; BAGS-WIRE-1 |
-| STACK-1 | hard (persistence), persistence review | the partial and merge shapes of §4-§5 for every destination of command 9, the DUR-03 amendment, rows (§6) | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground ordinal |
+| STACK-1 | hard (persistence), persistence review | the partial and merge shapes of §4-§5 for every destination of command 9, the DUR-03 amendment, rows (§6) | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground order (`stack_ordinal`) |
 | STACK-PARITY-1 | impl | fixtures against Canary: 100 onto 70 in a full backpack, 30 of 100 to the ground onto a matching top stack, the four slot cases of §4.4 | STACK-1 |
 
 Tests: a session without the capability never receives `PARTIAL` and keeps its refusals (§3);
@@ -52,8 +52,9 @@ destination?
 - DUR-03 §12: a split of `x < q` into a planned identity; §13: a quantity transfer to a compatible
   receiver keeps the receiver's identity, "UUID/client list ordering never selects
   survivor/receiver"; §7.1 reservations; §23 retry.
-- RANGED-0 §6.1.2 (candidate, PR #1439): a database-assigned `ground_ordinal` on every Ground
-  location row; the top Ground item is the live root with the highest ordinal.
+- RANGED-0 §6.1.2 (candidate, PR #2111): the existing migration 0034 `stack_ordinal` (trigger-stamped,
+  UNIQUE; no new `ground_ordinal`) orders the Ground, read as `stack_ordinal DESC NULLS FIRST`; the top
+  Ground item is the first live root. A legacy NULL top is ambiguous, so there is no merge onto it.
 - OTClient (`OTS_HYPOTHESIS_ONLY`, ITEM-MOVE-WIRE-0 §2) sends a count with every move.
 
 **OTS_HYPOTHESIS_ONLY** (Canary `04b83b512114bfd888000d6e1433ed8ecaec7c5b`, `game.cpp`

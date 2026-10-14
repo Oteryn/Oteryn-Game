@@ -547,7 +547,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 1. **Contract amendments**, specified in this decision and active on its acceptance (every
    pending-amendment note in DUR-03, CREATURE-AI-0, the composition decision, ITEM-MOVE-WIRE-1,
-   MOVE-RL11 and ATTACK-0 is edited by this PR to match it and stays pending): DUR-03 §15, §39.1 and §39.3 (§6.4 `WeaponUseAggregateV1`); the
+   MOVE-RL11 and ATTACK-0, and the STACK-0 dependency on the Ground order (`stack_ordinal`, not `ground_ordinal`), is edited by this PR to match it and stays pending): DUR-03 §15, §39.1 and §39.3 (§6.4 `WeaponUseAggregateV1`); the
    composition decision (server-originated swing variant, rule 1 scope, §6.2); ITEM-MOVE-WIRE-1 §4
    (quiver, Extra slot) and §5 and §6.2 (no schema change; Ground order is the existing
    `stack_ordinal`); BAGS-0 §3, §6 and §10 (quiver tree, reachable items); ATTACK-0 §4 (variants,
