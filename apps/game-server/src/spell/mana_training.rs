@@ -184,6 +184,18 @@ pub(crate) struct PreparedManaTraining {
     before: LiveManaTraining,
     after: LiveManaTraining,
     pub(crate) request: BuildChangeRequest,
+    /// Hits resolved while this checkpoint is retained for replay. They cannot touch the live
+    /// training (the replay commits only onto its exact `before`), so they wait here and merge
+    /// into `after` with the receipt.
+    post_checkpoint: Option<PostCheckpointTries>,
+}
+/// Skill tries and hit streaks after a retained checkpoint was prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PostCheckpointTries {
+    pending_skills: [u64; 7],
+    hits: HitTrainingCounters,
+    started_micros: u64,
+    last_micros: u64,
 }
 #[allow(
     clippy::large_enum_variant,
@@ -347,6 +359,7 @@ impl LiveManaTraining {
                 last_cast_micros: Some(now),
             },
             request,
+            post_checkpoint: None,
         }))
     }
 }
@@ -404,6 +417,22 @@ impl PreparedManaTraining {
             return Err(TrainingError::StaleReceipt);
         }
         Ok(self.after)
+    }
+    /// `after` with the hits resolved since this checkpoint was prepared.
+    fn after_with_post_checkpoint(&self) -> LiveManaTraining {
+        let mut next = self.after.clone();
+        if let Some(post) = self.post_checkpoint {
+            for (pending, tries) in next.pending_skills.iter_mut().zip(post.pending_skills) {
+                *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
+            }
+            next.hits = post.hits;
+            let started = next
+                .checkpoint_started_micros
+                .map_or(post.started_micros, |value| value.min(post.started_micros));
+            next.checkpoint_started_micros = Some(started);
+            next.last_cast_micros = next.last_cast_micros.max(Some(post.last_micros));
+        }
+        next
     }
 }
 
@@ -677,6 +706,109 @@ mod tests {
         state
             .commit_training_checkpoint(prepared, &receipt)
             .unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 11);
+        assert!(!state.has_training_to_flush());
+    }
+    fn test_fence() -> crate::durability::character_progression::CurrentCharacterGameplayFence {
+        use crate::domain::{CharacterId, CharacterRevision};
+        use crate::foundation::{
+            ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+        let id = |seed: u8| {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        };
+        crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(7)).unwrap(),
+            game_session_id: GameSessionId::decode(&id(3)).unwrap(),
+            connection_generation: ConnectionGeneration::new(1).unwrap(),
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(4)).unwrap(),
+                ChannelId::decode(&id(5)).unwrap(),
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).unwrap(),
+            expected_character_revision: CharacterRevision::new(1).unwrap(),
+        }
+    }
+    #[test]
+    fn hits_during_a_retained_checkpoint_merge_and_their_level_commits() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        let receipt_for = |prepared: &PreparedManaTraining, revision: u64| CommittedBuildChange {
+            occurrence: prepared.request.occurrence,
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(revision).unwrap(),
+            committed_character_revision: CharacterRevision::new(revision + 1).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        // A forced checkpoint is retained: its save returned `Unknown`.
+        state
+            .train_skill(SkillFamily::Sword, 1, &f, |_| 10)
+            .unwrap();
+        let prepared = state
+            .prepare_training_checkpoint(2, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        state
+            .retain_training_checkpoint(RetainedTrainingCheckpoint {
+                fence: test_fence(),
+                prepared: prepared.clone(),
+                formula_digest: f.digest(),
+            })
+            .unwrap();
+        // Hits after it are kept, and the one that reaches a level is still due at once.
+        assert_eq!(
+            state
+                .train_skill(SkillFamily::Sword, 3, &f, |_| 39)
+                .unwrap(),
+            TrainedSkill {
+                tries: 39,
+                checkpoint_due: false
+            }
+        );
+        assert_eq!(
+            state.train_skill(SkillFamily::Sword, 4, &f, |_| 1).unwrap(),
+            TrainedSkill {
+                tries: 1,
+                checkpoint_due: true
+            }
+        );
+        // The retry commits the retained receipt and merges the later tries.
+        let retained = state.pending_training_checkpoint().unwrap().clone();
+        let receipt = receipt_for(&retained.prepared, 1);
+        state
+            .commit_training_checkpoint(retained.prepared, &receipt)
+            .unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 10);
+        assert!(state.has_training_to_flush());
+        // The reached level writes at once, without waiting for the cadence.
+        let level = state
+            .prepare_training_checkpoint(5, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(level.request.after.skills()[2], (11, 0));
+        let receipt = receipt_for(&level, 2);
+        state.commit_training_checkpoint(level, &receipt).unwrap();
         assert_eq!(state.owned_skills.unwrap()[2], 11);
         assert!(!state.has_training_to_flush());
     }
@@ -977,7 +1109,13 @@ impl super::cast::PlayerSpellState {
         receipt: &CommittedBuildChange,
     ) -> Result<(), TrainingError> {
         let current = self.training.as_ref().ok_or(TrainingError::InvalidBuild)?;
-        let next = prepared.commit(current, receipt)?;
+        // The post-checkpoint hits bank on the retained copy; the caller may pass a clone.
+        let mut prepared = prepared;
+        if let Some(retained) = self.training_checkpoint.as_ref() {
+            prepared.post_checkpoint = retained.prepared.post_checkpoint;
+        }
+        let next = prepared.after_with_post_checkpoint();
+        prepared.commit(current, receipt)?;
         self.facts.magic_level = u32::from(next.durable().magic().0);
         // A banked skill level is live only now, after its receipt (A13 §2).
         if self.owned_skills.is_some() {
@@ -1001,8 +1139,9 @@ impl super::cast::PlayerSpellState {
     }
     /// W2b: one resolved hit or use trains `family` by the tries `rule` derives from the hit
     /// streaks. Without owned training (no active formula, the production off switch) nothing
-    /// trains. While a checkpoint is retained for replay the tries are dropped, since the replay
-    /// only commits onto its exact `before`.
+    /// trains. While a checkpoint is retained for replay (a save returned `Unknown`) the live
+    /// training must stay its exact `before`, so the hits bank on the retained checkpoint and
+    /// merge into the training with its receipt.
     ///
     /// SKILLS-0 §3.4: a level advance commits at once. When the banked tries reach a level the
     /// result says `checkpoint_due`, and the caller saves the training checkpoint in the same
@@ -1015,8 +1154,28 @@ impl super::cast::PlayerSpellState {
         formula: &CompiledTrainingFormula,
         rule: impl FnOnce(&mut HitTrainingCounters) -> u64,
     ) -> Result<TrainedSkill, TrainingError> {
-        if self.training_checkpoint.is_some() {
-            return Ok(TrainedSkill::default());
+        if let Some(retained) = self.training_checkpoint.as_mut() {
+            let prepared = &mut retained.prepared;
+            let base = prepared.after_with_post_checkpoint();
+            let mut next = base.clone();
+            let tries = rule(next.hits_mut());
+            next.record_skill_tries(family, tries, now)?;
+            let checkpoint_due = next.skill_level_due(formula, family)?;
+            let mut post = prepared.post_checkpoint.unwrap_or(PostCheckpointTries {
+                pending_skills: [0; 7],
+                hits: base.hits,
+                started_micros: now,
+                last_micros: now,
+            });
+            let pending = &mut post.pending_skills[family.index()];
+            *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
+            post.hits = next.hits;
+            post.last_micros = post.last_micros.max(now);
+            prepared.post_checkpoint = Some(post);
+            return Ok(TrainedSkill {
+                tries,
+                checkpoint_due,
+            });
         }
         let Some(current) = self.training.as_ref() else {
             return Ok(TrainedSkill::default());
