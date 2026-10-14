@@ -30,11 +30,13 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| COND-1 | hard (combat), combat and determinism review | the `ConditionInstance` store on the runtime actor, transitions, the tick scheduler, the families of §3, provenance (§3.2), dispel (§5), lifecycle (§6) | this decision |
+| COND-1 | hard (combat), combat and determinism review | COND-1a/1b/1c are merged (the store, transitions, tick scheduler, §3 families, provenance, dispel, lifecycle and owner wiring). Remaining: the §3.5 `ConflictKey` values `muted`, `pacified`, `powerless` and `agony` within `COND0-RL-01` (32), the `agony` tick, and the §3.5 admission gates with their precedence and typed server-side reasons | this decision |
 | SPEED-1 | impl, movement review | effective speed, the step-speed table and step pacing for players and creatures (§4) | COND-1; the GAME-AI-01 step cadence (§4.3) |
 | COND-WIRE-1 | impl, protocol review | the vitals revision with condition icons and the mana shield, and `speed` on VIS-2 entities (§7) | COND-1; SPEED-1; VIS-2 |
 | COND-DUR-1 | hard (persistence), persistence review | the durable remaining food time (§6.3), in the SPELL-D8 H-1 pattern | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | content lane | `ConditionDefinition` records for the spells, runes, potions, food, fields and monster attacks that use §3 families | this decision |
+| COND-CONTENT-2 | content lane | the §3.5 families in `tools/content-schema/condition-authoring` and their reference-sourced durations and `agony` tick shape (acceptance §1) | this decision; COND-CONTENT-1 (merged) |
+| COND-WIRE-2 | impl, protocol review, registry | condition icons for `muted`, `pacified`, `powerless` and `agony`, and the typed refusal reasons for `pacified` and `powerless` (§7) | COND-1 (§3.5 residual); COND-WIRE-1 |
 
 FOOD-REGEN-1 (ITEM-USE-0) builds its definition on COND-1. After COND-1, the charm lane wires
 Cleanse and the player-side cases to it. The speed charms (Cripple, Numb, Adrenaline Burst) stay
@@ -59,7 +61,12 @@ and show?
   distinct; ticks are deterministic and bounded. Its whole-gate candidate requires
   `RUN_EACH_BOUNDED` catch-up for anything that cannot be skipped (clause 5), explicit
   continuation at every exercised boundary (clause 6), and an explicit rule for an absent source.
-- No condition code exists; `charm_effects.rs` fails closed for paralysis, haste and cleanse.
+- At the 2026-09-30 decision no condition code existed and `charm_effects.rs` failed closed for
+  paralysis, haste and cleanse. Status at the 2026-10-14 acceptance: COND-1a (#1405, the
+  `ConditionStore`, `ConflictKey`, transitions and the tick schedule in `ability/condition.rs`),
+  COND-1b (mana shield, dispel, lifecycle) and the COND-1c owner wiring, including bundle-World
+  periodic damage (#2086), are on main, as are SPEED-1 (#1715) and COND-CONTENT-1 (#1400). COND-1's
+  remaining scope is only the §3.5 keys and admission gates (see the brief).
 - Movement has no speed: `step_cardinal` has no step duration and cardinal steps only;
   `StepDisposition` is `Moved`, `Blocked`, `Rejected` (`world_spatial.rs:37-41`).
 - Creatures think once per 1,000 ms and take at most one step per think (D115, `ai_think.rs`).
