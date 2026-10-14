@@ -18,7 +18,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_SPELL_PRESENT0_ACCEPTANCE_DECISION_2026-10-13.md
   - docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md
-  - docs/agents/tasks/archive/OTV2-20261013-accept-spell-present-0-flip.md
+  - docs/agents/tasks/archive/OTV2-20261014-accept-spell-present-0-flip.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -28,7 +28,7 @@ external_repositories: []
 
 ## Outcome
 
-- The presentation decision status line reads ACCEPTED (conditional on this PR passing review, CI and protected integration) and the packet status is conditional. No other rule text, code, wire, content or sound change.
+- The presentation decision status line reads ACCEPTED (conditional on this PR passing review, CI and protected integration) and the packet status is conditional. The only text edit besides the status lines is the dependency name ATTACK-1 to ATTACK-1b (brief and section 5 of the decision). No other rule text, code, wire, content or sound change.
 
 ## Architecture and source of truth
 
@@ -40,7 +40,7 @@ external_repositories: []
 
 ## Acceptance criteria
 
-- [x] Only the decision status line and the packet status change.
+- [x] Only the decision status line, the dependency name ATTACK-1 to ATTACK-1b (two places) and the packet status change.
 - [x] The decision points at the packet.
 
 ## Excluded scope

@@ -3,7 +3,7 @@
 - Decision: `SPELLPRES0-SPELL-AND-COMBAT-PRESENTATION-V1`
 - Status: **ACCEPTED**. Accepted 2026-10-14 (`ACCEPT-SPELL-PRESENT-0`,
   `OTERYN_GAME_ACCEPT_SPELL_PRESENT0_ACCEPTANCE_DECISION_2026-10-13.md`), effective only on
-  exact-head review, CI and protected integration of that acceptance PR; no other text change.
+  exact-head review, CI and protected integration of that acceptance PR; the only other text change is the dependency name ATTACK-1 to ATTACK-1b (brief and §5; acceptance packet §2 point 1).
   Original gate: exact-head validation, independent review (protocol,
   combat and determinism) and protected integration. Owner question P1 (§14) is answered
   (2026-09-30, #162): the 15.30 client sound files are included (§12).
@@ -31,7 +31,7 @@
 | PRESENT-CONTENT-1 | content lane | the 15.30 client sound files beside the other client assets, with the manifest (§12); the binding tables from asset keys and sound cues to 15.30 client ids; creature `race`; the hit table of §5 as content (§3) | this decision |
 | PRESENT-WIRE-1 | impl, protocol review | capability `PRESENTATION_V1`, domains `WORLD_PRESENTATION` and `ACTOR_COOLDOWNS`, the result `detail`, codecs, bounds and rows (§4, §7, §8, §9) | this decision; VIS-2 |
 | SPELL-PRESENT-1 | spell lane, combat review | server emission for casts: spell words, the refusal smoke, cooldown state, the result `detail` (§6-§8) | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition |
-| COMBAT-PRESENT-1 | combat lane, combat and determinism review | emission from the Ability commit: impact, area, projectile and hit effects, damage, heal, mana and experience numbers, block effects, condition ticks, sound cues (§5) | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1; COND-1 for ticks |
+| COMBAT-PRESENT-1 | combat lane, combat and determinism review | emission from the Ability commit: impact, area, projectile and hit effects, damage, heal, mana and experience numbers, block effects, condition ticks, sound cues (§5) | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1b; COND-1 for ticks |
 | PRESENT-CLIENT-1 | client lane (client owner) | drawing effects and projectiles, floating numbers, orange spell words above the caster, the cooldown bar, refusal texts, sound playback, console lines that name no other actor (§11, §12) | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
 
 Later, each with its own decision: parameter spells' words (`exura sio "name"`), rune use
@@ -166,7 +166,7 @@ words, the effects, the numbers, the cooldowns and the refusal messages?
 | Chain and windup | `missile` between chain hops with `path_asset_binding`; the windup effect on the caster | COMBAT-PRESENT-1 |
 | Committed damage | the hit effect of the damage type at the target and a `value_text` (primary and a secondary for an elemental split) | COMBAT-PRESENT-1 |
 | Heal, mana gain and loss | `value_text` `HEALED`, `MANA`; a mana loss adds the `loseenergy` effect | COMBAT-PRESENT-1 |
-| Block, armour, immunity | `POFF`, `BLOCKHIT`, or the immunity effect by type, with sound `NO_DAMAGE`; no number | COMBAT-PRESENT-1 (ATTACK-1 outcome) |
+| Block, armour, immunity | `POFF`, `BLOCKHIT`, or the immunity effect by type, with sound `NO_DAMAGE`; no number | COMBAT-PRESENT-1 (ATTACK-1b outcome) |
 | Condition tick | as committed damage (CONDITIONS-0 §3.2) | COMBAT-PRESENT-1 |
 | Experience | `value_text` `EXPERIENCE` at the killer; `EXPERIENCE_OTHERS` to spectators | COMBAT-PRESENT-1 (VSL-COMBAT-01 outcome) |
 | Refused cast | `POFF` at the caster where §6 says so | SPELL-PRESENT-1 |
