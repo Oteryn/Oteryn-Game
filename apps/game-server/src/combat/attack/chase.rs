@@ -1,31 +1,24 @@
-//! CHASE-1: the player chase path search and its runtime state (RANGED-0 §8,
+//! CHASE-1: the player chase runtime state and its search budget (RANGED-0 §8,
 //! `docs/architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md`).
 //!
-//! The path profile is CREATURE-AI-0 §5.3's: cardinal neighbours in the order north, east, south,
-//! west; 10 per step and +40 over a creature; ties by lowest total, then lowest estimate, then
-//! neighbour order, then discovery order; at most `AI01-PATH-SEARCH-WORK` expansions and
-//! `AI01-ROUTE-STEPS` steps, within a 12-tile chase distance of the start (Canary searches fully,
-//! `PARITY_PENDING`). The goal is the nearest tile at Chebyshev distance 1 from the target. A
-//! player pays no harmful-field cost. Which tiles are path tiles is the wiring's: floor-change,
-//! teleport and protection-zone tiles never are.
+//! Server-driven (owner decision 2026-10-14): the route comes from the Movement owner's shared
+//! path search (`movement::path_search`, CREATURE-MOVE-1). A player pays no harmful-field cost.
+//! Which tiles are path tiles is the wiring's: floor-change, teleport and protection-zone tiles
+//! never are. A client step always wins over a chase step.
 //!
 //! Runtime-only: nothing here is durable.
 
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap, VecDeque};
+use std::collections::VecDeque;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
+use crate::movement::path_search::{chebyshev, delta, route_next_to};
 
-/// `AI01-PATH-SEARCH-WORK`: expansions per search.
-pub(crate) const CHASE_SEARCH_WORK: usize = 1_024;
-/// `AI01-ROUTE-STEPS`: steps of an adopted route.
-pub(crate) const CHASE_ROUTE_STEPS: usize = 128;
-/// The chase search distance in tiles from the start (Chebyshev).
-pub(crate) const CHASE_SEARCH_DISTANCE: i32 = 12;
-/// At most one search per player per this interval.
+pub(crate) use crate::movement::path_search::CREATURE_COST;
+
+/// `RANGED0-RL-06`: at most one search per player per this interval.
 pub(crate) const CHASE_SEARCH_INTERVAL_MICROS: u64 = 1_000_000;
-/// A failed search waits this long before the next one (Canary).
+/// `RANGED0-RL-07`: a failed search waits this long before the next one (Canary).
 pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 /// `RANGED0-RL-03`: player chase searches per owner window per Channel.
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
@@ -35,156 +28,6 @@ pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
 pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
 /// At most this many refused cells are remembered; the oldest is forgotten first.
 pub(crate) const CHASE_REFUSED_CELLS: usize = 8;
-
-const STEP_COST: u32 = 10;
-/// Per discovered tile: its best cost and the step and tile it was reached by.
-type Discovered = BTreeMap<(i32, i32), (u32, Option<(CardinalStep, (i32, i32))>)>;
-/// The extra cost of a path tile a creature stands on.
-pub(crate) const CREATURE_COST: u32 = 40;
-const NEIGHBOURS: [CardinalStep; 4] = [
-    CardinalStep::North,
-    CardinalStep::East,
-    CardinalStep::South,
-    CardinalStep::West,
-];
-
-const fn delta(step: CardinalStep) -> (i32, i32) {
-    match step {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    }
-}
-
-fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {
-    let dx = (i64::from(to.x) - i64::from(from.x)).abs();
-    let dy = (i64::from(to.y) - i64::from(from.y)).abs();
-    dx.max(dy)
-}
-
-/// The fewest cardinal steps from `at` to a tile at Chebyshev distance 1 from `target`, times
-/// the step cost: admissible and consistent for the goal set.
-fn estimate(at: MovementLocalPosition, target: MovementLocalPosition) -> u32 {
-    let dx = (i64::from(target.x) - i64::from(at.x)).unsigned_abs();
-    let dy = (i64::from(target.y) - i64::from(at.y)).unsigned_abs();
-    let steps = if dx == 0 && dy == 0 {
-        1
-    } else {
-        dx.saturating_sub(1).saturating_add(dy.saturating_sub(1))
-    };
-    u32::try_from(steps)
-        .unwrap_or(u32::MAX)
-        .saturating_mul(STEP_COST)
-}
-
-fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition) -> bool {
-    at.floor == target.floor && chebyshev(at, target) == 1
-}
-
-/// The route from `start` to the nearest tile at Chebyshev distance 1 from `target` on the same
-/// floor. `tile_cost` answers each candidate tile: `None` when it is no path tile, else its
-/// extra cost ([`CREATURE_COST`] over a creature). `Some(empty)` when `start` already is such a
-/// tile; `None` when no route is found within the bounds (a failed search).
-pub(crate) fn chase_route(
-    start: MovementLocalPosition,
-    target: MovementLocalPosition,
-    mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
-) -> Option<Vec<CardinalStep>> {
-    if start.floor != target.floor {
-        return None;
-    }
-    if is_goal(start, target) {
-        return Some(Vec::new());
-    }
-    // Open entries are ordered by (total, estimate, neighbour order, discovery order).
-    let mut open = BinaryHeap::new();
-    // Per discovered tile: its best cost and how it was reached.
-    let mut best = Discovered::new();
-    let mut discovered: u64 = 0;
-    best.insert((start.x, start.y), (0, None));
-    open.push(Reverse((
-        estimate(start, target),
-        estimate(start, target),
-        0_u8,
-        0_u64,
-        start.x,
-        start.y,
-        0_u32,
-    )));
-    let mut expansions = 0_usize;
-    while let Some(Reverse((_, _, _, _, x, y, cost))) = open.pop() {
-        if best.get(&(x, y)).is_some_and(|(known, _)| *known < cost) {
-            continue;
-        }
-        let at = MovementLocalPosition {
-            x,
-            y,
-            floor: start.floor,
-        };
-        if is_goal(at, target) {
-            return route_to(&best, (start.x, start.y), (x, y));
-        }
-        expansions += 1;
-        if expansions > CHASE_SEARCH_WORK {
-            return None;
-        }
-        for (order, step) in (0_u8..).zip(NEIGHBOURS) {
-            let (dx, dy) = delta(step);
-            let (Some(nx), Some(ny)) = (x.checked_add(dx), y.checked_add(dy)) else {
-                continue;
-            };
-            let next = MovementLocalPosition {
-                x: nx,
-                y: ny,
-                floor: start.floor,
-            };
-            if chebyshev(start, next) > i64::from(CHASE_SEARCH_DISTANCE) {
-                continue;
-            }
-            let Some(extra) = tile_cost(next) else {
-                continue;
-            };
-            let next_cost = cost.saturating_add(STEP_COST).saturating_add(extra);
-            if best
-                .get(&(nx, ny))
-                .is_some_and(|(known, _)| *known <= next_cost)
-            {
-                continue;
-            }
-            best.insert((nx, ny), (next_cost, Some((step, (x, y)))));
-            discovered += 1;
-            let h = estimate(next, target);
-            open.push(Reverse((
-                next_cost.saturating_add(h),
-                h,
-                order,
-                discovered,
-                nx,
-                ny,
-                next_cost,
-            )));
-        }
-    }
-    None
-}
-
-fn route_to(best: &Discovered, start: (i32, i32), goal: (i32, i32)) -> Option<Vec<CardinalStep>> {
-    let mut steps = Vec::new();
-    let mut at = goal;
-    while at != start {
-        let (_, Some((step, from))) = best.get(&at)? else {
-            return None;
-        };
-        steps.push(*step);
-        if steps.len() > CHASE_ROUTE_STEPS {
-            return None;
-        }
-        at = *from;
-    }
-    steps.reverse();
-    Some(steps)
-}
 
 /// The chase of one attacker: the adopted route and when the next search may run.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -257,7 +100,7 @@ impl ChaseState {
         let stale = self.route.is_empty() || self.goal != Some(target);
         if stale && now_us >= self.next_search_us && admit() {
             let refused = &self.refused;
-            let route = chase_route(at, target, |cell| {
+            let route = route_next_to(at, target, |cell| {
                 if refused.iter().any(|&(blocked, _)| blocked == cell) {
                     None
                 } else {
@@ -353,99 +196,6 @@ mod tests {
                 floor: at.floor,
             }
         })
-    }
-
-    #[test]
-    fn an_open_field_route_ends_next_to_the_target_in_the_fewest_steps() {
-        let route = chase_route(at(0, 0), at(5, 0), open).unwrap();
-        assert_eq!(route, vec![CardinalStep::East; 4]);
-        let diagonal = chase_route(at(0, 0), at(3, 3), open).unwrap();
-        assert_eq!(
-            diagonal.len(),
-            4,
-            "(2, 2) is the nearest tile next to (3, 3)"
-        );
-        assert_eq!(walk(at(0, 0), &diagonal), at(2, 2));
-    }
-
-    #[test]
-    fn equal_routes_break_ties_by_estimate_then_neighbour_order_deterministically() {
-        // Every shortest route to (2, 2) costs the same; the lower estimate and then the
-        // neighbour order N, E, S, W pick one, the same one every time.
-        let first = chase_route(at(0, 0), at(3, 3), open).unwrap();
-        for _ in 0..8 {
-            assert_eq!(chase_route(at(0, 0), at(3, 3), open).unwrap(), first);
-        }
-        assert_eq!(first[0], CardinalStep::East, "east precedes south");
-        let north = chase_route(at(0, 0), at(-3, -3), open).unwrap();
-        assert_eq!(north[0], CardinalStep::North, "north precedes west");
-    }
-
-    #[test]
-    fn an_adjacent_or_diagonal_target_needs_no_step_and_another_floor_is_no_route() {
-        assert_eq!(chase_route(at(0, 0), at(1, 1), open), Some(Vec::new()));
-        assert_eq!(chase_route(at(0, 0), at(0, 1), open), Some(Vec::new()));
-        let below = MovementLocalPosition {
-            x: 3,
-            y: 0,
-            floor: 8,
-        };
-        assert_eq!(chase_route(at(0, 0), below, open), None);
-    }
-
-    #[test]
-    fn a_wall_is_walked_around_and_a_closed_room_is_a_failed_search() {
-        // A wall on x = 2 from y = -3 to y = 3.
-        let wall = |cell: MovementLocalPosition| {
-            (!(cell.x == 2 && (-3..=3).contains(&cell.y))).then_some(0)
-        };
-        let route = chase_route(at(0, 0), at(4, 0), wall).unwrap();
-        let end = walk(at(0, 0), &route);
-        assert_eq!(chebyshev(end, at(4, 0)), 1);
-        let mut position = at(0, 0);
-        for step in &route {
-            position = walk(position, &[*step]);
-            assert!(wall(position).is_some(), "the route never enters the wall");
-        }
-        // The target walled in on every side.
-        let boxed = |cell: MovementLocalPosition| (chebyshev(cell, at(6, 0)) > 2).then_some(0);
-        assert_eq!(chase_route(at(0, 0), at(6, 0), boxed), None);
-    }
-
-    #[test]
-    fn a_creature_costs_forty_so_a_short_detour_goes_around_it() {
-        let creature = at(1, 0);
-        let cost =
-            |cell: MovementLocalPosition| Some(if cell == creature { CREATURE_COST } else { 0 });
-        let route = chase_route(at(0, 0), at(4, 0), cost).unwrap();
-        let mut position = at(0, 0);
-        for step in &route {
-            position = walk(position, &[*step]);
-            assert_ne!(position, creature, "a 2-step detour is cheaper than +40");
-        }
-        assert_eq!(
-            route.len(),
-            4,
-            "around it to a diagonal neighbour of the target"
-        );
-    }
-
-    #[test]
-    fn the_search_stays_within_twelve_tiles_and_its_work_bound() {
-        // Thirteen tiles away the goal tiles lie outside the search distance.
-        assert_eq!(chase_route(at(0, 0), at(14, 0), open), None);
-        assert_eq!(
-            chase_route(at(0, 0), at(13, 0), open).map(|r| r.len()),
-            Some(12)
-        );
-        // A maze-free but unreachable goal expands at most the work bound and fails.
-        let mut calls = 0_usize;
-        let unreachable = |cell: MovementLocalPosition| {
-            calls += 1;
-            (chebyshev(cell, at(12, 0)) > 1).then_some(0)
-        };
-        assert_eq!(chase_route(at(0, 0), at(12, 0), unreachable), None);
-        assert!(calls <= 4 * CHASE_SEARCH_WORK, "{calls} tile reads");
     }
 
     #[test]
