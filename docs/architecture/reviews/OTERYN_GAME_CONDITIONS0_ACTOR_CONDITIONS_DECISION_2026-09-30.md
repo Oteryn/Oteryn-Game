@@ -1,8 +1,10 @@
 # CONDITIONS-0 Actor conditions
 
 - Decision: `CONDITIONS0-ACTOR-CONDITIONS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
-  determinism and protocol) and protected integration.
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by
+  `OTERYN_GAME_ACCEPT_CONDITIONS0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-CONDITIONS0-V1`); it takes
+  effect after exact-head independent review, CI and protected integration of that PR. §3.5 is the
+  scope amendment accepted with it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane's request (#162 5913838260: CONDITIONS-0 next) and the charm lane's
   first priority (5913203231 question 2, architect view a in 5913269950): paralysis, haste and
@@ -150,6 +152,27 @@ exists per conflict key.
 - A tick is an attack on the target: it refreshes the target's in-fight deadline (ATTACK-0).
 - In a protection zone a damage tick is refused and used up.
 
+### 3.5 Amendment 2026-10-14: gate, restriction and unrecoverable families (MAGIC-COND-1, mechanic 29)
+
+Owner scope amendment through the control plane. Values (durations, tick shape) are content; this
+section fixes keys, policies and gates. Rooted and feared keep their existing keys and movement gate.
+
+| Family | Conflict key | Policy | Gate or effect |
+|---|---|---|---|
+| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes and chat are unaffected |
+| `PACIFIED` | `pacified` | refresh the duration | refuses setting an attack target and every offensive action; a running attack target is cleared on application |
+| `POWERLESS` | `powerless` | refresh the duration | refuses attack spells and offensive runes; support spells, items and melee are unaffected |
+| `AGONY` | `agony` | replace when the new total is at least the remaining one | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it; ends only by duration or death |
+| `EXHAUST` | none | not a condition | projection of the GAME-ABILITY-01 cooldown group (the "You are exhausted" refusal); no `ConditionInstance` exists and no key is spent |
+| `INFIGHT` | none | not a condition | projection of the ATTACK-0 60 s in-fight deadline for the client icon only; ATTACK-0 stays its sole owner and the lifecycle (§6.1) is unchanged |
+
+- Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
+  refused action spends nothing and draws nothing.
+- The four new instance keys bring the worst case to 17, over 16, so `COND0-RL-01` is 20.
+- Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
+  transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
+- Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
+
 ### 3.3 Mana shield
 
 - The instance carries `capacity` (content formula, at most maximum mana) and `remaining`.
@@ -268,7 +291,7 @@ exists per conflict key.
 
 | Row | Value |
 |---|---|
-| `COND0-RL-01` instances per actor | 16 |
+| `COND0-RL-01` instances per actor | 20 (was 16; §3.5) |
 | `COND0-RL-02` minimum tick interval | 1,000 ms |
 | `COND0-RL-03` damage ticks per actor per simulation tick | 4 |
 
