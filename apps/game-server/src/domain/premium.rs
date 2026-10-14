@@ -87,9 +87,57 @@ impl PremiumGate {
     }
 }
 
+/// Proof that Premium has not been delivered on this deployment, valid only inside the Premium
+/// gate (PREMIUM-ACTIVATION-0 §1.2). It is neither `Copy` nor `Clone` and borrows the gate, so a
+/// pre-delivery bypass (GUILD-0 §3.2-§3.3, WHEEL-0 §6.2) can only be applied while the gate holds
+/// the shared latch lock.
+#[derive(Debug)]
+pub struct PreDelivery<'g> {
+    _gate: std::marker::PhantomData<&'g mut ()>,
+}
+
+impl PreDelivery<'_> {
+    /// For the Premium gate only, inside its shared-lock transaction.
+    pub(crate) const fn inside_gate() -> Self {
+        Self {
+            _gate: std::marker::PhantomData,
+        }
+    }
+}
+
+/// The account's Premium status at one gated command (PREMIUM-ACTIVATION-0 §1.2). A consumer with
+/// no pre-delivery rule treats `NotActivated` as `NotCurrent`.
+#[derive(Debug)]
+pub enum PremiumStatus<'g> {
+    /// Premium has not started on this deployment.
+    NotActivated(PreDelivery<'g>),
+    /// Premium has started and the account's Premium is current.
+    Current,
+    /// Premium has started (or its start is unknown) and the account reads Free.
+    NotCurrent,
+}
+
+impl PremiumStatus<'_> {
+    /// The gate of a consumer with no pre-delivery rule: open only for `Current`.
+    #[must_use]
+    pub const fn gate(&self) -> PremiumGate {
+        PremiumGate::from_fence_read(matches!(self, Self::Current))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_current_status_opens_the_gate() {
+        assert!(PremiumStatus::Current.gate().premium_current());
+        assert_eq!(PremiumStatus::NotCurrent.gate(), PremiumGate::CLOSED);
+        assert_eq!(
+            PremiumStatus::NotActivated(PreDelivery::inside_gate()).gate(),
+            PremiumGate::CLOSED
+        );
+    }
 
     #[test]
     fn the_premium_gate_is_closed_unless_a_fence_read_proved_current_authority() {

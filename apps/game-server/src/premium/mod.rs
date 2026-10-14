@@ -24,6 +24,7 @@
 //! ([`PremiumConsumer::pull_failed`]).
 
 pub mod client;
+pub mod clock;
 pub mod refresh;
 pub mod snapshot;
 #[cfg(test)]
@@ -110,6 +111,12 @@ impl TrustedNow {
                 lower_us: now_us.saturating_sub(uncertainty_us),
                 upper_us: now_us.saturating_add(uncertainty_us),
             })
+    }
+
+    /// The conservative lower bound of the window, in Unix microseconds.
+    #[must_use]
+    pub const fn lower_us(self) -> i64 {
+        self.lower_us
     }
 
     /// The conservative upper bound of the window, in Unix microseconds.

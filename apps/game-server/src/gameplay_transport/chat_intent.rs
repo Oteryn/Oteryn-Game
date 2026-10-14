@@ -512,7 +512,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(refused) = self.chat.pre_gate(session, intent, now) {
             return refused;
         }
-        let premium = self.session_premium_gate(session);
+        let premium = self.session_premium_gate(session).await;
         let runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
         chat_in_premium_channel(
