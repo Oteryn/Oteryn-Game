@@ -279,6 +279,23 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["authorization"] = grant  # a bare object is not a history
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
+    def test_malformed_untrusted_record_is_ignored(self):
+        snap = ready()
+        grant = snap["authorization"][0]
+        for junk in ({"author": "random-user"}, {"author": "random-user", "scope": 7, "at": "bad", "revoked": "x"}):
+            snap["authorization"] = [grant, junk]
+            self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+    def test_malformed_check_or_review_values_are_input_incomplete(self):
+        for field, value in (("conclusion", 7), ("conclusion", "succeeded"), ("status", None), ("status", "done")):
+            snap = ready()
+            snap["checks"]["runs"][0][field] = value
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (field, value))
+        for field in ("state", "verdict"):
+            snap = ready()
+            snap["review"]["reviews"][0][field] = 7
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], field)
+
     def test_untrusted_newer_record_cannot_mask_or_revoke(self):
         snap = ready()
         grant = snap["authorization"][0]

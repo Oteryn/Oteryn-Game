@@ -36,6 +36,13 @@ CLOCK_SKEW_SECONDS = 120
 # (for example a candidate defect) keeps the head blocked until a new head is pushed.
 EXTERNAL_CAUSE_CLASSES = frozenset({"external_infra", "base_branch_change", "flaky_runner_loss"})
 
+# Platform-reported check-run enums. Any other value is a readback defect (INPUT_INCOMPLETE), never a CI result,
+# so corrupted data cannot send the writer to supersede a frozen head.
+CHECK_STATUSES = frozenset({"queued", "in_progress", "completed", "waiting", "requested", "pending"})
+CHECK_CONCLUSIONS = frozenset({
+    "success", "failure", "neutral", "cancelled", "skipped", "timed_out", "action_required", "stale",
+    "startup_failure"})
+
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
     "CANDIDATE_STATE",
@@ -169,6 +176,10 @@ def _evaluate(s: dict, now: datetime) -> dict:
             if ats.count(max(ats)) != 1:
                 raise ValueError(f"ambiguous duplicate runs for required check {name}")
             hit = [hit[ats.index(max(ats))]]
+        for r in hit:
+            if r["status"] not in CHECK_STATUSES or (
+                    r["status"] == "completed" and r["conclusion"] not in CHECK_CONCLUSIONS):
+                raise ValueError(f"check {name} has an unsupported status or conclusion")
         if not hit or any(r["status"] != "completed" for r in hit):
             found["CHECKS"] = _blocker("CHECKS_PENDING", "ci", f"check_suite.completed {name} @ {head[:12]}")
             break
@@ -196,6 +207,8 @@ def _evaluate(s: dict, now: datetime) -> dict:
             # Re-reviews: only the newest qualifying exact-head review is authoritative, as for check reruns.
             ats = [event(r.get("at")) for r in exact]
             latest = [r for r, a in zip(exact, ats) if a == max(ats)]
+            if not all(_text(r["state"]) and _text(r["verdict"]) for r in latest):
+                raise ValueError("review state and verdict must be non-empty strings")
             if len({(r["state"], r["verdict"]) for r in latest}) > 1:
                 raise ValueError("conflicting exact-head reviews at the same latest time")
             r = latest[0]
@@ -265,15 +278,20 @@ def _evaluate(s: dict, now: datetime) -> dict:
         raise ValueError("authorization history is empty")
     records = []
     for auth in history:
-        scope = auth["scope"]
-        if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
-            raise ValueError("authorization.scope must be a list of strings")
+        if not isinstance(auth, dict):
+            raise ValueError("authorization records must be objects")
         author = auth["author"]  # platform-reported login of the record, set by the readback, not by the grantee
         if not isinstance(author, str):
             raise ValueError("authorization.author must be a string login")
+        # Only records by a trusted login count; an untrusted record can neither grant nor revoke, so its payload
+        # is never parsed and a malformed one cannot block the lane either.
+        if author.lower() not in TRUSTED_GRANT_AUTHORS:
+            continue
+        scope = auth["scope"]
+        if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
+            raise ValueError("authorization.scope must be a list of strings")
         records.append((event(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
-    # Only records by a trusted login count; an untrusted record can neither grant nor revoke.
-    trusted = [r for r in records if r[1]["author"].lower() in TRUSTED_GRANT_AUTHORS]
+    trusted = records
     newest = [r for r in trusted if r[0] == max(x[0] for x in trusted)] if trusted else []
     # The tie key holds every field the decision below reads, so array order can never pick the verdict.
     if len({(r[2], r[3], tuple(sorted(r[1]["scope"])), _text(r[1].get("granted_by"))) for r in newest}) > 1:
