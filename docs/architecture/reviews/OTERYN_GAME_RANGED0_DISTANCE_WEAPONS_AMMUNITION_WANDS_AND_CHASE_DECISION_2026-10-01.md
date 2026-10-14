@@ -93,7 +93,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
   and whose level the player meets (`player.cpp:405-451`); a distance weapon without usable
   ammunition makes no attack at all (`player.cpp` `doAttacking`).
 - Range: same floor, Chebyshev distance at most the shoot range (`weapons.cpp:135-147`).
-- Hit chance (`weapons.cpp:729-830`, verified against the source at that commit). Roles: a shot
+- Hit chance (`weapons.cpp:729-830`, read from Canary 04b83b5, not vendored; RANGED-CONTENT-1 verifies before freeze). Roles: a shot
   item's (ammunition or throwing item) own nonzero `hit_chance` **replaces** the table result with
   that absolute chance; the bow's `hit_chance` is **added**, and only when the weapon fires
   ammunition. The cap is `max_hit_chance` when set, else 90 for a weapon with an `ammoType` and 75
@@ -275,7 +275,7 @@ A refusal in step 1 makes no attack and spends nothing.
   - The point-blank penalty (distance 1 is not exempt from the table) is `PARITY_PENDING`.
 - **Distance and throwing damage:** the Canary formula of §2 with ATTACK-0's fight-mode factor
   (it applies to distance and throwing; `PARITY_PENDING`) and the vocation's distance multiplier,
-  with the level term of ATTACK-0 §5 (the official 13.05 curve, `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md:99-100, 109-110`; it equals `floor(level / 5)` only for level <= 500) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
+  with the level term of ATTACK-0 §5 (the 13.05 curve, `PRIMARY_OFFICIAL` evidence known only through mirrors of the official news, `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md:99-100, 109-110`; it equals `floor(level / 5)` only for level <= 500) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
   §5). Blocked by armor only. Element ammunition splits physical and element by attack share;
   resistances apply in GAME-ABILITY-01 mitigation.
 - **Wands and rods:** `normal_random(damage_min, damage_max)` of the wand's element, applied through
@@ -533,7 +533,7 @@ authority until RANGED-1 is allocated.
   bow values). **Ruled b).** (Replaces the first draft's relative-points reading.)
 - **R7. Post-commit accumulators.** a) A new durable key per swing for skill tries and wand mana;
   b) once-per-outcome live accumulation with a bounded loss on a crash and no duplication
-  (recommended: no new durable surface; SKILLS-0 and A13 own those accumulators). **Ruled b).**
+  (recommended: no new durable surface; SKILLS-0 and A13 own those accumulators). **Ruled b)** (pending owner acceptance of the bounded loss).
 - **R8. Transaction identity.** a) A TransactionId derived from a swing tuple; b) an allocated
   UUIDv7 frozen at PREPARE, reused by retries (recommended: DUR-03 §20 and the UUIDv7 audit check
   require an allocated identity; no durable counter is needed). **Ruled b).**
