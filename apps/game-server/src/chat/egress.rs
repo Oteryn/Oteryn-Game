@@ -3,7 +3,7 @@
 //! At most [`EGRESS_MAX_LINES`] undelivered lines wait per session. Beyond it the oldest line of
 //! the cheapest class is dropped (room, then local, then private) and one
 //! [`ChatLine::Dropped`] marker is owed; the marker takes no slot and is handed out once, ahead
-//! of the next line. Overflow after it re-arms nothing until a line has been sent, so a flood
+//! of the next line. Overflow after it re-arms nothing until a line has been delivered, so a flood
 //! can neither grow a session's backlog nor starve its queued lines. The one line handed out by
 //! [`ChatEgress::next_for_write`] stays counted against the bound until [`ChatEgress::delivered`],
 //! so queued plus in-flight lines never exceed [`EGRESS_MAX_LINES`]. The in-flight line is already
@@ -62,12 +62,12 @@ impl ChatEgress {
         self.lines.push_back(line);
     }
 
-    /// The next line to send: the owed marker first, then the oldest line.
+    /// Hands out the next line and acknowledges it as delivered at once (a write that cannot
+    /// stall). Marker coverage is reset only through [`Self::delivered`].
+    #[cfg(test)]
     pub(crate) fn pop(&mut self) -> Option<ChatLine> {
-        let line = self.take()?;
-        if !matches!(line, ChatLine::Dropped) {
-            self.marker_sent = false;
-        }
+        let line = self.next_for_write()?;
+        self.delivered();
         Some(line)
     }
 

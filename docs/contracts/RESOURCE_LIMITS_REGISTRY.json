@@ -8207,7 +8207,7 @@
       "client_visible": true,
       "boundary_tests": [
         "max=64: 64 queued lines are all kept and none owes a marker",
-        "max+1=65: a 65th line drops the oldest room line and owes exactly one marker; a sent marker covers further overflow until a line is sent",
+        "max+1=65: a 65th line drops the oldest room line and owes exactly one marker; a sent marker covers further overflow until a real line is delivered, not merely handed out",
         "in flight: 1 line being written plus 63 queued fill the bound, and a new line evicts the cheapest queued line and queued plus in-flight never exceed 64; a marker covers overflow until a line is delivered"
       ],
       "consumers": [

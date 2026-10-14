@@ -578,7 +578,7 @@ fn line_values_carry_the_mode_text_and_position() {
 }
 
 #[test]
-fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
+fn a_sent_marker_covers_further_overflow_until_a_line_is_delivered() {
     let mut egress = ChatEgress::new();
     for n in 0..EGRESS_MAX_LINES {
         egress.push(room_text(n));
@@ -587,7 +587,7 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
     egress.push(room_text(101));
     assert_eq!(egress.pop(), Some(room_text(2)));
-    // A line was sent: the next overflow owes a new marker.
+    // A line was delivered: the next overflow owes a new marker.
     egress.push(room_text(102));
     egress.push(room_text(103));
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
