@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: quest-authoring-${{ github.event.pull_request.number || github.ref }}
