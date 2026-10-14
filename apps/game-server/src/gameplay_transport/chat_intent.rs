@@ -223,8 +223,15 @@ impl ChatRuntime {
         if ChatText::parse(text).is_err() {
             return Some(result(ChatDisposition::Rejected));
         }
-        let mut sessions = self.sessions.lock().ok()?;
-        let entry = sessions.get_mut(&session)?;
+        // A session without chat state (its open failed) or a poisoned map ends in
+        // `ChatUnavailable` on the full path too; refusing it here keeps it off the locks.
+        let unavailable = || Some(result(ChatDisposition::ChatUnavailable));
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return unavailable();
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return unavailable();
+        };
         entry
             .limiter
             .pre_gate(speech_mode(*mode), now)
@@ -688,8 +695,13 @@ mod tests {
                 .disposition,
             ChatDisposition::Rejected
         );
-        // An unknown session is left to the full path.
-        assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
+        // An unknown session (its chat open failed) is refused before the Channel.
+        assert_eq!(
+            chat.pre_gate(session_of(0x7f), &say("x"), BASE)
+                .expect("unknown session")
+                .disposition,
+            ChatDisposition::ChatUnavailable
+        );
     }
 
     #[test]
