@@ -96,3 +96,38 @@ rollback/harness and retirement decision remain CP/operator gates. This packet
 neither supplies nor bypasses B2 or its3/3/max5 live attempts. NPC/new object or
 spell assignments/audio/event-trigger activation remain behind their actual
 dependencies. Existing binaries/qualified artifacts and all failures are retained.
+
+## Published99a8 native proof and real CI source repair
+
+99a8a3851dda92966bcee9e306a338a8085053b3 guarded publication/readback passes;
+recovery /workspace/oteryn-client-publication-99a8a385.bundle SHA256
+18e4f330c0f3bf6b8d25a3188fd94cd2bbcf866b813f867f7c3b50fba6a9d680.
+Exact Rust1.95 MSVC client229/215/5+Session82, strict all-target Clippy, fmt and
+release pass. Five history tests, focus-loss Reset/Cancel, closed-chat receiver,
+prior item-menu and Windows-only toolbar tests execute/pass. DX12 at125%DPI:
+20pages/78 rehashed captures/0invalid. Release0.1.0+dev.ci.g99a8a3851dda;
+executable8e48deb23e3d3e3185cd2d0635f96f445d4dda3f8f909ff3d9cdec784e33931e;
+manifest26c62c859cbccf17033870372bf9464424ae08484b8c4f18781e1d5e4bdc8b75.
+Build C:\Users\barte\Downloads\oteryn-client-99a8a385-20261014-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-99a8a385-20261014.
+QualificationPID40872 exits0 after134.82seconds. Separate launcher finishes0;
+source-bound loginPID31460/window4522326 responds with exact path/hash/U+2014
+title, no automatic sign-in or old-process termination.
+
+CI99a8 has only one protected-base success, not ordinary queued CI: live PR
+is mergeable=false/dirty. REST's base field still reports71c014d4; fresh Git
+fetch proves accepted mainaf85035f5864eb4a437dfe4b6a78584c3ea81182.
+Actual merge-tree identifies one conflict, content/world/pins/oteryn.json.
+Normal merge imports accepted New Haven/data/decision work, not root-authored
+server implementation or live deployment. Main's placement fingerprint changes
+world.rs; no HUD redesign or reset/rebase/force of the client branch.
+
+Preserve main's World digest1b04cc35a65bcced64dbc933fcb5ac9adad426a369149bb8c170b1aa80d04406,
+entry/identity/revision/nonproduction flag. Release pin-check rejects copied
+main inputs9a2b5616 and derives the merged-index inputs
+883be88aebae8c7d74bf58123f3b8d28ed2b95d21d9eea8f88839180032cd455.
+After the one-field repair, actual double-build validates identical25,089,907
+bytes matching main's digest. No invented fingerprint or weakened gate.
+Post-merge Linux230/209/5+Session82, strict/fmt and governance60 pass; new
+native/CI qualification follows.99a8 proof remains bound to its exact source,
+not inherited by the changed placement fingerprint.

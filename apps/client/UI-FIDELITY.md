@@ -1028,6 +1028,21 @@ is retained/published in the same packet, not relabelled as changed-code proof.
 HUD/graphics remain excluded; B2 and later capability activation remain gated.
 Packet: docs/agents/tasks/active/OTV2-20261014-client-local-input.md.
 
+Published99a8a385 additionally passes exact MSVC229/215/5+Session82, strict
+checks/release and DX1220pages/78rehashed captures/0invalid at125%DPI. All
+named new consumer regressions execute. Binary8e48deb23e3d3e3185cd2d0635f96f445d4dda3f8f909ff3d9cdec784e33931e;
+manifest26c62c859cbccf17033870372bf9464424ae08484b8c4f18781e1d5e4bdc8b75.
+Source-bound login31460 responds without automatic sign-in. Packet above keeps
+exact paths, native helper exit0, release, recovery and prior artifacts.
+
+Ordinary CI99a8 is blocked by real source conflict, not a red test or queued
+success. Accepted mainaf85035f moves World/placement data; normal reconciliation
+resolves one input-pin conflict via the provided release compiler. Double-build
+matches accepted digest1b04cc35/25,089,907bytes with merged inputs883be88a.
+No server deployment/start/identity mutation or graphics redesign. Updated
+placement fingerprint requires new native qualification; retained99 proof does
+not qualify the successor or its final same-head CI/review/MQ/main-channel release.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

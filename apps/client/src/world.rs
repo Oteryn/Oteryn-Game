@@ -35,7 +35,7 @@ pub(crate) const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/man
 /// The sha256 of `content/world/placements/index.json`, which pins every region file. A
 /// regenerated placement index must update it; a test compares it with the repository.
 const PLACEMENT_INDEX_SHA256: &str =
-    "4457eb96db6b2f9dedc641f8fa8699c92afae53299a5c7db7b036d37a102cafb";
+    "b32bc5e1088ba594b1b72238686a34e31373e5ecddc10f8428d4418db98ae081";
 const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 /// The Thais temple, where the offline view starts and the play view is anchored.
 pub const START: (i32, i32) = (32369, 32241);

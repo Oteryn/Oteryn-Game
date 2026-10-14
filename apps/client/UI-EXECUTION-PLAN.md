@@ -13,8 +13,8 @@ is explicitly excluded. Preserve existing runtime and native artifacts. The
 owner's Windows PC is available for isolated builds/acceptance, not server,
 account, personal-profile or trust mutations.
 
-Accepted main71c014d4 is normally merged in32ee396e, retaining the earlier
-15c6cab7 reconciliation3295351a. Neither refresh changes the client,
+Accepted main71c014d4 was normally merged in32ee396e, retaining the earlier
+15c6cab7 reconciliation3295351a. Neither of those refreshes changes the client,
 Session or protocol source. Last remote1942 head6f217f16 is still draft
 AUTHORING with green CI/game-gate; subsequent source needs its own checks.
 The pre-B2 stability packet refreshes already-admitted GameState before step
@@ -28,6 +28,13 @@ Scoped Linux230/209/5+Session82/strict/fmt/governance60 pass; one combined
 publication retains14d proof then requires new exact Windows qualification.
 Packet: docs/agents/tasks/active/OTV2-20261014-client-local-input.md. Original
 formats/physical picker/clipboard and original history defaults remain unknown.
+
+Published99a8 passes exact MSVC229/215/5+Session82/strict/release and native
+20pages/78captures, but ordinary CI is blocked by a real World-input conflict
+with newly accepted mainaf85035f. A normal merge and release double-build keep
+main's new1b04cc35 bundle/placement fingerprint and derive merged inputs883be88a.
+Entry/identity/content revision and live systems stay unchanged. New source
+must qualify independently; no empty CI retrigger or unqualified all-green claim.
 
 Fresh293-comment #1622 read:6149042654 is still operationally unanswered;
 6155885167 allocates a different WORLDINT registry lease. Neither that comment
