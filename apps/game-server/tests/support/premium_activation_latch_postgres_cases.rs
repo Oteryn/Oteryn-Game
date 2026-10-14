@@ -5,8 +5,8 @@
 use crate::bestiary_postgres_harness::{Harness, TestResult, configured_admin, runtime};
 use crate::durability::DurabilityRoot;
 use crate::durability::premium_activation_latch::{
-    PREMIUM_ACTIVATION_LOCK_KEY, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead,
-    PremiumGateTx,
+    EmptyLatchHeld, PREMIUM_ACTIVATION_LOCK_KEY, PreDeliveryBypass, PremiumActivationLatch,
+    PremiumActivationRead, PremiumGateTx,
 };
 use std::future::Future;
 use std::pin::Pin;
@@ -20,6 +20,7 @@ impl PreDeliveryBypass for Probe {
     type Output = i32;
     fn apply<'a, 't>(
         self,
+        _held: &'a EmptyLatchHeld,
         tx: &'a mut PremiumGateTx<'t>,
     ) -> Pin<Box<dyn Future<Output = i32> + Send + 'a>>
     where

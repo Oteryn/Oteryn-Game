@@ -13,7 +13,7 @@ use super::{
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
 use crate::durability::premium_activation_latch::{
-    PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
+    EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
 use crate::durability::{
     DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore,
@@ -165,13 +165,14 @@ impl<T: Send, F: PremiumGateOperation<T>> PreDeliveryBypass for GateBypass<T, F>
     type Output = T;
     fn apply<'a, 't>(
         self,
+        held: &'a EmptyLatchHeld,
         tx: &'a mut PremiumGateTx<'t>,
     ) -> Pin<Box<dyn Future<Output = T> + Send + 'a>>
     where
         Self: 'a,
     {
         (self.operation)(
-            PremiumStatus::NotActivated(PreDelivery::inside_gate()),
+            PremiumStatus::NotActivated(PreDelivery::inside_gate(held)),
             Some(tx),
         )
     }
@@ -187,13 +188,14 @@ impl<T: Send, F: PremiumBatchGateOperation<T>> PreDeliveryBypass for BatchBypass
     type Output = T;
     fn apply<'a, 't>(
         self,
+        held: &'a EmptyLatchHeld,
         tx: &'a mut PremiumGateTx<'t>,
     ) -> Pin<Box<dyn Future<Output = T> + Send + 'a>>
     where
         Self: 'a,
     {
         let statuses = (0..self.accounts)
-            .map(|_| PremiumStatus::NotActivated(PreDelivery::inside_gate()))
+            .map(|_| PremiumStatus::NotActivated(PreDelivery::inside_gate(held)))
             .collect();
         (self.operation)(statuses, Some(tx))
     }

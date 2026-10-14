@@ -8,6 +8,8 @@
 //! §4.1: every surface `REQUIRE_CURRENT`, every other class reads as Free). It starts closed, and
 //! only a Premium fence read that classified the account as current authority opens it.
 
+use crate::durability::premium_activation_latch::EmptyLatchHeld;
+
 /// Soul maximum without a current promotion benefit.
 pub const BASE_SOUL_MAXIMUM: u32 = 100;
 /// Soul maximum while authenticated Premium is current (owner amendment 2026-10-01).
@@ -88,20 +90,19 @@ impl PremiumGate {
 }
 
 /// Proof that Premium has not been delivered on this deployment, valid only inside the Premium
-/// gate (PREMIUM-ACTIVATION-0 §1.2). It is neither `Copy` nor `Clone` and borrows the gate, so a
-/// pre-delivery bypass (GUILD-0 §3.2-§3.3, WHEEL-0 §6.2) can only be applied while the gate holds
-/// the shared latch lock.
+/// gate (PREMIUM-ACTIVATION-0 §1.2). It is neither `Copy` nor `Clone` and borrows the latch read's
+/// [`EmptyLatchHeld`] witness, which only that read can make, so a pre-delivery bypass
+/// (GUILD-0 §3.2-§3.3, WHEEL-0 §6.2) can only be applied while the gate holds the shared latch
+/// lock over an empty table.
 #[derive(Debug)]
 pub struct PreDelivery<'g> {
-    _gate: std::marker::PhantomData<&'g mut ()>,
+    _held: &'g EmptyLatchHeld,
 }
 
-impl PreDelivery<'_> {
-    /// For the Premium gate only, inside its shared-lock transaction.
-    pub(crate) const fn inside_gate() -> Self {
-        Self {
-            _gate: std::marker::PhantomData,
-        }
+impl<'g> PreDelivery<'g> {
+    /// Inside the gate's shared-lock transaction that read an empty latch table.
+    pub(crate) const fn inside_gate(held: &'g EmptyLatchHeld) -> Self {
+        Self { _held: held }
     }
 }
 
@@ -134,7 +135,8 @@ mod tests {
         assert!(PremiumStatus::Current.gate().premium_current());
         assert_eq!(PremiumStatus::NotCurrent.gate(), PremiumGate::CLOSED);
         assert_eq!(
-            PremiumStatus::NotActivated(PreDelivery::inside_gate()).gate(),
+            PremiumStatus::NotActivated(PreDelivery::inside_gate(&EmptyLatchHeld::for_test()))
+                .gate(),
             PremiumGate::CLOSED
         );
     }
