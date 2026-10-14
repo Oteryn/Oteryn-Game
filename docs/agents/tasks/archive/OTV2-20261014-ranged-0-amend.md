@@ -25,6 +25,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md
+  - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md
   - docs/agents/tasks/archive/OTV2-20261014-ranged-0-amend.md
 public_contracts:
   - "Composition, ITEM-MOVE-WIRE-1, MOVE-RL11 and ATTACK-0 pending RANGED-0 notes reconciled to the decision (allocated TransactionId, stack_ordinal, no ordinal change, bounded chase): persistence, movement and combat review"
@@ -60,7 +61,7 @@ applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
   - "TransactionId is an allocated UUIDv7 frozen at PREPARE; it is never derived from the swing tuple."
-  - "Restart order: the claim commits under the character_root lock and advances the scope and CharacterLease/GameSession generation before any receipt read; only then is the newest receipt read (LIMIT 1) and a new TransactionId allocated."
+  - "Restart order: the claim commits under the character_root lock and advances the scope and CharacterLease/GameSession generation before any receipt read, and advances only the generation that changed (a character reconnect advances the CharacterLease/GameSession generation; a scope-owner replacement advances the scope generation through the scope-assignment authority, never both on the claim's own authority); only then is the newest receipt read (LIMIT 1) and a new TransactionId allocated."
   - "At most one outstanding ambiguous TransactionId per character: after the 2,000 ms window the slot is freed for every use except another weapon swing."
   - "A replay or reconciliation read returns the first outcome and credits nothing."
   - "Weapon swings stay refused (fail closed) while the restart read fails or a swing is unobserved or ambiguous."
@@ -96,6 +97,7 @@ finding_dispositions:
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 on b07ed26f and c5d78959 (critical-charm hook, wand swings): fixed"
+    - "Codex P1 x2 on 7a07cb26 (archive invariant recombined the generations; STACK-1 still depended on RANGED-1): fixed"
     - "Codex P1 on e5e6b0bb (separate scope-owner and character-session recovery cases): fixed"
     - "Codex P1/P2 on ed1d264a (CREATURE-MOVE-1 packet order reconciled; oldest-waiting-first fairness inside the chase reserve): fixed"
 ```

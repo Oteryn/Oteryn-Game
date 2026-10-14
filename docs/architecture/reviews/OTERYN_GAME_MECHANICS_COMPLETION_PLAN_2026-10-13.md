@@ -413,7 +413,7 @@ MAGIC-SUMMON-1 is complete only when every child above, the `owned_field_buff` c
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (BAGS0, ITEM_MOVE_WIRE0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
 
-Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITEM-USE-CLIENT-1 are not part of the ITEM-LOOP-1 completion set: each is allocated after the downstream child it names (DEPOT-1, TRADE-1, RANGED-1's Ground ordinal, ATTACK-CLIENT-1) and completes with that downstream family, so ITEM-STORAGE-1, TRADE-PLAYER-1 and LOOP-RANGED-1 are not blocked by them. ITEM-LOOP-1 is complete only when B3-3 (item weights, character capacity source, overweight refusal) and every other child in this table, except those integration children, are complete; B3-3 keeps the acceptance gate of the B3 brief (B3 is CANDIDATE): it is allocated only after B3's acceptance and its weight and capacity evidence.
+Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITEM-USE-CLIENT-1 are not part of the ITEM-LOOP-1 completion set: each is allocated after the downstream child it names (DEPOT-1, TRADE-1, the RANGED-0 §6.1.2 Ground order (existing `stack_ordinal`), ATTACK-CLIENT-1) and completes with that downstream family, so ITEM-STORAGE-1, TRADE-PLAYER-1 and LOOP-RANGED-1 are not blocked by them. ITEM-LOOP-1 is complete only when B3-3 (item weights, character capacity source, overweight refusal) and every other child in this table, except those integration children, are complete; B3-3 keeps the acceptance gate of the B3 brief (B3 is CANDIDATE): it is allocated only after B3's acceptance and its weight and capacity evidence.
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
@@ -433,7 +433,7 @@ Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITE
 | BAGS-DEPOT-1 | BAGS0 | hard, persistence review |  | DEPOT-1; INBOX-1a (merged); BAGS-1 |
 | BAGS-TRADE-1 | BAGS0 | hard, persistence and security review |  | TRADE-1; BAGS-1 |
 | STACK-WIRE-1 | STACK0 | impl, protocol review | yes | ITEM-EQUIP-WIRE-1; BAGS-WIRE-1 |
-| STACK-1 | STACK0 | hard (persistence), persistence review |  | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground ordinal |
+| STACK-1 | STACK0 | hard (persistence), persistence review |  | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; the existing migration 0034 `stack_ordinal` (RANGED-0 §6.1.2; no RANGED-1 dependency) |
 | STACK-PARITY-1 | STACK0 | impl |  | STACK-1 |
 | STARTER-1 | STARTER_BACKPACK0 | hard, persistence and security review |  | this decision; the C2 fence plumbing (`CurrentCharacterItemFence` in `AdmittedSession`); STARTER-CONTENT-1 |
 | STARTER-CONTENT-1 | STARTER_BACKPACK0 | **MERGED (#1424).** content |  | this decision |

@@ -20,7 +20,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | STACK-WIRE-1 | impl, protocol review | capability `ITEM_STACK_COUNT_V1` and the optional `count` of command 9 (§3); the client count dialog | ITEM-EQUIP-WIRE-1; BAGS-WIRE-1 |
-| STACK-1 | hard (persistence), persistence review | the partial and merge shapes of §4-§5 for every destination of command 9, the DUR-03 amendment, rows (§6) | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground order (`stack_ordinal`) |
+| STACK-1 | hard (persistence), persistence review | the partial and merge shapes of §4-§5 for every destination of command 9, the DUR-03 amendment, rows (§6) | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; the existing migration 0034 `stack_ordinal` (RANGED-0 §6.1.2; no RANGED-1 dependency) |
 | STACK-PARITY-1 | impl | fixtures against Canary: 100 onto 70 in a full backpack, 30 of 100 to the ground onto a matching top stack, the four slot cases of §4.4 | STACK-1 |
 
 Tests: a session without the capability never receives `PARTIAL` and keeps its refusals (§3);
