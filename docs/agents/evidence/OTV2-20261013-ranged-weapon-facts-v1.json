@@ -52,16 +52,6 @@
       "reason": "wiki_unparseable"
     },
     {
-      "field": "damagetype",
-      "item_key": "oteryn:item.tibia.i52336",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagetype",
-      "item_key": "oteryn:item.tibia.i52337",
-      "reason": "wiki_unparseable"
-    },
-    {
       "field": "damagerange",
       "item_key": "oteryn:item.tibia.i53220",
       "reason": "wiki_unparseable"
@@ -73,7 +63,7 @@
     }
   ],
   "counts": {
-    "conflicts": 14,
+    "conflicts": 12,
     "holds": 193,
     "items": 98,
     "kind_AMMUNITION": 2,
@@ -87,24 +77,36 @@
   "holds": [
     {
       "item_key": "oteryn:item.tibia.i761",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i762",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i763",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i774",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -119,18 +121,27 @@
     },
     {
       "item_key": "oteryn:item.tibia.i3446",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i3447",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i3448",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -143,6 +154,9 @@
     },
     {
       "item_key": "oteryn:item.tibia.i3450",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -155,24 +169,36 @@
     },
     {
       "item_key": "oteryn:item.tibia.i6528",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i7363",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i7364",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i7365",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -239,6 +265,9 @@
     },
     {
       "item_key": "oteryn:item.tibia.i14252",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -275,6 +304,9 @@
     },
     {
       "item_key": "oteryn:item.tibia.i16143",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -341,6 +373,9 @@
     },
     {
       "item_key": "oteryn:item.tibia.i21470",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -408,12 +443,18 @@
     },
     {
       "item_key": "oteryn:item.tibia.i22866",
+      "parity_pending": [
+        "range_tiles"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
     },
     {
       "item_key": "oteryn:item.tibia.i22867",
+      "parity_pending": [
+        "hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -1073,6 +1114,9 @@
     },
     {
       "item_key": "oteryn:item.tibia.i29417",
+      "parity_pending": [
+        "hit_chance"
+      ],
       "reasons": [
         "owned_by_weapon_metadata_103"
       ]
@@ -1244,7 +1288,6 @@
     {
       "item_key": "oteryn:item.tibia.i52336",
       "reasons": [
-        "element_unknown",
         "missile_unknown",
         "no_weapon_registration"
       ]
@@ -1252,7 +1295,6 @@
     {
       "item_key": "oteryn:item.tibia.i52337",
       "reasons": [
-        "element_unknown",
         "mana_per_shot_unknown",
         "missile_unknown",
         "no_weapon_registration",

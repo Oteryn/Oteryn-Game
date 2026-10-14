@@ -55,7 +55,7 @@ RANGED-0 §7, PR1: the weapon facts of the distance, throwing, ammunition and wa
 
 ## Acceptance criteria
 
-- [x] `lower_ranged_packet.py` plus tests; `--check` reproduces the packet (98 rows: 9 DISTANCE, 13 THROWING, 2 AMMUNITION, 66 WAND, plus 8 quivers; 193 holds; 14 conflicts, held rows included; the 103 Items pinned by the closed weapon-metadata packet are held as `owned_by_weapon_metadata_103`, because its native_weapon_guard fixes their weapon leaf; they join the PR2 re-baseline).
+- [x] `lower_ranged_packet.py` plus tests; `--check` reproduces the packet (98 rows: 9 DISTANCE, 13 THROWING, 2 AMMUNITION, 66 WAND, plus 8 quivers; 193 holds; 12 conflicts, held rows included; the 103 Items pinned by the closed weapon-metadata packet are held as `owned_by_weapon_metadata_103` (their Wiki-vs-Canary parity is still recorded on the hold), because its native_weapon_guard fixes their weapon leaf; they join the PR2 re-baseline).
 - [x] `item_ranged_promotion.rs` applies the pinned packet (digest and counts pinned) in the materializer; the content tree is regenerated with new revision `ranged-content-1-20261013-r1`.
 - [x] Dependent evidence is regenerated, not hand-edited: imbuement eligibility, candidate and rulesets; World bundle pin and identity; the reward-claim stack proof is unchanged (item i3450 is held).
 

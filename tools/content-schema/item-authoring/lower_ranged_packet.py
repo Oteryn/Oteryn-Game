@@ -58,6 +58,7 @@ WIKI_PRIMARY_KINDS = {
 CANARY_KINDS = {"distance": "DISTANCE", "ammunition": "AMMUNITION", "wand": "WAND"}
 AMMO_TYPES = {"arrow": "ARROW", "bolt": "BOLT"}
 ELEMENTS = {
+    "physical": "PHYSICAL",
     "death": "DEATH",
     "earth": "EARTH",
     "energy": "ENERGY",
@@ -307,11 +308,8 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
                 {"item_key": _key(item_id), "reasons": ["wiki_kind_ambiguous"]}
             )
             continue
-        if not is_quiver and _key(item_id) in owned:
-            holds.append(
-                {"item_key": _key(item_id), "reasons": ["owned_by_weapon_metadata_103"]}
-            )
-            continue
+        # Proof-owned rows stay held (PR2 re-baseline) but their parity is still computed.
+        owned_hold = not is_quiver and _key(item_id) in owned
         ammo = AMMO_TYPES.get(top.get("ammotype"))
         # Canary decides what the engine can fire; the wiki primary type is the cross-check.
         kind = canary_kind or next(iter(wiki_kinds), None)
@@ -328,6 +326,11 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
                 )
             )
             conflicts.extend(local_conflicts)
+            continue
+        if owned_hold and (is_quiver or kind is None):
+            holds.append(
+                {"item_key": _key(item_id), "reasons": ["owned_by_weapon_metadata_103"]}
+            )
             continue
         if is_quiver:
             holds.append({"item_key": _key(item_id), "reasons": ["quiver_and_weapon"]})
@@ -466,8 +469,18 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
         )
         if requirements:
             row["requirements"] = requirements
-        if reasons:
-            holds.append({"item_key": _key(item_id), "reasons": sorted(set(reasons))})
+        if owned_hold or reasons:
+            hold = {
+                "item_key": _key(item_id),
+                "reasons": (
+                    ["owned_by_weapon_metadata_103"]
+                    if owned_hold
+                    else sorted(set(reasons))
+                ),
+            }
+            if parity:
+                hold["parity_pending"] = sorted(set(parity))
+            holds.append(hold)
             conflicts.extend(local_conflicts)
             continue
         row["sources"] = dict(sorted(sources.items()))

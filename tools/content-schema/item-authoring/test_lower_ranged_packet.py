@@ -298,3 +298,26 @@ if __name__ == "__main__":
         if name.startswith("test_") and callable(test):
             test()
     print("lower_ranged_packet tests: PASS")
+
+
+def test_wiki_physical_damage_type_is_recognized():
+    assert lower._parse_element("Physical") == "PHYSICAL"
+    wand = {"top": WAND["top"], "nested": dict(WAND["nested"], wandtype="")}
+    wiki = snapshot(i3=[{"primarytype": "Wands", "damagetype": "Physical"}])
+    found = row(run(wiki, {3: wand}, {3})[0], 3)
+    assert found["element"] == "PHYSICAL"
+    assert found["sources"]["element"] == "WIKI"
+
+
+def test_proof_owned_rows_stay_held_but_keep_parity():
+    bow = {"top": dict(BOW["top"], hitchance="5"), "nested": BOW["nested"]}
+    wiki = snapshot(i3=[{"range": "7"}])
+    promotions, holds, _, _ = lower.build(wiki, {3: bow}, {3}, {key(3)})
+    assert promotions == []
+    assert holds == [
+        {
+            "item_key": key(3),
+            "reasons": ["owned_by_weapon_metadata_103"],
+            "parity_pending": ["range_tiles"],
+        }
+    ]
