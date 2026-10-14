@@ -3228,6 +3228,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chase_yield_to_client(actor, session).await;
     }
 
+    async fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.chase_search_waiting_now(actor, session).await
+    }
+
     async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
         self.actor_step_deadline_now(actor).await
     }

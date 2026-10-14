@@ -701,6 +701,17 @@ impl ChannelAttackStates {
         }
     }
 
+    /// CHASE-1: whether `actor`'s chase has a due search the Channel budget has not admitted
+    /// yet (`RANGED0-RL-03`), which its connection retries in the next owner window.
+    pub(crate) fn chase_search_waiting(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.index(actor, session)
+            .is_some_and(|index| self.entries[index].chase.search_waiting_since().is_some())
+    }
+
     /// CHASE-1: the chase step the Movement owner just refused at `now` drops the route. When it
     /// refused it as `blocked`, the refused cell also stays out of the next searches; any other
     /// refusal is transient and leaves the cell a path tile.
@@ -958,6 +969,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .record_step_deadline(actor, holder, Instant::now(), due);
+    }
+
+    /// CHASE-1: whether `actor`'s chase search waits for a later owner window.
+    pub(in crate::gameplay_transport) async fn chase_search_waiting_now(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.attack
+            .lock()
+            .await
+            .chase_search_waiting(actor, session)
     }
 
     /// CHASE-1: a client step of `actor` wins over its chase.

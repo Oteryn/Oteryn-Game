@@ -443,6 +443,16 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// CHASE-1 (`RANGED0-RL-03`): whether `actor`'s chase has a due search the Channel budget
+    /// has not admitted yet. Fixtures without a chase keep this default.
+    fn chase_search_waiting(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// CHASE-1 (RANGED-0 §8): the actor-owned pacing deadline of `actor` still ahead, which a
     /// replaced or resumed connection starts from. Fixtures without one keep this default.
     fn actor_step_deadline(
@@ -1282,6 +1292,11 @@ const SERENE_EVALUATION: std::time::Duration =
 /// VIS-3: how often a session with capability 6 looks for entities of its Channel that changed
 /// without its own step.
 const VISIBILITY_REFRESH: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// CHASE-1 (`RANGED0-RL-03`): a chase search the Channel budget refused asks again one owner
+/// window later.
+const CHASE_SEARCH_RETRY: std::time::Duration =
+    std::time::Duration::from_micros(crate::combat_attack::CHASE_WINDOW_MICROS);
 
 /// VIS-3: the domain 1 handles of a spatial view's objects under capability 4 (ITEM-VIEW-1b
 /// §4.1); without an item view there are none to attach.
@@ -2145,6 +2160,14 @@ where
                 let duration = step.as_ref().and_then(|(_, duration)| *duration);
                 record_actor_step(&mut pacer, authority, actor, &step_holder, duration).await;
                 let Some((outcome, _)) = step else {
+                    // RANGED0-RL-03: a search the Channel budget refused retries in the next
+                    // owner window, not at the next combat tick.
+                    if authority
+                        .chase_search_waiting(actor, admitted.game_session_id)
+                        .await
+                    {
+                        chase_due = Some(tokio::time::Instant::now() + CHASE_SEARCH_RETRY);
+                    }
                     continue;
                 };
                 let Some(observation) = outcome.moved_to else {
