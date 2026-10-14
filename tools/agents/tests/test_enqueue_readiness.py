@@ -37,8 +37,8 @@ def ready() -> dict:
                                    "at": "2026-10-14T09:00:00Z"}]},
         "dependencies": [{"pr": 2, "merged": True, "base_ref": "main", "at": "2026-10-14T08:00:00Z"}],
         "queue": {"prior_failures": []},
-        "authorization": {"head_sha": HEAD, "scope": ["enqueue"], "revoked": False,
-                          "granted_by": "owner", "author": "blakinio", "at": "2026-10-14T09:30:00Z"},
+        "authorization": [{"head_sha": HEAD, "scope": ["enqueue"], "revoked": False,
+                           "granted_by": "owner", "author": "blakinio", "at": "2026-10-14T09:30:00Z"}],
     }
 
 
@@ -230,8 +230,43 @@ class EnqueueReadinessTest(unittest.TestCase):
     def test_authorization_must_match_head_scope_and_not_be_revoked(self):
         for change in ({"head_sha": OTHER}, {"scope": ["review"]}, {"revoked": True}, {"granted_by": ""}):
             snap = ready()
-            snap["authorization"].update(change)
+            snap["authorization"][0].update(change)
             self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"], change)
+
+    def test_newest_authorization_record_governs(self):
+        snap = ready()
+        grant = snap["authorization"][0]
+        revoke = dict(grant, revoked=True, at="2026-10-14T09:40:00Z")
+        snap["authorization"] = [revoke, grant]  # order in the list is irrelevant
+        self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"])
+        narrow = dict(grant, scope=["review"], at="2026-10-14T09:40:00Z")
+        snap["authorization"] = [grant, narrow]
+        self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"])
+        other_head = dict(grant, head_sha=OTHER, at="2026-10-14T09:40:00Z")
+        snap["authorization"] = [grant, other_head]
+        self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"])
+        regrant = dict(grant, at="2026-10-14T09:50:00Z")
+        snap["authorization"] = [grant, revoke, regrant]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T10:05:00Z")
+
+    def test_authorization_history_ties_and_empty_fail_closed(self):
+        snap = ready()
+        grant = snap["authorization"][0]
+        snap["authorization"] = [grant, dict(grant, revoked=True)]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["authorization"] = [grant, dict(grant)]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        snap["authorization"] = []
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["authorization"] = grant  # a bare object is not a history
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_untrusted_newer_record_cannot_mask_or_revoke(self):
+        snap = ready()
+        grant = snap["authorization"][0]
+        snap["authorization"] = [grant, dict(grant, author="random-user", revoked=True, at="2026-10-14T09:45:00Z")]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
 
     def test_draft_candidate_blocks(self):
         snap = ready()
@@ -247,7 +282,7 @@ class EnqueueReadinessTest(unittest.TestCase):
 
     def test_all_blockers_listed_in_fixed_order(self):
         snap = ready()
-        snap["authorization"]["revoked"] = True
+        snap["authorization"][0]["revoked"] = True
         snap["threads"].update(total=1, unresolved=1)
         snap["checks"]["runs"] = []
         self.assertEqual(reasons(snap), ["CHECKS_PENDING", "REVIEW_THREADS_UNRESOLVED", "AUTHORIZATION_MISSING"])
@@ -263,7 +298,7 @@ class EnqueueReadinessTest(unittest.TestCase):
 
     def test_non_boolean_gate_fields_fail_closed(self):
         for path in (("evidence", "required", 0, "present"), ("dependencies", 0, "merged"),
-                     ("authorization", "revoked"), ("review", "required")):
+                     ("authorization", 0, "revoked"), ("review", "required")):
             snap = ready()
             node = snap
             for key in path[:-1]:
@@ -312,7 +347,7 @@ class EnqueueReadinessTest(unittest.TestCase):
 
     def test_scalar_scope_rejected(self):
         snap = ready()
-        snap["authorization"]["scope"] = "no-enqueue"
+        snap["authorization"][0]["scope"] = "no-enqueue"
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_gate_collections_must_be_arrays(self):
@@ -363,7 +398,7 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
             (lambda s: s["review"]["reviews"][0], "at"),
             (lambda s: s["evidence"]["required"][0], "at"),
             (lambda s: s["dependencies"][0], "at"),
-            (lambda s: s["authorization"], "at"),
+            (lambda s: s["authorization"][0], "at"),
         )
         for get, key in paths:
             for mode in ("missing", "bad", "naive", "empty"):
@@ -407,7 +442,7 @@ class ShaValidationTest(unittest.TestCase):
     def test_non_hex_or_short_sha_fails_closed_everywhere(self):
         spots = (
             lambda s: s["candidate"], lambda s: s["checks"]["runs"][0], lambda s: s["review"]["reviews"][0],
-            lambda s: s["evidence"]["required"][0], lambda s: s["authorization"],
+            lambda s: s["evidence"]["required"][0], lambda s: s["authorization"][0],
         )
         for bad in ("g" * 40, "a" * 39, "", None, 5):
             for get in spots:
@@ -429,8 +464,8 @@ class ShaValidationTest(unittest.TestCase):
 class AuthorizationAuthorTest(unittest.TestCase):
     def test_untrusted_author_with_forged_granted_by_is_not_eligible(self):
         snap = ready()
-        snap["authorization"]["author"] = "random-user"
-        snap["authorization"]["granted_by"] = "blakinio"
+        snap["authorization"][0]["author"] = "random-user"
+        snap["authorization"][0]["granted_by"] = "blakinio"
         result = evaluate(snap)
         self.assertEqual(result["verdict"], "BLOCKED")
         self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"])
@@ -438,15 +473,15 @@ class AuthorizationAuthorTest(unittest.TestCase):
     def test_missing_or_non_string_author_fails_closed(self):
         for bad in (None, 5, ["blakinio"]):
             snap = ready()
-            snap["authorization"]["author"] = bad
+            snap["authorization"][0]["author"] = bad
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
         snap = ready()
-        del snap["authorization"]["author"]
+        del snap["authorization"][0]["author"]
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_trusted_author_is_case_insensitive(self):
         snap = ready()
-        snap["authorization"]["author"] = "BlakinIO"
+        snap["authorization"][0]["author"] = "BlakinIO"
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
 
 

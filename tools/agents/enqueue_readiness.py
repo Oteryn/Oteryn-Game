@@ -235,19 +235,31 @@ def _evaluate(s: dict, now: datetime) -> dict:
                 f"removed from queue at {failure.get('at', 'unknown time')}: {failure.get('cause', 'undiagnosed')}")
             break
 
-    auth = s["authorization"]
-    scope = auth["scope"]
-    if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
-        raise ValueError("authorization.scope must be a list of strings")
-    author = auth["author"]  # platform-reported login of the comment/record, set by the readback, not by the grantee
-    if not isinstance(author, str):
-        raise ValueError("authorization.author must be a string login")
-    if (author.lower() not in TRUSTED_GRANT_AUTHORS or _sha(auth["head_sha"]) != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
-            or not _text(auth.get("granted_by"))):
+    # The snapshot carries the whole authorization history; the newest record by parsed `at` governs, so an older
+    # grant can never mask a later narrowing or revocation.
+    history = _list(s["authorization"], "authorization")
+    if not history:
+        raise ValueError("authorization history is empty")
+    records = []
+    for auth in history:
+        scope = auth["scope"]
+        if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
+            raise ValueError("authorization.scope must be a list of strings")
+        author = auth["author"]  # platform-reported login of the record, set by the readback, not by the grantee
+        if not isinstance(author, str):
+            raise ValueError("authorization.author must be a string login")
+        records.append((_parse_at(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
+    # Only records by a trusted login count; an untrusted record can neither grant nor revoke.
+    trusted = [r for r in records if r[1]["author"].lower() in TRUSTED_GRANT_AUTHORS]
+    newest = [r for r in trusted if r[0] == max(x[0] for x in trusted)] if trusted else []
+    if len({(r[2], r[3], tuple(r[1]["scope"])) for r in newest}) > 1:
+        raise ValueError("conflicting authorization records at the same newest time")
+    if (not newest or newest[0][2] != head or "enqueue" not in newest[0][1]["scope"] or newest[0][3]
+            or not _text(newest[0][1].get("granted_by"))):
         found["AUTHORIZATION"] = _blocker(
             "AUTHORIZATION_MISSING", "owner", f"enqueue authorization recorded for head {head[:12]}")
     else:
-        stamp(auth)
+        stamp(newest[0][1])
 
     blockers = [found[key] for key in ORDER if key in found]
     if blockers:
