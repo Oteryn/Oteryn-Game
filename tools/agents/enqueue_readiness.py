@@ -31,6 +31,11 @@ FALLBACK_LOGINS = frozenset({"blakinio"})
 # Readback and platform clocks may differ slightly; an event this far past `observed_at` is still accepted.
 CLOCK_SKEW_SECONDS = 120
 
+# A same-head queue removal may be retried only when a trusted diagnosis classifies its cause as outside the
+# candidate. Pinned here: a free-text `cause` or a bare `cause_addressed` flag proves nothing. Any other class
+# (for example a candidate defect) keeps the head blocked until a new head is pushed.
+EXTERNAL_CAUSE_CLASSES = frozenset({"external_infra", "base_branch_change", "flaky_runner_loss"})
+
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
     "CANDIDATE_STATE",
@@ -235,7 +240,16 @@ def _evaluate(s: dict, now: datetime) -> dict:
             continue
         failed_at = event(failure["at"])  # when this head was removed from the queue; required
         # The diagnosis counts only if it was recorded at or after the removal it claims to explain.
-        if _flag(failure["cause_addressed"]) and event(failure["addressed_at"]) >= failed_at:
+        addressed = _flag(failure["cause_addressed"])
+        if addressed:
+            cause_class, diagnosed_by = failure["cause_class"], failure["diagnosed_by"]
+            if not isinstance(cause_class, str) or not isinstance(diagnosed_by, str):
+                raise ValueError("a diagnosed failure needs string cause_class and diagnosed_by")
+            # The diagnosis must be recorded by a trusted login and classify the cause as external.
+            addressed_at = event(failure["addressed_at"])  # always parsed and bounded, whatever the class
+            addressed = (cause_class in EXTERNAL_CAUSE_CLASSES and diagnosed_by.lower() in TRUSTED_GRANT_AUTHORS
+                         and addressed_at >= failed_at)
+        if addressed:
             stamp(failure, "addressed_at")
         else:
             found["PRIOR_MQ_FAILURE"] = _blocker(

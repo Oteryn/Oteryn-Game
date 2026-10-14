@@ -229,6 +229,8 @@ class EnqueueReadinessTest(unittest.TestCase):
         self.assertEqual(reasons(snap), ["PRIOR_MQ_FAILURE_UNRESOLVED"])
         snap["queue"]["prior_failures"][0]["cause_addressed"] = True
         snap["queue"]["prior_failures"][0]["addressed_at"] = "2026-10-14T10:30:00Z"
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])  # no classification or diagnoser
+        snap["queue"]["prior_failures"][0].update(cause_class="external_infra", diagnosed_by="blakinio")
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
 
     def test_failure_of_older_head_does_not_block_new_head(self):
@@ -338,7 +340,7 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap = ready()
         snap["threads"].update(total=1, resolved_at="2026-10-14T11:00:00Z")
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T11:00:00Z")
-        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z",
+        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_class": "external_infra", "diagnosed_by": "blakinio", "cause_addressed": True, "at": "2026-10-14T10:20:00Z",
                                             "addressed_at": "2026-10-14T12:00:00Z"}]
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T12:00:00Z")
 
@@ -351,11 +353,35 @@ class EnqueueReadinessTest(unittest.TestCase):
     def test_addressed_failure_requires_timestamp(self):
         for extra in ({}, {"addressed_at": "nope"}):
             snap = ready()
-            snap["queue"]["prior_failures"] = [dict({"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}, **extra)]
+            snap["queue"]["prior_failures"] = [dict({"head_sha": HEAD, "cause_class": "external_infra", "diagnosed_by": "blakinio", "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}, **extra)]
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], extra)
 
+    def test_diagnosis_must_classify_cause_as_external_by_trusted_author(self):
+        base = {"head_sha": HEAD, "cause": "test failed", "cause_addressed": True, "at": "2026-10-14T10:20:00Z",
+                "addressed_at": "2026-10-14T10:30:00Z", "cause_class": "external_infra", "diagnosed_by": "blakinio"}
+        for cls in ("external_infra", "base_branch_change", "flaky_runner_loss"):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [dict(base, cause_class=cls)]
+            self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE", cls)
+        for change in ({"cause_class": "candidate_defect"}, {"cause_class": ""}, {"cause_class": "EXTERNAL_INFRA"},
+                       {"diagnosed_by": "mallory"}):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [dict(base, **change)]
+            self.assertEqual(reasons(snap), ["PRIOR_MQ_FAILURE_UNRESOLVED"], change)
+        for change in ({"cause_class": None}, {"cause_class": 5}, {"diagnosed_by": None}, {"addressed_at": "nope"}):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [dict(base, **change)]
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], change)
+        for key in ("cause_class", "diagnosed_by"):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [{k: v for k, v in base.items() if k != key}]
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], key)
+        snap = ready()  # a bad class with a malformed diagnosis time is still invalid input, not silently unresolved
+        snap["queue"]["prior_failures"] = [dict(base, cause_class="candidate_defect", addressed_at="nope")]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
     def test_failure_diagnosis_must_follow_the_failure(self):
-        base = {"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}
+        base = {"head_sha": HEAD, "cause_class": "external_infra", "diagnosed_by": "blakinio", "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}
         for addressed_at, expected in (("2026-10-14T10:19:59Z", ["PRIOR_MQ_FAILURE_UNRESOLVED"]),
                                        ("2026-10-14T10:20:00Z", [])):
             snap = ready()
