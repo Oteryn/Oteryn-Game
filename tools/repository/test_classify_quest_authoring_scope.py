@@ -106,6 +106,22 @@ class SyntheticTree(unittest.TestCase):
         for d in ("dots", "dots2", "dots3", "dots4"):
             self.assertEqual(self.verdict([rec(f"{TOOL}/{d}/README.md")]), "full", d)
 
+    def test_root_absolute_and_odd_slash_references_take_full_path(self):
+        forms = ["/{p}", "//{p}", "file:///{p}", "/./{p}", "/{d}/../{b}/README.md", ".\\{b}\\README.md"]
+        for i, form in enumerate(forms):
+            d = f"abs{i}"
+            doc = f"{TOOL}/{d}/README.md"
+            self.write(doc, "d\n")
+            ref = form.format(p=doc, d=f"{TOOL}/{d}", b=d)
+            if form.startswith("/{d}"):
+                ref = f"/{TOOL}/x/../{d}/README.md"
+            self.write(f"{TOOL}/{d}/pins.json", json.dumps({"doc": ref}))
+            self.assertEqual(self.verdict([rec(doc)]), "full", ref)
+        # An absolute path to a different file does not pin this one.
+        self.write(f"{TOOL}/abs_ok/README.md", "d\n")
+        self.write(f"{TOOL}/abs_ok/other.json", json.dumps({"doc": f"/{TOOL}/other/README.md"}))
+        self.assertEqual(self.verdict([rec(f"{TOOL}/abs_ok/README.md")]), "docs_only")
+
     def test_odd_alphabet_references_take_full_path(self):
         for i, name in enumerate(("my doc.md", "a+b@c.md", "x y/README.md")):
             d = f"odd{i}"

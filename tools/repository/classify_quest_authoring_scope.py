@@ -105,6 +105,10 @@ def _scan(data: bytes, needle: bytes, doc: str, current_rel: str, tool_form: str
                     raw = data[pos:end].decode("utf-8", "replace")
                     for text in {raw, raw.replace("\\", "/"), urllib.parse.unquote(raw), urllib.parse.unquote_plus(raw)}:
                         if text.startswith("/"):
+                            # Root-absolute ("/tools/..."), or "//" and "file:///" forms: relative to the
+                            # repository root only. Stripping every leading slash errs toward a match.
+                            if posixpath.normpath(text.lstrip("/")) == doc:
+                                return True
                             continue
                         if (
                             posixpath.normpath(text) == doc
