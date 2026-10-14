@@ -32,6 +32,7 @@ owned_paths:
   - rulesets/items/imbuements/** # regenerated; item definition hashes changed
   - tools/content-schema/imbuement-authoring/** # regenerated samples and evidence pin
   - tools/content-schema/reward-claim-authoring/** # mechanical item digest and proof pin
+  - tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json # checked, unchanged by this fix
   - .github/workflows/item-authoring-schema.yml # run the new test and --check
   - docs/agents/tasks/archive/OTV2-20261013-ranged-content-1.md
 public_contracts: []
@@ -54,7 +55,7 @@ RANGED-0 §7, PR1: the weapon facts of the distance, throwing, ammunition and wa
 
 ## Acceptance criteria
 
-- [x] `lower_ranged_packet.py` plus tests; `--check` reproduces the packet (98 rows: 9 DISTANCE, 13 THROWING, 2 AMMUNITION, 66 WAND, plus 8 quivers; 193 holds; 26 conflicts; the 103 Items pinned by the closed weapon-metadata packet are held as `owned_by_weapon_metadata_103`, because its native_weapon_guard fixes their weapon leaf; they join the PR2 re-baseline).
+- [x] `lower_ranged_packet.py` plus tests; `--check` reproduces the packet (98 rows: 9 DISTANCE, 13 THROWING, 2 AMMUNITION, 66 WAND, plus 8 quivers; 193 holds; 53 conflicts, held rows included; the 103 Items pinned by the closed weapon-metadata packet are held as `owned_by_weapon_metadata_103`, because its native_weapon_guard fixes their weapon leaf; they join the PR2 re-baseline).
 - [x] `item_ranged_promotion.rs` applies the pinned packet (digest and counts pinned) in the materializer; the content tree is regenerated with new revision `ranged-content-1-20261013-r1`.
 - [x] Dependent evidence is regenerated, not hand-edited: imbuement eligibility, candidate and rulesets; World bundle pin and identity; the reward-claim stack proof is unchanged (item i3450 is held).
 
@@ -64,7 +65,7 @@ Artifact bump, `RESOURCE_LIMITS_REGISTRY.json`, resource evidence (PR2). on_use,
 
 ## Implementation / findings
 
-Conflicts keep the Canary value: 22 wiki damage ranges unparseable, 3 mana costs, 1 range. Holds: owned_by_weapon_metadata_103 103, no_weapon_registration 80, missile_unknown 78, damage_unknown 24, range_tiles_unknown 10, ammunition_action_unknown 9, mana_per_shot_unknown 8, ammo_type_unknown 6, no_content_definition 6, element_unknown 4 (an Item can carry several). The materializer applies the packet on the consumables-admitted predecessor (digest `6a8bd4e0...fee3`), like BED-CONTENT-1. Applied: 24 fields set, 184 unchanged, 0 tree conflicts. Changed Item weapon semantics rippled into the imbuement eligibility evidence (item definition hashes), regenerated with the repository tooling; the variant migration packet was regenerated; the World bundle pin and identity were re-derived.
+Conflicts keep the Canary value: 44 wiki damage ranges, 4 mana costs, 3 ranges, 2 damage types (held rows included). Requirements and the quiver flag carry per-field provenance (`sources`, `parity_pending`). Holds: owned_by_weapon_metadata_103 103, no_weapon_registration 80, missile_unknown 78, damage_unknown 24, range_tiles_unknown 10, ammunition_action_unknown 9, mana_per_shot_unknown 8, ammo_type_unknown 6, no_content_definition 6, element_unknown 4 (an Item can carry several). The materializer applies the packet on the consumables-admitted predecessor (digest `6a8bd4e0...fee3`), like BED-CONTENT-1. Applied: 24 fields set, 184 unchanged, 0 tree conflicts. Changed Item weapon semantics rippled into the imbuement eligibility evidence (item definition hashes), regenerated with the repository tooling; the variant migration packet was regenerated; the World bundle pin and identity were re-derived.
 
 ## Validation
 

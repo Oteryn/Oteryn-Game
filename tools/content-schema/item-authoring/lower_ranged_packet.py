@@ -250,7 +250,14 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
         # Canary decides what the engine can fire; the wiki primary type is the cross-check.
         kind = canary_kind or next(iter(wiki_kinds), None)
         if kind is None and is_quiver:
-            promotions.append(_quiver_row(item_id, top, pages))
+            promotions.append(
+                _quiver_row(
+                    item_id,
+                    top,
+                    pages,
+                    "WIKI" if "Quivers" in wiki_primary else "CANARY",
+                )
+            )
             continue
         if is_quiver:
             holds.append({"item_key": _key(item_id), "reasons": ["quiver_and_weapon"]})
@@ -380,28 +387,54 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             if "element" not in row:
                 reasons.append("element_unknown")
         requirements = {}
-        level = _wiki_value(
-            merged, "levelrequired", lambda r: _uint(r), local_conflicts, item_id
+
+        def pick_requirement(
+            name,
+            wiki_value,
+            canary_value,
+            parity=parity,
+            sources=sources,
+            requirements=requirements,
+        ):
+            """Wiki first, Canary fallback, with provenance and a parity flag like `pick`."""
+            if wiki_value is not None:
+                if canary_value is not None and canary_value != wiki_value:
+                    parity.append(name)
+                value, source = wiki_value, "WIKI"
+            elif canary_value is not None:
+                value, source = canary_value, "CANARY"
+            else:
+                return
+            sources[name] = source
+            if value:
+                requirements[name] = value
+
+        pick_requirement(
+            "min_level",
+            _wiki_value(
+                merged, "levelrequired", lambda r: _uint(r), local_conflicts, item_id
+            ),
+            _uint(nested.get("level")),
         )
-        canary_level = _uint(nested.get("level"))
-        level = level if level is not None else canary_level
-        if level:
-            requirements["min_level"] = level
-        magic = _wiki_value(
-            merged, "mlrequired", lambda r: _uint(r), local_conflicts, item_id
+        pick_requirement(
+            "min_magic_level",
+            _wiki_value(
+                merged, "mlrequired", lambda r: _uint(r), local_conflicts, item_id
+            ),
+            None,
         )
-        if magic:
-            requirements["min_magic_level"] = magic
-        voc = _wiki_value(
-            merged, "vocrequired", _parse_vocations, local_conflicts, item_id
+        pick_requirement(
+            "vocations",
+            _wiki_value(
+                merged, "vocrequired", _parse_vocations, local_conflicts, item_id
+            ),
+            _canary_vocations(nested.get("vocation")),
         )
-        voc = voc if voc is not None else _canary_vocations(nested.get("vocation"))
-        if voc:
-            requirements["vocations"] = voc
         if requirements:
             row["requirements"] = requirements
         if reasons:
             holds.append({"item_key": _key(item_id), "reasons": sorted(set(reasons))})
+            conflicts.extend(local_conflicts)
             continue
         row["sources"] = dict(sorted(sources.items()))
         if pages:
@@ -410,8 +443,6 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             row["parity_pending"] = sorted(set(parity))
         promotions.append(row)
         conflicts.extend(local_conflicts)
-    kept = {p["item_key"] for p in promotions}
-    conflicts = [c for c in conflicts if c["item_key"] in kept]
     counts = Counter(
         {
             "items": len(promotions),
@@ -430,11 +461,16 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
     return promotions, holds, conflicts, dict(sorted(counts.items()))
 
 
-def _quiver_row(item_id, top, pages):
-    row = {"item_key": _key(item_id), "quiver": True, "sources": {"quiver": "CANARY"}}
+def _quiver_row(item_id, top, pages, quiver_source):
+    row = {
+        "item_key": _key(item_id),
+        "quiver": True,
+        "sources": {"quiver": quiver_source},
+    }
     size = _uint(top.get("containersize"), 1, 255)
     if size is not None:
         row["container_size"] = size
+        row["sources"]["container_size"] = "CANARY"
     if pages:
         row["wiki_pages"] = pages
     return row

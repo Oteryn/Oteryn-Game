@@ -2,6 +2,11 @@
   "compiler": "tools/content-schema/item-authoring/lower_ranged_packet.py",
   "conflicts": [
     {
+      "field": "range",
+      "item_key": "oteryn:item.tibia.i904",
+      "reason": "wiki_unparseable"
+    },
+    {
       "field": "damagerange",
       "item_key": "oteryn:item.tibia.i3071",
       "reason": "wiki_unparseable"
@@ -67,8 +72,103 @@
       "reason": "wiki_unparseable"
     },
     {
+      "field": "range",
+      "item_key": "oteryn:item.tibia.i22870",
+      "reason": "wiki_unparseable"
+    },
+    {
       "field": "damagerange",
       "item_key": "oteryn:item.tibia.i25700",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26007",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26008",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26009",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26010",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26011",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26012",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26038",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26039",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26040",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26041",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26042",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26043",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26068",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26069",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26070",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26071",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26072",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i26073",
       "reason": "wiki_unparseable"
     },
     {
@@ -130,17 +230,52 @@
       "field": "damagerange",
       "item_key": "oteryn:item.tibia.i49887",
       "reason": "wiki_unparseable"
+    },
+    {
+      "field": "manacost",
+      "item_key": "oteryn:item.tibia.i52336",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i52336",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagetype",
+      "item_key": "oteryn:item.tibia.i52336",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i52337",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagetype",
+      "item_key": "oteryn:item.tibia.i52337",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i53220",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i53222",
+      "reason": "wiki_unparseable"
     }
   ],
   "counts": {
-    "conflicts": 26,
+    "conflicts": 53,
     "holds": 193,
     "items": 98,
     "kind_AMMUNITION": 2,
     "kind_DISTANCE": 9,
     "kind_THROWING": 13,
     "kind_WAND": 66,
-    "parity_pending_items": 21,
+    "parity_pending_items": 22,
     "quivers": 8
   },
   "decision": "RANGED-0 section 7",
@@ -1450,6 +1585,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1468,6 +1604,7 @@
       "range_tiles": 6,
       "sources": {
         "break_chance_pct": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1497,9 +1634,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1529,9 +1668,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1558,9 +1699,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1587,9 +1730,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1616,9 +1761,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1648,9 +1795,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1680,9 +1829,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1709,9 +1860,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1741,9 +1894,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1773,9 +1928,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -1793,6 +1950,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1813,6 +1971,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1833,6 +1992,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1856,6 +2016,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1873,6 +2034,7 @@
       "range_tiles": 5,
       "sources": {
         "ammo_type": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
         "weapon_kind": "CANARY"
@@ -1889,6 +2051,7 @@
       "range_tiles": 6,
       "sources": {
         "ammo_type": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
         "weapon_kind": "CANARY"
@@ -1911,6 +2074,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1934,6 +2098,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1957,6 +2122,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -1981,8 +2147,10 @@
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2005,8 +2173,10 @@
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2029,8 +2199,10 @@
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2051,8 +2223,10 @@
       },
       "sources": {
         "ammo_type": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2075,8 +2249,10 @@
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2099,8 +2275,10 @@
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "DISTANCE",
@@ -2127,9 +2305,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2156,9 +2336,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2185,9 +2367,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2217,9 +2401,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2246,9 +2432,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2275,9 +2463,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2292,6 +2482,7 @@
       "range_tiles": 4,
       "sources": {
         "ammo_type": "CANARY",
+        "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
         "weapon_kind": "CANARY"
@@ -2323,9 +2514,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2352,9 +2545,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2381,9 +2576,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2410,9 +2607,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2439,9 +2638,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2468,9 +2669,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2497,9 +2700,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2522,9 +2727,11 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "THROWING",
@@ -2540,6 +2747,9 @@
       "mana_per_shot": 2,
       "missile": "energy",
       "on_use": "NONE",
+      "parity_pending": [
+        "min_level"
+      ],
       "range_tiles": 3,
       "requirements": {
         "vocations": [
@@ -2550,9 +2760,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2571,6 +2783,7 @@
       },
       "sources": {
         "break_chance_pct": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -2590,7 +2803,8 @@
       "missile": "fire",
       "on_use": "NONE",
       "parity_pending": [
-        "damage"
+        "damage",
+        "min_level"
       ],
       "range_tiles": 3,
       "requirements": {
@@ -2602,9 +2816,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2621,7 +2837,8 @@
       "missile": "smallice",
       "on_use": "NONE",
       "parity_pending": [
-        "damage"
+        "damage",
+        "min_level"
       ],
       "range_tiles": 3,
       "requirements": {
@@ -2633,9 +2850,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2662,9 +2881,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2691,9 +2912,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2720,9 +2943,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2753,9 +2978,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2781,6 +3008,7 @@
         "break_chance_pct": "CANARY",
         "hit_chance": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -2807,6 +3035,7 @@
       "sources": {
         "ammo_type": "CANARY",
         "max_hit_chance": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "weapon_kind": "CANARY"
@@ -2829,6 +3058,7 @@
       "sources": {
         "break_chance_pct": "CANARY",
         "max_hit_chance": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "range_tiles": "WIKI",
@@ -2861,9 +3091,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2890,9 +3122,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2919,9 +3153,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2948,9 +3184,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -2977,9 +3215,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3007,9 +3247,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3037,9 +3279,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3067,9 +3311,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3096,9 +3342,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3125,9 +3373,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3157,9 +3407,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3186,9 +3438,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3215,9 +3469,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3247,9 +3503,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3276,9 +3534,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3305,9 +3565,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3320,7 +3582,8 @@
       "item_key": "oteryn:item.tibia.i35524",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         92877
@@ -3331,7 +3594,8 @@
       "item_key": "oteryn:item.tibia.i35562",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         92656
@@ -3342,7 +3606,8 @@
       "item_key": "oteryn:item.tibia.i35848",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         92660
@@ -3353,7 +3618,8 @@
       "item_key": "oteryn:item.tibia.i35849",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         92659
@@ -3375,6 +3641,7 @@
       "sources": {
         "ammo_type": "CANARY",
         "max_hit_chance": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "CANARY",
         "weapon_kind": "CANARY"
@@ -3389,7 +3656,8 @@
       "item_key": "oteryn:item.tibia.i36666",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         94411
@@ -3414,9 +3682,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3443,9 +3713,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3472,9 +3744,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3501,9 +3775,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3516,7 +3792,8 @@
       "item_key": "oteryn:item.tibia.i39150",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         98473
@@ -3527,7 +3804,8 @@
       "item_key": "oteryn:item.tibia.i39160",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         98474
@@ -3552,9 +3830,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3584,9 +3864,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3613,9 +3895,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3645,9 +3929,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3674,9 +3960,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3703,9 +3991,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "CANARY",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3718,7 +4008,8 @@
       "item_key": "oteryn:item.tibia.i45644",
       "quiver": true,
       "sources": {
-        "quiver": "CANARY"
+        "container_size": "CANARY",
+        "quiver": "WIKI"
       },
       "wiki_pages": [
         105215
@@ -3743,9 +4034,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3772,9 +4065,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3801,9 +4096,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3830,9 +4127,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3862,9 +4161,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3894,9 +4195,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3926,9 +4229,11 @@
         "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3955,9 +4260,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -3984,9 +4291,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",
@@ -4013,9 +4322,11 @@
         "damage": "CANARY",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
+        "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
+        "vocations": "WIKI",
         "weapon_kind": "CANARY"
       },
       "weapon_kind": "WAND",

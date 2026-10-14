@@ -147,6 +147,26 @@ def test_negative_canary_hit_chance_is_kept():
     assert "hit_chance" not in row(run(snapshot(), {3: too_low}, {3})[0], 3)
 
 
+def test_requirements_carry_provenance_and_parity():
+    wiki = snapshot(i3=[{"levelrequired": "0"}])
+    canary = {3: {**BOW, "nested": {**BOW["nested"], "level": "1"}}}
+    promotions, _, _, _ = run(wiki, canary, {3})
+    found = row(promotions, 3)
+    assert found["sources"]["min_level"] == "WIKI"
+    assert "min_level" in found["parity_pending"]
+    only_canary = row(run(snapshot(), canary, {3})[0], 3)
+    assert only_canary["sources"]["min_level"] == "CANARY"
+    assert only_canary["requirements"]["min_level"] == 1
+
+
+def test_quiver_source_follows_the_wiki_type():
+    quiver = {"top": {"primarytype": "quivers", "containersize": "10"}, "nested": {}}
+    from_canary = row(run(snapshot(), {3: quiver}, {3})[0], 3)
+    assert from_canary["sources"] == {"quiver": "CANARY", "container_size": "CANARY"}
+    wiki = snapshot(i3=[{"primarytype": "Quivers"}])
+    assert row(run(wiki, {3: quiver}, {3})[0], 3)["sources"]["quiver"] == "WIKI"
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
