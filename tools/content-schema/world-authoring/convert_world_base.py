@@ -23,6 +23,11 @@ attribute is excluded, by reason: `unset_destination` (0, 0, 0), `destination_ou
 itself stays; the counts are recorded as `excluded_teleports` in the capture summary. A
 Transition whose teleport the map does not carry fails the conversion.
 
+A pinned script teleport (`convert_world_metadata.SCRIPT_TELEPORTS`, the script file is a
+source file here too) gives its destination to the unset (0, 0, 0) teleport attribute of the
+top-level item of its id on its tile; that attribute is carried, not excluded. A script
+teleport whose unset attribute or destination tile is not on the map fails the conversion.
+
 After `world.otbm`, fragment maps of `maps.7z` (`FILL`, currently `blue_valley.otbm`) fill
 tiles the base map lacks: a tile is added only where the base map has no tile at its position,
 nothing existing is overwritten or merged. Reading the archive needs `py7zr`
@@ -76,7 +81,7 @@ PINNED_EXCLUDED_TELEPORTS = {
     "destination_outside_map": 1,
     "destination_tile_absent": 5,
     "no_transition": 0,
-    "unset_destination": 1577,
+    "unset_destination": 1576,
 }
 ITEM_NAMESPACE = "ots/item_server_id"
 DONOR_PREFIX = f"donor:crystalserver@{metadata.SOURCE['revision'][:8]}:item/"
@@ -154,6 +159,7 @@ SOURCE = {
     **metadata.SOURCE,
     "files": [
         *(row for row in metadata.SOURCE["files"] if row["path"] == OTBM),
+        *(row for row in metadata.SOURCE["files"] if row["path"] != OTBM),
         {
             "path": ITEMS_XML,
             "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
@@ -377,6 +383,17 @@ def items_xml_ids(xml: bytes) -> set[int]:
     return ids
 
 
+def script_links(blobs: dict[str, bytes]) -> dict[tuple, tuple]:
+    """(position, item) -> destination of every pinned script teleport whose script is
+    among `blobs` (`read_source` loads them all), each verified against its script."""
+    links = {}
+    for entry in metadata.SCRIPT_TELEPORTS:
+        if entry["path"] in blobs:
+            metadata.verify_script(entry, blobs[entry["path"]])
+            links[(entry["from"], entry["item"])] = entry["to"]
+    return links
+
+
 class Collector:
     """Buffers encoded tiles per sector; identical tile bodies share one bytes object.
 
@@ -384,9 +401,18 @@ class Collector:
     palette indexes once the palette is known (``remap``).
     """
 
-    def __init__(self, links: Counter | None = None, reasons: dict | None = None):
+    def __init__(
+        self,
+        links: Counter | None = None,
+        reasons: dict | None = None,
+        scripted: dict | None = None,
+    ):
         # teleports still to carry (Transition records) and why the others are excluded
         self.links: Counter = Counter(links or {})
+        # script teleports still to add, and the destination tiles seen
+        self.scripted: dict = dict(scripted or {})
+        self.destinations = set((scripted or {}).values())
+        self.seen_destinations: set = set()
         self.reasons = reasons or {}
         self.excluded_teleports: Counter = Counter()
         self.sectors: dict[tuple[int, int, int], tuple[list, list]] = {}
@@ -401,13 +427,23 @@ class Collector:
 
     def __call__(self, x, y, z, flags, house, zones, items) -> None:
         converted = []
+        if (x, y, z) in self.destinations:
+            self.seen_destinations.add((x, y, z))
         for server_id, depth, attrs in items:
             self.occurrences[server_id] += 1
             named = None
             if attrs:
                 named = {}
                 for key, value in attrs.items():
-                    if key == DEST_KEY and not self.carry_teleport(
+                    script = ((x, y, z), server_id)
+                    if (
+                        key == DEST_KEY
+                        and tuple(value) == UNSET_DEST
+                        and depth == 0
+                        and script in self.scripted
+                    ):
+                        value = self.scripted.pop(script)
+                    elif key == DEST_KEY and not self.carry_teleport(
                         (x, y, z), server_id, tuple(value)
                     ):
                         continue
@@ -877,7 +913,7 @@ def build(
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings, defined)
-    collector = Collector(*teleport_links(blobs[OTBM]))
+    collector = Collector(*teleport_links(blobs[OTBM]), script_links(blobs))
     replace_row = next(
         (r for r in FILL if "replace" in r and fill_key(r) in blobs), None
     )
@@ -967,6 +1003,11 @@ def build(
     edron_items = apply_edron(collector, plan.add) if plan else 0
     draft_items = apply_edron(collector, draft_plan.add, "draft") if draft_plan else 0
     collector.check()
+    if collector.scripted or collector.destinations - collector.seen_destinations:
+        raise ConvertError(
+            f"script teleports without their unset attribute or destination tile: "
+            f"{sorted(collector.scripted) or sorted(collector.destinations - collector.seen_destinations)}"
+        )
     missing = sorted(+collector.links)
     if missing:
         raise ConvertError(
