@@ -185,10 +185,12 @@ impl ChatRuntime {
             .then(super::actor_spell::SpellCastOutcome::rejected)
     }
 
-    /// The gate in front of the Channel lock (CHAT-0 §6): a `say` of a muted session, or beyond
-    /// its bucket, a yell in its cooldown and a yell repeated soon after an under-level refusal
-    /// are refused here, before the runtime lock and the entity clone, so a flood costs the
-    /// Channel only this map lookup. `None` lets the intent go on.
+    /// The gate in front of the Channel lock (CHAT-0 §6): a line of a muted session or beyond its
+    /// bucket (a yell included), a yell in its cooldown and a yell repeated soon after an
+    /// under-level refusal (which takes its line) are refused here, before the runtime lock and
+    /// the entity clone, so a flood costs the Channel only this map lookup. An intent the runtime
+    /// does not serve yet (private messages and rooms, CHAT-2) is refused here too: it takes no
+    /// line, so letting it reach the locks would make it a free flood. `None` lets the intent go on.
     pub(crate) fn pre_gate(
         &self,
         session: GameSessionId,
@@ -196,7 +198,8 @@ impl ChatRuntime {
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
         let ChatIntent::Say { mode, text } = intent else {
-            return None;
+            // CHAT-2 gates these here when it implements them.
+            return Some(result(ChatDisposition::ChatUnavailable));
         };
         // Unusable text is refused here too, without the Channel and without a line, so it
         // cannot be repeated against the locks for free.
@@ -480,6 +483,7 @@ mod tests {
     use super::*;
     use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
     use crate::gameplay_transport::npc_talk::NpcTalkEntry;
+    use oteryn_protocol_oteryn::chat::ChatRoom;
 
     const BASE: SemanticTimeMicros = SemanticTimeMicros::from_micros(1_000_000);
 
@@ -667,41 +671,112 @@ mod tests {
                 .disposition,
             ChatDisposition::Rejected
         );
-        // An unknown session and a non-say intent are left to the full path.
+        // An unknown session is left to the full path.
         assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
     }
 
     #[test]
-    fn the_pre_gate_refuses_a_repeated_under_level_yell_before_the_channel() {
+    fn the_pre_gate_refuses_unserved_intents_without_the_channel() {
+        let (_runtime, chat, first, _) = two_players(0);
+        let unserved = [
+            ChatIntent::Private {
+                recipient_name: "Other".to_owned(),
+                text: "x".to_owned(),
+            },
+            ChatIntent::Room {
+                room: ChatRoom::World,
+                text: "x".to_owned(),
+            },
+            ChatIntent::OpenRoom(ChatRoom::Help),
+            ChatIntent::CloseRoom(ChatRoom::Help),
+        ];
+        for intent in &unserved {
+            for session in [first.1, session_of(0x7f)] {
+                assert_eq!(
+                    chat.pre_gate(session, intent, BASE)
+                        .expect("refused before the Channel")
+                        .disposition,
+                    ChatDisposition::ChatUnavailable,
+                    "{intent:?}"
+                );
+            }
+        }
+        // No line was taken: a say still passes the gate.
+        assert!(chat.pre_gate(first.1, &say("x"), BASE).is_none());
+    }
+
+    /// `chat_speak` without the async locks: the pre-gate, then the full Channel path, counting
+    /// how often the full path (runtime and spell-state locks, entity clone) is entered.
+    fn attempt(
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        who: (ExactActorRef, GameSessionId),
+        intent: &ChatIntent,
+        now: SemanticTimeMicros,
+        channel_work: &mut u32,
+    ) -> ChatIntentResult {
+        if let Some(refused) = chat.pre_gate(who.1, intent, now) {
+            return refused;
+        }
+        *channel_work += 1;
+        speak(chat, runtime, who, intent, now)
+    }
+
+    #[test]
+    fn repeated_under_level_yells_hit_the_limiter_before_the_channel() {
         let (runtime, chat, first, second) = two_players(0);
         let yell = ChatIntent::Say {
             mode: ChatSpeechMode::Yell,
             text: "hey".to_owned(),
         };
-        assert!(chat.pre_gate(first.1, &yell, BASE).is_none());
-        assert_eq!(
-            speak(&chat, &runtime, first, &yell, BASE),
-            result(ChatDisposition::LevelTooLow)
-        );
-        // Repeats are answered at the gate, without the runtime lock or the entity clone.
+        let mut channel_work = 0;
+        let mut dispositions = Vec::new();
         for _ in 0..16 {
-            assert_eq!(
-                chat.pre_gate(first.1, &yell, BASE),
-                Some(result(ChatDisposition::LevelTooLow))
-            );
+            dispositions
+                .push(attempt(&chat, &runtime, first, &yell, BASE, &mut channel_work).disposition);
         }
-        assert!(chat.muted_cast(first.1, BASE).is_none());
+        // One full-path refusal, three refusals at the gate (each takes a line), then the empty
+        // bucket starts the offence at the gate and the mute holds the rest there.
+        assert_eq!(channel_work, 1);
+        assert_eq!(dispositions[..4], [ChatDisposition::LevelTooLow; 4]);
+        assert!(
+            dispositions[4..]
+                .iter()
+                .all(|d| *d == ChatDisposition::Muted),
+            "{dispositions:?}"
+        );
+        assert!(chat.muted_cast(first.1, BASE).is_some());
         assert!(chat.drain(second.1).is_empty());
-        // The refused yells took no line: four says still pass the full path.
-        for _ in 0..4 {
-            assert_eq!(
-                speak(&chat, &runtime, first, &say("x"), BASE).disposition,
-                ChatDisposition::Ok
-            );
+        // The yells took the lines: a say is refused at the gate too.
+        assert_eq!(
+            attempt(&chat, &runtime, first, &say("x"), BASE, &mut channel_work).disposition,
+            ChatDisposition::Muted
+        );
+        assert_eq!(channel_work, 1);
+    }
+
+    #[test]
+    fn a_sustained_under_level_yell_flood_rarely_reaches_the_channel() {
+        let (runtime, chat, first, _) = two_players(0);
+        let yell = ChatIntent::Say {
+            mode: ChatSpeechMode::Yell,
+            text: "hey".to_owned(),
+        };
+        let mut channel_work = 0;
+        let mut muted = 0;
+        // One yell every 50 ms for ten minutes: 12,000 attempts.
+        for step in 0..12_000_u64 {
+            let now = SemanticTimeMicros::from_micros(BASE.get() + step * 50_000);
+            let done = attempt(&chat, &runtime, first, &yell, now, &mut channel_work);
+            assert_ne!(done.disposition, ChatDisposition::Ok);
+            if done.disposition == ChatDisposition::Muted {
+                muted += 1;
+            }
         }
-        // After the recheck window the full path checks the level again.
-        let later = SemanticTimeMicros::from_micros(BASE.get() + 2_500_000);
-        assert!(chat.pre_gate(first.1, &yell, later).is_none());
+        // Each full-path refusal is followed by an offence whose mute grows as 5 s x n^2, so the
+        // Channel sees a handful of attempts, not one per refill interval (240).
+        assert!(channel_work <= 8, "{channel_work}");
+        assert!(muted > 11_000, "{muted}");
     }
 
     #[test]
