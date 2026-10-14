@@ -901,8 +901,10 @@ existing stack or a fresh entry under `ConjureCause`.
 
 **Amendment (pending on acceptance of RANGED-0;
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
-The weapon use amendment in §39.3 also admits a one-unit BURN, or a one-unit split, merge into a
-dropped Ground stack, or whole-item TRANSFER to Ground, under `WeaponUseCause`.
+The weapon use amendment in §39.3 is the named aggregate `WeaponUseAggregateV1` (RANGED-0 §6.4)
+with its four closed shapes `BURN_ONE`, `DROP_SPLIT_NEW`, `DROP_WHOLE` and `DROP_MERGE_GROUND`
+under `WeaponUseCause`; it supersedes the earlier one-unit-only wording, and the one-item rows are
+unchanged.
 
 **Amendment (pending on acceptance of WORLD-INTERACTION-0;
 `reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
@@ -1804,35 +1806,37 @@ event each and their own suffixed rows (`DUR03-RL-01-RUNE`, `DUR03-RL-01-CONJURE
 
 **Amendment (pending on acceptance of RANGED-0;
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md`
-§6).** Once accepted, in its RANGED-1 child and for these shapes only, under the closed cause
-`WeaponUseCause {Ammunition, Throwing}` keyed by the swing `(WorldId, ChannelId, scope ownership
-generation, runtime actor id, actor generation, swing sequence, CharacterId)`, fenced by the
-composition decision's server-originated variant (the actor's current admitted session's
+§6.4).** Once accepted, in its RANGED-1 child and for these shapes only, the named aggregate
+`WeaponUseAggregateV1` (`BURN_ONE`, `DROP_SPLIT_NEW`, `DROP_WHOLE`, `DROP_MERGE_GROUND`) under the
+closed cause `WeaponUseCause {Ammunition, Throwing}`. The TransactionId is an allocated UUIDv7
+frozen at PREPARE (§20); it is not derived from any swing tuple, and there is no "actor
+generation" or swing-sequence key. Provenance (WorldId, ChannelId, scope ownership generation,
+runtime actor id, CharacterId) is audit and the restart read only. Fenced by the composition
+decision's server-originated variant (the actor's current admitted session's
 `CurrentCharacterItemFence`, no CommandRef) and, for a Ground drop, the §32 scope fence; one
-transaction per swing, with the shot unit reserved under §7.1 at PREPARE and committed before the
-swing's effect:
+transaction per swing, with the shot unit reserved under §7.1 at PREPARE (runtime only) and
+committed before the swing's effect:
 
 - **Ammunition burn.** One BURN line (§17) of exactly one unit from the shot direct entry of the
   equipped quiver, which keeps its identity (§11.1) or retires at zero (§11.5).
 - **Throwing burn.** The same one-unit BURN from the right-hand stack when the frozen break draw
   breaks it or the drop was refused at PREPARE.
 - **Throwing drop.** One unit of the right-hand stack to the landing tile's Ground: a §13 quantity
-  transfer into the tile's top Ground item (highest database-assigned Ground ordinal, RANGED-0
-  §6.1.2) when it is an unreserved compatible stack with room, reserved under §7.1 at PREPARE and
-  rechecked at commit under the tile row `FOR SHARE` (the hand stack
-  shrinks or retires at zero, the receiver grows and keeps its identity); otherwise a new item at the
-  top of the tile, by a §12 split into a planned identity (§11.3), or a whole TRANSFER from the
-  right-hand slot when it is the last unit, under the ITEM-MOVE-WIRE-1 §5 Ground rules (tile and
-  channel limits, house tiles refused, the tile row lock and counter). Every Ground write takes the
-  ITEM-MOVE-WIRE-1 §6.2 scope fence; D191 reset retirement applies. A database refusal is a refused
-  commit under the same TransactionId (§23).
+  transfer into the tile's top Ground item (first row of `ORDER BY stack_ordinal DESC NULLS FIRST`,
+  RANGED-0 §6.1.2; a NULL legacy top means no merge) when it is an unreserved compatible stack with
+  room, reserved under §7.1 at PREPARE and rechecked at commit under the tile row `FOR SHARE`;
+  otherwise a new item by a §12 split into a planned identity (§11.3), or a whole TRANSFER from the
+  right-hand slot when it is the last unit, under the ITEM-MOVE-WIRE-1 §5 Ground rules. Every Ground
+  write takes the ITEM-MOVE-WIRE-1 §6.2 scope fence; D191 reset retirement applies. A database
+  refusal is a refused commit under the same TransactionId (§23).
+- **Restart.** The old generation's TransactionIds are terminal by the fence; a replacement owner
+  reads the provenance receipts before the first swing (RANGED-0 §6.2); §20, §25 and §47 hold.
 - **Supersession.** For these shapes only, as ITEM-MOVE-WIRE-1 §6.1 did for its own: the §39.1
-  exclusions of burn, multiple touched items (at most 2), quantity redistribution (the split, and the
-  merge into a live dropped Ground stack), nested containers (an entry of the equipped quiver, depth
-  1), the source custodies (the right-hand slot and quiver entries as BURN, split or merge sources),
-  Ground insertion by split, and a whole TRANSFER from a slot to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
-  consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
-  RANGED-0 §6.3 (one participant per touched item).
+  exclusions of burn, multiple touched items (at most 2), quantity redistribution, nested
+  containers (a quiver entry, depth 1), the source custodies, Ground insertion by split, and a
+  whole TRANSFER from a slot to Ground. Every other §39 obligation is unchanged. One audit event
+  per swing consequence; rows `DUR03-RL-0x-WEAPON` as RANGED-0 §6.3 (one participant per touched
+  item), including `DUR03-RL-07-WEAPON-*` absolute values.
 
 **Amendment (PROF-SHAPE-1b, 2026-10-03; PROFICIENCY-1B §7.2).** The composed dust burn shape is
 admitted under `ProficiencyCause {track, slot, operation, occurrence}`: the `perk_modification`

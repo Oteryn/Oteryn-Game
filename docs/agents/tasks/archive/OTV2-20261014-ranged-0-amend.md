@@ -17,8 +17,13 @@ updated_at: 2026-10-14
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
+  - docs/architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md
   - docs/agents/tasks/archive/OTV2-20261014-ranged-0-amend.md
 public_contracts:
+  - "DUR-03 pending RANGED-0 notes (section 15, 39.1, 39.3) edited to WeaponUseAggregateV1, still pending: persistence review"
+  - "CREATURE-AI-0 RANGED0-RL-03 chase amendment struck: movement review"
+  - "Decision section 6.2 restart reconciliation and section 5 per-role hit chance: persistence and combat review"
   - "Decision §6.4 WeaponUseAggregateV1 (DUR-03 §15, §39.1, §39.3 amendment text, active on acceptance only): persistence review"
   - "Decision §6.2 allocated UUIDv7 TransactionId, server-originated fence, composition rule 1 scope: persistence review"
   - "Decision §6.1.2 Ground order is the existing stack_ordinal (no migration): persistence review"
