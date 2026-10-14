@@ -16,18 +16,18 @@ use crate::movement::path_search::{CHASE_SEARCH_DISTANCE, chebyshev, delta, rout
 
 pub(crate) use crate::movement::path_search::CREATURE_COST;
 
-/// RANGED-0 §8: at most one search per player per this interval.
+/// `RANGED0-RL-06` (RANGED-0 §8): at most one search per player per this interval.
 pub(crate) const CHASE_SEARCH_INTERVAL_MICROS: u64 = 1_000_000;
-/// RANGED-0 §8: a failed search waits this long before the next one (Canary).
+/// `RANGED0-RL-07` (RANGED-0 §8): a failed search waits this long before the next one (Canary).
 pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 /// `RANGED0-RL-03`: player chase searches per owner window per Channel.
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
-/// `RANGED0-RL-04`'s TTL: how long a cell the Movement owner refused a chase step into as
+/// `RANGED0-RL-08`'s TTL: how long a cell the Movement owner refused a chase step into as
 /// blocked stays out of the search.
 pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
-/// `RANGED0-RL-04`: at most this many refused cells are remembered; the oldest is forgotten
+/// `RANGED0-RL-08`: at most this many refused cells are remembered; the oldest is forgotten
 /// first.
 pub(crate) const CHASE_REFUSED_CELLS: usize = 8;
 
@@ -58,9 +58,14 @@ pub(crate) enum ChaseDecision {
 }
 
 impl ChaseState {
-    /// Drop the route; the next search may run at once (target or mode change).
+    /// Drop the route and the refused cells (target or mode change). The per-player search
+    /// cooldown stays (`RANGED0-RL-06`, `-07`), so repeated target or mode changes never search
+    /// more often than it allows.
     pub(crate) fn reset(&mut self) {
-        *self = Self::default();
+        *self = Self {
+            next_search_us: self.next_search_us,
+            ..Self::default()
+        };
     }
 
     /// A client step: drop the route; chase re-paths at its next 1,000 ms check (RANGED-0 §8,
@@ -322,8 +327,11 @@ mod tests {
         }
         assert_eq!(chase.refused.len(), CHASE_REFUSED_CELLS);
         assert_eq!(chase.refused.front().map(|(cell, _)| *cell), Some(at(1, 9)));
+        // The reset kept the cooldown of the search at 1,999,999 us.
+        let next = 1_999_999 + CHASE_SEARCH_INTERVAL_MICROS;
+        assert!(next >= CHASE_REFUSED_CELL_MICROS);
         assert_eq!(
-            chase.decide(CHASE_REFUSED_CELL_MICROS, at(0, 0), at(4, 0), || true, open),
+            chase.decide(next, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East),
             "an expired cell is searched again"
         );
@@ -339,13 +347,39 @@ mod tests {
         let entries = registry["entries"].as_array().unwrap();
         let row = entries
             .iter()
-            .find(|entry| entry["id"] == "RANGED0-RL-04")
+            .find(|entry| entry["id"] == "RANGED0-RL-08")
             .unwrap();
         assert_eq!(
             row["hard_maximum"].as_u64(),
             u64::try_from(CHASE_REFUSED_CELLS).ok()
         );
         assert_eq!(CHASE_REFUSED_CELL_MICROS, 2_000_000);
+    }
+
+    #[test]
+    fn a_reset_keeps_the_per_player_search_cooldown() {
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        chase.reset();
+        assert_eq!(chase.route.len(), 0);
+        assert_eq!(
+            chase.decide(250_000, at(1, 0), at(6, 0), || true, open),
+            ChaseDecision::Hold,
+            "a target change searches no sooner than 1,000 ms after the last search"
+        );
+        assert_eq!(
+            chase.decide(
+                CHASE_SEARCH_INTERVAL_MICROS,
+                at(1, 0),
+                at(6, 0),
+                || true,
+                open
+            ),
+            ChaseDecision::Step(CardinalStep::East)
+        );
     }
 
     #[test]

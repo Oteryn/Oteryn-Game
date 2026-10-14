@@ -1748,6 +1748,9 @@ where
     // client step; at most one is pending. Armed by a combat tick that holds a chasing target
     // and by a chase step that moved.
     let mut chase_due: Option<tokio::time::Instant> = None;
+    // CHASE-1: a ready client frame was already read ahead of the due chase step; the next poll
+    // runs that step first, so non-step traffic never postpones it indefinitely.
+    let mut chase_yielded = false;
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
@@ -1851,12 +1854,18 @@ where
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
                 }
-                // CHASE-1: a ready client frame is read before a due chase step, so a client
-                // step wins over the chase (RANGED-0 §8) and is never paced behind it.
+                // CHASE-1: one ready client frame is read before a due chase step, so a client
+                // step wins over the chase (RANGED-0 §8) and is never paced behind it; after
+                // that frame the due chase step runs before the next one.
+                let chase_ready = chase_tick.as_mut().poll(context).is_ready();
+                if chase_ready && chase_yielded {
+                    return std::task::Poll::Ready(Next::Chase);
+                }
                 if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                    chase_yielded = chase_ready;
                     return std::task::Poll::Ready(Next::Frame(read));
                 }
-                if chase_tick.as_mut().poll(context).is_ready() {
+                if chase_ready {
                     return std::task::Poll::Ready(Next::Chase);
                 }
                 std::task::Poll::Pending
@@ -2014,6 +2023,7 @@ where
             Next::Chase => {
                 // CHASE-1: a client step waiting in the buffer wins over the chase.
                 chase_due = None;
+                chase_yielded = false;
                 if buffered.is_some() {
                     continue;
                 }
@@ -2260,6 +2270,7 @@ where
                 Ok(direction) => {
                     // CHASE-1: client intent wins; the pending chase step and its route drop.
                     chase_due = None;
+                    chase_yielded = false;
                     authority
                         .yield_chase_to_client(actor, admitted.game_session_id)
                         .await;

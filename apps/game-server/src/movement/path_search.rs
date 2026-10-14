@@ -19,13 +19,14 @@ use std::collections::{BTreeMap, BinaryHeap};
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
 
-/// `AI01-PATH-SEARCH-WORK` (CREATURE-AI-0 §5.3, `RESOURCE_LIMITS_REGISTRY`): expansions per
+/// `AI01-PATH-SEARCH-WORK` (CREATURE-AI-0 §5.3, `RESOURCE_LIMITS_REGISTRY`), for a chase
+/// `RANGED0-RL-04` (RANGED-0 §8): expansions per
 /// search; the 1,025th expansion fails the search.
 pub(crate) const PATH_SEARCH_WORK: usize = 1_024;
 /// `AI01-ROUTE-STEPS` (CREATURE-AI-0 §5.3, `RESOURCE_LIMITS_REGISTRY`): steps of a route.
 pub(crate) const ROUTE_STEPS: usize = 128;
-/// CREATURE-AI-0 §5.3 (RANGED-0 §8): the search distance of a chase in tiles from the start
-/// (Chebyshev).
+/// `RANGED0-RL-05` (RANGED-0 §8, CREATURE-AI-0 §5.3): the 12-tile search distance of a chase,
+/// from the start (Chebyshev).
 pub(crate) const CHASE_SEARCH_DISTANCE: i32 = 12;
 /// The extra cost of a path tile another actor stands on (CREATURE-AI-0 §5.3 "+40 over a
 /// creature"; a player is a creature of the path profile).
