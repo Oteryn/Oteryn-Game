@@ -123,6 +123,32 @@ impl<T, F> PremiumGateOperation<T> for F where
         + 'static
 {
 }
+/// A multi-account Premium gate operation: runs once with one status per account, in order, and,
+/// for `NotActivated` only, the gate's transaction (PREMIUM-ACTIVATION-0 §1.2).
+pub(crate) trait PremiumBatchGateOperation<T>:
+    for<'g, 't> FnOnce(
+        Vec<PremiumStatus<'g>>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> PremiumBatchGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            Vec<PremiumStatus<'g>>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// What the gate settled for one command: the bypass applied in its transaction, or handed back
+/// with whether a held row decides the status.
+enum Settled<B: PreDeliveryBypass> {
+    Applied(B::Output),
+    Decided { bypass: B, delivered: bool },
+}
 /// An operation with a status decided after delivery: no transaction.
 async fn run_delivered<T, F: PremiumGateOperation<T>>(
     operation: F,
@@ -148,6 +174,28 @@ impl<T: Send, F: PremiumGateOperation<T>> PreDeliveryBypass for GateBypass<T, F>
             PremiumStatus::NotActivated(PreDelivery::inside_gate()),
             Some(tx),
         )
+    }
+}
+/// The multi-account operation as the latch read's pre-delivery bypass: every account is
+/// `NotActivated`.
+struct BatchBypass<T, F> {
+    accounts: usize,
+    operation: F,
+    _output: PhantomData<fn() -> T>,
+}
+impl<T: Send, F: PremiumBatchGateOperation<T>> PreDeliveryBypass for BatchBypass<T, F> {
+    type Output = T;
+    fn apply<'a, 't>(
+        self,
+        tx: &'a mut PremiumGateTx<'t>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        let statuses = (0..self.accounts)
+            .map(|_| PremiumStatus::NotActivated(PreDelivery::inside_gate()))
+            .collect();
+        (self.operation)(statuses, Some(tx))
     }
 }
 pub(crate) enum RegisteredSpellAccessOwner {
@@ -333,12 +381,82 @@ impl SpellPremiumCoordinator {
         T: Send,
         F: PremiumGateOperation<T>,
     {
-        let now = self
-            .clock
+        let now = self.read_now();
+        let bypass = GateBypass {
+            operation,
+            _output: PhantomData,
+        };
+        match self.settle(now, bypass).await? {
+            Settled::Applied(applied) => Ok(applied),
+            Settled::Decided { bypass, delivered } => {
+                let status = if delivered {
+                    self.delivered_status(account, now)
+                } else {
+                    PremiumStatus::NotCurrent
+                };
+                Ok(run_delivered(bypass.operation, status).await)
+            }
+        }
+    }
+    /// The multi-account Premium gate (PREMIUM-ACTIVATION-0 §1.2; the GUILD daily job and HOUSE
+    /// settlement): delivery is decided once, under one shared latch lock, before the operation
+    /// takes any guild or house rows, and `operation` runs once with one status per account, in
+    /// the order of `accounts`. `NotActivated` is decided for the deployment, so it is given to
+    /// every account at once, with the gate's transaction as `tx`; otherwise each account is
+    /// `Current` or `NotCurrent` on its own and `tx = None`. The clock is read once.
+    ///
+    /// # Errors
+    /// As [`Self::with_premium_gate`].
+    pub(crate) async fn with_premium_batch_gate<T, F>(
+        &self,
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumBatchGateOperation<T>,
+    {
+        let now = self.read_now();
+        let bypass = BatchBypass {
+            accounts: accounts.len(),
+            operation,
+            _output: PhantomData,
+        };
+        match self.settle(now, bypass).await? {
+            Settled::Applied(applied) => Ok(applied),
+            Settled::Decided { bypass, delivered } => {
+                let statuses = accounts
+                    .iter()
+                    .map(|account| {
+                        if delivered {
+                            self.delivered_status(*account, now)
+                        } else {
+                            PremiumStatus::NotCurrent
+                        }
+                    })
+                    .collect();
+                Ok((bypass.operation)(statuses, None).await)
+            }
+        }
+    }
+    fn read_now(&self) -> Option<TrustedNow> {
+        self.clock
             .as_ref()
-            .and_then(|clock| clock.read_current_window());
+            .and_then(|clock| clock.read_current_window())
+    }
+    /// §1.2 for one command: apply `bypass` inside the shared-lock transaction that read an empty
+    /// table (`NotActivated`), or hand it back with whether a held row decides each status
+    /// (`delivered`). A failed lock, read or latch is not delivered: `NotCurrent`.
+    async fn settle<B: PreDeliveryBypass>(
+        &self,
+        now: Option<TrustedNow>,
+        bypass: B,
+    ) -> Result<Settled<B>, DurabilityError> {
         if self.delivery.held.get().is_some() {
-            return Ok(run_delivered(operation, self.delivered_status(account, now)).await);
+            return Ok(Settled::Decided {
+                bypass,
+                delivered: true,
+            });
         }
         let empty = match (&self.delivery.activation, now) {
             (None, _) => EmptyLatch::NotActivated,
@@ -349,55 +467,48 @@ impl SpellPremiumCoordinator {
             (Some(_), Some(now)) => EmptyLatch::Latch { now },
         };
         let Some(root) = &self.latch else {
-            return Ok(run_delivered(operation, PremiumStatus::NotCurrent).await);
+            return Ok(Settled::Decided {
+                bypass,
+                delivered: false,
+            });
         };
         if !matches!(empty, EmptyLatch::NotActivated) {
-            let read = root.read_premium_activation().await;
-            return Ok(self.after_read(account, now, &empty, read, operation).await);
+            let read = root.read_premium_activation::<B::Output>().await;
+            let delivered = self.after_read(&empty, read).await;
+            return Ok(Settled::Decided { bypass, delivered });
         }
         // The read takes the bypass only if the table is empty.
-        let mut bypass = Some(GateBypass {
-            operation,
-            _output: PhantomData,
-        });
-        let read = root.read_premium_activation_with(&mut bypass).await;
-        match (read, bypass) {
-            (Ok(PremiumActivationRead::PreDelivery(applied)), _) => Ok(applied),
-            (Ok(PremiumActivationRead::Latched(latch)), Some(bypass)) => Ok(self
-                .after_read(
-                    account,
-                    now,
-                    &empty,
-                    Ok(PremiumActivationRead::Latched(latch)),
-                    bypass.operation,
-                )
-                .await),
-            (Ok(PremiumActivationRead::Empty), Some(bypass)) | (Err(_), Some(bypass)) => {
-                Ok(run_delivered(bypass.operation, PremiumStatus::NotCurrent).await)
+        let mut slot = Some(bypass);
+        let read = root.read_premium_activation_with(&mut slot).await;
+        match (read, slot) {
+            (Ok(PremiumActivationRead::PreDelivery(applied)), _) => Ok(Settled::Applied(applied)),
+            (Ok(PremiumActivationRead::Latched(latch)), Some(bypass)) => {
+                self.delivery.hold(latch);
+                Ok(Settled::Decided {
+                    bypass,
+                    delivered: true,
+                })
             }
+            (Ok(PremiumActivationRead::Empty) | Err(_), Some(bypass)) => Ok(Settled::Decided {
+                bypass,
+                delivered: false,
+            }),
             // The bypass ran and its transaction did not commit.
             (Err(error), None) => Err(error),
             (Ok(_), None) => Err(DurabilityError::InvalidStoredState),
         }
     }
-    /// The gate after a read that ran no bypass: a found row is held and decides (step 1); an
-    /// empty table is `NotCurrent` or is latched (steps 4 and 6); a failure is `NotCurrent`.
-    async fn after_read<T, F>(
+    /// The gate after a read that ran no bypass: a found row is held (step 1); an empty table is
+    /// latched or stays undelivered (steps 4 and 6); a failure is undelivered.
+    async fn after_read<T>(
         &self,
-        account: [u8; 16],
-        now: Option<TrustedNow>,
         empty: &EmptyLatch,
         read: Result<PremiumActivationRead<T>, DurabilityError>,
-        operation: F,
-    ) -> T
-    where
-        T: Send,
-        F: PremiumGateOperation<T>,
-    {
-        let status = match (read, empty, &self.delivery.activation, &self.latch) {
+    ) -> bool {
+        match (read, empty, &self.delivery.activation, &self.latch) {
             (Ok(PremiumActivationRead::Latched(latch)), _, _, _) => {
                 self.delivery.hold(latch);
-                self.delivered_status(account, now)
+                true
             }
             (
                 Ok(PremiumActivationRead::Empty),
@@ -414,13 +525,12 @@ impl SpellPremiumCoordinator {
             {
                 Ok(latch) => {
                     self.delivery.hold(latch);
-                    self.delivered_status(account, now)
+                    true
                 }
-                Err(_) => PremiumStatus::NotCurrent,
+                Err(_) => false,
             },
-            _ => PremiumStatus::NotCurrent,
-        };
-        run_delivered(operation, status).await
+            _ => false,
+        }
     }
     fn delivered_status(
         &self,
@@ -681,6 +791,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None => Ok(run_delivered(operation, PremiumStatus::NotCurrent).await),
         }
     }
+    /// The multi-account Premium gate: see [`SpellPremiumCoordinator::with_premium_batch_gate`].
+    /// Every account is `NotCurrent` on a node without the Premium reads.
+    ///
+    /// # Errors
+    /// Only when `operation` ran with `NotActivated` and its transaction did not commit.
+    #[allow(
+        dead_code,
+        reason = "the gate of the GUILD-1 daily job and HOUSE-1a settlement"
+    )]
+    pub(crate) async fn with_premium_batch_gate<T, F>(
+        &self,
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumBatchGateOperation<T>,
+    {
+        match self.premium_coordinator {
+            Some(coordinator) => {
+                coordinator
+                    .with_premium_batch_gate(accounts, operation)
+                    .await
+            }
+            None => {
+                let statuses = accounts.iter().map(|_| PremiumStatus::NotCurrent).collect();
+                Ok(operation(statuses, None).await)
+            }
+        }
+    }
     /// The Premium gate of `account` for a consumer with no pre-delivery rule (Premium areas,
     /// purchases, chat): open only for `Current`. Closed on a node without the Premium reads.
     pub(crate) async fn premium_gate(&self, account: [u8; 16]) -> PremiumGate {
@@ -939,5 +1079,57 @@ mod tests {
         // A held row is never undone by a later, different latch.
         current.delivery.hold(latch("premium-activation-0", T0));
         assert_eq!(status_name(&current), "current");
+    }
+
+    fn batch_names(
+        coordinator: &SpellPremiumCoordinator,
+        accounts: &[[u8; 16]],
+    ) -> Vec<&'static str> {
+        block_on(
+            coordinator.with_premium_batch_gate(accounts, |statuses, tx| {
+                Box::pin(async move {
+                    let in_tx = tx.is_some();
+                    statuses
+                        .into_iter()
+                        .map(|status| match (status, in_tx) {
+                            (PremiumStatus::NotActivated(_), _) => "not-activated",
+                            (PremiumStatus::Current, false) => "current",
+                            (PremiumStatus::NotCurrent, false) => "not-current",
+                            _ => "transaction",
+                        })
+                        .collect()
+                })
+            }),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn the_batch_gate_classifies_every_account_in_order_under_one_decision() {
+        let clock = || -> Option<Arc<dyn RegisteredPremiumClock>> { Some(clock_at(T0 + MINUTE)) };
+        let current = delivered(proven(EntitlementState::Active, FAR), clock());
+        // N accounts, one of them ineligible, in the order given; none runs in a transaction.
+        assert_eq!(
+            batch_names(&current, &[ACCOUNT, [2; 16], ACCOUNT, [3; 16]]),
+            ["current", "not-current", "current", "not-current"]
+        );
+        assert_eq!(batch_names(&current, &[]), Vec::<&str>::new());
+        // An ineligible proven account: every account reads not current.
+        let expired = delivered(proven(EntitlementState::Expired, FAR), clock());
+        assert_eq!(
+            batch_names(&expired, &[ACCOUNT, [2; 16]]),
+            ["not-current", "not-current"]
+        );
+        // Not delivered, without the latch: every account is not current.
+        let unread = SpellPremiumCoordinator::new(
+            proven(EntitlementState::Active, FAR),
+            clock(),
+            Some(activation(T0)),
+            None,
+        );
+        assert_eq!(
+            batch_names(&unread, &[ACCOUNT, [2; 16]]),
+            ["not-current", "not-current"]
+        );
     }
 }
