@@ -19,6 +19,7 @@ def carrier(name, item, charges, area=None, creates_fields=False, group='attack'
         'costs': {'mana': 0, 'soul': 0}, 'groups': [{'group': group, 'cooldown_ms': 2000}],
         'targeting': {'needs_target': False, 'aggressive': aggressive, 'self_target': False, 'needs_direction': False,
                       'target_or_direction': False, 'block_walls': True, 'allow_on_self': True, 'check_floor': True,
+                      'parameter': 'none',
                       **targeting},
         'rune': {'item': {'key': f'candidate:item/{item}'}, 'charges': charges, 'magic_level': 1,
                  'allow_far_use': True, 'blocking': {'solid': False, 'creature': False}},
@@ -51,6 +52,7 @@ class RuneCarrierAuditTest(unittest.TestCase):
     def test_area_tiles_and_blocking(self):
         self.assertEqual(audit.area_tiles({}), 1)
         self.assertEqual(audit.area_tiles({'area': {'matrix': {'north': ['xxCxx'], 'diagonal': ['..x', '.Cx', 'x..']}}}), 5)
+        self.assertEqual(audit.area_tiles({'area': {'matrix': {'north': ['xxx', 'xcx', 'xxx']}}}), 8)
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': [True, False]}}, 1), {'canary': False})
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': True}}, 0), {'canary': True})
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': True}}, 1), {'canary': False})
@@ -130,6 +132,12 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(rows['sudden death rune']['failed'], ['target_guard'])
         _, rows = run([carrier('sudden death rune', 3155, 3, allowed_targets='self_only')], profiles)
         self.assertEqual(rows['sudden death rune']['failed'], ['target_guard'])
+
+    def test_parameter_mode(self):
+        profiles = [profile('candidate:item/3155')]
+        _, rows = run([carrier('sudden death rune', 3155, 3, parameter='player_name')], profiles)
+        self.assertEqual(rows['sudden death rune']['failed'], ['parameter'])
+        self.assertEqual(rows['sudden death rune']['checks']['parameter']['registrars'], 'none')
 
     def test_range_is_checked_against_the_registrars(self):
         row = audit.check(99, {'canary': 5, 'crystal': 5})

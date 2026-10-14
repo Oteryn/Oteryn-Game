@@ -92,7 +92,8 @@ def area_tiles(ability):
     matrix = (ability.get('area') or {}).get('matrix')
     if not matrix:
         return 1
-    return max(sum(ch != '.' for row in rows for ch in row) for rows in matrix.values())
+    # Only hit cells count, as in the runtime geometry: `x` and the hit centre `C`, never the non-hit centre `c`.
+    return max(sum(ch in 'xC' for row in rows for ch in row) for rows in matrix.values())
 
 
 def registrars(census):
@@ -244,6 +245,11 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
         if field in guard:
             continue  # the S27 guard replaces the registrar value (`convert_spells.Spell.targeting`)
         checks[field] = check(targeting.get(field), flag(key), recorded=recorded(entry, base + 'targeting/' + field))
+    # The parameter mode as `convert_spells.Spell.targeting` derives it from either registrar's parameter flags.
+    expected = ('player_name' if any(r.get('hasPlayerNameParam') for r in registrar.values()) else
+                'text' if any(r.get('hasParams') for r in registrar.values()) else 'none')
+    checks['parameter'] = {'ours': targeting.get('parameter'), 'registrars': expected,
+                           'pass': targeting.get('parameter') == expected}
     # S27: the accepted onCastSpell guard of a rune fixes its target restriction; without one there is none.
     expected = {'allowed_targets': None, **guard}
     checks['target_guard'] = {'ours': {field: targeting.get(field) for field in expected}, 'guard': expected,

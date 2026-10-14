@@ -39,14 +39,15 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   registrars where no wiki states them), cooldown group, far use and every targeting flag the converter
   maps (`aggressive`, `self_target`, `needs_target`, `needs_direction`, `target_or_direction`, `block_walls`,
   `allow_on_self`, `check_floor`; registrars), range (wikis and registrars), and the target restriction
-  `allowed_targets` against the accepted S27 onCastSpell guard (`guard-behaviours.json`). Where the references
+  `allowed_targets` against the accepted S27 onCastSpell guard (`guard-behaviours.json`), and the
+  `parameter` mode against the registrars' parameter flags as the converter derives it. Where the references
   conflict, our value must be that of the source the catalogue manifest records as the winner
   (S3/S11/S13/S14); a recorded native resolution (S27, Disintegrate non-aggressive) requires a value
   that differs from the references;
   the dated `rune-use-source-resolutions.json` facts (they replace the field they name), `rune.charges` =
   the conjuring spell's `count` where both exist (§3), the native Item profile stack facts (stackable,
   100, `StackCapable`), and the authored area against `RUNEUSE0-RL-08` (≤ 37 tiles, so the victim cap
-  is ≤ 74) and `RUNEUSE0-RL-07` (≤ 12 tiles for a rune that creates fields). The joins and the 5 aliases
+  is ≤ 74; only hit cells `x`/`C` count, as in the runtime geometry) and `RUNEUSE0-RL-07` (≤ 12 tiles for a rune that creates fields). The joins and the 5 aliases
   are those of `verify_spells.py`.
 - Result: 34 of 36 pass. The largest area is 37 tiles and the largest field area 12 (Energy Wall
   diagonal), which reproduces the decision's ceilings. All 33 joinable charges equal the conjure count;
@@ -94,11 +95,14 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - Codex P2 on d861cb74 (several recorded agreeing sources let a new divergence pass): repaired; several
   recorded sources are agreement provenance, so a new divergence follows the converter's S4 rule (Canary
   decides between the registrars) and any other such conflict fails.
+- Codex P2 on 98782c90 (`parameter` unaudited): repaired; a `parameter` check requires the converter's
+  mode from the registrar flags (`player_name`, `text` or `none`; all 36 carriers `none`).
+- Codex P2 on 98782c90 (non-hit centre `c` counted as an area tile): repaired; only `x` and `C` count.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 12 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 13 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok
