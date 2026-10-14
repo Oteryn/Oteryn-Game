@@ -312,7 +312,7 @@ fn commands_and_domains_follow_the_selection() {
     }
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
-    // Capability 17: commands 11 and 12, domain 10.
+    // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -320,6 +320,7 @@ fn commands_and_domains_follow_the_selection() {
         (10, &[][..], &[15][..]),
         (16, &[22][..], &[16][..]),
         (17, &[11, 12][..], &[10][..]),
+        (19, &[][..], &[18][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {
@@ -363,6 +364,9 @@ struct NegotiatingAuthority {
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
     item_target: RefCell<Option<ItemTargetObservation>>,
+    /// ITEM-USE-1c: whether the backpack holds one direct entry, and the items used.
+    backpack_entry: Cell<bool>,
+    item_uses: RefCell<Vec<ItemKey>>,
 }
 
 impl NegotiatingAuthority {
@@ -373,6 +377,8 @@ impl NegotiatingAuthority {
             lost: Cell::new(None),
             steps: Cell::new(0),
             item_target: RefCell::new(None),
+            backpack_entry: Cell::new(false),
+            item_uses: RefCell::new(Vec::new()),
         }
     }
 }
@@ -449,9 +455,32 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
                 count: std::num::NonZeroU32::MIN,
                 sub_type: 0,
             }),
-            entries: Vec::new(),
+            entries: self
+                .backpack_entry
+                .get()
+                .then_some(ViewItem {
+                    key: ItemKey::Instance([0xa6; 16]),
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU32::MIN,
+                    sub_type: 0,
+                })
+                .into_iter()
+                .collect(),
             equipment: Vec::new(),
         })
+    }
+
+    async fn use_item(
+        &self,
+        _actor: ExactActorRef,
+        _use: super::super::connection::UseCommand,
+        item: ItemKey,
+    ) -> super::super::connection::UseOutcome {
+        self.item_uses.borrow_mut().push(item);
+        super::super::connection::UseOutcome {
+            disposition: super::super::world_object::UseDisposition::Full,
+            ..super::super::connection::UseOutcome::rejected()
+        }
     }
 
     async fn observe_item_target(
@@ -655,13 +684,21 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
+fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
     // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
     // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
-    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    let (last, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
+    assert_eq!(
+        (npc.id, npc.requires),
+        (
+            oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+            &[][..]
+        )
+    );
     assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
     assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
     assert_eq!(last.requires, [4, 6]);
@@ -1090,6 +1127,57 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
                 "{disposition:?}"
             );
         }
+        Ok(())
+    })
+}
+
+/// ITEM-USE-1c: a main backpack entry is used only under capability 15; without it the handle
+/// keeps the corpse path and the use is never reached.
+#[test]
+fn a_backpack_entry_is_used_only_under_capability_15() -> Result<(), Box<dyn Error>> {
+    use super::super::world_object::{COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_result};
+    use oteryn_protocol_oteryn::decode_command_result;
+    use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(ITEM_USE_OFFERED));
+        authority.backpack_entry.set(true);
+        let entry = std::num::NonZeroU64::new(2).ok_or("handle")?;
+        let frames = [command(
+            1,
+            COMMAND_TYPE_USE_INTENT,
+            &encode_use_item_intent(entry),
+        )];
+        for (selected, used, disposition) in [
+            (
+                &[CAPABILITY_ITEM_VIEW_MOVE_V1][..],
+                0,
+                UseDisposition::StaleState,
+            ),
+            (
+                &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1][..],
+                1,
+                UseDisposition::Full,
+            ),
+        ] {
+            let continuity = SessionContinuity {
+                selected_capabilities: selection(selected),
+                ..SessionContinuity::FRESH
+            };
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            let mut payloads = Vec::new();
+            for frame in &written {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    payloads.push(decode_command_result(envelope.payload())?.payload.to_vec());
+                }
+            }
+            assert_eq!(payloads, [encode_use_result(disposition)], "{selected:?}");
+            assert_eq!(authority.item_uses.borrow().len(), used, "{selected:?}");
+        }
+        assert_eq!(
+            *authority.item_uses.borrow(),
+            [ItemKey::Instance([0xa6; 16])]
+        );
         Ok(())
     })
 }

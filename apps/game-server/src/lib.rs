@@ -62,6 +62,13 @@ mod combat_pickup;
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
 #[path = "combat/attack/mod.rs"]
 mod combat_attack;
+// PVP-RT-1 (pure half): PvP legality and combat lock; not wired until the PVP-0 §8 go-live gate.
+#[allow(
+    dead_code,
+    reason = "PvP stays off until the PVP-0 go-live gate; PVP-RT-1b wires the legality stage"
+)]
+#[path = "combat/pvp/mod.rs"]
+mod combat_pvp;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
@@ -811,6 +818,11 @@ mod weak_spot_speech;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod welter_consume;
+#[allow(
+    dead_code,
+    reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
+)]
+mod world_clock;
 
 #[allow(
     dead_code,

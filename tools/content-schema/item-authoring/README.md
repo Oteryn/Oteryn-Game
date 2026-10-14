@@ -518,3 +518,12 @@ Leech source modifiers retain only observed chance/amount fields. A missing comp
 remains unknown; an explicit source zero remains zero. The schema requires a resource
 and at least one percentage. Partial source observations do not qualify complete runtime
 modifiers. `test_engine_items.py` runs the partial-leech regression tests in CI.
+
+## Consumption lowering (ITEM-SEM-USE-2)
+
+`lower_item_consumption_packet.py` lowers edible-food and restore-potion sources (TibiaWiki first,
+Canary `04b83b51` fallback) into `OTV2-20261004-item-consumption-facts-v1.json` and the
+`OTERYN_ITEM_ADMISSION/v3` packet `OTV2-20261004-consumable-item-admission.json`. `--capture`
+refreshes the pinned sources snapshot (network); the default run and `--check` are offline and
+reproducible. Rows the typed model cannot express (attribute potions, conditions, 1,200 s or more)
+are reported in the facts packet, never lowered. See the `*-consumption-sources.md` evidence note.

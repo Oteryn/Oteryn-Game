@@ -33,9 +33,23 @@ enum StepDisposition {
   STEP_DISPOSITION_TOO_EARLY = 4;
 }
 
-// CommandResult.payload of command type 1: outcome only, never state. At most 4 bytes.
+// CommandResult.payload of command type 1: the outcome and its pacing receipt, never state (no
+// revision, no snapshot). At most 4 bytes; at most 8 bytes to a session that selected capability
+// 13 PACED_MOVEMENT_V1.
 message WorldActorStepResultV1 {
   StepDisposition disposition = 1;
+  // STEP-PACE-WIRE-0 (OQ-1 R1): the pacing receipt, sent only to a session that selected
+  // capability 13; without it, field 2 fails closed.
+  // - MOVED: the authoritative duration of the step just committed, the exact value the server
+  //   pacer records: a multiple of 50 in 50..=111,150 (step-speed table maximum: speed 10, ground
+  //   speed 1000).
+  // - TOO_EARLY: the milliseconds left until the server deadline, rounded up, 1..=111,150.
+  // - BLOCKED, REJECTED: never present.
+  // Written only when non-zero: an explicit zero, any other value and a repeated field fail
+  // closed. Absent means no receipt, and the client may send its next step on receipt of this
+  // result. The client never sends before receipt time + step_wait_ms and resets that deadline
+  // on every admission, resume and ResyncRequest (the server pacer is per connection).
+  uint32 step_wait_ms = 2;
 }
 
 // Native-frame coordinates of the Channel's pinned frame binding.

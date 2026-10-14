@@ -33,7 +33,6 @@ def main():
         ['../reward-claim-authoring/test_variant_stack_serialization.py'],
         ['../reward-claim-authoring/reward_claim_authoring.py', 'content', '--check'],
         ['../reward-claim-authoring/reward_claim_variant_migration.py', '--check'],
-        ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'],
         ['validate_quest_content.py', 'samples/chests/claims.json', 'samples/questlog/quests.json',
          '--catalog', 'samples/chests/catalog.json', '--manifest', 'samples/chests/manifest.json',
          '--gates', 'samples/doors/gates.json', '--gates-manifest', 'samples/doors/manifest.json',
@@ -63,6 +62,8 @@ def main():
         ['quest_donor_source_authoring.py', '--check'],
         ['bundle_authoring.py', '--check'],
         ['quest_tree_authoring.py', 'content', '--check', '--source-packet', str(packet)],
+        # Slowest step last: the cheap evidence-consistency checks above fail first.
+        ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'],
     ]
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
     for arguments in commands:

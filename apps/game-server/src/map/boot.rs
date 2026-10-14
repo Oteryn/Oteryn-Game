@@ -234,8 +234,8 @@ impl CheckedBundle {
 /// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
 /// a `wall` Terrain or an Item whose definition is solid (a usable door is not among them, since
 /// its state decides: [`BundleFacts::doors`]), and the tiles whose top-level entries carry a
-/// catalogue `floor_change` fact (MAP-FLOOR-1). `spell_tiles` collects the spell tile facts of
-/// the same sectors (BUNDLE-TILES-1).
+/// catalogue `floor_change` fact (MAP-FLOOR-1) or a `teleport` attribute (NEWHAVEN-TELEPORT-1).
+/// `spell_tiles` collects the spell tile facts of the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
@@ -276,14 +276,29 @@ fn scan(
                 .fold(0, |mask, item| {
                     mask | masks.get(item.palette as usize).copied().unwrap_or(0)
                 });
-            floors.add(
-                TilePos {
-                    x: tile.x,
-                    y: tile.y,
-                    floor: sector.floor,
-                },
-                mask,
-            );
+            let at = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
+            floors.add(at, mask);
+            // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
+            // is the native floor (format document §5), which the reader checked is in the World.
+            if let Some((x, y, floor)) = tile
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .find_map(|item| item.attrs.teleport)
+            {
+                floors.add_teleport(
+                    at,
+                    TilePos {
+                        x,
+                        y,
+                        floor: i8::from_ne_bytes([floor]),
+                    },
+                );
+            }
         }
         facts.push(manifest, &sector, &mut blocked);
         spell_tiles.push(manifest, &sector, &blocked, item, &masks);
@@ -398,6 +413,14 @@ impl BundleWorld {
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
         table_activation_spawns(&self.spawns, profile)
+    }
+
+    /// Test only: this World with `table` as its spawn family (a booted bundle carries the
+    /// table its `spawn` section decoded to).
+    #[cfg(test)]
+    pub(crate) fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
+        self.spawns = Arc::new(table);
+        self
     }
 
     pub fn base(&self) -> &Arc<WorldBase> {
@@ -861,6 +884,17 @@ pub(crate) mod tests {
     /// [`floor_bundle`], plus a stair up onto a hole whose floor below leads back to the stair
     /// (`cycle`): stair `i1947` (north) on `z` 8 at (3, 3) and (3, 2), the hole on `z` 7 at (3, 2).
     pub(crate) fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
+        floor_bundle_of(cycle, false)
+    }
+
+    /// NEWHAVEN-TELEPORT-1: [`floor_bundle`], plus a row of teleports (palette Item `i37001`)
+    /// on `z` 8 at `y` 1: (0, 1) to (5, 1), (3, 1) to the missing tile (9, 1) and (4, 1) to (6, 1)
+    /// under a solid box; (5, 1) is plain grass in a protection zone (tile flag bit 0).
+    pub(crate) fn teleport_bundle() -> (Vec<u8>, BundlePins) {
+        floor_bundle_of(false, true)
+    }
+
+    fn floor_bundle_of(cycle: bool, teleports: bool) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -882,7 +916,7 @@ pub(crate) mod tests {
             id,
             terrain: None,
         };
-        let manifest = Manifest {
+        let mut manifest = Manifest {
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
             projection_class: "server".into(),
@@ -949,6 +983,25 @@ pub(crate) mod tests {
             lower.push(tile(3, 3, &[0, 4]));
             upper.push(tile(3, 2, &[1]));
         }
+        if teleports {
+            // Palette index 5: the New Haven forcefield Item.
+            manifest.palette.push(item("oteryn:item.tibia.i37001", 3));
+            let teleport = |x, to: (u16, u16)| {
+                let mut tile = tile(x, 1, &[0, 5]);
+                tile.items[1].attrs.teleport = Some((to.0, to.1, (-8i8).to_ne_bytes()[0]));
+                tile
+            };
+            lower.extend([
+                teleport(0, (5, 1)),
+                teleport(3, (9, 1)),
+                teleport(4, (6, 1)),
+                Tile {
+                    flags: 1,
+                    ..tile(5, 1, &[0])
+                },
+                tile(6, 1, &[0, 3]),
+            ]);
+        }
         for tiles in [&mut lower, &mut upper] {
             tiles.sort_by_key(|tile| (tile.y, tile.x));
         }
@@ -979,12 +1032,14 @@ pub(crate) mod tests {
         (bytes, pins)
     }
 
-    /// The served definitions of [`floor_bundle`]'s Items: the stair is walkable, the box solid.
+    /// The served definitions of [`floor_bundle`]'s Items: the stairs and the forcefield are
+    /// walkable, the box solid.
     pub(crate) fn floor_items(key: &str) -> Option<ItemDefinition> {
         let (reference, solid) = match key {
             "oteryn:item.tibia.i1950" => (1, Some(false)),
             "oteryn:item.tibia.i100" => (2, Some(true)),
             "oteryn:item.tibia.i1947" => (3, Some(false)),
+            "oteryn:item.tibia.i37001" => (4, Some(false)),
             _ => return None,
         };
         Some(ItemDefinition {
@@ -1163,6 +1218,40 @@ pub(crate) mod tests {
             items,
         )?;
         assert_eq!(flat.floors().count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn newhaven_teleport_boot_collects_the_teleport_attributes() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = teleport_bundle();
+        let world = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        let at = |x, y| TilePos { x, y, floor: -8 };
+        let floors = world.floors();
+        assert_eq!(floors.teleport_count(), 3);
+        // The attribute's floor byte is the native floor.
+        assert_eq!(floors.teleport(at(0, 1)), Some(at(5, 1)));
+        assert_eq!(floors.teleport(at(3, 1)), Some(at(9, 1)));
+        assert_eq!(floors.teleport(at(4, 1)), Some(at(6, 1)));
+        assert_eq!(floors.teleport(at(5, 1)), None);
+        // A teleport is no floor change: the stair and the hole stay the only ones.
+        assert_eq!(floors.count(), 2);
+        assert!(!floors.contains(at(0, 1)));
+        // The bundles without a teleport attribute have none.
+        let (bytes, load) = floor_bundle();
+        let plain = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        assert_eq!(plain.floors().teleport_count(), 0);
         Ok(())
     }
 

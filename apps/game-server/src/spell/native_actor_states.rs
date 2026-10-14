@@ -547,6 +547,8 @@ pub(crate) fn stance_skill(
 pub(crate) enum HealingOrigin {
     MonkSpell,
     HarmonyGain,
+    /// ITEM-USE-1c: a potion's restore, the ability of an item use. Sustain never scales it.
+    ItemUse,
     Other,
 }
 
@@ -566,7 +568,13 @@ pub(crate) fn stance_damage(
             StanceModifier::HealingDone {
                 percent,
                 serene_percent,
-            } if !incoming && healing && healing_origin != HealingOrigin::Other => {
+            } if !incoming
+                && healing
+                && matches!(
+                    healing_origin,
+                    HealingOrigin::MonkSpell | HealingOrigin::HarmonyGain
+                ) =>
+            {
                 Some(if serene { *serene_percent } else { *percent })
             }
             _ => None,
@@ -1364,6 +1372,11 @@ mod tests {
         );
         assert_eq!(
             stance_damage(&sustain, 89, false, true, true, HealingOrigin::Other),
+            Ok(89)
+        );
+        // ITEM-USE-1c: a potion's restore is outside Sustain's qualified scope.
+        assert_eq!(
+            stance_damage(&sustain, 89, false, true, true, HealingOrigin::ItemUse),
             Ok(89)
         );
         let harmony =

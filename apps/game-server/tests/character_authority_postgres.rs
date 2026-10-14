@@ -2223,6 +2223,11 @@ mod character_progression_postgres_cases;
 #[path = "support/item_mint_postgres_cases.rs"]
 mod item_mint_postgres_cases;
 
+// ITEM-USE-1b item use (migration 0083) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/item_use_postgres_cases.rs"]
+mod item_use_postgres_cases;
+
 // B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/item_transfer_postgres_cases.rs"]
@@ -2326,6 +2331,10 @@ mod character_stance_writer_postgres_cases;
 
 #[path = "support/character_last_position_postgres_cases.rs"]
 mod character_last_position_postgres_cases;
+
+// PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
+#[path = "support/pvp_state_postgres_cases.rs"]
+mod pvp_state_postgres_cases;
 
 #[path = "support/character_familiar_writer_postgres_cases.rs"]
 mod character_familiar_writer_postgres_cases;
@@ -3041,6 +3050,10 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+
+// NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
+#[path = "support/npc_trade_postgres_cases.rs"]
+mod npc_trade_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.
