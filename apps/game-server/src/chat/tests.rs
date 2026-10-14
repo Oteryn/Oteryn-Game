@@ -594,6 +594,51 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
 }
 
 #[test]
+fn the_pre_gate_refuses_a_repeated_under_level_yell_without_a_line_or_a_mute() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    // The first under-level yell reaches the level check of the full path.
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::LevelTooLow)
+    );
+    // Repeats inside the recheck window are refused at the gate: no line, no mute.
+    for ms in [0, 1_000, 2_499] {
+        assert_eq!(
+            limiter.pre_gate(SpeechMode::Yell, at_ms(ms)),
+            Err(ChatRefusal::LevelTooLow)
+        );
+    }
+    assert!(!limiter.is_muted(at_ms(2_499)));
+    for _ in 0..BUCKET_LINES {
+        assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(2_499)), Ok(()));
+        assert_eq!(
+            limiter.admit_local(SpeechMode::Say, low, at_ms(2_499)),
+            Ok(())
+        );
+    }
+    // With the bucket empty the gated yell is still LEVEL_TOO_LOW, never a mute.
+    assert_eq!(
+        limiter.pre_gate(SpeechMode::Yell, at_ms(2_499)),
+        Err(ChatRefusal::LevelTooLow)
+    );
+    assert!(!limiter.is_muted(at_ms(2_499)));
+    // After the window the full path checks the level again; a level gained (with a line back
+    // in the bucket) is admitted and clears the recheck.
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(2_500)), Ok(()));
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(5_000)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(5_000)),
+        Ok(())
+    );
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(40_000)), Ok(()));
+}
+
+#[test]
 fn the_pre_gate_refuses_a_yell_in_its_cooldown_and_takes_no_line() {
     let mut limiter = ChatLimiter::new(at_ms(0));
     let premium = YellGate {
