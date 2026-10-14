@@ -12,7 +12,8 @@ owner: root
 ```
 
 Parent client-game-ui, sole root writer, AUTHORING. Owned runtime:
-apps/client/src/preferences_hotkey_pages.rs and its own acceptance records.
+preferences_hotkey_pages.rs,preferences_browser.rs,settings_ui.rs and
+windows_shell.rs with its own acceptance records.
 No HUD/graphics redesign, protocol, capabilities, audio backend, dependency
 fork, account or deployment change. Native gameplay/E2E stays excluded.
 
@@ -76,3 +77,46 @@ guards, not the old source's incidental78capture count. No CI/validator is relax
 Checks and fresh changed-source Windows qualification follow the grouped repair.
 Prior690 native/CI evidence remains source-bound and is not inherited. No
 status-only source push, paid review trigger, freeze/MQ or1:1 claim.
+
+## e4 table qualification and a distinct native modal-routing finding
+
+Published e4d0be1710828fac1e8a834fdee57f9048426e03 passes exact MSVC1.95:
+client229/224/5,Platform16,Session84,TCP2,strict all-target Clippy,fmt,release.
+Owned40864 exits0/129.34s. DX12/125%DPI:20pages/78independently rehashed
+lossless WebP captures/0invalid, full-scroll/geometry/marker/footer/nonmutation
+guards and independent decoded dimensions pass. General/action/custom first
+captures are visually inspected: populated rows align with headers and both
+targets are visible. Empty custom has no populated native assignment proof.
+Release0.1.0+dev.ci.ge4d0be171082,exe SHA256
+6b7e2d0a6313ed9afeedc20bd4a3ecf4e00eb46dbd4f5d0840ed8921e17ac4b0;
+manifest52a6d10ac63d81f938465a0cda343442d33f6ac3c2f59735ccef237240d0d28c.
+Build/audit are Downloads/oteryn-client-e4d0be17-20261014-native and
+Downloads/oteryn-settings-audit-e4d0be17-20261014. Guarded recovery bundle
+SHA256dfc31cbf09af9e9f1a574031a17a09c6ebcae17aaa3852c81388910ed0df00dc.
+
+Normal source-bound client18404/HWND14289660 uses a NEW private child profile
+under Downloads/oteryn-binding-e4d0be17-20261014. Every screen is inspected
+before the next input, avoiding the earlier stale-coordinate cascade. Clicking
+the now-visible second key actually opens the correct Chat Off editor. Ordinary
+OS SendInput F10 then hides ALL Options instead of becoming the editor candidate.
+Capture01 modal SHA2561d1b3eae250827dcc05fe9df6ca44345bcc8120f727e085be0ceb3afbf61d54d;
+capture02 Welcome SHA256cc6b75fbd2395b4d99fa66fe7567d27caee186abed903efdcf816f3bb73aff29.
+This is a genuine production finding, not the rejected profile fixture. No
+preference file,clipboard,credentials,browser or admission action. Controller33116
+closes only own18404 normally exit0; native-binding-finding.json SHA256
+fd8adaba914b451648519ad362ba8d5844b819165ab2b3e3471c7bd140b60c87.
+
+Root cause: prelogin shell relies only on egui-winit consumed, which may be false
+when an active key-capture/confirmation modal has no focused TextEdit. Route
+F10 to the real existing inner-dialog owner before the global Options toggle;
+do not drop the raw event or manufacture a captured key. A production Options
+regression initially fails "F10 hid binding". PL/EN binding/profile/reset cases
+must retain modal/draft/current, real editor F10 candidate, inner Escape and
+ordinary-F10 recovery. This is an input-layer correction, not a table redesign,
+new dependency, protocol or private-state change. Successor needs fresh checks
+and native reproduction; e4's table proof does not qualify the input repair.
+Repaired merged-source Linux client230/218/5, strict all-target Clippy,fmt,
+governance validator+124tests pass. The guard reads the existing active nested
+dialog state; no new stored state, fork or fabricated key. All six modal cases
+also explicitly clear egui focus before routing, rather than assuming that the
+consumed bit models ownership. Ordinary unconsumed F10 resumes after dismissal.

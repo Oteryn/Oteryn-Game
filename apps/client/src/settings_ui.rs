@@ -122,6 +122,12 @@ pub struct SettingsPanel {
 }
 
 impl SettingsPanel {
+    pub(crate) fn blocks_options_hotkey(&self) -> bool {
+        // A key-capture/confirmation modal can have no focused TextEdit, so
+        // egui-winit's consumed bit alone does not describe its input ownership.
+        self.open && self.browser.has_inner_dialog()
+    }
+
     /// Open the ordinary Options entry point without retaining a temporary
     /// direct-route navigation mode from an earlier hotkey.
     pub fn open_options(&mut self) {
@@ -661,6 +667,144 @@ mod tests {
         assert!(!prelogin_settings_hotkey(
             false, true, true, false, false, true, false
         ));
+    }
+
+    #[test]
+    fn prelogin_f10_preserves_real_inner_dialogs_even_without_egui_keyboard_focus()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            for kind in ["binding", "profile", "reset"] {
+                let ctx = egui::Context::default();
+                let size = egui::vec2(900.0, 620.0);
+                let current = ClientSettings {
+                    english,
+                    ..Default::default()
+                };
+                let mut panel = SettingsPanel::for_settings_audit(current.clone());
+                let section = if kind == "reset" {
+                    "help"
+                } else {
+                    "general_hotkeys"
+                };
+                assert!(panel.open_complete_section(section));
+                if kind == "binding" {
+                    panel
+                        .draft
+                        .hotkeys
+                        .active_mut()
+                        .ok_or("profile")?
+                        .general_chat_off
+                        .insert(
+                            "action.bottom.1".into(),
+                            oteryn_client::hotkeys::HotkeyPair {
+                                first: Some(oteryn_client::settings_catalog::ShortcutBinding {
+                                    key: 4,
+                                    ctrl: true,
+                                    alt: false,
+                                    shift: true,
+                                    meta: false,
+                                }),
+                                second: None,
+                            },
+                        );
+                }
+                let before = panel.draft.clone();
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+                }
+                let label = match kind {
+                    "binding" => "Ctrl+Shift+A",
+                    "profile" => {
+                        if english {
+                            "Add"
+                        } else {
+                            "Dodaj"
+                        }
+                    }
+                    _ => {
+                        if english {
+                            "Reset All Options"
+                        } else {
+                            "Przywróć wszystkie ustawienia"
+                        }
+                    }
+                };
+                let button = button_position(&output, size, label).ok_or("inner-dialog button")?;
+                click(&ctx, size, button, |ctx| panel.show(ctx, None, None));
+                ctx.memory_mut(|memory| {
+                    if let Some(id) = memory.focused() {
+                        memory.surrender_focus(id);
+                    }
+                });
+                assert!(ctx.memory(|memory| memory.focused().is_none()));
+                // Native egui-winit can report consumed=false for a modal that
+                // owns no focused TextEdit. The actual modal state still owns F10.
+                if prelogin_settings_hotkey(
+                    panel.blocks_options_hotkey(),
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                    false,
+                ) {
+                    panel.toggle_options();
+                }
+                assert!(
+                    panel.open,
+                    "F10 hid {kind} instead of reaching its input owner"
+                );
+                let key = egui::Event::Key {
+                    key: egui::Key::F10,
+                    physical_key: Some(egui::Key::F10),
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                };
+                let output = frame(&ctx, size, vec![key], |ctx| panel.show(ctx, None, None)).1;
+                assert!(
+                    panel.blocks_options_hotkey(),
+                    "{kind} modal ownership was lost"
+                );
+                assert_eq!(panel.draft, before);
+                assert_eq!(panel.current, current);
+                assert!(!panel.applied);
+                if kind == "binding" {
+                    assert!(
+                        button_position(&output, size, "F10").is_some(),
+                        "actual editor did not capture F10"
+                    );
+                }
+                let escape = egui::Event::Key {
+                    key: egui::Key::Escape,
+                    physical_key: Some(egui::Key::Escape),
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                };
+                frame(&ctx, size, vec![escape], |ctx| panel.show(ctx, None, None));
+                assert!(panel.open, "inner Escape must not Cancel outer Options");
+                assert!(!panel.blocks_options_hotkey());
+                assert_eq!(panel.draft, before);
+                if prelogin_settings_hotkey(
+                    panel.blocks_options_hotkey(),
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                    false,
+                ) {
+                    panel.toggle_options();
+                }
+                assert!(
+                    !panel.open,
+                    "ordinary F10 must recover after modal dismissal"
+                );
+            }
+        }
+        Ok(())
     }
 
     #[test]

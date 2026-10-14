@@ -1116,6 +1116,12 @@ The next table-fit packet fixes a newly observed per-row gap that the20-page
 audit did not prove: header/key-column alignment and full second-key hit targets.
 Profiles Add/Apply is independently proved; later native Copy/Remove/key-capture
 fixture filenames are rejected because they show the wrong screen, not success.
+After e4's exact native table qualification, a new inspected normal-client probe
+does open the second-key editor and proves F10 hides its parent instead of being
+captured. Existing modal ownership now also fences the prelogin global toggle;
+raw input remains with upstream egui. Six PL/EN binding/profile/reset cases pass
+without changing draft/current, with inner Escape and ordinary-F10 recovery.
+That successor still needs fresh native reproduction; e4's proof is not inherited.
 
 Latest native OS evidence is in OTV2-20261014-client-native-os-input: bounded
 current-desktop permission supersedes older isolation requirements, and actual

@@ -15,6 +15,11 @@ equal-third headings disagree with naturally sized rows and the second key targe
 is partially clipped. Reuse the same upstream Grid and bounded wrapping for all
 three tables. This changes fit/reachability, not unavailable-action activation.
 Failed native Copy/Remove/binding fixture attempts remain explicitly unqualified.
+Table sourcee4d0be17 passes fresh MSVC and DX1220pages/78captures. A separate
+normal-client probe now proves F10 incorrectly hides an actual key-capture modal.
+The follow-up uses existing nested-dialog ownership rather than relying only on
+egui-winit consumed; six routed PL/EN cases include real F10 capture and recovery.
+This is a confirmed input repair, not a reason to claim whole-client completion.
 
 Newest packet: OTV2-20261014-client-prelogin-focus. Published ab111236 CI is
 terminal green including game-gate; current-main conflict still needs normal

@@ -844,7 +844,11 @@ impl ApplicationHandler for Application {
                 is_synthetic,
                 ..
             } if crate::settings_ui::prelogin_settings_hotkey(
-                consumed,
+                consumed
+                    || self
+                        .login
+                        .as_ref()
+                        .is_some_and(|ui| ui.settings.blocks_options_hotkey()),
                 self.login.is_some() && !auditing,
                 event.state == winit::event::ElementState::Pressed,
                 event.repeat,

@@ -48,6 +48,10 @@ pub enum PreferenceAction {
 }
 
 impl PreferencesBrowser {
+    pub(crate) fn has_inner_dialog(&self) -> bool {
+        self.open && self.page_state.has_inner_dialog()
+    }
+
     /// Reset only locally implemented controls owned by the displayed page.
     /// Reference factory values and profile-table reset semantics remain unverified.
     pub(crate) fn reset_current_page(&self, draft: &mut ClientSettings) {
