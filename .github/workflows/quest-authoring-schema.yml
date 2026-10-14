@@ -40,16 +40,43 @@ jobs:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      # A pull request that changes only unreferenced Quest tool docs skips the multi-minute
+      # checks below; every other change, and any doubt, takes the full path. The classifier is
+      # read from the protected base so a pull request cannot widen its own skip. The job still
+      # runs and reports, so the check name and its result never go missing.
+      - name: Classify Quest scope
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          full() { printf 'full=true\nreason=%s\n' "$1" >> "$GITHUB_OUTPUT"; echo "Quest scope: full ($1)"; }
+          if [ -z "$PULL_NUMBER" ]; then
+            full "not a pull request"
+          elif curl -fsSL --retry 2 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json" \
+              -o "$RUNNER_TEMP/classify_quest_scope.py" \
+              "https://api.github.com/repos/$REPOSITORY/contents/tools/repository/classify_quest_authoring_scope.py?ref=$BASE_SHA"; then
+            python -I "$RUNNER_TEMP/classify_quest_scope.py" --root . --repository "$REPOSITORY" --pull-request "$PULL_NUMBER" \
+              || full "classifier failed"
+          else
+            full "protected-base classifier unavailable"
+          fi
+
       - name: Set up Python
+        if: ${{ steps.scope.outputs.full == 'true' }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
           check-latest: false
 
       - name: Install pinned schema requirements
+        if: ${{ steps.scope.outputs.full == 'true' }}
         run: python -m pip install -r tools/content-schema/monster-authoring/requirements.txt
 
       - name: Validate all offline Quest data
+        if: ${{ steps.scope.outputs.full == 'true' }}
         run: python tools/content-schema/quest-authoring/run_checks.py
 
       - name: Verify the checkout stayed clean

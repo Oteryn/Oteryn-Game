@@ -450,7 +450,9 @@ jobs:
 
   rust_policy:
     name: Merge gate / Rust policy and metadata
-    needs: [scope, lanes]
+    # Cheap policy and routing checks run in parallel with `lanes` and gate the multi-minute Rust
+    # jobs, so a failure there stops the heavy work instead of waiting for it. `validate` still requires them all.
+    needs: [scope, lanes, governance, dependency_review, routing_contract]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -539,7 +541,8 @@ jobs:
 
   rust_fast:
     name: Merge gate / Rust changed-crate Clippy and unit tests
-    needs: [scope, lanes]
+    # Cheap gates first (see Rust policy).
+    needs: [scope, lanes, governance, dependency_review, routing_contract]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -729,7 +732,8 @@ jobs:
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
-    needs: [scope, lanes]
+    # Cheap gates first (see Rust policy).
+    needs: [scope, lanes, governance, dependency_review, routing_contract]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
