@@ -625,6 +625,17 @@ impl ChannelSpellStates {
             .monk_save_values(now)
     }
 
+    /// Whether `actor` of `session` holds training state a forced checkpoint would write.
+    pub(crate) fn has_training_to_flush(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        self.get(runtime, actor, game_session_id)
+            .is_some_and(|state| state.has_training_to_flush())
+    }
+
     /// Commit a resolved health credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.

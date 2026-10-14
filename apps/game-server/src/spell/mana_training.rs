@@ -665,6 +665,15 @@ impl super::cast::PlayerSpellState {
     }
 }
 impl super::cast::PlayerSpellState {
+    /// Whether a forced checkpoint now has anything to write: a retained checkpoint to replay or
+    /// unbanked training mana. A read-only in-memory check (OPS-SAVE-2 shutdown pre-filter).
+    pub(crate) fn has_training_to_flush(&self) -> bool {
+        self.training_checkpoint.is_some()
+            || self
+                .training
+                .as_ref()
+                .is_some_and(|value| value.pending_mana > 0)
+    }
     pub(crate) fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()
     }
