@@ -106,6 +106,12 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(rows['sudden death rune']['failed'], ['aggressive'])
         native = audit.check(False, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
         self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
+        reverted = audit.check(True, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
+        self.assertEqual((reverted['verdict'], reverted['pass']), ('agree', False))
+
+    def test_range_is_checked_against_the_registrars(self):
+        row = audit.check(99, {'canary': 5, 'crystal': 5})
+        self.assertEqual((row['verdict'], row['pass']), ('ours_differs', False))
 
     def test_both_registrar_records_are_required(self):
         entries = [carrier('sudden death rune', 3155, 3)]

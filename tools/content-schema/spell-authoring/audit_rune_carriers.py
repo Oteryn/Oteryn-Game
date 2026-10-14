@@ -7,10 +7,11 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
 - that both the Canary and the Crystal registrar records exist;
-- the cooldown group, the targeting flags (aggressive, self target, needs target) and far use against the Canary and Crystal registrars, and the range
-  against the wikis; where the references conflict, our value must be the one the catalogue manifest
-  records as the winning source (S3/S11/S13/S14), and a value no reference states passes only under a
-  recorded native resolution (S27);
+- the cooldown group, the targeting flags (aggressive, self target, needs target) and far use against
+  the Canary and Crystal registrars, and the range against the wikis and the registrars; where the
+  references conflict, our value must be the one the catalogue manifest records as the winning source
+  (S3/S11/S13/S14), and a recorded native resolution (S27) requires a value that differs from the
+  references;
 - the dated current rune-use facts of `rune-use-source-resolutions.json`, which replace the field
   they name;
 - `rune.charges` against the conjuring spell's `count` where both exist (§3);
@@ -98,7 +99,8 @@ def registrars(census):
 def check(ours, found, required=False, recorded=None):
     """Compare our value with its references. On a reference conflict our value must be that of the source the
     catalogue manifest records as the winner of its S3/S11/S13/S14 resolution; matching any reference is not enough.
-    A value that differs from every reference passes only under a recorded native resolution (S27)."""
+    A recorded native resolution (S27) requires our value to differ from the agreeing references; it is the only
+    way such a value passes."""
     recorded = recorded or {}
     verdict, follows = vs.classify(ours, found)
     passed = verdict == 'agree' or (verdict == 'no_source' and not required)
@@ -107,9 +109,12 @@ def check(ours, found, required=False, recorded=None):
         row['follows'] = follows
         row['recorded_winner'] = sorted(recorded.get('sources', ()))
         passed = bool(set(follows) & recorded.get('sources', set()))
-    elif verdict == 'ours_differs' and recorded.get('native'):
-        row['verdict'], row['resolution'] = 'native_resolution', recorded['native']
-        passed = True
+    if recorded.get('native'):
+        # A recorded native override constrains the value whatever the references say: it must differ from them.
+        row['resolution'] = recorded['native']
+        passed = verdict == 'ours_differs'
+        if passed:
+            row['verdict'] = 'native_resolution'
     row['pass'] = passed
     return row
 
@@ -211,7 +216,8 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
         'group': check(vs.group_key(spell['groups'][0]['group']) if spell.get('groups') else None,
                        registrar_values(registrar, 'group'), required=True,
                        recorded=recorded(entry, base + 'groups/0/group')),
-        'range_tiles': check(targeting.get('range_tiles'), wiki_values(pages, 'spellrange'),
+        'range_tiles': check(targeting.get('range_tiles'),
+                             {**wiki_values(pages, 'spellrange'), **registrar_values(registrar, 'range')},
                              recorded=recorded(entry, base + 'targeting/range_tiles')),
         'blocking_solid': check(rune.get('blocking', {}).get('solid'), registrar_blocking(registrar, 0),
                                 recorded=recorded(entry, base + 'rune/blocking/solid')),

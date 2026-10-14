@@ -37,9 +37,10 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   and writes `samples/rune-carrier-audit.json`; `--check` fails when the committed audit is stale. Checks
   per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
   registrars where no wiki states them), cooldown group, far use and the targeting flags `aggressive`,
-  `self_target` and `needs_target` (registrars), range (wikis). Where the references conflict, our value
-  must be that of the source the catalogue manifest records as the winner (S3/S11/S13/S14); a value no
-  reference states passes only under a recorded native resolution (S27, Disintegrate non-aggressive);
+  `self_target` and `needs_target` (registrars), range (wikis and registrars). Where the references
+  conflict, our value must be that of the source the catalogue manifest records as the winner
+  (S3/S11/S13/S14); a recorded native resolution (S27, Disintegrate non-aggressive) requires a value
+  that differs from the references;
   the dated `rune-use-source-resolutions.json` facts (they replace the field they name), `rune.charges` =
   the conjuring spell's `count` where both exist (§3), the native Item profile stack facts (stackable,
   100, `StackCapable`), and the authored area against `RUNEUSE0-RL-08` (≤ 37 tiles, so the victim cap
@@ -77,11 +78,15 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   the 36 names of the section 9 groups, else the tool exits 1 without writing.
 - Codex P2 on ee280f07 (one registrar record suffices): repaired; a `registrars` check fails a carrier
   unless both the Canary and the Crystal records exist (all 36 have both).
+- Codex P2 on e38bbac5 (registrar ranges ignored): repaired; the range is compared with the wikis and the
+  registrar `range` (Desintegrate 1 and Destroy Field 5 now agree instead of `no_source`).
+- Codex P2 on e38bbac5 (a native override reverted to the reference value passes): repaired; a recorded
+  native resolution now requires a value that differs from the references.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 9 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 10 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

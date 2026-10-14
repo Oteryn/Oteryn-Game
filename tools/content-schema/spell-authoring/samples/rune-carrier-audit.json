@@ -815,8 +815,11 @@
     "range_tiles": {
      "ours": 1,
      "pass": true,
-     "references": {},
-     "verdict": "no_source"
+     "references": {
+      "canary": 1,
+      "crystal": 1
+     },
+     "verdict": "agree"
     },
     "registrars": {
      "pass": true,
@@ -961,8 +964,11 @@
     "range_tiles": {
      "ours": 5,
      "pass": true,
-     "references": {},
-     "verdict": "no_source"
+     "references": {
+      "canary": 5,
+      "crystal": 5
+     },
+     "verdict": "agree"
     },
     "registrars": {
      "pass": true,
