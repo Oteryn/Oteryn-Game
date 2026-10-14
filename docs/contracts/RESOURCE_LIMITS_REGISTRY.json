@@ -10595,7 +10595,7 @@
     {
       "id": "WORLDINT0-RL-21",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md",
-      "resource": "PUSH_INTENT payload (command type 13, capability 11 WORLD_INTERACTION_V1)",
+      "resource": "PUSH_INTENT payload (command type 15, capability 11 WORLD_INTERACTION_V1)",
       "unit": "bytes",
       "hard_maximum": 41,
       "configurable_range": {
@@ -10613,7 +10613,7 @@
         "crates/protocol-oteryn/src/world_interaction.rs MAX_PUSH_INTENT_BYTES",
         "PUSH_INTENT command (WORLDINT-WIRE-1)"
       ],
-      "notes": "WORLD-INTERACTION-0 \u00a710.1 and \u00a712, amended from 32 to 41 bytes by the owner on 2026-10-14 (WORLDINT-WIRE-1, #2094). Mirrors max_payload_bytes of command type 13. Registered by WORLDINT-WIRE-1."
+      "notes": "WORLD-INTERACTION-0 \u00a710.1 and \u00a712, amended from 32 to 41 bytes by the owner on 2026-10-14 (WORLDINT-WIRE-1, #2094). Mirrors max_payload_bytes of command type 15. Registered by WORLDINT-WIRE-1."
     },
     {
       "id": "WORLDINT0-RL-22",

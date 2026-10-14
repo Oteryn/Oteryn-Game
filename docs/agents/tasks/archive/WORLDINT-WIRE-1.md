@@ -26,6 +26,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/container_view_tests.rs
   - apps/game-server/src/gameplay_transport/item_move_tests.rs
+  - apps/game-server/src/gameplay_transport/item_use.rs
   - apps/game-server/src/gameplay_transport/item_view_tests.rs
   - apps/game-server/src/gameplay_transport/map_door.rs
   - apps/game-server/src/gameplay_transport/mod.rs
@@ -40,9 +41,10 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto
   - docs/contracts/protocol-oteryn/v1/world_object_v1.proto
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md
   - docs/agents/tasks/archive/WORLDINT-WIRE-1.md
-public_contracts: [PROTOCOL_OTERYN_V1_REGISTRY.json]
+public_contracts: [PROTOCOL_OTERYN_V1_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json]
 external_repositories: []
 ```
 
