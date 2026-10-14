@@ -520,6 +520,59 @@ mod tests {
         assert_eq!(bank.request.after.magic(), (1, 0));
     }
     #[test]
+    fn a_skill_level_is_live_only_after_its_checkpoint_receipt() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        // Without owned training (the production off switch) nothing trains.
+        assert_eq!(
+            state
+                .train_skill(SkillFamily::Sword, 1, |c| c
+                    .melee_hit(hit_training::HitBlock::Unblocked))
+                .unwrap(),
+            0
+        );
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        assert!(!state.has_training_to_flush());
+        assert_eq!(
+            state.train_skill(SkillFamily::Sword, 2, |_| 50).unwrap(),
+            50
+        );
+        assert!(state.has_training_to_flush());
+        assert_eq!(state.owned_skills.unwrap()[2], 10);
+        let prepared = state
+            .prepare_training_checkpoint(3, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        let receipt = CommittedBuildChange {
+            occurrence: occurrence(),
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(1).unwrap(),
+            committed_character_revision: CharacterRevision::new(2).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        state
+            .commit_training_checkpoint(prepared, &receipt)
+            .unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 11);
+        assert!(!state.has_training_to_flush());
+    }
+    #[test]
     fn hit_streaks_feed_the_pending_tries() {
         let mut live = LiveManaTraining::from_owned_build(&seed());
         let tries = live.hits_mut().melee_hit(hit_training::HitBlock::Unblocked);
@@ -810,6 +863,10 @@ impl super::cast::PlayerSpellState {
         let current = self.training.as_ref().ok_or(TrainingError::InvalidBuild)?;
         let next = prepared.commit(current, receipt)?;
         self.facts.magic_level = u32::from(next.durable().magic().0);
+        // A banked skill level is live only now, after its receipt (A13 §2).
+        if self.owned_skills.is_some() {
+            self.owned_skills = Some(next.durable().skills().map(|(level, _)| level));
+        }
         self.training = Some(next);
         self.training_payment = None;
         self.training_checkpoint = None;
