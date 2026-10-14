@@ -52,6 +52,7 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     validate_declared_edges(&policy, &actual_edges)?;
     validate_acyclic(&policy.edges)?;
     validate_production_closure(&policy)?;
+    validate_restricted_calls(root)?;
     for member in &policy.members {
         if policy
             .forbidden_fragments
@@ -502,6 +503,77 @@ fn validate_production_closure(policy: &Policy) -> Result<(), String> {
     Ok(())
 }
 
+/// Game-server methods that only named files may name (PREM-WIRE-1): the Premium latch read that
+/// runs a pre-delivery bypass is the Premium gate's own entry, so only its definition, the
+/// coordinator's `settle` and the latch's PostgreSQL qualification may name it.
+const RESTRICTED_CALLS: &[(&str, &[&str])] = &[(
+    "read_premium_activation_with",
+    &[
+        "apps/game-server/src/durability/premium_activation_latch.rs",
+        "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+        "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
+    ],
+)];
+
+/// The game-server source trees scanned for [`RESTRICTED_CALLS`].
+const RESTRICTED_CALL_ROOTS: &[&str] = &["apps/game-server/src", "apps/game-server/tests"];
+
+fn validate_restricted_calls(root: &Path) -> Result<(), String> {
+    let mut files = Vec::new();
+    for tree in RESTRICTED_CALL_ROOTS {
+        collect_rust_sources(root, &root.join(tree), &mut files)?;
+    }
+    let violations = restricted_call_violations(&files);
+    if violations.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "restricted game-server calls outside their allowed files: {}",
+            violations.join(", ")
+        ))
+    }
+}
+
+/// Every `.rs` file under `dir` as (portable path relative to `root`, contents).
+fn collect_rust_sources(
+    root: &Path,
+    dir: &Path,
+    files: &mut Vec<(String, String)>,
+) -> Result<(), String> {
+    let entries =
+        fs::read_dir(dir).map_err(|error| format!("cannot read {}: {error}", dir.display()))?;
+    for entry in entries {
+        let path = entry
+            .map_err(|error| format!("cannot read {}: {error}", dir.display()))?
+            .path();
+        if path.is_dir() {
+            collect_rust_sources(root, &path, files)?;
+        } else if path.extension().is_some_and(|extension| extension == "rs") {
+            let relative = path
+                .strip_prefix(root)
+                .map_err(|_| format!("{} is outside the workspace", path.display()))?;
+            let contents = fs::read_to_string(&path)
+                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+            files.push((portable_relative_path(relative)?, contents));
+        }
+    }
+    Ok(())
+}
+
+/// `file: symbol` for every restricted symbol named in a file outside its allowed list.
+fn restricted_call_violations(files: &[(String, String)]) -> Vec<String> {
+    let mut violations = Vec::new();
+    for (path, contents) in files {
+        for (symbol, allowed) in RESTRICTED_CALLS {
+            if contents.contains(symbol) && !allowed.contains(&path.as_str()) {
+                violations.push(format!("{path}: {symbol}"));
+            }
+        }
+    }
+    violations.sort();
+    violations
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -817,5 +889,44 @@ mod tests {
             .dev_edges
             .insert("app".to_owned(), BTreeSet::from(["ghost".to_owned()]));
         assert!(validate_policy_shape(&policy).is_err());
+    }
+
+    #[test]
+    fn the_premium_bypass_read_is_named_only_by_the_gate_and_its_qualification() {
+        let call = "root.read_premium_activation_with(&mut slot).await";
+        let allowed = [
+            "apps/game-server/src/durability/premium_activation_latch.rs",
+            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+            "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
+        ];
+        let files: Vec<(String, String)> = allowed
+            .iter()
+            .map(|path| ((*path).to_owned(), call.to_owned()))
+            .collect();
+        assert!(restricted_call_violations(&files).is_empty());
+
+        let sibling = vec![(
+            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            call.to_owned(),
+        )];
+        assert_eq!(
+            restricted_call_violations(&sibling),
+            vec![
+                "apps/game-server/src/gameplay_transport/guild_daily.rs: \
+                 read_premium_activation_with"
+                    .to_owned()
+            ]
+        );
+        let unrelated = vec![(
+            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            "root.read_premium_activation().await".to_owned(),
+        )];
+        assert!(restricted_call_violations(&unrelated).is_empty());
+    }
+
+    #[test]
+    fn checked_in_game_server_names_restricted_calls_only_where_allowed() -> Result<(), String> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        validate_restricted_calls(&root)
     }
 }
