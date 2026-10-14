@@ -26,6 +26,7 @@ difference.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -40,6 +41,10 @@ OUTPUT = (
     ROOT / "docs" / "agents" / "evidence" / "OTV2-20261013-ranged-weapon-facts-v1.json"
 )
 WEAPON_METADATA_PROOF = "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json"
+WEAPON_METADATA_PROOF_SHA256 = (
+    "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc"
+)
+WEAPON_METADATA_PROOF_SCHEMA = "OTERYN_ITEM_WEAPON_METADATA_SOURCE_QUALIFICATION/v2"
 SCHEMA = "OTERYN_ITEM_RANGED_PROMOTION/v1"
 TASK_ID = "OTV2-20261013-ranged-content-1"
 COMPILER = "tools/content-schema/item-authoring/lower_ranged_packet.py"
@@ -153,6 +158,12 @@ def _parse_range(raw):
     return _uint(raw, 1, 7)
 
 
+def _parse_mana(raw):
+    """Wiki `manacost`: a bare number, or the decorated `+N` / `+N mana per attack` form."""
+    match = re.fullmatch(r"\+?([0-9]+)(?:\s+mana per attack)?", raw.strip())
+    return int(match[1]) if match and int(match[1]) <= 65535 else None
+
+
 def _parse_percent(raw):
     match = re.fullmatch(r"([0-9]{1,3})%", raw)
     return int(match[1]) if match and 0 <= int(match[1]) <= 100 else None
@@ -206,7 +217,12 @@ def _canary_vocations(raw):
 
 def closed_weapon_owners():
     """Item keys whose weapon leaf is pinned by the closed weapon-metadata packet (its native_weapon_guard)."""
-    proof = json.loads((ROOT / WEAPON_METADATA_PROOF).read_text(encoding="utf-8"))
+    raw = (ROOT / WEAPON_METADATA_PROOF).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != WEAPON_METADATA_PROOF_SHA256:
+        raise ValueError("weapon-metadata proof digest drift")
+    proof = json.loads(raw)
+    if proof.get("schema") != WEAPON_METADATA_PROOF_SCHEMA:
+        raise ValueError("weapon-metadata proof schema drift")
     return {r["target"]["key"] for r in proof["records"]}
 
 
@@ -355,7 +371,7 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             mana = _wiki_value(
                 merged,
                 "manacost",
-                lambda r: _uint(r, 0, 65535),
+                _parse_mana,
                 local_conflicts,
                 item_id,
             )
@@ -491,6 +507,11 @@ def packet_bytes(snapshot, canary, content_ids, pin):
         "source": {
             "canary": pin,
             "wiki_snapshot": str(SNAPSHOT.relative_to(ROOT)),
+            "weapon_metadata_proof": {
+                "path": WEAPON_METADATA_PROOF,
+                "schema": WEAPON_METADATA_PROOF_SCHEMA,
+                "sha256": WEAPON_METADATA_PROOF_SHA256,
+            },
             "policy": "TibiaWiki first, Canary fallback; differing values are parity_pending",
         },
         "counts": counts,

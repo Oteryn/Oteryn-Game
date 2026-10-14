@@ -13,11 +13,6 @@
     },
     {
       "field": "manacost",
-      "item_key": "oteryn:item.tibia.i3075",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "manacost",
       "item_key": "oteryn:item.tibia.i8092",
       "reason": "wiki_unparseable"
     },
@@ -147,11 +142,6 @@
       "reason": "wiki_unparseable"
     },
     {
-      "field": "manacost",
-      "item_key": "oteryn:item.tibia.i52336",
-      "reason": "wiki_unparseable"
-    },
-    {
       "field": "damagetype",
       "item_key": "oteryn:item.tibia.i52336",
       "reason": "wiki_unparseable"
@@ -173,7 +163,7 @@
     }
   ],
   "counts": {
-    "conflicts": 34,
+    "conflicts": 32,
     "holds": 193,
     "items": 98,
     "kind_AMMUNITION": 2,
@@ -1363,7 +1353,6 @@
       "item_key": "oteryn:item.tibia.i52336",
       "reasons": [
         "element_unknown",
-        "mana_per_shot_unknown",
         "missile_unknown",
         "no_weapon_registration"
       ]
@@ -1830,7 +1819,7 @@
       "sources": {
         "damage": "WIKI",
         "element": "WIKI",
-        "mana_per_shot": "CANARY",
+        "mana_per_shot": "WIKI",
         "min_level": "WIKI",
         "missile": "CANARY",
         "on_use": "DERIVED",
@@ -4250,6 +4239,11 @@
       "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
     },
     "policy": "TibiaWiki first, Canary fallback; differing values are parity_pending",
+    "weapon_metadata_proof": {
+      "path": "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json",
+      "schema": "OTERYN_ITEM_WEAPON_METADATA_SOURCE_QUALIFICATION/v2",
+      "sha256": "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc"
+    },
     "wiki_snapshot": "imports/tibiawiki/facts/items-stats.json"
   },
   "task_id": "OTV2-20261013-ranged-content-1"

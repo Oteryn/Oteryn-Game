@@ -173,6 +173,14 @@ def test_wiki_damage_with_average_prefix():
     assert lower._parse_damage("107 (98-116") is None
 
 
+def test_wiki_mana_cost_decorations():
+    assert lower._parse_mana("+3 mana per attack") == 3
+    assert lower._parse_mana("+10") == 10
+    assert lower._parse_mana("21") == 21
+    assert lower._parse_mana("+7-8 mana per attack") is None
+    assert lower._parse_mana("~2+~6+ mana per attack") is None
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
