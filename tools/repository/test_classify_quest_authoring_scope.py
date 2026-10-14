@@ -191,32 +191,5 @@ class WorkflowWiring(unittest.TestCase):
         self.assertIn("--base-sha", self.text)
 
 
-class MergeGateOrdering(unittest.TestCase):
-    def jobs(self):
-        text = (REPO / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
-        jobs = {}
-        for block in re.split(r"\n(?=  [a-z_]+:\n)", text.split("\njobs:\n", 1)[1]):
-            name = block.strip().split(":", 1)[0]
-            match = re.search(r"^    needs: (.+)$", block, re.MULTILINE)
-            jobs[name] = (block, match.group(1) if match else "")
-        return jobs
-
-    def test_heavy_rust_jobs_wait_for_cheap_policy_jobs(self):
-        jobs = self.jobs()
-        for heavy in ("rust_policy", "rust_fast", "rust_supply_chain"):
-            for cheap in ("governance", "dependency_review", "routing_contract"):
-                self.assertIn(cheap, jobs[heavy][1], f"{heavy} needs {cheap}")
-        for cheap in ("governance", "dependency_review", "routing_contract"):
-            self.assertEqual(jobs[cheap][1], "scope", f"{cheap} must stay a first-wave job")
-
-    def test_required_aggregates_still_always_report(self):
-        jobs = self.jobs()
-        for name in ("validate", "game_gate"):
-            self.assertIn("    if: always() &&", jobs[name][0])
-        for needed in ("governance", "dependency_review", "routing_contract", "rust_fast", "world_bundle"):
-            self.assertIn(needed, jobs["validate"][1])
-        self.assertEqual(jobs["game_gate"][1], "[scope, validate]")
-
-
 if __name__ == "__main__":
     unittest.main()

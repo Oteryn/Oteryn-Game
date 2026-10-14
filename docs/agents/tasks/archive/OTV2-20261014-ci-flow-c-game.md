@@ -16,7 +16,6 @@ created_at: 2026-10-14
 updated_at: 2026-10-14
 execution_policy: continuous_progress
 owned_paths:
-  - .github/workflows/merge-gate.yml
   - .github/workflows/quest-authoring-schema.yml
   - tools/repository/classify_quest_authoring_scope.py
   - tools/repository/test_classify_quest_authoring_scope.py
@@ -33,7 +32,7 @@ external_repositories:
 
 ## Outcome
 
-- Accepted package-C items of the #2100 review (owner: "wprowadz te optymalizacje"). A PR that only adds or modifies unreferenced `.md` files under the Quest tool directory skips `run_checks.py`; the Rust jobs of Merge gate wait for the cheap governance, dependency and routing jobs; `run_checks.py` runs its slowest step last. Platform acceptance coverage map is a separate docs PR (Oteryn-Platform #1612).
+- Accepted package-C items of the #2100 review (owner: "wprowadz te optymalizacje"). A PR that only adds or modifies unreferenced `.md` files under the Quest tool directory skips `run_checks.py`; `run_checks.py` runs its slowest step last. The Merge gate job-ordering change is not part of this PR: merge-gate.yml is blob-pinned by the merge-authority audit (`EXPECTED_MERGE_GATE_BLOB`), whose rotation needs a separate owner-authorized PR. Platform acceptance coverage map is a separate docs PR (Oteryn-Platform #1612).
 
 ## Architecture and source of truth
 
@@ -48,7 +47,7 @@ external_repositories:
 
 - [x] No blanket `*.md` ignore; pinned README, mixed diff, rename/delete, workflow, build, dependency and unknown inputs take the full path.
 - [x] Tests prove each case class.
-- [x] Required aggregates keep reporting.
+- [x] merge-gate.yml and the audit pins are untouched.
 - [x] Deferred and rejected items are not implemented.
 
 ## Excluded scope
