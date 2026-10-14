@@ -4,7 +4,7 @@
 task_id: LOOP-WORLD-1
 title: "LOOP-WORLD-1: teleports, keyed/level/quest doors, levers and tile damage on the bundle node (mechanics plan row 65)"
 mode: IMPLEMENT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/loop-world-1-20261014
@@ -21,6 +21,16 @@ updated_at: 2026-10-14
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/LOOP-WORLD-1.md
+  - apps/game-server/migrations/0086_item_keys.sql
+  - docs/contracts/game-events/v1/native_one_item_transaction.proto
+  - apps/game-server/src/durability/
+  - apps/game-server/src/content/reference_playable.rs
+  - apps/game-server/src/content/world_reward_claims.rs
+  - apps/game-server/src/interaction/chest_use.rs
+  - apps/game-server/tests/content_reference_playable.rs
+  - apps/game-server/tests/world_reward_claims_binding.rs
+  - apps/game-server/tests/support/chest_use_postgres_cases.rs
+  - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -30,7 +40,19 @@ external_repositories: []
 
 ## Outcome
 
-Waiting on CP/owner answers before any code. The entry gate is met (#2018, ENCOUNTER-RT-0
+KEY-1, mint half (CP Q3). A RewardClaim MINT can carry an immutable instance `key_number`
+(1..65,535, `WORLDINT0-RL-10`) on one non-stackable item: migration 0086 `game_item_keys` (written
+only with the reward-claim MINT of its one item in the same transaction; immutable, no delete or
+truncate), `OneItemStateV1.key_number = 6` (0 = not a key, so every existing event encodes
+byte-identically), the MINT intent binding (`0x4b` + u16, absent for non-keys), the audit gates
+(loot and map MINT never carry a number; TRANSFER carries it unchanged) and the TRANSFER source
+read. The binder admits the 21 authored key variants whose only pending lowering is
+`KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED` and whose binding is `canary:door-key/<n>`.
+
+Held: open the PR only after #2110 (migration 0085) merges; the resource-limit rows
+`WORLDINT0-RL-10` and `DUR03-RL-07-KEY` wait for the #2113 registry throttle.
+
+Earlier: waiting on CP/owner answers before any code. The entry gate is met (#2018, ENCOUNTER-RT-0
 ACCEPTED #2108, BUNDLE-COMBAT-ENABLE-1 #2025, CHAT-1b-2b #2093). The earlier branch
 `claude/loop-world-1-worldint-wire-1-20261013` is gone: its slice merged as WORLDINT-WIRE-1 (#2094),
 so this task starts fresh from main@75ec7985.
@@ -66,7 +88,8 @@ and is held on the questions below.
 | WORLDINT-WIRE-1 | merged #2094 | none |
 | DOOR-1 | merged #1966 (normal doors) | none |
 | FLOOR-1 | merged #1967 (teleports also #2018) | none |
-| KEY-1 | prerequisites merged; held | owner questions Q1-Q3 below; its door half also needs USE-WITH on a map item (WORLDINT-USE-1) |
+| KEY-1 mint half | this task | PR held until #2110 (migration 0085) merges |
+| KEY-1 door half | blocked | WORLDINT-USE-1 (USE-WITH on a map item) |
 | WORLDINT-USE-1 | blocked | WO-3 |
 | LEVER-1 | blocked | QUEST-TRIGGER-1 |
 | PUSH-1 | blocked | VSL-MOVE-01 movement owner (implementation not started) |
@@ -87,7 +110,22 @@ and is held on the questions below.
 Level and quest doors (QUEST-GATE-1) are not a child of this graph; DOOR-1's QUEST-GATE-1 gate
 is unmerged, so they stay sealed.
 
-## Owner questions (sent to CP)
+## CP decisions
+
+- Q1: instance-level number per ACCEPTED §4.4, no deviation; migration 0086 built locally.
+- Q2: architect ruling pending; the GAME-ITEM-01 §4 and DUR-03 §39.1 amendments are untouched.
+- Q3: KEY-1 here is the mint half only; the door half waits for WO-3 / WORLDINT-USE-1.
+
+## Residue
+
+- Other producers (item_use, decay, npc_trade, timed, fee_burn) emit `key_number` 0. Keys do not
+  decay or transform in the reference evidence; NPC sale of a key is unverified.
+- Left out: `oteryn:reward-claim.quest.key.id3002` (binding `crystalserver:door-key/3002`, a
+  namespace the binder does not admit) and the 4 key variants that also wait for container,
+  instance or timed lowering.
+- The world_reward_claims reader is not wired into runtime boot yet (tests only).
+
+## Owner questions (answered by CP)
 
 - Q1: Key number at instance (decision §4.4: side table, migration 0086+, game-events change,
   `DUR03-RL-07-KEY` and `WORLDINT0-RL-10` rows) or at definition (content already has per-number

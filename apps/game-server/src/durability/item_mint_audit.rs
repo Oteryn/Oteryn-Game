@@ -233,6 +233,10 @@ pub struct OneItemStateV1 {
     pub quantity: u32,
     #[prost(uint32, tag = "5")]
     pub lifecycle: u32,
+    /// The key capability's immutable instance number (WORLD-INTERACTION-0 §4.4,
+    /// `WORLDINT0-RL-10`); 0 for an item that is not a key, so a non-key state encodes as before.
+    #[prost(uint32, tag = "6")]
+    pub key_number: u32,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -498,6 +502,19 @@ pub fn check_uuid_v7(value: &[u8]) -> Result<(), AuditError> {
     Ok(())
 }
 
+/// WORLDINT0-RL-10: the largest key number.
+pub const WORLDINT0_KEY_NUMBER_MAX: u32 = 65_535;
+
+/// A key state (WORLD-INTERACTION-0 §4.4): a number in 1..=`WORLDINT0_KEY_NUMBER_MAX` on one
+/// item, since keys are not stackable; 0 is an item that is not a key.
+pub(super) fn check_key_number(value: &OneItemStateV1) -> Result<(), AuditError> {
+    if value.key_number > WORLDINT0_KEY_NUMBER_MAX || (value.key_number != 0 && value.quantity != 1)
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
+}
+
 pub(super) fn check_definition(
     value: Option<&OneItemTypedDefinitionRevisionV1>,
 ) -> Result<(), AuditError> {
@@ -558,8 +575,10 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
         }
         _ => return Err(AuditError::InvalidInput),
     }
-    // One live item with explicit semantic absence before it.
+    // One live item with explicit semantic absence before it; a key is minted only by a
+    // RewardClaim (WORLD-INTERACTION-0 §4.4).
     if !value.before_semantically_absent
+        || after.key_number != 0
         || after.quantity == 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || source.typed_cause != LOOT_MINT_TYPED_CAUSE
@@ -1159,6 +1178,7 @@ pub(super) mod tests {
                 definition: Some(definition("ItemType", "fixture:alpha", "rev-a/1")),
                 quantity: 1,
                 lifecycle: ITEM_LIFECYCLE_LIVE,
+                key_number: 0,
             }),
             destination: Some(OneItemGroundV1 {
                 world_id: uuid(1),
@@ -1221,6 +1241,7 @@ pub(super) mod tests {
                     definition: Some(typed.clone()),
                     quantity: u32::MAX,
                     lifecycle: u32::MAX,
+                    key_number: 0,
                 }),
                 destination: Some(OneItemGroundV1 {
                     world_id: uuid(0xee),
