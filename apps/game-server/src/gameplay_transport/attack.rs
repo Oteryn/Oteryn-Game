@@ -167,6 +167,10 @@ impl ActorAttack {
     }
 }
 
+/// CHASE-1: how long a claimed step in flight holds its actor's pacing clock when its
+/// connection never records the step's end (the connection ended mid-step).
+const STEP_IN_FLIGHT_HOLD: Duration = Duration::from_secs(1);
+
 /// The Channel owner's attack entries. Locked after `runtime` and `spell_states`, never before.
 #[derive(Debug, Default)]
 pub(crate) struct ChannelAttackStates {
@@ -178,7 +182,8 @@ pub(crate) struct ChannelAttackStates {
     chase_searches: ChaseSearchBudget,
     /// CHASE-1 (RANGED-0 §8): each player actor's pacing deadline, owned by the actor rather
     /// than its connection, so a client step and a chase step share one clock and a replaced or
-    /// resumed connection keeps it. Only deadlines still ahead are kept.
+    /// resumed connection keeps it. A step in flight holds it for at most
+    /// [`STEP_IN_FLIGHT_HOLD`]. Only deadlines still ahead are kept.
     step_deadlines: Vec<(ExactActorRef, Instant)>,
 }
 
@@ -195,17 +200,28 @@ impl ChannelAttackStates {
             .map(|(_, due)| *due)
     }
 
-    /// CHASE-1: `actor`'s pacing clock is due at `due`, set at `now`; deadlines already past
-    /// are dropped.
+    /// CHASE-1: claim `actor`'s pacing clock at `now` for one step, in one check-and-set, so a
+    /// replaced connection cannot step between another's commit and its recorded deadline.
+    /// `Some` with the deadline that still holds it; otherwise the step in flight holds it.
+    pub(crate) fn begin_step(&mut self, actor: ExactActorRef, now: Instant) -> Option<Instant> {
+        if let Some(due) = self.step_deadline(actor, now) {
+            return Some(due);
+        }
+        self.record_step_deadline(actor, now, Some(now + STEP_IN_FLIGHT_HOLD));
+        None
+    }
+
+    /// CHASE-1: `actor`'s pacing clock is due at `due`, set at `now`, or free with `None`;
+    /// deadlines already past are dropped.
     pub(crate) fn record_step_deadline(
         &mut self,
         actor: ExactActorRef,
         now: Instant,
-        due: Instant,
+        due: Option<Instant>,
     ) {
         self.step_deadlines
             .retain(|(owner, kept)| *owner != actor && now < *kept);
-        if now < due {
+        if let Some(due) = due.filter(|due| now < *due) {
             self.step_deadlines.push((actor, due));
         }
     }
@@ -886,11 +902,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .step_deadline(actor, Instant::now())
     }
 
-    /// CHASE-1: `actor`'s pacing clock is now due at `due`.
+    /// CHASE-1: claim `actor`'s pacing clock for one step; `Some` when it is still held.
+    pub(in crate::gameplay_transport) async fn begin_actor_step_now(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<Instant> {
+        self.attack.lock().await.begin_step(actor, Instant::now())
+    }
+
+    /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
     pub(in crate::gameplay_transport) async fn record_actor_step_deadline_now(
         &self,
         actor: ExactActorRef,
-        due: Instant,
+        due: Option<Instant>,
     ) {
         self.attack
             .lock()

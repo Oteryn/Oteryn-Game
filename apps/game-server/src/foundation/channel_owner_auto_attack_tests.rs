@@ -1332,22 +1332,22 @@ fn the_actor_pacing_deadline_survives_a_replaced_connection() {
     let player = owner().player;
     let now = tokio::time::Instant::now();
     let due = now + std::time::Duration::from_millis(400);
-    attack.record_step_deadline(player, now, due);
-    // The new connection reads it; a pacer resumed from it waits until it.
+    // A step claims the clock; while it is in flight a replacement cannot claim it.
+    assert_eq!(attack.begin_step(player, now), None);
+    assert!(
+        attack.begin_step(player, now).is_some(),
+        "a step in flight holds the clock"
+    );
+    attack.record_step_deadline(player, now, Some(due));
+    // The new connection reads the deadline; a pacer resumed from it waits until it.
+    assert_eq!(attack.begin_step(player, now), Some(due));
     let resumed = crate::movement::pacing::StepPacer::resumed(attack.step_deadline(player, now));
     assert_eq!(resumed.wait_until(now), Some(due));
     assert_eq!(resumed.wait_until(due), None);
-    // A later step replaces it; a passed deadline is gone.
-    let later = due + std::time::Duration::from_millis(300);
-    attack.record_step_deadline(player, due, later);
-    assert_eq!(attack.step_deadline(player, due), Some(later));
-    assert_eq!(attack.step_deadline(player, later), None);
-    attack.record_step_deadline(player, later, later);
-    assert_eq!(
-        attack.step_deadline(player, now),
-        None,
-        "a passed deadline is dropped"
-    );
+    // At the deadline the clock is free again; a step that did not move releases it.
+    assert_eq!(attack.begin_step(player, due), None);
+    attack.record_step_deadline(player, due, None);
+    assert_eq!(attack.step_deadline(player, due), None);
 }
 
 #[test]

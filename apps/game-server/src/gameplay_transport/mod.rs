@@ -3232,7 +3232,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.actor_step_deadline_now(actor).await
     }
 
-    async fn record_actor_step_deadline(&self, actor: ExactActorRef, due: tokio::time::Instant) {
+    async fn begin_actor_step(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.begin_actor_step_now(actor).await
+    }
+
+    async fn record_actor_step_deadline(
+        &self,
+        actor: ExactActorRef,
+        due: Option<tokio::time::Instant>,
+    ) {
         self.record_actor_step_deadline_now(actor, due).await;
     }
 

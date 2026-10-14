@@ -452,11 +452,20 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// CHASE-1: `actor`'s pacing clock is now due at `due`.
+    /// CHASE-1: claim `actor`'s pacing clock for one step, atomically with the check; `Some`
+    /// with the deadline when it is still held.
+    fn begin_actor_step(
+        &self,
+        _actor: ExactActorRef,
+    ) -> impl Future<Output = Option<tokio::time::Instant>> {
+        async { None }
+    }
+
+    /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
     fn record_actor_step_deadline(
         &self,
         _actor: ExactActorRef,
-        _due: tokio::time::Instant,
+        _due: Option<tokio::time::Instant>,
     ) -> impl Future<Output = ()> {
         async {}
     }
@@ -2121,12 +2130,16 @@ where
                 if buffered.is_some() {
                     continue;
                 }
-                let Some((outcome, duration)) =
-                    authority.chase_step(actor, admitted.game_session_id).await
-                else {
+                if let Some(due) = begin_actor_step(&mut pacer, authority, actor).await {
+                    chase_due = Some(due);
+                    continue;
+                }
+                let step = authority.chase_step(actor, admitted.game_session_id).await;
+                let duration = step.as_ref().and_then(|(_, duration)| *duration);
+                record_actor_step(&mut pacer, authority, actor, duration).await;
+                let Some((outcome, _)) = step else {
                     continue;
                 };
-                record_actor_step(&mut pacer, authority, actor, duration).await;
                 let Some(observation) = outcome.moved_to else {
                     continue;
                 };
@@ -2392,7 +2405,11 @@ where
                         .yield_chase_to_client(actor, admitted.game_session_id)
                         .await;
                     let now = tokio::time::Instant::now();
-                    if let Some(due) = pacer.wait_until(now) {
+                    let wait = match pacer.wait_until(now) {
+                        Some(due) => Some(due),
+                        None => begin_actor_step(&mut pacer, authority, actor).await,
+                    };
+                    if let Some(due) = wait {
                         buffered = Some(BufferedStep { frame, due });
                         continue;
                     }
@@ -3316,14 +3333,22 @@ fn item_view_delta(
     Some((delta_sequence, frame))
 }
 
-/// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
-/// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
-/// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
-/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
-/// result, a chase step (CHASE-1) on its own. `None` ends the connection.
-/// SPEED-1 with CHASE-1: a step of `actor` just committed; its pacing clock starts now, on the
-/// connection's copy and on the actor's own deadline (RANGED-0 §8). Only a moved step has a
-/// duration.
+/// SPEED-1 with CHASE-1 (RANGED-0 §8): claim `actor`'s pacing clock for one step. `Some(due)`
+/// when another connection's deadline or step in flight still holds it; the connection's copy
+/// then waits for it too.
+async fn begin_actor_step<A: FreshAdmissionAuthority>(
+    pacer: &mut StepPacer,
+    authority: &A,
+    actor: ExactActorRef,
+) -> Option<tokio::time::Instant> {
+    let due = authority.begin_actor_step(actor).await?;
+    *pacer = StepPacer::resumed(Some(due));
+    Some(due)
+}
+
+/// SPEED-1 with CHASE-1: the step claimed by [`begin_actor_step`] ended; its pacing clock
+/// starts now, on the connection's copy and on the actor's own deadline (RANGED-0 §8). Only a
+/// moved step has a duration; any other end releases the claim.
 async fn record_actor_step<A: FreshAdmissionAuthority>(
     pacer: &mut StepPacer,
     authority: &A,
@@ -3331,11 +3356,15 @@ async fn record_actor_step<A: FreshAdmissionAuthority>(
     duration: Option<std::time::Duration>,
 ) {
     pacer.record(tokio::time::Instant::now(), duration);
-    if let (Some(_), Some(due)) = (duration, pacer.next_due()) {
-        authority.record_actor_step_deadline(actor, due).await;
-    }
+    let due = duration.and(pacer.next_due());
+    authority.record_actor_step_deadline(actor, due).await;
 }
 
+/// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
+/// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
+/// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
+/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
+/// result, a chase step (CHASE-1) on its own. `None` ends the connection.
 #[allow(clippy::too_many_arguments)]
 async fn moved_step_frames<S, A>(
     stream: &mut S,
