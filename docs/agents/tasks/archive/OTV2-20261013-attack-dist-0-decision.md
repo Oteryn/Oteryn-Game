@@ -3,7 +3,7 @@
 ```yaml
 task_id: OTV2-20261013-attack-dist-0-decision
 title: "ATTACK-DIST-0: auto-attack draw distribution decision"
-mode: DOCUMENTATION
+mode: CONTRACT
 status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
