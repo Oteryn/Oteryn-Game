@@ -163,7 +163,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 | `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes and chat are unaffected |
 | `PACIFIED` | `pacified` | refresh the duration | refuses setting an attack target and every offensive action; a running attack target is cleared on application |
 | `POWERLESS` | `powerless` | refresh the duration | refuses attack spells and offensive runes; support spells, items and melee are unaffected |
-| `AGONY` | `agony` | replace when the new total is at least the remaining one | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it; ends only by duration or death |
+| `AGONY` | `agony` | replace when the new total is at least the remaining one | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it; ends only by duration, death or the V1 lifecycle boundaries of §6.3 (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
 | `EXHAUST` | none | not a condition | projection of the GAME-ABILITY-01 cooldown group (the "You are exhausted" refusal); no `ConditionInstance` exists and no key is spent |
 | `INFIGHT` | none | not a condition | projection of the ATTACK-0 60 s in-fight deadline for the client icon only; ATTACK-0 stays its sole owner and the lifecycle (§6.1) is unchanged |
 
@@ -282,6 +282,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
   5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
+- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and the client shows the typed refusal only. No bit, capability or field is registered by this decision.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.
 - **Other actors.** The VIS-2 `WORLD_SPATIAL_ENTITIES` entry gains `speed` (u16) behind the same
