@@ -96,7 +96,10 @@ def _evaluate(s: dict) -> dict:
         at = item[key]
         stamps.append((_parse_at(at), at))
 
-    if cand.get("state") != "open" or cand.get("draft") is not False or cand.get("base_ref") != "main":
+    state, base_ref = cand["state"], cand["base_ref"]
+    if not isinstance(state, str) or not isinstance(base_ref, str):
+        raise ValueError("candidate state and base_ref must be strings")
+    if state != "open" or _flag(cand["draft"]) or base_ref != "main":
         found["CANDIDATE_STATE"] = _blocker(
             "CANDIDATE_NOT_OPEN_READY", "writer", f"PR {pr} open, ready for review, base main")
 
@@ -134,13 +137,16 @@ def _evaluate(s: dict) -> dict:
             for r in exact:
                 stamp(r)
 
-    if _count(s["threads"]["unresolved"]) != 0:
+    threads = s["threads"]
+    total, unresolved = _count(threads["total"]), _count(threads["unresolved"])
+    if unresolved > total:
+        raise ValueError("threads.unresolved exceeds threads.total")
+    if unresolved != 0:
         found["REVIEW_THREADS"] = _blocker(
-            "REVIEW_THREADS_UNRESOLVED", "writer", "every review thread resolved", f"{s['threads']['unresolved']} open")
-    else:
-        # Optional: when the last thread was resolved (the unblocking event for REVIEW_THREADS).
-        if s["threads"].get("resolved_at") is not None:
-            stamp(s["threads"], "resolved_at")
+            "REVIEW_THREADS_UNRESOLVED", "writer", "every review thread resolved", f"{unresolved} open")
+    elif total > 0:
+        # A PR that had threads was unblocked when the last one was resolved; that time is required.
+        stamp(threads, "resolved_at")
 
     for item in s["evidence"]["required"]:
         if not _flag(item["present"]) or _sha(item["head_sha"]) != head:

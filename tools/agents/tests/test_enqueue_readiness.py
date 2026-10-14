@@ -22,7 +22,7 @@ def ready() -> dict:
         },
         "review": {"required": True, "reviews": [
             {"head_sha": HEAD, "state": "completed", "verdict": "clean", "at": "2026-10-14T10:05:00Z"}]},
-        "threads": {"unresolved": 0},
+        "threads": {"total": 0, "unresolved": 0},
         "evidence": {"required": [{"name": "task-record", "head_sha": HEAD, "present": True,
                                    "at": "2026-10-14T09:00:00Z"}]},
         "dependencies": [{"pr": 0, "merged": True, "at": "2026-10-14T08:00:00Z"}],
@@ -84,7 +84,7 @@ class EnqueueReadinessTest(unittest.TestCase):
 
     def test_unresolved_threads_block(self):
         snap = ready()
-        snap["threads"]["unresolved"] = 2
+        snap["threads"].update(total=2, unresolved=2)
         self.assertEqual(reasons(snap), ["REVIEW_THREADS_UNRESOLVED"])
 
     def test_evidence_must_be_present_and_bound_to_head(self):
@@ -132,7 +132,7 @@ class EnqueueReadinessTest(unittest.TestCase):
     def test_all_blockers_listed_in_fixed_order(self):
         snap = ready()
         snap["authorization"]["revoked"] = True
-        snap["threads"]["unresolved"] = 1
+        snap["threads"].update(total=1, unresolved=1)
         snap["checks"]["runs"] = []
         self.assertEqual(reasons(snap), ["CHECKS_PENDING", "REVIEW_THREADS_UNRESOLVED", "AUTHORIZATION_MISSING"])
 
@@ -176,7 +176,7 @@ class EnqueueReadinessTest(unittest.TestCase):
 
     def test_final_unblock_events_extend_ready_at(self):
         snap = ready()
-        snap["threads"]["resolved_at"] = "2026-10-14T11:00:00Z"
+        snap["threads"].update(total=1, resolved_at="2026-10-14T11:00:00Z")
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T11:00:00Z")
         snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True,
                                             "addressed_at": "2026-10-14T12:00:00Z"}]
@@ -218,7 +218,7 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
 
     def test_unresolved_positive_integer_blocks(self):
         snap = ready()
-        snap["threads"]["unresolved"] = 2
+        snap["threads"].update(total=2, unresolved=2)
         self.assertEqual(reasons(snap), ["REVIEW_THREADS_UNRESOLVED"])
 
     def test_missing_or_invalid_at_is_not_eligible(self):
@@ -241,7 +241,7 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
 
     def test_invalid_resolved_at_is_not_eligible(self):
         snap = ready()
-        snap["threads"]["resolved_at"] = "2026-10-14T10:00:00"
+        snap["threads"].update(total=1, resolved_at="2026-10-14T10:00:00")
         self.assert_incomplete(snap)
 
     def test_newest_check_run_is_chosen_by_parsed_datetime(self):
@@ -308,6 +308,39 @@ class AuthorizationAuthorTest(unittest.TestCase):
         snap = ready()
         snap["authorization"]["author"] = "BlakinIO"
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+
+class ThreadAndCandidateStateTest(unittest.TestCase):
+    def test_resolved_threads_require_resolved_at(self):
+        snap = ready()
+        snap["threads"]["total"] = 3
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["threads"]["resolved_at"] = "2026-10-14T12:00:00Z"
+        self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T12:00:00Z")
+
+    def test_thread_total_is_required_and_bounds_unresolved(self):
+        snap = ready()
+        del snap["threads"]["total"]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        snap["threads"]["unresolved"] = 1
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_missing_or_malformed_candidate_state_is_incomplete(self):
+        for field, bad in (("state", None), ("draft", None), ("base_ref", None),
+                           ("state", 1), ("draft", "false"), ("base_ref", ["main"])):
+            snap = ready()
+            if bad is None:
+                del snap["candidate"][field]
+            else:
+                snap["candidate"][field] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (field, bad))
+
+    def test_closed_or_draft_candidate_still_blocks(self):
+        for field, value in (("state", "closed"), ("draft", True), ("base_ref", "dev")):
+            snap = ready()
+            snap["candidate"][field] = value
+            self.assertEqual(reasons(snap), ["CANDIDATE_NOT_OPEN_READY"], field)
 
 
 if __name__ == "__main__":
