@@ -1752,9 +1752,11 @@ fn a_key_claim_records_its_number_once_and_the_database_rejects_any_other_key_ro
                 uuid(tx)
             )
         };
-        let mut forged_stack = forge_claim_statements(&character, &world, backpack, 180, 2, 2, true);
+        let mut forged_stack =
+            forge_claim_statements(&character, &world, backpack, 180, 2, 2, true);
         forged_stack.push(key_row(id(181), id(180), 12));
-        let mut forged_range = forge_claim_statements(&character, &world, backpack, 190, 1, 1, true);
+        let mut forged_range =
+            forge_claim_statements(&character, &world, backpack, 190, 1, 1, true);
         forged_range.push(key_row(id(191), id(190), 65_536));
         let attempts: Vec<Vec<String>> = vec![
             // A number on an item minted in an earlier transaction.
@@ -2931,7 +2933,7 @@ mod quest_obligations {
                 harness.footprint().await?,
                 before
                     .iter()
-                    .zip([1, 1, 1, 1, 0, 1, 1])
+                    .zip([1, 1, 1, 1, 0, 1, 1, 0])
                     .map(|(n, d)| n + d)
                     .collect::<Vec<_>>()
             );
