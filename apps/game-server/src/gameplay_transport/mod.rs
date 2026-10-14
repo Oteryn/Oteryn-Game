@@ -3097,14 +3097,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
-        let blocking = if self
+        // The closed bundle doors are read live per candidate cell, not collected per step: a
+        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
+        let (none, bundle_doors, legacy);
+        let blocking: &dyn crate::map::floor::CellBlocker = if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
-            std::collections::BTreeSet::new()
+            none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+            &none
+        } else if let Some(map) = self.bundle_map() {
+            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            &bundle_doors
         } else {
-            self.door.lock().await.blocking_cells().clone()
+            legacy = self.door.lock().await.blocking_cells().clone();
+            &legacy
         };
         let equipped_speed_delta = equipment
             .as_ref()
@@ -3119,7 +3126,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
                 None,
                 None,
@@ -3133,7 +3140,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
             )
             .await
@@ -4503,19 +4510,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let item_fence = item_fence_of(current);
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
         // actor's first command, and only from Character-owned facts; a monk's Serene is
-        // evaluated here too (§8.2).
+        // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
+        // saved its health and mana takes them, capped at its maxima, in this same step.
+        let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
+            .then(|| last_position::admitted_vitals(&decided, self.world_id))
+            .flatten();
         if let Some(facts) = facts
             && self
                 .spell_states
                 .lock()
                 .await
-                .initialize(
+                .initialize_admitted(
                     &runtime,
                     actor,
                     game_session_id,
                     facts,
                     monk,
                     self.owner_now(),
+                    saved_vitals,
                 )
                 .is_none()
         {

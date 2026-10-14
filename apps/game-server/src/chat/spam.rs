@@ -15,6 +15,10 @@ const MICROS_PER_SECOND: u64 = 1_000_000;
 pub(crate) const BUCKET_LINES: u8 = 4;
 /// `CHAT0-RL-02`: one line comes back every 2.5 s.
 const REFILL_MICROS: u64 = 2_500_000;
+/// How long an under-level yell is refused by [`ChatLimiter::pre_gate`] without the Channel: the
+/// refill interval, so repeated under-level yells cost the Channel at most what the bucket lets a
+/// say cost in steady state. A level gained meanwhile is seen at the next full-path yell.
+const LEVEL_RECHECK_MICROS: u64 = REFILL_MICROS;
 /// `CHAT0-RL-03`: 30 s between two yells.
 const YELL_COOLDOWN_MICROS: u64 = 30 * MICROS_PER_SECOND;
 /// `CHAT0-RL-04`: offences of the last 30 minutes count, at most the last 16.
@@ -59,6 +63,9 @@ pub(crate) struct ChatLimiter {
     offences: VecDeque<SemanticTimeMicros>,
     muted_until: Option<SemanticTimeMicros>,
     yell_ready_at: Option<SemanticTimeMicros>,
+    /// Until when a yell is refused `LEVEL_TOO_LOW` at the pre-gate: set when the full path refused
+    /// one for its level, cleared when the full path finds the level.
+    yell_level_recheck_at: Option<SemanticTimeMicros>,
     /// The latest time seen; an earlier `now` is read as this one, so no deadline moves back.
     last_seen: SemanticTimeMicros,
 }
@@ -72,6 +79,7 @@ impl ChatLimiter {
             offences: VecDeque::new(),
             muted_until: None,
             yell_ready_at: None,
+            yell_level_recheck_at: None,
             last_seen: now,
         }
     }
@@ -84,8 +92,11 @@ impl ChatLimiter {
     /// The cheap gate in front of the Channel lock (CHAT-0 §6): refuses a muted character and
     /// starts the offence of a line beyond an empty bucket, taking no line. A yell inside its
     /// cooldown is refused here too, before the level is known (it needs no Channel state); a
-    /// speaker who lost the level meanwhile reads `Exhausted` instead of `LevelTooLow`. An admitted line still goes
-    /// through [`Self::admit_local`], which takes it.
+    /// speaker who lost the level meanwhile reads `Exhausted` instead of `LevelTooLow`. A yell
+    /// within [`LEVEL_RECHECK_MICROS`] of a full-path `LevelTooLow` is refused `LevelTooLow` here,
+    /// so a repeated under-level yell does not take the Channel locks per attempt; it takes no
+    /// line and starts no mute. An admitted line still goes through [`Self::admit_local`], which
+    /// takes it.
     pub(crate) fn pre_gate(
         &mut self,
         mode: SpeechMode,
@@ -97,6 +108,13 @@ impl ChatLimiter {
             return Err(ChatRefusal::Muted {
                 seconds: seconds_until(now, until),
             });
+        }
+        if mode == SpeechMode::Yell
+            && self
+                .yell_level_recheck_at
+                .is_some_and(|recheck| recheck > now)
+        {
+            return Err(ChatRefusal::LevelTooLow);
         }
         if let Some(ready) = self
             .yell_ready_at
@@ -136,8 +154,10 @@ impl ChatLimiter {
         }
         if mode == SpeechMode::Yell {
             if !gate.allows() {
+                self.yell_level_recheck_at = Some(after(now, LEVEL_RECHECK_MICROS));
                 return Err(ChatRefusal::LevelTooLow);
             }
+            self.yell_level_recheck_at = None;
             if let Some(ready) = self.yell_ready_at.filter(|ready| *ready > now) {
                 return Err(ChatRefusal::Exhausted {
                     seconds: seconds_until(now, ready),

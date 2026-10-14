@@ -14,7 +14,7 @@ House catalogue in `content/houses/` (`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1`
 |---|---|---:|---|
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
-| `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
+| `Transition.Teleport` | `content/world/transitions/` | 873 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 
 `content/world/terrain/` (8,548 Terrain records, `oteryn:terrain.tibia.i<id>`) and
@@ -173,14 +173,25 @@ Teleport keys are position-based.
   key of the item id (architect ruling #162 comment 5910173902, Q1b): the `Item` key
   `oteryn:item.tibia.i<id>` when the id has an Item record in `content/items/definitions`, even if
   it routes to Terrain or WorldObject (the runtime follows the A12 4.6 `routed_to` pointer);
-  else the WO-2 `WorldObject` or `Terrain` catalogue key; else the run fails closed (872 of 872
+  else the WO-2 `WorldObject` or `Terrain` catalogue key; else the run fails closed (873 of 873
   are `Item`). The validator requires an Item key to have an Item record and allows a catalogue
   key only when the id has none. Only teleports whose destination is set,
   inside the map and on an existing tile are imported. The capture summary counts those
   rejected:
-  - 1573 with an unset destination, which are script-driven;
+  - 1572 with an unset destination, which are script-driven;
   - 1 with a destination outside the map;
   - 5 with a destination on an absent tile.
+- **Script teleports (NEWHAVEN-TELEPORT-1):** `SCRIPT_TELEPORTS` in `convert_world_metadata.py`
+  pins the Crystal step-in scripts that give an unset map teleport its destination: today the
+  New Haven forcefield at (32538, 32514, 7), whose
+  `data-global/scripts/quests/newhaven/movement_select_vocation.lua` sends a player to
+  (32544, 32515, 7). Each entry names the script path, its sha256, the item id, `from` and `to`;
+  the script must still register exactly `from` and `teleportTo` exactly `to`, the map tile must
+  hold exactly one teleport of that item with an unset destination, and the destination must be
+  an existing tile, or the run fails closed. The record binds under the namespace
+  `crystalserver/script-step-in-teleport`, the script joins the pinned source files and the
+  capture summary counts `script_teleports`, which the validator matches against the records.
+  The script's other effects (starter items, map marks, storages) are not imported.
 - **Not here yet:**
   - floor changes that are scripted `use` actions (ladders up, rope spots, sewer grates,
     shovel and pick holes): see "Floor changes".
@@ -297,9 +308,12 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   item and destination. Every other one is excluded with its reason in
   `excluded_teleports` of the capture summary (`unset_destination` for (0, 0, 0),
   `destination_outside_map`, `destination_tile_absent`, `no_transition`); the item itself
-  stays. On the pinned sources that is 1,577 unset destinations (4 of them from the fill) and
-  6 real-destination orphans (1 outside the map, 5 on absent tiles), matching the 1,573 + 1 + 5
-  that #1160 does not import. A Transition whose teleport the map lacks fails the conversion.
+  stays. On the pinned sources that is 1,576 unset destinations (4 of them from the fill) and
+  6 real-destination orphans (1 outside the map, 5 on absent tiles), matching the 1,572 + 1 + 5
+  that #1160 does not import. A pinned script teleport fills the unset destination of the
+  top-level item it names with the script's destination, so that attribute is carried and
+  matches its Transition record; a script whose attribute or destination tile the map lacks
+  fails the conversion. A Transition whose teleport the map lacks fails the conversion.
   `validate_world_base.py` requires `excluded_teleports` for a populated base and the carried
   teleports and the committed Transition records to match one to one.
 - **Item identity (palette):** a region file never names an item. It stores, per item, an

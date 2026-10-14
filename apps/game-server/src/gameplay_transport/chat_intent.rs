@@ -186,8 +186,9 @@ impl ChatRuntime {
     }
 
     /// The gate in front of the Channel lock (CHAT-0 §6): a `say` of a muted session, or beyond
-    /// its bucket, is refused here, before the runtime lock and the entity clone, so a flood
-    /// costs the Channel only this map lookup. `None` lets the intent go on.
+    /// its bucket, a yell in its cooldown and a yell repeated soon after an under-level refusal
+    /// are refused here, before the runtime lock and the entity clone, so a flood costs the
+    /// Channel only this map lookup. `None` lets the intent go on.
     pub(crate) fn pre_gate(
         &self,
         session: GameSessionId,
@@ -668,6 +669,39 @@ mod tests {
         );
         // An unknown session and a non-say intent are left to the full path.
         assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
+    }
+
+    #[test]
+    fn the_pre_gate_refuses_a_repeated_under_level_yell_before_the_channel() {
+        let (runtime, chat, first, second) = two_players(0);
+        let yell = ChatIntent::Say {
+            mode: ChatSpeechMode::Yell,
+            text: "hey".to_owned(),
+        };
+        assert!(chat.pre_gate(first.1, &yell, BASE).is_none());
+        assert_eq!(
+            speak(&chat, &runtime, first, &yell, BASE),
+            result(ChatDisposition::LevelTooLow)
+        );
+        // Repeats are answered at the gate, without the runtime lock or the entity clone.
+        for _ in 0..16 {
+            assert_eq!(
+                chat.pre_gate(first.1, &yell, BASE),
+                Some(result(ChatDisposition::LevelTooLow))
+            );
+        }
+        assert!(chat.muted_cast(first.1, BASE).is_none());
+        assert!(chat.drain(second.1).is_empty());
+        // The refused yells took no line: four says still pass the full path.
+        for _ in 0..4 {
+            assert_eq!(
+                speak(&chat, &runtime, first, &say("x"), BASE).disposition,
+                ChatDisposition::Ok
+            );
+        }
+        // After the recheck window the full path checks the level again.
+        let later = SemanticTimeMicros::from_micros(BASE.get() + 2_500_000);
+        assert!(chat.pre_gate(first.1, &yell, later).is_none());
     }
 
     #[test]
