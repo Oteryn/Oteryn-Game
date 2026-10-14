@@ -7,9 +7,10 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
 - that both the Canary and the Crystal registrar records exist;
-- the cooldown group, every targeting flag the converter maps (`TARGETING_FLAGS`), the PZ lock and
-  weapon flags (`SPELL_FLAGS`) and far use against
-  the Canary and Crystal registrars, and the range against the wikis and the registrars; where the
+- the cooldown group against the wiki `runegroup` of the rune's spell page (S3) and the registrars;
+  every targeting flag the converter maps (`TARGETING_FLAGS`), the PZ lock and weapon flags
+  (`SPELL_FLAGS`) and far use against the Canary and Crystal registrars; and the range against the
+  wikis and the registrars; a field every reference is silent on must stay absent; where the
   references conflict, our value must be the one the catalogue manifest records as the winning source
   (S3/S11/S13/S14), several recorded sources that now diverge follow the converter's S4 rule (Canary
   decides between the registrars), and a recorded native resolution (S27) requires a value that
@@ -221,7 +222,7 @@ def stack_facts(profile):
             'pass': stackable is True and stack_max == STACK_MAX and stack_class == 'StackCapable'}
 
 
-def audit_carrier(entry, references, registrar, resolutions, conjures, profiles, guard):
+def audit_carrier(entry, references, registrar, resolutions, conjures, profiles, guard, spell_pages=None):
     spell = entry['bundle']['spell']
     name = spell['name'].lower()
     item_key = spell['rune']['item']['key']
@@ -238,8 +239,11 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
         'vocations': check(ours['vocrequired'],
                            wiki_values(pages, 'vocrequired') or registrar_vocations(registrar), required=True,
                            recorded=recorded(entry, base + 'requirements/vocations')),
+        # S3: the converter takes a rune's group from the wiki `runegroup` of its spell page, then the registrars.
         'group': check(vs.group_key(spell['groups'][0]['group']) if spell.get('groups') else None,
-                       registrar_values(registrar, 'group'), required=True,
+                       {**{ref: vs.group_key(page['fields']['runegroup']) for ref, page in (spell_pages or {}).items()
+                           if vs.reference_value('runegroup', page['fields'].get('runegroup')) is not None},
+                        **registrar_values(registrar, 'group')}, required=True,
                        recorded=recorded(entry, base + 'groups/0/group')),
         'range_tiles': check(targeting.get('range_tiles'),
                              {**wiki_values(pages, 'spellrange'), **registrar_values(registrar, 'range')},
@@ -328,9 +332,14 @@ def audit(catalogue, documents, census, resolutions, profiles, guards=None):
         if conjure:
             conjures.setdefault(conjure['result']['key'], {})[spell['name'].lower()] = conjure['count']
     by_item = {profile['authoring']['item']['key']: profile for profile in profiles['records']}
+    # The wiki spell pages by name, as `convert_spells.Wikis.spell_names` joins a rune (it has no words).
+    spell_names = {ref: {ws.plain(page['fields'].get('name', page['title'])).lower(): page for page in doc['pages']
+                         if page.get('template') == 'Infobox Spell'} for ref, doc in documents.items()}
     carriers = [audit_carrier(entry, references, regs.get(vs.rune_name(entry['bundle']['spell']['name']), {}),
                               resolutions.get('spells', {}), conjures, by_item,
-                              rune_guard((guards or {}).get(entry['bundle']['spell']['name'].lower(), {})))
+                              rune_guard((guards or {}).get(entry['bundle']['spell']['name'].lower(), {})),
+                              {ref: pages[entry['bundle']['spell']['name'].lower()] for ref, pages in spell_names.items()
+                               if entry['bundle']['spell']['name'].lower() in pages})
                 for entry in catalogue['bundles'] if entry['bundle']['spell']['carrier'] == 'rune']
     carriers.sort(key=lambda row: row['name'])
     names = {row['name'] for row in carriers}

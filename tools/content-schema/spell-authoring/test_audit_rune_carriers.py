@@ -32,11 +32,12 @@ def conjure(name, item, count):
         'conjure': {'count': count, 'result': {'key': f'candidate:item/{item}'}}}}}}
 
 
-def run(entries, profiles, resolutions=None, drop=None, guards=None):
+def run(entries, profiles, resolutions=None, drop=None, guards=None, spell_pages=()):
     documents = {'fandom': {'pages': [
         {'template': 'Infobox Object', 'title': name.title(),
          'fields': {'name': name.title(), 'itemid': str(item), 'vocrequired': 'sorcerers'}}
-        for name, item in (('sudden death rune', 3155), ('fire wall rune', 3190), ('great fireball rune', 3191))]}}
+        for name, item in (('sudden death rune', 3155), ('fire wall rune', 3190), ('great fireball rune', 3191))]
+        + list(spell_pages)}}
     census = {'canary': [], 'crystal': []}
     for source in census:
         for name, item in (('sudden death rune', 3155), ('fire wall rune', 3190), ('great fireball rune', 3191)):
@@ -111,6 +112,19 @@ class RuneCarrierAuditTest(unittest.TestCase):
         wikis = {'sources': {'fandom', 'br'}}
         self.assertFalse(audit.check(['druid'], found, recorded=wikis)['pass'])
         self.assertEqual(audit.recorded(entry, '/n')['native'], 'S27')
+
+    def test_group_follows_the_wiki_runegroup(self):
+        # A refreshed wiki runegroup that diverges from the registrars wins, as the converter selects it (S3).
+        page = {'template': 'Infobox Spell', 'title': 'Sudden Death Rune',
+                'fields': {'name': 'Sudden Death Rune', 'runegroup': 'Support'}}
+        manifest = {'sources': [{'api': 'https://tibia.fandom.com/api.php'}], 'entries': [
+            {'destination': '/spell/spell/groups/0/group', 'status': 'mapped', 'source_index': 0}]}
+        for group, failed in (('support', []), ('attack', ['group'])):
+            entry = {**carrier('sudden death rune', 3155, 3, group=group), 'manifest': manifest}
+            _, rows = run([entry], [profile('candidate:item/3155')], spell_pages=[page])
+            row = rows['sudden death rune']
+            self.assertEqual(row['checks']['group']['references']['fandom'], 'support')
+            self.assertEqual(row['failed'], failed)
 
     def test_targeting_flags_and_native_resolution(self):
         _, rows = run([carrier('sudden death rune', 3155, 3, aggressive=False)], [profile('candidate:item/3155')])

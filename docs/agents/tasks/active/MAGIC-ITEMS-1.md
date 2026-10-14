@@ -109,11 +109,15 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - Codex P2 on db42842a (an unsourced `range_tiles` passes as `no_source`): repaired at the root; a
   source-silent field now passes only while absent, as the converter omits it, so any value without a
   reference fails. All 36 carriers keep their verdicts (the 10 source-silent ranges are absent).
+- Codex P2 on d9301590 (the group check ignores the wiki `runegroup` the converter selects): repaired;
+  the group is now compared with the `runegroup` of the rune's wiki spell page, joined by name as the
+  converter does, as well as with the registrars. Intense and Ultimate Healing now carry their Fandom
+  `healing` reference; all 36 carriers keep their verdicts.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 16 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 17 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

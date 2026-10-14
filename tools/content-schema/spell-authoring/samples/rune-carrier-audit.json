@@ -4700,7 +4700,8 @@
      "pass": true,
      "references": {
       "canary": "healing",
-      "crystal": "healing"
+      "crystal": "healing",
+      "fandom": "healing"
      },
      "verdict": "agree"
     },
@@ -8327,7 +8328,8 @@
      "pass": true,
      "references": {
       "canary": "healing",
-      "crystal": "healing"
+      "crystal": "healing",
+      "fandom": "healing"
      },
      "verdict": "agree"
     },
