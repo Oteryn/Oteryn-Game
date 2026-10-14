@@ -38,7 +38,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-eligibility.json",
-      "sha256": "1fc4c8b6e06cf8b573b5068a49b5a780f5653c5c77a1cf3b897999e3530f79d3"
+      "sha256": "13ae748de7e85bff15b5674e18b9195dc029c18cb39a3916d0bcbdfdf1b8f177"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-sources-2026-10-01.json",
@@ -46,7 +46,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json",
-      "sha256": "88129485302c6c1371c402c2f5b8947808bf08ea745494ee33062fcdfc775e2c"
+      "sha256": "65be1d4e0a4a6e11579d9db5796494c8c5aeb362f95ab62d4e92d9b6165be001"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/missing-item-definitions.json",
@@ -80,11 +80,11 @@
     },
     {
       "path": "rulesets/items/imbuements/catalogue.json",
-      "sha256": "a5f0736d1df732a0eb346b2dfb195bcfc08ec2a3a5eae835c9d71d3d538de2ba"
+      "sha256": "40364206092b7165f2b16b55aa36e809a17f651d5436c9ef498767754a6f504a"
     },
     {
       "path": "rulesets/items/imbuements/equipment.json",
-      "sha256": "3f66874aa3dc3c433e7639410b193414d8a2df1101afb10622117aea7b4f9a40"
+      "sha256": "6b0baad7671946f015e2b6b632204f7297fab74714b8f95154bce9a5e95398aa"
     },
     {
       "path": "rulesets/items/imbuements/owner-policy.json",

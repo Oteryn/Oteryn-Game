@@ -24,13 +24,10 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
     // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
-    assert_eq!(
-        catalogue.project_revision(),
-        "item-sem-use-2-consumables-20261013-r1"
-    );
+    assert_eq!(catalogue.project_revision(), "ranged-content-1-20261013-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3"
+        "1d0cbdf96bddfca1e7c62346560f2231493c93919a7324a3807677047a07c378"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

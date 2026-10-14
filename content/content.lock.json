@@ -45,7 +45,7 @@
     "declarations": "ad60e61c43110681f01bda20d502a49abccbf422",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "49f94022e9642e2fe8e04b975a8334cbb25efcfe",
-    "reference": "97121c9480a517790e9b947dd6d2a8c1da4ae044",
+    "reference": "05c361291af6fc1f03c39e2471fb79982200b380",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -66,15 +66,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "a5f0736d1df732a0eb346b2dfb195bcfc08ec2a3a5eae835c9d71d3d538de2ba"
+        "sha256": "40364206092b7165f2b16b55aa36e809a17f651d5436c9ef498767754a6f504a"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "3f66874aa3dc3c433e7639410b193414d8a2df1101afb10622117aea7b4f9a40"
+        "sha256": "6b0baad7671946f015e2b6b632204f7297fab74714b8f95154bce9a5e95398aa"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "b0fb45d103549ccb7f5a618000b7a500e2a52fb00bf4bd24c6c11d269114e275"
+        "sha256": "2df8718677fe44571403cf650e908e4118ae0bd92680932d56fa7d29f58e9599"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -158,7 +158,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "b02ed334a53643084b27c7e1aec5a35b521a0ccebe6de99afff8e7685e9f856f"
+          "sha256": "25eb5473d4e51cbdb359f1b4ddac05e78f60be3823332a3441d2ca0c27833365"
         },
         {
           "creates_canonical_identities": false,

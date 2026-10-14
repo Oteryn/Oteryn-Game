@@ -167,6 +167,11 @@ jobs:
           python test_lower_equip_abilities_packet.py
           python lower_equip_abilities_packet.py --check
 
+      - name: Ranged weapon facts (wiki first, Canary fallback) tests and drift
+        run: |
+          python test_lower_ranged_packet.py
+          python lower_ranged_packet.py --check
+
       - name: Bounded source-qualified container capacity tests and drift
         run: python test_lower_wiki_capacity_packet.py
 

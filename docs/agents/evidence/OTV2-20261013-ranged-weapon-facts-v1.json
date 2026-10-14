@@ -1,0 +1,5279 @@
+{
+  "compiler": "tools/content-schema/item-authoring/lower_ranged_packet.py",
+  "conflicts": [
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i3071",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "manacost",
+      "item_key": "oteryn:item.tibia.i3072",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i3072",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i3073",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i3074",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "manacost",
+      "item_key": "oteryn:item.tibia.i3075",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i3075",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "manacost",
+      "item_key": "oteryn:item.tibia.i8092",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i8092",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i8093",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i8094",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i16115",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "range",
+      "item_key": "oteryn:item.tibia.i22766",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i25700",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i27457",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i28825",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i28826",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i29425",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i30399",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i36668",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i47373",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i49528",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i49529",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i49885",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i49886",
+      "reason": "wiki_unparseable"
+    },
+    {
+      "field": "damagerange",
+      "item_key": "oteryn:item.tibia.i49887",
+      "reason": "wiki_unparseable"
+    }
+  ],
+  "counts": {
+    "conflicts": 26,
+    "holds": 126,
+    "items": 165,
+    "kind_AMMUNITION": 20,
+    "kind_DISTANCE": 58,
+    "kind_THROWING": 13,
+    "kind_WAND": 66,
+    "parity_pending_items": 36,
+    "quivers": 8
+  },
+  "decision": "RANGED-0 section 7",
+  "holds": [
+    {
+      "item_key": "oteryn:item.tibia.i904",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i3448",
+      "reasons": [
+        "ammunition_action_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i3449",
+      "reasons": [
+        "ammunition_action_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i7366",
+      "reasons": [
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i15792",
+      "reasons": [
+        "no_content_definition"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22043",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22046",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22047",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22048",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22049",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22050",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22119",
+      "reasons": [
+        "ammunition_action_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i22870",
+      "reasons": [
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23229",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23230",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23231",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23232",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23239",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23240",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23241",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23242",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23249",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23250",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23251",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23252",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23259",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23260",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23261",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23262",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23287",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23288",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23289",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23290",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23291",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23292",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23293",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23294",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23295",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23296",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23297",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23298",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23299",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23300",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23301",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23302",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23327",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23328",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23329",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23330",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23331",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23332",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23333",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23334",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23335",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23336",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23337",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23338",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23339",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23340",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23341",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i23342",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i25757",
+      "reasons": [
+        "ammunition_action_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26001",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26002",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26003",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26004",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26005",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26006",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26007",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26008",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26009",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26010",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26011",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26012",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26032",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26033",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26034",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26035",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26036",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26037",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26038",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26039",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26040",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26041",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26042",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26043",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26062",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26063",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26064",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26065",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26066",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26067",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26068",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26069",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26070",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26071",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26072",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26073",
+      "reasons": [
+        "damage_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28465",
+      "reasons": [
+        "missile_unknown",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28466",
+      "reasons": [
+        "damage_unknown",
+        "element_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28478",
+      "reasons": [
+        "missile_unknown",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28479",
+      "reasons": [
+        "damage_unknown",
+        "element_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28787",
+      "reasons": [
+        "no_content_definition"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28788",
+      "reasons": [
+        "no_content_definition"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28789",
+      "reasons": [
+        "no_content_definition"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i28790",
+      "reasons": [
+        "no_content_definition"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i35901",
+      "reasons": [
+        "ammunition_action_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i40535",
+      "reasons": [
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i51760",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i52332",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i52336",
+      "reasons": [
+        "damage_unknown",
+        "element_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i52337",
+      "reasons": [
+        "damage_unknown",
+        "element_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53168",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53169",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53170",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53171",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53172",
+      "reasons": [
+        "ammo_type_unknown",
+        "ammunition_action_unknown",
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53219",
+      "reasons": [
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53220",
+      "reasons": [
+        "damage_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53221",
+      "reasons": [
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53222",
+      "reasons": [
+        "damage_unknown",
+        "mana_per_shot_unknown",
+        "missile_unknown",
+        "no_weapon_registration",
+        "range_tiles_unknown"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53225",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53226",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53227",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53228",
+      "reasons": [
+        "missile_unknown",
+        "no_weapon_registration"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i53855",
+      "reasons": [
+        "no_content_definition"
+      ]
+    }
+  ],
+  "promotions": [
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i761",
+      "max_hit_chance": 90,
+      "missile": "flasharrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        20257
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i762",
+      "max_hit_chance": 90,
+      "missile": "shiverarrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        20256
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i763",
+      "max_hit_chance": 90,
+      "missile": "flammingarrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        20255
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i774",
+      "max_hit_chance": 90,
+      "missile": "eartharrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        20254
+      ]
+    },
+    {
+      "break_chance_pct": 3,
+      "item_key": "oteryn:item.tibia.i1781",
+      "max_hit_chance": 76,
+      "missile": "smallstone",
+      "on_use": "DROP",
+      "range_tiles": 4,
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        1757
+      ]
+    },
+    {
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i2992",
+      "missile": "snowball",
+      "on_use": "CONSUME",
+      "range_tiles": 6,
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        2562
+      ]
+    },
+    {
+      "damage_max": 53,
+      "damage_min": 37,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i3065",
+      "mana_per_shot": 8,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 26,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4947
+      ]
+    },
+    {
+      "damage_max": 18,
+      "damage_min": 8,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i3066",
+      "mana_per_shot": 1,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "parity_pending": [
+        "mana_per_shot"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 6,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4937
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i3067",
+      "mana_per_shot": 13,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 33,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        19805
+      ]
+    },
+    {
+      "damage_max": 37,
+      "damage_min": 23,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i3069",
+      "mana_per_shot": 5,
+      "missile": "death",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 19,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        19812
+      ]
+    },
+    {
+      "damage_max": 25,
+      "damage_min": 13,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i3070",
+      "mana_per_shot": 3,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 13,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4945
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i3071",
+      "mana_per_shot": 13,
+      "missile": "fire",
+      "on_use": "NONE",
+      "parity_pending": [
+        "mana_per_shot"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 33,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4950
+      ]
+    },
+    {
+      "damage_max": 37,
+      "damage_min": 23,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i3072",
+      "mana_per_shot": 5,
+      "missile": "death",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 19,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        19807
+      ]
+    },
+    {
+      "damage_max": 53,
+      "damage_min": 37,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i3073",
+      "mana_per_shot": 8,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 26,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4943
+      ]
+    },
+    {
+      "damage_max": 18,
+      "damage_min": 8,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i3074",
+      "mana_per_shot": 2,
+      "missile": "energy",
+      "on_use": "NONE",
+      "parity_pending": [
+        "mana_per_shot"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 6,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4939
+      ]
+    },
+    {
+      "damage_max": 25,
+      "damage_min": 13,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i3075",
+      "mana_per_shot": 3,
+      "missile": "fire",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 13,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        4941
+      ]
+    },
+    {
+      "break_chance_pct": 3,
+      "item_key": "oteryn:item.tibia.i3277",
+      "max_hit_chance": 76,
+      "missile": "spear",
+      "on_use": "DROP",
+      "range_tiles": 3,
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        1658
+      ]
+    },
+    {
+      "break_chance_pct": 10,
+      "item_key": "oteryn:item.tibia.i3287",
+      "max_hit_chance": 76,
+      "missile": "throwingstar",
+      "on_use": "DROP",
+      "range_tiles": 4,
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        2719
+      ]
+    },
+    {
+      "break_chance_pct": 7,
+      "item_key": "oteryn:item.tibia.i3298",
+      "max_hit_chance": 76,
+      "missile": "throwingknife",
+      "on_use": "DROP",
+      "range_tiles": 4,
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        2721
+      ]
+    },
+    {
+      "break_chance_pct": 6,
+      "item_key": "oteryn:item.tibia.i3347",
+      "max_hit_chance": 80,
+      "missile": "huntingspear",
+      "on_use": "DROP",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        4863
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "item_key": "oteryn:item.tibia.i3349",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        1756
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "item_key": "oteryn:item.tibia.i3350",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        1738
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i3446",
+      "max_hit_chance": 86,
+      "missile": "bolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        1673
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i3447",
+      "max_hit_chance": 90,
+      "missile": "arrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        1657
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i3450",
+      "max_hit_chance": 90,
+      "missile": "powerbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 55
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        2726
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 2,
+      "item_key": "oteryn:item.tibia.i5803",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 75,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        12215
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i6528",
+      "max_hit_chance": 90,
+      "missile": "infernalbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 110
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        12159
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i7363",
+      "max_hit_chance": 86,
+      "missile": "piercingbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 30
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        16498
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i7364",
+      "max_hit_chance": 99,
+      "missile": "sniperarrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 20
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        16501
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i7365",
+      "max_hit_chance": 92,
+      "missile": "onyxarrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 40
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        16519
+      ]
+    },
+    {
+      "break_chance_pct": 1,
+      "item_key": "oteryn:item.tibia.i7367",
+      "max_hit_chance": 80,
+      "missile": "enchantedspear",
+      "on_use": "DROP",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 42
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        16497
+      ]
+    },
+    {
+      "break_chance_pct": 33,
+      "item_key": "oteryn:item.tibia.i7368",
+      "max_hit_chance": 96,
+      "missile": "redstar",
+      "on_use": "DROP",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 80
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        16486
+      ]
+    },
+    {
+      "break_chance_pct": 3,
+      "item_key": "oteryn:item.tibia.i7378",
+      "max_hit_chance": 80,
+      "missile": "royalspear",
+      "on_use": "DROP",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 25
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        16881
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i7438",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "vocations": [
+          "NONE"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25597
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 1,
+      "item_key": "oteryn:item.tibia.i8021",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 45,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25427
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "item_key": "oteryn:item.tibia.i8022",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 60,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25345
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 3,
+      "item_key": "oteryn:item.tibia.i8023",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 130,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25482
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "item_key": "oteryn:item.tibia.i8024",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 100,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25609
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "item_key": "oteryn:item.tibia.i8025",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 80,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25691
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i8026",
+      "on_use": "NONE",
+      "range_tiles": 7,
+      "requirements": {
+        "min_level": 80,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25457
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 2,
+      "item_key": "oteryn:item.tibia.i8027",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 50,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25433
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 7,
+      "item_key": "oteryn:item.tibia.i8028",
+      "on_use": "NONE",
+      "range_tiles": 7,
+      "requirements": {
+        "min_level": 60,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25689
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 3,
+      "item_key": "oteryn:item.tibia.i8029",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 40,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25389
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "item_key": "oteryn:item.tibia.i8030",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 70,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        25610
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i8082",
+      "mana_per_shot": 13,
+      "missile": "death",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 42,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25335
+      ]
+    },
+    {
+      "damage_max": 37,
+      "damage_min": 23,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i8083",
+      "mana_per_shot": 5,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 22,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25331
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i8084",
+      "mana_per_shot": 13,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 37,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25333
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i8092",
+      "mana_per_shot": 13,
+      "missile": "energy",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 37,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25339
+      ]
+    },
+    {
+      "damage_max": 37,
+      "damage_min": 23,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i8093",
+      "mana_per_shot": 5,
+      "missile": "fire",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 22,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25337
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i8094",
+      "mana_per_shot": 13,
+      "missile": "death",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 42,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        25341
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "item_key": "oteryn:item.tibia.i9378",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "sources": {
+        "ammo_type": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        38266
+      ]
+    },
+    {
+      "damage_max": 62,
+      "damage_min": 44,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i12603",
+      "mana_per_shot": 9,
+      "missile": "energy",
+      "on_use": "NONE",
+      "parity_pending": [
+        "element"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 37,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        56596
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i12732",
+      "mana_per_shot": 13,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 40,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        54148
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 7,
+      "item_key": "oteryn:item.tibia.i12733",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 40,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        54108
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i12741",
+      "mana_per_shot": 13,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 40,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        54151
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i14246",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 85,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        56672
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 2,
+      "item_key": "oteryn:item.tibia.i14247",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 50,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        56673
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i14251",
+      "max_hit_chance": 94,
+      "missile": "tarsalarrow",
+      "on_use": "CONSUME",
+      "requirements": {
+        "min_level": 30
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        56670
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i14252",
+      "max_hit_chance": 90,
+      "missile": "vortexbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 40
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        56677
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 1,
+      "item_key": "oteryn:item.tibia.i14768",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 150,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        58720
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i15793",
+      "max_hit_chance": 95,
+      "missile": "crystallinearrow",
+      "on_use": "CONSUME",
+      "requirements": {
+        "min_level": 90
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        59868
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 75,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i16096",
+      "mana_per_shot": 17,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 65,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        59786
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 75,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i16115",
+      "mana_per_shot": 17,
+      "missile": "fire",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 65,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        59803
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 75,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i16117",
+      "mana_per_shot": 17,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 65,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        59805
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 75,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i16118",
+      "mana_per_shot": 17,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 65,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        59806
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i16141",
+      "max_hit_chance": 90,
+      "missile": "prismaticbolt",
+      "on_use": "CONSUME",
+      "requirements": {
+        "min_level": 90
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        59829
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i16142",
+      "max_hit_chance": 90,
+      "missile": "drillbolt",
+      "on_use": "CONSUME",
+      "requirements": {
+        "min_level": 70
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        59830
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i16143",
+      "max_hit_chance": 92,
+      "missile": "envenomedarrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 70
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        59831
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 3,
+      "item_key": "oteryn:item.tibia.i16163",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 90,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        59838
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i16164",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 105,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        59839
+      ]
+    },
+    {
+      "break_chance_pct": 3,
+      "item_key": "oteryn:item.tibia.i17110",
+      "max_hit_chance": 76,
+      "missile": "spear",
+      "on_use": "DROP",
+      "range_tiles": 3,
+      "requirements": {
+        "vocations": [
+          "NONE"
+        ]
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        61895
+      ]
+    },
+    {
+      "damage_max": 18,
+      "damage_min": 8,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i17111",
+      "mana_per_shot": 2,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "vocations": [
+          "NONE"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        61894
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 2,
+      "item_key": "oteryn:item.tibia.i19356",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 70,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65373
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i19362",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65372
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i20082",
+      "on_use": "NONE",
+      "range_tiles": 7,
+      "requirements": {
+        "min_level": 75,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65958
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i20083",
+      "on_use": "NONE",
+      "range_tiles": 7,
+      "requirements": {
+        "min_level": 120,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65959
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i20084",
+      "on_use": "NONE",
+      "range_tiles": 7,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65960
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 1,
+      "item_key": "oteryn:item.tibia.i20085",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 75,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65952
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 2,
+      "item_key": "oteryn:item.tibia.i20086",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 120,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65954
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i20087",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        65956
+      ]
+    },
+    {
+      "break_chance_pct": 2,
+      "item_key": "oteryn:item.tibia.i21158",
+      "missile": "gloothspear",
+      "on_use": "DROP",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 60
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        67928
+      ]
+    },
+    {
+      "damage_max": 10,
+      "damage_min": 6,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i21348",
+      "mana_per_shot": 1,
+      "missile": "fire",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        68907
+      ]
+    },
+    {
+      "damage_max": 10,
+      "damage_min": 6,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i21350",
+      "mana_per_shot": 1,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 3,
+      "requirements": {
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        68901
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i21470",
+      "max_hit_chance": 90,
+      "missile": "arrow",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        68886
+      ]
+    },
+    {
+      "damage_max": 74,
+      "damage_min": 56,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i22183",
+      "mana_per_shot": 13,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 37,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        76912
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 65,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i22765",
+      "mana_per_shot": 17,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 3,
+      "requirements": {
+        "min_level": 65,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        76900
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 80,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i22766",
+      "mana_per_shot": 19,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 100,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        76899
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 3,
+      "item_key": "oteryn:item.tibia.i22866",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 120,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        76776
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i22867",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 120,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        76777
+      ]
+    },
+    {
+      "damage_max": 77,
+      "damage_min": 63,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i25700",
+      "mana_per_shot": 18,
+      "missile": "energy",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 80,
+        "vocations": [
+          "SORCERER",
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        81398
+      ]
+    },
+    {
+      "break_chance_pct": 40,
+      "hit_chance": 90,
+      "item_key": "oteryn:item.tibia.i25735",
+      "max_hit_chance": 86,
+      "missile": "leafstar",
+      "on_use": "DROP",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 60
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "hit_chance": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        81397
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i25758",
+      "max_hit_chance": 90,
+      "missile": "spectralbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 150
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        80873
+      ]
+    },
+    {
+      "break_chance_pct": 30,
+      "item_key": "oteryn:item.tibia.i25759",
+      "max_hit_chance": 100,
+      "missile": "royalstar",
+      "on_use": "DROP",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 120
+      },
+      "sources": {
+        "break_chance_pct": "CANARY",
+        "max_hit_chance": "CANARY",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "range_tiles": "WIKI",
+        "weapon_kind": "WIKI"
+      },
+      "weapon_kind": "THROWING",
+      "wiki_pages": [
+        80874
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 75,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i25760",
+      "mana_per_shot": 15,
+      "missile": "death",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 41,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        80875
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i27455",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 200,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        83005
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i27456",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 200,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        83006
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 80,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i27457",
+      "mana_per_shot": 20,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 200,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        83007
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 80,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i27458",
+      "mana_per_shot": 20,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 200,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        83008
+      ]
+    },
+    {
+      "damage_max": 101,
+      "damage_min": 87,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i28716",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        85237
+      ]
+    },
+    {
+      "damage_max": 102,
+      "damage_min": 86,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i28717",
+      "mana_per_shot": 21,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        85238
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i28718",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        85227
+      ]
+    },
+    {
+      "damage_max": 98,
+      "damage_min": 86,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i28825",
+      "mana_per_shot": 23,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 180,
+        "vocations": [
+          "SORCERER",
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        85243
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 80,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i28826",
+      "mana_per_shot": 23,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 230,
+        "vocations": [
+          "SORCERER",
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        85242
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i29417",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 220,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        86771
+      ]
+    },
+    {
+      "damage_max": 108,
+      "damage_min": 88,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i29425",
+      "mana_per_shot": 24,
+      "missile": "fire",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 180,
+        "vocations": [
+          "SORCERER",
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        86752
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i30393",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 220,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        88672
+      ]
+    },
+    {
+      "damage_max": 100,
+      "damage_min": 94,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i30399",
+      "mana_per_shot": 22,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 270,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        88665
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 70,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i30400",
+      "mana_per_shot": 21,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 220,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        88664
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 4,
+      "item_key": "oteryn:item.tibia.i31581",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        88735
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i34088",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 400,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        91429
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i34089",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 400,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        91432
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 100,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i34090",
+      "mana_per_shot": 22,
+      "missile": "suddendeath",
+      "on_use": "NONE",
+      "parity_pending": [
+        "mana_per_shot"
+      ],
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 400,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        91433
+      ]
+    },
+    {
+      "damage_max": 118,
+      "damage_min": 98,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i34091",
+      "mana_per_shot": 21,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 400,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        91431
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i34150",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 270,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        91451
+      ]
+    },
+    {
+      "damage_max": 105,
+      "damage_min": 85,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i34151",
+      "mana_per_shot": 20,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 270,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        91453
+      ]
+    },
+    {
+      "damage_max": 109,
+      "damage_min": 89,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i34152",
+      "mana_per_shot": 21,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "parity_pending": [
+        "range_tiles"
+      ],
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 220,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        91455
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i35518",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 150,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        92864
+      ]
+    },
+    {
+      "damage_max": 100,
+      "damage_min": 80,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i35521",
+      "mana_per_shot": 19,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 150,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        92872
+      ]
+    },
+    {
+      "damage_max": 100,
+      "damage_min": 80,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i35522",
+      "mana_per_shot": 19,
+      "missile": "smallearth",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 150,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        92873
+      ]
+    },
+    {
+      "container_size": 8,
+      "item_key": "oteryn:item.tibia.i35524",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        92877
+      ]
+    },
+    {
+      "container_size": 6,
+      "item_key": "oteryn:item.tibia.i35562",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        92656
+      ]
+    },
+    {
+      "container_size": 6,
+      "item_key": "oteryn:item.tibia.i35848",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        92660
+      ]
+    },
+    {
+      "container_size": 6,
+      "item_key": "oteryn:item.tibia.i35849",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        92659
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "break_chance_pct": 0,
+      "item_key": "oteryn:item.tibia.i35902",
+      "max_hit_chance": 90,
+      "missile": "spectralbolt",
+      "on_use": "CONSUME",
+      "parity_pending": [
+        "max_hit_chance"
+      ],
+      "requirements": {
+        "min_level": 150
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "max_hit_chance": "WIKI",
+        "missile": "CANARY",
+        "on_use": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "AMMUNITION",
+      "wiki_pages": [
+        80873
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i36664",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        94371
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i36665",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        94372
+      ]
+    },
+    {
+      "container_size": 8,
+      "item_key": "oteryn:item.tibia.i36666",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        94411
+      ]
+    },
+    {
+      "damage_max": 105,
+      "damage_min": 85,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i36668",
+      "mana_per_shot": 22,
+      "missile": "fire",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        94373
+      ]
+    },
+    {
+      "damage_max": 105,
+      "damage_min": 85,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i36669",
+      "mana_per_shot": 22,
+      "missile": "fire",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        94376
+      ]
+    },
+    {
+      "damage_max": 105,
+      "damage_min": 85,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i36674",
+      "mana_per_shot": 22,
+      "missile": "ice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        94374
+      ]
+    },
+    {
+      "damage_max": 105,
+      "damage_min": 85,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i36675",
+      "mana_per_shot": 22,
+      "missile": "ice",
+      "on_use": "NONE",
+      "range_tiles": 4,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        94375
+      ]
+    },
+    {
+      "container_size": 12,
+      "item_key": "oteryn:item.tibia.i39150",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        98473
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i39159",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        98484
+      ]
+    },
+    {
+      "container_size": 8,
+      "item_key": "oteryn:item.tibia.i39160",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        98474
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 90,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i39162",
+      "mana_per_shot": 21,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        98486
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 90,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i39163",
+      "mana_per_shot": 21,
+      "missile": "smallice",
+      "on_use": "NONE",
+      "parity_pending": [
+        "mana_per_shot"
+      ],
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        98485
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i43877",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        102819
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i43878",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        102820
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 7,
+      "item_key": "oteryn:item.tibia.i43879",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        102822
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 7,
+      "item_key": "oteryn:item.tibia.i43880",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        102821
+      ]
+    },
+    {
+      "damage_max": 125,
+      "damage_min": 113,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i43882",
+      "mana_per_shot": 21,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        102825
+      ]
+    },
+    {
+      "damage_max": 125,
+      "damage_min": 103,
+      "element": "FIRE",
+      "item_key": "oteryn:item.tibia.i43883",
+      "mana_per_shot": 21,
+      "missile": "energy",
+      "on_use": "NONE",
+      "parity_pending": [
+        "element"
+      ],
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        102826
+      ]
+    },
+    {
+      "damage_max": 124,
+      "damage_min": 100,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i43885",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        102824
+      ]
+    },
+    {
+      "damage_max": 124,
+      "damage_min": 100,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i43886",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 600,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "CANARY",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        102823
+      ]
+    },
+    {
+      "container_size": 8,
+      "item_key": "oteryn:item.tibia.i45644",
+      "quiver": true,
+      "sources": {
+        "quiver": "CANARY"
+      },
+      "wiki_pages": [
+        105215
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i47371",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 330,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        105142
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 82,
+      "element": "ENERGY",
+      "item_key": "oteryn:item.tibia.i47372",
+      "mana_per_shot": 20,
+      "missile": "energy",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 330,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        105144
+      ]
+    },
+    {
+      "damage_max": 95,
+      "damage_min": 80,
+      "element": "ICE",
+      "item_key": "oteryn:item.tibia.i47373",
+      "mana_per_shot": 20,
+      "missile": "ice",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 330,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "WIKI",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        105145
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 7,
+      "item_key": "oteryn:item.tibia.i47377",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 330,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        105143
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i49520",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107465
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i49522",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107466
+      ]
+    },
+    {
+      "damage_max": 115,
+      "damage_min": 95,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i49528",
+      "mana_per_shot": 21,
+      "missile": "death",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107463
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 90,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i49529",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107464
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i49858",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107493
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i49859",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107494
+      ]
+    },
+    {
+      "ammo_type": "ARROW",
+      "hit_chance": 5,
+      "item_key": "oteryn:item.tibia.i49860",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107492
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i49861",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107496
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i49862",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107497
+      ]
+    },
+    {
+      "ammo_type": "BOLT",
+      "hit_chance": 6,
+      "item_key": "oteryn:item.tibia.i49863",
+      "on_use": "NONE",
+      "range_tiles": 6,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
+      "sources": {
+        "ammo_type": "CANARY",
+        "hit_chance": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "DISTANCE",
+      "wiki_pages": [
+        107495
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 100,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i49882",
+      "mana_per_shot": 21,
+      "missile": "death",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107487
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 100,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i49883",
+      "mana_per_shot": 21,
+      "missile": "death",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107488
+      ]
+    },
+    {
+      "damage_max": 120,
+      "damage_min": 100,
+      "element": "DEATH",
+      "item_key": "oteryn:item.tibia.i49884",
+      "mana_per_shot": 21,
+      "missile": "death",
+      "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "SORCERER"
+        ]
+      },
+      "sources": {
+        "damage": "WIKI",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107486
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 90,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i49885",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107490
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 90,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i49886",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107491
+      ]
+    },
+    {
+      "damage_max": 110,
+      "damage_min": 90,
+      "element": "EARTH",
+      "item_key": "oteryn:item.tibia.i49887",
+      "mana_per_shot": 20,
+      "missile": "earth",
+      "on_use": "NONE",
+      "range_tiles": 5,
+      "requirements": {
+        "min_level": 300,
+        "vocations": [
+          "DRUID"
+        ]
+      },
+      "sources": {
+        "damage": "CANARY",
+        "element": "WIKI",
+        "mana_per_shot": "CANARY",
+        "missile": "CANARY",
+        "on_use": "DERIVED",
+        "range_tiles": "WIKI",
+        "weapon_kind": "CANARY"
+      },
+      "weapon_kind": "WAND",
+      "wiki_pages": [
+        107489
+      ]
+    }
+  ],
+  "schema": "OTERYN_ITEM_RANGED_PROMOTION/v1",
+  "source": {
+    "canary": {
+      "evidence": "OTS_HYPOTHESIS_ONLY",
+      "path": "imports/canary/items-xml/items.xml",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    "policy": "TibiaWiki first, Canary fallback; differing values are parity_pending",
+    "wiki_snapshot": "imports/tibiawiki/facts/items-stats.json"
+  },
+  "task_id": "OTV2-20261013-ranged-content-1"
+}
