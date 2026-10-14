@@ -1071,6 +1071,30 @@ CI belong to that unchanged source, not this repaired candidate. Packet:
 docs/agents/tasks/active/OTV2-20261014-client-local-input.md. No post-B2 activation
 or HUD/graphics redesign is authorized by this local repair.
 
+Source98319fd7531430dc604dd8e92eb80c7eb857ac5a additionally passes exact
+Rust1.95 MSVC229/217/5+Session82,strict all-target Clippy/fmt/release. All seven
+history regressions execute/pass. DX12 at125%DPI:20pages/78independently
+rehashed captures/0invalid. Release0.1.0+dev.ci.g98319fd75314; binary
+04208c8fee07c95a0096e501582af4844654123ab8673c857ec2a77eafbf14c8;
+manifest394c1a5795ddaca7d9f36996ec128476566a7fc9ee52d74e7c6fdebaca9d0e3e.
+Private build C:\Users\barte\Downloads\oteryn-client-98319fd7-20261014-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-98319fd7-20261014.
+HelperPID13632 exits0 after129.98seconds. The compiled audit runs/exits without
+automatic login,new personal-profile/clipboard operations or terminating older
+clients. Guarded publication/readback and recovery98319fd7 pass; bundle SHA256
+7422d9e606bd51d0c12c4898003a4ffe563cb07cd3b11444df780d9c00a96c60.
+This exact input proof is preserved with the next real export-guard fix, not a
+status-only push. A changed Options export source needs new native qualification.
+
+Options destination follow-up narrows the Windows gap to absent preferences:
+existing files already canonicalize safely, but lexical equality misses an
+ASCII-case alias of a missing settings.json. A conservative same-parent/name
+guard and Windows real-filesystem regression preserve bytes/absence while
+allowing ordinary sibling ZIP export/import. Linux230/211/5,strict Clippy/fmt
+and governance60 pass. An isolated Windows counterfactual and exact-source
+qualification remain pending; physical picker interaction is not claimed.
+Packet: docs/agents/tasks/active/OTV2-20261014-client-export-destination.md.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

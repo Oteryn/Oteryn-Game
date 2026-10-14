@@ -16,6 +16,12 @@ is32success/1skipped/0failed, not successor qualification. Exact new Linux/MSVC
 checks follow; OS clipboard/picker isolation and B2 gates remain open. Details:
 docs/agents/tasks/active/OTV2-20261014-client-local-input.md.
 
+98319fd7 now has exact native229/217/5+82 and DX1220/78/0 proof. Next bounded
+Options export repair protects a missing Windows settings.json against a
+case-equivalent destination; existing files were already canonicalized safely.
+Use isolated real-filesystem regression/counterfactual,not the owner profile.
+Packet: docs/agents/tasks/active/OTV2-20261014-client-export-destination.md.
+
 Latest owner scope: finish remaining points1–5 and7–10; point6 (HUD/graphics)
 is explicitly excluded. Preserve existing runtime and native artifacts. The
 owner's Windows PC is available for isolated builds/acceptance, not server,

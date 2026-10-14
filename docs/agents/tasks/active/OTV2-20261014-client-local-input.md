@@ -192,3 +192,5 @@ Scoped Linux230/211/5,strict all-target client Clippy,fmt and governance60 pass.
 Exact-source MSVC qualification follows publication. No dependencies,protocol,capabilities,preferences,
 server/operator changes,paid review or HUD/graphics redesign. Dedicated B2
 QA/node/ON-OFF/harness/retirement prerequisites remain unsupplied.
+
+98319fd7 native229/217/5+82 and DX1220/78/0 pass; exact hashes in UI-FIDELITY.

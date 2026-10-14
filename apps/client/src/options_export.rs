@@ -151,6 +151,25 @@ fn resolved_destination(path: &Path) -> io::Result<std::path::PathBuf> {
     Ok(std::fs::canonicalize(parent)?.join(name))
 }
 
+fn same_destination(left: &Path, right: &Path) -> bool {
+    if left == right {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        // Canonicalized parents identify the same directory. Its missing
+        // settings.json must be protected even when the picker changes case.
+        left.parent() == right.parent()
+            && left
+                .file_name()
+                .and_then(|name| name.to_str())
+                .zip(right.file_name().and_then(|name| name.to_str()))
+                .is_some_and(|(left, right)| left.eq_ignore_ascii_case(right))
+    }
+    #[cfg(not(windows))]
+    false
+}
+
 pub(crate) fn save(settings: &ClientSettings, destination: &Path) -> io::Result<()> {
     save_guarded(settings, destination, ClientSettings::path().as_deref())
 }
@@ -171,7 +190,7 @@ fn save_guarded(
             resolved_destination(active),
             resolved_destination(destination),
         )
-        && active == selected
+        && same_destination(&active, &selected)
     {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -253,6 +272,39 @@ pub(crate) fn choose_source(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn options_export_refuses_case_alias_of_existing_or_missing_active_preferences()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for exists in [false, true] {
+            let directory = tempfile::tempdir()?;
+            let active = directory.path().join("settings.json");
+            let selected = directory.path().join("SETTINGS.JSON");
+            let settings = ClientSettings::default();
+            if exists {
+                settings.save(&active)?;
+                assert!(selected.exists(), "Windows fixture aliases the active file");
+            }
+            let before = std::fs::read(&active).ok();
+            assert_eq!(before.is_some(), exists);
+            assert!(same_destination(
+                &resolved_destination(&active)?,
+                &resolved_destination(&selected)?
+            ));
+            assert!(save_guarded(&settings, &selected, Some(&active)).is_err());
+            assert_eq!(std::fs::read(&active).ok(), before);
+            if !exists {
+                assert!(!selected.exists());
+            }
+            // Refusal does not disable ordinary export beside the active file.
+            let archive = directory.path().join("options.zip");
+            save_guarded(&settings, &archive, Some(&active))?;
+            assert_eq!(load(&archive)?, settings);
+            assert_eq!(std::fs::read(&active).ok(), before);
+        }
+        Ok(())
+    }
 
     fn options_zip(name: &str, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut archive = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
