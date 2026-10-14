@@ -1,11 +1,12 @@
 # ACCEPT-SPELL-PRESENT-0 Acceptance packet for the spell and combat presentation decision
 
 - Decision: `ACCEPT-SPELL-PRESENT0-V1`
-- Status: **PROPOSED, NOT EFFECTIVE**. This packet changes no status. SPELL-PRESENT-0 stays
-  CANDIDATE until the owner confirms the acceptance directly to the control plane and a later
-  change (§3 step 2) flips the status line after exact-head independent review (protocol, combat
-  and determinism), CI on the frozen head and protected integration. It adds no rule text and
-  changes no code, wire, migration, content or sound file.
+- Status: **ACCEPTED, CONDITIONAL**. The owner confirmed the acceptance in the worker's chat on
+  2026-10-13 ("tak") and told the worker to continue on 2026-10-14. It takes effect only when the
+  PR carrying this status passes exact-head independent review (protocol, combat and determinism)
+  and CI on its frozen head and is integrated through the protected merge path; until then
+  SPELL-PRESENT-0 is not effective as ACCEPTED, whatever the status line says on an unmerged
+  branch. It adds no rule text and changes no code, wire, migration, content or sound file.
 - Packet for: `reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md`
   (`SPELLPRES0-SPELL-AND-COMBAT-PRESENTATION-V1`), following ACCEPT-SPELL-NPC-MAP-0 (PR #2084)
   and ACCEPT-CHAR-POSITION-0.
@@ -57,5 +58,5 @@
 
 ## 4. Not done here
 
-- No status line changes. SPELL-NPC-MAP-0 is a separate packet (PR #2084).
+- The follow-up PR changes only the decision status line. SPELL-NPC-MAP-0 is a separate packet (PR #2084).
 - No child is allocated and no code, content, sound, migration or protocol-registry change is made.

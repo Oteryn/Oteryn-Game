@@ -1,7 +1,10 @@
 # SPELL-PRESENT-0 Spell and combat presentation
 
 - Decision: `SPELLPRES0-SPELL-AND-COMBAT-PRESENTATION-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED**. Accepted 2026-10-14 (`ACCEPT-SPELL-PRESENT-0`,
+  `OTERYN_GAME_ACCEPT_SPELL_PRESENT0_ACCEPTANCE_DECISION_2026-10-13.md`), effective only on
+  exact-head review, CI and protected integration of that acceptance PR; no other text change.
+  Original gate: exact-head validation, independent review (protocol,
   combat and determinism) and protected integration. Owner question P1 (§14) is answered
   (2026-09-30, #162): the 15.30 client sound files are included (§12).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
