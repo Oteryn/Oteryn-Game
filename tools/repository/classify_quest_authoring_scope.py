@@ -80,9 +80,21 @@ def _mentions(data: bytes, doc: str, current_rel: str) -> bool:
     file's directory, the repository root and the tool directory. A tool-relative bare name is only
     a pin for its own directory.
     """
-    needle = posixpath.basename(doc).encode()
+    base_name = posixpath.basename(doc)
+    # The file name may appear plain or percent-encoded (any hex case, "+" for a space).
+    needles = {base_name}
+    for encode in (urllib.parse.quote, lambda t: urllib.parse.quote(t, safe=""), urllib.parse.quote_plus):
+        encoded = encode(base_name)
+        needles |= {encoded, re.sub(r"%[0-9A-F]{2}", lambda m: m.group().lower(), encoded)}
     tool_form = posixpath.relpath(doc, TOOL_DIR)
     tool_ok = posixpath.dirname(doc) != TOOL_DIR
+    for needle_text in needles:
+        if _scan(data, needle_text.encode(), doc, current_rel, tool_form, tool_ok):
+            return True
+    return False
+
+
+def _scan(data: bytes, needle: bytes, doc: str, current_rel: str, tool_form: str, tool_ok: bool) -> bool:
     start = data.find(needle)
     while start != -1:
         end = start + len(needle)
@@ -91,7 +103,7 @@ def _mentions(data: bytes, doc: str, current_rel: str) -> bool:
             for pos in range(start, line_start - 1, -1):
                 if pos == line_start or data[pos - 1] in _START_BREAKS:
                     raw = data[pos:end].decode("utf-8", "replace")
-                    for text in {raw, raw.replace("\\", "/"), urllib.parse.unquote(raw)}:
+                    for text in {raw, raw.replace("\\", "/"), urllib.parse.unquote(raw), urllib.parse.unquote_plus(raw)}:
                         if text.startswith("/"):
                             continue
                         if (
