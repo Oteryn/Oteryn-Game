@@ -818,13 +818,79 @@ mod tests {
             .prepare_training_checkpoint(5, &f, occurrence(), false)
             .unwrap()
             .unwrap();
-        assert!(state.training_level_due(&f));
+        assert!(state.training_successor_due(&f, false));
         assert_eq!(level.request.after.skills()[2], (11, 0));
         let receipt = receipt_for(&level, 2);
         state.commit_training_checkpoint(level, &receipt).unwrap();
         assert_eq!(state.owned_skills.unwrap()[2], 11);
         assert!(!state.has_training_to_flush());
-        assert!(!state.training_level_due(&f));
+        assert!(!state.training_successor_due(&f, false));
+    }
+    #[test]
+    fn a_forced_save_drains_post_checkpoint_tries_below_a_level() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        let receipt_for = |prepared: &PreparedManaTraining| CommittedBuildChange {
+            occurrence: prepared.request.occurrence,
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(1).unwrap(),
+            committed_character_revision: CharacterRevision::new(2).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        state
+            .train_skill(SkillFamily::Sword, 1, &f, |_| 10)
+            .unwrap();
+        let prepared = state
+            .prepare_training_checkpoint(2, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        state
+            .retain_training_checkpoint(RetainedTrainingCheckpoint {
+                fence: test_fence(),
+                prepared,
+                formula_digest: f.digest(),
+            })
+            .unwrap();
+        // Tries after the retained checkpoint that reach no level.
+        assert!(
+            !state
+                .train_skill(SkillFamily::Sword, 3, &f, |_| 5)
+                .unwrap()
+                .checkpoint_due
+        );
+        let retained = state.pending_training_checkpoint().unwrap().clone();
+        let receipt = receipt_for(&retained.prepared);
+        state
+            .commit_training_checkpoint(retained.prepared, &receipt)
+            .unwrap();
+        // A cadence save may leave them; a forced (logout) save writes them before `Saved`.
+        assert!(!state.training_successor_due(&f, false));
+        assert!(state.training_successor_due(&f, true));
+        let rest = state
+            .prepare_training_checkpoint(4, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        assert_eq!(rest.request.after.skills()[2], (10, 15));
+        let receipt = receipt_for(&rest);
+        state.commit_training_checkpoint(rest, &receipt).unwrap();
+        assert!(!state.training_successor_due(&f, true));
     }
     #[test]
     fn hit_streaks_feed_the_pending_tries() {
@@ -1204,14 +1270,22 @@ impl super::cast::PlayerSpellState {
             checkpoint_due,
         })
     }
-    /// After a replayed receipt merged the hits resolved meanwhile: whether they reach a level
-    /// that must be written now (SKILLS-0 §3.4), before the save reports `Saved`.
-    pub(crate) fn training_level_due(&self, formula: &CompiledTrainingFormula) -> bool {
+    /// After a replayed receipt merged the hits resolved meanwhile: whether the save must write
+    /// them before it reports `Saved`. A level they reach is due at once (SKILLS-0 §3.4); a
+    /// forced save (logout, shutdown) also writes tries that reach no level.
+    pub(crate) fn training_successor_due(
+        &self,
+        formula: &CompiledTrainingFormula,
+        force: bool,
+    ) -> bool {
         self.training_checkpoint.is_none()
-            && self
-                .training
-                .as_ref()
-                .is_some_and(|value| value.level_due(formula))
+            && if force {
+                self.has_training_to_flush()
+            } else {
+                self.training
+                    .as_ref()
+                    .is_some_and(|value| value.level_due(formula))
+            }
     }
     pub(crate) fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()

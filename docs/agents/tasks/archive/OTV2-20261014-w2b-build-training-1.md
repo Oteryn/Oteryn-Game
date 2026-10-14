@@ -50,8 +50,8 @@ next_action: "control plane: review trigger on the frozen head"
   one `training` receipt; a checkpoint runs when a level is reached, at the 60 s window, and at
   logout or shutdown (A13 §2). A cast banks mana only and leaves the tries pending, so a paid
   successor keeps its owned skill levels. Hits resolved while a checkpoint is retained for replay
-  bank on that checkpoint and merge with its receipt; when they reach a level,
-  `save_spell_training` writes it before it reports `Saved`. Without owned training nothing trains: that is the production off switch, and the
+  bank on that checkpoint and merge with its receipt; when they reach a level
+  (or on a forced save, always), `save_spell_training` writes them before it reports `Saved`. Without owned training nothing trains: that is the production off switch, and the
   formula stays off until DEATH-ML-LOSS-1.
 - **Live skill level.** `commit_training_checkpoint` refreshes the owned skill levels after the
   receipt, so a banked level is live only then (A13 §2). This is the control plane's `cast.rs`

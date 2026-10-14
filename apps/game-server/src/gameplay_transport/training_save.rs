@@ -23,17 +23,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         force: bool,
     ) -> TrainingSave {
         let saved = self.save_spell_training_once(actor, session, force).await;
-        if saved != TrainingSave::Saved || !self.spell_training_level_due(actor, session).await {
+        if saved != TrainingSave::Saved
+            || !self
+                .spell_training_successor_due(actor, session, force)
+                .await
+        {
             return saved;
         }
         // A replayed receipt merged the hits resolved while it was retained. A level they
-        // reach is written now, never left to the cadence (SKILLS-0 §3.4).
+        // reach is written now, never left to the cadence (SKILLS-0 §3.4); a forced save
+        // writes all of them.
         match self.save_spell_training_once(actor, session, force).await {
             TrainingSave::NotApplicable => TrainingSave::Saved,
             other => other,
         }
     }
-    async fn spell_training_level_due(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+    async fn spell_training_successor_due(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> bool {
         let Some(formula) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -45,7 +55,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.spell_states.lock().await;
         states
             .get_mut(&runtime, actor, session)
-            .is_some_and(|state| state.training_level_due(formula))
+            .is_some_and(|state| state.training_successor_due(formula, force))
     }
     async fn save_spell_training_once(
         &self,
