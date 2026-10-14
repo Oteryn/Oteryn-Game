@@ -161,6 +161,11 @@ impl DurabilityRoot {
                 .bind(account.as_slice()).execute(&mut *tx).await?;
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
+            // One operation identity is held by at most one receipt table (migration 0086).
+            if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid")
+                .bind(operation.as_slice()).fetch_optional(&mut *tx).await?.is_some() {
+                return Ok(Err(CharacterAuthorityError::Conflict));
+            }
             if let Some(row) = sqlx::query("SELECT o.command_binding, o.character_id::text, o.event_id::text, o.transaction_id::text FROM game_character_operation_receipts o WHERE o.operation_id = encode($1, 'hex')::uuid")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await? {
                 // Reconciliation of the committed decision, never a new authorization.
@@ -269,7 +274,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
+            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -630,7 +635,7 @@ fn stored_predecessor_evidence(
     Ok(row.try_get("predecessor_digest")?)
 }
 
-fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
+pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     let hex: String = value.chars().filter(|c| *c != '-').collect();
     if hex.len() != 32 {
         return Err(DurabilityError::Unavailable);
@@ -651,7 +656,7 @@ pub(super) async fn load_current_character(
     character_id: [u8; 16],
 ) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
     assert_recovery_fence(tx, recovery).await?;
-    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
         .bind(character_id.as_slice())
         .fetch_optional(&mut **tx)
         .await?;
@@ -698,7 +703,7 @@ fn read_record_row(
 }
 
 /// Current (highest-revision) Game-owned Character interpretation, if any.
-async fn current_interpretation(
+pub(super) async fn current_interpretation(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> std::result::Result<Option<(i64, CharacterInterpretationV1)>, DurabilityError> {
     let Some(row) = sqlx::query(
@@ -751,6 +756,27 @@ async fn current_account_security_allows(
     account: &[u8; 16],
     now: i64,
 ) -> std::result::Result<bool, DurabilityError> {
+    Ok(account_security(tx, account, now).await? == Security::Allowed)
+}
+
+/// Current account-security evidence for one AccountId at trusted Game time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Security {
+    /// Current evidence allows the account.
+    Allowed,
+    /// Current evidence refuses the account: a definite answer.
+    Refused,
+    /// No current evidence (absent, other-purpose or stale): not an answer.
+    Unknown,
+}
+
+/// [`current_account_security_allows`] with the definite refusal kept apart from
+/// missing or stale evidence, for deciders that store a definite answer.
+pub(super) async fn account_security(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account: &[u8; 16],
+    now: i64,
+) -> std::result::Result<Security, DurabilityError> {
     let account_id = uuid_string(account);
     let Some(registered) = sqlx::query_scalar::<_, String>(
         "SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id = 1 FOR SHARE",
@@ -758,7 +784,7 @@ async fn current_account_security_allows(
     .fetch_optional(&mut **tx)
     .await?
     else {
-        return Ok(false);
+        return Ok(Security::Unknown);
     };
     let Some(row) = sqlx::query(
         "SELECT operation, source_revision::text, decision_identity, observed_at, semantic_facts \
@@ -770,11 +796,11 @@ async fn current_account_security_allows(
     .fetch_optional(&mut **tx)
     .await?
     else {
-        return Ok(false);
+        return Ok(Security::Unknown);
     };
     let invalid = |_| DurabilityError::InvalidStoredState;
     if row.try_get::<String, _>(0).map_err(invalid)? != ACCOUNT_SECURITY_OPERATION {
-        return Ok(false);
+        return Ok(Security::Unknown);
     }
     let revision: String = row.try_get(1).map_err(invalid)?;
     let decision: String = row.try_get(2).map_err(invalid)?;
@@ -787,7 +813,7 @@ async fn current_account_security_allows(
         scope: ACCOUNT_SECURITY_SCOPE,
     };
     let Ok(Response::Observed(observation)) = decode_response(&request, &registered, &body) else {
-        return Ok(false);
+        return Ok(Security::Unknown);
     };
     if observation.source_revision.to_string() != revision
         || observation.decision_identity.as_str() != decision
@@ -796,7 +822,7 @@ async fn current_account_security_allows(
         return Err(DurabilityError::InvalidStoredState);
     }
     let Facts::Account { allowed, .. } = observation.facts else {
-        return Ok(false);
+        return Ok(Security::Unknown);
     };
     let deadline = i64::try_from(observation.clock_uncertainty_seconds)
         .ok()
@@ -805,11 +831,19 @@ async fn current_account_security_allows(
                 .checked_add(ACCOUNT_SECURITY_FRESH_SECONDS)?
                 .checked_sub(uncertainty)
         });
-    Ok(allowed && observed_at <= now && deadline.is_some_and(|deadline| now <= deadline))
+    if observed_at > now || deadline.is_none_or(|deadline| now > deadline) {
+        return Ok(Security::Unknown);
+    }
+    Ok(if allowed {
+        Security::Allowed
+    } else {
+        Security::Refused
+    })
 }
 
-/// Complete first-slice integrity: each root has its exact receipt, including the
-/// reconstructed intent binding; every retained audit event binds to that
+/// Complete first-slice integrity: each root has exactly one creation receipt, from the
+/// operator bootstrap with its reconstructed intent binding or from a committed create
+/// command (migration 0086), and no operation identity is in both receipt tables; every retained audit event binds to that
 /// receipt and root with an intact payload hash. Expired events may be absent.
 /// The retained intent source high-water exists exactly when a receipt exists
 /// and equals the newest receipt's decision, so a restore can neither drop nor
@@ -820,9 +854,10 @@ async fn verify_character_integrity(
 ) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_creation_receipts c USING (character_id) \
            LEFT JOIN game_character_operation_receipts o USING (character_id) \
-           LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
-          WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
+           LEFT JOIN game_character_audit_outbox a ON a.event_id = c.event_id \
+          WHERE c.character_id IS NULL OR c.account_id <> r.account_id OR c.world_id <> r.world_id \
              OR o.character_revision <> 1 \
              OR o.command_binding <> decode('02', 'hex') || uuid_send(o.issuer_decision_id) \
                 || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
@@ -834,13 +869,19 @@ async fn verify_character_integrity(
                 || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision, 'UTF8') \
                 || int2send(octet_length(r.name)::int2) || convert_to(r.name, 'UTF8') \
              OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
-                 OR a.transaction_id <> o.transaction_id OR a.server_build_id <> o.server_build_id \
-                 OR a.occurred_at <> o.occurred_at \
+                 OR a.transaction_id <> c.transaction_id OR a.server_build_id <> c.server_build_id \
+                 OR a.occurred_at <> c.occurred_at \
                  OR a.payload_sha256 <> sha256(a.payload))) \
          UNION ALL \
          SELECT 1 FROM game_character_audit_outbox a \
-           LEFT JOIN game_character_operation_receipts o ON o.event_id = a.event_id \
-          WHERE o.event_id IS NULL OR o.character_id <> a.character_id \
+           LEFT JOIN game_character_creation_receipts c ON c.event_id = a.event_id \
+          WHERE c.event_id IS NULL OR c.character_id <> a.character_id \
+         UNION ALL \
+         SELECT 1 FROM game_character_creation_receipts c \
+          GROUP BY c.character_id HAVING count(*) > 1 \
+         UNION ALL \
+         SELECT 1 FROM game_character_command_receipts k \
+           JOIN game_character_operation_receipts o USING (operation_id) \
          UNION ALL \
          SELECT 1 FROM game_character_operation_receipts o \
            LEFT JOIN game_character_roots r USING (character_id) \

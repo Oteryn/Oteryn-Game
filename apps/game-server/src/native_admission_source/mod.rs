@@ -1,5 +1,6 @@
 use std::{fmt, io};
 pub mod account_characters;
+pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
 pub mod runtime_status;

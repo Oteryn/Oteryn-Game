@@ -192,6 +192,10 @@ async fn exchange_status(
                 &[],
             )
             .await
+        } else if let Some(body_max) = super::character_commands::response_bytes(operation) {
+            // Character commands (§3): every response, success or empty failure,
+            // fits the operation's bound.
+            read_response_bounded(&mut tls, require_ok, body_max, false, &[]).await
         } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
@@ -485,7 +489,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 11] = [
+    const OPERATIONS: [Operation; 14] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -497,6 +501,9 @@ mod envelope_tests {
         Operation::PublishProjectionWatermarkV1,
         Operation::ReportScopeAssignmentV1,
         Operation::ReportScopeRevocationV1,
+        Operation::ListPendingCharacterCommandsV1,
+        Operation::ReadCharacterCommandIntentV1,
+        Operation::PublishCharacterCommandReceiptV1,
     ];
     #[test]
     fn every_maximum_body_fits_its_envelope_and_only_the_snapshot_widens_it() {

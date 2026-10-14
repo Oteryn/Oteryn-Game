@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-13T00:00:00+00:00",
+  "updated_at": "2026-10-14T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -7901,7 +7901,8 @@
       ],
       "consumers": [
         "apps/game-server/src/native_admission_source/account_characters.rs",
-        "apps/game-server/src/durability/account_characters_projection.rs"
+        "apps/game-server/src/durability/account_characters_projection.rs",
+        "apps/game-server/src/durability/character_command.rs"
       ],
       "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
     },
@@ -7968,6 +7969,220 @@
         "apps/game-server/src/native_admission_source/account_characters.rs"
       ],
       "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "CHARCMD-PAGE-ENTRIES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Pending entries per ListPendingCharacterCommandsV1 response",
+      "unit": "entries",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The page is decoded from a body already bounded by CHARCMD-LIST-RESPONSE-BYTES; a 33rd entry refuses the whole page.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a page of 33 entries is refused as malformed"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-LIST-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded ListPendingCharacterCommandsV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields and length-checked before the exchange opens a connection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the worst-case list request with a cursor encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-READ-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded ReadCharacterCommandIntentV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields (at most 496 bytes) and length-checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the worst-case read request encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INTENT-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Stored command intent bytes returned by ReadCharacterCommandIntentV1",
+      "unit": "bytes",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The response body is read with a 4096-byte cap; a longer intent is refused before decoding and the decision stores CHAR_CMD_INTENT_INVALID.",
+      "client_visible": false,
+      "boundary_tests": [
+        "an intent above 4096 bytes is classified invalid before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs",
+        "apps/game-server/src/durability/character_command.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-RECEIPT-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded PublishCharacterCommandReceiptV1 request body (stored receipt)",
+      "unit": "bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Receipts are built from bounded fields; the worst-case committed create is below 1024 bytes and the store column is checked at 1..1024.",
+      "client_visible": false,
+      "boundary_tests": [
+        "worst-case committed and rejected receipts fit 1024 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs",
+        "apps/game-server/src/durability/character_command.rs",
+        "apps/game-server/migrations/0086_character_commands.sql"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-LIST-RESPONSE-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "ListPendingCharacterCommandsV1 response body",
+      "unit": "bytes",
+      "hard_maximum": 8192,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Read with an 8192-byte cap before decoding; a full page of 32 maximal entries is 5602 bytes.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a response above 8192 bytes is refused before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-RECEIPT-RESPONSE-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "PublishCharacterCommandReceiptV1 response body",
+      "unit": "bytes",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Read with a 256-byte cap before decoding.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a receipt response above 256 bytes is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Concurrent Platform exchanges per character-command consumer",
+      "unit": "exchanges",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The consumer performs list, read and publish sequentially; no queue beyond the one exchange is retained.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the consumer performs one exchange per step and never overlaps two"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INTENT-TTL",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Lifetime of a command intent (expires_at_source - issued_at_source)",
+      "unit": "seconds",
+      "hard_maximum": 300,
+      "configurable_range": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A wider window is classified CHAR_CMD_INTENT_INVALID; an intent at or past expiry is rejected CHAR_CMD_EXPIRED, which bounds every transient retry.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a 301 s window is invalid",
+        "expires equal to issued is invalid"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_command.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-KNOWN-KEYS",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Pending operations the consumer remembers between polls",
+      "unit": "entries",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A fixed-capacity map of settled and retrying keys; the oldest settled key is evicted first and an evicted key is only re-decided, which republishes its stored receipt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the known-key map never exceeds 512 entries"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
     },
     {
       "id": "CHARPOS0-RL-01",
