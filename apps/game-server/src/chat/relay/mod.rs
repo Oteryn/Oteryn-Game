@@ -229,15 +229,19 @@ impl<'a> Cursor<'a> {
 }
 
 /// The `NOTIFY` channel of a World: `oteryn_chat_<32 hex digits>`, the canonical lower-case
-/// UUID of the WorldId (as `node/config.rs` admits it, 36 characters with hyphens) without its
-/// hyphens. The name is a safe unquoted identifier, 44 bytes, and distinct per World.
+/// UUIDv7 of the WorldId without its hyphens. The name is a safe unquoted identifier, 44 bytes,
+/// and distinct per World. A WorldId is admitted exactly as `node/config.rs` (`v7_uuid`) admits
+/// it: 36 characters with hyphens, version nibble `7` and RFC 9562 variant (`8`, `9`, `a`, `b`);
+/// any other value is `BadChannel`, so no WorldId the node would refuse names a relay channel.
 pub(crate) fn channel_name(world_id: &str) -> Result<String, RelayError> {
     let bytes = world_id.as_bytes();
     let canonical = bytes.len() == 36
         && bytes.iter().enumerate().all(|(index, byte)| match index {
             8 | 13 | 18 | 23 => *byte == b'-',
             _ => byte.is_ascii_digit() || (b'a'..=b'f').contains(byte),
-        });
+        })
+        && bytes[14] == b'7'
+        && matches!(bytes[19], b'8' | b'9' | b'a' | b'b');
     if !canonical {
         return Err(RelayError::BadChannel);
     }
