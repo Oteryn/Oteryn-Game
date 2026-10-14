@@ -28,7 +28,7 @@ def ready() -> dict:
         "dependencies": [{"pr": 0, "merged": True, "at": "2026-10-14T08:00:00Z"}],
         "queue": {"prior_failures": []},
         "authorization": {"head_sha": HEAD, "scope": ["enqueue"], "revoked": False,
-                          "granted_by": "owner", "at": "2026-10-14T09:30:00Z"},
+                          "granted_by": "owner", "author": "blakinio", "at": "2026-10-14T09:30:00Z"},
     }
 
 
@@ -283,6 +283,30 @@ class ShaValidationTest(unittest.TestCase):
     def test_uppercase_hex_matches_same_head(self):
         snap = ready()
         snap["candidate"]["head_sha"] = HEAD.upper()
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+
+class AuthorizationAuthorTest(unittest.TestCase):
+    def test_untrusted_author_with_forged_granted_by_is_not_eligible(self):
+        snap = ready()
+        snap["authorization"]["author"] = "random-user"
+        snap["authorization"]["granted_by"] = "blakinio"
+        result = evaluate(snap)
+        self.assertEqual(result["verdict"], "BLOCKED")
+        self.assertEqual(reasons(snap), ["AUTHORIZATION_MISSING"])
+
+    def test_missing_or_non_string_author_fails_closed(self):
+        for bad in (None, 5, ["blakinio"]):
+            snap = ready()
+            snap["authorization"]["author"] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        del snap["authorization"]["author"]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_trusted_author_is_case_insensitive(self):
+        snap = ready()
+        snap["authorization"]["author"] = "BlakinIO"
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
 
 

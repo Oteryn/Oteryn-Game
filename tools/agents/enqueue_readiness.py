@@ -16,6 +16,10 @@ import sys
 from datetime import datetime
 
 CANONICAL_CHECK = "game-gate"  # .github/repository-policy.json required status
+# Logins whose authorization record is accepted: the owner (code_owner in .github/repository-policy.json) and
+# the control plane, which records the standing D247 grant under the owner's account. Pinned here, never taken
+# from the snapshot: a name the record merely states (`granted_by`) proves nothing.
+TRUSTED_GRANT_AUTHORS = frozenset({"blakinio"})
 
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
@@ -167,7 +171,10 @@ def _evaluate(s: dict) -> dict:
     scope = auth["scope"]
     if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
         raise ValueError("authorization.scope must be a list of strings")
-    if (_sha(auth["head_sha"]) != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
+    author = auth["author"]  # platform-reported login of the comment/record, set by the readback, not by the grantee
+    if not isinstance(author, str):
+        raise ValueError("authorization.author must be a string login")
+    if (author.lower() not in TRUSTED_GRANT_AUTHORS or _sha(auth["head_sha"]) != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
             or not _text(auth.get("granted_by"))):
         found["AUTHORIZATION"] = _blocker(
             "AUTHORIZATION_MISSING", "owner", f"enqueue authorization recorded for head {head[:12]}")
