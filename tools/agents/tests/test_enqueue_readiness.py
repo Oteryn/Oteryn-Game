@@ -1,11 +1,19 @@
 import copy
 import sys
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from enqueue_readiness import evaluate  # noqa: E402
+import enqueue_readiness  # noqa: E402
+
+NOW = datetime(2026, 10, 14, 12, 0, 30, tzinfo=timezone.utc)
+
+
+def evaluate(snapshot, now=None):
+    return enqueue_readiness.evaluate(snapshot, now=now or NOW)
+
 
 HEAD = "a" * 40
 OTHER = "b" * 40
@@ -101,6 +109,35 @@ class EnqueueReadinessTest(unittest.TestCase):
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
         snap["review"]["reviews"][0]["provider"] = "codex"
         self.assertEqual(reasons(snap), ["REVIEW_NOT_ON_EXACT_HEAD"])
+
+    def test_observed_at_beyond_evaluator_clock_is_rejected(self):
+        snap = ready()
+        snap["observed_at"] = "2026-10-14T12:02:00Z"  # 90 s ahead of NOW: within skew
+        snap["checks"]["runs"][0]["at"] = "2026-10-14T12:02:00Z"
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        snap["observed_at"] = snap["checks"]["runs"][0]["at"] = "2026-10-14T12:03:00Z"  # 150 s ahead
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_latest_review_is_authoritative(self):
+        snap = ready()
+        base = snap["review"]["reviews"][0]
+        old = dict(base, state="running", at="2026-10-14T09:00:00Z")
+        snap["review"]["reviews"] = [base, old]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        newer = dict(base, state="running", at="2026-10-14T11:00:00Z")
+        snap["review"]["reviews"] = [base, newer]
+        self.assertEqual(reasons(snap), ["REVIEW_PENDING"])
+        older_block = dict(base, verdict="blocking", at="2026-10-14T09:00:00Z")
+        snap["review"]["reviews"] = [older_block, base]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        tie = dict(base, state="running")
+        snap["review"]["reviews"] = [base, tie]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["review"]["reviews"] = [base, dict(base)]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        del base["at"]
+        snap["review"]["reviews"] = [base]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_event_after_observed_at_is_rejected(self):
         snap = ready()
@@ -346,6 +383,9 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
     def test_newest_check_run_is_chosen_by_parsed_datetime(self):
         snap = ready()
         snap["observed_at"] = "2026-10-14T16:00:00Z"
+        global NOW
+        self.addCleanup(lambda saved=NOW: globals().update(NOW=saved))
+        NOW = datetime(2026, 10, 14, 16, 0, 0, tzinfo=timezone.utc)
         # String order disagrees with chronological order across offsets.
         old_fail = {"name": "game-gate", "head_sha": HEAD, "status": "completed",
                     "conclusion": "failure", "at": "2026-10-14T09:00:00-05:00"}  # 14:00Z

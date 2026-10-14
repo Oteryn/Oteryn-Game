@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 CANONICAL_CHECK = "game-gate"  # .github/repository-policy.json required status
 # Logins whose authorization record is accepted: the owner (code_owner in .github/repository-policy.json) and
@@ -97,16 +97,19 @@ def _list(value, field: str) -> list:
     return value
 
 
-def evaluate(snapshot) -> dict:
-    """Return {"verdict", "blockers", "ready_at"}; any malformed input fails closed."""
+def evaluate(snapshot, now: datetime | None = None) -> dict:
+    """Return {"verdict", "blockers", "ready_at"}; any malformed input fails closed.
+
+    `now` is the evaluator's clock (injectable for tests); `observed_at` may not lie beyond it by more than the skew.
+    """
     try:
-        return _evaluate(snapshot)
+        return _evaluate(snapshot, now or datetime.now(timezone.utc))
     except (AttributeError, KeyError, TypeError, ValueError) as exc:
         blocker = _blocker("INPUT_INCOMPLETE", "control_plane", "complete live readback", repr(exc))
         return {"verdict": "BLOCKED", "blockers": [blocker], "ready_at": None}
 
 
-def _evaluate(s: dict) -> dict:
+def _evaluate(s: dict, now: datetime) -> dict:
     cand = s["candidate"]
     head = _sha(cand["head_sha"])
     pr = _pr(cand["pr"])
@@ -117,6 +120,8 @@ def _evaluate(s: dict) -> dict:
     stamps: list[tuple[datetime, str]] = []
     # The time the readback was taken: no qualifying event can lie after it, so ready_at is never in the future.
     observed = _parse_at(s["observed_at"])
+    if (observed - now).total_seconds() > CLOCK_SKEW_SECONDS:
+        raise ValueError(f"observed_at {s['observed_at']!r} is later than the evaluator clock")
 
     def stamp(item, key: str = "at") -> None:
         at = item[key]
@@ -174,12 +179,18 @@ def _evaluate(s: dict) -> dict:
         exact = [r for r in reviews if qualifies(r) and _sha(r["head_sha"]) == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
-        elif any(r["state"] != "completed" for r in exact):
-            found["REVIEW"] = _blocker("REVIEW_PENDING", "reviewer", f"review for head {head[:12]} completed")
-        elif any(r["verdict"] != "clean" for r in exact):
-            found["REVIEW"] = _blocker("REVIEW_BLOCKING_FINDINGS", "writer", "fix pushed as a new head, then new exact-head review")
         else:
-            for r in exact:
+            # Re-reviews: only the newest qualifying exact-head review is authoritative, as for check reruns.
+            ats = [_parse_at(r.get("at")) for r in exact]
+            latest = [r for r, a in zip(exact, ats) if a == max(ats)]
+            if len({(r["state"], r["verdict"]) for r in latest}) > 1:
+                raise ValueError("conflicting exact-head reviews at the same latest time")
+            r = latest[0]
+            if r["state"] != "completed":
+                found["REVIEW"] = _blocker("REVIEW_PENDING", "reviewer", f"review for head {head[:12]} completed")
+            elif r["verdict"] != "clean":
+                found["REVIEW"] = _blocker("REVIEW_BLOCKING_FINDINGS", "writer", "fix pushed as a new head, then new exact-head review")
+            else:
                 stamp(r)
 
     threads = s["threads"]
