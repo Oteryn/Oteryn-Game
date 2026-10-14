@@ -1,0 +1,76 @@
+# MAGIC-ITEMS-1
+
+```yaml
+task_id: MAGIC-ITEMS-1
+title: "MAGIC-ITEMS-1: rune use and conjure; first slice RUNE-CONTENT-1 rune carrier audit"
+mode: IMPLEMENT
+status: implementing
+repository: Oteryn/Oteryn-Game
+issue: 1622
+base_branch: main
+branch: claude/magic-items-1-20261014
+pr: null
+base_sha: 75ec7985
+head_sha: null
+final_head_sha: null
+owner: claude-code-session-01Puou2Pm8SECtLFcjHYAuEC
+control_plane: session_01XYC239givrMonrYoBwwECV
+created_at: 2026-10-14
+updated_at: 2026-10-14
+owned_paths:
+  - tools/content-schema/spell-authoring/audit_rune_carriers.py
+  - tools/content-schema/spell-authoring/test_audit_rune_carriers.py
+  - tools/content-schema/spell-authoring/samples/rune-carrier-audit.json
+  - tools/content-schema/spell-authoring/README.md
+  - docs/agents/tasks/active/MAGIC-ITEMS-1.md
+public_contracts: []
+external_repositories: []
+```
+
+## Outcome
+
+Plan row MAGIC-ITEMS-1 (`docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`,
+appendix "MAGIC-ITEMS-1"), under RUNE-USE-0 (accepted, #2107). This PR is the one child whose
+prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, merged).
+
+- `audit_rune_carriers.py` audits the 36 rune carriers of `content/abilities/definitions/player-spells.json`
+  and writes `samples/rune-carrier-audit.json`; `--check` fails when the committed audit is stale. Checks
+  per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
+  registrars where no wiki states them), cooldown group and targeting flags (registrars), range (wikis),
+  the dated `rune-use-source-resolutions.json` facts (they replace the field they name), `rune.charges` =
+  the conjuring spell's `count` where both exist (§3), the native Item profile stack facts (stackable,
+  100, `StackCapable`), and the authored area against `RUNEUSE0-RL-08` (≤ 37 tiles, so the victim cap
+  is ≤ 74) and `RUNEUSE0-RL-07` (≤ 12 tiles for a rune that creates fields). The joins and the 5 aliases
+  are those of `verify_spells.py`.
+- Result: 34 of 36 pass. The largest area is 37 tiles and the largest field area 12 (Energy Wall
+  diagonal), which reproduces the decision's ceilings. All 33 joinable charges equal the conjure count;
+  Lightest Missile, Light Stone Shower and Lightest Magic Missile have no conjuring spell (S25).
+- **Fail, stay blocked (2):** Intense Healing Rune (the lowered catalogue lacks Monk and Exalted Monk,
+  per the 2026-10-09 ledger) and Paralyze Rune (catalogue group `support`, ledger `attack`). The
+  converter already applies the ledger; the lowered catalogue and the r21 candidate bundles predate it.
+  A catalogue regeneration (pinned Canary/Crystal checkouts) closes both.
+- Stack facts: the live conjure path (`world_item_cast.rs`) qualifies items from the native Item
+  profiles, where all 36 runes and the blank rune are already admitted stack-capable, 100. No content
+  regeneration, materializer step, migration or registry is needed for this slice.
+- A pass is not runtime admission: each carrier stays subject to its §9 group's needs.
+
+## Blocked children (not implemented)
+
+- RUNE-WIRE-1: needs a `RUNE_USE_V1` capability number from the registry (#2113/#2114).
+- RUNE-1: needs a migration (0083 `cause_kind CHECK IN (1,2)`); #2110 holds 0085.
+- RUNE-CAST-1: RUNE-1, SPELL-TARGET-1, VIS-2.
+- RUNE-CONJ-1 (and gate `RUNEUSE0-C1`; conjure is ungated today): RUNE-1, SPELL-D4.
+- FIELD-1, FIELD-WIRE-1, Soulfire: COND-1 / CONDITIONS-0 (#2106).
+
+## Validation
+
+- `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 5 tests OK
+- spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
+  (`_sources/canary`) and are identical on `main`
+- `python3 verify_spells.py self-test`: ok
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `cargo +1.95.0 fmt --all --check`: pass; `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- No Rust or `content/` file changes, so the Rust test suites are not affected and were not re-run
+- `git diff --check`: clean

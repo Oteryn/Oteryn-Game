@@ -1,0 +1,4226 @@
+{
+ "carriers": [
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "animate dead rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "support",
+     "pass": true,
+     "references": {
+      "canary": "support",
+      "crystal": "support"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3203,
+     "pass": true,
+     "references": {
+      "canary": 3203,
+      "crystal": 3203,
+      "fandom": 3203
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3203",
+   "name": "animate dead rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "cure poison rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "healing",
+     "pass": true,
+     "references": {
+      "canary": "healing",
+      "crystal": "healing"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3153,
+     "pass": true,
+     "references": {
+      "canary": 3153,
+      "crystal": 3153,
+      "fandom": 3153
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3153",
+   "name": "antidote rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 37,
+     "victim_cap": 74
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "avalanche rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3161,
+     "pass": true,
+     "references": {
+      "canary": 3161,
+      "crystal": 3161,
+      "fandom": 3161
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3161",
+   "name": "avalanche rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "chameleon rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "support",
+     "pass": true,
+     "references": {
+      "canary": "support",
+      "crystal": "support"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3178,
+     "pass": true,
+     "references": {
+      "canary": 3178,
+      "crystal": 3178,
+      "fandom": 3178
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3178",
+   "name": "chameleon rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "convince creature rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "support",
+     "pass": true,
+     "references": {
+      "canary": "support",
+      "crystal": "support"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3177,
+     "pass": true,
+     "references": {
+      "canary": 3177,
+      "crystal": 3177,
+      "fandom": 3177
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3177",
+   "name": "convince creature rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "disintegrate rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "support",
+     "pass": true,
+     "references": {
+      "canary": "support",
+      "crystal": "support"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3197,
+     "pass": true,
+     "references": {
+      "canary": 3197,
+      "crystal": 3197,
+      "fandom": 3197
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 1,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3197",
+   "name": "desintegrate rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "destroy field rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "support",
+     "pass": true,
+     "references": {
+      "canary": "support",
+      "crystal": "support"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3148,
+     "pass": true,
+     "references": {
+      "canary": 3148,
+      "crystal": 3148,
+      "fandom": 3148
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 5,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3148",
+   "name": "destroy field rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "energy field rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3164,
+     "pass": true,
+     "references": {
+      "canary": 3164,
+      "crystal": 3164,
+      "fandom": 3164
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3164",
+   "name": "energy field rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 12,
+     "victim_cap": 24
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "energy wall rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3166,
+     "pass": true,
+     "references": {
+      "canary": 3166,
+      "crystal": 3166,
+      "fandom": 3166
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3166",
+   "name": "energy wall rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 2,
+     "conjure_spell": "energy bomb rune",
+     "ours": 2,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3149,
+     "pass": true,
+     "references": {
+      "canary": 3149,
+      "crystal": 3149,
+      "fandom": 3149
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3149",
+   "name": "energybomb rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 6,
+     "conjure_spell": "explosion rune",
+     "ours": 6,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3200,
+     "pass": true,
+     "references": {
+      "canary": 3200,
+      "crystal": 3200,
+      "fandom": 3200
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3200",
+   "name": "explosion rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "fire field rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3188,
+     "pass": true,
+     "references": {
+      "canary": 3188,
+      "crystal": 3188,
+      "fandom": 3188
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3188",
+   "name": "fire field rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "fire wall rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3190,
+     "pass": true,
+     "references": {
+      "canary": 3190,
+      "crystal": 3190,
+      "fandom": 3190
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3190",
+   "name": "fire wall rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 5,
+     "conjure_spell": "fireball rune",
+     "ours": 5,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3189,
+     "pass": true,
+     "references": {
+      "canary": 3189,
+      "crystal": 3189,
+      "fandom": 3189
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3189",
+   "name": "fireball rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 2,
+     "conjure_spell": "fire bomb rune",
+     "ours": 2,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3192,
+     "pass": true,
+     "references": {
+      "canary": 3192,
+      "crystal": 3192,
+      "fandom": 3192
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3192",
+   "name": "firebomb rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 37,
+     "victim_cap": 74
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "great fireball rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3191,
+     "pass": true,
+     "references": {
+      "canary": 3191,
+      "crystal": 3191,
+      "fandom": 3191
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3191",
+   "name": "great fireball rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 10,
+     "conjure_spell": "heavy magic missile rune",
+     "ours": 10,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3198,
+     "pass": true,
+     "references": {
+      "canary": 3198,
+      "crystal": 3198,
+      "fandom": 3198
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3198",
+   "name": "heavy magic missile rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 5,
+     "conjure_spell": "holy missile rune",
+     "ours": 5,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3182,
+     "pass": true,
+     "references": {
+      "canary": 3182,
+      "crystal": 3182,
+      "fandom": 3182
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "paladin"
+     ],
+     "pass": true,
+     "references": {
+      "br": [
+       "paladin"
+      ],
+      "fandom": [
+       "paladin"
+      ],
+      "tibiopedia": [
+       "paladin"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3182",
+   "name": "holy missile rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 5,
+     "conjure_spell": "icicle rune",
+     "ours": 5,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3158,
+     "pass": true,
+     "references": {
+      "canary": 3158,
+      "crystal": 3158,
+      "fandom": 3158
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3158",
+   "name": "icicle rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "intense healing rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "healing",
+     "pass": true,
+     "references": {
+      "canary": "healing",
+      "crystal": "healing"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3152,
+     "pass": true,
+     "references": {
+      "canary": 3152,
+      "crystal": 3152,
+      "fandom": 3152
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "captured": "2026-10-09",
+     "current": [
+      "druid",
+      "elder_druid",
+      "elite_knight",
+      "exalted_monk",
+      "knight",
+      "master_sorcerer",
+      "monk",
+      "paladin",
+      "royal_paladin",
+      "sorcerer"
+     ],
+     "ours": [
+      "druid",
+      "elder_druid",
+      "elite_knight",
+      "knight",
+      "master_sorcerer",
+      "paladin",
+      "royal_paladin",
+      "sorcerer"
+     ],
+     "pass": false,
+     "source": "https://api.tibiadata.com/v4/spell/intensehealingrune",
+     "verdict": "current_resolution"
+    }
+   },
+   "failed": [
+    "vocations"
+   ],
+   "item": "candidate:item/3152",
+   "name": "intense healing rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_fail"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 10,
+     "conjure_spell": "practise magic missile",
+     "ours": 10,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3174,
+     "pass": true,
+     "references": {
+      "canary": 3174,
+      "crystal": 3174,
+      "fandom": 3174
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3174",
+   "name": "light magic missile rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 5,
+     "victim_cap": 10
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "ours": 4,
+     "pass": true,
+     "verdict": "no_conjuring_spell"
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 21351,
+     "pass": true,
+     "references": {
+      "canary": 21351,
+      "crystal": 21351,
+      "fandom": 21351
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "follows": [
+      "fandom"
+     ],
+     "ours": [
+      "druid",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "br": [
+       "druid",
+       "paladin",
+       "sorcerer"
+      ],
+      "fandom": [
+       "druid",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "sources_disagree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/21351",
+   "name": "light stone shower rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "ours": 10,
+     "pass": true,
+     "verdict": "no_conjuring_spell"
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 17512,
+     "pass": true,
+     "references": {
+      "canary": 17512,
+      "crystal": 17512,
+      "fandom": 17512
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "canary": [
+       "druid",
+       "knight",
+       "paladin",
+       "sorcerer"
+      ],
+      "crystal": [
+       "druid",
+       "knight",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/17512",
+   "name": "lightest magic missile rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "ours": 10,
+     "pass": true,
+     "verdict": "no_conjuring_spell"
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 21352,
+     "pass": true,
+     "references": {
+      "canary": 21352,
+      "crystal": 21352,
+      "fandom": 21352
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "follows": [
+      "fandom"
+     ],
+     "ours": [
+      "druid",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "br": [
+       "druid",
+       "paladin",
+       "sorcerer"
+      ],
+      "fandom": [
+       "druid",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "sources_disagree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/21352",
+   "name": "lightest missile rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "magic wall rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3180,
+     "pass": true,
+     "references": {
+      "canary": 3180,
+      "crystal": 3180,
+      "fandom": 3180
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3180",
+   "name": "magic wall rune",
+   "section_9_group": "blocking_object",
+   "section_9_needs": "a later FND-04 gameplay-admission decision (RUNEUSE0-C7, R5)",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "paralyze rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "captured": "2026-10-09",
+     "current": "attack",
+     "ours": "support",
+     "pass": false,
+     "source": "https://api.tibiadata.com/v4/spell/paralyserune",
+     "verdict": "current_resolution"
+    },
+    "item_id": {
+     "ours": 3165,
+     "pass": true,
+     "references": {
+      "canary": 3165,
+      "crystal": 3165,
+      "fandom": 3165
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid"
+     ],
+     "pass": true,
+     "references": {
+      "br": [
+       "druid"
+      ],
+      "fandom": [
+       "druid"
+      ],
+      "tibiopedia": [
+       "druid"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [
+    "group"
+   ],
+   "item": "candidate:item/3165",
+   "name": "paralyze rune",
+   "section_9_group": "native_behaviour",
+   "section_9_needs": "each key's own child (S27)",
+   "verdict": "checks_fail"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 2,
+     "conjure_spell": "poison bomb rune",
+     "ours": 2,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3173,
+     "pass": true,
+     "references": {
+      "canary": 3173,
+      "crystal": 3173,
+      "fandom": 3173
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3173",
+   "name": "poison bomb rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "poison field rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3172,
+     "pass": true,
+     "references": {
+      "canary": 3172,
+      "crystal": 3172,
+      "fandom": 3172
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3172",
+   "name": "poison field rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 9,
+     "victim_cap": 18
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "poison wall rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3176,
+     "pass": true,
+     "references": {
+      "canary": 3176,
+      "crystal": 3176,
+      "fandom": 3176
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3176",
+   "name": "poison wall rune",
+   "section_9_group": "field",
+   "section_9_needs": "FIELD-1; FIELD-WIRE-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "soulfire rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3195,
+     "pass": true,
+     "references": {
+      "canary": 3195,
+      "crystal": 3195,
+      "fandom": 3195
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3195",
+   "name": "soulfire rune",
+   "section_9_group": "condition",
+   "section_9_needs": "RUNE-CAST-1; COND-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 10,
+     "conjure_spell": "stalagmite rune",
+     "ours": 10,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3179,
+     "pass": true,
+     "references": {
+      "canary": 3179,
+      "crystal": 3179,
+      "fandom": 3179
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3179",
+   "name": "stalagmite rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 37,
+     "victim_cap": 74
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "stone shower rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3175,
+     "pass": true,
+     "references": {
+      "canary": 3175,
+      "crystal": 3175,
+      "fandom": 3175
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3175",
+   "name": "stone shower rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 3,
+     "conjure_spell": "sudden death rune",
+     "ours": 3,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3155,
+     "pass": true,
+     "references": {
+      "canary": 3155,
+      "crystal": 3155,
+      "fandom": 3155
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3155",
+   "name": "sudden death rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 37,
+     "victim_cap": 74
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 4,
+     "conjure_spell": "thunderstorm rune",
+     "ours": 4,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3202,
+     "pass": true,
+     "references": {
+      "canary": 3202,
+      "crystal": 3202,
+      "fandom": 3202
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid",
+      "knight",
+      "monk",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3202",
+   "name": "thunderstorm rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": false,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 1,
+     "conjure_spell": "ultimate healing rune",
+     "ours": 1,
+     "pass": true
+    },
+    "group": {
+     "ours": "healing",
+     "pass": true,
+     "references": {
+      "canary": "healing",
+      "crystal": "healing"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3160,
+     "pass": true,
+     "references": {
+      "canary": 3160,
+      "crystal": 3160,
+      "fandom": 3160
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": null,
+     "pass": true,
+     "references": {},
+     "verdict": "no_source"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "follows": [
+      "fandom"
+     ],
+     "ours": [
+      "druid",
+      "knight",
+      "paladin",
+      "sorcerer"
+     ],
+     "pass": true,
+     "references": {
+      "fandom": [
+       "druid",
+       "knight",
+       "paladin",
+       "sorcerer"
+      ],
+      "tibiopedia": [
+       "druid",
+       "knight",
+       "monk",
+       "paladin",
+       "sorcerer"
+      ]
+     },
+     "verdict": "sources_disagree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3160",
+   "name": "ultimate healing rune",
+   "section_9_group": "direct",
+   "section_9_needs": "RUNE-CAST-1",
+   "verdict": "checks_pass"
+  },
+  {
+   "checks": {
+    "allow_far_use": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "area": {
+     "creates_fields": true,
+     "pass": true,
+     "tiles": 1,
+     "victim_cap": 2
+    },
+    "blocking_creature": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "blocking_solid": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
+    "charges": {
+     "conjure_count": 2,
+     "conjure_spell": "wild growth rune",
+     "ours": 2,
+     "pass": true
+    },
+    "group": {
+     "ours": "attack",
+     "pass": true,
+     "references": {
+      "canary": "attack",
+      "crystal": "attack"
+     },
+     "verdict": "agree"
+    },
+    "item_id": {
+     "ours": 3156,
+     "pass": true,
+     "references": {
+      "canary": 3156,
+      "crystal": 3156,
+      "fandom": 3156
+     },
+     "verdict": "agree"
+    },
+    "needs_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
+    "range_tiles": {
+     "ours": 7,
+     "pass": true,
+     "references": {
+      "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "stack": {
+     "pass": true,
+     "stack_class": "StackCapable",
+     "stack_max": 100,
+     "stackable": true
+    },
+    "vocations": {
+     "ours": [
+      "druid"
+     ],
+     "pass": true,
+     "references": {
+      "br": [
+       "druid"
+      ],
+      "fandom": [
+       "druid"
+      ],
+      "tibiopedia": [
+       "druid"
+      ]
+     },
+     "verdict": "agree"
+    }
+   },
+   "failed": [],
+   "item": "candidate:item/3156",
+   "name": "wild growth rune",
+   "section_9_group": "blocking_object",
+   "section_9_needs": "a later FND-04 gameplay-admission decision (RUNEUSE0-C7, R5)",
+   "verdict": "checks_pass"
+  }
+ ],
+ "decision": "docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md",
+ "inputs": [
+  "content/abilities/definitions/player-spells.json",
+  "content/items/definitions/spell-native-profiles.json",
+  "tools/content-schema/spell-authoring/samples/spell-census-canary-99902524-crystal-ff7ede5.json",
+  "tools/content-schema/spell-authoring/rune-use-source-resolutions.json",
+  "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json",
+  "tools/content-schema/spell-authoring/samples/wiki-spell-facts-br-2026-09-27.json",
+  "tools/content-schema/spell-authoring/samples/tibiopedia-spell-facts-2026-09-28.json"
+ ],
+ "limits": {
+  "area_tiles_max": 37,
+  "field_tiles_max": 12,
+  "stack_max": 100,
+  "victim_cap_max": 74
+ },
+ "note": "A failed check keeps the carrier blocked. A pass is subject to the needs of its section 9 group; it does not establish runtime admission or cast parity. Missing evidence is not agreement: item_id, vocations and group need a source.",
+ "schema": "OTERYN_RUNE_CARRIER_AUDIT/v1",
+ "summary": {
+  "carriers": 36,
+  "checks_fail": [
+   "intense healing rune",
+   "paralyze rune"
+  ],
+  "checks_pass": 34,
+  "largest_area_tiles": 37,
+  "largest_field_tiles": 12
+ }
+}
