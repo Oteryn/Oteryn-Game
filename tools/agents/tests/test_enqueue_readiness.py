@@ -21,7 +21,8 @@ def ready() -> dict:
                       "conclusion": "success", "at": "2026-10-14T10:00:00Z"}],
         },
         "review": {"required": True, "reviews": [
-            {"head_sha": HEAD, "state": "completed", "verdict": "clean", "at": "2026-10-14T10:05:00Z"}]},
+            {"head_sha": HEAD, "state": "completed", "verdict": "clean", "reviewer": "chatgpt-codex-connector[bot]",
+             "at": "2026-10-14T10:05:00Z"}]},
         "threads": {"total": 0, "unresolved": 0},
         "evidence": {"required": [{"name": "task-record", "head_sha": HEAD, "present": True,
                                    "at": "2026-10-14T09:00:00Z"}]},
@@ -76,6 +77,27 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap = ready()
         snap["review"]["reviews"][0]["verdict"] = "blocking"
         self.assertEqual(reasons(snap), ["REVIEW_BLOCKING_FINDINGS"])
+
+    def test_review_from_untrusted_reviewer_does_not_qualify(self):
+        snap = ready()
+        snap["review"]["reviews"][0]["reviewer"] = "someone-else"
+        self.assertEqual(reasons(snap), ["REVIEW_NOT_ON_EXACT_HEAD"])
+        for bad in ("", None, 7):
+            snap = ready()
+            snap["review"]["reviews"][0]["reviewer"] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        del snap["review"]["reviews"][0]["reviewer"]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_evidence_must_name_its_artifact(self):
+        for bad in ("", None, 3):
+            snap = ready()
+            snap["evidence"]["required"][0]["name"] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        del snap["evidence"]["required"][0]["name"]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_review_not_required_is_not_demanded(self):
         snap = ready()

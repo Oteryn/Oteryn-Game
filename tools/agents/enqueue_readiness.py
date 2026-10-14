@@ -20,6 +20,9 @@ CANONICAL_CHECK = "game-gate"  # .github/repository-policy.json required status
 # the control plane, which records the standing D247 grant under the owner's account. Pinned here, never taken
 # from the snapshot: a name the record merely states (`granted_by`) proves nothing.
 TRUSTED_GRANT_AUTHORS = frozenset({"blakinio"})
+# Platform-reported logins whose exact-head review qualifies (D245): Codex, and the owner's account, under which
+# the control plane records the Claude fallback review. Any other reviewer's record is ignored, never trusted.
+TRUSTED_REVIEWERS = frozenset({"chatgpt-codex-connector[bot]", "blakinio"})
 
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
@@ -136,7 +139,11 @@ def _evaluate(s: dict) -> dict:
 
     review = s["review"]
     if _flag(review["required"]):
-        exact = [r for r in _list(review["reviews"], "review.reviews") if _sha(r["head_sha"]) == head]
+        reviews = _list(review["reviews"], "review.reviews")
+        if not all(_text(r["reviewer"]) for r in reviews):
+            raise ValueError("review.reviews[].reviewer must be the platform-reported login")
+        exact = [r for r in reviews
+                 if r["reviewer"].lower() in TRUSTED_REVIEWERS and _sha(r["head_sha"]) == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         elif any(r["state"] != "completed" for r in exact):
@@ -159,6 +166,8 @@ def _evaluate(s: dict) -> dict:
         stamp(threads, "resolved_at")
 
     for item in _list(s["evidence"]["required"], "evidence.required"):
+        if not _text(item["name"]):
+            raise ValueError("evidence.required[].name must be a non-empty string")
         if not _flag(item["present"]) or _sha(item["head_sha"]) != head:
             found["EVIDENCE"] = _blocker("EVIDENCE_MISSING", "writer", f"evidence {item['name']} bound to head {head[:12]}")
             break
