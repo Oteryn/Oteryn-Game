@@ -27,6 +27,10 @@ fn recipient(marker: u8) -> CharacterId {
     CharacterId::decode(&bytes).expect("valid UUIDv7 character id")
 }
 
+fn name(value: &str) -> CharacterName {
+    CharacterName::parse(value).expect("valid character name")
+}
+
 fn room_line(id: u8, sent_at: u64) -> RelayLine {
     RelayLine {
         message_id: [id; ID_BYTES],
@@ -34,7 +38,7 @@ fn room_line(id: u8, sent_at: u64) -> RelayLine {
         destination: RelayDestination::Room {
             room: ChatRoom::English,
         },
-        sender_name: "Sender".to_owned(),
+        sender_name: name("Sender"),
         text: chat_text("hello world"),
     }
 }
@@ -62,7 +66,7 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
         destination: RelayDestination::Private {
             recipient: recipient(9),
         },
-        sender_name: "n".repeat(SENDER_NAME_MAX_BYTES),
+        sender_name: name(&"n".repeat(29)),
         // 255 four-byte scalars: both the character and the byte bound of CHAT-0 §4.
         text: chat_text(&"\u{10348}".repeat(255)),
         ..room_line(1, NOW)
@@ -75,17 +79,32 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
 }
 
 #[test]
-fn an_oversized_field_is_rejected_not_truncated() {
+fn a_received_sender_name_the_naming_policy_refuses_is_a_bad_payload() {
     let ring = ring(&[(1, 0)]);
-    let long_name = RelayLine {
-        sender_name: "n".repeat(SENDER_NAME_MAX_BYTES + 1),
-        ..room_line(1, NOW)
-    };
-    // An over-long text cannot be built: `ChatText` bounds it before it reaches the relay.
-    assert_eq!(
-        seal_with_nonce(&ring, CHANNEL, &long_name, NONCE),
-        Err(RelayError::Oversized)
-    );
+    let valid = room_line(1, NOW);
+    let plaintext = valid.encode().expect("encode");
+    let name_at = 1 + ID_BYTES + 8 + 1;
+    let tail = name_at + 2 + valid.sender_name.as_str().len();
+    for bad in [
+        "",
+        "A",
+        " Sender",
+        "Sender ",
+        "Se  nder",
+        "Sender1",
+        "Send\u{e9}r",
+        &"n".repeat(30),
+    ] {
+        let mut forged = plaintext[..name_at].to_vec();
+        push_prefixed(&mut forged, bad.as_bytes()).expect("prefixed");
+        forged.extend_from_slice(&plaintext[tail..]);
+        let sealed = seal_plaintext(&ring, CHANNEL, NOW, forged, NONCE).expect("seal");
+        assert_eq!(
+            open(&ring, CHANNEL, &sealed, NOW),
+            Err(RelayError::BadPayload),
+            "{bad:?}"
+        );
+    }
 }
 
 #[test]
@@ -346,7 +365,7 @@ fn randomness_differs_and_debug_never_shows_text_or_key() {
         destination: RelayDestination::Room {
             room: ChatRoom::English,
         },
-        sender_name: "Sender".to_owned(),
+        sender_name: name("Sender"),
         text: chat_text("hello"),
     };
     let a = open(

@@ -17,6 +17,7 @@ use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::chat::ChatRoom;
 
 use super::{ChatText, TEXT_MAX_BYTES};
+use crate::domain::character_name::CharacterName;
 
 /// `CHAT0-RL-06`: the `NOTIFY` text is at most 2,048 bytes.
 pub(crate) const NOTIFY_MAX_BYTES: usize = 2_048;
@@ -128,7 +129,7 @@ pub(crate) struct RelayLine {
     /// The sender's database time, microseconds.
     pub(crate) sent_at_micros: u64,
     pub(crate) destination: RelayDestination,
-    pub(crate) sender_name: String,
+    pub(crate) sender_name: CharacterName,
     /// Valid chat text (CHAT-0 §4) on both sides: a sender cannot seal, and a receiver does not
     /// open, a text that `ChatText::parse` refuses.
     pub(crate) text: ChatText,
@@ -146,9 +147,7 @@ impl fmt::Debug for RelayLine {
 
 impl RelayLine {
     fn encode(&self) -> Result<Vec<u8>, RelayError> {
-        if self.sender_name.len() > SENDER_NAME_MAX_BYTES
-            || self.text.as_str().len() > TEXT_MAX_BYTES
-        {
+        if self.text.as_str().len() > TEXT_MAX_BYTES {
             return Err(RelayError::Oversized);
         }
         let mut out = Vec::with_capacity(PLAINTEXT_MAX_BYTES);
@@ -162,7 +161,7 @@ impl RelayLine {
             RelayDestination::Private { recipient } => out.extend_from_slice(recipient.as_bytes()),
             RelayDestination::Room { room } => out.push(room as u8),
         }
-        push_prefixed(&mut out, self.sender_name.as_bytes())?;
+        push_prefixed(&mut out, self.sender_name.as_str().as_bytes())?;
         push_prefixed(&mut out, self.text.as_str().as_bytes())?;
         Ok(out)
     }
@@ -188,7 +187,9 @@ impl RelayLine {
             }
             _ => return Err(RelayError::BadPayload),
         };
-        let sender_name = cursor.prefixed(SENDER_NAME_MAX_BYTES)?;
+        // Only a name the naming policy admits is accepted, as on the sending side.
+        let sender_name = CharacterName::parse(&cursor.prefixed(SENDER_NAME_MAX_BYTES)?)
+            .map_err(|_| RelayError::BadPayload)?;
         let raw = cursor.prefixed(TEXT_MAX_BYTES)?;
         // Only the canonical (already trimmed) form a sender can seal is accepted.
         let text = ChatText::parse(&raw)
@@ -362,7 +363,7 @@ pub(crate) struct OutgoingLine {
     /// The sender's database time, microseconds.
     pub(crate) sent_at_micros: u64,
     pub(crate) destination: RelayDestination,
-    pub(crate) sender_name: String,
+    pub(crate) sender_name: CharacterName,
     pub(crate) text: ChatText,
 }
 
