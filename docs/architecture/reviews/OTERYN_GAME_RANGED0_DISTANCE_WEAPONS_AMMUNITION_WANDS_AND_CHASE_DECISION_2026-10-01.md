@@ -5,7 +5,7 @@
   persistence, movement and protocol) and protected integration. Amended 2026-10-14 after the
   four-lane review of 2026-10-14 (all four lanes failed; every blocker is closed in §14 and the
   sections it names); the amended head needs the four lanes again. Round 2 (2026-10-14) closes the second-round
-  blockers (§14). Round 3 (2026-10-14) records the owner decision that chase is server-driven (§8).
+  blockers (§14). Round 3 (2026-10-14) records the owner decision that chase is server-driven (§8). Acceptance includes the R7 bounded loss of a crash-interrupted swing's skill tries or wand mana (§4.2, §10 R7); it is an explicit owner notice (§11), not a silent default.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698, item 1); ATTACK-0 left distance and
   throwing weapons, ammunition, wands and rods and chase movement to their own decision
@@ -218,8 +218,10 @@ A refusal in step 1 makes no attack and spends nothing.
   hit, none on a miss. A target that fails the recheck is not hit; the unit is spent.
 - **Known abort.** DUR-03 §25 retries the same transaction while it can; a terminal refusal
   releases the reservation (and a wand's mana hold), and the swing has no effect (nothing spent).
-- **Ambiguous commit.** After `RANGED0-RL-02` (2,000 ms, as `ITEMUSE0-RL-04`) the slot is freed; the
-  shot unit stays reserved and unspendable until reconciliation reads the receipt by the
+- **Ambiguous commit.** After `RANGED0-RL-02` (2,000 ms, as `ITEMUSE0-RL-04`) the slot is freed for every use **except another
+  weapon swing**: the character's weapon swings stay refused (a stall, no backlog) while an ambiguous swing is
+  unreconciled, so a character has at most one outstanding ambiguous TransactionId and no second one is
+  allocated before the first receipt is read. The shot unit stays reserved and unspendable until reconciliation reads the receipt by the
   TransactionId (DUR-03 §7.3, §25); a commit known only then applies no late effect. If the owner
   is lost meanwhile the restart path of §6.2 applies.
 - **Wands** have no transaction: PRIMARY COMMIT follows PREPARE in the same owner turn, and the
@@ -229,7 +231,7 @@ A refusal in step 1 makes no attack and spends nothing.
   refreshes. These are live-session accumulators applied **once**, in the owner lane, when the
   outcome is first known committed. They have no durable key of their own: a crash between the
   commit and the accumulation loses that swing's tries or mana_spent (a bounded loss of at most
-  one swing's progress, never a duplication; an accepted bounded loss, **pending owner acceptance**). A replay or a reconciliation read returns the first
+  one swing's progress, never a duplication; a bounded loss recorded as the §11 owner notice). A replay or a reconciliation read returns the first
   outcome and **credits nothing**. A later durable key from SKILLS-0 or A13 supersedes this.
 - **Channel transfer and logout** wait for the slot's outcome, within the same bound.
 - **No ammunition.** A `DISTANCE` swing with no usable entry (§3.2), or from a session without
@@ -237,12 +239,9 @@ A refusal in step 1 makes no attack and spends nothing.
   out-of-range swing (a stall, not a cleared target). No client text is defined (no new wire);
   a "no ammunition" message is `PARITY_PENDING` and a later protocol decision.
 - **Hooks (wiring rule).** CHARM-0 answer 16: an auto-attack triggers charms only on its main
-  target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:706`) and is **not raised for
-  `DISTANCE` or `THROWING`**. `CommittedHit` (defined at `apps/game-server/src/combat/charm_effects.rs:507`; the call is `committed_hit` at `apps/game-server/src/gameplay_transport/attack.rs:774-789`) fires only on a frozen hit, which RANGED-1 adds as a hit gate. RANGED-1 raises
-  the charm hooks (`combat/charm_effects.rs`) from the committed outcome (`CommittedHit`), never
-  from the pre-commit calculation, and **only when the main target takes the frozen damage**: a
+  target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:706`) and carries the critical charms (Low Blow, Savage Blow: `charm_effects.rs` maps `CriticalHitChance` and `CriticalExtraDamage` only to it). RANGED-1 raises it for a `DISTANCE` or `THROWING` swing **after the hit is selected and before its damage is frozen**, for the main target only; whether those critical charms apply to ranged attacks in Tibia is `PARITY_PENDING`. `CommittedHit` (defined at `apps/game-server/src/combat/charm_effects.rs:507`; the call is `committed_hit` at `apps/game-server/src/gameplay_transport/attack.rs:774-789`) fires only on a frozen hit, which RANGED-1 adds as a hit gate, and runs the attack-hit and creature-killed effects from the committed outcome, **only when the main target takes the frozen damage**: a
   `DISTANCE` or `THROWING` hit, or a `WAND` swing's damage (a wand has no hit roll). **Neither hook
-  fires on a distance or throwing miss.** The source stays `CharmHitSource::CharacterAttack` for all
+  fires on a distance or throwing miss** (no hit is selected). The source stays `CharmHitSource::CharacterAttack` for all
   three variants; no new variant is added. RANGED-1 tests a wand main-target attack that evaluates
   its charms and a miss that evaluates none. Whether a wand triggers charms in Tibia is
   `PARITY_PENDING` (Canary lacks the rule). Proficiency effects (`content/proficiencies/`)
@@ -374,8 +373,8 @@ The content `on_use` decides:
   ownership generation and `CurrentCharacterItemFence` in the same transaction that writes the
   receipt (DUR-03 §7.2), so no commit of the old generation can land after the claim; (c) before the
   character's first weapon swing the replacement reads **the newest one receipt** by CharacterId and the old
-  generation (a single indexed `LIMIT 1` read, ordered by the receipt's commit sequence): the owner serializes a
-  character's swings (the next swing waits for the previous commit outcome), so at most one TransactionId of the old
+  generation (a single indexed `LIMIT 1` read, ordered by the receipt's commit sequence): the owner allows no new
+  weapon swing while one is unobserved or ambiguous (§4.2), so at most one TransactionId of the old
   generation can be unobserved, and every earlier receipt was observed and applied by the live owner. The read is
   bounded work (one row, one retry budget of DUR-03 §23, DUR-03 §28); if it fails or exhausts the budget the
   character's weapon swings stay refused (fail closed) and the read is retried, never skipped; (d) a committed receipt is applied as committed (the unit is spent, the landing item
@@ -533,15 +532,17 @@ authority until RANGED-1 is allocated.
   bow values). **Ruled b).** (Replaces the first draft's relative-points reading.)
 - **R7. Post-commit accumulators.** a) A new durable key per swing for skill tries and wand mana;
   b) once-per-outcome live accumulation with a bounded loss on a crash and no duplication
-  (recommended: no new durable surface; SKILLS-0 and A13 own those accumulators). **Ruled b)** (pending owner acceptance of the bounded loss).
+  (recommended: no new durable surface; SKILLS-0 and A13 own those accumulators). **Ruled b)** (bounded loss recorded as the §11 owner notice).
 - **R8. Transaction identity.** a) A TransactionId derived from a swing tuple; b) an allocated
   UUIDv7 frozen at PREPARE, reused by retries (recommended: DUR-03 §20 and the UUIDv7 audit check
   require an allocated identity; no durable counter is needed). **Ruled b).**
 
 ## 11. Owner questions
 
-None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 and owner rule
-5905825574.
+None blocks acceptance. Every choice is a Tibia-parity application or a bound under DUR-03 §28 and owner rule
+5905825574. **Owner notice (R7):** acceptance accepts that a crash between a commit and its live accumulation loses at most
+one swing's skill tries or wand `mana_spent`, never a duplicate; the owner may veto in the acceptance PR, in which case
+SKILLS-0 or A13 must first supply a durable key.
 
 ## 12. Decision test
 
