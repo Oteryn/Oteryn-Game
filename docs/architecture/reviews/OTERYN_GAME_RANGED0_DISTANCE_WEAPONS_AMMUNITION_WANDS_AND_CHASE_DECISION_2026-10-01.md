@@ -29,7 +29,7 @@
 | RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
 | QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b (RANGED-1 itself registers the §6.4 aggregate rows, receipt and audit tables; the missile also needs the SPELL-PRESENT-0 stream and its key to u16 table, §7, and the slot-9 key reconciliation is QUIVER-1's, §3.3) |
-| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the CREATURE-MOVE-1 path profile in code; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
+| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09 ordering, AI01-ROUTE-STEPS resolved to the 12-tile bound `RANGED0-RL-05`); #2113 lands that shared search module (player chase first, creature reuse by CREATURE-MOVE-1), not a player-only copy; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
 | RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
@@ -107,7 +107,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
   | 100 | `trunc(min(s,73)*1.35)+1` | `trunc(min(s,30)*3.20)+4` | `trunc(min(s,48)*2.05)+2` | `trunc(min(s,65)*1.50)+2` | `trunc(min(s,87)*1.20)-4` | `trunc(min(s,90)*1.10)+1` |
 
   Ceilings (skill at the row limit, d1/d2/d3/d4/d6/d7): cap 75: 75, 75, 75, 75, 75, 74; cap 90:
-  89, 89, 90, 89, 90, 90; cap 100: 99, 100, 100, 99, 100, 100. Any other cap (the pinned data carries 76, 80, 86 and 96) gives a **flat chance
+  89, 89, 90, 89, 90, 90; cap 100: 99, 100, 100, 99, 100, 100. Any cap other than 75, 90 and 100 (the pinned items data carries many, for example 40, 76, 80, 86, 87, 89, 91, 93, 94, 95 and 96) gives a **flat chance
   equal to the cap**, at every distance. A perfect shot gives chance 100 (out of scope). One draw
   `chance >= uniform(1,100)` hits. A miss lands on the target tile or, beyond adjacent range, on a
   random walkable tile of the 3x3 around it (`:837-859`).
@@ -153,10 +153,9 @@ reserved or unspendable (§6). No such entry: no attack.
 
 ### 3.3 The Extra slot
 
-The ninth slot is `EquipmentSlot::Ammo` in the domain (GAME-ITEM-01 §6.1 semantic key `ammo`) and
-`EXTRA` on the wire (`crates/protocol-oteryn/src/item_view.rs:198`). The two names already differ;
-this decision changes neither, and QUIVER-1 reconciles the documented key with the wire key before
-it exposes the slot (no wire change is made here). The slot becomes the manual's Extra slot: it admits any whole item without `container` semantics, whatever its equipment semantics,
+The ninth slot is `EquipmentSlot::Ammo` in the domain (`crates/protocol-oteryn/src/item_view.rs:151`) with the
+semantic key `EXTRA` (`item_view.rs:198`, pinned by `item_view_tests.rs:816`). GAME-ITEM-01 §6.1 has no `ammo`
+key. This decision changes neither name, and QUIVER-1 reconciles the documentation to `EXTRA` (no wire change is made here). The slot becomes the manual's Extra slot: it admits any whole item without `container` semantics, whatever its equipment semantics,
 with no level, vocation or Premium check. An item there grants no equipment effect (EQUIP-0 decides
 the one exception, light) and is never shot. Amended: ITEM-MOVE-WIRE-1 §4.
 
@@ -238,7 +237,8 @@ A refusal in step 1 makes no attack and spends nothing.
   out-of-range swing (a stall, not a cleared target). No client text is defined (no new wire);
   a "no ammunition" message is `PARITY_PENDING` and a later protocol decision.
 - **Hooks (wiring rule).** CHARM-0 answer 16: an auto-attack triggers charms only on its main
-  target. `AttackDamageCalculation` runs before the commit and has no hit gate, so RANGED-1 raises
+  target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:707`) and is **not raised for
+  `DISTANCE` or `THROWING`**. `CommittedHit` (`attack.rs:782`) fires only on a frozen hit, which RANGED-1 adds as a hit gate. RANGED-1 raises
   the charm hooks (`combat/charm_effects.rs`) from the committed outcome (`CommittedHit`), never
   from the pre-commit calculation, and **only when the main target takes the frozen damage**: a
   `DISTANCE` or `THROWING` hit, or a `WAND` swing's damage (a wand has no hit roll). **Neither hook
@@ -260,18 +260,19 @@ A refusal in step 1 makes no attack and spends nothing.
   - **Bow** (a `DISTANCE` weapon firing ammunition): `hit_chance` is a **signed relative modifier**
     added to the table result (content bound -100..=100).
   - `max_hit_chance` selects the cap (default 90 with an `ammo_type`, else 75). Caps 75, 90 and 100
-    use the §2 rows. **Any other cap (76, 80, 86, 96) is a flat chance equal to the cap**, at every
+    use the §2 rows. **Any cap other than 75, 90 and 100 is a flat chance equal to the cap**, at every
     distance, before the bow modifier.
-  - `chance = clamp(base + bow modifier, 0, 100)` where `base` is the shot item's absolute chance
+  - Canary's proficiency `RANGED_HIT_CHANCE` (`weapons.cpp:831`) is **excluded**: proficiency takes no part here.
+  `chance = clamp(base + bow modifier, 0, 100)` where `base` is the shot item's absolute chance
     if it has one, else the table (or flat) value; one draw `chance >= uniform(1, 100)` hits.
   - **RANGED-CONTENT-1 re-baseline:** any non-bow row whose `hit_chance` is not positive is held
     unclassified until a source classifies it (an absolute chance cannot be negative or zero).
     Hit chance 90 on `i25735` (CANARY, `OTS_HYPOTHESIS_ONLY`; source: the pinned Canary items data)
-    is consistent with an ammunition absolute override.
+    is a **throwing** item (no `ammo_type`), consistent with a throwing absolute override.
   - The point-blank penalty (distance 1 is not exempt from the table) is `PARITY_PENDING`.
 - **Distance and throwing damage:** the Canary formula of §2 with ATTACK-0's fight-mode factor
   (it applies to distance and throwing; `PARITY_PENDING`) and the vocation's distance multiplier,
-  with the level term of ATTACK-0 §5 (the official 13.05 curve, `floor(level / 5)`) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
+  with the level term of ATTACK-0 §5 (the official 13.05 curve, `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md:99-100`; it equals `floor(level / 5)` only for level <= 500) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
   §5). Blocked by armor only. Element ammunition splits physical and element by attack share;
   resistances apply in GAME-ABILITY-01 mitigation.
 - **Wands and rods:** `normal_random(damage_min, damage_max)` of the wand's element, applied through
@@ -361,20 +362,20 @@ The content `on_use` decides:
   same swing (§4.2, DUR-03 §25) reuses it. It is **not derived** from any tuple. The durable
   receipt is unique on it. Within a live owner a replay of the swing returns the first outcome.
   A replay of the swing in the live owner returns the first outcome.
-- **Restart and reconciliation (DUR-03 §20, §7.3, §47).** The reservation of the shot unit is
+- **Restart and reconciliation (DUR-03 §20 "proven terminal", §7.2, §7.3, §25, §47).** The reservation of the shot unit is
   runtime only (§7.1) and dies with the owner; the unit is durably held by its item row, whose
-  quantity changes only in the committed transaction. The commit validates the scope ownership
-  generation and `CurrentCharacterItemFence` inside the database transaction (§7.2), so once a
-  replacement owner holds a newer generation, **no commit of the old owner can land**: every
-  TransactionId of the old generation is terminal by that fence, not by timeout. Before the
-  replacement owner (or a re-admitted session) accepts the character's first weapon swing it reads
-  the receipts whose provenance (CharacterId and the old scope generation) matches: a committed
-  receipt is applied as committed (the unit is spent, the landing item exists, no damage is
-  re-run); no receipt means proven non-committed (the unit is untouched). Only then is a new
-  TransactionId allocated for a new swing, an intentionally new logical intent. The receipt index
-  on provenance is part of the RANGED-1 receipt table. A commit that completed unobserved costs the
-  player that unit without damage, never a duplicate. Reconciliation by TransactionId while the owner
-  lives is §4.2.
+  quantity changes only in the committed transaction. In this order: (a) the replacement owner's
+  generation claim commits in the database under the `character_root` lock **before any receipt
+  read**; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
+  ownership generation and `CurrentCharacterItemFence` in the same transaction that writes the
+  receipt (DUR-03 §7.2), so no commit of the old generation can land after the claim; (c) before the
+  character's first weapon swing the replacement reads the receipts by CharacterId and the old
+  generation; (d) a committed receipt is applied as committed (the unit is spent, the landing item
+  exists, no damage is re-run), and no receipt after the claim means proven non-committed (the unit
+  is untouched); (e) only then is a new TransactionId allocated for a new swing, an intentionally
+  new logical intent (§20, §25, §47). The receipt index on provenance is part of the RANGED-1 receipt
+  table. A commit that completed unobserved costs the player that unit without damage, never a
+  duplicate. Reconciliation by TransactionId while the owner lives is §4.2.
 - **Provenance** (audit and the restart read above, not an identity): `(WorldId, ChannelId, scope ownership generation,
   runtime actor id, CharacterId)` plus the fence below. No "actor generation" or swing sequence is
   relied on for uniqueness, so no durable high-water mark is needed.
@@ -478,10 +479,11 @@ authority until RANGED-1 is allocated.
 - **What the client sees.** Chase steps are ordinary committed movement events for the chaser; no
   path and no new wire are sent. Rejection and position correction use the existing movement
   correction. The Protocol lane confirms there is no new field (CHASE-1 review).
-- **CHASE-1 depends on** the CREATURE-MOVE-1 path profile in code (today `ai_think.rs` and
+- **CHASE-1 depends on** the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09
+  ordering, AI01-ROUTE-STEPS resolved to the 12-tile bound `RANGED0-RL-05`; today `ai_think.rs` and
   `path_proposal.rs` do not carry it; VSL-MOVE-01 §8 requires "its own accepted implementation
-  profile") and the actor-level clock above. #2113 may implement the mode and target handling and
-  must not add a path before the profile exists.
+  profile") and the actor-level clock above. #2113 lands that shared search module (player chase
+  first, creature reuse by CREATURE-MOVE-1), not a player-only copy.
 - Wand and distance chase uses the swing's range and line of sight (§4) as the goal; `FOLLOW` and
   diagonal steps stay later decisions (diagonal Movement).
 
@@ -566,8 +568,8 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 5. **Wire:** none new; the quiver is gated by `CONTAINER_TREE_V1`; chase adds no wire (the existing mode and target intents); missiles wait for
    the SPELL-PRESENT-0 stream registration and its u16 binding (§7). A session without
    `CONTAINER_TREE_V1` that logs in with a quiver equipped sees it as an item with no tree and its
-   swings draw no ammunition (§3.1); the Extra slot's wire key stays `EXTRA` and its domain key `ammo` (§3.3), so older clients
-   render it as before. Chase-wire comments cite `attack.rs:10-12`.
+   swings draw no ammunition (§3.1); the Extra slot's semantic key stays `EXTRA` and its domain name `EquipmentSlot::Ammo` (§3.3), so older clients
+   render it as before. The comment at `apps/game-server/src/gameplay_transport/attack.rs:10-12` says chase is client-driven; CHASE-1 or #2113 rewrites it.
 6. **Split work:** one swing, one transaction committed before the effect, one PRIMARY COMMIT.
 
 ## 14. Review amendments (2026-10-14)
@@ -576,7 +578,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 |---|---|---|
 | Movement | connection-local pacing clock, unordered buffered steps | §8 pacing rule (actor-level clock, client step wins) |
 | Movement | server chase contradicts #1942 | §8, R3 a): owner decision 2026-10-14 |
-| Movement | CREATURE-MOVE-1 profile not in code | §8 CHASE-1 depends-on |
+| Movement | shared CREATURE-MOVE-1 §5.3 search not in code | §8 CHASE-1 depends-on |
 | Protocol | chase conflict in wire comments | §8 (existing mode and target intents; no new wire) |
 | Protocol | no client-visible server path | §8 what the client sees (ordinary movement, no path) |
 | Protocol | SPELL-PRESENT-0 stream unregistered | brief note and §7 |
@@ -602,7 +604,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 | Movement | CREATURE-AI-0 chase amendment `RANGED0-RL-03` | kept consistent with §8 in CREATURE-AI-0 |
 | Movement | creature keep-distance steps | §4.2 Creatures (CREATURE-MOVE-1 gated) |
 | Codex | wand charms; child-owned work in Depends-on; stale composition, ITEM-MOVE-WIRE-1, MOVE-RL11 and ATTACK-0 notes | §4.2 Hooks, brief, the five notes |
-| Non-blocking | LOS query, 13.05 floor, `i25735`, NULLS FIRST, `DUR03-RL-07-WEAPON` numbers, merge scope, slot-9 key, RANGED-1 depends-on, `attack.rs:10-12` | §4, §5, §6.1.2, §6.3, §3.3, brief, §13 |
+| Non-blocking | LOS query, 13.05 floor, `i25735`, NULLS FIRST, `DUR03-RL-07-WEAPON` numbers, merge scope, slot-9 key, RANGED-1 depends-on, `apps/game-server/src/gameplay_transport/attack.rs:10-12` | §4, §5, §6.1.2, §6.3, §3.3, brief, §13 |
 
 Non-blocking items taken: PARITY_PENDING point-blank (§5), 13.05 level curve (§5), fight-mode
 factor on distance (§5), wand damage through GAME-ABILITY-01 (§5), range plus line of sight in place

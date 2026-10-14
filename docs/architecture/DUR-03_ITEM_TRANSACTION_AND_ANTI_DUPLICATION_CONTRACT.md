@@ -407,7 +407,9 @@ Rune use is a caller-chosen one-unit BURN, not `DECAY_RETIRE`.
 
 **Amendment (pending on acceptance of RANGED-0;
 `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6).**
-The weapon use amendment in §39.3 admits the closed `WeaponUseCause {Ammunition, Throwing}`.
+The weapon use amendment in §39.3 is the named aggregate `WeaponUseAggregateV1` (RANGED-0 §6.4)
+with its four closed shapes `BURN_ONE`, `DROP_SPLIT_NEW`, `DROP_WHOLE` and `DROP_MERGE_GROUND`
+under `WeaponUseCause {Ammunition, Throwing}`; it supersedes the earlier one-unit-only wording.
 
 **Amendment (pending on acceptance of TIMED-ITEM-0; `reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md` §7, §10).** `FeeBurnCause::NpcRepair` is admitted. The name
 `TimedItemCause` is reserved; its variants, including any expiry BURN sink, are admitted by
