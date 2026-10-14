@@ -5,7 +5,7 @@
   persistence, movement and protocol) and protected integration. Amended 2026-10-14 after the
   four-lane review of 2026-10-14 (all four lanes failed; every blocker is closed in §14 and the
   sections it names); the amended head needs the four lanes again. Round 2 (2026-10-14) closes the second-round
-  blockers (§14).
+  blockers (§14). Round 3 (2026-10-14) records the owner decision that chase is server-driven (§8).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698, item 1); ATTACK-0 left distance and
   throwing weapons, ammunition, wands and rods and chase movement to their own decision
@@ -29,12 +29,13 @@
 | RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
 | QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b; the §6.4 aggregate registered; the SPELL-PRESENT-0 stream registered with its missile key to u16 table (only for the projectile, §7); the slot-9 key reconciliation (§3.3) |
-| CHASE-1 | **GATED, not allocatable** (hard, movement), movement and determinism review | server-driven chase (§8). Chase stays client-driven (#1942) until the §8 gates hold | an owner decision superseding #1942; CREATURE-MOVE-1 path profile in code; the §8 pacing and wire gates |
+| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the CREATURE-MOVE-1 path profile in code; the §8 pacing rule implemented; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8 |
 | RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
-`FIGHT_MODES_INTENT` and domain 10. Quiver use needs `CONTAINER_TREE_V1` (§3.1). Chase stays
-client-driven (§8): this decision adds no server movement and no chase wire. **Projectiles:** the
+`FIGHT_MODES_INTENT` and domain 10. Quiver use needs `CONTAINER_TREE_V1` (§3.1). Chase is
+server-driven (§8, owner decision 2026-10-14): the client sends only the chase mode and the target,
+as today, and no new wire is added. **Projectiles:** the
 SPELL-PRESENT-0 presentation stream has no protocol registry row yet
 (`spell_presentation_candidate.rs`), so RANGED-1 emits no missile until that stream is registered
 by its own protocol-reviewed child; until then weapons swing without a projectile (§7). This
@@ -121,8 +122,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
 - Wands and rods: `normal_random(min, max)` of their element, no hit roll, not blocked by armor or
   shield, mana per shot (`weapons.cpp:344-351, 968-983`).
 - Chase follows the attacked creature, re-paths when it moves, waits 2,000 ms after a failed path,
-  full search with target distance 1 (`player.cpp:6139-6210`). Reference only: this repository
-  keeps chase client-driven (§8).
+  full search with target distance 1 (`player.cpp:6139-6210`). This repository adopts it with bounds:   follows Canary's server-driven chase with the owner's bounds (§8).
 
 ## 3. Equipment (QUIVER-1)
 
@@ -442,26 +442,46 @@ authority until RANGED-1 is allocated.
   `missile` key; this decision defines no second mapping, content supplies only the key, and a key
   with no binding emits no projectile (never a refusal of the swing). Amended: SPELL-PRESENT-0 §5.
 
-## 8. Chase (client-driven; CHASE-1 gated)
+## 8. Chase (server-driven, owner decision 2026-10-14)
 
-- **Decision.** Chase stays **client-driven** (LOOP-COMBAT-MODES-1: "chase stays client-driven
-  (#1942)"; `attack/tests.rs` asserts the same). The server adds no chase movement, no path, no step
-  timer and no wire. The `chase` fight mode keeps ATTACK-0 §3's "no effect on the server". The
-  VSL-MOVE-01 rule that a client route is never authority is unchanged: the client sends ordinary
-  step requests, each validated by the Movement owner. ATTACK-WIRE-1's chase toggle semantics are
-  those of #1942, not this decision.
-- **CHASE-1 is GATED and not allocatable.** A server-driven chase may return only as its own
-  decision, after all of:
-  1. an owner decision superseding #1942;
-  2. the CREATURE-MOVE-1 path profile exists in code (today `ai_think.rs` and `path_proposal.rs` do
-     not carry it; VSL-MOVE-01 §8 requires "its own accepted implementation profile");
-  3. a **per-actor** pacing clock: today the player's pacing clock is connection-local
-     (`connection.rs`, `pacing.rs`), so server steps and client steps cannot be ordered. That
-     decision must fix the actor-level clock and the order of buffered steps (client intent wins,
-     one pending step);
-  4. a protocol decision for what the client sees of a server-chosen path (re-emit and
-     correction), since "wire: none new" cannot be shown for server movement.
-- Rejected here and kept as research for that future decision: Canary's server chase (§2).
+- **Decision.** Chase is **server-driven**, as in Canary and Tibia. The owner decision of
+  2026-10-14 supersedes the earlier "chase stays client-driven" position of #1942 (LOOP-COMBAT-MODES-1
+  is rebased on this section). The client sends only the chase mode and the target (ATTACK-WIRE-1's
+  existing intents); it does not path. With `chase` set and a live target out of reach, the server
+  walks the player toward the target. `chase` loses ATTACK-0 §3's "no effect on the server" for the
+  player; `stand` and `balanced` keep it.
+- **Search bounds** (rows registered by CHASE-1; values fixed here):
+
+  | Row | Value |
+  |---|---|
+  | `RANGED0-RL-03` chase searches per window per channel | 64 per 50 ms, served in actor-id order after creature searches, inside CREATURE-AI-0's `RL-09` work-unit budget (a request over budget waits for the next window) |
+  | `RANGED0-RL-04` expansions per search | 1,024 (A*, one work unit per expansion) |
+  | `RANGED0-RL-05` path length | 12 tiles |
+  | `RANGED0-RL-06` searches per player | 1 per second |
+  | `RANGED0-RL-07` backoff after a failed search | 2 s (the player holds position and keeps target and mode) |
+
+  The path uses the CREATURE-MOVE-1 profile with player differences (no creature bans that do not
+  apply to players; the floor, zone and door rules of the Movement owner apply to every step), a goal
+  of adjacency for melee and of in-range and in-sight for distance and throwing weapons and wands,
+  and it re-searches when the target moves, within the rows above. A search never fails because of
+  the budget.
+- **Movement authority.** VSL-MOVE-01 §3 holds: only the Movement owner commits a step. A chase step
+  is a movement occurrence whose source is the server (VSL-MOVE-01 §5), validated by the same rules
+  as a client step; a refused step drops the path and starts the backoff.
+- **Pacing rule.** CONDITIONS-0 §4.3's one player pacing clock is today connection-local
+  (`connection.rs`, `pacing.rs`). CHASE-1 moves it to the actor, so a client step and a chase step
+  share one clock with a one-step buffer: **a client step always wins**; a pending chase step is
+  dropped when a client step arrives; any manual step cancels the current path (the mode stays).
+  Server steps never queue behind each other.
+- **What the client sees.** Chase steps are ordinary committed movement events for the chaser; no
+  path and no new wire are sent. Rejection and position correction use the existing movement
+  correction. The Protocol lane confirms there is no new field (CHASE-1 review).
+- **CHASE-1 depends on** the CREATURE-MOVE-1 path profile in code (today `ai_think.rs` and
+  `path_proposal.rs` do not carry it; VSL-MOVE-01 §8 requires "its own accepted implementation
+  profile") and the actor-level clock above. #2113 may implement the mode and target handling and
+  must not add a path before the profile exists.
+- Wand and distance chase uses the swing's range and line of sight (§4) as the goal; `FOLLOW` and
+  diagonal steps stay later decisions (diagonal Movement).
 
 ## 9. Rejected options
 
@@ -474,8 +494,8 @@ authority until RANGED-1 is allocated.
 - **Never merging on the ground.** Owner answer 1a (#162 5930136984): faithful, as Tibia.
 - **Choosing the merge receiver by ItemInstanceId.** DUR-03 §13 forbids it; the Ground `stack_ordinal` is
   Tibia's top item.
-- **Server-driven chase now.** It contradicts the owner decision of #1942 and needs an actor-level
-  pacing clock, the CREATURE-MOVE-1 path profile and a path wire that do not exist (§8).
+- **Client-driven chase.** The first amended draft kept it (#1942); the owner decision of
+  2026-10-14 chose server-driven chase (§8).
 - **A separate ranged timer.** It would allow two swings per interval.
 
 ## 10. Architect rulings (owner rule 5905825574)
@@ -486,8 +506,8 @@ authority until RANGED-1 is allocated.
 - **R2. Thrown weapons.** a) Tibia: break chance, else drop one unit, merging into a compatible top
   stack (recommended; owner answer 1a); b) always burn. **Ruled a).**
 - **R3. Chase steps.** a) Server-driven through the Movement owner on CREATURE-AI-0's profile with
-  player differences; b) client-driven, as the owner decided in #1942 (recommended: no server
-  movement without the §8 gates). **Ruled b)** (supersedes the first ruling a)).
+  player differences and the owner's bounds; b) client-driven (#1942). **Ruled a)** by the owner
+  decision of 2026-10-14 (the first draft ruled a), the first amendment b)).
 - **R4. Overload.** a) No attack for a due deadline above 256 weapon transactions in flight per
   channel (recommended: bounded, no queue, as WORLD-INTERACTION-0 R5); b) a queue. **Ruled a).**
 - **R5. Requirements.** a) The manual: below the level the weapon cannot be used (recommended: an
@@ -513,7 +533,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 - **Must decide now:** YES. Without it paladins, sorcerers and druids cannot auto-attack.
 - **Minimum sufficient:** no new wire; one burn cause with the accepted rune pattern; one container
-  admission; the existing Ground `stack_ordinal`; no server chase.
+  admission; the existing Ground `stack_ordinal`; the chase bounded by the owner's rows.
 - **Superseding evidence:** an official formula, TibiaPal disagreeing with Canary, or a measured
   database cost of one transaction per shot above the DUR-03 §28 envelope.
 - **Deliberately not decided:** `FOLLOW`, diagonal steps, Perfect Shot values, exercise weapons,
@@ -528,8 +548,9 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
    (quiver, Extra slot) and §5 and §6.2 (no schema change; Ground order is the existing
    `stack_ordinal`); BAGS-0 §3, §6 and §10 (quiver tree, reachable items); ATTACK-0 §4 (variants,
    RNG purposes); SPELL-PRESENT-0 §5 (weapon projectiles, after its stream is registered).
-   **Withdrawn from the first draft:** ATTACK-0 §3 (chase), CONDITIONS-0 §4.3, CREATURE-AI-0 §7 and
-   MOVE-RL-11 §4.3 (no server chase, no ordinal change).
+   ATTACK-0 §3 (chase has an effect for the player), CONDITIONS-0 §4.3 (actor-level pacing clock,
+   client step wins), CREATURE-AI-0 §5 and `RL-09` (player chase searches, the `RANGED0-RL-03` row).
+   **Withdrawn from the first draft:** CREATURE-AI-0 §7 and MOVE-RL-11 §4.3 (no ordinal change).
 2. **Serialization:** one weapon-use slot per actor; the shot unit is reserved under DUR-03 §7.1, so a
    concurrent move of that entry is refused; rule 4's lock order; the Ground tile row lock and
    counter for drops; the merge receiver is reserved at PREPARE and rechecked at commit; a known abort
@@ -540,7 +561,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
    modes are runtime; skill tries and wand mana follow R7.
 4. **Typed references:** weapons and ammunition are A12 keys; the shot entry is its ItemInstanceId
    with its parent quiver; provenance is fully typed (§6.2).
-5. **Wire:** none new; the quiver is gated by `CONTAINER_TREE_V1`; no chase wire; missiles wait for
+5. **Wire:** none new; the quiver is gated by `CONTAINER_TREE_V1`; chase adds no wire (the existing mode and target intents); missiles wait for
    the SPELL-PRESENT-0 stream registration and its u16 binding (§7). A session without
    `CONTAINER_TREE_V1` that logs in with a quiver equipped sees it as an item with no tree and its
    swings draw no ammunition (§3.1); the Extra slot's wire key stays `EXTRA` and its domain key `ammo` (§3.3), so older clients
@@ -551,11 +572,11 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 | Lane | Blocker | Closed in |
 |---|---|---|
-| Movement | connection-local pacing clock, unordered buffered steps | §8 gate 3 (no server chase now) |
-| Movement | server chase contradicts #1942 | §8, R3 now b), CHASE-1 gated |
-| Movement | CREATURE-MOVE-1 profile not in code | §8 gate 2 |
-| Protocol | chase conflict in wire comments | §8 (client-driven, nothing changes) |
-| Protocol | no client-visible server path | §8 gate 4 |
+| Movement | connection-local pacing clock, unordered buffered steps | §8 pacing rule (actor-level clock, client step wins) |
+| Movement | server chase contradicts #1942 | §8, R3 a): owner decision 2026-10-14 |
+| Movement | CREATURE-MOVE-1 profile not in code | §8 CHASE-1 depends-on |
+| Protocol | chase conflict in wire comments | §8 (existing mode and target intents; no new wire) |
+| Protocol | no client-visible server path | §8 what the client sees (ordinary movement, no path) |
 | Protocol | SPELL-PRESENT-0 stream unregistered | brief note and §7 |
 | Protocol | missile u16 has no mapping | §7 |
 | Combat | hit_chance override versus add | §5, R6 |
@@ -576,7 +597,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 | Combat | R6 contradicts Canary roles; cap 90 and 100 rows; non-anchor caps | §2, §5, R6 |
 | Persistence | DUR-03 pending text keyed by actor generation and one-unit split | DUR-03 §15, §39.1, §39.3 notes edited |
 | Persistence | restart rule versus DUR-03 §20, §7.3 | §6.2 restart and reconciliation |
-| Movement | CREATURE-AI-0 chase amendment `RANGED0-RL-03` | struck in CREATURE-AI-0 |
+| Movement | CREATURE-AI-0 chase amendment `RANGED0-RL-03` | kept consistent with §8 in CREATURE-AI-0 |
 | Movement | creature keep-distance steps | §4.2 Creatures (CREATURE-MOVE-1 gated) |
 | Non-blocking | LOS query, 13.05 floor, `i25735`, NULLS FIRST, `DUR03-RL-07-WEAPON` numbers, merge scope, slot-9 key, RANGED-1 depends-on, `attack.rs:10-12` | §4, §5, §6.1.2, §6.3, §3.3, brief, §13 |
 

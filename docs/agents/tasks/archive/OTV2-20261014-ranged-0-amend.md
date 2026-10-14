@@ -22,13 +22,13 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261014-ranged-0-amend.md
 public_contracts:
   - "DUR-03 pending RANGED-0 notes (section 15, 39.1, 39.3) edited to WeaponUseAggregateV1, still pending: persistence review"
-  - "CREATURE-AI-0 RANGED0-RL-03 chase amendment struck: movement review"
+  - "CREATURE-AI-0 RANGED0-RL-03 chase amendment kept consistent with the server-driven chase of decision section 8 (owner decision 2026-10-14): movement review"
   - "Decision section 6.2 restart reconciliation and section 5 per-role hit chance: persistence and combat review"
   - "Decision §6.4 WeaponUseAggregateV1 (DUR-03 §15, §39.1, §39.3 amendment text, active on acceptance only): persistence review"
   - "Decision §6.2 allocated UUIDv7 TransactionId, server-originated fence, composition rule 1 scope: persistence review"
   - "Decision §6.1.2 Ground order is the existing stack_ordinal (no migration): persistence review"
   - "Decision §5 and §4 hit_chance semantics, cap rows, AutoAttack routing, SwingRngPurpose: combat review"
-  - "Decision §8 chase stays client-driven, CHASE-1 gated: movement review"
+  - "Decision §8 chase is server-driven with bounded searches (owner decision 2026-10-14): movement review"
   - "Decision §7 missile stream waits for SPELL-PRESENT-0 registration: protocol review"
 depends_on: []
 blocks: []

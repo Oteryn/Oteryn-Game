@@ -404,9 +404,11 @@ decisions; until then the factor is 1.
   beyond them stay due and run in the next windows in deadline order, then `ExactActorRef`. Think
   timers keep `SKIP_TO_LATEST` (first slice §4.2): a late think runs once, never a burst.
 - A think over `RL-06` work units ends idle for that think with zero mutation (bootstrap §7).
-- **Struck (RANGED-0 amended 2026-10-14).** The earlier pending amendment that gave player chase
-  searches a row `RANGED0-RL-03` is withdrawn: chase stays client-driven (RANGED-0 §8). It may
-  return only inside the gated CHASE-1 decision.
+- **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8, owner decision 2026-10-14).** Player chase
+  searches use the same path profile with their own rows `RANGED0-RL-03` to `-07` (64 searches per
+  50 ms window per channel, 1,024 expansions and 12 tiles per search, 1 search per second per
+  player, 2 s backoff after a failure), served in actor-id order after creature searches, inside
+  `RL-09`.
 - Control, fencing, admission and player input never wait for AI work: AI budgets are separate and
   bounded (GAME-AI-01 §20). Player-visible creatures get no priority: the order is deterministic
   (SIM-DETERMINISM-01), so an overload shows as later thinks, the same on every replay.
