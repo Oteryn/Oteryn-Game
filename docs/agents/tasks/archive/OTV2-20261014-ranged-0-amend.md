@@ -55,8 +55,8 @@ external_repositories: []
 
 ### Focused
 
-- `python3 tools/agents/validate_governance.py`: see PR checks
-- `python3 -m unittest discover -s tools/agents/tests`: see PR checks
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
 - `git diff --check`: pass
 
 ### Component/integration
