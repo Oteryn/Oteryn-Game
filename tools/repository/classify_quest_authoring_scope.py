@@ -51,37 +51,36 @@ def referenced_docs(
         wanted[doc] = [hashlib.sha256(blob).hexdigest().encode() for blob in blobs]
     found: dict[str, str] = {}
     base = root / TOOL_DIR
+    token_re = re.compile(rb"[\w./\-]*\.md(?![\w\-])")
     for current, _dirs, names in os.walk(base):
         current_rel = Path(current).relative_to(root).as_posix()
-        candidates = {
-            doc: re.compile(
-                rb"(?<![\w/\-])(?:"
-                + b"|".join(
-                    re.escape(path.encode())
-                    for path in {
-                        posixpath.relpath(doc, current_rel),
-                        doc,
-                        # Tool-relative form; a bare name is only a pin for its own directory.
-                        *([posixpath.relpath(doc, TOOL_DIR)] if posixpath.dirname(doc) != TOOL_DIR else []),
-                    }
-                )
-                + rb")(?![\w\-])"
-            )
-            for doc in docs
-            if doc not in found
-        }
-        if not candidates:
+        pending = [doc for doc in docs if doc not in found]
+        if not pending:
             return found
         for name in names:
             if name.endswith(".md") or name.endswith((".gz", ".png", ".jpg", ".zip", ".otbm")):
                 continue
             data = (Path(current) / name).read_bytes()
-            for doc, pattern in candidates.items():
-                if doc in found:
-                    continue
-                if posixpath.basename(doc).encode() in data and pattern.search(data):
-                    found[doc] = f"referenced by {current_rel}/{name}"
-                elif any(digest in data for digest in wanted[doc]):
+            todo = [doc for doc in pending if doc not in found]
+            hit = [doc for doc in todo if posixpath.basename(doc).encode() in data]
+            if hit:
+                # Normalize each path-like token ("./README.md", "a/../README.md", "../x/README.md")
+                # against the referring file's directory, the tool directory and the repository root.
+                resolved: set[str] = set()
+                for match in token_re.finditer(data):
+                    token = match.group().decode("utf-8", "replace")
+                    if token.startswith("/"):
+                        continue
+                    resolved.add(posixpath.normpath(token))
+                    resolved.add(posixpath.normpath(posixpath.join(current_rel, token)))
+                    resolved.add("tool:" + posixpath.normpath(token))
+                for doc in hit:
+                    tool_form = "tool:" + posixpath.relpath(doc, TOOL_DIR)
+                    # A tool-relative bare name is only a pin for its own directory.
+                    if doc in resolved or (posixpath.dirname(doc) != TOOL_DIR and tool_form in resolved):
+                        found[doc] = f"referenced by {current_rel}/{name}"
+            for doc in todo:
+                if doc not in found and any(digest in data for digest in wanted[doc]):
                     found[doc] = f"content hash pinned by {current_rel}/{name}"
     return found
 
@@ -108,7 +107,7 @@ def classify(
             return "full", f"{status} {path}"
         if not path.startswith(TOOL_DIR + "/") or not path.endswith(".md"):
             return "full", f"not a Quest tool doc: {path}"
-        if ".." in path.split("/") or not (root / path).is_file():
+        if ".." in path.split("/") or (root / path).is_symlink() or not (root / path).is_file():
             return "full", f"unreadable doc: {path}"
         docs.append(path)
     pinned = referenced_docs(root, docs, base_blobs)
@@ -142,6 +141,22 @@ def fetch_records(repository: str, number: str, token: str) -> tuple[list[dict],
         if len(batch) < 100:
             return records, True
     return records, False
+
+
+def live_pull(repository: str, number: str, token: str) -> tuple[str, str]:
+    """Current head and base SHA of the pull request."""
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}/pulls/{number}",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "Oteryn-quest-scope",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        pull = json.load(response)
+    return str(pull["head"]["sha"]), str(pull["base"]["sha"])
 
 
 def fetch_base_blobs(repository: str, base_sha: str, token: str, records: object) -> dict[str, bytes]:
@@ -181,13 +196,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repository")
     parser.add_argument("--pull-request")
     parser.add_argument("--base-sha")
+    parser.add_argument("--head-sha")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     try:
         if args.records:
             records, complete = json.loads(args.records.read_text(encoding="utf-8")), True
         elif args.repository and args.pull_request:
-            records, complete = fetch_records(args.repository, args.pull_request, os.environ.get("GH_TOKEN", ""))
+            token = os.environ.get("GH_TOKEN", "")
+            if not (args.head_sha and args.base_sha):
+                raise ValueError("expected head and base SHA missing")
+            # The file list is mutable; it counts only if head and base were the checked-out
+            # revision before and after enumeration (merge-gate.yml does the same).
+            if live_pull(args.repository, args.pull_request, token) != (args.head_sha, args.base_sha):
+                raise ValueError("pull request moved before enumeration")
+            records, complete = fetch_records(args.repository, args.pull_request, token)
+            if live_pull(args.repository, args.pull_request, token) != (args.head_sha, args.base_sha):
+                raise ValueError("pull request moved during enumeration")
         else:
             records, complete = [], False
         base_blobs = (
@@ -196,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
             else None
         )
         verdict, reason = classify(records, root, complete=complete, base_blobs=base_blobs)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, KeyError, TypeError) as error:
         verdict, reason = "full", f"classification failed closed: {type(error).__name__}"
     reason = safe_reason(reason)
     print(f"Quest scope: {verdict} ({reason})")

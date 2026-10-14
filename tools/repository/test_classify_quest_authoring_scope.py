@@ -93,6 +93,58 @@ class SyntheticTree(unittest.TestCase):
         self.assertEqual(lines[0], "full=true")
         self.assertTrue(lines[1].startswith("reason="))
 
+    def test_dot_slash_and_dotdot_references_take_full_path(self):
+        self.write(f"{TOOL}/dots/README.md", "d\n")
+        self.write(f"{TOOL}/dots/pins.json", '{"doc": "./README.md"}\n')
+        self.write(f"{TOOL}/dots2/README.md", "d\n")
+        self.write(f"{TOOL}/dots2/pins.json", '{"doc": "x/../README.md"}\n')
+        self.write(f"{TOOL}/dots3/README.md", "d\n")
+        self.write(f"{TOOL}/dots3/sub/pins.json", '{"doc": "../README.md"}\n')
+        self.write(f"{TOOL}/dots4/README.md", "d\n")
+        self.write(f"{TOOL}/dots4/pins.json", f'{{"doc": "./{TOOL}/dots4/README.md"}}\n')
+        for d in ("dots", "dots2", "dots3", "dots4"):
+            self.assertEqual(self.verdict([rec(f"{TOOL}/{d}/README.md")]), "full", d)
+
+    def test_symlinked_doc_takes_full_path(self):
+        (self.root / TOOL / "link.md").symlink_to(self.root / "docs/note.md")
+        self.assertEqual(self.verdict([rec(f"{TOOL}/link.md", "added")]), "full")
+
+    def test_moved_pull_request_fails_closed(self):
+        import os
+        from unittest import mock
+        out = self.root / "out2.txt"
+        env = {"GITHUB_OUTPUT": str(out), "GH_TOKEN": "x"}
+        argv = ["--root", str(self.root), "--repository", "o/r", "--pull-request", "1",
+                "--base-sha", "b" * 40, "--head-sha", "a" * 40]
+        files = ([rec(f"{TOOL}/README.md")], True)
+        cases = {
+            "head moved before": [("c" * 40, "b" * 40)],
+            "head moved after": [("a" * 40, "b" * 40), ("c" * 40, "b" * 40)],
+            "base moved after": [("a" * 40, "b" * 40), ("a" * 40, "d" * 40)],
+        }
+        for name, live in cases.items():
+            with mock.patch.dict(os.environ, env), \
+                 mock.patch.object(scope, "live_pull", side_effect=live), \
+                 mock.patch.object(scope, "fetch_records", return_value=files), \
+                 mock.patch.object(scope, "fetch_base_blobs", return_value={}):
+                out.write_text("")
+                scope.main(argv)
+            self.assertIn("full=true", out.read_text(), name)
+        # Stable head and base: the unreferenced doc may skip.
+        stable = [("a" * 40, "b" * 40)] * 2
+        with mock.patch.dict(os.environ, env), \
+             mock.patch.object(scope, "live_pull", side_effect=stable), \
+             mock.patch.object(scope, "fetch_records", return_value=files), \
+             mock.patch.object(scope, "fetch_base_blobs", return_value={}):
+            out.write_text("")
+            scope.main(argv)
+        self.assertIn("full=false", out.read_text())
+        # Missing expected SHAs also fail closed.
+        with mock.patch.dict(os.environ, env):
+            out.write_text("")
+            scope.main(argv[:-2])
+        self.assertIn("full=true", out.read_text())
+
     def test_mixed_diff_takes_full_path(self):
         self.assertEqual(self.verdict([rec(f"{TOOL}/README.md"), rec(f"{TOOL}/run_checks.py")]), "full")
         self.assertEqual(self.verdict([rec(f"{TOOL}/README.md"), rec("docs/note.md")]), "full")
@@ -189,6 +241,7 @@ class WorkflowWiring(unittest.TestCase):
         self.assertIn("github.event.pull_request.base.sha", self.text)
         self.assertIn("workflow_dispatch", self.text)
         self.assertIn("--base-sha", self.text)
+        self.assertIn("--head-sha", self.text)
 
 
 if __name__ == "__main__":
