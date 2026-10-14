@@ -118,22 +118,25 @@ def _evaluate(s: dict, now: datetime) -> dict:
 
     found: dict[str, dict] = {}
     stamps: list[tuple[datetime, str]] = []
-    # The time the readback was taken: no qualifying event can lie after it, so ready_at is never in the future.
-    observed = _parse_at(s["observed_at"])
-    if (observed - now).total_seconds() > CLOCK_SKEW_SECONDS:
-        raise ValueError(f"observed_at {s['observed_at']!r} is later than the evaluator clock")
-
-    def moment(at) -> datetime:
-        """Parse an event time and bound it by the evaluator clock. One shared tolerance, so skews never add up
-        past now + skew. Applied to every time that selects or orders a record, not only to the ones that qualify."""
+    # observed_at is the time the readback was taken: no event can lie after it, so ready_at is never in the future.
+    def moment(at, label: str = "event time", ceiling: datetime = now) -> datetime:
+        """The single parser for every timestamp the evaluator reads. It bounds the time by `ceiling` plus the one
+        shared skew (never added twice). Applied to every time that selects, orders, qualifies or is compared."""
         parsed = _parse_at(at)
-        if (parsed - now).total_seconds() > CLOCK_SKEW_SECONDS:
-            raise ValueError(f"event time {at!r} is later than the evaluator clock")
+        if (parsed - ceiling).total_seconds() > CLOCK_SKEW_SECONDS:
+            raise ValueError(f"{label} {at!r} is later than its bound")
         return parsed
+
+    observed = moment(s["observed_at"], "observed_at")  # bounded by the evaluator clock
+
+    def event(at) -> datetime:
+        """An event time: bounded by the evaluator clock (via observed) and by the snapshot's own observation, since
+        no fact can postdate the single live read it claims to come from."""
+        return moment(at, "event time", min(now, observed))
 
     def stamp(item, key: str = "at") -> None:
         at = item[key]
-        stamps.append((moment(at), at))
+        stamps.append((event(at), at))
 
     state, base_ref = cand["state"], cand["base_ref"]
     if not isinstance(state, str) or not isinstance(base_ref, str):
@@ -157,7 +160,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
         hit = [r for r in runs if r["name"] == name and _sha(r["head_sha"]) == head]
         if len(hit) > 1:
             # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
-            ats = [moment(r.get("at")) for r in hit]
+            ats = [event(r.get("at")) for r in hit]
             if ats.count(max(ats)) != 1:
                 raise ValueError(f"ambiguous duplicate runs for required check {name}")
             hit = [hit[ats.index(max(ats))]]
@@ -186,7 +189,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         else:
             # Re-reviews: only the newest qualifying exact-head review is authoritative, as for check reruns.
-            ats = [moment(r.get("at")) for r in exact]
+            ats = [event(r.get("at")) for r in exact]
             latest = [r for r, a in zip(exact, ats) if a == max(ats)]
             if len({(r["state"], r["verdict"]) for r in latest}) > 1:
                 raise ValueError("conflicting exact-head reviews at the same latest time")
@@ -230,9 +233,9 @@ def _evaluate(s: dict, now: datetime) -> dict:
     for failure in _list(s["queue"]["prior_failures"], "queue.prior_failures"):
         if _sha(failure["head_sha"]) != head:
             continue
-        failed_at = moment(failure["at"])  # when this head was removed from the queue; required
+        failed_at = event(failure["at"])  # when this head was removed from the queue; required
         # The diagnosis counts only if it was recorded at or after the removal it claims to explain.
-        if _flag(failure["cause_addressed"]) and moment(failure["addressed_at"]) >= failed_at:
+        if _flag(failure["cause_addressed"]) and event(failure["addressed_at"]) >= failed_at:
             stamp(failure, "addressed_at")
         else:
             found["PRIOR_MQ_FAILURE"] = _blocker(
@@ -254,7 +257,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
         author = auth["author"]  # platform-reported login of the record, set by the readback, not by the grantee
         if not isinstance(author, str):
             raise ValueError("authorization.author must be a string login")
-        records.append((moment(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
+        records.append((event(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
     # Only records by a trusted login count; an untrusted record can neither grant nor revoke.
     trusted = [r for r in records if r[1]["author"].lower() in TRUSTED_GRANT_AUTHORS]
     newest = [r for r in trusted if r[0] == max(x[0] for x in trusted)] if trusted else []

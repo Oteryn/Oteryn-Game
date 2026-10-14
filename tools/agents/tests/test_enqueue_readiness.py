@@ -374,6 +374,41 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["queue"]["prior_failures"] = [dict(base, at="2026-10-14T10:20:00Z", addressed_at="2026-10-14T12:05:00Z")]
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])  # addressed_at beyond now + skew
 
+    def test_every_event_time_is_bounded_by_observed_at(self):
+        late = "2026-10-14T11:00:00Z"  # after observed_at (08:00) but before NOW (12:00:30)
+        def probe(mutate):
+            snap = ready()
+            snap["observed_at"] = "2026-10-14T08:00:00Z"
+            for key in ("state_at",):
+                snap["candidate"][key] = "2026-10-14T07:00:00Z"
+            for run in snap["checks"]["runs"]:
+                run["at"] = "2026-10-14T07:00:00Z"
+            for r in snap["review"]["reviews"]:
+                r["at"] = "2026-10-14T07:00:00Z"
+            for a in snap["authorization"]:
+                a["at"] = "2026-10-14T07:00:00Z"
+            snap["threads"].pop("resolved_at", None)
+            for item in snap["evidence"]["required"]:
+                item["at"] = "2026-10-14T07:00:00Z"
+            for dep in snap["dependencies"]:
+                dep["at"] = "2026-10-14T07:00:00Z"
+            mutate(snap)
+            return snap
+        self.assertEqual(evaluate(probe(lambda s: None))["verdict"], "ENQUEUE_ELIGIBLE")
+        setters = {
+            "state_at": lambda s: s["candidate"].update(state_at=late),
+            "check": lambda s: s["checks"]["runs"][0].update(at=late),
+            "review": lambda s: s["review"]["reviews"][0].update(at=late),
+            "authorization": lambda s: s["authorization"][0].update(at=late),
+            "older_review": lambda s: s["review"]["reviews"].append(
+                dict(s["review"]["reviews"][0], state="running", at=late)),
+            "older_authorization": lambda s: s["authorization"].append(
+                dict(s["authorization"][0], revoked=True, at=late)),
+        }
+        for name, mutate in setters.items():
+            with self.subTest(name):
+                self.assertEqual(reasons(probe(mutate)), ["INPUT_INCOMPLETE"])
+
     def test_future_dated_selecting_records_are_rejected(self):
         future = "2026-10-14T12:10:00Z"
         snap = ready()  # a future-dated review, rerun, authorization or failure cannot become "newest"
