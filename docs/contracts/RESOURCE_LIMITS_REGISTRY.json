@@ -10591,6 +10591,52 @@
         "apps/game-server/src/gameplay_transport/kill_reward.rs KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX"
       ],
       "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.3. Registered by OTV2-20261004-kill-reward-comp-1 (KILL-REWARD-COMP-1)."
+    },
+    {
+      "id": "WORLDINT0-RL-21",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md",
+      "resource": "PUSH_INTENT payload (command type 15, capability 11 WORLD_INTERACTION_V1)",
+      "unit": "bytes",
+      "hard_maximum": 41,
+      "configurable_range": {
+        "minimum": 41,
+        "maximum": 41
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses a payload over 41 bytes on length before reading any field; the largest valid intent (a 16-byte identity, a u64::MAX generation and two 5-byte zigzag sint32 coordinates, 18 + 11 + 6 + 6) is exactly 41 bytes. The result payload is at most 4 bytes (max_result_payload_bytes). Non-durable; nothing is allocated past the bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=41: crates/protocol-oteryn/src/world_interaction_tests.rs a_push_round_trips_and_the_largest_fits_the_bound (every 41-byte extreme decodes)",
+        "max+1=42: crates/protocol-oteryn/src/world_interaction_tests.rs malformed_pushes_fail_closed (one_over is refused LimitExceeded)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_interaction.rs MAX_PUSH_INTENT_BYTES",
+        "PUSH_INTENT command (WORLDINT-WIRE-1)"
+      ],
+      "notes": "WORLD-INTERACTION-0 \u00a710.1 and \u00a712, amended from 32 to 41 bytes by the owner on 2026-10-14 (WORLDINT-WIRE-1, #2094). Mirrors max_payload_bytes of command type 15. Registered by WORLDINT-WIRE-1."
+    },
+    {
+      "id": "WORLDINT0-RL-22",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md",
+      "resource": "USE_INTENT payload with the map_item or map_object arm of field 4 (capabilities 4, 15 and 11)",
+      "unit": "bytes",
+      "hard_maximum": 529,
+      "configurable_range": {
+        "minimum": 529,
+        "maximum": 529
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Capability 11 does not raise the USE_INTENT bound: the map_object placement is capped at 496 bytes so the largest intent (a u64::MAX tool handle, a 496-byte placement and a u64::MAX revision) is exactly 529 bytes, and the decoder refuses any larger payload before parsing.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=529: crates/protocol-oteryn/src/world_interaction_tests.rs use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes (the largest intent decodes under capabilities 4, 15 and 11)",
+        "max+1=530: the same test refuses that intent plus one byte with LimitExceeded; a 497-byte placement is refused by the encoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_object.rs MAX_USE_INTENT_BYTES and MAX_USE_WITH_PLACEMENT_BYTES",
+        "USE_INTENT command (WORLDINT-WIRE-1, capability 11 WORLD_INTERACTION_V1)"
+      ],
+      "notes": "WORLD-INTERACTION-0 \u00a710.1 and \u00a712; the owner decision of 2026-10-14 keeps 529 bytes unchanged. Same bound as ITEMUSE0-RL-03 and max_payload_bytes of command type 2. Registered by WORLDINT-WIRE-1."
     }
   ]
 }

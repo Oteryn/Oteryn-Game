@@ -2554,6 +2554,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::Exhausted,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
@@ -2617,6 +2618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition: world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 };
             }
         }
@@ -2664,6 +2666,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
+            gate_message_id: None,
         }
     }
 }
@@ -3225,6 +3228,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         let actor_floor = i32::from(position.floor);
@@ -3234,6 +3238,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::TooFar,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         // #162 5868482467 (shared-lease P1 repair r4121956127): occupancy is every currently
@@ -3263,22 +3268,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         revision,
                     }),
                     earned: connection::EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 }
             }
             Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
                 disposition: world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
                 disposition: world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {
                 UseOutcome::rejected()

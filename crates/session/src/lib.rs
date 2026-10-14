@@ -41,6 +41,7 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
+use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
@@ -609,6 +610,9 @@ pub struct CommandOutcome<D> {
     pub result_server_sequence: u64,
     pub world_spatial_delta: Option<AppliedDelta<WorldSpatialObservation>>,
     pub world_object_overlay_delta: Option<AppliedDelta<WorldObjectOverlayEntry>>,
+    /// The gate message id (1 to 127) of a `SEALED` use result under capability 11, so a client
+    /// can show the gate's own reason; `None` for every other disposition and command.
+    pub gate_message_id: Option<u8>,
 }
 
 /// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
@@ -1868,6 +1872,7 @@ impl<S: SessionStream> Session<S> {
             result_server_sequence: result.server_sequence,
             world_spatial_delta,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         })
     }
 
@@ -1875,7 +1880,14 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
-        let disposition = world_object::decode_use_result(&result.payload)?;
+        let (disposition, gate_message_id) =
+            world_object::decode_use_result_with_gate(&result.payload)?;
+        // Dispositions 11 to 17 and the gate message id exist only under capability 11.
+        check_use_result_negotiated(
+            disposition,
+            gate_message_id,
+            self.is_selected(world_interaction::CAPABILITY_WORLD_INTERACTION_V1),
+        )?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -1890,6 +1902,7 @@ impl<S: SessionStream> Session<S> {
             result_server_sequence: result.server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
+            gate_message_id,
         })
     }
 
@@ -2502,6 +2515,23 @@ async fn read_frame_body<S: AsyncRead + Unpin>(
 /// The server sends `ACCEPTED` for every typed disposition except `REJECTED`, which it sends
 /// with `REJECTED` (`connection.rs` `serve_admitted`, both `STEP` and `USE_INTENT`); any other
 /// pairing is a violation.
+/// A server that sends a capability 11 disposition (11 to 17) or a gate message id to a session
+/// that did not select capability 11 broke the negotiation: the result fails closed.
+fn check_use_result_negotiated(
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+    world_interaction_selected: bool,
+) -> Result<(), SessionError> {
+    if (disposition.needs_world_interaction() || gate_message_id.is_some())
+        && !world_interaction_selected
+    {
+        return Err(SessionError::WorldObject(
+            world_object::WorldObjectError::Malformed,
+        ));
+    }
+    Ok(())
+}
+
 fn check_status_pairing(
     command_id: u64,
     status: CommandStatus,
@@ -3978,7 +4008,7 @@ mod tests {
                 41,
                 7,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?;
             let (client, peer) = script_peer(vec![
                 Step::ReadCommand,
@@ -4015,7 +4045,7 @@ mod tests {
                 41,
                 7,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?;
             let (client, peer) = script_peer(vec![Step::ReadCommand, Step::Send(committed)]);
             let mut session = Session::admit(client, admission()?).await?;
@@ -5337,7 +5367,7 @@ mod tests {
             sequence,
             id,
             CommandStatus::Accepted,
-            &world_object::encode_use_result(disposition),
+            &world_object::encode_use_result(disposition).unwrap_or_default(),
         )?))
     }
 
@@ -5563,6 +5593,68 @@ mod tests {
             let result = Session::admit(client, item_admission()?).await;
             drop(peer);
             assert!(matches!(result, Err(SessionError::WorldSpatial(_))));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn capability_11_dispositions_and_the_gate_id_need_the_negotiated_capability() {
+        use UseDisposition as D;
+        for (disposition, gate) in [
+            (D::Sealed, Some(9)),
+            (D::Locked, None),
+            (D::NotPossible, None),
+        ] {
+            assert!(check_use_result_negotiated(disposition, gate, true).is_ok());
+            assert!(matches!(
+                check_use_result_negotiated(disposition, gate, false),
+                Err(SessionError::WorldObject(_))
+            ));
+        }
+        for disposition in [D::Committed, D::NothingToUse, D::NoTarget, D::Rejected] {
+            assert!(check_use_result_negotiated(disposition, None, false).is_ok());
+        }
+    }
+
+    #[test]
+    fn a_sealed_use_result_without_capability_11_fails_closed_and_others_carry_no_gate_id()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let sealed = world_object::encode_use_result_with_gate(UseDisposition::Sealed, Some(9))
+                .map_err(|error| format!("{error:?}"))?;
+            let (client, peer) = item_peer(
+                item_snapshot(vec![loot_corpse(1, 40, at(1, 0))])?,
+                vec![],
+                vec![
+                    ItemStep::Expect(
+                        world_object::COMMAND_TYPE_USE_INTENT,
+                        world_object::encode_use_item_intent(handle(40)),
+                    ),
+                    ItemStep::Send(use_result(41, 7, UseDisposition::NothingToUse)?),
+                    ItemStep::Expect(
+                        world_object::COMMAND_TYPE_USE_INTENT,
+                        world_object::encode_use_item_intent(handle(40)),
+                    ),
+                    ItemStep::Send(Step::Send(encode_command_result(
+                        1,
+                        42,
+                        8,
+                        CommandStatus::Accepted,
+                        &sealed,
+                    )?)),
+                ],
+            );
+            let mut session = Session::admit(client, item_admission()?).await?;
+            let used = session.use_item(handle(40)).await?;
+            assert_eq!(used.disposition, UseDisposition::NothingToUse);
+            assert_eq!(used.gate_message_id, None);
+            // Capability 11 is not selected: the SEALED result is a negotiation fault.
+            assert!(matches!(
+                session.use_item(handle(40)).await,
+                Err(SessionError::WorldObject(_))
+            ));
+            drop(session);
+            peer.await??;
             Ok(())
         })?
     }

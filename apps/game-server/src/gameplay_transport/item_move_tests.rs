@@ -447,6 +447,7 @@ fn use_command(command_id: u64) -> UseCommand {
 const CORPSE_ONLY: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
     container_tree: false,
+    world_interaction: false,
 };
 
 fn into_backpack(source: ItemHandle) -> Vec<u8> {
@@ -594,6 +595,7 @@ fn equipment_and_inventory_sources_are_not_supported() -> TestResult {
         let selection = ItemMoveSelection {
             equip_drop: true,
             container_tree: false,
+            world_interaction: false,
         };
         let to_head = encode_item_move_intent_for(
             &ItemMoveIntent {
@@ -732,6 +734,7 @@ fn an_unknown_transfer_or_an_unreadable_backpack_after_it_disconnects() -> TestR
 const EQUIP: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: false,
+    world_interaction: false,
 };
 
 /// The view after a capability 12 snapshot showing `shown`.
@@ -1216,7 +1219,7 @@ fn capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
                 1,
                 1,
                 CommandStatus::Accepted,
-                &encode_use_result(UseDisposition::Committed),
+                &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?,
             delta_frame(2, &opened)?,
             move_result(3, 2, ItemMoveOutcome::Moved)?,

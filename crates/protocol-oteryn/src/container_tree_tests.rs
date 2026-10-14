@@ -423,6 +423,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
     let tree = ItemMoveSelection {
         equip_drop: true,
         container_tree: true,
+        world_interaction: false,
     };
     let worst = ItemMoveIntent {
         source: handle(u64::MAX),
@@ -437,6 +438,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
     let only_tree = ItemMoveSelection {
         equip_drop: false,
         container_tree: true,
+        world_interaction: false,
     };
     assert_eq!(decode_item_move_intent_for(&bytes, only_tree), Ok(worst));
     assert!(bytes.len() > MAX_ITEM_MOVE_INTENT_BYTES);
@@ -446,6 +448,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
         let selection = ItemMoveSelection {
             equip_drop,
             container_tree: false,
+            world_interaction: false,
         };
         assert_eq!(
             encode_item_move_intent_for(&worst, selection),
