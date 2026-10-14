@@ -4,6 +4,8 @@
 - Status: **CANDIDATE with owner decisions D58-D60 and D62-D68 taken (§2)**. Acceptance requires
   exact-head validation, independent review and protected integration.
 - Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): character durability PASS for the DEATH-1 scope, DUR-03 transfers DEFECT (item loss is not implemented, DEATH-3), restart safety DEFECT (the pending respawn is consumed before the actor is placed, so a crash loses the recorded respawn position of §4.5; a missing death policy lets a player respawn without a durable death). The owner's acceptance is not recorded. Reopened as CANDIDATE until these are resolved and re-reviewed.
+- Resolution 2026-10-13 (`DEATH-WIRE-1`, D1022): the two restart-safety defects are fixed by DEATH-RESTART-SAFETY-1 (#2004: the respawn row is kept until the placement is recorded; an unbound session never respawns without a durable death) together with CHAR-POSITION-1 (#2006: the completed placement is stored as the durable last position). The owner waived DUR-03 item loss (DEATH-3) for this acceptance (D1022, option 2a): a death records an empty lost-item set and selects no Amulet of Loss (§4.4 "Delivery gap"), so no corpse or item workflow is wired and the contract is unchanged. DEATH-3 stays the open child of §5 and re-enters through its own allocation. The acceptance records after the independent re-review.
+- Waiver lifted 2026-10-13 (`DEATH-COMPLETE-0`, `OTERYN_GAME_DEATH_COMPLETE0_PLAYER_DEATH_MODULE_DECISION_2026-10-13.md`): the owner directed the whole death module to be delivered as one unit, so the D1022 waiver no longer applies to DEATH-3. The batches, the single receipt change and the DUR-03 rules are in that decision; this decision's rules are unchanged.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (target Global Tibia at 2026-09-27, D33)
 - Amends: `OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md` difference 1 (D58). Its
@@ -219,15 +221,15 @@ production_authority_changed: false
 cross_repository_authority_changed: false
 implementation_may_resume: false
 required_fresh_allocation: true
-required_independent_review: "exact-head independent review (Character durability, DUR-03 transfers, restart safety)"
+required_independent_review: "exact-head independent review (Character durability, restart safety, and the D1022 waiver: a death records an empty lost-item set and selects no Amulet of Loss; the DUR-03 transfer checks move to DEATH-3)"
 implementation_lanes: [DEATH-0, DEATH-1, DEATH-2, DEATH-3, DEATH-4]
 required_revalidation:
   - "DEATH-1: the loss matches the D58 formula at levels 1, 23, 24, 100 and 500 with 0 to 4 blessings; floor rounding; experience never below 0; skills and magic level unchanged; a retry returns the first result; a stale fence writes nothing"
   - "DEATH-2: HP 0 from a creature starts one death; no input until respawn; respawn at the temple with full HP and mana; a PvP-contributed death is out of scope"
   - "DEATH-0: the migration admits a death receipt that lowers experience and writes blessings and the respawn position, bound to the occurrence; XP-award receipts are unchanged"
-  - "DEATH-3: the drop ladder per blessing count; Amulet of Loss consumed by a DUR-03 destroy and no loss with fewer than 5 blessings; exemptions up to level 8 and without a vocation; after a restart every outstanding cause resumes and commits once; no respawn before all item operations commit; no duplication"
+  - "DEATH-3 (deferred by D1022, not part of the first-death acceptance; checked when DEATH-3 is allocated): the drop ladder per blessing count; Amulet of Loss consumed by a DUR-03 destroy and no loss with fewer than 5 blessings; exemptions up to level 8 and without a vocation; after a restart every outstanding cause resumes and commits once; no respawn before all item operations commit; no duplication"
 remaining_unknowns:
   - the Newhaven low-level exemption at the target date
   - temple positions (content)
-next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates DEATH-0, and DEATH-1 after DEATH-0 and progression readiness."
+next_action: "#162 validates this exact head, routes the independent re-review of the first player death (DEATH-0, DEATH-1 and DEATH-2 are implemented), integrates the exact reviewed head through Merge Queue, records the owner acceptance with the D1022 waiver, and keeps DEATH-3 and DEATH-4 (blessing purchase, after the NPC trade lane) as the open children for their own allocation. The PvP-death parts of §4.1 and §4.5 that PARTY-PVP-0 made effective stay out of this acceptance: they are not activated until PVP-DEATH-1 lands and is reviewed."
 ```

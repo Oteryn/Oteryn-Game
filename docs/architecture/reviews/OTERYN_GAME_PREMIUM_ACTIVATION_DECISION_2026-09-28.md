@@ -1,7 +1,7 @@
 # Premium activation decision
 
 - Decision: `PREMIUM-ACTIVATION-V1`
-- Status: **CANDIDATE with owner decisions D69-D76 taken (§2)**. Acceptance requires exact-head
+- Status: **ACCEPTED with owner decisions D69-D76 taken (§2)**. Accepted by the owner (blakinio) on 2026-10-13, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-PREMIUM-ACTIVATION`, `OTERYN_GAME_ACCEPT_PREMIUMACTIVATION_ACCEPTANCE_DECISION_2026-10-13.md`); no rule text changes. Original gate: Acceptance requires exact-head
   validation, independent review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (Global Tibia at 2026-09-27, D33)

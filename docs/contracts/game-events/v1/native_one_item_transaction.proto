@@ -76,6 +76,24 @@ package oteryn.events.v1;
 // once per (World, Channel, base bundle digest, placement key, reset epoch).
 // The pickup that follows is an ordinary B3 TRANSFER event. Its payload and
 // envelope stay within DUR03-RL-07.
+// The NPC trade (operation tag 9, NPC-TRADE-1; NPC-0 §4 command 8
+// NPC_TRADE_INTENT and §5.5, NPC_SINGLE_TRADE_COMMIT_V1) is one item-only
+// transaction per (occurrence, Character) under the closed NpcTradeCause: a
+// BUY burns the gold fee plan's coin stacks (FeeBurnCause::NpcTrade), mints
+// the change and the bought item; a SELL burns the sold units and mints the
+// coins. Every MINT is a fresh stack in a new direct entry of the equipped main
+// backpack. Its own rows are DUR03-RL-*-NPC-TRADE-* (BUY 23 participants / 66
+// work units, SELL 4 / 9; payload <= 27,094 B, EventEnvelope <= 27,408 B). It
+// carries its CommandRef in the payload; the envelope has no session, command
+// or causation.
+// The item use (operation tag 10, ITEM-USE-1; decision ITEM-USE-0 §4, DUR-03 §15,
+// §39.1 and §39.3 item-use amendment) is one player-originated event per use of
+// one consumable unit (food or potion): a BURN of exactly one unit from the used
+// stack, or, for a potion whose content names an empty flask, one unit-level
+// TRANSFORM whose output is one flask unit added to a compatible stack of the
+// main backpack or planted as a fresh item. At most two items are touched; nothing
+// is minted. Its own rows are DUR03-RL-*-ITEM-USE*; payload and envelope stay
+// within DUR03-RL-07.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -89,6 +107,8 @@ message OneItemTransactionV1 {
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
+    OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
+    OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
   }
 }
 
@@ -408,4 +428,88 @@ message OneItemMapItemMintV1 {
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
   uint64 connection_generation = 5; // the commanding session's
+}
+
+// Closed NpcTradeCause: the catalogue offer and the trade command occurrence.
+message OneItemNpcTradeCauseV1 {
+  string npc_key = 1;            // the NPC's content key, <= 512 B
+  uint64 catalogue_revision = 2; // the bound trade catalogue revision
+  uint32 offer_index = 3;        // the offer in that catalogue (< offer count)
+  uint32 side = 4;               // 1 = BUY, 2 = SELL
+  bytes occurrence = 5;          // the trade command occurrence, 16-byte UUIDv7
+}
+
+// One line, in commit order. kind 1 = coin BURN, 2 = coin MINT, 3 = item BURN,
+// 4 = item MINT. A BURN carries before (LIVE) and after (the same identity,
+// World and definition: RETIRED with quantity 0, or LIVE with fewer units in
+// the same entry); a MINT carries only after (LIVE) in a new direct entry.
+message OneItemNpcTradeLineV1 {
+  uint32 kind = 1;
+  optional OneItemStateV1 before = 2;
+  OneItemStateV1 after = 3;
+  uint64 placement_ordinal = 4; // the entry before a BURN, the new entry of a MINT; non-zero
+}
+
+// NPC trade transaction (NPC-TRADE-1). BUY lines: 1..20 coin BURNs in the fee
+// plan's order (worth ascending, then highest placement ordinal first; only
+// the last keeps units), the change (burned - total, below the last burned
+// coin's worth: change / 100 platinum, then change % 100 gold, each only when
+// positive) and the item MINT last. SELL lines: one item BURN of a non-coin
+// item, then the proceeds as crystal, platinum and gold, each only when
+// positive, at most 100 crystal. MINT entries are consecutive after every BURN
+// entry.
+message OneItemNpcTradeV1 {
+  OneItemNpcTradeCauseV1 cause = 1;
+  OneItemCommandRefV1 command = 2; // the trade command, command_id non-zero
+  bytes character_id = 3;          // 16-byte UUIDv7
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 runtime_scope_ownership_generation = 6; // non-zero
+  bytes backpack_item_instance_id = 7;           // parent of every line's entry
+  uint32 quantity = 8;                           // 1..100 units of the item
+  uint64 unit_price = 9;                         // 0..20,000,000 (0: NPC-0 §5.3/§5.4)
+  uint64 total_gold_units = 10; // unit_price x quantity; BUY <= 20,000,000, SELL <= 1,009,999
+  uint64 burned_gold_units = 11; // BUY: worth of the burned coins; SELL: 0
+  uint64 minted_gold_units = 12; // BUY: the change; SELL: total_gold_units
+  repeated OneItemNpcTradeLineV1 lines = 13; // BUY 1..23, SELL 1..4 (price 0: the item line only)
+}
+
+// Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
+// command's CommandRef, which is the cause's identity.
+message OneItemUseCauseV1 {
+  uint32 kind = 1; // 1 Food, 2 Potion
+  string content_revision = 6;
+  string ruleset_revision = 7;
+  string sim_revision = 8;
+  OneItemCommandRefV1 command_ref = 9;
+}
+
+// The flask unit of a potion use: either a compatible stack E of the main
+// backpack grows by one unit (`before` present, same identity and definition) or
+// a fresh item F (`before` absent) of quantity 1 is planted in a new entry.
+message OneItemUseFlaskV1 {
+  OneItemStateV1 before = 1; // E, LIVE; absent for a fresh flask item
+  OneItemStateV1 after = 2;  // LIVE; E with quantity + 1, or F with quantity 1
+  OneItemContainerEntryV1 entry = 3; // E's entry, or F's new entry
+}
+
+// One item use: exactly one unit of `source_before` leaves (quantity - 1 and
+// the identity kept, or RETIRED at quantity 0) from its container entry. A
+// potion with an empty flask adds `flask` (the TRANSFORM output); `flask_missing`
+// records a flask the character had no room for (burn shape, PARITY_PENDING
+// until ITEM-MOVE-2b); `flask` and `flask_missing` are never both set, and
+// neither is set for Food. Touches 1 ItemInstance (2 with `flask`).
+message OneItemUseV1 {
+  OneItemStateV1 source_before = 1; // LIVE, quantity >= 1
+  OneItemStateV1 source_after = 2;  // same identity, World and definition
+  OneItemContainerEntryV1 source_entry = 3; // the used stack's entry before
+  OneItemUseCauseV1 cause = 4;
+  bytes character_id = 5; // exactly 16-byte non-nil UUIDv7
+  bytes world_id = 6;
+  bytes channel_id = 7;
+  uint64 runtime_scope_ownership_generation = 8; // non-zero
+  uint64 expected_session_generation = 9; // non-zero, the rule 2 fence
+  bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
+  OneItemUseFlaskV1 flask = 11;
+  bool flask_missing = 12;
 }

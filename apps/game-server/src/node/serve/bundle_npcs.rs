@@ -17,9 +17,11 @@ use crate::foundation::{
     ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacementError, NpcPlacementTable,
     NpcPlacements,
 };
+use crate::gameplay_transport::NpcTalkBook;
 use oteryn_world_bundle::{bundle, npc};
 use std::collections::BTreeSet;
 use std::path::Path;
+use std::sync::Arc;
 
 /// The NPC frame of a verified bundle and the catalogue digest its compiler classified with.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +36,8 @@ pub(super) struct BundleNpcs {
 pub(super) struct LoadedNpcCatalogue {
     admitted: BTreeSet<String>,
     catalogue_sha256: String,
+    /// What the admitted NPCs say (NPC-CMD-1a).
+    talk: Arc<NpcTalkBook>,
 }
 
 /// What the Channel does with the bundle's NPCs at start.
@@ -44,6 +48,7 @@ pub(super) enum NpcBoot {
         table: NpcPlacementTable,
         admitted: BTreeSet<String>,
         production: bool,
+        talk: Arc<NpcTalkBook>,
     },
     /// Outside production only: no NPC actor, for the logged reason.
     Skip {
@@ -130,6 +135,7 @@ impl LoadedNpcCatalogue {
                 .map(|reference| reference.key.clone())
                 .collect(),
             catalogue_sha256,
+            talk: Arc::new(NpcTalkBook::from_model(&model)),
         })
     }
 }
@@ -165,6 +171,7 @@ pub(super) fn bind(
             table: frame.table,
             admitted: loaded.admitted.clone(),
             production,
+            talk: Arc::clone(&loaded.talk),
         }),
     }
 }
@@ -182,6 +189,14 @@ pub(super) fn prepare(
         .map(|(catalogue, root)| LoadedNpcCatalogue::from_catalogue(catalogue, root))
         .transpose()?;
     bind(frame, loaded.as_ref(), production).map(Some)
+}
+
+/// The conversation book of the placed NPCs, for the gameplay listener.
+pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
+    match boot {
+        Some(NpcBoot::Place { talk, .. }) => Some(Arc::clone(talk)),
+        _ => None,
+    }
 }
 
 /// Places the bound NPCs on the Channel once, before its creatures, and logs the outcome.
@@ -206,6 +221,7 @@ pub(super) fn place(
             table,
             admitted,
             production,
+            ..
         }) => {
             let outcome = runtime
                 .place_npcs(table, |key| admitted.contains(key), *production)
@@ -341,6 +357,7 @@ mod tests {
         LoadedNpcCatalogue {
             admitted: admitted.iter().map(|key| (*key).to_owned()).collect(),
             catalogue_sha256: catalogue.to_owned(),
+            talk: Arc::default(),
         }
     }
 

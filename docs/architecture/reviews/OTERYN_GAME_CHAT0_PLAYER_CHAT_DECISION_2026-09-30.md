@@ -3,7 +3,7 @@
 - Decision: `CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   security and privacy) and protected integration.
-- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, head `a1d2ee2d8b9f`): protocol PASS, privacy PASS, security DEFECT. The owner's acceptance is not recorded because the security review found (1) no rule requiring a rate gate before the Channel lock and entity clone for a `say`, and (2) the cast-path mute of §6 is not wired in the runtime. Reopened as CANDIDATE until both are resolved and re-reviewed. Both are resolved in code and text (the cast-path mute by CHAT-MUTE-CAST-1 #2003; the pre-lock gate by DEATH-WIRE-1 and §6 "Gate before the Channel lock"); the acceptance (D1021, no waiver) waits for the re-review. A yell inside its cooldown is refused at this gate too.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to finish the playable game (2026-09-30); players cannot talk
   today
@@ -167,6 +167,11 @@ does not use the sender's spam bucket, which MAIL-0's posting rate replaces.
   character is muted for 5 s × n², n being its offences in the last 30 minutes (`CHAT0-RL-04`, an
   Oteryn choice: the sources say "recently"). More than 20 distinct private recipients in 10 minutes
   mutes the same way. After a mute the bucket refills to full.
+- **Gate before the Channel lock.** A `say` is first checked against the speaker's limiter
+  (mute, then an empty bucket) before the Channel runtime lock is taken and before any entity
+  list is cloned, so a flooding or muted character costs the Channel one map lookup. The gate
+  takes no line and starts the offence of a line beyond an empty bucket; an admitted line takes
+  its line, and the yell level gate, in the full path (`CHAT-DEFECT-RATE-GATE`). A yell inside its 30 s cooldown is refused at this gate too, before the level is known, because it needs no Channel state and would otherwise cost both locks per attempt. The one visible difference from the full path is a speaker who dropped below the yell level during the cooldown: that yell reads `EXHAUSTED` instead of `LEVEL_TOO_LOW`; both take nothing from the bucket. Outside its cooldown a yell takes its line before its level is checked: an under-level yell costs a line like a say, and a yell beyond an empty bucket starts the offence at this gate, before the level is known. Once the full path has refused a yell for its level, the speaker's further yells are refused `LEVEL_TOO_LOW` at this gate for 2.5 s (the refill interval), each taking its line, so repeated under-level yells drain the bucket and reach the offence and mute without the Channel locks; they cost the Channel at most one full-path attempt per refill interval or mute. A level gained meanwhile is seen at the next full-path yell. An intent the runtime does not serve yet (private messages and rooms, CHAT-2) is refused `CHAT_UNAVAILABLE` at this gate, before both locks; it takes no line. CHAT-2 gates those intents here when it implements them.
 - **A muted character can neither chat nor cast any spell** (the manual): the spell path (command 3)
   reads the same mute.
 - **Durable mute.** `game_character_chat_mutes` (CharacterId, the last 16 offence times, muted

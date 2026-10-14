@@ -6,6 +6,9 @@ mod fixture;
 #[path = "monk_save_fresh_fixture.rs"]
 mod fresh_fixture;
 
+#[path = "kill_reward_postgres_e2e_tests.rs"]
+mod kill_reward_e2e;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -202,6 +205,7 @@ impl Dependencies {
             active_generation: None,
             premium_coordinator: None,
             qualified_room: None,
+            combat_room: None,
             achievements: &self.achievements,
             imported_charms: &self.charms,
             spell_states: Mutex::default(),
@@ -214,10 +218,12 @@ impl Dependencies {
             quest_catalogue: None,
             quest_sessions: std::sync::Mutex::default(),
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
+            npc_conversations: Default::default(),
             wheel_ruleset: None,
             wheel_sessions: std::sync::Mutex::default(),
             progression_sessions: std::sync::Mutex::default(),
             last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
+            input_gate: Default::default(),
             premium: crate::premium::refresh::PremiumRefresher::new(
                 Default::default(),
                 harness.root.clone(),
@@ -493,6 +499,111 @@ fn boundary_removed_actor_cannot_save_values_from_its_old_slot() -> TestResult {
                 .await,
             MonkSave::NotApplicable
         );
+        assert_eq!(revision(&harness).await?, 1);
+        assert_eq!(receipt_count(&harness).await?, 0);
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// OPS-SAVE-1: tracks the admitted session as the node does after a successful admission read.
+fn track(owner: &ComposedFreshAdmission<'_, '_, '_>, dependencies: &Dependencies) -> TestResult {
+    use crate::gameplay_transport::last_position::AdmissionPosition;
+    assert!(owner.track_restored(
+        dependencies.admitted.game_session_id,
+        dependencies.actor,
+        &AdmissionPosition::FirstLogin,
+        fence(1)?,
+    ));
+    Ok(())
+}
+
+#[test]
+fn shutdown_flush_saves_live_monk_values_and_skips_untracked_actors() -> TestResult {
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "flush_monk_live", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        dependencies.initialize(&owner).await;
+        // Untracked: nothing is written.
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
+        assert_eq!(receipt_count(&harness).await?, 0);
+        assert_eq!(revision(&harness).await?, 1);
+        track(&owner, &dependencies)?;
+        // The session stays live and fenced in; the flush is the only writer.
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
+        let state = harness
+            .root
+            .read_character_monk_state(&authority, fence(1)?.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(state.harmony(), 3);
+        assert!(state.serene_forced_remaining_micros() > 0);
+        assert!(state.serene_forced_remaining_micros() <= 7_000_000);
+        assert_eq!(revision(&harness).await?, 2);
+        assert_eq!(receipt_count(&harness).await?, 1);
+        let (session, _) = FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session_at(dependencies.admitted.game_session_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            session.session_state(),
+            crate::foundation::GameSessionState::Active
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailable_store()
+-> TestResult {
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "flush_monk_fenced", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        dependencies.initialize(&owner).await;
+        track(&owner, &dependencies)?;
+        // An unproven save is reported, so the flush is retried and never marked done.
+        sqlx::query("ALTER TABLE game_character_monk_state_receipts RENAME TO spell_fixture_unavailable_receipts").execute(&harness.pool).await?;
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 1);
+        assert_eq!(revision(&harness).await?, 1);
+        sqlx::query("ALTER TABLE spell_fixture_unavailable_receipts RENAME TO game_character_monk_state_receipts").execute(&harness.pool).await?;
+        // A session that ended meanwhile is fenced out: nothing is written, nothing is retried.
+        dependencies.loss(&harness, -1).await?;
+        assert!(matches!(
+            FreshAdmissionStore::from_root(harness.root.clone())
+                .release_expired_loss(
+                    dependencies.admitted.game_session_id,
+                    &crate::gameplay_transport::canonical_uuid(&id(40))
+                )
+                .await
+                .map_err(debug)?,
+            crate::durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+        ));
+        assert_eq!(owner.flush_monk_states(&mut Default::default()).await, 0);
         assert_eq!(revision(&harness).await?, 1);
         assert_eq!(receipt_count(&harness).await?, 0);
         drop(owner);

@@ -38,6 +38,7 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
+use oteryn_protocol_oteryn::world_clock::{CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK};
 use oteryn_protocol_oteryn::world_map::{
     CAPABILITY_WORLD_MAP_VIEW_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
 };
@@ -77,12 +78,18 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
 ];
 
-/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the Item view set (which
-/// offers 4 `ITEM_VIEW_MOVE_V1`) plus capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6.
-/// A bundle World boots only against a generation whose Item key set names every bundle Item.
-/// Only a bundle World returns it; the registry entry stays `offered: false` and its `offer_gate`
-/// names this offer. 18 is above every offered ID, so appending it keeps the set ascending.
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a): capability 3
+/// `NPC_SERVICE_V1` (a bundle World places the NPCs), then the Item view set (which offers 4
+/// `ITEM_VIEW_MOVE_V1`), then capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6. A bundle
+/// World boots only against a generation whose Item key set names every bundle Item. Only a
+/// bundle World returns it; the registry entries of 3 and 18 stay `offered: false` and their
+/// `offer_gate` names this offer. 3 is below and 18 above every other offered ID, so the set is
+/// ascending.
 pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
+    const NPC_SERVICE: OfferedCapability = OfferedCapability {
+        id: CAPABILITY_NPC_SERVICE_V1,
+        requires: &[],
+    };
     const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
         id: CAPABILITY_WORLD_MAP_VIEW_V1,
         requires: &[
@@ -90,10 +97,11 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
             CAPABILITY_WORLD_SPATIAL_ENTITIES,
         ],
     };
-    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 1];
+    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 2];
+    set[0] = NPC_SERVICE;
     let mut index = 0;
     while index < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
-        set[index] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
+        set[index + 1] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
         index += 1;
     }
     set
@@ -197,6 +205,7 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
+    (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

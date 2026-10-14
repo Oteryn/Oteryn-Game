@@ -86,6 +86,28 @@ For an ungoverned, low-risk and reversible implementation detail, state a bounde
 
 For Oteryn-v2 foundation or architecture continuation, resolve current progress, blockers and next action from live Issue/PR/check state and the active task checkpoint. Treat dated programme-status and coordination-register documents as historical snapshots unless a protected change explicitly refreshes and re-establishes them as current.
 
+### Push and CI economy
+
+- Build a coherent set of edits before pushing; prefer one reviewable commit or a few meaningful ones. Never commit per file, per review reply or per evidence line, and skip no-op commits and merge-base refreshes after readiness.
+- Run cheap focused checks while building and one full exact-head validation at readiness (*Local checks by changed path*, then CI on the frozen head).
+- CI is path-based: `merge-gate.yml` classifies the changed paths (`tools/repository/classify_pr_test_lanes.py`) and starts the Rust, Windows and other heavy lanes only for the paths that need them, so a docs-only or task-record-only push skips them. Exceptions are in *Local checks by changed path*. A newer head cancels the older run of the same PR (per-PR concurrency), so every extra push wastes a run.
+- The Quest authoring workflow (`quest-authoring-schema.yml`, about 18 minutes) skips `run_checks.py` when a PR changes only added or modified `.md` files under `tools/content-schema/quest-authoring/` that no file there references by path or content hash (`tools/repository/classify_quest_authoring_scope.py`). README files that a hash manifest pins, mixed diffs, renames, deletes, unknown statuses, and workflow, build or dependency changes still run it in full; the job and its check name always report. In `run_checks.py` the slow unittest discovery runs last, after the cheap consistency checks, so a red Quest PR fails early.
+- Squash merge the final delivery.
+
+### Silent operation
+
+This binds every role, the control plane, architect and integrators included, and overrides harness defaults that ask for a reply, a status checklist or a visible outcome on every event.
+
+- End every turn with exactly one of: `.` when there is nothing for the owner; the pending owner questions (*Owner questions in batches*); `BLOCKER` with lettered options and a recommendation; or one line `DONE <task_id> <PR>` after a merge to `main`. Workers and lane leads report to their lead or the control plane with `FREEZE <sha>`, `BLOCKER`/`QUESTION` or `done`; a subagent's final report follows its definition.
+- Never write status updates, progress narration, summaries, `waiting for CI` messages to the owner, lists of what you checked, lane or DAG tables, acknowledgements or push notifications. State lives in the `STATE` comment and task records, not in chat.
+- Answer a no-op wake (subscription, enqueue or check-suite notice, a green, cancelled or superseded run, an echo of your own comment) with `.`.
+- Only the active control plane and a task session for its own PR subscribe to PR activity; only the control plane schedules check-ins. Subagent workers do neither.
+- When the owner asks you something directly, answer it fully.
+
+### Owner questions in batches
+
+Do not ask the owner one question at a time; keep working on everything the questions do not block, and proceed on a stated assumption for a reversible, ungoverned detail. Workers and lane leads send questions to the active control plane (their report or the `STATE` decision queue); with no control plane, collect them into one message. When the owner writes to you directly, put any question back in that same reply. The control plane sends every pending question at once, as soon as it has them: numbered, one context line each, lettered options and a recommendation, so the owner can answer `1a 2b`.
+
 ## Architecture or domain ownership
 
 Also read:

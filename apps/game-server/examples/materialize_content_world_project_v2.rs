@@ -26,9 +26,11 @@ use oteryn_game_server::content::{
     item_abilities::apply_equip_abilities_v1,
     item_admission::{
         apply_item_admission_v1, apply_item_admission_v2, apply_item_admission_v2_cheese,
+        apply_item_admission_v3,
     },
     item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
+    item_consumption_promotion::apply_item_consumption_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
     item_document_promotion::apply_item_document_promotion_v1,
@@ -588,6 +590,63 @@ fn admit_cheese_on_corpse_admitted(
     Ok(true)
 }
 
+// ITEM-SEM-USE-2 admits the consumable Items and lowers their consumption on exactly the
+// cheese-admitted package (tree digest of D3-8).
+const CHEESE_ADMITTED_PREDECESSOR: &str =
+    "9765ddf321d887855c381a7dc4d1fb07ceb7186406dc0c129c1b1aadd79383b6";
+/// Revisions are immutable (DUR-04): the consumable package is a new project revision.
+const CONSUMABLES_ADMITTED_PROJECT_REVISION: &str = "item-sem-use-2-consumables-20261013-r1";
+
+fn admit_consumables_on_cheese_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CHEESE_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let admitted = apply_item_admission_v3(&mut draft)?;
+    let (food, potions) = apply_item_consumption_promotion_v1(&mut draft)?;
+    draft.core.project_revision = CONSUMABLES_ADMITTED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "consumable_admitted_items={admitted} consumption_food={food} consumption_potions={potions} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
+fn admit_cheese_from_stage(stage: &Path, output: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_cheese_on_corpse_admitted(stage_parent, stage_name, output)? {
+        return Err("corpse-admitted stage is not the cheese predecessor".into());
+    }
+    Ok(())
+}
+
+fn admit_consumables_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_consumables_on_cheese_admitted(stage_parent, stage_name, output)? {
+        return Err("cheese-admitted stage is not the consumables predecessor".into());
+    }
+    Ok(())
+}
+
 fn materialize_from_predecessor(
     source: &Path,
     output: &Path,
@@ -595,27 +654,31 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
-    if admit_cheese_on_corpse_admitted(parent, name, output)? {
+    if admit_consumables_on_cheese_admitted(parent, name, output)? {
         return Ok(());
     }
-    // The pinned predecessor predates both admissions: stage the corpse-admitted package beside
-    // the output and admit the cheese on top of it, so the result is the tracked package.
-    let stage = output.with_file_name(format!(
-        ".{}-corpse-stage",
-        output
-            .file_name()
-            .ok_or("output basename missing")?
-            .to_string_lossy()
-    ));
-    if admit_corpse_on_reconciled(parent, name, &stage)? {
-        let stage_parent = stage.parent().ok_or("stage parent missing")?;
-        let stage_name = stage.file_name().ok_or("stage basename missing")?;
-        let chained = admit_cheese_on_corpse_admitted(stage_parent, stage_name, output);
-        fs::remove_dir_all(&stage)?;
-        if !chained? {
-            return Err("corpse-admitted stage is not the cheese predecessor".into());
+    // The pinned predecessor predates the admissions: stage each package beside the output and
+    // admit the next one on top of it, so the result is the tracked package.
+    let output_name = output
+        .file_name()
+        .ok_or("output basename missing")?
+        .to_string_lossy()
+        .into_owned();
+    let cheese_stage = output.with_file_name(format!(".{output_name}-cheese-stage"));
+    if admit_cheese_on_corpse_admitted(parent, name, &cheese_stage)? {
+        let chained = admit_consumables_from_stage(&cheese_stage, output);
+        fs::remove_dir_all(&cheese_stage)?;
+        return chained;
+    }
+    let corpse_stage = output.with_file_name(format!(".{output_name}-corpse-stage"));
+    if admit_corpse_on_reconciled(parent, name, &corpse_stage)? {
+        let chained = admit_cheese_from_stage(&corpse_stage, &cheese_stage)
+            .and_then(|()| admit_consumables_from_stage(&cheese_stage, output));
+        fs::remove_dir_all(&corpse_stage)?;
+        if cheese_stage.exists() {
+            fs::remove_dir_all(&cheese_stage)?;
         }
-        return Ok(());
+        return chained;
     }
     let filesystem = ProjectFilesystemLimits {
         project: main_world_limits(),
@@ -2904,6 +2967,32 @@ mod cheese_admission_revision_tests {
         assert!(after.contains(
             "draft.core.project_revision = CHEESE_ADMITTED_PROJECT_REVISION.to_owned();"
         ));
+    }
+}
+
+#[cfg(test)]
+mod consumables_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The consumable
+    /// admission and consumption lowering run only in `admit_consumables_on_cheese_admitted`,
+    /// which mints its own revision.
+    #[test]
+    fn consumables_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_consumables_on_cheese_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_consumables_on_cheese_admitted body");
+        for call in [
+            ["apply_item_admission_v3", "(&mut draft)"].concat(),
+            ["apply_item_consumption_promotion_v1", "(&mut draft)"].concat(),
+        ] {
+            assert_eq!(source.matches(call.as_str()).count(), 1);
+            let (_, after) = body.split_once(call.as_str()).expect("step call");
+            assert!(after.contains(
+                "draft.core.project_revision = CONSUMABLES_ADMITTED_PROJECT_REVISION.to_owned();"
+            ));
+        }
     }
 }
 
