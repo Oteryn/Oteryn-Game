@@ -235,6 +235,7 @@ fn scenario() -> TestResult {
             wheel_sessions: std::sync::Mutex::default(),
             progression_sessions: std::sync::Mutex::default(),
             last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
+            input_gate: Default::default(),
             premium: crate::premium::refresh::PremiumRefresher::new(
                 Default::default(),
                 harness.root.clone(),

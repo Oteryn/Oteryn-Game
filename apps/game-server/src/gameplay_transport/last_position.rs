@@ -143,11 +143,16 @@ impl LastPositionFlush {
     /// writes, and mark it done only once none failed. The node stops waiting at its budget.
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
+        // OPS-SAVE-2: admissions and player commands stop, and those in flight finish, before
+        // the first snapshot, so no write below is overtaken. Server-driven work is not input.
+        authority.input_gate.quiesce().await;
         let mut monks_settled = std::collections::HashSet::new();
+        let mut training_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
             // OPS-SAVE-1: the monk values of the live actors go with the positions.
             let failed = authority.write_due_last_positions(true).await
-                + authority.flush_monk_states(&mut monks_settled).await;
+                + authority.flush_monk_states(&mut monks_settled).await
+                + authority.flush_spell_training(&mut training_settled).await;
             if failed == 0 {
                 self.done.cancel();
                 return;
@@ -156,6 +161,46 @@ impl LastPositionFlush {
         }
         // Never done: the node's budget ends its wait, and the shutdown is reported incomplete.
         operator_event("last_position_flush_incomplete");
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// OPS-SAVE-2: the spell-training checkpoint of every tracked live actor, the forced
+    /// actor-end save run while the session is still Active (a terminal session is fenced out).
+    /// Returns the number of unproven saves, which the caller retries; settled sessions are
+    /// skipped. Familiar state is not flushed: its save is a logout save, valid only after the
+    /// grace deadline.
+    pub(super) async fn flush_spell_training(
+        &self,
+        settled: &mut std::collections::HashSet<GameSessionId>,
+    ) -> usize {
+        let mut failed = 0;
+        for (session, actor) in self.last_positions.tracked_actors() {
+            if settled.contains(&session) {
+                continue;
+            }
+            // In-memory pre-filter: an actor with nothing to checkpoint costs no store read.
+            if !self.has_training_to_flush(session, actor).await {
+                settled.insert(session);
+                continue;
+            }
+            if self.save_spell_training(actor, session, true).await
+                == super::actor_spell::TrainingSave::Unknown
+            {
+                failed += 1;
+            } else {
+                settled.insert(session);
+            }
+        }
+        failed
+    }
+
+    async fn has_training_to_flush(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
+        let runtime = self.runtime.lock().await;
+        self.spell_states
+            .lock()
+            .await
+            .has_training_to_flush(&runtime, actor, session)
     }
 }
 

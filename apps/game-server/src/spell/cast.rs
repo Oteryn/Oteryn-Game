@@ -368,6 +368,16 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
+    /// FOOD-REGEN-1 successor: the fed time extended by `regeneration_seconds` under one successor
+    /// revision, so the new condition is published like any other ACTOR_VITALS-revision change.
+    /// `None` when eating is refused (full or unrepresentable) or the revision is exhausted.
+    pub(crate) fn after_food(&self, regeneration_seconds: u16, now_ms: u64) -> Option<Self> {
+        let mut next = self.clone();
+        super::actor_conditions::eat_food(&mut next, regeneration_seconds, now_ms).ok()?;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
+
     /// Test only: stages a wounded actor (no damage owner exists yet).
     #[cfg(test)]
     pub(crate) const fn set_health_for_test(&mut self, health: u32) {

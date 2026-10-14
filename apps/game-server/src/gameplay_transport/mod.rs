@@ -13,8 +13,10 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod input_gate;
 mod item_move;
 mod item_ref_admission;
+mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
@@ -29,6 +31,7 @@ mod monster_ai_cycle;
 mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
+mod npc_trade_command;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
@@ -536,6 +539,7 @@ pub async fn serve_gameplay(
         wheel_sessions: std::sync::Mutex::default(),
         progression_sessions: std::sync::Mutex::default(),
         last_positions: last_position::LastPositions::default(),
+        input_gate: input_gate::InputGate::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -745,6 +749,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub(crate) last_positions: last_position::LastPositions,
+    /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(crate) input_gate: input_gate::InputGate,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -2897,6 +2903,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
+    async fn npc_trade(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> npc_trade_command::NpcTradeStep {
+        npc_trade_command::npc_trade(self, actor, command, intent).await
+    }
+
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
@@ -3145,6 +3160,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
+    async fn use_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> UseOutcome {
+        self.use_backpack_item(actor, command, item).await
     }
 
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
@@ -3577,10 +3602,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         result
     }
 
+    async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
+        self.input_gate.enter().await
+    }
+
     async fn resume(
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(AdmissionRefusal::Unavailable);
+        };
         let admitted = self.resume_lost(attempt).await?;
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
@@ -3626,6 +3659,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(Unavailable);
+        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
