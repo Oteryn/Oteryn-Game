@@ -390,11 +390,11 @@ fn publish(code: &str) -> Decision {
     }
 }
 
+/// Exchanges sent, decisions asked (command, operation) and logged events.
+type Driven = (Vec<(Operation, String)>, Vec<(String, String)>, Vec<String>);
+
 /// Drive the consumer until its scripted source runs dry.
-fn drive(
-    script: Vec<Result<Vec<u8>, Failure>>,
-    decisions: Vec<Decision>,
-) -> (Vec<(Operation, String)>, Vec<(String, String)>, Vec<String>) {
+fn drive(script: Vec<Result<Vec<u8>, Failure>>, decisions: Vec<Decision>) -> Driven {
     // Tests run in parallel; each polls its consumer on its own thread.
     thread_local!(static LOG: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) });
     LOG.with_borrow_mut(Vec::clear);

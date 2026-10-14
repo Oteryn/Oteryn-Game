@@ -3255,7 +3255,7 @@ async fn character_commands_flow(database: &Database) -> TestResult {
         (
             65,
             create_intent(65, 41, 90, 8, "Hero Ce", (now - 400, now - 100)),
-            "CHAR_CMD_EXPIRED",
+            "CHAR_CMD_INTENT_EXPIRED",
         ),
         (
             66,
