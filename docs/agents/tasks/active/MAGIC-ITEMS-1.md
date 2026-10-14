@@ -71,11 +71,15 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   on the manifest-recorded winning source.
 - Codex P2 on 7401dd64 (`aggressive` and `self_target` unchecked): repaired; both are checked against the
   registrars with the converter defaults.
+- Codex P2 on 5e0f8fdf (only the last conjure count per item audited): repaired; every conjuring spell
+  of the item is kept and each count must equal the charges (item 3174 has three, all 10).
+- Codex P2 on 5e0f8fdf (an incomplete carrier inventory passes): repaired; the audited names must equal
+  the 36 names of the section 9 groups, else the tool exits 1 without writing.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 7 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 8 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

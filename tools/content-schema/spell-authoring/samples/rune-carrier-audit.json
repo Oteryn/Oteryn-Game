@@ -45,8 +45,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "animate dead rune",
+     "conjure_counts": {
+      "animate dead rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -179,8 +180,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "cure poison rune",
+     "conjure_counts": {
+      "cure poison rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -313,8 +315,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "avalanche rune",
+     "conjure_counts": {
+      "avalanche rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -449,8 +452,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "chameleon rune",
+     "conjure_counts": {
+      "chameleon rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -583,8 +587,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "convince creature rune",
+     "conjure_counts": {
+      "convince creature rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -718,8 +723,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "disintegrate rune",
+     "conjure_counts": {
+      "disintegrate rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -852,8 +858,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "destroy field rune",
+     "conjure_counts": {
+      "destroy field rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -986,8 +993,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "energy field rune",
+     "conjure_counts": {
+      "energy field rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -1122,8 +1130,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "energy wall rune",
+     "conjure_counts": {
+      "energy wall rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -1258,8 +1267,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 2,
-     "conjure_spell": "energy bomb rune",
+     "conjure_counts": {
+      "energy bomb rune": 2
+     },
      "ours": 2,
      "pass": true
     },
@@ -1394,8 +1404,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 6,
-     "conjure_spell": "explosion rune",
+     "conjure_counts": {
+      "explosion rune": 6
+     },
      "ours": 6,
      "pass": true
     },
@@ -1530,8 +1541,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "fire field rune",
+     "conjure_counts": {
+      "fire field rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -1666,8 +1678,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "fire wall rune",
+     "conjure_counts": {
+      "fire wall rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -1802,8 +1815,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 5,
-     "conjure_spell": "fireball rune",
+     "conjure_counts": {
+      "fireball rune": 5
+     },
      "ours": 5,
      "pass": true
     },
@@ -1938,8 +1952,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 2,
-     "conjure_spell": "fire bomb rune",
+     "conjure_counts": {
+      "fire bomb rune": 2
+     },
      "ours": 2,
      "pass": true
     },
@@ -2074,8 +2089,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "great fireball rune",
+     "conjure_counts": {
+      "great fireball rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -2210,8 +2226,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 10,
-     "conjure_spell": "heavy magic missile rune",
+     "conjure_counts": {
+      "heavy magic missile rune": 10
+     },
      "ours": 10,
      "pass": true
     },
@@ -2346,8 +2363,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 5,
-     "conjure_spell": "holy missile rune",
+     "conjure_counts": {
+      "holy missile rune": 5
+     },
      "ours": 5,
      "pass": true
     },
@@ -2473,8 +2491,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 5,
-     "conjure_spell": "icicle rune",
+     "conjure_counts": {
+      "icicle rune": 5
+     },
      "ours": 5,
      "pass": true
     },
@@ -2609,8 +2628,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "intense healing rune",
+     "conjure_counts": {
+      "intense healing rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -2746,8 +2766,11 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 10,
-     "conjure_spell": "practise magic missile",
+     "conjure_counts": {
+      "light magic missile rune": 10,
+      "lightest magic missile": 10,
+      "practise magic missile": 10
+     },
      "ours": 10,
      "pass": true
     },
@@ -3282,8 +3305,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "magic wall rune",
+     "conjure_counts": {
+      "magic wall rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -3418,8 +3442,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "paralyze rune",
+     "conjure_counts": {
+      "paralyze rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -3544,8 +3569,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 2,
-     "conjure_spell": "poison bomb rune",
+     "conjure_counts": {
+      "poison bomb rune": 2
+     },
      "ours": 2,
      "pass": true
     },
@@ -3680,8 +3706,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "poison field rune",
+     "conjure_counts": {
+      "poison field rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -3816,8 +3843,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "poison wall rune",
+     "conjure_counts": {
+      "poison wall rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -3952,8 +3980,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "soulfire rune",
+     "conjure_counts": {
+      "soulfire rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -4088,8 +4117,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 10,
-     "conjure_spell": "stalagmite rune",
+     "conjure_counts": {
+      "stalagmite rune": 10
+     },
      "ours": 10,
      "pass": true
     },
@@ -4224,8 +4254,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "stone shower rune",
+     "conjure_counts": {
+      "stone shower rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -4360,8 +4391,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 3,
-     "conjure_spell": "sudden death rune",
+     "conjure_counts": {
+      "sudden death rune": 3
+     },
      "ours": 3,
      "pass": true
     },
@@ -4496,8 +4528,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 4,
-     "conjure_spell": "thunderstorm rune",
+     "conjure_counts": {
+      "thunderstorm rune": 4
+     },
      "ours": 4,
      "pass": true
     },
@@ -4632,8 +4665,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 1,
-     "conjure_spell": "ultimate healing rune",
+     "conjure_counts": {
+      "ultimate healing rune": 1
+     },
      "ours": 1,
      "pass": true
     },
@@ -4770,8 +4804,9 @@
      "verdict": "agree"
     },
     "charges": {
-     "conjure_count": 2,
-     "conjure_spell": "wild growth rune",
+     "conjure_counts": {
+      "wild growth rune": 2
+     },
      "ours": 2,
      "pass": true
     },
@@ -4878,6 +4913,11 @@
    "paralyze rune"
   ],
   "checks_pass": 34,
+  "inventory": {
+   "expected": 36,
+   "missing": [],
+   "unexpected": []
+  },
   "largest_area_tiles": 37,
   "largest_field_tiles": 12
  }

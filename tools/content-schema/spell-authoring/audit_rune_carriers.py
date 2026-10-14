@@ -236,8 +236,8 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
                          'source': resolution['source']['url'], 'captured': resolution['source']['captured'],
                          'pass': ours_value == current}
     conjure = conjures.get(item_key)
-    checks['charges'] = ({'ours': rune.get('charges'), 'conjure_spell': conjure[0], 'conjure_count': conjure[1],
-                          'pass': rune.get('charges') == conjure[1]} if conjure else
+    checks['charges'] = ({'ours': rune.get('charges'), 'conjure_counts': conjure,
+                          'pass': all(count == rune.get('charges') for count in conjure.values())} if conjure else
                          {'ours': rune.get('charges'), 'verdict': 'no_conjuring_spell', 'pass': True})
     checks['stack'] = stack_facts(profiles.get(item_key))
     abilities = entry.get('dependencies', {}).get('abilities', [])
@@ -260,13 +260,17 @@ def audit(catalogue, documents, census, resolutions, profiles):
         spell = entry['bundle']['spell']
         conjure = spell.get('execution', {}).get('conjure')
         if conjure:
-            conjures[conjure['result']['key']] = (spell['name'].lower(), conjure['count'])
+            conjures.setdefault(conjure['result']['key'], {})[spell['name'].lower()] = conjure['count']
     by_item = {profile['authoring']['item']['key']: profile for profile in profiles['records']}
     carriers = [audit_carrier(entry, references, regs.get(vs.rune_name(entry['bundle']['spell']['name']), {}),
                               resolutions.get('spells', {}), conjures, by_item)
                 for entry in catalogue['bundles'] if entry['bundle']['spell']['carrier'] == 'rune']
     carriers.sort(key=lambda row: row['name'])
+    names = {row['name'] for row in carriers}
+    expected = {name for _, group in GROUPS.values() for name in group}
     summary = {'carriers': len(carriers),
+               'inventory': {'expected': len(expected), 'missing': sorted(expected - names),
+                             'unexpected': sorted(names - expected)},
                'checks_pass': sum(1 for row in carriers if row['verdict'] == 'checks_pass'),
                'checks_fail': sorted(row['name'] for row in carriers if row['verdict'] == 'checks_fail'),
                'largest_area_tiles': max((row['checks']['area']['tiles'] for row in carriers), default=0),
@@ -298,7 +302,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--check', action='store_true', help='fail if the committed audit is stale')
     args = parser.parse_args(argv)
-    text = render(document())
+    doc = document()
+    inventory = doc['summary']['inventory']
+    if inventory['missing'] or inventory['unexpected']:
+        print(f'rune carrier inventory differs from RUNE-USE-0 section 9: {inventory}', file=sys.stderr)
+        return 1
+    text = render(doc)
     if args.check:
         if not OUT.exists() or OUT.read_text(encoding='utf-8') != text:
             print(f'{OUT.name} is stale; run python audit_rune_carriers.py', file=sys.stderr)

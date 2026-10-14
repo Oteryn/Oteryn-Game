@@ -68,6 +68,15 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(rows['great fireball rune']['failed'], ['area'])
         self.assertEqual(rows['great fireball rune']['checks']['charges']['verdict'], 'no_conjuring_spell')
         self.assertEqual(summary['checks_fail'], ['fire wall rune', 'great fireball rune'])
+        self.assertIn('energy wall rune', summary['inventory']['missing'])
+
+    def test_every_conjure_count_is_audited(self):
+        entries = [carrier('sudden death rune', 3155, 3), conjure('sudden death rune', 3155, 3),
+                   conjure('practise sudden death', 3155, 1)]
+        _, rows = run(entries, [profile('candidate:item/3155')])
+        charges = rows['sudden death rune']['checks']['charges']
+        self.assertEqual(charges['conjure_counts'], {'practise sudden death': 1, 'sudden death rune': 3})
+        self.assertFalse(charges['pass'])
 
     def test_current_resolution_replaces_the_field(self):
         entries = [carrier('sudden death rune', 3155, 3)]
@@ -97,8 +106,9 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
 
     def test_missing_item_evidence_fails(self):
-        _, rows = run([carrier('unknown rune', 9999, 1)], [profile('candidate:item/9999')])
+        summary, rows = run([carrier('unknown rune', 9999, 1)], [profile('candidate:item/9999')])
         self.assertEqual(rows['unknown rune']['failed'], ['group', 'item_id', 'vocations'])
+        self.assertEqual(summary['inventory']['unexpected'], ['unknown rune'])
         self.assertIsNone(rows['unknown rune']['section_9_group'])
 
     def test_committed_audit_is_current(self):
