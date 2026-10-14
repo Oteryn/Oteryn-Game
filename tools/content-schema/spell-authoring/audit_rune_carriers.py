@@ -23,7 +23,7 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
   they name;
 - `rune.charges` against the conjuring spell's `count` where both exist (§3);
 - the rune item's stack facts in the native Item profiles (stackable, stack of 100, §3);
-- the authored area (hit cells `x` and `C` only): at most 37 tiles, so the victim cap 2 x tiles stays at or below 74 (RL-08),
+- the authored area (hit cells `x` and `C` only; a radius or beam area fails as unaudited): at most 37 tiles, so the victim cap 2 x tiles stays at or below 74 (RL-08),
   and at most 12 tiles for a rune that creates fields (RL-07).
 
 The rune joins and the aliases are those of `verify_spells.py`. A carrier that fails any check stays
@@ -98,8 +98,12 @@ def group_of(name):
 
 
 def area_tiles(ability):
-    """Tiles of one ability's area: the largest direction; no area is the target tile only."""
-    matrix = (ability.get('area') or {}).get('matrix')
+    """Tiles of one ability's area: the largest direction; no area is the target tile only. A radius or beam area
+    (schema `area` oneOf) is not counted here, so it returns None and the area check fails until the audit covers it."""
+    area = ability.get('area') or {}
+    if set(area) - {'matrix'}:
+        return None
+    matrix = area.get('matrix')
     if not matrix:
         return 1
     # Only hit cells count, as in the runtime geometry: `x` and the hit centre `C`, never the non-hit centre `c`.
@@ -267,7 +271,9 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
                                        {source: bool(value) for source, value in
                                         registrar_values(registrar, 'optionalTarget', False).items()},
                                        recorded=recorded(entry, base + 'targeting/cast_at_position'))
-    aim = any(page['fields'].get('aimattarget') == 'yes' for page in pages.values()) and targeting.get('needs_direction')
+    # Aim at Target is a spell field, so it is read from the rune's Infobox Spell pages, not its Infobox Object pages.
+    aim = (any(page['fields'].get('aimattarget') == 'yes' for page in (spell_pages or {}).values())
+           and targeting.get('needs_direction'))
     checks['aim_at_target'] = {'ours': targeting.get('aim_at_target', False), 'expected': bool(aim),
                                'pass': targeting.get('aim_at_target', False) == bool(aim)}
     # The parameter mode as `convert_spells.Spell.targeting` derives it from either registrar's parameter flags.
@@ -306,11 +312,15 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
                          {'ours': rune.get('charges'), 'verdict': 'no_conjuring_spell', 'pass': True})
     checks['stack'] = stack_facts(profiles.get(item_key))
     abilities = entry.get('dependencies', {}).get('abilities', [])
-    tiles = sum(area_tiles(ability) for ability in abilities) if abilities else 1
+    counted = [area_tiles(ability) for ability in abilities] or [1]
+    unaudited = [index for index, value in enumerate(counted) if value is None]
+    tiles = sum(value for value in counted if value is not None)
     creates_fields = any(effect.get('operation') == 'create_item'
                          for effect in entry.get('dependencies', {}).get('effects', []))
     checks['area'] = {'tiles': tiles, 'victim_cap': 2 * tiles, 'creates_fields': creates_fields,
-                      'pass': tiles <= AREA_TILES_MAX and (not creates_fields or tiles <= FIELD_TILES_MAX)}
+                      **({'unaudited_abilities': unaudited} if unaudited else {}),
+                      'pass': not unaudited and tiles <= AREA_TILES_MAX and
+                      (not creates_fields or tiles <= FIELD_TILES_MAX)}
     group, needs = group_of(name)
     failed = sorted(field for field, row in checks.items() if not row['pass'])
     return {'name': name, 'item': item_key, 'section_9_group': group, 'section_9_needs': needs,

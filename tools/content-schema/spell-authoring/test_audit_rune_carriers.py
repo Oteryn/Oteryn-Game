@@ -55,6 +55,8 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(audit.area_tiles({}), 1)
         self.assertEqual(audit.area_tiles({'area': {'matrix': {'north': ['xxCxx'], 'diagonal': ['..x', '.Cx', 'x..']}}}), 5)
         self.assertEqual(audit.area_tiles({'area': {'matrix': {'north': ['xxx', 'xcx', 'xxx']}}}), 8)
+        self.assertIsNone(audit.area_tiles({'area': {'radius_tiles': 5}}))
+        self.assertIsNone(audit.area_tiles({'area': {'length_tiles': 8, 'spread_tiles': 3}}))
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': [True, False]}}, 1), {'canary': False})
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': True}}, 0), {'canary': True})
         self.assertEqual(audit.registrar_blocking({'canary': {'isBlocking': True}}, 1), {'canary': False})
@@ -125,6 +127,26 @@ class RuneCarrierAuditTest(unittest.TestCase):
             row = rows['sudden death rune']
             self.assertEqual(row['checks']['group']['references']['fandom'], 'support')
             self.assertEqual(row['failed'], failed)
+
+    def test_radius_and_beam_areas_fail_as_unaudited(self):
+        entry = carrier('great fireball rune', 3191, 4)
+        entry['dependencies']['abilities'] = [{'area': {'radius_tiles': 99}}, {}]
+        _, rows = run([entry], [profile('candidate:item/3191')])
+        area = rows['great fireball rune']['checks']['area']
+        self.assertEqual((area['unaudited_abilities'], area['tiles'], area['pass']), ([0], 1, False))
+        self.assertEqual(rows['great fireball rune']['failed'], ['area'])
+
+    def test_aim_at_target_reads_the_spell_pages(self):
+        profiles = [profile('candidate:item/3155')]
+        spell = {'template': 'Infobox Spell', 'title': 'Sudden Death Rune',
+                 'fields': {'name': 'Sudden Death Rune', 'aimattarget': 'yes'}}
+        thing = {'template': 'Infobox Object', 'title': 'Sudden Death Rune',
+                 'fields': {'name': 'Sudden Death Rune', 'itemid': '3155', 'aimattarget': 'yes'}}
+        for pages, expected in (([spell], True), ([thing], False)):
+            _, rows = run([carrier('sudden death rune', 3155, 3, needs_direction=True, aim_at_target=expected)],
+                          profiles, spell_pages=pages)
+            aim = rows['sudden death rune']['checks']['aim_at_target']
+            self.assertEqual((aim['expected'], aim['pass']), (expected, True))
 
     def test_targeting_flags_and_native_resolution(self):
         _, rows = run([carrier('sudden death rune', 3155, 3, aggressive=False)], [profile('candidate:item/3155')])

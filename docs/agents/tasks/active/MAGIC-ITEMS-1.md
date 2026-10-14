@@ -113,12 +113,16 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   the group is now compared with the `runegroup` of the rune's wiki spell page, joined by name as the
   converter does, as well as with the registrars. Intense and Ultimate Healing now carry their Fandom
   `healing` reference; all 36 carriers keep their verdicts.
+- Codex P2 x2 on 7bbfd609: (1) Aim at Target was read from the rune's Infobox Object pages; it is now
+  read from its Infobox Spell pages, where the wiki states it. (2) A radius or beam area (schema `area`
+  oneOf) counted as one tile, so it could bypass RL-07/RL-08; it now fails the area check as unaudited.
+  No carrier uses either (all areas are matrices), so all 36 keep their verdicts.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 17 tests OK
-- spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 19 tests OK
+- spell-authoring `unittest discover`: 351 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok
 - `python tools/agents/validate_governance.py`: pass
