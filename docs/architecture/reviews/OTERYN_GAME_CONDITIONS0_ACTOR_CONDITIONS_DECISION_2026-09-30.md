@@ -64,7 +64,7 @@ and show?
   `StepDisposition` is `Moved`, `Blocked`, `Rejected` (`world_spatial.rs:37-41`).
 - Creatures think once per 1,000 ms and take at most one step per think (D115, `ai_think.rs`).
 - Vitals are runtime-actor-local (SPELL-D2). `ACTOR_VITALS` is at most 32 bytes and rejects unknown
-  fields (`actor_spell.rs:37`); its worst case is 27 bytes (SPELL-D8).
+  fields (`crates/protocol-oteryn/src/actor_spell.rs:37`); its worst case is 27 bytes (SPELL-D8).
 - ITEM-USE-0 §6.1 (merged) defines `FoodRegeneration` with its own key, `FULL` at 1,200 s, no gain
   in a protection zone, coexisting with Recovery.
 - SPELL-D8 H-1 (#1360) made the remaining forced Serene time durable: a bounded column, a receipt,
@@ -160,10 +160,10 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 | Family | Conflict key | Policy | Gate or effect |
 |---|---|---|---|
-| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes and chat are unaffected |
+| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes are unaffected, and the condition itself does not gate chat (a CHAT-0 §6 mute is a separate rule) |
 | `PACIFIED` | `pacified` | refresh the duration | refuses setting an attack target and every offensive action; a running attack target is cleared on application |
 | `POWERLESS` | `powerless` | refresh the duration | refuses attack spells and offensive runes; support spells, items and melee are unaffected |
-| `AGONY` | `agony` | replace when the new total is at least the remaining one | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it; ends only by duration, death or the V1 lifecycle boundaries of §6.3 (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
+| `AGONY` | `agony` | replace when the new total is at least the remaining one | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it (an explicit exception to §3.2); ends only by duration, death or the V1 lifecycle boundaries of §6.3 (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
 | `EXHAUST` | none | not a condition | projection of the GAME-ABILITY-01 cooldown group (the "You are exhausted" refusal); no `ConditionInstance` exists and no key is spent |
 | `INFIGHT` | none | not a condition | projection of the ATTACK-0 60 s in-fight deadline for the client icon only; ATTACK-0 stays its sole owner and the lifecycle (§6.1) is unchanged |
 
@@ -189,7 +189,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - **Tick order.** Ticks due in one simulation tick run in the key `(due tick, actor id, instance
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
-- **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
+- **Overload.** At most `COND0-RL-03` ticks (damage and regeneration, as `ability/condition.rs` counts them) per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
 - **Instance limit.** One instance per conflict key gives at most 28 today (the exhaustive §3.5
   count: the 24 keys of the `ConflictKey` enum on main and the four new §3.5 keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
@@ -283,7 +283,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
   5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
-- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`); offensive rune use has no wire command yet (RUNE-USE-0 is a candidate), so its refusal disposition for `pacified` and `powerless` is defined by that child's own protocol review; `agony` gates nothing. A cast refused by `muted` keeps the already accepted SPELL-PRESENT-0 §§6 and 8 result `detail` `MUTED` (no refusal smoke) unchanged. The typed reasons new in §3.5 (`pacified`, `powerless`) stay server-side (audit and log) and reach the client only through the refusal extension that COND-WIRE-2 carries. No bit, capability, field or enum value is registered by this decision.
+- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their condition icons (all four) are routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`), not `REENTRY_PROTECTED` (5), which stays the ATTACK-0 re-entry answer; a spell refused by `pacified` or `powerless` shows no refusal smoke, like `MUTED`; offensive rune use has no wire command yet (RUNE-USE-0 is a candidate), so its refusal disposition for `pacified` and `powerless` is defined by that child's own protocol review; `agony` gates nothing. A cast refused by `muted` keeps the already accepted SPELL-PRESENT-0 §§6 and 8 result `detail` `MUTED` (no refusal smoke) unchanged. The typed reasons new in §3.5 (`pacified`, `powerless`) stay server-side (audit and log) and reach the client only through the refusal extension that COND-WIRE-2 carries. No bit, capability, field or enum value is registered by this decision.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.
 - **Other actors.** The VIS-2 `WORLD_SPATIAL_ENTITIES` entry gains `speed` (u16) behind the same
@@ -296,7 +296,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 |---|---|
 | `COND0-RL-01` instances per actor | 32 (was 16; §3.5) |
 | `COND0-RL-02` minimum tick interval | 1,000 ms |
-| `COND0-RL-03` damage ticks per actor per simulation tick | 4 |
+| `COND0-RL-03` ticks (damage and regeneration) per actor per simulation tick | 4 |
 
 ## 9. Rejected options
 

@@ -10,7 +10,7 @@
 
 - Once the condition in the status line is met, the CONDITIONS-0 status line reads ACCEPTED, pointing here.
 - §3.5 is new rule text accepted with it: keys, policies and gates for `muted`, `pacified`, `powerless` and `agony`, `exhaust` and `infight` as projections only, and `COND0-RL-01` raised from 16 to 32.
-- The condition icons for the §3.5 families are not part of this acceptance; they go to COND-WIRE-2 (§7). No wire change is made here.
+- The condition icons for the §3.5 families are not part of this acceptance; they go to COND-WIRE-2 (§7), which also carries the new typed refusal reasons for `pacified` and `powerless` only (a `muted` cast keeps the SPELL-PRESENT-0 `MUTED` detail; `agony` gates nothing). No wire change is made here.
 - Amendments that other decisions wrote as "pending on acceptance" keep their wording; each takes effect only when its own source decision is accepted.
 
 ## 2. Acceptance record
