@@ -1573,7 +1573,7 @@ mod tests {
             vocation: *definition.vocations.iter().next().unwrap(),
             level: 999,
             magic_level: 999,
-            premium: true,
+            premium: crate::spell::CasterPremium::Current,
             mana: 1_000_000,
             max_mana: 1_000_000,
             soul: 10_000,

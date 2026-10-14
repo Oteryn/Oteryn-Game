@@ -7,7 +7,7 @@ use serde_json::Value;
 
 use super::*;
 use crate::ability::RevisionSet;
-use crate::spell::OperationalCastFacts;
+use crate::spell::{CasterPremium, OperationalCastFacts};
 
 const CASTER: &str = "actor:caster";
 
@@ -463,6 +463,68 @@ fn cooldowns_reject_until_ready_and_a_rejection_changes_nothing() {
     .expect("ready again");
     assert_eq!(second.mana, first.mana - 20);
     assert_eq!(second.revision(), 3);
+}
+
+#[test]
+fn a_premium_spell_needs_a_current_caster_and_the_wheel_exception_stays_closed() {
+    let book = v1_spell_book().expect("V1 book");
+    let mut spell = book.spells[0].clone();
+    spell.premium = true;
+    let premium_book = SpellBook::canonical(vec![spell]).expect("premium book");
+    let free = wounded(druid(100), 50);
+    assert_eq!(
+        run(
+            &premium_book,
+            &free,
+            &intent(1, SpellTarget::None),
+            at(0),
+            &mut Vec::new()
+        ),
+        Err(SpellCastDisposition::NotAvailable)
+    );
+    let mut current = free.clone();
+    current
+        .apply_owner_premium_transition(true, Some(200_000_000))
+        .expect("current premium");
+    let cast = run(
+        &premium_book,
+        &current,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("a current caster casts");
+    assert!(cast.mana < current.mana);
+
+    // WHEEL0-PS-1 is deferred to W-1: a `wheel_unlock` Premium spell is refused under
+    // `NotActivated` too, and a spell that is not Premium needs no status.
+    let bytes = include_bytes!(
+        "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    );
+    let digest = <sha2::Sha256 as sha2::Digest>::digest(bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    let catalog = crate::spell::executable_catalog::compile(bytes, &digest).expect("catalog");
+    let wheel = catalog
+        .entries
+        .iter()
+        .find(|e| e.header.requirements.wheel_unlock == Some(true))
+        .and_then(|e| e.definition.as_ref().ok())
+        .expect("a wheel_unlock spell");
+    assert!(wheel.premium);
+    assert!(CasterPremium::Current.admits(wheel));
+    assert!(!CasterPremium::NotCurrent.admits(wheel));
+    assert!(!CasterPremium::NotActivated.admits(wheel));
+    let free_spell = &book.spells[0];
+    assert!(!free_spell.premium);
+    for status in [
+        CasterPremium::Current,
+        CasterPremium::NotCurrent,
+        CasterPremium::NotActivated,
+    ] {
+        assert!(status.admits(free_spell));
+    }
 }
 
 #[test]
