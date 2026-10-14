@@ -19,7 +19,11 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_ENCOUNTER_RT0_ACCEPTANCE_DECISION_2026-10-14.md
   - docs/agents/tasks/archive/OTV2-20261014-accept-encounter-rt-0.md
-public_contracts: []
+public_contracts:
+  - DUR-03 §32/§39 InstanceRuntime Ground custody (Ground location row carries the InstanceId scope ref)
+  - DUR-03 closed cause EncounterDropCause and InstanceRetire (retirement of live Ground roots when an instance ends)
+  - WORLD-INTERACTION-0 §5 BOSS_ENTRY lever child (BOSS-LEVER-1)
+  - ADR-0021 WorldReset amendment
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -28,7 +32,7 @@ external_repositories: []
 
 ## Outcome
 
-- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change.
+- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change is made by this PR, but acceptance makes the decision's pending amendments effective as contract text: the DUR-03 InstanceRuntime Ground custody, EncounterDropCause and InstanceRetire (§8), and the BOSS_ENTRY lever (§7). Nothing is enabled: every runtime, migration and production step needs its own child, review and #162 allocation.
 
 ## Architecture and source of truth
 
@@ -36,7 +40,7 @@ external_repositories: []
 
 ## High-risk authority/recovery qualification
 
-`NOT_APPLICABLE`: documentation only. No mutation, no code, nothing enabled.
+`APPLICABLE` to the contract effects, not to this PR's diff: the accepted text governs persistence (DUR-03 Ground custody in an instance scope, retirement causes) and security-relevant admission (boss entry, instance ownership fence). This PR changes no code and enables nothing, but it needs the decision's own independent review domains (determinism, combat, persistence and security) on the exact head, and every implementation child keeps the hard-worker plus independent persistence and security review before it can merge.
 
 ## Acceptance criteria
 
