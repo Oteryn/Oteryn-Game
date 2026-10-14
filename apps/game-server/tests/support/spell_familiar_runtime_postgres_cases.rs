@@ -120,6 +120,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
                         condition_immunities: Vec::new(),
                         preferred_distance: Some(1),
                         reward_boss: Some(false),
+                        defense: Some(1),
                         armor: Some(10),
                         mitigation: None,
                         resistances: Vec::new(),

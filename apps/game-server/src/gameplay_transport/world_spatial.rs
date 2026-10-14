@@ -325,7 +325,7 @@ impl SessionVisibility {
             if !self.objects && matches!(entity.kind, VisibleKind::Corpse { .. }) {
                 continue;
             }
-            // An entity off the 0..=15 floors cannot be shown; the observer then fails below.
+            // An entity off the -15..=15 floors cannot be shown; the observer then fails below.
             let Ok(position) = VisibilityPosition::new(
                 entity.position.x,
                 entity.position.y,

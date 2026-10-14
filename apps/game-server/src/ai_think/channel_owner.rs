@@ -19,6 +19,7 @@ use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef,
 };
 use crate::foundation::{CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use crate::movement::interest::tibia_floor;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 impl CreatureAiTable {
@@ -102,7 +103,7 @@ impl CreatureAiTable {
     /// The wake of `viewers` in turn, bounded independently of the product of players and
     /// creatures: one walk of the table with one `position_of` per idle creature builds an index
     /// by (floor, x, y); each viewer then examines only the index rows of its view box, at most
-    /// `VIEW_FLOORS` floors of `2 * WAKE_VIEW_REACH + 1` rows. Returns the woken and the number
+    /// the 16 VIS-1 floors of `2 * WAKE_VIEW_REACH + 1` rows. Returns the woken and the number
     /// of index entries the viewers examined.
     pub(crate) fn wake_indexed(
         &mut self,
@@ -298,22 +299,14 @@ impl CreatureAiTable {
 /// player sees on floor `f` lies within it of the player's cell shifted by `player.floor - f`.
 const WAKE_VIEW_REACH: i64 = 9;
 
-/// VIS-1's floors; a player on one sees no other floor outside them, and one off them sees only
-/// its own floor (`targeting::sees`).
-const VIEW_FLOORS: std::ops::RangeInclusive<i16> = 0..=15;
-
 /// The cells of `floor` a player at `viewer` may see, as (columns, rows); `None` when it sees no
-/// cell of `floor`. A superset of `targeting::sees`, which still decides each cell.
+/// cell of `floor`. A superset of `targeting::sees`, which still decides each cell: a native floor
+/// sees as the Tibia floor of its negation, and a player off the VIS-1 floors sees nothing.
 fn wake_view_box(
     viewer: MovementLocalPosition,
     floor: i16,
 ) -> Option<(std::ops::RangeInclusive<i32>, std::ops::RangeInclusive<i32>)> {
-    let viewable = floor == viewer.floor
-        || (VIEW_FLOORS.contains(&viewer.floor) && VIEW_FLOORS.contains(&floor));
-    if !viewable {
-        return None;
-    }
-    let shift = i64::from(viewer.floor) - i64::from(floor);
+    let shift = i64::from(tibia_floor(viewer.floor)?) - i64::from(tibia_floor(floor)?);
     let span = |centre: i32| {
         let centre = i64::from(centre) + shift;
         to_i32(centre - WAKE_VIEW_REACH)..=to_i32(centre + WAKE_VIEW_REACH)

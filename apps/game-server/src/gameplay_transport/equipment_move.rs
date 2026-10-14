@@ -122,13 +122,13 @@ pub(super) fn native_for_move<'g>(
     (native.source_digest() == runtime.content_pin().server_artifact_digest()).then_some(native)
 }
 
-/// Domain 9's occupied equipment slots of `game_session_id`'s Character, in ascending wire slot
-/// order. `None` when the session is not current, the Channel pin is another generation, the
-/// equipment owner cannot be read or an item is not named by the pinned index.
-pub(super) async fn observe_character_equipment(
+/// The equipment of `game_session_id`'s Character under the current item fence, with the
+/// Channel content digest it was read at. `None` when the session is not current, the Channel
+/// pin is another generation or the equipment owner cannot be read.
+pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
-) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+) -> Option<character_equipment::EquipmentSnapshot> {
     let current = FreshAdmissionStore::from_root(admission.root.clone())
         .current_session_at(game_session_id)
         .await
@@ -169,12 +169,22 @@ pub(super) async fn observe_character_equipment(
     if read.fence() != &fence || read.equipment().content_digest != digest {
         return None;
     }
+    Some(read.equipment().clone())
+}
+
+/// Domain 9's occupied equipment slots of `game_session_id`'s Character, in ascending wire slot
+/// order. `None` when the session is not current, the Channel pin is another generation, the
+/// equipment owner cannot be read or an item is not named by the pinned index.
+pub(super) async fn observe_character_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    game_session_id: GameSessionId,
+) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+    let equipment = read_current_equipment(admission, game_session_id).await?;
     let index = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,
     )?;
-    let mut equipment = read
-        .equipment()
+    let mut equipment = equipment
         .items
         .iter()
         .map(|item| {
@@ -247,7 +257,7 @@ pub(super) async fn move_equipment(
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return refused;
     };
-    match admission
+    let committed = admission
         .root
         .commit_equipment_move(
             admission.character,
@@ -257,8 +267,15 @@ pub(super) async fn move_equipment(
             native,
             durable,
         )
+        .await;
+    // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever
+    // the outcome; the next swing waits for a fresh read.
+    admission
+        .attack
+        .lock()
         .await
-    {
+        .forget_weapon(actor, command.game_session_id);
+    match committed {
         Ok(Ok(_receipt)) => EquipmentMoveResult::Committed,
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),
         Err(_) => EquipmentMoveResult::Unknown,

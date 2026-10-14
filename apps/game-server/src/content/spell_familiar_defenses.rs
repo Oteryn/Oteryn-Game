@@ -156,6 +156,7 @@ mod tests {
             mana_cost: None,
             is_familiar: true,
             condition_immunities: Vec::new(),
+            defense: None,
             armor: None,
             mitigation: None,
             resistances: Vec::new(),

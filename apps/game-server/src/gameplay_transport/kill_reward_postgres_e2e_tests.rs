@@ -296,6 +296,8 @@ fn scenario() -> TestResult {
         }
         let mut swings = 0;
         loop {
+            // ATTACK-2: the swing weapon (here fists) is read from the equipment owner first.
+            owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
             if owner.attack.lock().await.kills().has_session(session) {
                 break;

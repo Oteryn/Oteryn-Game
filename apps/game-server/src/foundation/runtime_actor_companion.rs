@@ -35,6 +35,8 @@ pub(crate) struct CompiledCreaturePolicy {
     pub(crate) mana_cost: Option<u32>,
     pub(crate) is_familiar: bool,
     pub(crate) condition_immunities: Vec<ConditionType>,
+    /// The source defence a blocked melee hit draws from (`creature.cpp:966-967`).
+    pub(crate) defense: Option<u32>,
     pub(crate) armor: Option<u32>,
     pub(crate) mitigation: Option<CreatureExactRatio>,
     pub(crate) resistances: Vec<CreatureResistance>,
@@ -1315,6 +1317,7 @@ mod tests {
             condition_immunities: Vec::new(),
             preferred_distance: Some(1),
             reward_boss: Some(false),
+            defense: Some(1),
             armor: Some(10),
             mitigation: None,
             resistances: vec![],

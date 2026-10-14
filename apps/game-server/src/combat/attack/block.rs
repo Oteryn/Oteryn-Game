@@ -22,6 +22,7 @@ impl BlockBudget {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn blocks(&self) -> u8 {
         self.blocks
     }

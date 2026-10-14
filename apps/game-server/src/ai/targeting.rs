@@ -38,22 +38,15 @@ pub enum Strategy {
 }
 
 /// Whether a player at `player` sees a creature at `creature` under the reference view. A
-/// source world's native floors can lie outside VIS-1's 0..=15; there a creature on the
-/// player's own floor is judged on one plane and any other floor is not seen (the same mapping
-/// as ATTACK-1b's `gameplay_transport::attack::sees`).
+/// source world's native floor sees as the Tibia floor of its negation (`VisibilityPosition`),
+/// as in ATTACK-1b's `gameplay_transport::attack::sees`.
 #[must_use]
 pub fn sees(player: MovementLocalPosition, creature: MovementLocalPosition) -> bool {
-    const PLANE: i16 = 7;
-    let view = |position: MovementLocalPosition, floor: i16| {
-        VisibilityPosition::new(position.x, position.y, floor).ok()
-    };
-    let (observer, seen) = match (view(player, player.floor), view(creature, creature.floor)) {
-        (Some(observer), Some(seen)) => (Some(observer), Some(seen)),
-        _ if player.floor == creature.floor => (view(player, PLANE), view(creature, PLANE)),
-        _ => (None, None),
-    };
-    match (observer, seen) {
-        (Some(observer), Some(seen)) => VisibilitySettings::REFERENCE.can_see(observer, seen),
+    match (
+        VisibilityPosition::new(player.x, player.y, player.floor),
+        VisibilityPosition::new(creature.x, creature.y, creature.floor),
+    ) {
+        (Ok(observer), Ok(seen)) => VisibilitySettings::REFERENCE.can_see(observer, seen),
         _ => false,
     }
 }

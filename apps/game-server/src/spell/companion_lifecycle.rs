@@ -2503,6 +2503,7 @@ mod direct_acquisition_owner_tests {
             mana_cost: Some(250),
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(10),
             mitigation: None,
             resistances: vec![],
