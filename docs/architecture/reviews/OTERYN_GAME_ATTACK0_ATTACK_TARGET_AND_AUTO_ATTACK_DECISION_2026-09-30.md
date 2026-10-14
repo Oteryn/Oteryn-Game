@@ -127,9 +127,10 @@ does a hit do?
   rules; `secure` is carried now and has no effect until then.
 - **Chase** is carried now and has no effect in the first slice: every actor acts as STAND. Chase
   needs server-driven player movement, which has no owner yet.
-  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8).** Once accepted
-  and CHASE-1 lands, `CHASE` makes the player follow its target through the Movement owner. Until
-  then the client ships the chase toggle disabled (always `STAND`).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8, owner decision 2026-10-14).** Once
+  accepted and CHASE-1 lands, `CHASE` makes the player follow its target through the Movement owner,
+  with bounded searches (`RANGED0-RL-03` to `-07`); a client step wins over a chase step. Until then
+  the client ships the chase toggle disabled (always `STAND`).
 - Fight modes are runtime-only, as in Tibia, where the client sends them at login: the defaults
   are balanced, stand and secure on.
 - Domain 10 is owned by the channel runtime; its revision is monotonic per GameSession (FND-02
@@ -173,8 +174,8 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
   purposes are closed: `hit_chance` (reserved for distance), `damage_draw`, `defence_draw` and
   `armor_draw`. Charm rolls take the swing as their `DecisionOccurrenceId`.
   **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §4.1).** The closed
-  purposes gain `miss_landing` and `break`; a ranged swing's DUR-03 key adds the World, Channel,
-  scope ownership generation and CharacterId (RANGED-0 §6.2).
+  purposes gain `miss_landing` and `break`; a ranged swing's DUR-03 TransactionId is an allocated UUIDv7 frozen at PREPARE, with provenance
+  (World, Channel, scope ownership generation, runtime actor id, CharacterId) (RANGED-0 §6.2).
 - **Timer.** Every attack interval (2,000 ms) while the target is valid, the actor swings once
   through the GAME-ABILITY-01 pipeline as one typed ability, `AutoAttack`. Catch-up policy
   `DEADLINE_STATE`: at most one swing per due deadline, never a backlog, as Canary never replays
