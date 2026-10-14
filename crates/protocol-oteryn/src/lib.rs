@@ -372,7 +372,7 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] =
-    &[1, 3, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19];
+    &[1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -668,7 +668,7 @@ fn validate_acceptance_value(
 
 /// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
 /// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
+/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
 const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -693,6 +693,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         world_clock::CAPABILITY_WORLD_LIGHT_V1,
         &world_clock::CAPABILITY_WORLD_LIGHT_V1_REQUIRES,
+    ),
+    (
+        world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
     ),
 ];
 
@@ -2577,6 +2581,7 @@ pub mod npc_service;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
 pub mod world_clock;
+pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
@@ -2731,6 +2736,9 @@ mod tests {
             (&[4, 19][..], false),
             (&[6, 19][..], true),
             (&[4, 6, 19][..], true),
+            (&[11][..], false),
+            (&[4, 6, 11, 15][..], false),
+            (&[4, 6, 11, 15, 18][..], true),
         ] {
             let expected = |result: Result<(), FoundationProtocolError>| match valid {
                 true => assert!(result.is_ok(), "{selected:?}"),

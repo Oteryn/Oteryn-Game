@@ -48,6 +48,29 @@ unfixed; no newer stable winit patch or accepted hook/fork route is established.
 The CP request6149042654 still has no targeted response in the latest material
 coordination comments. Do not block unrelated client work on that one path.
 
-Full current-source checks and fresh native qualification follow this repair
-and main reconciliation. No status-only publication, original1:1 or completion
+F10 regression initially fails; after repair both focused tests pass, including
+12 ignored PL/EN/open-state event cases and focused recovery. This is not an
+OS-injection claim. Normal merge keeps the client map/receipt implementation and
+accepted main's capability11 result validation. Session conflicts are only the
+combined imports/re-export and adding gate_message_id=None inside the retained
+StepReceiptOutcome, not restoring the obsolete bare CommandOutcome return.
+The first post-merge compile fails on seven new UseDisposition variants. An
+explicit unavailable fallback closes that compilation gap without offering11,
+adding actions or inventing gate-message text. A14-case PL/EN regression ensures
+these outcomes never report Used; actual activation remains a later owned packet.
+World pin-check initially refuses main's input hash: the merged tree derives
+e8d897f6 (same as ab111236), not main85ae1cd2. Re-pin from the compiler, not by
+choosing a side blindly. Bundle/identity/start remain unchanged.
+The following pin-check double-build passes:25,089,907bytes,
+1b04cc35a65bcced64dbc933fcb5ac9adad426a369149bb8c170b1aa80d04406.
+The map duplex fixture also needs main's now-fallible encode_use_result API:
+propagate its typed error as the existing boxed fixture error, never produce an
+empty success payload. Initial missing conversion compile failures are retained.
+Current merged-source Linux tests pass:client230/216/5,Session84. Workspace
+architecture passes. Strict all-target Clippy of client/Session,fmt and governance
+validator+124unit checks pass on the repaired merged source;
+the previous pre-map-fix Clippy run failed and is not counted as green.
+
+Fresh native qualification follows this repair and main reconciliation. Published
+predecessor evidence is preserved, not inherited. No status-only publication, original1:1 or completion
 claim, review trigger, freeze or protected integration is made here.

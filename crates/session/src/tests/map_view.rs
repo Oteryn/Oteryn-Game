@@ -128,7 +128,8 @@ fn map_peer_script(
                     result_sequence,
                     7,
                     CommandStatus::Accepted,
-                    &world_object::encode_use_result(UseDisposition::Committed),
+                    &world_object::encode_use_result(UseDisposition::Committed)
+                        .map_err(|error| format!("{error:?}"))?,
                 )?,
             )
             .await?;

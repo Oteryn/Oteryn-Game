@@ -42,10 +42,12 @@ use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
-    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
-    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
-    encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_USE_INTENT,
+    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+    STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
+    WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
+    encode_use_result_with_gate, encode_world_object_overlay_delta,
+    encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
@@ -56,6 +58,7 @@ use super::world_spatial::{
     encode_world_spatial, moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
+use crate::chat::EGRESS_MAX_LINES;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
@@ -89,7 +92,7 @@ use oteryn_protocol_oteryn::container_tree::{
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
-    ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_with_equip_drop,
+    ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_for,
 };
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT, DELTA_TYPE_NPC_CONVERSATION_V1,
@@ -580,9 +583,15 @@ pub(crate) trait FreshAdmissionAuthority {
         }
     }
 
-    /// CHAT-WIRE-1: every line queued for the session since the last call, oldest first.
-    fn chat_drain(&self, _session: GameSessionId) -> impl Future<Output = Vec<ChatLine>> {
-        async { Vec::new() }
+    /// CHAT-WIRE-1: the oldest line queued for the session, if any.
+    fn chat_next(&self, _session: GameSessionId) -> impl Future<Output = Option<ChatLine>> {
+        async { None }
+    }
+
+    /// CHAT-WIRE-1: the real line last returned by `chat_next` was written to the client; it
+    /// stops counting against `CHAT0-RL-11`.
+    fn chat_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
+        async {}
     }
 
     /// NPC-CMD-1a: a session with capability 3 starts (or restarts) without a conversation.
@@ -852,6 +861,9 @@ pub(crate) struct UseOutcome {
     /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
     /// it only for a session that selected capability 8.
     pub(crate) earned: EarnedNotice,
+    /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
+    /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
+    pub(crate) gate_message_id: Option<u8>,
 }
 
 impl UseOutcome {
@@ -860,6 +872,7 @@ impl UseOutcome {
             disposition: super::world_object::UseDisposition::Rejected,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            gate_message_id: None,
         }
     }
 }
@@ -1881,7 +1894,12 @@ where
             Next::Chat => {
                 // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
                 // delta; an empty queue sends nothing.
-                for line in authority.chat_drain(admitted.game_session_id).await {
+                // At most one full queue per refresh: lines that keep arriving cannot hold the
+                // connection here, and the rest waits for the next tick.
+                for _ in 0..EGRESS_MAX_LINES {
+                    let Some(line) = authority.chat_next(admitted.game_session_id).await else {
+                        break;
+                    };
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
                         generation,
                         sequence,
@@ -1895,6 +1913,10 @@ where
                     admitted.continuity.chat_revision = revision;
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    // A marker takes no slot, so only a real line frees one.
+                    if !matches!(line, ChatLine::Dropped) {
+                        authority.chat_delivered(admitted.game_session_id).await;
                     }
                 }
                 continue;
@@ -2186,16 +2208,24 @@ where
                 // and a use by definition finds nothing to use.
                 Ok(UseIntent {
                     use_with: Some(_), ..
+                })
+                // WORLDINT-WIRE-1: the map_item arm of field 4 decodes only under capability 11, which is not offered
+                // before WORLDINT-USE-1 composes the interaction gate.
+                | Ok(UseIntent {
+                    use_with_map_item: Some(_),
+                    ..
                 }) => Dispatch::Use(UseOutcome::rejected()),
                 Ok(UseIntent {
                     target: UseTarget::ItemByDefinition(_),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => Dispatch::UseItem(OpenDecision::NothingToUse, None),
                 // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
                 // call; opening writes nothing.
                 Ok(UseIntent {
                     target: UseTarget::Item(handle),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => {
                     let key = item_view.as_ref().and_then(|view| view.resolve(handle));
                     // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
@@ -2278,6 +2308,7 @@ where
                 Ok(UseIntent {
                     target: UseTarget::WorldObject(target),
                     use_with: None,
+                    use_with_map_item: None,
                 }) => Dispatch::Use(
                     authority
                         .use_object(
@@ -2356,6 +2387,8 @@ where
                         equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
                         container_tree: selected_capabilities
                             .contains(CAPABILITY_CONTAINER_TREE_V1),
+                        world_interaction: selected_capabilities
+                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
                     };
                     let step = item_move::item_move(
                         authority,
@@ -2567,9 +2600,11 @@ where
                 ),
             ),
             Dispatch::Use(outcome) => {
-                let disposition = negotiated_use_disposition(
+                let (disposition, gate_message_id) = negotiated_use_disposition(
                     selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
+                    selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
                     outcome.disposition,
+                    outcome.gate_message_id,
                 );
                 (
                     if disposition == UseDisposition::Rejected {
@@ -2577,7 +2612,9 @@ where
                     } else {
                         CommandStatus::Accepted
                     },
-                    encode_use_result(disposition),
+                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
+                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
+                    ),
                 )
             }
             Dispatch::Spell(outcome) => (
@@ -2595,16 +2632,22 @@ where
                     OpenDecision::TooFar => UseDisposition::TooFar,
                     OpenDecision::StaleState => UseDisposition::StaleState,
                     OpenDecision::NothingToUse => UseDisposition::NothingToUse,
-                }),
+                })
+                .unwrap_or_default(),
             ),
             Dispatch::ContainerView(outcome, _) => (
                 CommandStatus::Accepted,
                 encode_container_view_result(*outcome),
             ),
             Dispatch::ItemMove(outcome, _) => {
-                let Ok(payload) = encode_item_move_result_with_equip_drop(
+                let Ok(payload) = encode_item_move_result_for(
                     *outcome,
-                    selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    ItemMoveSelection {
+                        equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        world_interaction: selected_capabilities
+                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
+                        ..ItemMoveSelection::default()
+                    },
                 ) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
@@ -3070,8 +3113,27 @@ where
 /// sequence after `sequence`; `None` on an encoding fault. The complete value
 /// may coalesce multiple actual owner changes from the last transmitted revision.
 /// Dispositions 7 to 10 exist only under capability 15 (ITEM-USE-0 §3): a session without it
-/// gets `Rejected`, the one refusal it can decode, for any of them.
-fn negotiated_use_disposition(item_use: bool, disposition: UseDisposition) -> UseDisposition {
+/// gets `Rejected`, the one refusal it can decode, for any of them. So does a session without
+/// capability 11 for the dispositions 11 to 17 (WORLD-INTERACTION-0 §10.1).
+fn negotiated_use_disposition(
+    item_use: bool,
+    world_interaction: bool,
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+) -> (UseDisposition, Option<u8>) {
+    if disposition.needs_world_interaction() && !world_interaction {
+        return (UseDisposition::Rejected, None);
+    }
+    // `SEALED` carries its gate message id and no other disposition does; a mismatch is a server
+    // fault, and the one refusal every session can decode replaces it.
+    let valid_gate = match (disposition, gate_message_id) {
+        (UseDisposition::Sealed, Some(id)) => (1..=MAX_GATE_MESSAGE_ID).contains(&id),
+        (UseDisposition::Sealed, None) | (_, Some(_)) => false,
+        (_, None) => true,
+    };
+    if !valid_gate {
+        return (UseDisposition::Rejected, None);
+    }
     match disposition {
         UseDisposition::RequirementNotMet
         | UseDisposition::Exhausted
@@ -3079,9 +3141,9 @@ fn negotiated_use_disposition(item_use: bool, disposition: UseDisposition) -> Us
         | UseDisposition::NoTarget
             if !item_use =>
         {
-            UseDisposition::Rejected
+            (UseDisposition::Rejected, None)
         }
-        other => other,
+        other => (other, gate_message_id),
     }
 }
 
@@ -3297,6 +3359,7 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    use super::super::world_object::decode_use_result_with_gate;
     use super::*;
     use crate::gameplay_transport::world_spatial::encode_step_result;
     use std::cell::{Cell, RefCell};
@@ -3306,9 +3369,21 @@ mod tests {
     #[test]
     fn use_dispositions_7_to_10_need_capability_15() {
         use UseDisposition as D;
+        let neg = |i, w, d| negotiated_use_disposition(i, w, d, None).0;
         for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
-            assert_eq!(negotiated_use_disposition(false, d), D::Rejected);
-            assert_eq!(negotiated_use_disposition(true, d), d);
+            assert_eq!(neg(false, false, d), D::Rejected);
+            assert_eq!(neg(true, false, d), d);
+        }
+        for d in [
+            D::Locked,
+            D::KeyMismatch,
+            D::PzBlocked,
+            D::NotMovable,
+            D::NoRoom,
+            D::NotPossible,
+        ] {
+            assert_eq!(neg(true, false, d), D::Rejected);
+            assert_eq!(neg(true, true, d), d);
         }
         for d in [
             D::Committed,
@@ -3317,8 +3392,36 @@ mod tests {
             D::StaleState,
             D::TooFar,
         ] {
-            assert_eq!(negotiated_use_disposition(false, d), d);
+            assert_eq!(neg(false, false, d), d);
         }
+    }
+
+    #[test]
+    fn sealed_carries_its_gate_message_id_only_under_capability_11() {
+        use UseDisposition as D;
+        assert_eq!(
+            negotiated_use_disposition(true, true, D::Sealed, Some(9)),
+            (D::Sealed, Some(9))
+        );
+        assert_eq!(
+            negotiated_use_disposition(true, false, D::Sealed, Some(9)),
+            (D::Rejected, None)
+        );
+        for bad in [None, Some(0), Some(128)] {
+            assert_eq!(
+                negotiated_use_disposition(true, true, D::Sealed, bad),
+                (D::Rejected, None)
+            );
+        }
+        assert_eq!(
+            negotiated_use_disposition(true, true, D::Locked, Some(9)),
+            (D::Rejected, None)
+        );
+        let payload = encode_use_result_with_gate(D::Sealed, Some(9)).expect("sealed");
+        assert_eq!(
+            decode_use_result_with_gate(&payload).expect("decode"),
+            (D::Sealed, Some(9))
+        );
     }
 
     const CHARACTER: [u8; 16] = uuid_v7(0x11);
@@ -4739,6 +4842,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed.clone()),
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -4774,7 +4878,7 @@ mod tests {
                     1,
                     1,
                     CommandStatus::Accepted,
-                    &encode_use_result(UseDisposition::Committed),
+                    &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
                 )?,
                 encode_state_delta(
                     1,
@@ -4975,6 +5079,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed),
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -5032,6 +5137,7 @@ mod tests {
                     disposition: UseDisposition::Committed,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let world_id = WorldId::decode(&WORLD)?;
@@ -5077,7 +5183,7 @@ mod tests {
                 1,
                 1,
                 CommandStatus::Accepted,
-                &encode_use_result(UseDisposition::Committed),
+                &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?);
             assert_eq!(frames, expected);
             assert_eq!(
@@ -5108,6 +5214,7 @@ mod tests {
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -5140,13 +5247,85 @@ mod tests {
                     1,
                     1,
                     CommandStatus::Accepted,
-                    &encode_use_result(UseDisposition::NothingToUse),
+                    &encode_use_result(UseDisposition::NothingToUse).unwrap_or_default(),
                 )?,
                 encode_command_result(1, 2, 2, CommandStatus::Rejected, &[])?,
             ]);
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
+            Ok(())
+        })
+    }
+
+    /// WORLDINT-WIRE-1: a `SEALED` authority outcome carries its gate message id through the
+    /// server to the result under capability 11, and is refused as plain `Rejected` without it.
+    #[test]
+    fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::Sealed,
+                    committed: None,
+                    earned: EarnedNotice::NoneEarned,
+                    gate_message_id: Some(42),
+                },
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let frames_with = |capabilities: &'static [u32]| {
+                let offered = [
+                    OfferedCapability {
+                        id: CAPABILITY_ITEM_USE_V1,
+                        requires: &[],
+                    },
+                    OfferedCapability {
+                        id: 18,
+                        requires: &[],
+                    },
+                    OfferedCapability {
+                        id: CAPABILITY_WORLD_INTERACTION_V1,
+                        requires: &[CAPABILITY_ITEM_USE_V1, 18],
+                    },
+                ];
+                let selected =
+                    SelectedCapabilities::select(&offered, capabilities).expect("selection");
+                let admitted = AdmittedSession {
+                    continuity: SessionContinuity {
+                        selected_capabilities: selected,
+                        ..SessionContinuity::FRESH
+                    },
+                    ..positioned().expect("session")
+                };
+                (
+                    admitted,
+                    use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0),
+                )
+            };
+            let result_present = |frames: &[Vec<u8>], status, payload: &[u8]| {
+                (0..64u64).any(|sequence| {
+                    encode_command_result(1, 1, sequence, status, payload)
+                        .is_ok_and(|expected| frames.contains(&expected))
+                })
+            };
+            let (admitted, command) =
+                frames_with(&[CAPABILITY_ITEM_USE_V1, 18, CAPABILITY_WORLD_INTERACTION_V1]);
+            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
+            let sealed =
+                encode_use_result_with_gate(UseDisposition::Sealed, Some(42)).expect("sealed");
+            assert!(result_present(&frames, CommandStatus::Accepted, &sealed));
+
+            let (admitted, command) = frames_with(&[CAPABILITY_ITEM_USE_V1]);
+            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
+            assert!(result_present(
+                &frames,
+                CommandStatus::Rejected,
+                &encode_use_result(UseDisposition::Rejected).unwrap_or_default()
+            ));
             Ok(())
         })
     }
@@ -5869,6 +6048,7 @@ mod tests {
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned,
+                gate_message_id: None,
             },
         }
     }
@@ -5936,7 +6116,7 @@ mod tests {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(UseDisposition::Committed),
+            &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
         )?)
     }
 

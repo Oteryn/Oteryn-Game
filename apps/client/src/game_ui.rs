@@ -2111,6 +2111,17 @@ fn use_feedback(value: UseDisposition, english: bool) -> &'static str {
         ),
         UseDisposition::Full => ("Brak miejsca", "No space available"),
         UseDisposition::NoTarget => ("Wybierz cel", "Select a target"),
+        // Main's capability-11 outcomes are not activated by this client
+        // packet. Keep their fallback explicit and never describe them as Used.
+        UseDisposition::Locked
+        | UseDisposition::KeyMismatch
+        | UseDisposition::Sealed
+        | UseDisposition::PzBlocked
+        | UseDisposition::NotMovable
+        | UseDisposition::NoRoom
+        | UseDisposition::NotPossible => {
+            ("Ta czynność jest niedostępna", "This action is unavailable")
+        }
     };
     if english { en } else { pl }
 }
@@ -2170,6 +2181,35 @@ mod tests {
         item_button, panel_hotkey_destination, settings_with_panel_shortcuts, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn unactivated_world_interaction_outcomes_never_report_a_success() {
+        use oteryn_session::UseDisposition;
+        for outcome in [
+            UseDisposition::Locked,
+            UseDisposition::KeyMismatch,
+            UseDisposition::Sealed,
+            UseDisposition::PzBlocked,
+            UseDisposition::NotMovable,
+            UseDisposition::NoRoom,
+            UseDisposition::NotPossible,
+        ] {
+            for english in [false, true] {
+                assert_eq!(
+                    super::use_feedback(outcome, english),
+                    if english {
+                        "This action is unavailable"
+                    } else {
+                        "Ta czynność jest niedostępna"
+                    }
+                );
+                assert_ne!(
+                    super::use_feedback(outcome, english),
+                    super::use_feedback(UseDisposition::Committed, english)
+                );
+            }
+        }
+    }
 
     type MenuState = std::sync::Arc<std::sync::Mutex<oteryn_client::play::GameState>>;
     type MenuActions =

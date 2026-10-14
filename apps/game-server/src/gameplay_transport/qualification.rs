@@ -876,7 +876,7 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
     };
     let overlay_delta = |sequence, from, state: &str, to| -> TestResult<Vec<u8>> {
@@ -3258,6 +3258,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                     },
                 }),
                 world_object_overlay_delta: None,
+                gate_message_id: None,
             };
         let door_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
             content_generation,
@@ -3274,6 +3275,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             result_server_sequence: result_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         };
         let door_event = |result_sequence: u64, base: u64, state: &str| {
             SessionEvent::WorldObjectOverlay(AppliedDelta {

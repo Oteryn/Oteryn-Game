@@ -312,7 +312,7 @@ fn commands_and_domains_follow_the_selection() {
     }
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
-    // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18.
+    // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18. Capability 11: command 15.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -321,6 +321,7 @@ fn commands_and_domains_follow_the_selection() {
         (16, &[22][..], &[16][..]),
         (17, &[11, 12][..], &[10][..]),
         (19, &[][..], &[18][..]),
+        (11, &[15][..], &[][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {
@@ -1017,16 +1018,19 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         let with = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(ItemHandle::MIN),
             use_with: creature,
+            use_with_map_item: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: None,
+            use_with_map_item: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition_with = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: creature,
+            use_with_map_item: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let frames = [
@@ -1048,7 +1052,7 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         };
         let rejected = (
             CommandStatus::Rejected,
-            encode_use_result(UseDisposition::Rejected),
+            encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
         );
         for selected in [&[][..], &[CAPABILITY_ITEM_VIEW_MOVE_V1]] {
             let continuity = SessionContinuity {
@@ -1075,6 +1079,7 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         let with_backpack = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(backpack),
             use_with: creature,
+            use_with_map_item: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let item_use = selection(&[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1]);
@@ -1119,10 +1124,14 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
                     (
                         2,
                         CommandStatus::Accepted,
-                        encode_use_result(UseDisposition::NothingToUse)
+                        encode_use_result(UseDisposition::NothingToUse).unwrap_or_default()
                     ),
                     (3, rejected.0, rejected.1.clone()),
-                    (4, CommandStatus::Accepted, encode_use_result(disposition)),
+                    (
+                        4,
+                        CommandStatus::Accepted,
+                        encode_use_result(disposition).unwrap_or_default()
+                    ),
                 ],
                 "{disposition:?}"
             );
@@ -1171,7 +1180,11 @@ fn a_backpack_entry_is_used_only_under_capability_15() -> Result<(), Box<dyn Err
                     payloads.push(decode_command_result(envelope.payload())?.payload.to_vec());
                 }
             }
-            assert_eq!(payloads, [encode_use_result(disposition)], "{selected:?}");
+            assert_eq!(
+                payloads,
+                [encode_use_result(disposition).unwrap_or_default()],
+                "{selected:?}"
+            );
             assert_eq!(authority.item_uses.borrow().len(), used, "{selected:?}");
         }
         assert_eq!(
@@ -1381,8 +1394,12 @@ mod chat_wire {
             )
         }
 
-        async fn chat_drain(&self, session: GameSessionId) -> Vec<ChatLine> {
-            self.chat.drain(session)
+        async fn chat_next(&self, session: GameSessionId) -> Option<ChatLine> {
+            self.chat.next(session)
+        }
+
+        async fn chat_delivered(&self, session: GameSessionId) {
+            self.chat.delivered(session);
         }
     }
 

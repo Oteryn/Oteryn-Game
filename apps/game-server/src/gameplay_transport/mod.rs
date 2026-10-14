@@ -2554,6 +2554,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::Exhausted,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
@@ -2617,6 +2618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition: world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 };
             }
         }
@@ -2664,6 +2666,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
+            gate_message_id: None,
         }
     }
 }
@@ -2859,11 +2862,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat_speak(actor, session, &intent).await
     }
 
-    async fn chat_drain(
+    async fn chat_next(
         &self,
         session: GameSessionId,
-    ) -> Vec<oteryn_protocol_oteryn::chat::ChatLine> {
-        self.chat.drain(session)
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.chat.next(session)
+    }
+
+    async fn chat_delivered(&self, session: GameSessionId) {
+        self.chat.delivered(session);
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {
@@ -3225,6 +3232,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         let actor_floor = i32::from(position.floor);
@@ -3234,6 +3242,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 disposition: world_object::UseDisposition::TooFar,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             };
         }
         // #162 5868482467 (shared-lease P1 repair r4121956127): occupancy is every currently
@@ -3263,22 +3272,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         revision,
                     }),
                     earned: connection::EarnedNotice::NoneEarned,
+                    gate_message_id: None,
                 }
             }
             Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
                 disposition: world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
                 disposition: world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
                 disposition: world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
+                gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {
                 UseOutcome::rejected()
@@ -4510,19 +4523,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let item_fence = item_fence_of(current);
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
         // actor's first command, and only from Character-owned facts; a monk's Serene is
-        // evaluated here too (§8.2).
+        // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
+        // saved its health and mana takes them, capped at its maxima, in this same step.
+        let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
+            .then(|| last_position::admitted_vitals(&decided, self.world_id))
+            .flatten();
         if let Some(facts) = facts
             && self
                 .spell_states
                 .lock()
                 .await
-                .initialize(
+                .initialize_admitted(
                     &runtime,
                     actor,
                     game_session_id,
                     facts,
                     monk,
                     self.owner_now(),
+                    saved_vitals,
                 )
                 .is_none()
         {
