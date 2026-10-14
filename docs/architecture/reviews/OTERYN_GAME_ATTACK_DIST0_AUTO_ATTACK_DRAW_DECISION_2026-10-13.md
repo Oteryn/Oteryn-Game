@@ -28,9 +28,21 @@ So a linear-decreasing density is the simplest integer-drawable shape that lands
 
 Take B as ATTACK-DIST-1, one PR, owned paths `combat/attack/**`, `gameplay_transport/attack.rs` (the one draw site) and the constants table. Changing the damage distribution of player auto-attacks is player-visible, so the owner's acceptance goes through the control plane, not a worker. The draw count per swing becomes variable only on the vanishingly rare rejection; seed derivation stays deterministic per attempt index, so replay determinism holds, but the drawn values change.
 
+The shared draw site in `gameplay_transport/attack.rs` serves Offensive, Balanced (the default) and Defensive, but all 1536 evidence rows are Offensive. ATTACK-DIST-1 therefore requires an Offensive-only branch: Balanced and Defensive keep the uniform draw until evidence for them is gathered and accepted.
+
 Not in scope: the Balanced and Defensive factors, monk, creature melee, distance weapons, critical hits.
 
 ## 4. Owner question
 
 1. Accept option B (ATTACK-DIST-1), keep A, or wait for C? Recommendation: B.
 2. Only if B: may packet 1.4 be amended so the mean gate is the +-1/3 band? Recommendation: no relabel without it; default answer keeps the values `PARITY_PENDING`.
+
+## 5. Decision timing (ARCHITECTURE_DECISION_DISCIPLINE)
+
+1. **Must decide now?** NO. Option B does not meet the packet 1.4 floor gate, so nothing becomes `MATCHED_TIBIAPAL` either way; the uniform draw is a working default.
+2. **Downstream work blocked:** only a future `MATCHED_TIBIAPAL` relabel of the Offensive attack values and ATTACK-DIST-1 itself. Nothing on the playable path is blocked.
+3. **Harder later:** a player-visible change of average damage, replay-visible once shipped (drawn values change), and a +-1/3 tolerance, if accepted, would weaken the packet 1.4 gate for later rows.
+4. **Superseding evidence:** a measured damage distribution (sampled TibiaPal or official source), a floor-exact construction over all 1536 rows, or an owner decision on the mean gate.
+5. **Deliberately not decided:** Balanced and Defensive draws, monk, creature melee, distance weapons, criticals, and any change to packet 1.4.
+
+Consequence: if the owner prefers no change now, option A (or C) is acceptable and this packet can be registered as backlog without implementing ATTACK-DIST-1.
