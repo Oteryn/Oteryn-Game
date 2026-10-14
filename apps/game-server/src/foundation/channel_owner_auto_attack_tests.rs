@@ -1330,24 +1330,35 @@ fn the_actor_pacing_deadline_survives_a_replaced_connection() {
     // replaced connection starts from it and never steps sooner.
     let mut attack = ChannelAttackStates::default();
     let player = owner().player;
+    let first = std::sync::Arc::new(());
+    let second = std::sync::Arc::new(());
     let now = tokio::time::Instant::now();
     let due = now + std::time::Duration::from_millis(400);
-    // A step claims the clock; while it is in flight a replacement cannot claim it.
-    assert_eq!(attack.begin_step(player, now), None);
+    // A step claims the clock; while it is in flight a replacement cannot claim it, however
+    // long the step takes, and the replacement's record changes nothing.
+    assert_eq!(attack.begin_step(player, &first, now), None);
+    let late = now + std::time::Duration::from_secs(5);
     assert!(
-        attack.begin_step(player, now).is_some(),
-        "a step in flight holds the clock"
+        attack.begin_step(player, &second, late).is_some(),
+        "a step in flight holds the clock until it ends"
     );
-    attack.record_step_deadline(player, now, Some(due));
+    attack.record_step_deadline(player, &second, late, None);
+    assert!(attack.step_deadline(player, late).is_some());
+    attack.record_step_deadline(player, &first, now, Some(due));
     // The new connection reads the deadline; a pacer resumed from it waits until it.
-    assert_eq!(attack.begin_step(player, now), Some(due));
+    assert_eq!(attack.begin_step(player, &second, now), Some(due));
     let resumed = crate::movement::pacing::StepPacer::resumed(attack.step_deadline(player, now));
     assert_eq!(resumed.wait_until(now), Some(due));
     assert_eq!(resumed.wait_until(due), None);
     // At the deadline the clock is free again; a step that did not move releases it.
-    assert_eq!(attack.begin_step(player, due), None);
-    attack.record_step_deadline(player, due, None);
+    assert_eq!(attack.begin_step(player, &second, due), None);
+    attack.record_step_deadline(player, &second, due, None);
     assert_eq!(attack.step_deadline(player, due), None);
+    // A claim whose connection ended mid-step frees the clock with it.
+    assert_eq!(attack.begin_step(player, &first, due), None);
+    drop(first);
+    assert_eq!(attack.step_deadline(player, due), None);
+    assert_eq!(attack.begin_step(player, &second, due), None);
 }
 
 #[test]

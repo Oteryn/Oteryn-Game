@@ -452,19 +452,22 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// CHASE-1: claim `actor`'s pacing clock for one step, atomically with the check; `Some`
-    /// with the deadline when it is still held.
+    /// CHASE-1: claim `actor`'s pacing clock for one step of the connection owning `holder`,
+    /// atomically with the check; `Some` with when to ask again while it is still held.
     fn begin_actor_step(
         &self,
         _actor: ExactActorRef,
+        _holder: &std::sync::Arc<()>,
     ) -> impl Future<Output = Option<tokio::time::Instant>> {
         async { None }
     }
 
-    /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
+    /// CHASE-1: the step `holder` claimed ended; `actor`'s pacing clock is now due at `due`, or
+    /// free.
     fn record_actor_step_deadline(
         &self,
         _actor: ExactActorRef,
+        _holder: &std::sync::Arc<()>,
         _due: Option<tokio::time::Instant>,
     ) -> impl Future<Output = ()> {
         async {}
@@ -1843,6 +1846,8 @@ where
     // (CHASE-1, RANGED-0 §8): it starts from the actor's deadline and records to it, so a
     // replaced or resumed connection never steps sooner.
     let mut pacer = StepPacer::resumed(authority.actor_step_deadline(actor).await);
+    // CHASE-1: this connection's claims on the actor's pacing clock live while it does.
+    let step_holder = std::sync::Arc::new(());
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
@@ -2130,13 +2135,15 @@ where
                 if buffered.is_some() {
                     continue;
                 }
-                if let Some(due) = begin_actor_step(&mut pacer, authority, actor).await {
+                if let Some(due) =
+                    begin_actor_step(&mut pacer, authority, actor, &step_holder).await
+                {
                     chase_due = Some(due);
                     continue;
                 }
                 let step = authority.chase_step(actor, admitted.game_session_id).await;
                 let duration = step.as_ref().and_then(|(_, duration)| *duration);
-                record_actor_step(&mut pacer, authority, actor, duration).await;
+                record_actor_step(&mut pacer, authority, actor, &step_holder, duration).await;
                 let Some((outcome, _)) = step else {
                     continue;
                 };
@@ -2407,7 +2414,7 @@ where
                     let now = tokio::time::Instant::now();
                     let wait = match pacer.wait_until(now) {
                         Some(due) => Some(due),
-                        None => begin_actor_step(&mut pacer, authority, actor).await,
+                        None => begin_actor_step(&mut pacer, authority, actor, &step_holder).await,
                     };
                     if let Some(due) = wait {
                         buffered = Some(BufferedStep { frame, due });
@@ -2418,7 +2425,7 @@ where
                         .await;
                     // The clock starts when the step committed, so a slow owner turn never
                     // shortens the next step's wait.
-                    record_actor_step(&mut pacer, authority, actor, duration).await;
+                    record_actor_step(&mut pacer, authority, actor, &step_holder, duration).await;
                     // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
                     let wait = if outcome.disposition == StepDisposition::Moved {
                         moved_step_wait_ms(duration)
@@ -3333,15 +3340,17 @@ fn item_view_delta(
     Some((delta_sequence, frame))
 }
 
-/// SPEED-1 with CHASE-1 (RANGED-0 §8): claim `actor`'s pacing clock for one step. `Some(due)`
-/// when another connection's deadline or step in flight still holds it; the connection's copy
-/// then waits for it too.
+/// SPEED-1 with CHASE-1 (RANGED-0 §8): claim `actor`'s pacing clock for one step of the
+/// connection owning `holder`; the claim holds until [`record_actor_step`], or until the
+/// connection and its holder are gone. `Some(due)` when another connection's deadline or step in
+/// flight still holds it; the connection's copy then waits for it too.
 async fn begin_actor_step<A: FreshAdmissionAuthority>(
     pacer: &mut StepPacer,
     authority: &A,
     actor: ExactActorRef,
+    holder: &std::sync::Arc<()>,
 ) -> Option<tokio::time::Instant> {
-    let due = authority.begin_actor_step(actor).await?;
+    let due = authority.begin_actor_step(actor, holder).await?;
     *pacer = StepPacer::resumed(Some(due));
     Some(due)
 }
@@ -3353,11 +3362,14 @@ async fn record_actor_step<A: FreshAdmissionAuthority>(
     pacer: &mut StepPacer,
     authority: &A,
     actor: ExactActorRef,
+    holder: &std::sync::Arc<()>,
     duration: Option<std::time::Duration>,
 ) {
     pacer.record(tokio::time::Instant::now(), duration);
     let due = duration.and(pacer.next_due());
-    authority.record_actor_step_deadline(actor, due).await;
+    authority
+        .record_actor_step_deadline(actor, holder, due)
+        .await;
 }
 
 /// The frames that follow one moved step of `actor`: with capability 6 the interest set's change

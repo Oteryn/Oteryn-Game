@@ -25,6 +25,7 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
 
 use super::ComposedFreshAdmission;
@@ -167,9 +168,19 @@ impl ActorAttack {
     }
 }
 
-/// CHASE-1: how long a claimed step in flight holds its actor's pacing clock when its
-/// connection never records the step's end (the connection ended mid-step).
-const STEP_IN_FLIGHT_HOLD: Duration = Duration::from_secs(1);
+/// CHASE-1: how soon a step that found its actor's clock held by another connection's step in
+/// flight asks again.
+const STEP_IN_FLIGHT_RETRY: Duration = Duration::from_millis(50);
+
+/// CHASE-1 (RANGED-0 §8): a player actor's pacing clock.
+#[derive(Debug)]
+enum StepClock {
+    /// A claimed step is in flight. It holds the clock until its claimer records the step's
+    /// end, or the claimer's connection is gone (its holder no longer upgrades), never by time.
+    InFlight(Weak<()>),
+    /// The next step is due at this instant.
+    Due(Instant),
+}
 
 /// The Channel owner's attack entries. Locked after `runtime` and `spell_states`, never before.
 #[derive(Debug, Default)]
@@ -180,11 +191,10 @@ pub(crate) struct ChannelAttackStates {
     /// CHASE-1: the Channel's player chase searches in the current owner window
     /// (`RANGED0-RL-03`).
     chase_searches: ChaseSearchBudget,
-    /// CHASE-1 (RANGED-0 §8): each player actor's pacing deadline, owned by the actor rather
-    /// than its connection, so a client step and a chase step share one clock and a replaced or
-    /// resumed connection keeps it. A step in flight holds it for at most
-    /// [`STEP_IN_FLIGHT_HOLD`]. Only deadlines still ahead are kept.
-    step_deadlines: Vec<(ExactActorRef, Instant)>,
+    /// CHASE-1 (RANGED-0 §8): each player actor's pacing clock, owned by the actor rather than
+    /// its connection, so a client step and a chase step share one clock and a replaced or
+    /// resumed connection keeps it. Only held clocks are kept.
+    step_clocks: Vec<(ExactActorRef, StepClock)>,
 }
 
 impl ChannelAttackStates {
@@ -192,37 +202,60 @@ impl ChannelAttackStates {
         &self.kills
     }
 
-    /// CHASE-1: the pacing deadline of `actor` still ahead of `now`, if any.
+    /// CHASE-1: when `actor`'s pacing clock may next be claimed, if it is still held at `now`.
     pub(crate) fn step_deadline(&self, actor: ExactActorRef, now: Instant) -> Option<Instant> {
-        self.step_deadlines
+        self.step_clocks
             .iter()
-            .find(|(owner, due)| *owner == actor && now < *due)
-            .map(|(_, due)| *due)
+            .find(|(owner, _)| *owner == actor)
+            .and_then(|(_, clock)| match clock {
+                StepClock::InFlight(holder) => {
+                    (holder.strong_count() > 0).then(|| now + STEP_IN_FLIGHT_RETRY)
+                }
+                StepClock::Due(due) => (now < *due).then_some(*due),
+            })
     }
 
-    /// CHASE-1: claim `actor`'s pacing clock at `now` for one step, in one check-and-set, so a
-    /// replaced connection cannot step between another's commit and its recorded deadline.
-    /// `Some` with the deadline that still holds it; otherwise the step in flight holds it.
-    pub(crate) fn begin_step(&mut self, actor: ExactActorRef, now: Instant) -> Option<Instant> {
+    /// CHASE-1: claim `actor`'s pacing clock at `now` for one step of the connection that owns
+    /// `holder`, in one check-and-set, so a replaced connection cannot step between another's
+    /// commit and its recorded deadline. `Some` with when to ask again while the clock is held;
+    /// otherwise the claim holds it until [`Self::record_step_deadline`] with the same holder.
+    pub(crate) fn begin_step(
+        &mut self,
+        actor: ExactActorRef,
+        holder: &Arc<()>,
+        now: Instant,
+    ) -> Option<Instant> {
         if let Some(due) = self.step_deadline(actor, now) {
             return Some(due);
         }
-        self.record_step_deadline(actor, now, Some(now + STEP_IN_FLIGHT_HOLD));
+        self.step_clocks.retain(|(owner, _)| *owner != actor);
+        self.step_clocks
+            .push((actor, StepClock::InFlight(Arc::downgrade(holder))));
         None
     }
 
-    /// CHASE-1: `actor`'s pacing clock is due at `due`, set at `now`, or free with `None`;
-    /// deadlines already past are dropped.
+    /// CHASE-1: the step `holder` claimed ended at `now`; `actor`'s pacing clock is due at
+    /// `due`, or free with `None`. A record without the matching claim changes nothing.
     pub(crate) fn record_step_deadline(
         &mut self,
         actor: ExactActorRef,
+        holder: &Arc<()>,
         now: Instant,
         due: Option<Instant>,
     ) {
-        self.step_deadlines
-            .retain(|(owner, kept)| *owner != actor && now < *kept);
+        let claimed = Arc::downgrade(holder);
+        let Some(index) = self.step_clocks.iter().position(|(owner, clock)| {
+            *owner == actor && matches!(clock, StepClock::InFlight(kept) if kept.ptr_eq(&claimed))
+        }) else {
+            return;
+        };
+        self.step_clocks.swap_remove(index);
+        self.step_clocks.retain(|(_, clock)| match clock {
+            StepClock::InFlight(kept) => kept.strong_count() > 0,
+            StepClock::Due(kept) => now < *kept,
+        });
         if let Some(due) = due.filter(|due| now < *due) {
-            self.step_deadlines.push((actor, due));
+            self.step_clocks.push((actor, StepClock::Due(due)));
         }
     }
 }
@@ -906,20 +939,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn begin_actor_step_now(
         &self,
         actor: ExactActorRef,
+        holder: &Arc<()>,
     ) -> Option<Instant> {
-        self.attack.lock().await.begin_step(actor, Instant::now())
+        self.attack
+            .lock()
+            .await
+            .begin_step(actor, holder, Instant::now())
     }
 
     /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
     pub(in crate::gameplay_transport) async fn record_actor_step_deadline_now(
         &self,
         actor: ExactActorRef,
+        holder: &Arc<()>,
         due: Option<Instant>,
     ) {
         self.attack
             .lock()
             .await
-            .record_step_deadline(actor, Instant::now(), due);
+            .record_step_deadline(actor, holder, Instant::now(), due);
     }
 
     /// CHASE-1: a client step of `actor` wins over its chase.
