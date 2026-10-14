@@ -8,6 +8,10 @@ use crate::durability::character_build::{
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
+#[path = "hit_training.rs"]
+pub(crate) mod hit_training;
+use hit_training::{HitTrainingCounters, SkillFamily};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TrainingError {
     InvalidProfile,
@@ -129,6 +133,13 @@ impl BuildFormula for CompiledTrainingFormula {
             (value.is_finite() && value < 9_223_372_036_854_775_808.0)
                 .then_some(value.floor() as u64)
         } else {
+            // SKILLS-0 §2: a promoted vocation trains skills with its base vocation's row (the
+            // pinned elite_knight row swaps fist and distance, a Canary data error).
+            let v = self
+                .profile
+                .vocations
+                .iter()
+                .find(|row| row.key == skill_vocation(vocation))?;
             let index = family.checked_sub(1)?;
             skill_tries_required(
                 *self.profile.skill_bases.get(index)?,
@@ -145,10 +156,26 @@ impl BuildFormula for CompiledTrainingFormula {
     }
 }
 
+/// The base vocation whose skill multipliers a promoted vocation uses (SKILLS-0 §2).
+fn skill_vocation(vocation: &str) -> &str {
+    match vocation {
+        "elder_druid" => "druid",
+        "elite_knight" => "knight",
+        "exalted_monk" => "monk",
+        "master_sorcerer" => "sorcerer",
+        "royal_paladin" => "paladin",
+        other => other,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LiveManaTraining {
     durable: DurableBuildState,
     pending_mana: u64,
+    /// W2b: skill tries from hits, banked only by a checkpoint receipt (never by a cast, whose
+    /// paid successor keeps the owned skill levels).
+    pending_skills: [u64; 7],
+    hits: HitTrainingCounters,
     checkpoint_started_micros: Option<u64>,
     last_cast_micros: Option<u64>,
 }
@@ -157,6 +184,18 @@ pub(crate) struct PreparedManaTraining {
     before: LiveManaTraining,
     after: LiveManaTraining,
     pub(crate) request: BuildChangeRequest,
+    /// Hits resolved while this checkpoint is retained for replay. They cannot touch the live
+    /// training (the replay commits only onto its exact `before`), so they wait here and merge
+    /// into `after` with the receipt.
+    post_checkpoint: Option<PostCheckpointTries>,
+}
+/// Skill tries and hit streaks after a retained checkpoint was prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PostCheckpointTries {
+    pending_skills: [u64; 7],
+    hits: HitTrainingCounters,
+    started_micros: u64,
+    last_micros: u64,
 }
 #[allow(
     clippy::large_enum_variant,
@@ -171,9 +210,71 @@ impl LiveManaTraining {
         Self {
             durable: build.clone(),
             pending_mana: 0,
+            pending_skills: [0; 7],
+            hits: HitTrainingCounters::default(),
             checkpoint_started_micros: None,
             last_cast_micros: None,
         }
+    }
+    pub(crate) fn pending_skills(&self) -> [u64; 7] {
+        self.pending_skills
+    }
+    /// Whether the pending tries of `family` reach its next level.
+    fn skill_level_due(
+        &self,
+        formula: &CompiledTrainingFormula,
+        family: SkillFamily,
+    ) -> Result<bool, TrainingError> {
+        let vocation = self.durable.vocation();
+        if formula.required(vocation, 0, 1).is_none() {
+            return Err(TrainingError::UnknownVocation);
+        }
+        let index = family.index();
+        let skill = self.durable.skills()[index];
+        Ok(advance(
+            formula,
+            vocation,
+            index + 1,
+            skill,
+            self.pending_skills[index],
+        )
+        .0 != skill.0)
+    }
+    /// Whether pending mana or any pending skill tries reach a level now.
+    fn level_due(&self, formula: &CompiledTrainingFormula) -> bool {
+        let vocation = self.durable.vocation();
+        if formula.required(vocation, 0, 1).is_none() {
+            return false;
+        }
+        let magic = self.durable.magic();
+        advance(formula, vocation, 0, magic, self.pending_mana).0 != magic.0
+            || SkillFamily::ALL
+                .iter()
+                .any(|family| self.skill_level_due(formula, *family).unwrap_or(false))
+    }
+    /// The hit streaks the caller resolves a hit with, before it records the tries.
+    pub(crate) fn hits_mut(&mut self) -> &mut HitTrainingCounters {
+        &mut self.hits
+    }
+    /// Bank `tries` for `family` live. The next checkpoint (tick, logout) commits them; one that
+    /// reaches a level writes at once, as A13 §2 requires.
+    pub(crate) fn record_skill_tries(
+        &mut self,
+        family: SkillFamily,
+        tries: u64,
+        now: u64,
+    ) -> Result<(), TrainingError> {
+        if self.last_cast_micros.is_some_and(|previous| now < previous) {
+            return Err(TrainingError::StaleTime);
+        }
+        if tries == 0 {
+            return Ok(());
+        }
+        let pending = &mut self.pending_skills[family.index()];
+        *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
+        self.checkpoint_started_micros.get_or_insert(now);
+        self.last_cast_micros = Some(now);
+        Ok(())
     }
     pub(crate) fn durable(&self) -> &DurableBuildState {
         &self.durable
@@ -188,8 +289,9 @@ impl LiveManaTraining {
         formula: &CompiledTrainingFormula,
         occurrence: BuildOccurrence,
     ) -> Result<TrainingStage, TrainingError> {
-        self.prepare_delta(paid_mana, now, formula, occurrence, false)
+        self.prepare_delta(paid_mana, now, formula, occurrence, false, false)
     }
+    /// `with_skills`: a checkpoint also banks the pending skill tries; a cast banks mana only.
     fn prepare_delta(
         &self,
         paid_mana: u32,
@@ -197,6 +299,7 @@ impl LiveManaTraining {
         formula: &CompiledTrainingFormula,
         occurrence: BuildOccurrence,
         force: bool,
+        with_skills: bool,
     ) -> Result<TrainingStage, TrainingError> {
         if self.last_cast_micros.is_some_and(|previous| now < previous) {
             return Err(TrainingError::StaleTime);
@@ -207,36 +310,49 @@ impl LiveManaTraining {
             .saturating_add(u64::from(paid_mana))
             .min(MAX_BUILD_PROGRESS);
         live.last_cast_micros = Some(now);
-        if live.pending_mana == 0 {
+        let skills_pending = live.pending_skills.iter().any(|tries| *tries > 0);
+        if live.pending_mana == 0 && !(with_skills && skills_pending) {
             return Ok(TrainingStage::Live(live));
         }
         let started = *live.checkpoint_started_micros.get_or_insert(now);
-        let (mut level, stored) = self.durable.magic();
-        let mut progress = stored
-            .saturating_add(live.pending_mana)
-            .min(MAX_BUILD_PROGRESS);
-        if formula.required(self.durable.vocation(), 0, 1).is_none() {
+        let vocation = self.durable.vocation();
+        if formula.required(vocation, 0, 1).is_none() {
             return Err(TrainingError::UnknownVocation);
         }
-        while level < MAX_BUILD_LEVEL {
-            let Some(required) = formula.required(self.durable.vocation(), 0, level + 1) else {
-                break;
-            };
-            if progress < required {
-                break;
+        let magic = advance(
+            formula,
+            vocation,
+            0,
+            self.durable.magic(),
+            live.pending_mana,
+        );
+        let mut advanced = magic.0 != self.durable.magic().0;
+        let mut skills = self.durable.skills();
+        if with_skills {
+            for (index, skill) in skills.iter_mut().enumerate() {
+                let next = advance(
+                    formula,
+                    vocation,
+                    index + 1,
+                    *skill,
+                    live.pending_skills[index],
+                );
+                advanced |= next.0 != skill.0;
+                *skill = next;
             }
-            progress -= required;
-            level += 1;
         }
-        if !force && level == self.durable.magic().0 && now.saturating_sub(started) < 60_000_000 {
+        if !force && !advanced && now.saturating_sub(started) < 60_000_000 {
             return Ok(TrainingStage::Live(live));
         }
-        let after = DurableBuildState::new(
-            self.durable.vocation(),
-            (level, progress),
-            self.durable.skills(),
-        )
-        .map_err(|_| TrainingError::InvalidBuild)?;
+        let after = DurableBuildState::new(vocation, magic, skills)
+            .map_err(|_| TrainingError::InvalidBuild)?;
+        // A cast leaves the skill tries pending in their original checkpoint window, so casting
+        // never postpones them: the next tick past that window banks them.
+        let (pending_skills, checkpoint_started_micros) = if with_skills || !skills_pending {
+            ([0; 7], None)
+        } else {
+            (live.pending_skills, Some(started))
+        };
         let request = BuildChangeRequest {
             occurrence,
             cause: BuildCause::Training,
@@ -249,10 +365,13 @@ impl LiveManaTraining {
             after: LiveManaTraining {
                 durable: after,
                 pending_mana: 0,
-                checkpoint_started_micros: None,
+                pending_skills,
+                hits: live.hits,
+                checkpoint_started_micros,
                 last_cast_micros: Some(now),
             },
             request,
+            post_checkpoint: None,
         }))
     }
 }
@@ -264,11 +383,34 @@ impl LiveManaTraining {
         occurrence: BuildOccurrence,
         force: bool,
     ) -> Result<Option<PreparedManaTraining>, TrainingError> {
-        match self.prepare_delta(0, now, formula, occurrence, force)? {
+        match self.prepare_delta(0, now, formula, occurrence, force, true)? {
             TrainingStage::Live(_) => Ok(None),
             TrainingStage::Durable(value) => Ok(Some(value)),
         }
     }
+}
+
+/// Bank `pending` onto `(level, progress)` of `family` (0 magic, 1..=7 the skills): every level
+/// the formula reaches advances; progress saturates at the stored bound.
+fn advance(
+    formula: &CompiledTrainingFormula,
+    vocation: &str,
+    family: usize,
+    (mut level, stored): (u16, u64),
+    pending: u64,
+) -> (u16, u64) {
+    let mut progress = stored.saturating_add(pending).min(MAX_BUILD_PROGRESS);
+    while level < MAX_BUILD_LEVEL {
+        let Some(required) = formula.required(vocation, family, level + 1) else {
+            break;
+        };
+        if progress < required {
+            break;
+        }
+        progress -= required;
+        level += 1;
+    }
+    (level, progress)
 }
 
 impl PreparedManaTraining {
@@ -287,6 +429,22 @@ impl PreparedManaTraining {
             return Err(TrainingError::StaleReceipt);
         }
         Ok(self.after)
+    }
+    /// `after` with the hits resolved since this checkpoint was prepared.
+    fn after_with_post_checkpoint(&self) -> LiveManaTraining {
+        let mut next = self.after.clone();
+        if let Some(post) = self.post_checkpoint {
+            for (pending, tries) in next.pending_skills.iter_mut().zip(post.pending_skills) {
+                *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
+            }
+            next.hits = post.hits;
+            let started = next
+                .checkpoint_started_micros
+                .map_or(post.started_micros, |value| value.min(post.started_micros));
+            next.checkpoint_started_micros = Some(started);
+            next.last_cast_micros = next.last_cast_micros.max(Some(post.last_micros));
+        }
+        next
     }
 }
 
@@ -316,6 +474,28 @@ mod tests {
         assert_eq!(f.required("none", 0, 2), Some(6400));
         assert_eq!(f.required("missing", 0, 1), None);
         assert_eq!(f.required("druid", 7, 11), Some(20));
+        // SKILLS-0 §2: the elite knight trains skills on the knight row, not the swapped one.
+        assert_eq!(f.required("elite_knight", 1, 12), Some(55));
+        // 30 x 1.4f (binary32, 1.39999998) floors to 41, as the pinned source computes it.
+        assert_eq!(f.required("elite_knight", 5, 12), Some(41));
+        assert_eq!(
+            f.required("elite_knight", 5, 12),
+            f.required("knight", 5, 12)
+        );
+        for (promoted, base) in [
+            ("elder_druid", "druid"),
+            ("elite_knight", "knight"),
+            ("exalted_monk", "monk"),
+            ("master_sorcerer", "sorcerer"),
+            ("royal_paladin", "paladin"),
+        ] {
+            for family in 0..=7 {
+                assert_eq!(
+                    f.required(promoted, family, 12),
+                    f.required(base, family, 12)
+                );
+            }
+        }
         let mut profile: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../tools/content-schema/native-gameplay/build-training.json"
         ))
@@ -378,6 +558,351 @@ mod tests {
             panic!()
         };
         assert_eq!(advance.request.after.magic(), (2, 0));
+    }
+    #[test]
+    fn skill_tries_bank_on_a_checkpoint_and_a_reached_level_writes_at_once() {
+        let f = formula();
+        let mut live = LiveManaTraining::from_owned_build(&seed());
+        live.record_skill_tries(SkillFamily::Sword, 10, 5).unwrap();
+        assert!(
+            live.prepare_checkpoint(6, &f, occurrence(), false)
+                .unwrap()
+                .is_none()
+        );
+        // The 60 s window from the first try, then a forced (logout) checkpoint.
+        let window = live
+            .prepare_checkpoint(60_000_005, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(window.request.after.skills()[2], (10, 10));
+        assert_eq!(window.request.after.magic(), (0, 0));
+        assert_eq!(window.after.pending_skills(), [0; 7]);
+        let forced = live
+            .prepare_checkpoint(6, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        assert_eq!(forced.request.after, window.request.after);
+        // Druid sword level 11 needs 50 tries (SKILLS-0 §2): reaching it writes before 60 s,
+        // with any leftover kept and every family banked in the one receipt.
+        live.record_skill_tries(SkillFamily::Sword, 45, 7).unwrap();
+        live.record_skill_tries(SkillFamily::Fishing, 3, 7).unwrap();
+        let advance = live
+            .prepare_checkpoint(8, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(advance.request.after.skills()[2], (11, 5));
+        assert_eq!(advance.request.after.skills()[6], (10, 3));
+        assert_eq!(advance.request.cause, BuildCause::Training);
+        assert!(live.record_skill_tries(SkillFamily::Fist, 1, 6).is_err());
+    }
+    #[test]
+    fn a_cast_banks_mana_only_and_keeps_skill_tries_pending() {
+        let f = formula();
+        let mut live = LiveManaTraining::from_owned_build(&seed());
+        live.record_skill_tries(SkillFamily::Sword, 60, 1).unwrap();
+        let TrainingStage::Durable(cast) =
+            live.prepare_paid_cast(1600, 2, &f, occurrence()).unwrap()
+        else {
+            panic!()
+        };
+        assert_eq!(cast.request.after.magic(), (1, 0));
+        assert_eq!(cast.request.after.skills(), seed().skills());
+        assert_eq!(cast.after.pending_skills()[2], 60);
+        // The cast keeps the skill window opened by the first try at t=1.
+        assert!(
+            cast.after
+                .prepare_checkpoint(60_000_001, &f, occurrence(), false)
+                .unwrap()
+                .is_some()
+        );
+        let mut slow = LiveManaTraining::from_owned_build(&seed());
+        slow.record_skill_tries(SkillFamily::Sword, 5, 1).unwrap();
+        let TrainingStage::Durable(slow_cast) =
+            slow.prepare_paid_cast(1600, 2, &f, occurrence()).unwrap()
+        else {
+            panic!()
+        };
+        assert!(
+            slow_cast
+                .after
+                .prepare_checkpoint(60_000_000, &f, occurrence(), false)
+                .unwrap()
+                .is_none()
+        );
+        let window = slow_cast
+            .after
+            .prepare_checkpoint(60_000_001, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(window.request.after.skills()[2], (10, 5));
+        let TrainingStage::Live(only_mana) =
+            live.prepare_paid_cast(20, 3, &f, occurrence()).unwrap()
+        else {
+            panic!()
+        };
+        assert_eq!(only_mana.pending_skills()[2], 60);
+        let bank = cast
+            .after
+            .prepare_checkpoint(4, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(bank.request.after.skills()[2], (11, 10));
+        assert_eq!(bank.request.after.magic(), (1, 0));
+    }
+    #[test]
+    fn a_skill_level_is_live_only_after_its_checkpoint_receipt() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        // Without owned training (the production off switch) nothing trains.
+        assert_eq!(
+            state
+                .train_skill(SkillFamily::Sword, 1, &f, |c| c
+                    .melee_hit(hit_training::HitBlock::Unblocked))
+                .unwrap(),
+            TrainedSkill::default()
+        );
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        assert!(!state.has_training_to_flush());
+        // 49 of the 50 druid sword tries wait for the cadence; the 50th is due at once.
+        assert_eq!(
+            state
+                .train_skill(SkillFamily::Sword, 2, &f, |_| 49)
+                .unwrap(),
+            TrainedSkill {
+                tries: 49,
+                checkpoint_due: false
+            }
+        );
+        assert!(
+            state
+                .prepare_training_checkpoint(2, &f, occurrence(), false)
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            state.train_skill(SkillFamily::Sword, 2, &f, |_| 1).unwrap(),
+            TrainedSkill {
+                tries: 1,
+                checkpoint_due: true
+            }
+        );
+        assert!(state.has_training_to_flush());
+        assert_eq!(state.owned_skills.unwrap()[2], 10);
+        let prepared = state
+            .prepare_training_checkpoint(3, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        let receipt = CommittedBuildChange {
+            occurrence: occurrence(),
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(1).unwrap(),
+            committed_character_revision: CharacterRevision::new(2).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        state
+            .commit_training_checkpoint(prepared, &receipt)
+            .unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 11);
+        assert!(!state.has_training_to_flush());
+    }
+    fn test_fence() -> crate::durability::character_progression::CurrentCharacterGameplayFence {
+        use crate::domain::{CharacterId, CharacterRevision};
+        use crate::foundation::{
+            ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+        let id = |seed: u8| {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        };
+        crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(7)).unwrap(),
+            game_session_id: GameSessionId::decode(&id(3)).unwrap(),
+            connection_generation: ConnectionGeneration::new(1).unwrap(),
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(4)).unwrap(),
+                ChannelId::decode(&id(5)).unwrap(),
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).unwrap(),
+            expected_character_revision: CharacterRevision::new(1).unwrap(),
+        }
+    }
+    #[test]
+    fn hits_during_a_retained_checkpoint_merge_and_their_level_commits() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        let receipt_for = |prepared: &PreparedManaTraining, revision: u64| CommittedBuildChange {
+            occurrence: prepared.request.occurrence,
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(revision).unwrap(),
+            committed_character_revision: CharacterRevision::new(revision + 1).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        // A forced checkpoint is retained: its save returned `Unknown`.
+        state
+            .train_skill(SkillFamily::Sword, 1, &f, |_| 10)
+            .unwrap();
+        let prepared = state
+            .prepare_training_checkpoint(2, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        state
+            .retain_training_checkpoint(RetainedTrainingCheckpoint {
+                fence: test_fence(),
+                prepared: prepared.clone(),
+                formula_digest: f.digest(),
+            })
+            .unwrap();
+        // Hits after it are kept, and the one that reaches a level is still due at once.
+        assert_eq!(
+            state
+                .train_skill(SkillFamily::Sword, 3, &f, |_| 39)
+                .unwrap(),
+            TrainedSkill {
+                tries: 39,
+                checkpoint_due: false
+            }
+        );
+        assert_eq!(
+            state.train_skill(SkillFamily::Sword, 4, &f, |_| 1).unwrap(),
+            TrainedSkill {
+                tries: 1,
+                checkpoint_due: true
+            }
+        );
+        // The retry commits the retained receipt and merges the later tries.
+        let retained = state.pending_training_checkpoint().unwrap().clone();
+        let receipt = receipt_for(&retained.prepared, 1);
+        state
+            .commit_training_checkpoint(retained.prepared, &receipt)
+            .unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 10);
+        assert!(state.has_training_to_flush());
+        // The save drains it before reporting `Saved`: the reached level writes at once, without waiting for the cadence.
+        let level = state
+            .prepare_training_checkpoint(5, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert!(state.training_successor_due(&f, false));
+        assert_eq!(level.request.after.skills()[2], (11, 0));
+        let receipt = receipt_for(&level, 2);
+        state.commit_training_checkpoint(level, &receipt).unwrap();
+        assert_eq!(state.owned_skills.unwrap()[2], 11);
+        assert!(!state.has_training_to_flush());
+        assert!(!state.training_successor_due(&f, false));
+    }
+    #[test]
+    fn a_forced_save_drains_post_checkpoint_tries_below_a_level() {
+        use crate::domain::{CharacterId, CharacterRevision};
+        let f = formula();
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 8,
+            magic_level: 0,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0).unwrap();
+        state.load_owned_build(&seed()).unwrap();
+        state.enable_owned_training(&seed(), &f).unwrap();
+        let receipt_for = |prepared: &PreparedManaTraining| CommittedBuildChange {
+            occurrence: prepared.request.occurrence,
+            character_id: CharacterId::from_bytes([
+                7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7,
+            ])
+            .unwrap(),
+            original_character_revision: CharacterRevision::new(1).unwrap(),
+            committed_character_revision: CharacterRevision::new(2).unwrap(),
+            cause: BuildCause::Training,
+            before: prepared.request.before.clone(),
+            after: prepared.request.after.clone(),
+            pruned_stance: None,
+        };
+        state
+            .train_skill(SkillFamily::Sword, 1, &f, |_| 10)
+            .unwrap();
+        let prepared = state
+            .prepare_training_checkpoint(2, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        state
+            .retain_training_checkpoint(RetainedTrainingCheckpoint {
+                fence: test_fence(),
+                prepared,
+                formula_digest: f.digest(),
+            })
+            .unwrap();
+        // Tries after the retained checkpoint that reach no level.
+        assert!(
+            !state
+                .train_skill(SkillFamily::Sword, 3, &f, |_| 5)
+                .unwrap()
+                .checkpoint_due
+        );
+        let retained = state.pending_training_checkpoint().unwrap().clone();
+        let receipt = receipt_for(&retained.prepared);
+        state
+            .commit_training_checkpoint(retained.prepared, &receipt)
+            .unwrap();
+        // A cadence save may leave them; a forced (logout) save writes them before `Saved`.
+        assert!(!state.training_successor_due(&f, false));
+        assert!(state.training_successor_due(&f, true));
+        let rest = state
+            .prepare_training_checkpoint(4, &f, occurrence(), true)
+            .unwrap()
+            .unwrap();
+        assert_eq!(rest.request.after.skills()[2], (10, 15));
+        let receipt = receipt_for(&rest);
+        state.commit_training_checkpoint(rest, &receipt).unwrap();
+        assert!(!state.training_successor_due(&f, true));
+    }
+    #[test]
+    fn hit_streaks_feed_the_pending_tries() {
+        let mut live = LiveManaTraining::from_owned_build(&seed());
+        let tries = live.hits_mut().melee_hit(hit_training::HitBlock::Unblocked);
+        live.record_skill_tries(SkillFamily::Club, tries, 1)
+            .unwrap();
+        let tries = live.hits_mut().block_hit(true);
+        live.record_skill_tries(SkillFamily::Shielding, tries, 2)
+            .unwrap();
+        live.record_skill_tries(SkillFamily::Fist, 0, 3).unwrap();
+        assert_eq!(live.pending_skills(), [0, 1, 0, 0, 0, 1, 0]);
     }
 }
 
@@ -630,6 +1155,14 @@ impl TrainingPaymentWitness {
     }
 }
 
+/// The outcome of [`super::cast::PlayerSpellState::train_skill`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct TrainedSkill {
+    pub(crate) tries: u64,
+    /// The pending tries reach a level: the caller saves the checkpoint now.
+    pub(crate) checkpoint_due: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RetainedTrainingCheckpoint {
     pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
@@ -656,8 +1189,18 @@ impl super::cast::PlayerSpellState {
         receipt: &CommittedBuildChange,
     ) -> Result<(), TrainingError> {
         let current = self.training.as_ref().ok_or(TrainingError::InvalidBuild)?;
-        let next = prepared.commit(current, receipt)?;
+        // The post-checkpoint hits bank on the retained copy; the caller may pass a clone.
+        let mut prepared = prepared;
+        if let Some(retained) = self.training_checkpoint.as_ref() {
+            prepared.post_checkpoint = retained.prepared.post_checkpoint;
+        }
+        let next = prepared.after_with_post_checkpoint();
+        prepared.commit(current, receipt)?;
         self.facts.magic_level = u32::from(next.durable().magic().0);
+        // A banked skill level is live only now, after its receipt (A13 §2).
+        if self.owned_skills.is_some() {
+            self.owned_skills = Some(next.durable().skills().map(|(level, _)| level));
+        }
         self.training = Some(next);
         self.training_payment = None;
         self.training_checkpoint = None;
@@ -666,13 +1209,83 @@ impl super::cast::PlayerSpellState {
 }
 impl super::cast::PlayerSpellState {
     /// Whether a forced checkpoint now has anything to write: a retained checkpoint to replay or
-    /// unbanked training mana. A read-only in-memory check (OPS-SAVE-2 shutdown pre-filter).
+    /// unbanked training mana or skill tries. A read-only in-memory check (OPS-SAVE-2 shutdown
+    /// pre-filter).
     pub(crate) fn has_training_to_flush(&self) -> bool {
         self.training_checkpoint.is_some()
-            || self
-                .training
-                .as_ref()
-                .is_some_and(|value| value.pending_mana > 0)
+            || self.training.as_ref().is_some_and(|value| {
+                value.pending_mana > 0 || value.pending_skills.iter().any(|tries| *tries > 0)
+            })
+    }
+    /// W2b: one resolved hit or use trains `family` by the tries `rule` derives from the hit
+    /// streaks. Without owned training (no active formula, the production off switch) nothing
+    /// trains. While a checkpoint is retained for replay (a save returned `Unknown`) the live
+    /// training must stay its exact `before`, so the hits bank on the retained checkpoint and
+    /// merge into the training with its receipt.
+    ///
+    /// SKILLS-0 §3.4: a level advance commits at once. When the banked tries reach a level the
+    /// result says `checkpoint_due`, and the caller saves the training checkpoint in the same
+    /// owner turn (`save_spell_training`), not at the cadence tick. The level is live only after
+    /// that receipt (A13 §2).
+    pub(crate) fn train_skill(
+        &mut self,
+        family: SkillFamily,
+        now: u64,
+        formula: &CompiledTrainingFormula,
+        rule: impl FnOnce(&mut HitTrainingCounters) -> u64,
+    ) -> Result<TrainedSkill, TrainingError> {
+        if let Some(retained) = self.training_checkpoint.as_mut() {
+            let prepared = &mut retained.prepared;
+            let base = prepared.after_with_post_checkpoint();
+            let mut next = base.clone();
+            let tries = rule(next.hits_mut());
+            next.record_skill_tries(family, tries, now)?;
+            let checkpoint_due = next.skill_level_due(formula, family)?;
+            let mut post = prepared.post_checkpoint.unwrap_or(PostCheckpointTries {
+                pending_skills: [0; 7],
+                hits: base.hits,
+                started_micros: now,
+                last_micros: now,
+            });
+            let pending = &mut post.pending_skills[family.index()];
+            *pending = pending.saturating_add(tries).min(MAX_BUILD_PROGRESS);
+            post.hits = next.hits;
+            post.last_micros = post.last_micros.max(now);
+            prepared.post_checkpoint = Some(post);
+            return Ok(TrainedSkill {
+                tries,
+                checkpoint_due,
+            });
+        }
+        let Some(current) = self.training.as_ref() else {
+            return Ok(TrainedSkill::default());
+        };
+        let mut next = current.clone();
+        let tries = rule(next.hits_mut());
+        next.record_skill_tries(family, tries, now)?;
+        let checkpoint_due = next.skill_level_due(formula, family)?;
+        self.training = Some(next);
+        Ok(TrainedSkill {
+            tries,
+            checkpoint_due,
+        })
+    }
+    /// After a replayed receipt merged the hits resolved meanwhile: whether the save must write
+    /// them before it reports `Saved`. A level they reach is due at once (SKILLS-0 §3.4); a
+    /// forced save (logout, shutdown) also writes tries that reach no level.
+    pub(crate) fn training_successor_due(
+        &self,
+        formula: &CompiledTrainingFormula,
+        force: bool,
+    ) -> bool {
+        self.training_checkpoint.is_none()
+            && if force {
+                self.has_training_to_flush()
+            } else {
+                self.training
+                    .as_ref()
+                    .is_some_and(|value| value.level_due(formula))
+            }
     }
     pub(crate) fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()

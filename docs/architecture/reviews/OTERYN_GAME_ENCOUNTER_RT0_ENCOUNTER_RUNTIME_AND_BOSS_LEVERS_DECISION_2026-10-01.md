@@ -1,7 +1,7 @@
 # ENCOUNTER-RT-0 Encounter runtime and boss levers
 
 - Decision: `ENCOUNTERRT0-ENCOUNTER-RUNTIME-AND-BOSS-LEVERS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (determinism,
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by `OTERYN_GAME_ACCEPT_ENCOUNTER_RT0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-ENCOUNTER_RT0-V1`); it takes effect after exact-head independent review, CI and protected integration of that PR. Original acceptance conditions: Acceptance needs exact-head validation, independent review (determinism,
   combat, persistence and security) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698). BOSS-RAID-0 §6.5 names this
