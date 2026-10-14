@@ -407,8 +407,13 @@ decisions; until then the factor is 1.
 - **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8, owner decision 2026-10-14).** Player chase
   searches use the same path profile with their own rows `RANGED0-RL-03` to `-07` (64 searches per
   50 ms window per channel, 1,024 expansions and 12 tiles per search, 1 search per second per
-  player, 2 s backoff after a failure), served in actor-id order after creature searches, inside
-  `RL-09`.
+  player, 2 s backoff after a failure), served in actor-id order, inside `RL-09`. **Reserve:** 16 of
+  the 64 searches (16,384 of the 65,536 units) per window are reserved for player chase, so
+  creature path demand, including carried-over overdue requests, can use at most 48 searches
+  (49,152 units) while a chase search is waiting; chase searches that are not waiting leave their
+  reserve to creatures in that window. Chase searches never queue behind the creature queue; the
+  reserve serves 320 chase searches per second per channel (16 per window, 20 windows per second),
+  and CHASE-1 tests that a full creature queue leaves chase searches running.
 - Control, fencing, admission and player input never wait for AI work: AI budgets are separate and
   bounded (GAME-AI-01 §20). Player-visible creatures get no priority: the order is deterministic
   (SIM-DETERMINISM-01), so an overload shows as later thinks, the same on every replay.
