@@ -19,8 +19,13 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
   - docs/architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md
+  - docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md
+  - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20261014-ranged-0-amend.md
 public_contracts:
+  - "Composition, ITEM-MOVE-WIRE-1, MOVE-RL11 and ATTACK-0 pending RANGED-0 notes reconciled to the decision (allocated TransactionId, stack_ordinal, no ordinal change, bounded chase): persistence, movement and combat review"
   - "DUR-03 pending RANGED-0 notes (section 15, 39.1, 39.3) edited to WeaponUseAggregateV1, still pending: persistence review"
   - "CREATURE-AI-0 RANGED0-RL-03 chase amendment kept consistent with the server-driven chase of decision section 8 (owner decision 2026-10-14): movement review"
   - "Decision section 6.2 restart reconciliation and section 5 per-role hit chance: persistence and combat review"

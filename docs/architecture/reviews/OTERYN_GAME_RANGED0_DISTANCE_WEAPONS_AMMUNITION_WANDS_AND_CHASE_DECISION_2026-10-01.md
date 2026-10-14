@@ -28,8 +28,8 @@
 |---|---|---|---|
 | RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
 | QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
-| RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b; the §6.4 aggregate registered; the SPELL-PRESENT-0 stream registered with its missile key to u16 table (only for the projectile, §7); the slot-9 key reconciliation (§3.3) |
-| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the CREATURE-MOVE-1 path profile in code; the §8 pacing rule implemented; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8 |
+| RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b (RANGED-1 itself registers the §6.4 aggregate rows, receipt and audit tables; the missile also needs the SPELL-PRESENT-0 stream and its key to u16 table, §7, and the slot-9 key reconciliation is QUIVER-1's, §3.3) |
+| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the CREATURE-MOVE-1 path profile in code; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
 | RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
@@ -237,16 +237,17 @@ A refusal in step 1 makes no attack and spends nothing.
   `CONTAINER_TREE_V1`, makes no attack, spends nothing, keeps the target and waits like an
   out-of-range swing (a stall, not a cleared target). No client text is defined (no new wire);
   a "no ammunition" message is `PARITY_PENDING` and a later protocol decision.
-- **Hooks (wiring rule).** `AttackDamageCalculation` runs before the commit and has no hit gate,
-  and a main-target wand `AutoAttack` maps to `CharmHitSource::CharacterAttack` today, so charms
-  would evaluate for a wand. Rule: RANGED-1 raises the charm hooks (`combat/charm_effects.rs`)
-  **only for a frozen hit** of a `DISTANCE` or `THROWING` swing, by the melee rules, from the
-  committed outcome (`CommittedHit`), never from the pre-commit calculation; **neither hook fires
-  on a miss**. A `WAND` swing uses a new variant `CharmHitSource::CharacterWandAttack`, for which
-  `event_runs_effect` returns false (elemental, no hit roll; `PARITY_PENDING`); RANGED-1 adds the
-  variant with a test that a wand main-target attack evaluates no charm. Proficiency effects
-  (`content/project/v2/proficiency`) take no part in a distance, throwing or wand swing until their
-  own decision. RANGED-1 audits `charm_effects.rs` against this rule.
+- **Hooks (wiring rule).** CHARM-0 answer 16: an auto-attack triggers charms only on its main
+  target. `AttackDamageCalculation` runs before the commit and has no hit gate, so RANGED-1 raises
+  the charm hooks (`combat/charm_effects.rs`) from the committed outcome (`CommittedHit`), never
+  from the pre-commit calculation, and **only when the main target takes the frozen damage**: a
+  `DISTANCE` or `THROWING` hit, or a `WAND` swing's damage (a wand has no hit roll). **Neither hook
+  fires on a distance or throwing miss.** The source stays `CharmHitSource::CharacterAttack` for all
+  three variants; no new variant is added. RANGED-1 tests a wand main-target attack that evaluates
+  its charms and a miss that evaluates none. Whether a wand triggers charms in Tibia is
+  `PARITY_PENDING` (Canary lacks the rule). Proficiency effects (`content/project/v2/proficiency`)
+  take no part in a distance, throwing or wand swing until their own decision. RANGED-1 audits
+  `charm_effects.rs` against this rule.
 - **Creatures** keep CREATURE-AI-0 §4.4: their ranged attacks are think entries, not this timer. Creature keep-distance steps
   are gated by CREATURE-MOVE-1; the local steps in `ai_think.rs:376-399` are pre-profile and are not
   extended by this decision.
@@ -541,9 +542,9 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments**, specified in this decision and active on its acceptance (the
-   pending-amendment notes already in DUR-03 and CREATURE-AI-0 are edited by this PR to match it
-   and stay pending): DUR-03 §15, §39.1 and §39.3 (§6.4 `WeaponUseAggregateV1`); the
+1. **Contract amendments**, specified in this decision and active on its acceptance (every
+   pending-amendment note in DUR-03, CREATURE-AI-0, the composition decision, ITEM-MOVE-WIRE-1,
+   MOVE-RL11 and ATTACK-0 is edited by this PR to match it and stays pending): DUR-03 §15, §39.1 and §39.3 (§6.4 `WeaponUseAggregateV1`); the
    composition decision (server-originated swing variant, rule 1 scope, §6.2); ITEM-MOVE-WIRE-1 §4
    (quiver, Extra slot) and §5 and §6.2 (no schema change; Ground order is the existing
    `stack_ordinal`); BAGS-0 §3, §6 and §10 (quiver tree, reachable items); ATTACK-0 §4 (variants,
@@ -593,12 +594,13 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
 
 | Lane | Blocker | Closed in |
 |---|---|---|
-| Combat | wand charm ruling unreachable; miss wiring | §4.2 Hooks (wiring rule, `CharacterWandAttack`) |
+| Combat | wand charm ruling unreachable; miss wiring | §4.2 Hooks (wiring rule; wand keeps `CharacterAttack`, per CHARM-0 answer 16) |
 | Combat | R6 contradicts Canary roles; cap 90 and 100 rows; non-anchor caps | §2, §5, R6 |
 | Persistence | DUR-03 pending text keyed by actor generation and one-unit split | DUR-03 §15, §39.1, §39.3 notes edited |
 | Persistence | restart rule versus DUR-03 §20, §7.3 | §6.2 restart and reconciliation |
 | Movement | CREATURE-AI-0 chase amendment `RANGED0-RL-03` | kept consistent with §8 in CREATURE-AI-0 |
 | Movement | creature keep-distance steps | §4.2 Creatures (CREATURE-MOVE-1 gated) |
+| Codex | wand charms; child-owned work in Depends-on; stale composition, ITEM-MOVE-WIRE-1, MOVE-RL11 and ATTACK-0 notes | §4.2 Hooks, brief, the five notes |
 | Non-blocking | LOS query, 13.05 floor, `i25735`, NULLS FIRST, `DUR03-RL-07-WEAPON` numbers, merge scope, slot-9 key, RANGED-1 depends-on, `attack.rs:10-12` | §4, §5, §6.1.2, §6.3, §3.3, brief, §13 |
 
 Non-blocking items taken: PARITY_PENDING point-blank (§5), 13.05 level curve (§5), fight-mode

@@ -117,8 +117,10 @@ degrade and resync dispositions are unchanged
 **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs rank with players and creatures as actors.
 VIS-3 does not offer capability 6 before NPC-VIS-1 adds kind 5 to `world_spatial_v1.proto`
 `EntityKind`.
-**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
-tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
+**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** None: RANGED-0 adds no `ground_ordinal`
+and makes no change to this section (the Ground order is the existing `stack_ordinal`, and the client's
+in-tile order and the 256 cutoff are unchanged); the earlier pending amendment is withdrawn. The
+rule below is the current rule.
 Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
 actors first as above; items by floor distance, Chebyshev distance, then the canonical tile key
 `(floor, y, x)` in native floor coordinates (`OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1` §11) so
