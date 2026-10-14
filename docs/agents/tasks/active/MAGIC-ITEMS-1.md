@@ -40,7 +40,8 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   maps (`aggressive`, `self_target`, `needs_target`, `needs_direction`, `target_or_direction`, `block_walls`,
   `allow_on_self`, `check_floor`; registrars), range (wikis and registrars), and the target restriction
   `allowed_targets` against the accepted S27 onCastSpell guard (`guard-behaviours.json`), and the
-  `parameter` mode against the registrars' parameter flags as the converter derives it. Where the references
+  `parameter` mode, `cast_at_position` (`optionalTarget`) and `aim_at_target` as the converter derives
+  them; any other targeting field fails as unaudited (`targeting_fields`). Where the references
   conflict, our value must be that of the source the catalogue manifest records as the winner
   (S3/S11/S13/S14); a recorded native resolution (S27, Disintegrate non-aggressive) requires a value
   that differs from the references;
@@ -98,11 +99,14 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - Codex P2 on 98782c90 (`parameter` unaudited): repaired; a `parameter` check requires the converter's
   mode from the registrar flags (`player_name`, `text` or `none`; all 36 carriers `none`).
 - Codex P2 on 98782c90 (non-hit centre `c` counted as an area tile): repaired; only `x` and `C` count.
+- Codex P2 on 87cc5d66 (`cast_at_position` unaudited): repaired at the root; `cast_at_position` and
+  `aim_at_target` are checked, and a closed `targeting_fields` check fails any targeting field the audit
+  does not cover, so a new converter field cannot pass unaudited.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 13 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 14 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

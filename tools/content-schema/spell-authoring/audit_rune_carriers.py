@@ -15,11 +15,13 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
   differs from the references;
 - the target restriction (`allowed_targets`) against the accepted onCastSpell guard of
   `guard-behaviours.json` (S27); a rune without a guard has none;
+- the parameter mode, the positional cast (`optionalTarget`) and Aim at Target as the converter
+  derives them (S20); any other targeting field fails as unaudited;
 - the dated current rune-use facts of `rune-use-source-resolutions.json`, which replace the field
   they name;
 - `rune.charges` against the conjuring spell's `count` where both exist (§3);
 - the rune item's stack facts in the native Item profiles (stackable, stack of 100, §3);
-- the authored area: at most 37 tiles, so the victim cap 2 x tiles stays at or below 74 (RL-08),
+- the authored area (hit cells `x` and `C` only): at most 37 tiles, so the victim cap 2 x tiles stays at or below 74 (RL-08),
   and at most 12 tiles for a rune that creates fields (RL-07).
 
 The rune joins and the aliases are those of `verify_spells.py`. A carrier that fails any check stays
@@ -75,6 +77,9 @@ REQUIRED = ('item_id', 'vocations', 'group')
 TARGETING_FLAGS = (('aggressive', 'isAggressive'), ('self_target', 'isSelfTarget'), ('needs_target', 'needTarget'),
                    ('needs_direction', 'needDirection'), ('target_or_direction', 'needCasterTargetOrDirection'),
                    ('block_walls', 'blockWalls'), ('allow_on_self', 'allowOnSelf'), ('check_floor', 'checkFloor'))
+# Every targeting field `convert_spells.Spell.targeting` writes; each has a check above.
+AUDITED_TARGETING = ({field for field, _ in TARGETING_FLAGS} |
+                     {'range_tiles', 'parameter', 'aim_at_target', 'cast_at_position', 'allowed_targets'})
 # The registrar defaults of an omitted call (`convert_spells.DEFAULTS`).
 REGISTRAR_DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
                       'needCasterTargetOrDirection': False, 'blockWalls': True, 'allowOnSelf': True,
@@ -245,6 +250,15 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
         if field in guard:
             continue  # the S27 guard replaces the registrar value (`convert_spells.Spell.targeting`)
         checks[field] = check(targeting.get(field), flag(key), recorded=recorded(entry, base + 'targeting/' + field))
+    # S20: the positional cast (registrar `optionalTarget`) and Aim at Target (a wiki `aimattarget` of a directional
+    # spell) are written only when set (`convert_spells.Spell.targeting`), so absent means false.
+    checks['cast_at_position'] = check(targeting.get('cast_at_position', False),
+                                       {source: bool(value) for source, value in
+                                        registrar_values(registrar, 'optionalTarget', False).items()},
+                                       recorded=recorded(entry, base + 'targeting/cast_at_position'))
+    aim = any(page['fields'].get('aimattarget') == 'yes' for page in pages.values()) and targeting.get('needs_direction')
+    checks['aim_at_target'] = {'ours': targeting.get('aim_at_target', False), 'expected': bool(aim),
+                               'pass': targeting.get('aim_at_target', False) == bool(aim)}
     # The parameter mode as `convert_spells.Spell.targeting` derives it from either registrar's parameter flags.
     expected = ('player_name' if any(r.get('hasPlayerNameParam') for r in registrar.values()) else
                 'text' if any(r.get('hasParams') for r in registrar.values()) else 'none')
@@ -254,6 +268,9 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles,
     expected = {'allowed_targets': None, **guard}
     checks['target_guard'] = {'ours': {field: targeting.get(field) for field in expected}, 'guard': expected,
                               'pass': all(targeting.get(field) == value for field, value in expected.items())}
+    # A targeting field this audit does not know is unaudited, so it fails until the audit covers it.
+    unknown = sorted(set(targeting) - AUDITED_TARGETING)
+    checks['targeting_fields'] = {'unaudited': unknown, 'pass': not unknown}
     # Every registrar-backed check compares both engines; a carrier with one registrar record stays blocked.
     checks['registrars'] = {'present': sorted(registrar), 'required': list(REGISTRARS),
                             'pass': all(source in registrar for source in REGISTRARS)}

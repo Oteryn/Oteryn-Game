@@ -139,6 +139,16 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(rows['sudden death rune']['failed'], ['parameter'])
         self.assertEqual(rows['sudden death rune']['checks']['parameter']['registrars'], 'none')
 
+    def test_positional_cast_and_unaudited_fields(self):
+        profiles = [profile('candidate:item/3155')]
+        _, rows = run([carrier('sudden death rune', 3155, 3, cast_at_position=True)], profiles)
+        self.assertEqual(rows['sudden death rune']['failed'], ['cast_at_position'])
+        _, rows = run([carrier('sudden death rune', 3155, 3, aim_at_target=True)], profiles)
+        self.assertEqual(rows['sudden death rune']['failed'], ['aim_at_target'])
+        _, rows = run([carrier('sudden death rune', 3155, 3, new_mode='x')], profiles)
+        self.assertEqual(rows['sudden death rune']['failed'], ['targeting_fields'])
+        self.assertEqual(rows['sudden death rune']['checks']['targeting_fields']['unaudited'], ['new_mode'])
+
     def test_range_is_checked_against_the_registrars(self):
         row = audit.check(99, {'canary': 5, 'crystal': 5})
         self.assertEqual((row['verdict'], row['pass']), ('ours_differs', False))
