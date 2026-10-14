@@ -293,13 +293,6 @@ def test_committed_packet_rebuilds():
     assert lower.OUTPUT.read_bytes() == data
 
 
-if __name__ == "__main__":
-    for name, test in sorted(globals().items()):
-        if name.startswith("test_") and callable(test):
-            test()
-    print("lower_ranged_packet tests: PASS")
-
-
 def test_wiki_physical_damage_type_is_recognized():
     assert lower._parse_element("Physical") == "PHYSICAL"
     wand = {"top": WAND["top"], "nested": dict(WAND["nested"], wandtype="")}
@@ -321,3 +314,10 @@ def test_proof_owned_rows_stay_held_but_keep_parity():
             "parity_pending": ["range_tiles"],
         }
     ]
+
+
+if __name__ == "__main__":
+    for name, test in sorted(globals().items()):
+        if name.startswith("test_") and callable(test):
+            test()
+    print("lower_ranged_packet tests: PASS")
