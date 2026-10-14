@@ -1109,6 +1109,13 @@ Packet: docs/agents/tasks/active/OTV2-20261014-client-export-destination.md.
 
 ## Required evidence per page/panel
 
+Latest native OS evidence is in OTV2-20261014-client-native-os-input: bounded
+current-desktop permission supersedes older isolation requirements, and actual
+Options clipboard/pickers/import+Apply/wheel tests pass on ab111236. Emoji
+VK_PACKET typing fails while identical standard Win32 Edit input succeeds;
+Paste is not proof of a typing fix. Latest F10 focus repair/source composition
+is in OTV2-20261014-client-prelogin-focus; earlier native proofs are not inherited.
+
 Six local steps, without E2E: current packet
 docs/agents/tasks/active/OTV2-20261014-client-six-local-steps.md distinguishes
 catalogue declarations (UI-LOCAL-OPTION-INDEX.md) from actual consumers. Initially

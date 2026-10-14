@@ -839,15 +839,20 @@ impl ApplicationHandler for Application {
             WindowEvent::Focused(focused) => {
                 self.focused = focused;
             }
-            WindowEvent::KeyboardInput { event, .. }
-                if crate::settings_ui::prelogin_settings_hotkey(
-                    consumed,
-                    self.login.is_some() && !auditing,
-                    event.state == winit::event::ElementState::Pressed,
-                    event.repeat,
-                    event.physical_key
-                        == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10),
-                ) =>
+            WindowEvent::KeyboardInput {
+                event,
+                is_synthetic,
+                ..
+            } if crate::settings_ui::prelogin_settings_hotkey(
+                consumed,
+                self.login.is_some() && !auditing,
+                event.state == winit::event::ElementState::Pressed,
+                event.repeat,
+                event.physical_key
+                    == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10),
+                self.focused,
+                is_synthetic,
+            ) =>
             {
                 if let Some(ui) = self.login.as_mut() {
                     ui.settings.toggle_options();

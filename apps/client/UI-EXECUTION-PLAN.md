@@ -8,6 +8,15 @@ AUTHORING. This plan is the execution order, not a completion declaration.
 
 ## Current continuation — 2026-10-14
 
+Newest packet: OTV2-20261014-client-prelogin-focus. Published ab111236 CI is
+terminal green including game-gate; current-main conflict still needs normal
+composition. Native OS packet OTV2-20261014-client-native-os-input supersedes
+the older isolation blocker for owner-approved bounded desktop interactions:
+real Options clipboard, native picker Cancel/import/export, visible import/Apply
+and injected wheel are proved on ab111236. Supplementary injected VK_PACKET
+input is separately uncorrected; physical IME/trackpad/game chat are not inferred.
+Continue independent local work; no whole-client1:1 or successor proof follows.
+
 Owner now requires all six local plan steps before stopping, explicitly without
 E2E and still excluding HUD/graphics redesign. Current baseline f8c68f18 has
 green same-head CI/game-gate. The local batch indexes393 catalogue declarations,

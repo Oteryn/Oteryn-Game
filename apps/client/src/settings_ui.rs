@@ -97,8 +97,10 @@ pub(crate) const fn prelogin_settings_hotkey(
     pressed: bool,
     repeat: bool,
     f10: bool,
+    focused: bool,
+    synthetic: bool,
 ) -> bool {
-    !consumed && login_present && pressed && !repeat && f10
+    !consumed && login_present && pressed && !repeat && f10 && focused && !synthetic
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -641,12 +643,67 @@ mod tests {
 
     #[test]
     fn prelogin_f10_yields_to_the_binding_editor() {
-        assert!(prelogin_settings_hotkey(false, true, true, false, true));
-        assert!(!prelogin_settings_hotkey(true, true, true, false, true));
-        assert!(!prelogin_settings_hotkey(false, false, true, false, true));
-        assert!(!prelogin_settings_hotkey(false, true, false, false, true));
-        assert!(!prelogin_settings_hotkey(false, true, true, true, true));
-        assert!(!prelogin_settings_hotkey(false, true, true, false, false));
+        assert!(prelogin_settings_hotkey(
+            false, true, true, false, true, true, false
+        ));
+        assert!(!prelogin_settings_hotkey(
+            true, true, true, false, true, true, false
+        ));
+        assert!(!prelogin_settings_hotkey(
+            false, false, true, false, true, true, false
+        ));
+        assert!(!prelogin_settings_hotkey(
+            false, true, false, false, true, true, false
+        ));
+        assert!(!prelogin_settings_hotkey(
+            false, true, true, true, true, true, false
+        ));
+        assert!(!prelogin_settings_hotkey(
+            false, true, true, false, false, true, false
+        ));
+    }
+
+    #[test]
+    fn prelogin_f10_ignores_background_and_synthetic_keys_without_losing_draft()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            for initially_open in [false, true] {
+                let current = ClientSettings {
+                    english,
+                    ..Default::default()
+                };
+                let mut panel = SettingsPanel::for_settings_audit(current.clone());
+                panel.open = initially_open;
+                panel.draft.show_chat = !current.show_chat;
+                let draft = serde_json::to_value(&panel.draft).map_err(|_| "draft")?;
+                for (focused, synthetic) in [(false, false), (false, true), (true, true)] {
+                    if prelogin_settings_hotkey(false, true, true, false, true, focused, synthetic)
+                    {
+                        panel.toggle_options();
+                    }
+                    assert_eq!(
+                        panel.open, initially_open,
+                        "focused={focused}, synthetic={synthetic}"
+                    );
+                    assert_eq!(
+                        serde_json::to_value(&panel.draft).map_err(|_| "draft")?,
+                        draft
+                    );
+                    assert_eq!(panel.current.show_chat, current.show_chat);
+                    assert!(!panel.applied);
+                }
+                if prelogin_settings_hotkey(false, true, true, false, true, true, false) {
+                    panel.toggle_options();
+                }
+                assert_eq!(panel.open, !initially_open);
+                assert_eq!(
+                    serde_json::to_value(&panel.draft).map_err(|_| "draft")?,
+                    draft
+                );
+                assert!(!panel.applied);
+            }
+        }
+        Ok(())
     }
 
     #[test]
