@@ -222,6 +222,9 @@ fn follow(
         _ => Err(Refusal::Blocked),
     };
     for _ in 0..MAX_DESTINATIONS {
+        if ground(next) == Ground::Blocked {
+            return Err(Refusal::Blocked);
+        }
         let mask = table.mask(next);
         if mask == 0 {
             return land(next);
@@ -436,24 +439,24 @@ fn destination(
     closed: &BTreeSet<LogicalCell>,
 ) -> Result<MovementLocalPosition, MovementError> {
     let floor = i32::from(origin.floor);
-    // A closed door on the entered tile blocks the step before any teleport on it applies
-    // (WORLD-INTERACTION-0 blocking-solid rule); `closed` otherwise only guards the landing.
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
+    // A closed door blocks the entered tile and every tile a floor change resolves onto
+    // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
+    // teleport destination.
+    let ground = ground_of(cells);
+    let ground = |cell: Cell| {
+        if closed.contains(&LogicalCell {
+            x: cell.0,
+            y: cell.1,
+            z: cell.2,
+        }) {
+            Ground::Blocked
+        } else {
+            ground(cell)
+        }
     };
-    if closed.contains(&LogicalCell {
-        x: origin.x + dx,
-        y: origin.y + dy,
-        z: floor,
-    }) {
-        return Err(MovementError::Blocked);
-    }
     let (x, y, z) = resolve_landing(
         table,
-        ground_of(cells),
+        ground,
         landable_of(cells, pz_blocked, closed),
         (origin.x, origin.y, floor),
         direction,

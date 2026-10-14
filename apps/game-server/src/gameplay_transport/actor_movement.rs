@@ -703,6 +703,30 @@ mod tests {
     }
 
     #[test]
+    fn newhaven_teleport_a_closed_door_on_the_floor_change_landing_blocks_the_step() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        // The stair resolves onto (2, 0, 7); a door closed there refuses the step before any
+        // teleport on that tile applies (WORLD-INTERACTION-0 §6.6, Codex review of 49fc686).
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 2, y: 0, z: 7 }]);
+        let before = at(&mut runtime, actor);
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &closed,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(at(&mut runtime, actor), before);
+    }
+
+    #[test]
     fn map_floor_an_initialized_player_changes_floors_at_its_own_speed() {
         let (mut runtime, mut states, cells, actor, session) = bundle_owner();
         let facts = CharacterCastFacts {
