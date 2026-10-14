@@ -4,13 +4,13 @@
 task_id: OTV2-20261014-w2b-build-training-1
 title: "W2b: skill tries from hits banked with mana in the Character build training receipt (#38, #40, #41)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 status_note: "#41 confirmed; #40 rules, banking and the owned-skill refresh; control plane 2026-10-14: attack.rs hook after LOOP-COMBAT-MODES-1, shielding hook deferred, Vocation::None split to LOOP-PROGRESS-1"
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/w2b-build-training
 issue: 1622
-pr: null
+pr: 2109
 base_sha: 67cacb76
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-14
@@ -26,7 +26,7 @@ owned_paths:
   - apps/game-server/src/durability/character_build.rs
   - apps/game-server/src/domain/progression.rs   # build/training parts only
   - apps/game-server/migrations/0085_*.sql
-  - docs/agents/tasks/active/OTV2-20261014-w2b-build-training-1.md
+  - docs/agents/tasks/archive/OTV2-20261014-w2b-build-training-1.md
 public_contracts: []
 external_repositories: []
 blocked: []
@@ -86,10 +86,10 @@ next_action: "control plane: review trigger on the frozen head"
 ## Validation
 
 - `cargo +1.95.0 fmt --all --check`: pass
-- `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- mana_training hit_training`: pass (12)
+- `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- mana_training hit_training training`: pass (17)
 - `CARGO_BUILD_JOBS=2 cargo +1.95.0 clippy --locked -p oteryn-game-server --lib --tests -- -D warnings`: pass
-- `python tools/agents/validate_governance.py`: see the candidate
-- `python -m unittest discover -s tools/agents/tests`: see the candidate
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
 
 ## Self-review
