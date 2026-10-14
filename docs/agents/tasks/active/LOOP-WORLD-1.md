@@ -113,7 +113,9 @@ is unmerged, so they stay sealed.
 ## CP decisions
 
 - Q1: instance-level number per ACCEPTED §4.4, no deviation; migration 0086 built locally.
-- Q2: architect ruling pending; the GAME-ITEM-01 §4 and DUR-03 §39.1 amendments are untouched.
+- Q2: architect ruling: WI0 §4.4/§7.2 are ACCEPTED (D1019); the GAME-ITEM-01 §4 and DUR-03 §39.1
+  amendment blocks are not yet in force as those contracts' text. KEY-1 implements WI0 §4.4/§7.2;
+  the amendments stay untouched. Open to CP: must a docs-only flip of those two markers land first?
 - Q3: KEY-1 here is the mint half only; the door half waits for WO-3 / WORLDINT-USE-1.
 
 ## Residue
