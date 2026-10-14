@@ -1,11 +1,13 @@
 # ACCEPT-SPELL-NPC-MAP-0 Acceptance packet for the spell and NPC handoff mapping decision
 
 - Decision: `ACCEPT-SPELL-NPC-MAP0-V1`
-- Status: **PROPOSED, NOT EFFECTIVE**. This packet changes no status. SPELL-NPC-MAP-0 stays
-  CANDIDATE until the owner confirms the acceptance directly to the control plane and a later
-  change (this document's §3 step) flips the status line after exact-head independent review
-  (spell and content), CI on the frozen head and protected integration. It adds no rule text and
-  changes no code, wire, migration or content.
+- Status: **ACCEPTED, CONDITIONAL**. The owner confirmed the acceptance in the worker's chat on
+  2026-10-13 ("tak") and told the worker to continue on 2026-10-14. It takes effect only when the
+  PR carrying this status passes exact-head independent review (spell and content) and CI on its
+  frozen head and is integrated through the protected merge path; until then SPELL-NPC-MAP-0 is
+  not effective as ACCEPTED, whatever the status line says on an unmerged branch. It adds no rule
+  text beyond the §3 step 2 correction of the two M3 references, and changes no code, wire,
+  migration or content.
 - Packet for: `reviews/OTERYN_GAME_SPELL_NPC_MAP0_SPELL_AND_NPC_HANDOFF_MAPPING_DECISION_2026-10-04.md`
   (`SPELL-NPC-MAP0-V1`), following ACCEPT-CHAR-POSITION-0 and ACCEPT-SOCIAL-MAP-0.
 - Answers: control plane request of 2026-10-13 (MAGIC-CAST-1 entry gate, option B). Every
@@ -65,6 +67,6 @@
 
 ## 4. Not done here
 
-- No status line changes. SPELL-PRESENT-0 (the other CANDIDATE gate of MAGIC-CAST-1) is a
+- The follow-up PR changes only the decision status line and the M3 references. SPELL-PRESENT-0 (the other CANDIDATE gate of MAGIC-CAST-1) is a
   separate packet.
 - No child is allocated and no code, content, migration or protocol-registry change is made.

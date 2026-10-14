@@ -1,8 +1,12 @@
 # SPELL-NPC-MAP-0 mapping the spell and NPC source handoffs to accepted owners
 
 - Decision: `SPELL-NPC-MAP0-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (spell and
-  content) and protected integration. Rulings M1-M3 and M9 apply accepted decisions; rulings
+- Status: **ACCEPTED**. Accepted 2026-10-14 (`ACCEPT-SPELL-NPC-MAP-0`,
+  `OTERYN_GAME_ACCEPT_SPELL_NPC_MAP0_ACCEPTANCE_DECISION_2026-10-13.md`), effective only on
+  exact-head review, CI and protected integration of that acceptance PR; the only text change is
+  the correction of the two references to the nonexistent M3. Original gate: acceptance needs
+  exact-head validation, independent review (spell and content) and protected integration.
+  Rulings M1, M2 and M9 apply accepted decisions; rulings
   M4 (Paralyze caster effect) and M8 (`departure_text`) rule on contract gaps.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner answers of 2026-10-04 (1a: publish the local spell and NPC data as draft PRs
@@ -179,5 +183,5 @@ lists, per model, its class from §1 and keeps its held state; it activates noth
 | Evidence that supersedes it | an official tibia.com source or the wiki (S24 order) describing the effect on an immune or blocked target; an owner in-game test (D.7) | a Global source showing the departure line is not per route; a TRAVEL-0 acceptance review that places the line elsewhere |
 | Deliberately not decided | the effect for the `VARIANT_POSITION` and `VARIANT_STRING` branches and for other runes; the Heal Friend effect (D.5.1); the paralysis duration and speed values | translations, per-vehicle defaults, an arrival line, any wire field |
 
-M1-M3 and M5-M7, M9 add no contract: they apply accepted decisions, so they need no separate
+M1, M2, M5-M7 and M9 add no contract: they apply accepted decisions, so they need no separate
 decision test.
