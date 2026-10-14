@@ -24,6 +24,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md
   - docs/agents/tasks/archive/OTV2-20261014-ranged-0-amend.md
 public_contracts:
   - "Composition, ITEM-MOVE-WIRE-1, MOVE-RL11 and ATTACK-0 pending RANGED-0 notes reconciled to the decision (allocated TransactionId, stack_ordinal, no ordinal change, bounded chase): persistence, movement and combat review"
@@ -95,6 +96,7 @@ finding_dispositions:
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 on b07ed26f and c5d78959 (critical-charm hook, wand swings): fixed"
+    - "Codex P1/P2 on ed1d264a (CREATURE-MOVE-1 packet order reconciled; oldest-waiting-first fairness inside the chase reserve): fixed"
 ```
 
 ## Acceptance criteria

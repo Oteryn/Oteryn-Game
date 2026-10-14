@@ -464,7 +464,7 @@ authority until RANGED-1 is allocated.
 
   | Row | Value |
   |---|---|
-  | `RANGED0-RL-03` chase searches per window per channel | 64 per 50 ms, served in actor-id order, inside CREATURE-AI-0's `RL-09` work-unit budget, with 16 of the 64 searches (16,384 units) reserved for chase so a full creature queue cannot starve it (a request over budget waits for the next window) |
+  | `RANGED0-RL-03` chase searches per window per channel | 64 per 50 ms, served oldest-waiting request first, then actor id (so every player's request is served within a bounded number of windows), inside CREATURE-AI-0's `RL-09` work-unit budget, with 16 of the 64 searches (16,384 units) reserved for chase so a full creature queue cannot starve it (a request over budget waits for the next window) |
   | `RANGED0-RL-04` expansions per search | 1,024 (A*, one work unit per expansion) |
   | `RANGED0-RL-05` path length | 12 tiles |
   | `RANGED0-RL-06` searches per player | 1 per second |

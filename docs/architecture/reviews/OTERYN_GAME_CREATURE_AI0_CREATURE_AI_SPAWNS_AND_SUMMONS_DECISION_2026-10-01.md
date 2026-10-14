@@ -407,7 +407,7 @@ decisions; until then the factor is 1.
 - **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8, owner decision 2026-10-14).** Player chase
   searches use the same path profile with their own rows `RANGED0-RL-03` to `-07` (64 searches per
   50 ms window per channel, 1,024 expansions and 12 tiles per search, 1 search per second per
-  player, 2 s backoff after a failure), served in actor-id order, inside `RL-09`. **Reserve:** 16 of
+  player, 2 s backoff after a failure), served oldest-waiting request first, then actor id (a request that has waited longer always precedes a newer one, so no player is starved by lower actor ids), inside `RL-09`. **Reserve:** 16 of
   the 64 searches (16,384 of the 65,536 units) per window are reserved for player chase, so
   creature path demand, including carried-over overdue requests, can use at most 48 searches
   (49,152 units) while a chase search is waiting; chase searches that are not waiting leave their
