@@ -30,7 +30,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| COND-1 | hard (combat), combat and determinism review | COND-1a/1b/1c are merged (the store, transitions, tick scheduler, §3 families, provenance, dispel, lifecycle and owner wiring). Remaining: the §3.5 `ConflictKey` values `muted`, `pacified`, `powerless` and `agony` within `COND0-RL-01` (32), the `agony` tick, and the §3.5 admission gates with their precedence and typed server-side reasons | this decision |
+| COND-1 | hard (combat), combat and determinism review | COND-1a/1b/1c are merged (the store, transitions, tick scheduler, §3 families, provenance, dispel, lifecycle and owner wiring). Remaining: the §3.5 `ConflictKey` values `muted`, `pacified`, `powerless` and `agony` within `COND0-RL-01` (32), the `agony` tick, the §3.5 admission gates with their precedence and typed server-side reasons, and the `PACIFIED` application-time side effect that clears a running attack target (§3.5, through the ATTACK-0 owner), so pacification stops an attack already in progress | this decision |
 | SPEED-1 | impl, movement review | MERGED (#1715): effective speed, the step-speed table and paced player steps (§4.1, §4.2, §4.3 Players). Remaining: creature steps at their step duration on the live path (§4.3 Creatures; the cadence type from #1807 exists), carried by the GAME-AI-01 step cadence amendment | the GAME-AI-01 step cadence (§4.3) |
 | COND-WIRE-1 | impl, protocol review | the vitals revision with condition icons and the mana shield, and `speed` on VIS-2 entities (§7) | COND-1; SPEED-1; VIS-2 |
 | COND-DUR-1 | hard (persistence), persistence review | the durable remaining food time (§6.3), in the SPELL-D8 H-1 pattern | COND-1; FOOD-REGEN-1 |

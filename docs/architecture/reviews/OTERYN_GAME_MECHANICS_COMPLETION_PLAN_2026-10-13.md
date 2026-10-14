@@ -336,7 +336,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 | EQUIP-RT-1 | EQUIP0 | hard (combat), combat and determinism review |  | ITEM-MOVE-2a; SPEED-1 (merged); COND-1; CHAR-BUILD-1 (merged) and SKILLS-0's live skill read (the base a `SKILL_BOOST` adds to) |
 | EQUIP-PARITY-1 | EQUIP0 | impl |  | EQUIP-RT-1 |
 | CHARM-DEF-1 | CHARM4 | combat lane, combat and determinism review |  | ATTACK-1b (creature attacks on characters) |
-| COND-1 | CONDITIONS0 | **COND-1a/1b/1c MERGED (#1405, #2086).** Residual: the §3.5 keys and admission gates. hard (combat), combat and determinism review |  | this decision |
+| COND-1 | CONDITIONS0 | **COND-1a/1b/1c MERGED (#1405, #2086).** Residual: the §3.5 keys, the `agony` tick, the admission gates and the `PACIFIED` clearing of a running attack target. hard (combat), combat and determinism review |  | this decision |
 | SPEED-1 | CONDITIONS0 | **MERGED (#1715).** impl, movement review |  | COND-1; the GAME-AI-01 step cadence (§4.3) |
 | COND-WIRE-1 | CONDITIONS0 | impl, protocol review | yes | COND-1; SPEED-1 (merged); VIS-2 |
 | COND-DUR-1 | CONDITIONS0 | hard (persistence), persistence review |  | COND-1; FOOD-REGEN-1 |
