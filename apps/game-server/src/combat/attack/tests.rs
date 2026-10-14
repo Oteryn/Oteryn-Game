@@ -562,7 +562,7 @@ fn waiting_target_is_held_and_cleared_target_is_dropped() {
 /// poll meanwhile and swung at the moment it is in reach, without spending an interval while
 /// it waited.
 #[test]
-fn a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach() {
+fn a_fleeing_target_is_held_while_the_server_chase_closes_in_until_it_is_in_reach() {
     let interval = table().attack_interval_micros();
     let mut state = AttackState::<u32, u8>::default();
     state.set_target(9, 0, &facts()).unwrap();

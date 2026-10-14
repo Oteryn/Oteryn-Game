@@ -12,21 +12,23 @@ use std::collections::VecDeque;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
-use crate::movement::path_search::{chebyshev, delta, route_next_to};
+use crate::movement::path_search::{CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to};
 
 pub(crate) use crate::movement::path_search::CREATURE_COST;
 
-/// `RANGED0-RL-06`: at most one search per player per this interval.
+/// RANGED-0 §8: at most one search per player per this interval.
 pub(crate) const CHASE_SEARCH_INTERVAL_MICROS: u64 = 1_000_000;
-/// `RANGED0-RL-07`: a failed search waits this long before the next one (Canary).
+/// RANGED-0 §8: a failed search waits this long before the next one (Canary).
 pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 /// `RANGED0-RL-03`: player chase searches per owner window per Channel.
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
-/// How long a cell whose chase step the Movement owner refused stays out of the search.
+/// `RANGED0-RL-04`'s TTL: how long a cell the Movement owner refused a chase step into as
+/// blocked stays out of the search.
 pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
-/// At most this many refused cells are remembered; the oldest is forgotten first.
+/// `RANGED0-RL-04`: at most this many refused cells are remembered; the oldest is forgotten
+/// first.
 pub(crate) const CHASE_REFUSED_CELLS: usize = 8;
 
 /// The chase of one attacker: the adopted route and when the next search may run.
@@ -100,7 +102,7 @@ impl ChaseState {
         let stale = self.route.is_empty() || self.goal != Some(target);
         if stale && now_us >= self.next_search_us && admit() {
             let refused = &self.refused;
-            let route = route_next_to(at, target, |cell| {
+            let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
                 if refused.iter().any(|&(blocked, _)| blocked == cell) {
                     None
                 } else {
@@ -133,9 +135,18 @@ impl ChaseState {
         ChaseDecision::Step(step)
     }
 
-    /// The step just taken was refused at `now_us`: the route is dropped (RANGED-0 §8) and the
-    /// refused cell stays out of the search for [`CHASE_REFUSED_CELL_MICROS`].
-    pub(crate) fn step_refused(&mut self, now_us: u64) {
+    /// The step just taken was refused for any reason but a blocked cell (a transient refusal):
+    /// the route is dropped (RANGED-0 §8); the cell stays a path tile.
+    pub(crate) fn step_refused(&mut self) {
+        self.route.clear();
+        self.expected_at = None;
+        self.goal = None;
+    }
+
+    /// The Movement owner refused the step just taken because its cell is blocked, at `now_us`:
+    /// the route is dropped (RANGED-0 §8) and the cell stays out of the search for
+    /// [`CHASE_REFUSED_CELL_MICROS`].
+    pub(crate) fn step_blocked(&mut self, now_us: u64) {
         if let Some(cell) = self.expected_at {
             self.refused.retain(|&(blocked, _)| blocked != cell);
             if self.refused.len() >= CHASE_REFUSED_CELLS {
@@ -242,7 +253,7 @@ mod tests {
             chase.decide(2_000_000, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
-        chase.step_refused(2_000_000);
+        chase.step_blocked(2_000_000);
         // The player never reached the expected tile: the route is gone; the next search waits
         // for the interval.
         assert_eq!(
@@ -267,7 +278,7 @@ mod tests {
             chase.decide(0, at(0, 0), target, || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
-        chase.step_refused(0);
+        chase.step_blocked(0);
         let mut position = at(0, 0);
         for now in CHASE_SEARCH_INTERVAL_MICROS..CHASE_SEARCH_INTERVAL_MICROS + 8 {
             match chase.decide(now, position, target, || true, open) {
@@ -295,19 +306,19 @@ mod tests {
             chase.decide(0, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
-        chase.step_refused(0);
+        chase.step_blocked(0);
         assert_ne!(
             chase.decide(1_999_999, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
         chase.reset();
         assert_eq!(chase.refused.len(), 0, "a reset forgets the refused cells");
-        chase.step_refused(0);
+        chase.step_blocked(0);
         assert_eq!(chase.refused.len(), 0, "no step was expected");
         for x in 0..=CHASE_REFUSED_CELLS {
             chase.expected_at = Some(at(i32::try_from(x).unwrap(), 9));
-            chase.step_refused(0);
-            chase.step_refused(0);
+            chase.step_blocked(0);
+            chase.step_blocked(0);
         }
         assert_eq!(chase.refused.len(), CHASE_REFUSED_CELLS);
         assert_eq!(chase.refused.front().map(|(cell, _)| *cell), Some(at(1, 9)));
@@ -317,6 +328,81 @@ mod tests {
             "an expired cell is searched again"
         );
         assert_eq!(chase.refused.len(), 0);
+    }
+
+    #[test]
+    fn the_refused_cell_cap_matches_its_registered_row() {
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+        ))
+        .unwrap();
+        let entries = registry["entries"].as_array().unwrap();
+        let row = entries
+            .iter()
+            .find(|entry| entry["id"] == "RANGED0-RL-04")
+            .unwrap();
+        assert_eq!(
+            row["hard_maximum"].as_u64(),
+            u64::try_from(CHASE_REFUSED_CELLS).ok()
+        );
+        assert_eq!(CHASE_REFUSED_CELL_MICROS, 2_000_000);
+    }
+
+    #[test]
+    fn a_transient_refusal_drops_the_route_but_keeps_the_cell_a_path_tile() {
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        chase.step_refused();
+        assert_eq!(chase.refused.len(), 0, "only a blocked cell is remembered");
+        assert_eq!(chase.route.len(), 0);
+        assert_eq!(
+            chase.decide(1, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Hold,
+            "the next search waits for the interval"
+        );
+        assert_eq!(
+            chase.decide(
+                CHASE_SEARCH_INTERVAL_MICROS,
+                at(0, 0),
+                at(4, 0),
+                || true,
+                open
+            ),
+            ChaseDecision::Step(CardinalStep::East),
+            "the same cell is taken again"
+        );
+    }
+
+    #[test]
+    fn a_chase_searches_within_twelve_tiles_and_a_target_beyond_fails_the_search() {
+        // The goal (12, 0) of a target on (13, 0) lies on the 12-tile search distance.
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(13, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        assert_eq!(chase.route.len(), 11, "12 steps, the first one taken");
+        // A target on (14, 0) has no goal within it: a failed search waits 2,000 ms.
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(14, 0), || true, open),
+            ChaseDecision::Hold
+        );
+        assert_eq!(chase.next_search_us, CHASE_FAILED_SEARCH_WAIT_MICROS);
+        // Around a wall the search may leave the straight line, but never the 12 tiles: a wall
+        // across x = 1 from y = -12 to y = 12 leaves no route to (3, 0).
+        let wall = |cell: MovementLocalPosition| {
+            (!(cell.x == 1 && (-12..=12).contains(&cell.y))).then_some(0)
+        };
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(3, 0), || true, wall),
+            ChaseDecision::Hold
+        );
+        assert_eq!(chase.next_search_us, CHASE_FAILED_SEARCH_WAIT_MICROS);
     }
 
     #[test]

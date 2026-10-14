@@ -561,26 +561,30 @@ impl ChannelAttackStates {
             entry.chase.reset();
             return None;
         }
-        let mut creatures: Option<std::collections::BTreeSet<(i32, i32)>> = None;
+        // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
+        // another player; never the chasing player), and the target's own tile is no path tile.
+        let mut occupied: Option<std::collections::BTreeSet<(i32, i32)>> = None;
         let decision = entry.chase.decide(
             now.get(),
             from,
             to,
             || chase_searches.admit(now.get()),
             |cell| {
-                if !path_tile(cell) {
+                if cell == to || !path_tile(cell) {
                     return None;
                 }
-                let creatures = creatures.get_or_insert_with(|| {
-                    runtime
-                        .visible_entities()
+                let occupied = occupied.get_or_insert_with(|| {
+                    let visible = runtime.visible_entities();
+                    visible
                         .creatures
                         .iter()
-                        .filter(|creature| creature.position.floor == from.floor)
-                        .map(|creature| (creature.position.x, creature.position.y))
+                        .chain(&visible.npcs)
+                        .chain(&visible.players)
+                        .filter(|other| other.actor != actor && other.position.floor == from.floor)
+                        .map(|other| (other.position.x, other.position.y))
                         .collect()
                 });
-                Some(if creatures.contains(&(cell.x, cell.y)) {
+                Some(if occupied.contains(&(cell.x, cell.y)) {
                     CREATURE_COST
                 } else {
                     0
@@ -606,16 +610,23 @@ impl ChannelAttackStates {
         }
     }
 
-    /// CHASE-1: the chase step the Movement owner just refused at `now` drops the route and keeps
-    /// the refused cell out of the next searches.
+    /// CHASE-1: the chase step the Movement owner just refused at `now` drops the route. When it
+    /// refused it as `blocked`, the refused cell also stays out of the next searches; any other
+    /// refusal is transient and leaves the cell a path tile.
     pub(crate) fn chase_step_refused(
         &mut self,
         actor: ExactActorRef,
         session: GameSessionId,
         now: SemanticTimeMicros,
+        blocked: bool,
     ) {
         if let Some(index) = self.index(actor, session) {
-            self.entries[index].chase.step_refused(now.get());
+            let chase = &mut self.entries[index].chase;
+            if blocked {
+                chase.step_blocked(now.get());
+            } else {
+                chase.step_refused();
+            }
         }
     }
 }
@@ -808,10 +819,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let (outcome, duration) = self.paced_step(actor, session, direction).await;
         if outcome.moved_to.is_none() {
+            let blocked = outcome.disposition == super::StepDisposition::Blocked;
             self.attack
                 .lock()
                 .await
-                .chase_step_refused(actor, session, now);
+                .chase_step_refused(actor, session, now, blocked);
         }
         Some((outcome, duration))
     }

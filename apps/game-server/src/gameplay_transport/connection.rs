@@ -1851,11 +1851,13 @@ where
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
                 }
-                if chase_tick.as_mut().poll(context).is_ready() {
-                    return std::task::Poll::Ready(Next::Chase);
-                }
+                // CHASE-1: a ready client frame is read before a due chase step, so a client
+                // step wins over the chase (RANGED-0 §8) and is never paced behind it.
                 if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
                     return std::task::Poll::Ready(Next::Frame(read));
+                }
+                if chase_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Chase);
                 }
                 std::task::Poll::Pending
             })
