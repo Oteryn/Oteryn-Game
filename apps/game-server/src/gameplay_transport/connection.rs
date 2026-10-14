@@ -75,7 +75,7 @@ use oteryn_protocol_oteryn::achievement_notices::{
 };
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, COMMAND_TYPE_ATTACK_TARGET_INTENT,
-    COMMAND_TYPE_FIGHT_MODES_INTENT, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+    COMMAND_TYPE_FIGHT_MODES_INTENT, ChaseMode, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
     STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
     encode_attack_intent_result,
 };
@@ -415,6 +415,26 @@ pub(crate) trait FreshAdmissionAuthority {
         direction: StepDirection,
     ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
         async move { (self.step(actor, direction).await, None) }
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the server-driven chase step of `actor` due now, taken like
+    /// [`Self::paced_step`] and answered the same way; `None` when the chase takes no step.
+    /// Fixtures without a chase keep this default.
+    fn chase_step(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<(StepOutcome, Option<std::time::Duration>)>> {
+        async { None }
+    }
+
+    /// CHASE-1: a client step of `actor` arrived; it wins over the chase, whose route is dropped.
+    fn yield_chase_to_client(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = ()> {
+        async {}
     }
 
     /// STEP-PACE-WIRE-1 rollout switch: whether a capability 13 session's step results carry the
@@ -1724,6 +1744,10 @@ where
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
     let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
+    // CHASE-1 (RANGED-0 §8): when the next chase step is checked, on the same pacing clock as a
+    // client step; at most one is pending. Armed by a combat tick that holds a chasing target
+    // and by a chase step that moved.
+    let mut chase_due: Option<tokio::time::Instant> = None;
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
@@ -1736,6 +1760,7 @@ where
             Chat,
             Visibility,
             Combat,
+            Chase,
             Npc,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
@@ -1795,6 +1820,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut chase_tick = std::pin::pin!(async {
+                match chase_due {
+                    Some(due) => tokio::time::sleep_until(due).await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
@@ -1819,6 +1850,9 @@ where
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
+                }
+                if chase_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Chase);
                 }
                 if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
                     return std::task::Poll::Ready(Next::Frame(read));
@@ -1951,6 +1985,13 @@ where
                 else {
                     continue;
                 };
+                if chase_due.is_none()
+                    && state.target.is_some()
+                    && state.modes.chase == ChaseMode::Chase
+                {
+                    let now = tokio::time::Instant::now();
+                    chase_due = Some(pacer.wait_until(now).unwrap_or(now));
+                }
                 let Some(change) = admitted
                     .continuity
                     .combat
@@ -1966,6 +2007,43 @@ where
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                continue;
+            }
+            Next::Chase => {
+                // CHASE-1: a client step waiting in the buffer wins over the chase.
+                chase_due = None;
+                if buffered.is_some() {
+                    continue;
+                }
+                let Some((outcome, duration)) =
+                    authority.chase_step(actor, admitted.game_session_id).await
+                else {
+                    continue;
+                };
+                pacer.record(tokio::time::Instant::now(), duration);
+                let Some(observation) = outcome.moved_to else {
+                    continue;
+                };
+                if moved_step_frames(
+                    stream,
+                    authority,
+                    actor,
+                    &mut admitted,
+                    visibility.as_mut(),
+                    item_view.as_mut(),
+                    world_map.as_mut(),
+                    generation,
+                    &mut sequence,
+                    &mut revision,
+                    observation,
+                )
+                .await
+                .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                let now = tokio::time::Instant::now();
+                chase_due = Some(pacer.wait_until(now).unwrap_or(now));
                 continue;
             }
             Next::Visibility => {
@@ -2178,6 +2256,11 @@ where
                     Dispatch::Step(StepOutcome::too_early(), too_early_step_wait_ms(left))
                 }
                 Ok(direction) => {
+                    // CHASE-1: client intent wins; the pending chase step and its route drop.
+                    chase_due = None;
+                    authority
+                        .yield_chase_to_client(actor, admitted.game_session_id)
+                        .await;
                     let now = tokio::time::Instant::now();
                     if let Some(due) = pacer.wait_until(now) {
                         buffered = Some(BufferedStep { frame, due });
@@ -2715,114 +2798,24 @@ where
         }
         match dispatch {
             Dispatch::Step(outcome, _) => {
-                if let Some(observation) = outcome.moved_to {
-                    // VIS-3: with capability 6 the step's delta is the interest set's change (a
-                    // resync ends the connection); without it, the v1 own-actor delta.
-                    let (frames_out, delta_sequence, new_revision) =
-                        if let Some(view) = visibility.as_mut() {
-                            let Some(mut channel) = authority.observe_visible_entities(actor).await
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            // The step's committed position is the observer's own.
-                            let observer = channel.observer;
-                            for own in channel
-                                .entities
-                                .iter_mut()
-                                .filter(|entity| entity.identity == observer)
-                            {
-                                own.position = observation.actor_position;
-                            }
-                            let update = view.refresh(&channel, &mut |entities| {
-                                attach_spatial_handles(item_view.as_mut(), entities)
-                            });
-                            if let Some(item_view) = &item_view {
-                                admitted.continuity.item_view = item_view.continuity();
-                            }
-                            let Some(sent) = update.ok().and_then(|update| {
-                                visibility_frames(
-                                    generation,
-                                    sequence,
-                                    revision,
-                                    selected_capabilities.as_slice(),
-                                    &update,
-                                )
-                            }) else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            sent
-                        } else {
-                            let (Some(delta_sequence), Some(new_revision)) =
-                                (sequence.checked_add(1), revision.checked_add(1))
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            let Ok(delta) = encode_state_delta(
-                                generation,
-                                delta_sequence,
-                                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                                revision,
-                                new_revision,
-                                DELTA_TYPE_WORLD_SPATIAL_V1,
-                                &encode_world_spatial(&observation),
-                            ) else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            (vec![delta], delta_sequence, new_revision)
-                        };
-                    sequence = delta_sequence;
-                    admitted.continuity.server_sequence = sequence;
-                    for frame in &frames_out {
-                        if write_frame(stream, frame).await.is_err() {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        }
-                    }
-                    // r4122508665: only record the new spatial revision once the delta that
-                    // carries it has actually been transmitted (this had the same
-                    // before-the-write ordering bug the overlay path did).
-                    revision = new_revision;
-                    admitted.continuity.spatial_revision = revision;
-                    // ITEM-VIEW-1b §4.3: a step out of reach or to another floor closes the
-                    // open corpse.
-                    if let Some(view) = item_view.as_mut() {
-                        let closed = view.close(&CloseTrigger::Moved {
-                            to: observation.actor_position,
-                        });
-                        admitted.continuity.item_view = view.continuity();
-                        let Ok(closed) = closed else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        if let Some(delta) = closed {
-                            let Some((delta_sequence, frame)) =
-                                item_view_delta(generation, sequence, &delta)
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            sequence = delta_sequence;
-                            admitted.continuity.server_sequence = sequence;
-                            if write_frame(stream, &frame).await.is_err() {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            }
-                        }
-                    }
-                    // MAP-WIRE-2: the tiles the step brought into, kept in or took out of view.
-                    if let (Some(view), Some(items)) = (world_map.as_mut(), item_view.as_mut()) {
-                        let update =
-                            world_map_delta(authority, actor, generation, sequence, view, items)
-                                .await;
-                        admitted.continuity.item_view = items.continuity();
-                        let Some(update) = update else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        if let Some((delta_sequence, frame)) = update {
-                            sequence = delta_sequence;
-                            admitted.continuity.server_sequence = sequence;
-                            admitted.continuity.world_map_revision = view.revision();
-                            if write_frame(stream, &frame).await.is_err() {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            }
-                        }
-                    }
+                if let Some(observation) = outcome.moved_to
+                    && moved_step_frames(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        visibility.as_mut(),
+                        item_view.as_mut(),
+                        world_map.as_mut(),
+                        generation,
+                        &mut sequence,
+                        &mut revision,
+                        observation,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
             Dispatch::Use(outcome) => {
@@ -3191,6 +3184,108 @@ fn item_view_delta(
     )
     .ok()?;
     Some((delta_sequence, frame))
+}
+
+/// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
+/// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
+/// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
+/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
+/// result, a chase step (CHASE-1) on its own. `None` ends the connection.
+#[allow(clippy::too_many_arguments)]
+async fn moved_step_frames<S, A>(
+    stream: &mut S,
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    visibility: Option<&mut SessionVisibility>,
+    mut item_view: Option<&mut SessionItemView>,
+    world_map: Option<&mut SessionMapView>,
+    generation: u64,
+    sequence: &mut u64,
+    revision: &mut u64,
+    observation: WorldSpatialObservation,
+) -> Option<()>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let selected_capabilities = admitted.continuity.selected_capabilities;
+    let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
+        let mut channel = authority.observe_visible_entities(actor).await?;
+        // The step's committed position is the observer's own.
+        let observer = channel.observer;
+        for own in channel
+            .entities
+            .iter_mut()
+            .filter(|entity| entity.identity == observer)
+        {
+            own.position = observation.actor_position;
+        }
+        let update = view.refresh(&channel, &mut |entities| {
+            attach_spatial_handles(item_view.as_deref_mut(), entities)
+        });
+        if let Some(item_view) = &item_view {
+            admitted.continuity.item_view = item_view.continuity();
+        }
+        update.ok().and_then(|update| {
+            visibility_frames(
+                generation,
+                *sequence,
+                *revision,
+                selected_capabilities.as_slice(),
+                &update,
+            )
+        })?
+    } else {
+        let (Some(delta_sequence), Some(new_revision)) =
+            (sequence.checked_add(1), revision.checked_add(1))
+        else {
+            return None;
+        };
+        let delta = encode_state_delta(
+            generation,
+            delta_sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            *revision,
+            new_revision,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &encode_world_spatial(&observation),
+        )
+        .ok()?;
+        (vec![delta], delta_sequence, new_revision)
+    };
+    *sequence = delta_sequence;
+    admitted.continuity.server_sequence = *sequence;
+    for frame in &frames_out {
+        write_frame(stream, frame).await.ok()?;
+    }
+    // r4122508665: only record the new spatial revision once the delta that carries it has
+    // actually been transmitted.
+    *revision = new_revision;
+    admitted.continuity.spatial_revision = *revision;
+    if let Some(view) = item_view.as_deref_mut() {
+        let closed = view.close(&CloseTrigger::Moved {
+            to: observation.actor_position,
+        });
+        admitted.continuity.item_view = view.continuity();
+        if let Some(delta) = closed.ok()? {
+            let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
+            *sequence = delta_sequence;
+            admitted.continuity.server_sequence = *sequence;
+            write_frame(stream, &frame).await.ok()?;
+        }
+    }
+    if let (Some(view), Some(items)) = (world_map, item_view) {
+        let update = world_map_delta(authority, actor, generation, *sequence, view, items).await;
+        admitted.continuity.item_view = items.continuity();
+        if let Some((delta_sequence, frame)) = update? {
+            *sequence = delta_sequence;
+            admitted.continuity.server_sequence = *sequence;
+            admitted.continuity.world_map_revision = view.revision();
+            write_frame(stream, &frame).await.ok()?;
+        }
+    }
+    Some(())
 }
 
 /// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no

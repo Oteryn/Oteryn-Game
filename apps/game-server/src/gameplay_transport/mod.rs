@@ -3176,6 +3176,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<Duration>)> {
+        self.chase_step_now(actor, session).await
+    }
+
+    async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.chase_yield_to_client(actor, session).await;
+    }
+
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
     async fn use_item(
         &self,

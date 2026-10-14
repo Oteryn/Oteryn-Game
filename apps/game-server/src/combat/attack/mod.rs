@@ -15,6 +15,7 @@
     )
 )]
 mod block;
+mod chase;
 mod constants;
 mod formulas;
 #[cfg(test)]
@@ -24,6 +25,7 @@ mod target;
 mod tests;
 
 pub(crate) use block::BlockBudget;
+pub(crate) use chase::{CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState};
 pub(crate) use constants::{AttackConstants, FightMode};
 #[cfg(test)]
 use formulas::{

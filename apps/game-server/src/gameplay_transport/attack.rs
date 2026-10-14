@@ -6,14 +6,17 @@
 //! committed by the physical owner under the swing identity `(character, lease generation,
 //! session, lineage, swing ordinal)`: the lineage is the `CommandRef` of the `ATTACK_TARGET`
 //! command that set the target and the ordinal counts the swings of that lineage from 0.
-//! Player targets (PvP), distance weapons and creature defence/armor are out of scope. Server-driven
-//! chase (CHASE-1) is not implemented: today the server only holds the out-of-range target and never
-//! steps the player, so `CHASE` behaves like `STAND`; owner/CP decision (LOOP-COMBAT-MODES-1) keeps
-//! chase client-driven (#1942) until the follow-up. `secure` has no creature-target effect before PvP.
+//! Player targets (PvP), distance weapons and creature defence/armor are out of scope.
+//!
+//! CHASE-1 (RANGED-0 §8): with `chase=CHASE` and a held target the owner steps the player towards
+//! the nearest tile next to it, one Movement-owner step at a time on the player's own pacing
+//! clock, along a bounded path search (`combat_attack::chase`). A client step wins: it drops the
+//! route and chase re-paths at its next 1,000 ms check. `STAND` never moves the player. `secure`
+//! has no creature-target effect; its PvP refusal waits for player targets (PVP-RT-1).
 
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{
-    ActorCombatState, AttackIntentDisposition, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
+    ActorCombatState, AttackIntentDisposition, ChaseMode, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
     FightMode as WireFightMode, FightModes, MAX_ATTACK_TARGET_CHANGES_PER_SECOND,
     MAX_FIGHT_MODE_CHANGES_PER_SECOND, STATE_DOMAIN_ACTOR_COMBAT_STATE, encode_actor_combat_state,
 };
@@ -34,13 +37,14 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    player_fist_formula,
+    AttackConstants, AttackState, CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState,
+    FightMode, SwingPoll, TargetFacts, TargetRefusal, player_fist_formula,
 };
 use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use crate::movement::CardinalStep;
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
@@ -151,12 +155,15 @@ struct ActorAttack {
     target_ref: Option<EntityRef>,
     /// The swing ordinal of the next swing of the held target's lineage.
     next_ordinal: u16,
+    /// CHASE-1: the chase route towards the held target (runtime-only).
+    chase: ChaseState,
 }
 
 impl ActorAttack {
     fn clear_target(&mut self) {
         self.state.clear_target();
         self.target_ref = None;
+        self.chase.reset();
     }
 }
 
@@ -166,6 +173,9 @@ pub(crate) struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
     /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 §1.3).
     kills: super::kill_reward::KillSettlementQueue,
+    /// CHASE-1: the Channel's player chase searches in the current owner window
+    /// (`RANGED0-RL-03`).
+    chase_searches: ChaseSearchBudget,
 }
 
 impl ChannelAttackStates {
@@ -334,6 +344,7 @@ impl ChannelAttackStates {
                     modes: FightModes::DEFAULT,
                     target_ref: None,
                     next_ordinal: 0,
+                    chase: ChaseState::default(),
                 });
                 self.entries.len() - 1
             }
@@ -396,6 +407,7 @@ impl ChannelAttackStates {
             Ok(()) => {
                 entry.target_ref = Some(target_ref);
                 entry.next_ordinal = 0;
+                entry.chase.reset();
                 AttackIntentDisposition::Ok
             }
             Err(refusal) => refusal_disposition(refusal),
@@ -412,6 +424,9 @@ impl ChannelAttackStates {
     ) -> bool {
         match self.entry(runtime, actor, session) {
             Some(entry) => {
+                if modes.chase != ChaseMode::Chase {
+                    entry.chase.reset();
+                }
                 entry.modes = modes;
                 true
             }
@@ -502,6 +517,133 @@ impl ChannelAttackStates {
             entry.state.record_hit(now, constants.in_fight_micros());
         }
     }
+}
+
+impl ChannelAttackStates {
+    /// CHASE-1 (RANGED-0 §8): the step the chase of `actor` takes now, if any. Chase runs only
+    /// with `chase=CHASE`, a held target that is alive, visible and on the attacker's floor, and
+    /// no re-entry protection on the attacker; otherwise its route is dropped. `path_tile` says
+    /// whether a cell is a path tile; a creature on it costs [`CREATURE_COST`] more.
+    pub(crate) fn chase_decision(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+        path_tile: impl Fn(MovementLocalPosition) -> bool,
+    ) -> Option<CardinalStep> {
+        let index = self.index(actor, session)?;
+        let Self {
+            entries,
+            chase_searches,
+            ..
+        } = self;
+        let entry = &mut entries[index];
+        let chasing = entry.modes.chase == ChaseMode::Chase;
+        let Some(target) = entry.state.target().filter(|_| chasing) else {
+            entry.chase.reset();
+            return None;
+        };
+        let positions = runtime
+            .read_actor_position(actor)
+            .ok()
+            .zip(runtime.read_actor_position(target).ok())
+            .map(|(from, to)| (from.position(), to.position()));
+        let facts = target_facts(runtime, room, actor, session, target, now);
+        let (Some((from, to)), Some(facts)) = (positions, facts) else {
+            entry.chase.reset();
+            return None;
+        };
+        if !(facts.present_and_visible && facts.alive && facts.same_floor)
+            || facts.attacker_reentry_protected
+        {
+            entry.chase.reset();
+            return None;
+        }
+        let mut creatures: Option<std::collections::BTreeSet<(i32, i32)>> = None;
+        let decision = entry.chase.decide(
+            now.get(),
+            from,
+            to,
+            || chase_searches.admit(now.get()),
+            |cell| {
+                if !path_tile(cell) {
+                    return None;
+                }
+                let creatures = creatures.get_or_insert_with(|| {
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .filter(|creature| creature.position.floor == from.floor)
+                        .map(|creature| (creature.position.x, creature.position.y))
+                        .collect()
+                });
+                Some(if creatures.contains(&(cell.x, cell.y)) {
+                    CREATURE_COST
+                } else {
+                    0
+                })
+            },
+        );
+        match decision {
+            ChaseDecision::Step(step) => Some(step),
+            ChaseDecision::Hold => None,
+        }
+    }
+
+    /// CHASE-1: a client step wins over the chase; its route is dropped and it re-paths at its
+    /// next 1,000 ms check.
+    pub(crate) fn chase_yield_to_client(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
+        if let Some(index) = self.index(actor, session) {
+            self.entries[index].chase.yield_to_client(now.get());
+        }
+    }
+
+    /// CHASE-1: the chase step the Movement owner just refused drops the route.
+    pub(crate) fn chase_step_refused(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        if let Some(index) = self.index(actor, session) {
+            self.entries[index].chase.step_refused();
+        }
+    }
+}
+
+/// CHASE-1: whether a player chase may path over `cell` (CREATURE-AI-0 §5.3 with RANGED-0 §8). It
+/// is a Walkable cell of the Movement owner's cells, no closed door blocks it, and it is no
+/// teleport, protection-zone or floor-change tile: a chase never changes floors. Unknown tile
+/// facts refuse, except on the accepted entry room without a tile document, whose Movement owner
+/// admits a step on terrain and doors alone.
+pub(super) fn chase_path_tile(
+    cells: &crate::content::NativeEntryMovementCells,
+    blocking: &dyn crate::map::floor::CellBlocker,
+    cell: MovementLocalPosition,
+) -> bool {
+    let target = LogicalCell {
+        x: cell.x,
+        y: cell.y,
+        z: i32::from(cell.floor),
+    };
+    let ordinary = match cells.spell_tiles().lookup(cells.scope(), target) {
+        Ok(tile) => !tile.flags().protection_zone && !tile.flags().floor_change,
+        Err(crate::content::SpellTileLookupError::Unknown) => {
+            matches!(
+                cells.index(),
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
+            ) && !crate::movement::source_floor_change::is_source_profile(cells)
+        }
+        Err(_) => false,
+    };
+    ordinary
+        && cells.index().lookup(cells.scope(), target)
+            == Ok(crate::content::CollisionClass::Walkable)
+        && !blocking.blocks(target)
+        && !crate::map::floor::is_teleport(cells, target)
 }
 
 /// ATTACK-1b has no Charm state reader: every hook is evaluated against no assignments and its
@@ -608,6 +750,76 @@ fn swing_plan(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// CHASE-1 (RANGED-0 §8): the chase step of `actor` due now, if any, taken as one ordinary
+    /// paced step through the Movement owner, which revalidates it like a client step. A step
+    /// that does not move drops the route. `None` when the chase takes no step.
+    pub(in crate::gameplay_transport) async fn chase_step_now(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(super::StepOutcome, Option<Duration>)> {
+        use super::FreshAdmissionAuthority as _;
+        let room = self.combat_room?;
+        let now = self.owner_now();
+        let step = {
+            // Lock order: runtime, spell states, door, then attack.
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            // DEATH-2 §4.2: a dead player takes no input, the chase included.
+            if states.is_dead(actor) {
+                return None;
+            }
+            // The same closed doors a player step reads (`paced_step`).
+            let (none, bundle_doors, legacy);
+            let blocking: &dyn crate::map::floor::CellBlocker = if self
+                .qualified_room
+                .is_some_and(|room| room.source_world().is_some())
+            {
+                none = std::collections::BTreeSet::<LogicalCell>::new();
+                &none
+            } else if let Some(map) = self.bundle_map() {
+                bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+                &bundle_doors
+            } else {
+                legacy = self.door.lock().await.blocking_cells().clone();
+                &legacy
+            };
+            let cells = self.movement_cells;
+            self.attack.lock().await.chase_decision(
+                &runtime,
+                room,
+                actor,
+                session,
+                now,
+                |cell| chase_path_tile(cells, blocking, cell),
+            )?
+        };
+        let direction = match step {
+            CardinalStep::North => super::StepDirection::North,
+            CardinalStep::East => super::StepDirection::East,
+            CardinalStep::South => super::StepDirection::South,
+            CardinalStep::West => super::StepDirection::West,
+        };
+        let (outcome, duration) = self.paced_step(actor, session, direction).await;
+        if outcome.moved_to.is_none() {
+            self.attack.lock().await.chase_step_refused(actor, session);
+        }
+        Some((outcome, duration))
+    }
+
+    /// CHASE-1: a client step of `actor` wins over its chase.
+    pub(in crate::gameplay_transport) async fn chase_yield_to_client(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let now = self.owner_now();
+        self.attack
+            .lock()
+            .await
+            .chase_yield_to_client(actor, session, now);
+    }
+
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
@@ -635,7 +847,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.spell_states.lock().await;
         let mut attack = self.attack.lock().await;
         attack.prune(&runtime);
-        let ChannelAttackStates { entries, kills } = &mut *attack;
+        let ChannelAttackStates { entries, kills, .. } = &mut *attack;
         let sink = super::kill_reward::KillSink {
             queue: kills,
             rewards: self.reward_table(),

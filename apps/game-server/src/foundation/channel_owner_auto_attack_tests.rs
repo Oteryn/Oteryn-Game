@@ -1247,3 +1247,111 @@ fn a_bundle_player_is_a_monster_target_outside_a_protection_zone_only() {
         );
     }
 }
+
+/// CHASE-1: the first open Thalom cell east of the player at least three tiles away.
+fn distant_open_cell() -> MovementLocalPosition {
+    let room = source_world();
+    let none = std::collections::BTreeSet::new();
+    (OPEN_PLAYER.x + 3..OPEN_PLAYER.x + 8)
+        .map(|x| MovementLocalPosition { x, ..OPEN_PLAYER })
+        .find(|cell| chase_path_tile(room.movement_cells(), &none, *cell))
+        .expect("an open Thalom cell east of the player")
+}
+
+impl Owner {
+    fn chase_modes(&mut self, chase: ChaseMode) {
+        let modes = FightModes {
+            chase,
+            ..FightModes::DEFAULT
+        };
+        assert!(
+            self.attack
+                .set_modes(&self.runtime, self.player, self.session, modes)
+        );
+    }
+
+    fn chase(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        let room = self.room.clone();
+        let none = std::collections::BTreeSet::new();
+        self.attack.chase_decision(
+            &self.runtime,
+            &room,
+            self.player,
+            self.session,
+            at(now),
+            |cell| chase_path_tile(room.movement_cells(), &none, cell),
+        )
+    }
+}
+
+#[test]
+fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
+    let rat_at = distant_open_cell();
+    let mut owner = owner_at(OPEN_PLAYER, rat_at);
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Stand);
+    assert_eq!(owner.chase(T0), None, "STAND never moves the player");
+    owner.chase_modes(ChaseMode::Chase);
+    let step = owner.chase(T0).expect("a chase step");
+    let (dx, _) = match step {
+        crate::movement::CardinalStep::East => (1, 0),
+        crate::movement::CardinalStep::West => (-1, 0),
+        _ => (0, 0),
+    };
+    assert!(
+        dx >= 0,
+        "the first step never leads away from the rat: {step:?}"
+    );
+    // A refused step drops the route; the next search waits for the 1,000 ms interval.
+    owner.attack.chase_step_refused(owner.player, owner.session);
+    assert_eq!(owner.chase(T0 + 1), None);
+    assert!(owner.chase(T0 + 1_000_000).is_some());
+    // A client step wins; chase re-paths a second later.
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1_100_000));
+    assert_eq!(owner.chase(T0 + 1_200_000), None);
+    assert!(owner.chase(T0 + 2_100_000).is_some());
+    // Clearing the target ends the chase.
+    assert_eq!(
+        owner.target(T0 + 2_200_000, None, 2),
+        AttackIntentDisposition::Ok
+    );
+    assert_eq!(owner.chase(T0 + 5_000_000), None);
+}
+
+#[test]
+fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
+    let mut owner = owner();
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "already next to the rat");
+
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    owner
+        .runtime
+        .record_control_loss(
+            owner.player,
+            owner.session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    owner
+        .runtime
+        .restore_control_after_committed_reentry(owner.player, owner.session, 1, T0)
+        .unwrap();
+    assert_eq!(
+        owner.chase(T0 + 1),
+        None,
+        "re-entry protection ends the chase"
+    );
+    assert!(owner.chase(T0 + 4_000_000).is_some());
+}
