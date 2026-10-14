@@ -2926,6 +2926,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
+        "break_chance_pct": "DERIVED",
         "max_hit_chance": "WIKI",
         "min_level": "WIKI",
         "missile": "CANARY",
@@ -3532,6 +3533,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
+        "break_chance_pct": "DERIVED",
         "max_hit_chance": "WIKI",
         "min_level": "WIKI",
         "missile": "CANARY",

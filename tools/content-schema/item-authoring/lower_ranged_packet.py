@@ -362,6 +362,7 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             if nested.get("action") != "removecount":
                 reasons.append("ammunition_action_unknown")
             row["break_chance_pct"] = 0
+            sources["break_chance_pct"] = "DERIVED"
             row["on_use"] = "CONSUME"
             sources["on_use"] = "CANARY"
         else:

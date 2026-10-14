@@ -181,6 +181,12 @@ def test_wiki_mana_cost_decorations():
     assert lower._parse_mana("~2+~6+ mana per attack") is None
 
 
+def test_ammunition_break_chance_is_derived():
+    found = row(run(snapshot(), {3: ARROW}, {3})[0], 3)
+    assert found["break_chance_pct"] == 0
+    assert found["sources"]["break_chance_pct"] == "DERIVED"
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
