@@ -10,6 +10,7 @@
 pub(crate) mod egress;
 pub(crate) mod greeting;
 pub(crate) mod line;
+pub(crate) mod relay;
 pub(crate) mod spam;
 #[cfg(test)]
 mod tests;
