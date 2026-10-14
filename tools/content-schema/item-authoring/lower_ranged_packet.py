@@ -503,7 +503,23 @@ def _quiver_row(item_id, top, nested, merged, pages, quiver_source, local_confli
     return row
 
 
+def verified_snapshot_digest(snapshot):
+    """Recompute the wiki snapshot digest over its records and refuse a mismatch."""
+    digest = hashlib.sha256(
+        json.dumps(
+            snapshot["records"],
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    if digest != snapshot["snapshot_sha256"]:
+        raise ValueError("wiki snapshot digest mismatch")
+    return digest
+
+
 def packet_bytes(snapshot, canary, content_ids, pin):
+    snapshot_digest = verified_snapshot_digest(snapshot)
     promotions, holds, conflicts, counts = build(
         snapshot, canary, content_ids, closed_weapon_owners()
     )
@@ -515,6 +531,7 @@ def packet_bytes(snapshot, canary, content_ids, pin):
         "source": {
             "canary": pin,
             "wiki_snapshot": str(SNAPSHOT.relative_to(ROOT)),
+            "wiki_snapshot_sha256": snapshot_digest,
             "weapon_metadata_proof": {
                 "path": WEAPON_METADATA_PROOF,
                 "schema": WEAPON_METADATA_PROOF_SCHEMA,

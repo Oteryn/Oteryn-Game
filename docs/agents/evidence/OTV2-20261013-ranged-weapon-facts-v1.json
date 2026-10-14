@@ -4199,7 +4199,8 @@
       "schema": "OTERYN_ITEM_WEAPON_METADATA_SOURCE_QUALIFICATION/v2",
       "sha256": "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc"
     },
-    "wiki_snapshot": "imports/tibiawiki/facts/items-stats.json"
+    "wiki_snapshot": "imports/tibiawiki/facts/items-stats.json",
+    "wiki_snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91"
   },
   "task_id": "OTV2-20261013-ranged-content-1"
 }

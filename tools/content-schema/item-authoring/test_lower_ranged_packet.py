@@ -214,6 +214,16 @@ def test_zero_minimum_damage_and_derived_throwing_defaults():
     assert spear["sources"]["break_chance_pct"] == "CANARY"
 
 
+def test_snapshot_digest_is_verified():
+    tampered = {"records": {}, "snapshot_sha256": "0" * 64}
+    try:
+        lower.packet_bytes(tampered, {}, set(), lower.canary_pin())
+    except ValueError as error:
+        assert "digest mismatch" in str(error)
+    else:
+        raise AssertionError("tampered wiki snapshot accepted")
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
