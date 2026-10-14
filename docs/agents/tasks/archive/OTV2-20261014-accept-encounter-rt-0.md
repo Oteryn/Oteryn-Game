@@ -27,6 +27,13 @@ public_contracts:
   - "CREATURE-AI-0 §3 ownership amendment (encounter link to one instance of the same scope owner; overrides end with the creature or instance): determinism and combat review"
   - "BOSS-RAID-0 §6.5 durable instance allocation states RETIRING and RETIRED (persistent boss-room lifecycle, BOSS-ROOM-1 recovery): persistence review"
   - "ADR-0021 WorldReset amendment: persistence review"
+  - "BOSS-RAID-0 §6.4 instance allocation row gains RETIRING and RETIRED, resumed by InstanceRetire (decision §8): persistence review"
+  - "Decision §17.2 (SHARDS-E1): the format `attribute` row gains `max_health` (set 1..=4,294,967,295 or reset), with the `damage_accumulated` percent row and format §9.4 in place: determinism and combat review"
+  - "Decision §17.2 bound on monster data and admission: `monster.schema.json` stats.max_health and initial_health take maximum 4,294,967,295 and Creature admission refuses above it (the WorldProject v2 encounter schema and lowering reject the same range): combat and content-admission review"
+  - "Decision §17.2 CHARM-4 reads: attack-proc percent, Overpower/Overflux cap and Carnage percent use the maximum in force at the committed hit (`snapshot.maximum_health`, gameplay_transport/attack.rs): combat review"
+  - "Decision §17.2 set_phase catch-up (typed phases list, set_phase action, phase_entered trigger in the WorldProject v2 encounter schema): determinism review"
+  - "Decision §5/§6.5 SIM RNG purpose ENCOUNTER_DRAW (SIM-DETERMINISM-01) and the ENCRT0-RL rows (limit registry, each registered by its child): determinism review"
+  - "Decision §17.3 holds Phosphorus and Boss Difficulty PARITY_PENDING and defers tiers to BOSS-DIFFICULTY-0; Crystal SU26 values stay OTS_HYPOTHESIS_ONLY: no activation, content-hold only"
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -35,7 +42,7 @@ external_repositories: []
 
 ## Outcome
 
-- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change is made by this PR, but acceptance makes the decision's pending amendments effective as contract text: the DUR-03 InstanceRuntime Ground custody, EncounterDropCause and InstanceRetire (§8), and the BOSS_ENTRY lever (§7), the encounter format, CREATURE-AI-0 and BOSS-RAID-0 amendments (all listed in `public_contracts`; a repo-wide search found exactly the amendments citing "pending on acceptance of ENCOUNTER-RT-0" in DUR-03 (two), the encounter format, BOSS-RAID-0, CREATURE-AI-0 and WORLD-INTERACTION-0). Nothing is enabled: every runtime, migration and production step needs its own child, review and #162 allocation.
+- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change is made by this PR, but acceptance makes the decision's pending amendments effective as contract text: the DUR-03 InstanceRuntime Ground custody, EncounterDropCause and InstanceRetire (§8), and the BOSS_ENTRY lever (§7), the encounter format, CREATURE-AI-0 and BOSS-RAID-0 amendments (all listed in `public_contracts`, including the §17.2 rulings on `max_health`, monster data/admission and CHARM-4, found by reading every section of the decision rather than only the pending markers; a repo-wide search found exactly the amendments citing "pending on acceptance of ENCOUNTER-RT-0" in DUR-03 (two), the encounter format, BOSS-RAID-0, CREATURE-AI-0 and WORLD-INTERACTION-0). Nothing is enabled: every runtime, migration and production step needs its own child, review and #162 allocation.
 
 ## Architecture and source of truth
 
