@@ -236,7 +236,10 @@ A refusal in step 1 makes no attack and spends nothing.
 - **Channel transfer and logout** wait for the slot's outcome, within the same bound.
 - **No ammunition.** A `DISTANCE` swing with no usable entry (§3.2), or from a session without
   `CONTAINER_TREE_V1`, makes no attack, spends nothing, keeps the target and waits like an
-  out-of-range swing (a stall, not a cleared target). No client text is defined (no new wire);
+  out-of-range swing (a stall, not a cleared target). RANGED-1 makes this check (a read of the quiver
+  and the session capability) before `AttackState::poll_swing` advances `last_swing`, so the refusal
+  does not consume the swing interval and a swing fires on the first poll after ammunition is
+  available; a test covers a swing made available right after a refusal. No client text is defined (no new wire);
   a "no ammunition" message is `PARITY_PENDING` and a later protocol decision.
 - **Hooks (wiring rule).** CHARM-0 answer 16: an auto-attack triggers charms only on its main
   target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:706`) and carries the critical charms (Low Blow, Savage Blow: `charm_effects.rs` maps `CriticalHitChance` and `CriticalExtraDamage` only to it). RANGED-1 raises it for a `DISTANCE`, `THROWING` or `WAND` swing **after the hit is selected (a wand always hits) and before its damage is frozen**, for the main target only; whether those critical charms apply to ranged or wand attacks in Tibia is `PARITY_PENDING`. `CommittedHit` (defined at `apps/game-server/src/combat/charm_effects.rs:507`; the call is `committed_hit` at `apps/game-server/src/gameplay_transport/attack.rs:774-789`) fires only on a frozen hit, which RANGED-1 adds as a hit gate, and runs the attack-hit and creature-killed effects from the committed outcome, **only when the main target takes the frozen damage**: a
