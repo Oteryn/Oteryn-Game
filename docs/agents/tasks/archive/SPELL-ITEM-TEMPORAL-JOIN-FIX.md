@@ -10,7 +10,7 @@ issue: 1622
 lane_id: spell-items
 base_branch: main
 branch: claude/fix-spell-item-temporal-join
-pr: PENDING
+pr: 2118
 base_sha: a94831d0
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
