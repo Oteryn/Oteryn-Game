@@ -26,7 +26,9 @@ message WorldObjectTargetV1 {
 // select it and sends field 2 fails closed. Fields 4 and 5 are ITEM-USE-0 §3 (ITEM-USE-WIRE-1,
 // D485), gated by capability 15 ITEM_USE_V1 (which requires 4); a session that did not
 // select it and sends either fails closed (REJECTED). Field 4 is valid only with field 2 or
-// 5, at most once, with a 16-byte identity and a non-zero generation. Field 3 stays reserved.
+// 5, at most once; its entity arm carries a 16-byte identity and a non-zero generation, while
+// its capability-11 map_item and map_object arms (UseWithV1 below) carry neither. Field 3
+// stays reserved.
 message UseIntentV1 {
   oneof target {
     WorldObjectTargetV1 world_object = 1;

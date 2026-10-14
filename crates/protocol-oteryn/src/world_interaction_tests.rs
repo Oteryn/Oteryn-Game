@@ -24,6 +24,8 @@ const USE_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
 const ITEM_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/item_view_v1.proto");
+const RESOURCE_REGISTRY: &str =
+    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
 
 fn push(generation: u64, to_x: i32, to_y: i32) -> PushIntent {
     PushIntent {
@@ -303,6 +305,13 @@ fn use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes() {
     assert_eq!(bytes.len(), MAX_USE_INTENT_BYTES);
     assert_eq!(decode_use_intent_target(&[4, 15, 11], &bytes), Ok(largest));
     assert_eq!(MAX_USE_WITH_PLACEMENT_BYTES, 496);
+    // One byte over the WORLDINT0-RL-22 bound fails closed before any field is read.
+    let mut one_over = bytes;
+    one_over.push(0);
+    assert_eq!(
+        decode_use_intent_target(&[4, 15, 11], &one_over),
+        Err(WorldObjectError::LimitExceeded)
+    );
     // The encoder refuses an empty or over-long placement and a map object with the entity arm.
     assert_eq!(
         encode_item_use_intent(&key_on(UseTarget::Item(key), door(0, 1))),
@@ -488,4 +497,17 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     );
     assert!(!USE_SCHEMA.contains("use_with_map_item = 6;"));
     assert!(USE_SCHEMA.contains("USE_DISPOSITION_NOT_POSSIBLE = 17;"));
+    let resources: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");
+    let limit = |id: &str| {
+        let matches: Vec<&Value> = resources["entries"]
+            .as_array()
+            .expect("entries")
+            .iter()
+            .filter(|entry| entry["id"] == id)
+            .collect();
+        assert_eq!(matches.len(), 1, "{id} registered once");
+        matches[0]["hard_maximum"].clone()
+    };
+    assert_eq!(limit("WORLDINT0-RL-21"), MAX_PUSH_INTENT_BYTES);
+    assert_eq!(limit("WORLDINT0-RL-22"), MAX_USE_INTENT_BYTES);
 }
