@@ -22,6 +22,17 @@ impl BlockBudget {
         }
     }
 
+    /// The budget of a defender that has been live for at least the full refill span before
+    /// `now`: capped, with the refill phase starting at `now`. A creature refills while it thinks
+    /// (`creature.cpp:141-145`), so one first met here holds the cap unless it spawned within
+    /// that span; its spawn time is not kept, so that case is rounded up to the cap too.
+    pub(crate) fn settled(constants: &BlockConstants, now: SemanticTimeMicros) -> Self {
+        Self {
+            blocks: constants.max_blocks,
+            ..Self::new(constants, now)
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn blocks(&self) -> u8 {
         self.blocks

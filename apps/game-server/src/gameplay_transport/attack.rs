@@ -1026,7 +1026,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if blocks.len() >= runtime.actor_slot_capacity() {
                         continue;
                     }
-                    blocks.push((target, BlockBudget::new(&constants.block, swing.at)));
+                    // A creature's budget refills from spawn, not from the first hit on it.
+                    blocks.push((target, BlockBudget::settled(&constants.block, swing.at)));
                     blocks.len() - 1
                 }
             };
