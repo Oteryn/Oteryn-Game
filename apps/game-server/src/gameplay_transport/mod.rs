@@ -3041,10 +3041,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // runtime actor-condition owner (players and creatures) and, for a player, its spell
         // state, read under the same runtime lock (lock order: runtime, then spell_states). A
         // store whose owner time is ahead of `now_us` gives no light. Equipped items and monster
-        // content carry no light source yet, so they add none.
+        // content carry no light source yet, so they add none. The census includes players whose
+        // control was lost: they stay visible during reconnect grace, so their light stays too.
         let now_us = self.owner_now().get();
         let mut lights = world_spatial::EntityLights::new();
-        if let Ok(census) = runtime.positioned_actor_census() {
+        if let Ok(census) = runtime.positioned_melee_census() {
             let states = self.spell_states.lock().await;
             for (actor, _, session) in census {
                 let spell = session
