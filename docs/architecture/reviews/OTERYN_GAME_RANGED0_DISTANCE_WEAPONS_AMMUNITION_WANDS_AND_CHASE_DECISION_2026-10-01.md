@@ -122,7 +122,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
 - Wands and rods: `normal_random(min, max)` of their element, no hit roll, not blocked by armor or
   shield, mana per shot (`weapons.cpp:344-351, 968-983`).
 - Chase follows the attacked creature, re-paths when it moves, waits 2,000 ms after a failed path,
-  full search with target distance 1 (`player.cpp:6139-6210`). This repository adopts it with bounds:   follows Canary's server-driven chase with the owner's bounds (§8).
+  full search with target distance 1 (`player.cpp:6139-6210`). This repository adopts the server-driven chase with the bounds of §8.
 
 ## 3. Equipment (QUIVER-1)
 
@@ -229,7 +229,7 @@ A refusal in step 1 makes no attack and spends nothing.
   refreshes. These are live-session accumulators applied **once**, in the owner lane, when the
   outcome is first known committed. They have no durable key of their own: a crash between the
   commit and the accumulation loses that swing's tries or mana_spent (a bounded loss of at most
-  one swing's progress, never a duplication). A replay or a reconciliation read returns the first
+  one swing's progress, never a duplication; an accepted bounded loss, **pending owner acceptance**). A replay or a reconciliation read returns the first
   outcome and **credits nothing**. A later durable key from SKILLS-0 or A13 supersedes this.
 - **Channel transfer and logout** wait for the slot's outcome, within the same bound.
 - **No ammunition.** A `DISTANCE` swing with no usable entry (§3.2), or from a session without
@@ -237,15 +237,15 @@ A refusal in step 1 makes no attack and spends nothing.
   out-of-range swing (a stall, not a cleared target). No client text is defined (no new wire);
   a "no ammunition" message is `PARITY_PENDING` and a later protocol decision.
 - **Hooks (wiring rule).** CHARM-0 answer 16: an auto-attack triggers charms only on its main
-  target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:707`) and is **not raised for
-  `DISTANCE` or `THROWING`**. `CommittedHit` (`attack.rs:782`) fires only on a frozen hit, which RANGED-1 adds as a hit gate. RANGED-1 raises
+  target. `AttackDamageCalculation` is pre-commit (`apps/game-server/src/gameplay_transport/attack.rs:706`) and is **not raised for
+  `DISTANCE` or `THROWING`**. `CommittedHit` (defined at `apps/game-server/src/combat/charm_effects.rs:507`; the call is `committed_hit` at `apps/game-server/src/gameplay_transport/attack.rs:774-789`) fires only on a frozen hit, which RANGED-1 adds as a hit gate. RANGED-1 raises
   the charm hooks (`combat/charm_effects.rs`) from the committed outcome (`CommittedHit`), never
   from the pre-commit calculation, and **only when the main target takes the frozen damage**: a
   `DISTANCE` or `THROWING` hit, or a `WAND` swing's damage (a wand has no hit roll). **Neither hook
   fires on a distance or throwing miss.** The source stays `CharmHitSource::CharacterAttack` for all
   three variants; no new variant is added. RANGED-1 tests a wand main-target attack that evaluates
   its charms and a miss that evaluates none. Whether a wand triggers charms in Tibia is
-  `PARITY_PENDING` (Canary lacks the rule). Proficiency effects (`content/project/v2/proficiency`)
+  `PARITY_PENDING` (Canary lacks the rule). Proficiency effects (`content/proficiencies/`)
   take no part in a distance, throwing or wand swing until their own decision. RANGED-1 audits
   `charm_effects.rs` against this rule.
 - **Creatures** keep CREATURE-AI-0 §4.4: their ranged attacks are think entries, not this timer. Creature keep-distance steps
@@ -262,8 +262,11 @@ A refusal in step 1 makes no attack and spends nothing.
   - `max_hit_chance` selects the cap (default 90 with an `ammo_type`, else 75). Caps 75, 90 and 100
     use the §2 rows. **Any cap other than 75, 90 and 100 is a flat chance equal to the cap**, at every
     distance, before the bow modifier.
-  - Canary's proficiency `RANGED_HIT_CHANCE` (`weapons.cpp:831`) is **excluded**: proficiency takes no part here.
-  `chance = clamp(base + bow modifier, 0, 100)` where `base` is the shot item's absolute chance
+  - Canary's proficiency `RANGED_HIT_CHANCE` (`weapons.cpp:831`, `UNKNOWN`: not readable at Canary 04b83b5 in this tree) is **excluded**: proficiency takes no part here.
+  - An absolute chance is **not clamped** by `max_hit_chance`: `i25735` (`maxhitchance` 86, `hitchance` 90,
+    `imports/canary/items-xml/items.xml:48885-48898`) rolls 90 (`OTS_HYPOTHESIS_ONLY`; RANGED-CONTENT-1 verifies
+    against `weapons.cpp` at 04b83b5 before freeze; if Canary clamps it, `i25735` rolls 86).
+  - `chance = clamp(base + bow modifier, 0, 100)` where `base` is the shot item's absolute chance
     if it has one, else the table (or flat) value; one draw `chance >= uniform(1, 100)` hits.
   - **RANGED-CONTENT-1 re-baseline:** any non-bow row whose `hit_chance` is not positive is held
     unclassified until a source classifies it (an absolute chance cannot be negative or zero).
@@ -272,7 +275,7 @@ A refusal in step 1 makes no attack and spends nothing.
   - The point-blank penalty (distance 1 is not exempt from the table) is `PARITY_PENDING`.
 - **Distance and throwing damage:** the Canary formula of §2 with ATTACK-0's fight-mode factor
   (it applies to distance and throwing; `PARITY_PENDING`) and the vocation's distance multiplier,
-  with the level term of ATTACK-0 §5 (the official 13.05 curve, `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md:99-100`; it equals `floor(level / 5)` only for level <= 500) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
+  with the level term of ATTACK-0 §5 (the official 13.05 curve, `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md:99-100, 109-110`; it equals `floor(level / 5)` only for level <= 500) in place of Canary's `level / 5`, as `player_expression` trees for `spell/formula.rs` (ATTACK-0
   §5). Blocked by armor only. Element ammunition splits physical and element by attack share;
   resistances apply in GAME-ABILITY-01 mitigation.
 - **Wands and rods:** `normal_random(damage_min, damage_max)` of the wand's element, applied through
@@ -361,12 +364,13 @@ The content `on_use` decides:
   step 5) before the first commit attempt (DUR-03 §20) and frozen with the swing; every retry of the
   same swing (§4.2, DUR-03 §25) reuses it. It is **not derived** from any tuple. The durable
   receipt is unique on it. Within a live owner a replay of the swing returns the first outcome.
-  A replay of the swing in the live owner returns the first outcome.
 - **Restart and reconciliation (DUR-03 §20 "proven terminal", §7.2, §7.3, §25, §47).** The reservation of the shot unit is
   runtime only (§7.1) and dies with the owner; the unit is durably held by its item row, whose
   quantity changes only in the committed transaction. In this order: (a) the replacement owner's
   generation claim commits in the database under the `character_root` lock **before any receipt
-  read**; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
+  read**, and the claim, in the same transaction, advances the scope ownership generation and the
+  CharacterLease/GameSession generation that `CurrentCharacterItemFence` checks, so every old-generation
+  commit of a burn or drop fails the fence; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
   ownership generation and `CurrentCharacterItemFence` in the same transaction that writes the
   receipt (DUR-03 §7.2), so no commit of the old generation can land after the claim; (c) before the
   character's first weapon swing the replacement reads **the newest one receipt** by CharacterId and the old
@@ -453,7 +457,7 @@ authority until RANGED-1 is allocated.
 
 - **Decision.** Chase is **server-driven**, as in Canary and Tibia. The owner decision of
   2026-10-14 supersedes the earlier "chase stays client-driven" position of #1942 (LOOP-COMBAT-MODES-1
-  is rebased on this section). The client sends only the chase mode and the target (ATTACK-WIRE-1's
+  is to be rebased on this section by #2113; its task file is not flipped yet). The client sends only the chase mode and the target (ATTACK-WIRE-1's
   existing intents); it does not path. With `chase` set and a live target out of reach, the server
   walks the player toward the target. `chase` loses ATTACK-0 §3's "no effect on the server" for the
   player; `stand` and `balanced` keep it.
@@ -466,6 +470,8 @@ authority until RANGED-1 is allocated.
   | `RANGED0-RL-05` path length | 12 tiles |
   | `RANGED0-RL-06` searches per player | 1 per second |
   | `RANGED0-RL-07` backoff after a failed search | 2 s (the player holds position and keeps target and mode) |
+
+  `RANGED0-RL-04` (1,024 expansions) is a bound distinct from CREATURE-AI-0 §5's creature cap ("A* at most 512 nodes", `astarnodes.hpp:37`): the 512 cap does not apply to player chase searches, and the shared CREATURE-MOVE-1 §5.3 search takes the node cap as a parameter.
 
   The path uses the CREATURE-MOVE-1 profile with player differences (no creature bans that do not
   apply to players; the floor, zone and door rules of the Movement owner apply to every step), a goal
@@ -573,7 +579,7 @@ None. Every choice is a Tibia-parity application or a bound under DUR-03 §28 an
    the SPELL-PRESENT-0 stream registration and its u16 binding (§7). A session without
    `CONTAINER_TREE_V1` that logs in with a quiver equipped sees it as an item with no tree and its
    swings draw no ammunition (§3.1); the Extra slot's semantic key stays `EXTRA` and its domain name `EquipmentSlot::Ammo` (§3.3), so older clients
-   render it as before. The comment at `apps/game-server/src/gameplay_transport/attack.rs:10-12` says chase is client-driven; CHASE-1 or #2113 rewrites it.
+   render it as before. The comment at `apps/game-server/src/gameplay_transport/attack.rs:10-12` and the test comment at `apps/game-server/src/combat/attack/tests.rs:560` say chase is client-driven; CHASE-1 or #2113 rewrites both.
 6. **Split work:** one swing, one transaction committed before the effect, one PRIMARY COMMIT.
 
 ## 14. Review amendments (2026-10-14)
