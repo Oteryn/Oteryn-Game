@@ -57,10 +57,18 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
+/// CLOCK-1: capability 19 `WORLD_LIGHT_V1` (domain 18 and the VIS-2 `light` of domain 1), which
+/// requires 6. Every offered set ends with it.
+const WORLD_LIGHT: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_WORLD_LIGHT_V1,
+    requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+};
+
 /// The production offered set for a generation without a non-empty Item key set: the registry's
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
-/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`. A test keeps it equal to the registry and within
+/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; CLOCK-1 offers
+/// capability 19. A test keeps it equal to the registry and within
 /// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
@@ -79,15 +87,17 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_ATTACK_V1,
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
     },
+    WORLD_LIGHT,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a): capability 3
 /// `NPC_SERVICE_V1` (a bundle World places the NPCs), then the Item view set (which offers 4
-/// `ITEM_VIEW_MOVE_V1`), then capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6. A bundle
+/// `ITEM_VIEW_MOVE_V1`) up to 17, then capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6,
+/// then 19. A bundle
 /// World boots only against a generation whose Item key set names every bundle Item. Only a
 /// bundle World returns it; the registry entries of 3 and 18 stay `offered: false` and their
-/// `offer_gate` names this offer. 3 is below and 18 above every other offered ID, so the set is
-/// ascending.
+/// `offer_gate` names this offer. 3 is below every other offered ID and 18 between the Item view
+/// set's 17 and 19, so the set is ascending.
 pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
     const NPC_SERVICE: OfferedCapability = OfferedCapability {
         id: CAPABILITY_NPC_SERVICE_V1,
@@ -100,13 +110,15 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
             CAPABILITY_WORLD_SPATIAL_ENTITIES,
         ],
     };
-    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 2];
+    const LEN: usize = ITEM_VIEW_OFFERED_CAPABILITIES.len() + 2;
+    let mut set = [WORLD_MAP_VIEW; LEN];
     set[0] = NPC_SERVICE;
     let mut index = 0;
-    while index < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+    while index + 1 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
         set[index + 1] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
         index += 1;
     }
+    set[LEN - 1] = WORLD_LIGHT;
     set
 };
 
@@ -135,6 +147,7 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_ATTACK_V1,
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
     },
+    WORLD_LIGHT,
 ];
 
 /// The command types and state domains each registered capability owns

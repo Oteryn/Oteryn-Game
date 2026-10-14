@@ -100,7 +100,8 @@ message EntityRefV1 {
 }
 
 // At most 128 encoded bytes. Players, creatures and NPCs carry fields 5-7 and no fields 8-10; corpses and
-// ground items carry fields 8-9 (and 10 under capability 4) and no fields 3, 5-7.
+// ground items carry fields 8-9 (and 10 under capability 4) and no fields 3, 5-7 or 11-12.
+// Players and creatures also carry fields 11-12 under capability 19; NPCs never do.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;
   bytes identity = 2;
@@ -120,6 +121,15 @@ message WorldSpatialEntityV1 {
   // ITEM_VIEW_MOVE_V1; never on actors. Any other session receives the entry without it, and
   // field 10 fails closed there.
   uint64 item_handle = 10;
+  // WORLD-INTERACTION-0 §10.2 and §11.4 (CLOCK-1, VIS-2 `light`): the light a player or creature
+  // gives off, 1..=255, and its color, 0..=255. These fields are sent, and accepted, only for a
+  // session that selected capability 19 WORLD_LIGHT_V1, and only on players and creatures. Any
+  // other session receives the entry without them, and fields 11-12 fail closed there. A level
+  // of 0 is no light, so both fields are omitted. A color without a level fails closed. The two
+  // fields together are at most 6 bytes (WORLDINT0-RL-20). The server sends a changed light at
+  // most once per 1,000 ms per entity.
+  uint32 light_level = 11;
+  uint32 light_color = 12;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),

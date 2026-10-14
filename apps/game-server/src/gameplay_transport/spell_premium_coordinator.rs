@@ -371,6 +371,10 @@ impl SpellPremiumCoordinator {
     /// it and the gate commits after it returns. Every other status gets `tx = None`. A failed
     /// lock, read or latch gives `NotCurrent`. `operation` owns what it captures.
     ///
+    /// The gate commits whatever `operation` left in `tx`, whatever it returns. An operation that
+    /// can reject after a write makes its writes in a savepoint (`tx.begin()`) and commits that
+    /// savepoint only on success; dropping it rolls the writes back.
+    ///
     /// # Errors
     /// Only when `operation` ran with `NotActivated` and its transaction did not commit: its
     /// writes are not durable and the outcome of the command is unknown.

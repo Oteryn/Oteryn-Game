@@ -115,7 +115,7 @@ pub(crate) struct PlayerSpellState {
     pub(super) stance: Option<super::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
-    owned_skills: Option<[u16; 7]>,
+    pub(super) owned_skills: Option<[u16; 7]>,
     pub(super) training: Option<super::mana_training::LiveManaTraining>,
     pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
     pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,

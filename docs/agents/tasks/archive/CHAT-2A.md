@@ -1,0 +1,138 @@
+# CHAT-2A
+
+```yaml
+task_id: CHAT-2A
+title: "CHAT-2A: sealed World chat relay payload, key ring and replay window (CHAT-0 section 5)"
+mode: IMPLEMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/chat-2-20261013
+issue: 2074
+governing_issue: 1622
+pr: 2076
+base_sha: b4774770
+head_sha: null
+final_head_sha: null
+owner: claude-code-session-016UMPeTGXu2gXmPn9iAd9s1
+control_plane: session_01XYC239givrMonrYoBwwECV
+created_at: 2026-10-13
+updated_at: 2026-10-14
+owned_paths:
+  - apps/game-server/src/chat/relay/**
+  - apps/game-server/src/chat/mod.rs
+  - apps/game-server/Cargo.toml
+  - Cargo.toml
+  - Cargo.lock
+  - content/world/pins/oteryn.json
+  - docs/agents/tasks/archive/CHAT-2A.md
+public_contracts: []
+external_repositories: []
+```
+
+## Outcome
+
+First reviewable batch of sub-issue #2074 (CHAT-2, parent #1622): the pure security core of the
+World relay of CHAT-0 section 5. `chat::relay` holds the fixed binary payload (private and room
+kinds), AES-256-GCM sealing with a random 96-bit nonce and the channel name plus `key_id` as
+associated data, the per-World key ring (send with the newest activated key, open with every held key until 24 hours after its successor's activation, `CHAT0-RL-12`), the 30 s freshness check and the bounded `message_id`
+de-duplication window (`CHAT0-RL-13`, a full window refuses rather than forgets), and the
+`oteryn_chat_<WorldId hex>` channel name (the canonical UUID without hyphens). AES-GCM comes from `aws-lc-rs`, already in the lock through
+rustls; no new crate enters `Cargo.lock`.
+
+## Architecture and source of truth
+
+- PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` section 5 (layout, sealing, rotation, replay) and section 8 rows `CHAT0-RL-06`, `-12`, `-13`.
+- UNKNOWN (merge gate): that CHAT-0 decision is still `CANDIDATE` (its acceptance D1021 waits for the security re-review) and grants no runtime authority. This record implements its section 5 as written; it does not accept it. The PR is not qualified for merge until the owner records CHAT-0's acceptance (or a scoped waiver), and any change the acceptance makes to section 5 comes back here first.
+- DERIVED: the channel is `oteryn_chat_<WorldId without hyphens>` (44 bytes) because production WorldIds are canonical UUIDv7 (`node/config.rs`); CHAT-0 section 5 writes `<world_id>` without fixing the encoding. `channel_name` admits exactly what `node/config.rs` `v7_uuid` admits (lower-case hex, hyphens at 8/13/18/23, version nibble `7`, variant `8`-`b`) and refuses anything else as `BadChannel`.
+- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce and 128-bit `message_id`; `ReplayWindow::receive` is the only receive path and runs open and admit on one monotonic high-water clock, so a database clock stepped back can neither re-admit an evicted id, accept an expired line nor revive a retired key. The window is the only security-relevant process state in the relay (the key ring is immutable configuration; nonces and `message_id`s are random, no counters), and one durable value per World carries it across a restart: the relay lease. The window opens or admits only on a clock reading at most the lease the listener has stored durably (`lease_due` / `lease_stored`, `RELAY_LEASE_MICROS` = 30 s ahead, renewed at half; past it every line is `Unleased`; the lease is taken from the database reading, never from the window's clock, which a restart starts past the stored lease, so listeners restarting in a row never push the stored lease ahead and it stays within 30 s of the database clock), so every line a process admitted is stamped at most the highest stored lease plus 30 s and every key it found retired was retired by that lease. A restarted listener builds `ReplayWindow::resume(db_now, stored_lease)`, whose floor and clock start past both the readiness reading plus the 30 s future allowance and the stored lease plus 30 s (database clock only, no host wall clock), so a captured line, future-stamped ones included, is `BeforeStart` or stale and a retired key stays retired after a restart even when the database clock was stepped back. The listener stores the lease without ever lowering it and passes the stored value back on restart; that storage lives with the listener (follow-up batch). Deliberate availability cost: for up to ~60 s after a restart, however many restarts came before, every line is dropped, legitimate ones included (chat is best-effort). Sending stays stateless: with a stepped-back `sent_at` it may pick an older key, which receivers then refuse (fail closed). The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
+- Plaintext is at most 1,185 bytes (two-byte length prefixes), sealed at most 1,214, base64 at most 1,624, inside the section 5 figures.
+
+## Acceptance criteria
+
+- [x] Round trip of a room and a private line; the widest line stays within the documented bounds.
+- [x] Oversized fields are `Oversized`, never truncated.
+- [x] Wrong channel, altered ciphertext and a relabelled `key_id` fail authentication.
+- [x] Rotation (retirement also holds when the clock steps back): a key sends once its cluster-wide `activate_at` has passed (the newest activated key); every held key opens, and a key retires 24 hours after its successor's activation.
+- [x] Stale, future-dated and replayed lines are refused; a full window refuses.
+- [x] Restart: a window receives only inside a stored lease; a rolling restart keeps the stored lease and the restart cost bounded; after a restart, also with the database clock stepped back, a captured (also future-stamped) line is not delivered again and a retired key stays retired.
+- [x] `Debug` of a line, destination or key never prints text, a private recipient or key bytes.
+
+## Excluded scope (stays CHAT-2, follow-up batches)
+
+The `LISTEN`/`NOTIFY` connection and `NOTIFY` send, `log_parameter_max_length = 0` on it, listener
+readiness and `CHAT_UNAVAILABLE`, the `NOTIFY` queue watch (`CHAT0-RL-09`), delivery of relayed
+lines to sessions, private-message and room dispatch, durable storage of the per-World relay
+lease that `ReplayWindow::resume` takes back (never lowered), the durable mute row
+(`game_character_chat_mutes`, needs a leased migration number) and any wire change. No protocol,
+registry, migration or content change here.
+
+## Validation
+
+Run at the final authoring head:
+
+- `cargo fmt --all --check`: exit 0
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings` (`CARGO_BUILD_JOBS=1`): exit 0
+- `cargo test --locked -p oteryn-game-server --quiet` (whole package): NOT COMPLETED locally, exit 101. rustc was killed by SIGKILL (signal 9, out of memory) while compiling the lib test target and `apps/game-server/tests/character_authority_postgres.rs`; no test result was produced. Qualification of the whole package = exact-head CI (nieukończony lokalnie, kwalifikacja = CI).
+- `cargo test --locked -p oteryn-game-server --lib --quiet` with `CARGO_BUILD_JOBS=1` (partial substitute, lib target only): exit 0, 2938 passed, 0 failed, 29 ignored, including the 22 `chat::relay` tests. The integration test targets (including the Postgres-backed ones, which need PG 17.6) were not run locally.
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: exit 0, `workspace-boundaries: PASS`
+- `python tools/agents/validate_governance.py`: exit 0, 22 policy documents and 9 lanes validated
+- `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
+
+Merge of `main` and the relay lease (restart and clock-rollback review round):
+
+- `cargo fmt --all --check`: exit 0
+- `chat::relay` module with its tests, compiled as a standalone crate against the workspace lock (the full `oteryn-game-server` lib target was killed by the session memory limit, SIGKILL, before producing a result): `cargo test` 25 passed, 0 failed; `cargo clippy --all-targets -- -D warnings` with the package lint set: exit 0
+- `content/world/pins/oteryn.json` `inputs_digest` recomputed for the merged tree with the `inputs_digest` algorithm (cross-checked against the pins of `main` and of the pre-merge branch); `pin-check` itself was killed by the memory limit, so exact-head CI qualifies it
+- `python tools/agents/validate_governance.py`: exit 0; `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
+- whole-package clippy and tests: left to exact-head CI
+
+Codex round on `95a9ef1` (lease compounding on a rolling restart; private recipient in `Debug`):
+
+- tests first: the two new tests (`a_rolling_restart_does_not_push_the_lease_ahead`, `debug_never_shows_a_private_recipient`) failed against the `95a9ef1` relay code, 25 passed, 2 failed
+- `cargo fmt --all --check`: exit 0
+- `chat::relay` module with its tests as a standalone crate against the workspace lock (the `oteryn-game-server` lib clippy was killed by the session memory limit, SIGKILL, with about 2.3 GB free): `cargo test` 27 passed, 0 failed; `cargo clippy --lib --tests` with the package lint set: exit 0
+- `python3 tools/agents/validate_governance.py`: exit 0, 22 policy documents and 9 lanes validated
+- whole-package clippy and tests: left to exact-head CI
+
+Codex round on `32ca793` (UUIDv7 version and variant in the channel name; the CHAT-0 acceptance gate):
+
+- the lease (`a_rolling_restart_does_not_push_the_lease_ahead`) and `Debug` (`debug_never_shows_a_private_recipient`) findings re-raised on `32ca793` were already fixed by `a816c739`; both tests pass on `32ca793`
+- tests first: the extended `the_channel_name_is_a_safe_world_scoped_identifier` (version nibbles 4/1/0, variant nibbles 0/7/c/f refused; 8/9/a/b admitted) failed against the `32ca793` relay code, 26 passed, 1 failed
+- `cargo fmt --all --check`: exit 0
+- `cargo test --locked -p oteryn-game-server --lib --quiet -- chat::relay` (`CARGO_BUILD_JOBS=1`, no debuginfo): NOT COMPLETED, rustc SIGKILL (out of memory) compiling the lib test target; no result
+- `chat::relay` module with its tests as a standalone crate against the workspace lock (offline, `CARGO_BUILD_JOBS=1`): `cargo test` 27 passed, 0 failed; `cargo clippy --lib --tests -- -D warnings` with the package lint set: exit 0
+- `python tools/agents/validate_governance.py`: exit 0, 22 policy documents and 9 lanes validated
+- `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
+- `git diff --check`: exit 0
+- whole-package clippy and tests: left to exact-head CI
+
+Codex round on `34f542cf` (private recipient as raw bytes):
+
+- the private destination holds a `CharacterId`; `decode` validates it, so zero bytes, non-v7 versions and bad variants are `BadPayload` (`a_private_recipient_that_is_not_a_character_id_is_a_bad_payload`); `Debug` redaction unchanged
+- `chat::relay` as a standalone crate against the workspace lock (the lib test target is OOM-killed here): 29 passed, 0 failed; clippy with the package lint set: exit 0; `cargo +1.95.0 fmt --all --check` and `git diff --check`: exit 0
+
+Codex round on `6db05caf` (relay sender name):
+
+- `RelayLine` and `OutgoingLine` carry a `CharacterName`; `decode` parses it and returns `BadPayload` for empty, short, padded, double-space, digit, non-ASCII and over-29 names (`a_received_sender_name_the_naming_policy_refuses_is_a_bad_payload`)
+- `chat::relay` as a standalone crate with `domain::character_name` (lib test target is OOM-killed here): relay and name tests 32 passed, 0 failed; clippy with the package lint set: exit 0; fmt and `git diff --check`: exit 0
+
+### Exact-head CI
+
+Recorded in the PR checks of the frozen head.
+
+## Self-review
+
+- method: implementing agent read the whole diff against owned paths.
+- material findings: none open.
+
+## Independent review
+
+- required: full Codex review on the frozen head, requested by the control plane.
+
+## PR and closeout
+
+- `Merge gate / World bundle` failed on `6e447ee`: `Cargo.toml` and `Cargo.lock` are world-bundle inputs, so the pin `inputs_digest` was refreshed (`pin-check` passes locally).
+- Merge blocked until CHAT-0 is accepted (D1021) or the owner waives it for this batch; see *Architecture and source of truth*.
+- Refs #2074 (does not close it).
+- merge commit/result: squash merge of #2076 (pending)

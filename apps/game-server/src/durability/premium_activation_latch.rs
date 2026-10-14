@@ -57,7 +57,9 @@ impl EmptyLatchHeld {
 }
 
 /// A pre-delivery bypass: applied in the gate's transaction, which holds the shared lock and read
-/// an empty table. Its writes commit with it, before any latch can.
+/// an empty table. Its writes commit with it, before any latch can. The transaction commits
+/// whatever `apply` returns: a bypass that can reject after a write writes in a savepoint
+/// (`tx.begin()`) and commits it only on success.
 pub trait PreDeliveryBypass: Send {
     type Output: Send;
     fn apply<'a, 't>(
@@ -92,6 +94,10 @@ impl DurabilityRoot {
     /// bypass out of `bypass`, run it in the same transaction and commit it: its writes commit
     /// before any latch can. `bypass` is left in place when the table holds a row or the read
     /// fails before the table was read.
+    ///
+    /// For the Premium gate only (`SpellPremiumCoordinator::settle`), which calls it only after
+    /// its activation and trusted-clock decision gave `NotActivated`. A consumer never calls it:
+    /// it goes through `with_premium_gate` or `with_premium_batch_gate`.
     pub async fn read_premium_activation_with<B: PreDeliveryBypass>(
         &self,
         bypass: &mut Option<B>,
