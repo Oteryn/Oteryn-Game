@@ -606,10 +606,16 @@ impl ChannelAttackStates {
         }
     }
 
-    /// CHASE-1: the chase step the Movement owner just refused drops the route.
-    pub(crate) fn chase_step_refused(&mut self, actor: ExactActorRef, session: GameSessionId) {
+    /// CHASE-1: the chase step the Movement owner just refused at `now` drops the route and keeps
+    /// the refused cell out of the next searches.
+    pub(crate) fn chase_step_refused(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) {
         if let Some(index) = self.index(actor, session) {
-            self.entries[index].chase.step_refused();
+            self.entries[index].chase.step_refused(now.get());
         }
     }
 }
@@ -802,7 +808,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let (outcome, duration) = self.paced_step(actor, session, direction).await;
         if outcome.moved_to.is_none() {
-            self.attack.lock().await.chase_step_refused(actor, session);
+            self.attack
+                .lock()
+                .await
+                .chase_step_refused(actor, session, now);
         }
         Some((outcome, duration))
     }

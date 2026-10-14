@@ -31,6 +31,10 @@ pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
+/// How long a cell whose chase step the Movement owner refused stays out of the search.
+pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
+/// At most this many refused cells are remembered; the oldest is forgotten first.
+pub(crate) const CHASE_REFUSED_CELLS: usize = 8;
 
 const STEP_COST: u32 = 10;
 /// Per discovered tile: its best cost and the step and tile it was reached by.
@@ -192,6 +196,11 @@ pub(crate) struct ChaseState {
     goal: Option<MovementLocalPosition>,
     /// No search before this owner time.
     next_search_us: u64,
+    /// Cells whose chase step the Movement owner refused, each with the owner time it expires.
+    /// The owner alone judges passability from committed facts (a blocking item has no
+    /// in-memory projection), so the search avoids what it just refused instead of re-reading
+    /// them.
+    refused: VecDeque<(MovementLocalPosition, u64)>,
 }
 
 /// What a chase check decided.
@@ -231,8 +240,9 @@ impl ChaseState {
         at: MovementLocalPosition,
         target: MovementLocalPosition,
         admit: impl FnOnce() -> bool,
-        tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+        mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
     ) -> ChaseDecision {
+        self.refused.retain(|&(_, expires_us)| now_us < expires_us);
         if at.floor != target.floor || chebyshev(at, target) <= 1 {
             self.route.clear();
             self.expected_at = None;
@@ -246,7 +256,15 @@ impl ChaseState {
         }
         let stale = self.route.is_empty() || self.goal != Some(target);
         if stale && now_us >= self.next_search_us && admit() {
-            match chase_route(at, target, tile_cost) {
+            let refused = &self.refused;
+            let route = chase_route(at, target, |cell| {
+                if refused.iter().any(|&(blocked, _)| blocked == cell) {
+                    None
+                } else {
+                    tile_cost(cell)
+                }
+            });
+            match route {
                 Some(route) if !route.is_empty() => {
                     self.route = route.into();
                     self.goal = Some(target);
@@ -272,8 +290,17 @@ impl ChaseState {
         ChaseDecision::Step(step)
     }
 
-    /// The step just taken was refused: the route is dropped (RANGED-0 §8).
-    pub(crate) fn step_refused(&mut self) {
+    /// The step just taken was refused at `now_us`: the route is dropped (RANGED-0 §8) and the
+    /// refused cell stays out of the search for [`CHASE_REFUSED_CELL_MICROS`].
+    pub(crate) fn step_refused(&mut self, now_us: u64) {
+        if let Some(cell) = self.expected_at {
+            self.refused.retain(|&(blocked, _)| blocked != cell);
+            if self.refused.len() >= CHASE_REFUSED_CELLS {
+                self.refused.pop_front();
+            }
+            self.refused
+                .push_back((cell, now_us.saturating_add(CHASE_REFUSED_CELL_MICROS)));
+        }
         self.route.clear();
         self.expected_at = None;
         self.goal = None;
@@ -465,17 +492,81 @@ mod tests {
             chase.decide(2_000_000, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
-        chase.step_refused();
+        chase.step_refused(2_000_000);
         // The player never reached the expected tile: the route is gone; the next search waits
         // for the interval.
         assert_eq!(
             chase.decide(2_100_000, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Hold
         );
-        assert_eq!(
+        assert_ne!(
             chase.decide(3_000_000, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East),
+            "the refused cell stays out of the search"
+        );
+    }
+
+    #[test]
+    fn a_blocking_item_the_owner_refuses_on_the_shortest_route_is_detoured() {
+        // A committed blocking item on (1, 0): the search cannot see it, the Movement owner
+        // refuses the step onto it.
+        let item = at(1, 0);
+        let target = at(4, 0);
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), target, || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
+        chase.step_refused(0);
+        let mut position = at(0, 0);
+        for now in CHASE_SEARCH_INTERVAL_MICROS..CHASE_SEARCH_INTERVAL_MICROS + 8 {
+            match chase.decide(now, position, target, || true, open) {
+                ChaseDecision::Step(step) => {
+                    position = walk(position, &[step]);
+                    assert_ne!(
+                        position, item,
+                        "the chase never steps onto the refused item"
+                    );
+                }
+                ChaseDecision::Hold => break,
+            }
+        }
+        assert_eq!(
+            chebyshev(position, target),
+            1,
+            "the detour reaches the target"
+        );
+    }
+
+    #[test]
+    fn refused_cells_expire_after_two_seconds_and_at_most_eight_are_kept() {
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        chase.step_refused(0);
+        assert_ne!(
+            chase.decide(1_999_999, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        chase.reset();
+        assert_eq!(chase.refused.len(), 0, "a reset forgets the refused cells");
+        chase.step_refused(0);
+        assert_eq!(chase.refused.len(), 0, "no step was expected");
+        for x in 0..=CHASE_REFUSED_CELLS {
+            chase.expected_at = Some(at(i32::try_from(x).unwrap(), 9));
+            chase.step_refused(0);
+            chase.step_refused(0);
+        }
+        assert_eq!(chase.refused.len(), CHASE_REFUSED_CELLS);
+        assert_eq!(chase.refused.front().map(|(cell, _)| *cell), Some(at(1, 9)));
+        assert_eq!(
+            chase.decide(CHASE_REFUSED_CELL_MICROS, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East),
+            "an expired cell is searched again"
+        );
+        assert_eq!(chase.refused.len(), 0);
     }
 
     #[test]

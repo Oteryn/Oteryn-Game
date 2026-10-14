@@ -1303,8 +1303,11 @@ fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
         dx >= 0,
         "the first step never leads away from the rat: {step:?}"
     );
-    // A refused step drops the route; the next search waits for the 1,000 ms interval.
-    owner.attack.chase_step_refused(owner.player, owner.session);
+    // A refused step drops the route; the next search waits for the 1,000 ms interval and
+    // keeps the refused cell out of the route.
+    owner
+        .attack
+        .chase_step_refused(owner.player, owner.session, at(T0));
     assert_eq!(owner.chase(T0 + 1), None);
     assert!(owner.chase(T0 + 1_000_000).is_some());
     // A client step wins; chase re-paths a second later.

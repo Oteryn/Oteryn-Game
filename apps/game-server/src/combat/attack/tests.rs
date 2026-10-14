@@ -557,9 +557,10 @@ fn waiting_target_is_held_and_cleared_target_is_dropped() {
     );
 }
 
-/// CHASE-1 is client-driven (LOOP-COMBAT-MODES-1): the client walks after its target, so the
-/// server must keep an out-of-range target through every poll while it runs and swing the
-/// moment the client has closed the distance, without spending an interval while it waited.
+/// CHASE-1 is server-driven (RANGED-0 §8, owner decision 2026-10-14): the owner, or a client
+/// step that wins over it, closes the distance, so an out-of-range target is kept through every
+/// poll meanwhile and swung at the moment it is in reach, without spending an interval while
+/// it waited.
 #[test]
 fn a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach() {
     let interval = table().attack_interval_micros();
