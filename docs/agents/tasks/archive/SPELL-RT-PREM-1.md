@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/spell-rt-prem-1
 issue: 2048
 governing_issue: 2048
-pr: TBD
+pr: 2119
 created_at: 2026-10-14
 updated_at: 2026-10-14
 execution_policy: continuous_progress
@@ -47,5 +47,6 @@ Coordination: control plane session_01XYC239givrMonrYoBwwECV (option B, 2026-10-
 
 - cargo +1.95.0 fmt --all --check: pass
 - cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings: pass
-- cargo +1.95.0 test --locked -p oteryn-game-server --lib -- spell:: gameplay_transport::familiar
-  gameplay_transport::ordinary_combat gameplay_transport::spell_book: 450 passed
+- cargo +1.95.0 test --locked -p oteryn-game-server --lib, after merging main (#2110 merged):
+  spell:: 463, familiar 14, ordinary_combat 15, spell_book 4, premium 52 passed
+- python3 tools/agents/validate_governance.py: pass; agents unittest: OK
