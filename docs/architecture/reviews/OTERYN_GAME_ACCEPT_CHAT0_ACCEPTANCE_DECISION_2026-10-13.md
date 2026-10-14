@@ -1,7 +1,7 @@
 # ACCEPT-CHAT-0 Acceptance of the player chat decision
 
 - Decision: `ACCEPT-CHAT0-V1`
-- Status: **ACCEPTED BY THE OWNER 2026-10-13 VIA THE CONTROL PLANE**. Owner `blakinio` accepted CHAT-0 (owner accepted via control plane). The acceptance takes effect only when this PR passes exact-head independent review and CI on its frozen head and is integrated through the protected merge path. It adds no rule text and changes no code, wire, migration or content.
+- Status: **ACCEPTED BY THE OWNER 2026-10-13 VIA THE CONTROL PLANE**. Owner `blakinio` accepted CHAT-0 (owner accepted via control plane). The acceptance takes effect only when this PR passes exact-head independent review and CI on its frozen head and is integrated through the protected merge path. It adds no rule text and changes no wire, migration or content. It also changes `ChatRuntime::pre_gate` in `apps/game-server/src/gameplay_transport/chat_intent.rs` and its test, so a session without chat state gets the early `CHAT_UNAVAILABLE` refusal (security re-review finding).
 - Accepts: `reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` (`CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`), following ACCEPT-CHAR-POSITION-0.
 - Answers: the CHAT work (PR #2076) cites the decision while it still reads CANDIDATE.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`

@@ -58,9 +58,9 @@ external_repositories: []
 
 ### Component/integration
 
-- `cargo fmt -p oteryn-game-server -- --check`: pass
-- `cargo clippy -p oteryn-game-server --lib`: no finding in the crate
-- `cargo test -p oteryn-game-server` (the updated `the_pre_gate_refuses_a_flood_without_the_channel_and_takes_no_line` asserts the unknown-session refusal): run by the exact-head `game-gate` CI; the local test build is OOM-killed on this machine.
+- `cargo fmt --all --check`: pass (run locally, exit 0)
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: could not run locally; OOM-killed (SIGKILL), also with `CARGO_BUILD_JOBS=1` and with the narrower `--lib`. Run by the exact-head `game-gate` CI job (`.github/workflows/merge-gate.yml`, job name `game-gate`); no local pass is claimed.
+- `cargo test --locked -p oteryn-game-server --quiet`: could not run locally; OOM-killed (SIGKILL), also with `CARGO_BUILD_JOBS=1` and a `pre_gate` filter. Run by the exact-head `game-gate` CI job, which covers the updated `the_pre_gate_refuses_a_flood_without_the_channel_and_takes_no_line` (unknown-session refusal); no local pass is claimed.
 
 ### E2E
 
