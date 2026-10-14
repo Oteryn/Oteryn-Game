@@ -231,6 +231,9 @@ pub struct ItemMoveSelection {
     pub equip_drop: bool,
     /// Capability 14: the `container` destination.
     pub container_tree: bool,
+    /// Capability 11 `WORLD_INTERACTION_V1` (WORLD-INTERACTION-0 §10.1): the `ground` destination
+    /// for a map-item or Ground source, and the `BLOCKED` result; not the `equipment` destination.
+    pub world_interaction: bool,
 }
 
 /// `ItemMoveIntentV1`.
@@ -260,11 +263,14 @@ pub enum ItemMoveOutcome {
 }
 
 impl ItemMoveOutcome {
-    fn needs_equip_drop(self) -> bool {
-        matches!(
-            self,
-            Self::SlotMismatch | Self::RequirementNotMet | Self::Blocked
-        )
+    /// Results 10 to 12 need capability 12; capability 11 admits `BLOCKED` alone, the refusal of a
+    /// `ground` destination.
+    fn admitted_by(self, selection: ItemMoveSelection) -> bool {
+        match self {
+            Self::SlotMismatch | Self::RequirementNotMet => selection.equip_drop,
+            Self::Blocked => selection.equip_drop || selection.world_interaction,
+            _ => true,
+        }
     }
 }
 
@@ -595,6 +601,7 @@ pub fn encode_item_move_intent_with_equip_drop(
         ItemMoveSelection {
             equip_drop,
             container_tree: false,
+            world_interaction: false,
         },
     )
 }
@@ -614,7 +621,10 @@ pub fn encode_item_move_intent_for(
             push_message_field(&mut output, 5, &body);
         }
         ItemMoveDestination::Container(_) => return malformed(),
-        _ if !selection.equip_drop => return malformed(),
+        ItemMoveDestination::Ground(_) if !selection.equip_drop && !selection.world_interaction => {
+            return malformed();
+        }
+        ItemMoveDestination::Equipment(_) if !selection.equip_drop => return malformed(),
         ItemMoveDestination::Equipment(slot) => {
             let mut body = Vec::with_capacity(2);
             push_varint_field(&mut body, 1, slot as u64);
@@ -644,6 +654,7 @@ pub fn decode_item_move_intent_with_equip_drop(
         ItemMoveSelection {
             equip_drop,
             container_tree: false,
+            world_interaction: false,
         },
     )
 }
@@ -657,8 +668,9 @@ pub fn decode_item_move_intent_for(
     let ItemMoveSelection {
         equip_drop,
         container_tree,
+        world_interaction,
     } = selection;
-    let bound = if equip_drop || container_tree {
+    let bound = if equip_drop || container_tree || world_interaction {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
     } else {
         MAX_ITEM_MOVE_INTENT_BYTES
@@ -681,7 +693,7 @@ pub fn decode_item_move_intent_for(
                 let slot = decode_equipment_destination(read_bytes(payload, &mut cursor)?)?;
                 set_once(&mut destination, ItemMoveDestination::Equipment(slot))?;
             }
-            0x22 if equip_drop => {
+            0x22 if equip_drop || world_interaction => {
                 let position = decode_position(read_bytes(payload, &mut cursor)?)?;
                 set_once(&mut destination, ItemMoveDestination::Ground(position))?;
             }
@@ -708,7 +720,21 @@ pub fn encode_item_move_result_with_equip_drop(
     outcome: ItemMoveOutcome,
     equip_drop: bool,
 ) -> WireResult<Vec<u8>> {
-    if !equip_drop && outcome.needs_equip_drop() {
+    encode_item_move_result_for(
+        outcome,
+        ItemMoveSelection {
+            equip_drop,
+            ..ItemMoveSelection::default()
+        },
+    )
+}
+
+/// A result the selection does not admit is refused.
+pub fn encode_item_move_result_for(
+    outcome: ItemMoveOutcome,
+    selection: ItemMoveSelection,
+) -> WireResult<Vec<u8>> {
+    if !outcome.admitted_by(selection) {
         return malformed();
     }
     let mut output = Vec::with_capacity(2);
@@ -725,6 +751,20 @@ pub fn decode_item_move_result_with_equip_drop(
     payload: &[u8],
     equip_drop: bool,
 ) -> WireResult<ItemMoveOutcome> {
+    decode_item_move_result_for(
+        payload,
+        ItemMoveSelection {
+            equip_drop,
+            ..ItemMoveSelection::default()
+        },
+    )
+}
+
+/// A result the selection does not admit fails closed as unknown.
+pub fn decode_item_move_result_for(
+    payload: &[u8],
+    selection: ItemMoveSelection,
+) -> WireResult<ItemMoveOutcome> {
     let outcome = match read_result_enum(payload, MAX_ITEM_MOVE_RESULT_BYTES)? {
         1 => ItemMoveOutcome::Moved,
         2 => ItemMoveOutcome::Stale,
@@ -740,7 +780,7 @@ pub fn decode_item_move_result_with_equip_drop(
         12 => ItemMoveOutcome::Blocked,
         _ => return malformed(),
     };
-    if !equip_drop && outcome.needs_equip_drop() {
+    if !outcome.admitted_by(selection) {
         return malformed();
     }
     Ok(outcome)

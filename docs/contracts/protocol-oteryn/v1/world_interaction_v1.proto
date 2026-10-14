@@ -1,10 +1,11 @@
 // WORLD-INTERACTION-0 §10.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md):
 // typed payloads of capability 11 WORLD_INTERACTION_V1 (requires 15 ITEM_USE_V1 and 18
 // WORLD_MAP_VIEW_V1) and command type 15 PUSH_INTENT. Numbers leased to WORLDINT-WIRE-1 by the
-// #1622 control plane. The capability also extends two existing messages and owns no domain:
-// world_object_v1.proto UseIntentV1 field 6 use_with_map_item and UseDispositionV1 values 11 to
-// 17 with UseResultV1 field 2 gate_message_id. It changes no other command: the map-item and
-// Ground sources of command type 9 (item_view_v1.proto) are a separate registry change. Unknown
+// #1622 control plane. The capability also extends existing messages and owns no domain:
+// world_object_v1.proto UseIntentV1 field 4 use_with (the map_item arm, UseWithV1 field 3) and
+// UseDispositionV1 values 11 to 17 with UseResultV1 field 2 gate_message_id. It also extends command
+// type 9 (item_view_v1.proto): the GROUND destination (field 4) is admitted for a map-item or Ground
+// source, and the BLOCKED result, as under capability 12 (which stays the only home of EQUIPMENT). Unknown
 // and repeated fields, zero and unknown enum values, an identity other than 16 bytes, a zero
 // generation and a payload over its bound all fail closed.
 syntax = "proto3";

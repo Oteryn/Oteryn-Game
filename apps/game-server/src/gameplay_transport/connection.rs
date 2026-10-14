@@ -90,7 +90,7 @@ use oteryn_protocol_oteryn::container_tree::{
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
-    ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_with_equip_drop,
+    ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_for,
 };
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT, DELTA_TYPE_NPC_CONVERSATION_V1,
@@ -2170,7 +2170,7 @@ where
                 Ok(UseIntent {
                     use_with: Some(_), ..
                 })
-                // WORLDINT-WIRE-1: field 6 decodes only under capability 11, which is not offered
+                // WORLDINT-WIRE-1: the map_item arm of field 4 decodes only under capability 11, which is not offered
                 // before WORLDINT-USE-1 composes the interaction gate.
                 | Ok(UseIntent {
                     use_with_map_item: Some(_),
@@ -2323,6 +2323,8 @@ where
                         equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
                         container_tree: selected_capabilities
                             .contains(CAPABILITY_CONTAINER_TREE_V1),
+                        world_interaction: selected_capabilities
+                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
                     };
                     let step = item_move::item_move(
                         authority,
@@ -2573,9 +2575,14 @@ where
                 encode_container_view_result(*outcome),
             ),
             Dispatch::ItemMove(outcome, _) => {
-                let Ok(payload) = encode_item_move_result_with_equip_drop(
+                let Ok(payload) = encode_item_move_result_for(
                     *outcome,
-                    selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    ItemMoveSelection {
+                        equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        world_interaction: selected_capabilities
+                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
+                        ..ItemMoveSelection::default()
+                    },
                 ) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };

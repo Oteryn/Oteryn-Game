@@ -4,10 +4,15 @@ use serde_json::Value;
 
 use super::*;
 use crate::charm_wire::{push_message_field, push_varint_field};
-use crate::item_view::ItemHandle;
+use crate::item_view::{
+    EquipmentSlot, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
+    ItemMoveSelection, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, WorldTilePosition,
+    decode_item_move_intent_for, decode_item_move_intent_with_equip_drop,
+    decode_item_move_result_for, encode_item_move_intent_for, encode_item_move_result_for,
+};
 use crate::world_object::{
-    MAX_USE_WITH_PLACEMENT_BYTES, MapItemRef, UseIntent, UseTarget, WorldObjectError,
-    WorldObjectTarget, decode_use_intent_target, encode_item_use_intent, encode_use_item_intent,
+    UseIntent, UseTarget, WorldObjectError, decode_use_intent_target, encode_item_use_intent,
+    encode_use_item_intent,
 };
 
 const PROTOCOL_REGISTRY: &str =
@@ -155,35 +160,79 @@ fn the_result_carries_the_new_dispositions_and_the_sealed_gate_message_within_fo
 }
 
 #[test]
-fn use_field_6_needs_capability_11_and_excludes_field_4() {
+fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
     let handle = ItemHandle::MIN;
     let intent = UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
-        use_with_map_item: Some(MapItemRef::Handle(ItemHandle::new(7).expect("handle"))),
+        use_with_map_item: Some(ItemHandle::new(u64::MAX).expect("handle")),
     };
     let bytes = encode_item_use_intent(&intent).expect("encode");
     assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
-    // Capabilities 4, 15 and 11 select it; without 11, or without 15, field 6 fails closed.
+    // Capabilities 4, 15 and 11 select the arm; without 11 or without 15 it fails closed.
     assert_eq!(
         decode_use_intent_target(&[4, 15, 11], &bytes),
         Ok(intent.clone())
     );
     assert!(decode_use_intent_target(&[4, 15], &bytes).is_err());
     assert!(decode_use_intent_target(&[4, 11], &bytes).is_err());
-    // Field 6 alone, with a world object, twice, with field 4, or with a zero handle.
+    // The entity arm is unchanged and still decodes without capability 11.
+    let creature = UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: Some(EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        }),
+        use_with_map_item: None,
+    };
+    let creature_bytes = encode_item_use_intent(&creature).expect("encode");
+    assert_eq!(
+        decode_use_intent_target(&[4, 15], &creature_bytes),
+        Ok(creature.clone())
+    );
+    assert_eq!(
+        decode_use_intent_target(&[4, 15, 11], &creature_bytes),
+        Ok(creature.clone())
+    );
+    // The arm alone (no field 2 or 5), with a world object target, twice, mixed with the entity
+    // arm, with a zero or missing handle, and as the retired top-level fields 6 and 7.
+    let mut arm = Vec::new();
+    push_message_field(&mut arm, 3, &[0x08, 0x07]);
     let mut alone = Vec::new();
-    push_message_field(&mut alone, 6, &[0x08, 0x07]);
+    push_message_field(&mut alone, 4, &arm);
+    let mut with_world_object = Vec::new();
+    push_message_field(&mut with_world_object, 1, &[0x0a, 1, b'a']);
+    push_message_field(&mut with_world_object, 4, &arm);
     let mut twice = bytes.clone();
-    twice.extend_from_slice(&bytes[bytes.len() - 4..]);
-    let mut with_creature = bytes.clone();
-    let mut creature = Vec::new();
-    push_message_field(&mut creature, 1, &[1; 16]);
-    push_varint_field(&mut creature, 2, 1);
-    push_message_field(&mut with_creature, 4, &creature);
+    twice.extend_from_slice(&bytes[bytes.len() - 6..]);
+    let mut mixed = Vec::new();
+    push_message_field(&mut mixed, 3, &[0x08, 0x07]);
+    push_message_field(&mut mixed, 1, &[1; 16]);
+    push_varint_field(&mut mixed, 2, 1);
+    let mut mixed_intent = encode_use_item_intent(handle);
+    push_message_field(&mut mixed_intent, 4, &mixed);
+    let mut zero_arm = Vec::new();
+    push_message_field(&mut zero_arm, 3, &[]);
     let mut zero = encode_use_item_intent(handle);
-    push_message_field(&mut zero, 6, &[]);
-    for payload in [alone, twice, with_creature, zero] {
+    push_message_field(&mut zero, 4, &zero_arm);
+    let mut zero_value = Vec::new();
+    push_message_field(&mut zero_value, 3, &[0x08, 0x00]);
+    let mut zero_handle = encode_use_item_intent(handle);
+    push_message_field(&mut zero_handle, 4, &zero_value);
+    let mut retired_6 = encode_use_item_intent(handle);
+    push_message_field(&mut retired_6, 6, &[0x08, 0x07]);
+    let mut retired_7 = encode_use_item_intent(handle);
+    push_message_field(&mut retired_7, 7, &[0x0a, 1, b'd']);
+    for payload in [
+        alone,
+        with_world_object,
+        twice,
+        mixed_intent,
+        zero,
+        zero_handle,
+        retired_6,
+        retired_7,
+    ] {
         assert!(
             decode_use_intent_target(&[4, 15, 11], &payload).is_err(),
             "{payload:?}"
@@ -196,60 +245,67 @@ fn use_field_6_needs_capability_11_and_excludes_field_4() {
                 identity: [1; 16],
                 generation: 1
             }),
-            use_with_map_item: Some(MapItemRef::Handle(handle)),
+            use_with_map_item: Some(handle),
         })
         .is_err()
     );
 }
 
 #[test]
-fn a_tool_or_key_names_a_handleless_map_item_by_placement_in_field_7() {
-    let door = |placement: &[u8], expected_revision| WorldObjectTarget {
-        placement: placement.to_vec(),
-        expected_revision,
+fn command_9_takes_the_ground_destination_under_capability_11_without_equipment() {
+    let source = ItemHandle::MIN.get();
+    let ground = ItemMoveIntent {
+        source: ItemHandle::MIN,
+        destination: ItemMoveDestination::Ground(WorldTilePosition {
+            x: -1_048_576,
+            y: 1_048_575,
+            floor: -32_768,
+        }),
     };
-    let intent = |target: WorldObjectTarget| UseIntent {
-        target: UseTarget::Item(ItemHandle::new(u64::MAX).expect("handle")),
-        use_with: None,
-        use_with_map_item: Some(MapItemRef::WorldObject(target)),
+    let equip = ItemMoveIntent {
+        source: ItemHandle::MIN,
+        destination: ItemMoveDestination::Equipment(EquipmentSlot::Head),
     };
-    for good in [
-        door(b"oteryn:placement/entry-door", 0),
-        door(b"oteryn:placement/entry-door", u64::MAX),
-        door(&[0xaa; MAX_USE_WITH_PLACEMENT_BYTES], u64::MAX),
+    let world = ItemMoveSelection {
+        world_interaction: true,
+        ..ItemMoveSelection::default()
+    };
+    let none = ItemMoveSelection::default();
+    let bytes = encode_item_move_intent_for(&ground, world).expect("ground under capability 11");
+    assert!(bytes.len() <= MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
+    assert_eq!(decode_item_move_intent_for(&bytes, world), Ok(ground));
+    // Capability 12 alone still admits it; neither capability refuses it.
+    assert_eq!(
+        decode_item_move_intent_with_equip_drop(&bytes, true),
+        Ok(ground)
+    );
+    assert!(decode_item_move_intent_for(&bytes, none).is_err());
+    assert!(encode_item_move_intent_for(&ground, none).is_err());
+    // Capability 11 does not admit the equipment destination: that stays with capability 12.
+    assert!(encode_item_move_intent_for(&equip, world).is_err());
+    let equip_bytes = encode_item_move_intent_for(
+        &equip,
+        ItemMoveSelection {
+            equip_drop: true,
+            ..ItemMoveSelection::default()
+        },
+    )
+    .expect("equipment under capability 12");
+    assert!(decode_item_move_intent_for(&equip_bytes, world).is_err());
+    assert!(source > 0);
+    // Results: BLOCKED (the refusal of a ground destination) is admitted, 10 and 11 are not.
+    for outcome in [ItemMoveOutcome::Moved, ItemMoveOutcome::Blocked] {
+        let bytes = encode_item_move_result_for(outcome, world).expect("result");
+        assert_eq!(decode_item_move_result_for(&bytes, world), Ok(outcome));
+    }
+    for outcome in [
+        ItemMoveOutcome::SlotMismatch,
+        ItemMoveOutcome::RequirementNotMet,
     ] {
-        let value = intent(good);
-        let bytes = encode_item_use_intent(&value).expect("encode");
-        assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
-        assert_eq!(decode_use_intent_target(&[4, 15, 11], &bytes), Ok(value));
-        // Without capability 11 the field fails closed.
-        assert!(decode_use_intent_target(&[4, 15], &bytes).is_err());
+        assert!(encode_item_move_result_for(outcome, world).is_err());
+        assert!(encode_item_move_result_for(outcome, none).is_err());
     }
-    assert_eq!(
-        encode_item_use_intent(&intent(door(&[1; MAX_USE_WITH_PLACEMENT_BYTES + 1], 1))),
-        Err(WorldObjectError::LimitExceeded)
-    );
-    assert_eq!(
-        encode_item_use_intent(&intent(door(b"", 1))),
-        Err(WorldObjectError::Malformed)
-    );
-    // Empty placement, both field 6 and 7, field 7 twice, and field 7 with a world object target.
-    let target = encode_use_item_intent(ItemHandle::MIN);
-    let mut empty = target.clone();
-    push_message_field(&mut empty, 7, &[0x10, 1]);
-    let mut both = encode_item_use_intent(&intent(door(b"d", 1))).expect("encode");
-    push_message_field(&mut both, 6, &[0x08, 0x07]);
-    let mut twice = encode_item_use_intent(&intent(door(b"d", 1))).expect("encode");
-    twice.extend_from_slice(&[0x3a, 5, 0x0a, 1, b'd', 0x10, 1]);
-    let mut with_world_object = Vec::new();
-    push_message_field(&mut with_world_object, 1, &[0x0a, 1, b'a']);
-    push_message_field(&mut with_world_object, 7, &[0x0a, 1, b'd']);
-    for payload in [empty, both, twice, with_world_object] {
-        assert!(
-            decode_use_intent_target(&[4, 15, 11], &payload).is_err(),
-            "{payload:?}"
-        );
-    }
+    assert!(encode_item_move_result_for(ItemMoveOutcome::Blocked, none).is_err());
 }
 
 #[test]
@@ -287,7 +343,8 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     assert!(SCHEMA.contains(&format!("At most {MAX_PUSH_INTENT_BYTES} bytes")));
     assert!(USE_SCHEMA.contains("uint32 gate_message_id = 2;"));
     assert!(!SCHEMA.contains("command type 9 (item_view_v1.proto), whose"));
-    assert!(USE_SCHEMA.contains("ItemTargetV1 use_with_map_item = 6;"));
-    assert!(USE_SCHEMA.contains("WorldObjectTargetV1 use_with_map_object = 7;"));
+    assert!(USE_SCHEMA.contains("UseWithV1 use_with = 4;"));
+    assert!(USE_SCHEMA.contains("ItemTargetV1 map_item = 3;"));
+    assert!(!USE_SCHEMA.contains("use_with_map_item = 6;"));
     assert!(USE_SCHEMA.contains("USE_DISPOSITION_NOT_POSSIBLE = 17;"));
 }

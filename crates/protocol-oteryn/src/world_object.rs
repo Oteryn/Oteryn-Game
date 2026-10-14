@@ -46,13 +46,11 @@ pub const SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1: u32 = 1;
 ///
 /// `ITEMUSE0-RL-03`: fields 4 and 5 keep this bound. The largest intent with them is field 2 (a
 /// 10-byte handle: 2 + 11 = 13) or field 5 (a 5-byte index: 2 + 6 = 8) plus field 4 (2 + 29 = 31),
-/// so 44 bytes; field 4 never combines with field 1.
+/// so 44 bytes; field 4 never combines with field 1. The `map_item` arm of field 4 (capability 11)
+/// is a handle (3 + 11 = 14 inside, 16 wrapped) and fits the same bound.
 pub const MAX_USE_INTENT_BYTES: usize = 529;
 /// The encoded `EntityRefV1` of field 4: identity (1 + 1 + 16) and generation (1 + 10).
 const MAX_USE_WITH_BYTES: usize = 29;
-/// Field 7 beside the largest field 2 (13 bytes): 3 (tag, length) + 3 (placement tag, length) + the
-/// placement + 11 (revision) <= 529 - 13, so at most 499 placement bytes.
-pub const MAX_USE_WITH_PLACEMENT_BYTES: usize = 499;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
 /// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs` to keep the repeated-field and
 /// over-bound decode failures distinct in tests.
@@ -97,26 +95,16 @@ pub enum UseTarget {
     ItemByDefinition(NonZeroU32),
 }
 
-/// The map item a tool or key is used on (capability 11): a movable base item by handle (field 6),
-/// or a map object without a handle by placement and revision (field 7), such as a door, which the
-/// map publishes as a base ordinal and which `UseTarget::WorldObject` already names.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MapItemRef {
-    Handle(ItemHandle),
-    WorldObject(WorldObjectTarget),
-}
-
-/// A decoded `UseIntentV1`: the target and field 4 `use_with`, the creature a potion is used on
-/// (absent means the user). Field 4 is accepted only under capability 15 and only with field 2 or 5.
-/// Fields 6 and 7 are the map item a tool or key is used on (WORLD-INTERACTION-0 §10.1), by handle
-/// or by placement: accepted only under capability 11, only with field 2 or 5, at most one of them
-/// once, and never together with field 4. The placement of field 7 is non-empty and at most
-/// `MAX_USE_WITH_PLACEMENT_BYTES`, so the intent stays within `MAX_USE_INTENT_BYTES`.
+/// A decoded `UseIntentV1`: the target and field 4 `use_with`, which is either the creature a potion
+/// is used on (`use_with`, absent means the user) or, under capability 11 (WORLD-INTERACTION-0
+/// §10.1), the map item a tool or key is used on (`use_with_map_item`, the `map_item` arm, field 3
+/// of the field 4 message). The two arms are exclusive. Field 4 is accepted only under capability
+/// 15, the map item arm only under capabilities 15 and 11, only with field 2 or 5, at most once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseIntent {
     pub target: UseTarget,
     pub use_with: Option<EntityRef>,
-    pub use_with_map_item: Option<MapItemRef>,
+    pub use_with_map_item: Option<ItemHandle>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -288,33 +276,23 @@ pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObject
             output
         }
     };
-    if let Some(creature) = &intent.use_with {
-        if creature.generation == 0 {
-            return Err(WorldObjectError::Malformed);
-        }
-        let mut inner = Vec::with_capacity(MAX_USE_WITH_BYTES);
-        push_bytes_field(&mut inner, 1, &creature.identity);
-        push_varint_field(&mut inner, 2, creature.generation);
-        push_bytes_field(&mut output, 4, &inner);
-    }
-    if let Some(map_item) = &intent.use_with_map_item {
-        if intent.use_with.is_some() {
-            return Err(WorldObjectError::Malformed);
-        }
-        match map_item {
-            MapItemRef::Handle(handle) => {
-                push_bytes_field(&mut output, 6, &encode_item_target(*handle));
+    match (&intent.use_with, &intent.use_with_map_item) {
+        (Some(_), Some(_)) => return Err(WorldObjectError::Malformed),
+        (Some(creature), None) => {
+            if creature.generation == 0 {
+                return Err(WorldObjectError::Malformed);
             }
-            MapItemRef::WorldObject(target) => {
-                if target.placement.is_empty() {
-                    return Err(WorldObjectError::Malformed);
-                }
-                if target.placement.len() > MAX_USE_WITH_PLACEMENT_BYTES {
-                    return Err(WorldObjectError::LimitExceeded);
-                }
-                push_bytes_field(&mut output, 7, &encode_world_object_target(target)?);
-            }
+            let mut inner = Vec::with_capacity(MAX_USE_WITH_BYTES);
+            push_bytes_field(&mut inner, 1, &creature.identity);
+            push_varint_field(&mut inner, 2, creature.generation);
+            push_bytes_field(&mut output, 4, &inner);
         }
+        (None, Some(handle)) => {
+            let mut inner = Vec::with_capacity(MAX_USE_WITH_BYTES);
+            push_bytes_field(&mut inner, 3, &encode_item_target(*handle));
+            push_bytes_field(&mut output, 4, &inner);
+        }
+        (None, None) => {}
     }
     Ok(output)
 }
@@ -345,10 +323,14 @@ fn decode_item_by_definition(input: &[u8]) -> Result<NonZeroU32, WorldObjectErro
     NonZeroU32::new(index.unwrap_or(0)).ok_or(WorldObjectError::Malformed)
 }
 
-/// Field 4, an `EntityRefV1`: exactly 16 identity bytes and a non-zero generation.
-fn decode_use_with(input: &[u8]) -> Result<EntityRef, WorldObjectError> {
+/// Field 4: an `EntityRefV1` (exactly 16 identity bytes and a non-zero generation) or, under
+/// capability 11, the `map_item` arm (field 3, an item handle). The two never combine.
+fn decode_use_with(
+    input: &[u8],
+    map_item_use: bool,
+) -> Result<(Option<EntityRef>, Option<ItemHandle>), WorldObjectError> {
     let mut cursor = 0;
-    let (mut identity, mut generation) = (None, None);
+    let (mut identity, mut generation, mut map_item) = (None, None, None);
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x0a if identity.is_none() => {
@@ -358,21 +340,29 @@ fn decode_use_with(input: &[u8]) -> Result<EntityRef, WorldObjectError> {
                 identity = Some(bytes);
             }
             0x10 if generation.is_none() => generation = Some(read_varint(input, &mut cursor)?),
+            0x1a if map_item_use && map_item.is_none() => {
+                map_item = Some(map_item_handle(read_bytes(input, &mut cursor)?)?);
+            }
             _ => return Err(WorldObjectError::Malformed),
         }
     }
-    Ok(EntityRef {
-        identity: identity.ok_or(WorldObjectError::Malformed)?,
-        generation: generation
-            .filter(|generation| *generation != 0)
-            .ok_or(WorldObjectError::Malformed)?,
-    })
+    match (identity, generation, map_item) {
+        (None, None, Some(handle)) => Ok((None, Some(handle))),
+        (Some(identity), Some(generation), None) if generation != 0 => Ok((
+            Some(EntityRef {
+                identity,
+                generation,
+            }),
+            None,
+        )),
+        _ => Err(WorldObjectError::Malformed),
+    }
 }
 
 /// Exactly one target. Field 2 is accepted only when the session selected capability 4, and fields
 /// 4 and 5 only when it selected capability 15 (ITEM-USE-0 §3); without them, and always for the
 /// reserved field 3, the intent fails closed. Field 4 needs field 2 or 5: alone or with field 1 it
-/// fails closed. Field 6 follows the same rule under capabilities 15 and 11 and excludes field 4.
+/// fails closed. Its `map_item` arm additionally needs capability 11.
 pub fn decode_use_intent_target(
     selected_capabilities: &[u32],
     payload: &[u8],
@@ -388,24 +378,9 @@ pub fn decode_use_intent_target(
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         match key {
-            0x22 if item_use && use_with.is_none() => {
-                use_with = Some(decode_use_with(read_bytes(payload, &mut cursor)?)?);
-            }
-            0x32 if map_item_use && use_with_map_item.is_none() => {
-                use_with_map_item = Some(MapItemRef::Handle(map_item_handle(read_bytes(
-                    payload,
-                    &mut cursor,
-                )?)?));
-            }
-            0x3a if map_item_use && use_with_map_item.is_none() => {
-                let target = decode_world_object_target(read_bytes(payload, &mut cursor)?)?;
-                if target.placement.is_empty() {
-                    return Err(WorldObjectError::Malformed);
-                }
-                if target.placement.len() > MAX_USE_WITH_PLACEMENT_BYTES {
-                    return Err(WorldObjectError::LimitExceeded);
-                }
-                use_with_map_item = Some(MapItemRef::WorldObject(target));
+            0x22 if item_use && use_with.is_none() && use_with_map_item.is_none() => {
+                (use_with, use_with_map_item) =
+                    decode_use_with(read_bytes(payload, &mut cursor)?, map_item_use)?;
             }
             0x2a if item_use && target.is_none() => {
                 target = Some(UseTarget::ItemByDefinition(decode_item_by_definition(
@@ -427,9 +402,8 @@ pub fn decode_use_intent_target(
         }
     }
     let target = target.ok_or(WorldObjectError::Malformed)?;
-    let has_use_with = use_with.is_some() || use_with_map_item.is_some();
-    if (has_use_with && matches!(target, UseTarget::WorldObject(_)))
-        || (use_with.is_some() && use_with_map_item.is_some())
+    if (use_with.is_some() || use_with_map_item.is_some())
+        && matches!(target, UseTarget::WorldObject(_))
     {
         return Err(WorldObjectError::Malformed);
     }
@@ -1305,7 +1279,11 @@ mod tests {
             include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
         for line in [
             "ItemByDefinitionV1 item_by_definition = 5;",
-            "oteryn.protocol.v1.world_spatial.EntityRefV1 use_with = 4;",
+            "UseWithV1 use_with = 4;",
+            "message UseWithV1 {",
+            "bytes identity = 1;",
+            "uint64 generation = 2;",
+            "oteryn.protocol.v1.item_view.ItemTargetV1 map_item = 3;",
             "reserved 3;",
             "USE_DISPOSITION_REQUIREMENT_NOT_MET = 7;",
             "USE_DISPOSITION_EXHAUSTED = 8;",

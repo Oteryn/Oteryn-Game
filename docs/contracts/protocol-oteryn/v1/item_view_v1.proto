@@ -120,7 +120,7 @@ message ItemMoveIntentV1 {
     MainBackpackDestinationV1 main_backpack = 2;
     // Capability 12 only.
     EquipmentDestinationV1 equipment = 3;
-    // Capability 12 only.
+    // Capability 12, or capability 11 WORLD_INTERACTION_V1 (a map-item or Ground source).
     WorldTilePositionV1 ground = 4;
     // Capability 14 only.
     ContainerDestinationV1 container = 5;
