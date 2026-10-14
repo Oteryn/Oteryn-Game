@@ -110,7 +110,7 @@ def evaluate(snapshot, now: datetime | None = None) -> dict:
     try:
         return _evaluate(snapshot, now or datetime.now(timezone.utc))
     except (AttributeError, KeyError, TypeError, ValueError) as exc:
-        blocker = _blocker("INPUT_INCOMPLETE", "control_plane", "complete live readback", repr(exc))
+        blocker = _blocker("INPUT_INCOMPLETE", "control_plane", "corrected live readback, re-read and re-evaluated by the control plane", repr(exc))
         return {"verdict": "BLOCKED", "blockers": [blocker], "ready_at": None}
 
 
