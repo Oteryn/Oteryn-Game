@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: WORLDINT-WIRE-1
-title: "WORLDINT-WIRE-1: World interaction wire (capability 11, PUSH_INTENT 15, USE field 6)"
+title: "WORLDINT-WIRE-1: World interaction wire (capability 11, PUSH_INTENT 15, USE map_item arm)"
 mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -10,10 +10,10 @@ base_branch: main
 branch: claude/loop-world-1-worldint-wire-1-20261013
 issue: null
 governing_issue: 1622
-pr: null
+pr: 2094
 base_sha: 39f77b53
 created_at: 2026-10-13
-updated_at: 2026-10-13
+updated_at: 2026-10-14
 execution_policy: continuous_progress
 owned_paths:
   - crates/protocol-oteryn/src/world_interaction.rs
@@ -24,6 +24,19 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/capabilities.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - apps/game-server/src/gameplay_transport/connection.rs
+  - apps/game-server/src/gameplay_transport/container_view_tests.rs
+  - apps/game-server/src/gameplay_transport/item_move_tests.rs
+  - apps/game-server/src/gameplay_transport/item_view_tests.rs
+  - apps/game-server/src/gameplay_transport/map_door.rs
+  - apps/game-server/src/gameplay_transport/mod.rs
+  - apps/game-server/src/gameplay_transport/qualification.rs
+  - apps/client/src/play.rs
+  - crates/protocol-oteryn/src/container_tree_tests.rs
+  - crates/session/src/lib.rs
+  - tools/dev-client/src/lib.rs
+  - tools/synthetic-client-harness/src/live/model.rs
+  - tools/synthetic-client-harness/src/live/tests.rs
+  - docs/contracts/protocol-oteryn/v1/item_view_v1.proto
   - docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto
   - docs/contracts/protocol-oteryn/v1/world_object_v1.proto
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
@@ -67,8 +80,11 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 ## Validation
 
 - `cargo fmt --all --check`: pass
-- `cargo test -p oteryn-protocol-oteryn`: pass (224)
-- `cargo test -p oteryn-game-server --lib gameplay_transport`: pass (544)
+- `cargo test -p oteryn-protocol-oteryn`: pass (225)
+- `cargo test -p oteryn-game-server --lib gameplay_transport`: pass (546)
+- `cargo test -p oteryn-session`: pass (60); synthetic harness 36; dev-client 34
+- `python tools/agents/validate_governance.py`: pass ("Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy documents and 9 project lanes.")
+- `python -m unittest discover -s tools/agents/tests`: pass ("Ran 60 tests ... OK")
 - `cargo clippy` on both crates: no findings in the changed files
 - `oteryn-architecture-check workspace .`: pass
 
