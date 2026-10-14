@@ -444,11 +444,22 @@ fn the_startup_floor_depends_on_the_database_clock_only() {
     assert_eq!(window.receive(&ring, CHANNEL, &text, floor + 1), Ok(line));
 }
 
+/// Stores the lease a listener owes at `db_now`, if any, and returns the lease now stored.
+fn renew(window: &mut ReplayWindow, db_now: u64) -> u64 {
+    if let Some(lease) = window.lease_due(db_now) {
+        window.lease_stored(lease);
+    }
+    window.leased_until.expect("a lease is stored")
+}
+
 /// A window resumed after a restart with its first lease stored, as a listener runs it.
 fn resumed(db_now: u64, stored: Option<u64>) -> (ReplayWindow, u64) {
     let mut window = ReplayWindow::resume(db_now, stored);
-    let lease = window.lease_due(db_now).expect("a new window owes a lease");
-    window.lease_stored(lease);
+    assert!(
+        window.lease_due(db_now).is_some(),
+        "a new window owes a lease"
+    );
+    let lease = renew(&mut window, db_now);
     (window, lease)
 }
 
@@ -494,7 +505,8 @@ fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
     let old_only = self::ring(&[(1, 0)]);
     let at_expiry = added + KEY_OVERLAP_MICROS;
     // The old process sees the old key retire, under a lease stored at that reading.
-    let (mut before, stored) = resumed(at_expiry - FRESHNESS_MICROS - 1, None);
+    let (mut before, _) = resumed(at_expiry - FRESHNESS_MICROS - 1, None);
+    let stored = renew(&mut before, at_expiry);
     let probe = seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
     assert_eq!(
         before.receive(&ring, CHANNEL, &probe, at_expiry),
@@ -506,8 +518,20 @@ fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
         let (mut after, _) = resumed(rolled_back, Some(stored));
         let forged =
             seal_with_nonce(&old_only, CHANNEL, &room_line(2, rolled_back), NONCE).expect("seal");
+        // The rolled-back reading is far behind the resumed clock, so no lease covers it.
+        assert!(
+            matches!(
+                after.receive(&ring, CHANNEL, &forged, rolled_back),
+                Err(RelayError::Unleased | RelayError::UnknownKey)
+            ),
+            "rolled back to {rolled_back}"
+        );
+        // Once a lease covers the resumed clock the old key is still retired.
+        let floor = after.floor;
+        renew(&mut after, floor);
+        let late = seal_with_nonce(&old_only, CHANNEL, &room_line(3, floor), NONCE).expect("seal");
         assert_eq!(
-            after.receive(&ring, CHANNEL, &forged, rolled_back),
+            after.receive(&ring, CHANNEL, &late, floor),
             Err(RelayError::UnknownKey),
             "rolled back to {rolled_back}"
         );
@@ -518,7 +542,8 @@ fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
 fn a_future_stamped_line_is_not_delivered_again_after_a_restart_and_a_clock_rollback() {
     let ring = ring(&[(1, 0)]);
     // The old process admits a line stamped the full future allowance ahead of its clock.
-    let (mut before, stored) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let (mut before, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let stored = renew(&mut before, NOW);
     let line = room_line(1, NOW + FRESHNESS_MICROS);
     let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
     assert_eq!(before.receive(&ring, CHANNEL, &text, NOW), Ok(line));
@@ -528,6 +553,16 @@ fn a_future_stamped_line_is_not_delivered_again_after_a_restart_and_a_clock_roll
         assert!(
             matches!(
                 after.receive(&ring, CHANNEL, &text, ready),
+                Err(RelayError::Stale | RelayError::BeforeStart | RelayError::Unleased)
+            ),
+            "ready at {ready}"
+        );
+        // Nor once a lease covers the resumed clock.
+        let floor = after.floor;
+        renew(&mut after, floor);
+        assert!(
+            matches!(
+                after.receive(&ring, CHANNEL, &text, floor),
                 Err(RelayError::Stale | RelayError::BeforeStart)
             ),
             "ready at {ready}"
@@ -547,4 +582,59 @@ fn a_resumed_window_starts_past_the_stored_lease() {
         ReplayWindow::resume(NOW, Some(NOW - RELAY_LEASE_MICROS)).floor,
         startup_floor(NOW)
     );
+}
+
+#[test]
+fn a_rolling_restart_does_not_push_the_lease_ahead() {
+    let ring = ring(&[(1, 0)]);
+    // The listeners of one World restart one after another, 5 s apart. The durable lease is
+    // stored with `GREATEST(stored, new)`; each listener renews it until it stops.
+    let step = 5_000_000;
+    let cost = FRESHNESS_MICROS + RELAY_LEASE_MICROS + 1;
+    let mut durable: Option<u64> = None;
+    let mut running: Option<ReplayWindow> = None;
+    let mut db_now = NOW;
+    for restart in 0..20_u64 {
+        db_now = NOW + restart * step;
+        if let Some(mut old) = running.take() {
+            let lease = renew(&mut old, db_now);
+            durable = durable.max(Some(lease));
+        }
+        let (window, lease) = resumed(db_now, durable);
+        durable = durable.max(Some(lease));
+        // The durable lease and the restart cost stay bounded, however many restarts came before.
+        assert!(
+            durable <= Some(db_now + RELAY_LEASE_MICROS),
+            "lease after restart {restart}"
+        );
+        assert!(
+            window.floor <= db_now + cost,
+            "floor after restart {restart}"
+        );
+        running = Some(window);
+    }
+    // Once the documented cost has passed, the last listener delivers a legitimate line.
+    let mut window = running.expect("a listener runs");
+    let later = db_now + cost;
+    renew(&mut window, later);
+    let line = room_line(1, later);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(window.receive(&ring, CHANNEL, &text, later), Ok(line));
+}
+
+#[test]
+fn debug_never_shows_a_private_recipient() {
+    let recipient = [201_u8; ID_BYTES];
+    let destination = RelayDestination::Private { recipient };
+    let line = RelayLine {
+        destination,
+        ..room_line(1, NOW)
+    };
+    for rendered in [format!("{line:?}"), format!("{destination:?}")] {
+        assert!(rendered.contains("Private"));
+        assert!(!rendered.contains("201"));
+        assert!(!rendered.contains(&format!("{recipient:?}")));
+    }
+    // A room is not private and stays readable.
+    assert!(format!("{:?}", room_line(1, NOW)).contains("English"));
 }

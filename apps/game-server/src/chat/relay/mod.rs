@@ -102,12 +102,22 @@ impl Display for RelayError {
 impl Error for RelayError {}
 
 /// Where a relayed line goes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelayDestination {
     /// A private message, keyed by the recipient CharacterId (server side only).
     Private { recipient: [u8; ID_BYTES] },
     /// A World room: each node delivers to its sessions that opened it.
     Room { room: ChatRoom },
+}
+
+// The recipient CharacterId is player-linked; it never reaches a log through `Debug` (FND-02 §20).
+impl fmt::Debug for RelayDestination {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Private { .. } => f.debug_struct("Private").finish_non_exhaustive(),
+            Self::Room { room } => f.debug_struct("Room").field("room", room).finish(),
+        }
+    }
 }
 
 /// The plaintext of one relayed line (CHAT-0 §5 layout).
@@ -121,7 +131,8 @@ pub(crate) struct RelayLine {
     pub(crate) text: String,
 }
 
-// Text is private chat; it never reaches a log through `Debug` (FND-02 §20).
+// Text and the sender are private chat and the recipient is redacted by
+// `RelayDestination::Debug`; none of them reaches a log through `Debug` (FND-02 §20).
 impl fmt::Debug for RelayLine {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("RelayLine")
@@ -463,8 +474,10 @@ pub(crate) struct ReplayWindow {
 /// part: `sent_at` and `now_micros` are both database time.
 ///
 /// Deliberate availability cost: for up to `FRESHNESS_MICROS` plus `RELAY_LEASE_MICROS` after a
-/// restart every line is `BeforeStart`, legitimate ones included. Chat is best-effort and a restart
-/// already drops the connection.
+/// restart every line is `BeforeStart`, legitimate ones included. The bound holds however many
+/// listeners of the World restart in a row, because a stored lease is at most `RELAY_LEASE_MICROS`
+/// past the database reading it was taken at ([`ReplayWindow::lease_due`]). Chat is best-effort
+/// and a restart already drops the connection.
 pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
     db_now_micros
         .saturating_add(FRESHNESS_MICROS)
@@ -505,8 +518,16 @@ impl ReplayWindow {
     /// the stored lease still covers at least half of `RELAY_LEASE_MICROS` ahead. After the store
     /// commits the listener calls [`Self::lease_stored`] with the same value; until then lines past
     /// the old lease are `Unleased`.
+    ///
+    /// The lease follows the database reading itself, never the window's clock: a resumed window's
+    /// clock starts past the lease an earlier listener stored, so a lease taken from it would move
+    /// the durable lease further ahead on every restart and a rolling restart would compound it.
+    /// Taken from the reading, the stored lease stays within `RELAY_LEASE_MICROS` of the database
+    /// clock however many listeners restart, and a resumed window stays `Unleased` until the reading
+    /// is within `RELAY_LEASE_MICROS` of its floor. The window still acts only on clock readings at
+    /// most a stored lease, which is all the restart guarantees need.
     pub(crate) fn lease_due(&mut self, now_micros: u64) -> Option<u64> {
-        let now_micros = self.observe(now_micros);
+        self.observe(now_micros);
         let renew_at = now_micros.saturating_add(RELAY_LEASE_MICROS / 2);
         if self.leased_until.is_some_and(|until| until >= renew_at) {
             return None;
