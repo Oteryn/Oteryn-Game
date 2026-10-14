@@ -42,7 +42,7 @@ external_repositories: []
 ## Acceptance criteria
 
 - [x] The acceptance decision records the owner, date and basis.
-- [x] No rule text changes beyond §3.5 and COND0-RL-01. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree.
+- [x] No rule text changes beyond §3.5 and COND0-RL-01. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree; `agony` is excluded from `SUPPRESS` in both documents (it cannot be cured, blocked or resisted), and §4.1 takes creature base speed from content with no draw (CREATURE-MOVE-1-PACKET-1 §1.2).
 - [x] Every child the brief defines (COND-CONTENT-2 and COND-WIRE-2 included) is in the mechanics plan's MAGIC-COND-1 graph with its class and prerequisites.
 
 ## Excluded scope
