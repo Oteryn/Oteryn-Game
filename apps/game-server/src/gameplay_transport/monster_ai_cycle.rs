@@ -432,9 +432,10 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
 }
 
 /// CREATURE-MOVE-1 (CREATURE-AI-0 §5.3, R2): whether a creature may step onto `cell`. It is a
-/// Walkable cell of the qualified room, no door cell (open or closed) covers it, and it is neither a
-/// protection-zone nor a floor-change tile. A creature never opens a door and never changes
-/// floors by a step. The check reads only; the step is committed by the Channel owner.
+/// Walkable cell of the qualified room, no door cell (open or closed) covers it, it is neither a
+/// protection-zone nor a floor-change tile, and it is no bundle teleport (WORLD-INTERACTION-0
+/// §6.5: monsters never enter one). A creature never opens a door and never changes floors by a
+/// step. The check reads only; the step is committed by the Channel owner.
 ///
 /// LIMIT (CREATURE-MOVE-1c): durable ground items and fields (Magic Wall, Wild Growth) are not
 /// consulted here. No SQL, spell lane or durable-item snapshot enters the AI pass; the step uses
@@ -465,6 +466,7 @@ fn creature_cell_admissible(
     cell_open(
         cells.index().lookup(cells.scope(), target) == Ok(crate::content::CollisionClass::Walkable),
         doors.contains(&target),
+        crate::map::floor::is_teleport(cells, target),
         tile,
     )
 }
@@ -490,10 +492,10 @@ fn bundle_cells(cells: &crate::content::NativeEntryMovementCells) -> bool {
 
 /// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
 /// `None` when the tile facts are unknown, which refuses (fail closed, like the think pass).
-const fn cell_open(walkable: bool, door: bool, tile: Option<(bool, bool)>) -> bool {
+const fn cell_open(walkable: bool, door: bool, teleport: bool, tile: Option<(bool, bool)>) -> bool {
     match tile {
         Some((protection_zone, floor_change)) => {
-            walkable && !door && !protection_zone && !floor_change
+            walkable && !door && !teleport && !protection_zone && !floor_change
         }
         None => false,
     }
@@ -934,21 +936,67 @@ mod tests {
     /// CREATURE-MOVE-1: a creature steps only onto an open walkable ordinary cell.
     #[test]
     fn creature_steps_are_admitted_only_onto_open_walkable_cells() {
-        assert!(cell_open(true, false, Some((false, false))));
-        assert!(!cell_open(false, false, Some((false, false))), "blocked");
-        assert!(!cell_open(true, true, Some((false, false))), "closed door");
+        assert!(cell_open(true, false, false, Some((false, false))));
+        assert!(
+            !cell_open(false, false, false, Some((false, false))),
+            "blocked"
+        );
+        assert!(
+            !cell_open(true, true, false, Some((false, false))),
+            "closed door"
+        );
         // `doors` holds every door cell, open or closed, so an open doorway is refused too: a
         // creature standing there would not count in the door-close occupancy.
         assert!(
-            !cell_open(true, true, Some((false, false))),
+            !cell_open(true, true, false, Some((false, false))),
             "open door cell (CREATURE-DOOR-1)"
         );
         assert!(
-            !cell_open(true, false, Some((true, false))),
+            !cell_open(true, false, false, Some((true, false))),
             "protection zone"
         );
-        assert!(!cell_open(true, false, Some((false, true))), "floor change");
-        assert!(!cell_open(true, false, None), "unknown tile facts");
+        assert!(
+            !cell_open(true, false, false, Some((false, true))),
+            "floor change"
+        );
+        // WORLD-INTERACTION-0 §6.5: monsters never enter a teleport tile.
+        assert!(
+            !cell_open(true, false, true, Some((false, false))),
+            "teleport"
+        );
+        assert!(!cell_open(true, false, false, None), "unknown tile facts");
+    }
+
+    /// NEWHAVEN-TELEPORT-1 (WORLD-INTERACTION-0 §6.5): on a bundle World a creature never steps
+    /// onto a teleport tile, while an ordinary grass tile of the same bundle admits it.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_creature_never_steps_onto_a_bundle_teleport() {
+        use crate::foundation::{ChannelId, WorldId};
+        use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let (bytes, load) = teleport_bundle();
+        let booted = crate::map::boot::boot(&bytes, &floor_pins(load), world, channel, floor_items)
+            .expect("boot");
+        let cells = booted
+            .movement_cells(room.movement_cells())
+            .expect("bundle cells");
+        let none = std::collections::BTreeSet::new();
+        let at = |x, y| MovementLocalPosition { x, y, floor: 8 };
+        assert!(creature_cell_admissible(&cells, &none, at(2, 0)));
+        assert!(!creature_cell_admissible(&cells, &none, at(0, 1)));
+        assert!(crate::map::floor::is_teleport(
+            &cells,
+            LogicalCell { x: 0, y: 1, z: 8 }
+        ));
+        assert!(!crate::map::floor::is_teleport(
+            &cells,
+            LogicalCell { x: 2, y: 0, z: 8 }
+        ));
     }
 
     /// CREATURE-MOVE-1: a cell outside the qualified room is refused whatever the doors say.

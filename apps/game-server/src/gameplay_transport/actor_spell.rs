@@ -3907,7 +3907,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now_us: u64,
         direction: crate::movement::CardinalStep,
-        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
         contact: Option<CreatureFieldContact>,
