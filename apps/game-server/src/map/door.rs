@@ -223,20 +223,6 @@ impl DoorBook {
             .any(Door::solid)
     }
 
-    /// The tiles whose door entry is solid in its current state, ascending: the closed doors a
-    /// teleport landing must not relocate a player onto (WORLD-INTERACTION-0 §6.6).
-    pub(crate) fn solid_tiles(&self) -> Vec<TilePos> {
-        let mut tiles: Vec<TilePos> = self
-            .doors
-            .iter()
-            .filter(|door| door.solid())
-            .filter_map(|door| super::view::placement_of(door.key).map(|(pos, _)| pos))
-            .collect();
-        tiles.sort_unstable();
-        tiles.dedup();
-        tiles
-    }
-
     /// Whether any door entry of `pos` exists.
     pub fn at(&self, pos: TilePos) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {

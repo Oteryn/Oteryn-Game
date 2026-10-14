@@ -110,7 +110,7 @@ pub(crate) fn step_in_channel(
     session: GameSessionId,
     now_us: u64,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     equipment_delta: Option<i32>,
 ) -> StepInChannel {
     step_in_channel_with_source_step(
@@ -139,7 +139,7 @@ pub(crate) fn step_in_channel_with_source_step(
     session: GameSessionId,
     now_us: u64,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     equipment_delta: Option<i32>,
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
@@ -162,7 +162,7 @@ pub(crate) fn step_in_channel_with_source_step(
         let speed = baseline_speed(runtime, actor, session, now_us);
         if let Some(proof) = prepared_source_step {
             let position = proof.destination();
-            if blocking.contains(&cell(position)) {
+            if blocking.blocks(cell(position)) {
                 return failure(MovementError::Blocked);
             }
             let duration = duration_onto(&proof, position, speed)?;
@@ -245,7 +245,7 @@ pub(crate) fn step_in_channel_with_source_step(
         y,
         floor: pos.floor,
     });
-    if blocking.contains(&cell(actual_destination)) {
+    if blocking.blocks(cell(actual_destination)) {
         return failure(MovementError::Blocked);
     }
     let duration = match &source_step {
@@ -290,7 +290,7 @@ fn bundle_step(
     actor: ExactActorRef,
     session: GameSessionId,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     speed: Option<u16>,
     expected: MovementPositionSnapshot,
 ) -> StepInChannel {
@@ -303,7 +303,7 @@ fn bundle_step(
         runtime, cells, actor, session, expected, direction, pz_blocked, blocking,
     )?;
     let onto = proof.destination();
-    if blocking.contains(&cell(onto)) {
+    if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
     let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
@@ -319,7 +319,7 @@ fn baseline_step(
     actor: ExactActorRef,
     session: GameSessionId,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     speed: Option<u16>,
 ) -> StepInChannel {
     let expected = runtime
@@ -344,7 +344,7 @@ fn baseline_step(
             runtime, cells, actor, session, expected, direction,
         )?;
         let p = proof.destination();
-        if blocking.contains(&cell(p)) {
+        if blocking.blocks(cell(p)) {
             return Err(MovementError::Blocked);
         }
         let duration = duration_onto(&proof, p, speed)?;
@@ -373,7 +373,7 @@ fn baseline_step(
         y,
         floor: pos.floor,
     };
-    if blocking.contains(&cell(onto)) {
+    if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
     let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
@@ -768,6 +768,7 @@ mod tests {
     fn map_floor_a_proof_is_bound_to_the_position_it_was_made_for() {
         let (mut runtime, mut states, cells, actor, session) = bundle_owner();
         let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        let no_doors = std::collections::BTreeSet::new();
         let proof = crate::map::floor::prepare_bundle_step(
             &runtime,
             &cells,
@@ -776,7 +777,7 @@ mod tests {
             expected,
             CardinalStep::East,
             false,
-            &std::collections::BTreeSet::new(),
+            &no_doors,
         )
         .unwrap();
         assert_eq!(proof.destination().floor, 7);
@@ -1067,7 +1068,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -1125,7 +1126,7 @@ mod creature_field_step_tests {
                     session,
                     10,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -1144,7 +1145,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::West,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -1177,7 +1178,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -1198,7 +1199,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)

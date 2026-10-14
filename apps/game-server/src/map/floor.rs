@@ -145,6 +145,29 @@ impl FloorTable {
 /// `(x, y, legacy z)`.
 pub(crate) type Cell = (i32, i32, i32);
 
+/// Whether a cell is closed to an actor by a dynamic fact (a closed door). A bundle step asks
+/// only the few cells it considers, so an implementation answers by lookup, not by a set built
+/// per step.
+pub(crate) trait CellBlocker: Sync {
+    fn blocks(&self, cell: LogicalCell) -> bool;
+}
+
+impl CellBlocker for BTreeSet<LogicalCell> {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        self.contains(&cell)
+    }
+}
+
+/// The closed bundle doors, read live through the indexed door lookup. The native floor is the
+/// legacy `z` negated.
+pub(crate) struct BundleDoors<'a>(pub(crate) &'a super::door::DoorBook);
+
+impl CellBlocker for BundleDoors<'_> {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
+    }
+}
+
 fn pos(x: i32, y: i32, z: i32) -> Option<TilePos> {
     if !(0..=MAX_Z).contains(&z) {
         return None;
@@ -322,11 +345,11 @@ pub(crate) fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -
 fn landable_of<'a>(
     cells: &'a NativeEntryMovementCells,
     pz_blocked: bool,
-    closed: &'a BTreeSet<LogicalCell>,
+    closed: &'a dyn CellBlocker,
 ) -> impl Fn(Cell) -> bool + 'a {
     move |(x, y, z)| {
         let at = LogicalCell { x, y, z };
-        !closed.contains(&at)
+        !closed.blocks(at)
             && (!pz_blocked
                 || cells
                     .spell_tiles()
@@ -362,7 +385,7 @@ pub(crate) struct BundleStepProof<'a> {
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     pz_blocked: bool,
-    closed: BTreeSet<LogicalCell>,
+    closed: &'a dyn CellBlocker,
     destination: MovementLocalPosition,
 }
 
@@ -381,7 +404,7 @@ pub(crate) fn prepare_bundle_step<'a>(
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
     pz_blocked: bool,
-    closed: &BTreeSet<LogicalCell>,
+    closed: &'a dyn CellBlocker,
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected)?;
@@ -401,7 +424,7 @@ pub(crate) fn prepare_bundle_step<'a>(
         expected,
         direction,
         pz_blocked,
-        closed: closed.clone(),
+        closed,
         destination,
     })
 }
@@ -436,7 +459,7 @@ fn destination(
     origin: MovementLocalPosition,
     direction: CardinalStep,
     pz_blocked: bool,
-    closed: &BTreeSet<LogicalCell>,
+    closed: &dyn CellBlocker,
 ) -> Result<MovementLocalPosition, MovementError> {
     let floor = i32::from(origin.floor);
     // A closed door blocks the entered tile and every tile a floor change resolves onto
@@ -444,7 +467,7 @@ fn destination(
     // teleport destination.
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.contains(&LogicalCell {
+        if closed.blocks(LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
@@ -482,7 +505,7 @@ impl BundleStepProof<'_> {
             self.expected.position(),
             self.direction,
             self.pz_blocked,
-            &self.closed,
+            self.closed,
         )?;
         if observed != self.destination {
             return Err(MovementError::SnapshotMismatch);
