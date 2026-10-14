@@ -51,11 +51,12 @@ use super::world_object::{
 };
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
-    ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+    ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
     VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
-    decode_step_intent, encode_step_outcome, encode_visibility_delta, encode_visibility_snapshot,
-    encode_world_spatial, moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
+    decode_step_intent, encode_step_outcome, encode_visibility_delta_lit,
+    encode_visibility_snapshot_lit, encode_world_spatial, moved_step_wait_ms,
+    step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::chat::EGRESS_MAX_LINES;
@@ -64,6 +65,9 @@ use crate::foundation::{
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
 use crate::movement::pacing::StepPacer;
+use crate::world_clock::{
+    DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, WorldClockDeltaPacer, WorldClockSource,
+};
 use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
@@ -105,6 +109,10 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
     STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
+};
+use oteryn_protocol_oteryn::world_clock::{
+    CAPABILITY_WORLD_LIGHT_V1, DELTA_TYPE_WORLD_CLOCK_V1, SNAPSHOT_TYPE_WORLD_CLOCK_V1,
+    STATE_DOMAIN_WORLD_CLOCK, WorldClock, encode_world_clock,
 };
 use oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
@@ -211,6 +219,10 @@ pub(crate) struct SessionContinuity {
     /// NPC-CMD-1a: the last domain 7 and 8 revisions sent. Used only with capability 3; a resume
     /// or channel transfer carries them and the next snapshot follows them.
     pub(crate) npc: NpcContinuity,
+    /// CLOCK-1: the last domain 18 revision sent. Used only with capability 19; it is cumulative
+    /// per GameSession, so a resume or channel transfer carries it and the next snapshot follows
+    /// it.
+    pub(crate) world_clock_revision: u64,
 }
 
 impl SessionContinuity {
@@ -242,6 +254,7 @@ impl SessionContinuity {
             conversation_revision: 0,
             window_revision: 0,
         },
+        world_clock_revision: 0,
     };
 }
 
@@ -382,6 +395,8 @@ pub(crate) trait FreshAdmissionAuthority {
                     position: own.actor_position,
                     revision: 0,
                 }],
+                lights: EntityLights::new(),
+                observed_at_ms: 0,
             })
         }
     }
@@ -422,6 +437,12 @@ pub(crate) trait FreshAdmissionAuthority {
     /// [`step_wait_receipts_enabled`] (`OTERYN_STEP_WAIT_RECEIPTS=1`). Read once per connection.
     fn step_wait_receipts(&self) -> bool {
         step_wait_receipts_enabled()
+    }
+
+    /// CLOCK-1 (§11.2): the UTC time fact the World clock is read at, in milliseconds. `None`
+    /// when it cannot be read: a session that selected capability 19 then fails closed.
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        crate::world_clock::now_utc_ms()
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
@@ -1239,6 +1260,7 @@ fn visibility_frames(
     sequence: u64,
     revision: u64,
     selected: &[u32],
+    lights: &EntityLights,
     update: &VisibilityUpdate,
 ) -> Option<(Vec<Vec<u8>>, u64, u64)> {
     match update {
@@ -1246,7 +1268,8 @@ fn visibility_frames(
         VisibilityUpdate::Delta(delta) => {
             let (delta_sequence, new_revision) =
                 (sequence.checked_add(1)?, revision.checked_add(1)?);
-            let (delta_type, payload) = encode_visibility_delta(selected, delta).ok()?;
+            let (delta_type, payload) =
+                encode_visibility_delta_lit(selected, delta, lights).ok()?;
             let frame = encode_state_delta(
                 generation,
                 delta_sequence,
@@ -1261,6 +1284,28 @@ fn visibility_frames(
         }
         VisibilityUpdate::Snapshot(_) => None,
     }
+}
+
+/// CLOCK-1: the domain 18 delta after `revision`, with its sequence and new revision.
+fn world_clock_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    clock: WorldClock,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let (delta_sequence, new_revision) = (sequence.checked_add(1)?, revision.checked_add(1)?);
+    let payload = encode_world_clock(clock).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_WORLD_CLOCK,
+        revision,
+        new_revision,
+        DELTA_TYPE_WORLD_CLOCK_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, new_revision))
 }
 
 pub(crate) async fn serve_admitted<S, A>(
@@ -1426,7 +1471,8 @@ where
         let Some(channel) = authority.observe_visible_entities(actor).await else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
-        let mut view = SessionVisibility::with_objects(item_view.is_some());
+        let mut view = SessionVisibility::with_objects(item_view.is_some())
+            .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
         let snapshot = view.snapshot(&channel, &mut |entities| {
             attach_spatial_handles(item_view.as_mut(), entities)
         });
@@ -1434,7 +1480,11 @@ where
             admitted.continuity.item_view = item_view.continuity();
         }
         let Ok(encoded) = snapshot.and_then(|snapshot| {
-            encode_visibility_snapshot(selected_capabilities.as_slice(), &snapshot)
+            encode_visibility_snapshot_lit(
+                selected_capabilities.as_slice(),
+                &snapshot,
+                view.lights(),
+            )
         }) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -1631,6 +1681,30 @@ where
             payload: &map_snapshot.payload,
         });
         world_map = Some(view);
+    }
+    // CLOCK-1 (§11.3): with capability 19 (which requires 6), domain 18 at the session's current
+    // revision; a resume or transfer sends only this snapshot and never replays a delta.
+    let world_clock = WorldClockSource::new(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS);
+    let mut world_clock_pacer = WorldClockDeltaPacer::default();
+    let clock_snapshot;
+    if selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1) {
+        let Some((now, reading)) = authority
+            .world_clock_utc_ms()
+            .and_then(|now| Some((now, world_clock.reading(now)?)))
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let Ok(payload) = encode_world_clock(reading) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        world_clock_pacer.reset(reading, now);
+        clock_snapshot = payload;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_CLOCK,
+            revision: admitted.continuity.world_clock_revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_CLOCK_V1,
+            payload: &clock_snapshot,
+        });
     }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -1988,6 +2062,7 @@ where
                         sequence,
                         revision,
                         selected_capabilities.as_slice(),
+                        view.lights(),
                         &update,
                     )
                 }) else {
@@ -2014,6 +2089,28 @@ where
                         sequence = delta_sequence;
                         admitted.continuity.server_sequence = sequence;
                         admitted.continuity.world_map_revision = view.revision();
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                    }
+                }
+                // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
+                if selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1) {
+                    let Some(now) = authority.world_clock_utc_ms() else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if let Some(reading) = world_clock_pacer.due(&world_clock, now) {
+                        let Some((delta_sequence, frame, to)) = world_clock_delta(
+                            generation,
+                            sequence,
+                            admitted.continuity.world_clock_revision,
+                            reading,
+                        ) else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        admitted.continuity.world_clock_revision = to;
                         if write_frame(stream, &frame).await.is_err() {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
@@ -2745,6 +2842,7 @@ where
                                     sequence,
                                     revision,
                                     selected_capabilities.as_slice(),
+                                    view.lights(),
                                     &update,
                                 )
                             }) else {
@@ -4254,6 +4352,7 @@ mod tests {
                     world_map_revision: 0,
                     chat_revision: 0,
                     npc: NpcContinuity::default(),
+                    world_clock_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -6332,7 +6431,7 @@ mod visibility_tests {
         ActorPosition, ChannelEntity, EntityDetail, EntityKind, EntityRef,
         PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF, PLACEHOLDER_HEALTH_PERCENT,
         WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot, encode_step_intent,
-        encode_step_result,
+        encode_step_result, encode_visibility_delta, encode_visibility_snapshot,
     };
     use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
     use std::cell::{Cell, RefCell};
@@ -6450,6 +6549,8 @@ mod visibility_tests {
                 content_generation: CONTENT,
                 observer: own,
                 entities,
+                lights: EntityLights::new(),
+                observed_at_ms: 0,
             })
         }
     }

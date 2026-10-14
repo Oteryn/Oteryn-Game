@@ -209,3 +209,16 @@ remaining_unknowns:
   - dense-scene cost evidence
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates VIS-1."
 ```
+
+## 9. Amendment: VIS-2 light (CLOCK-1, 2026-10-14)
+
+WORLD-INTERACTION-0 §10.2 adds `light` to the VIS-2 entry. It is fields 11 (`light_level`,
+1..=255) and 12 (`light_color`, 0..=255) of the domain 1 type 2 entry. They are sent and accepted
+only under capability 19 `WORLD_LIGHT_V1` (which requires 6) and only on player and creature
+entries; anywhere else they fail closed. Level 0 means no light, so the light is omitted. They add
+at most 6 B per entry (`WORLDINT0-RL-20`), so the largest entry stays within 128 B and 256 lit
+entries still fit the 33,792 B bound of §4.4. A shown entity's light changes on the wire at most
+once per 1,000 ms. Until then, an entry sent for a move keeps the light last sent. A light change
+alone takes a delta update entry only within the §4.3 ceiling of 256; past it, the change waits
+for a later refresh. A session without capability 19 receives the same bytes as before. The
+other decisions of this review are unchanged.

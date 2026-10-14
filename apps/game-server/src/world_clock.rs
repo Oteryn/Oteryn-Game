@@ -24,6 +24,18 @@ const SUNSET_START: u32 = 1_050;
 const NIGHT_START: u32 = 1_170;
 /// `WORLDINT0-RL-18`: at most one `WORLD_CLOCK` delta per session in this many milliseconds.
 pub(crate) const MIN_DELTA_INTERVAL_MS: u64 = 10_000;
+
+/// CLOCK-1: the World clock epoch while no World ruleset carries `world_clock_epoch_utc_ms`: the
+/// Unix epoch, a whole UTC hour (§11.1).
+pub(crate) const DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS: u64 = 0;
+
+/// The process's UTC wall-clock time fact in milliseconds; `None` when it cannot be read.
+pub(crate) fn now_utc_ms() -> Option<u64> {
+    let elapsed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?;
+    u64::try_from(elapsed.as_millis()).ok()
+}
 const TIBIAN_HOUR_MINUTES: u32 = 60;
 
 /// §11.3: the World light level at a Tibian minute of the day. Panics never; a minute outside the

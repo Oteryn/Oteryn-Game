@@ -3037,10 +3037,41 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation,
         ))
         .collect();
+        // CLOCK-1 (§11.4): a player's light is its current LIGHT condition, read under the same
+        // runtime lock (lock order: runtime, then spell_states). Equipped items and monster
+        // content carry no light source yet, so they show none.
+        let now_us = self.owner_now().get();
+        let mut lights = world_spatial::EntityLights::new();
+        if let Ok(census) = runtime.positioned_actor_census() {
+            let states = self.spell_states.lock().await;
+            for (player, _, session) in census {
+                let Some(state) = session.and_then(|session| states.get(&runtime, player, session))
+                else {
+                    continue;
+                };
+                let conditions = state.owned_conditions();
+                if !conditions.accepts_time(now_us) {
+                    continue;
+                }
+                if let Some((level, color)) = conditions.light_at(now_us)
+                    && level != 0
+                {
+                    lights.insert(
+                        player.placement_identity(),
+                        world_spatial::EntityLight {
+                            level,
+                            color: color.unwrap_or(crate::world_clock::LIGHT_COLOR),
+                        },
+                    );
+                }
+            }
+        }
         Some(world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
             observer: actor.placement_identity(),
             entities,
+            lights,
+            observed_at_ms: now_us / 1_000,
         })
     }
 
