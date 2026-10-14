@@ -38,6 +38,7 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
+use oteryn_protocol_oteryn::world_clock::{CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK};
 use oteryn_protocol_oteryn::world_map::{
     CAPABILITY_WORLD_MAP_VIEW_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
 };
@@ -204,6 +205,7 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
+    (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

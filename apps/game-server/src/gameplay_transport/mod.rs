@@ -13,8 +13,10 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod input_gate;
 mod item_move;
 mod item_ref_admission;
+mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
@@ -29,6 +31,7 @@ mod monster_ai_cycle;
 mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
+mod npc_trade_command;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
@@ -536,6 +539,7 @@ pub async fn serve_gameplay(
         wheel_sessions: std::sync::Mutex::default(),
         progression_sessions: std::sync::Mutex::default(),
         last_positions: last_position::LastPositions::default(),
+        input_gate: input_gate::InputGate::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -745,6 +749,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub(crate) last_positions: last_position::LastPositions,
+    /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(crate) input_gate: input_gate::InputGate,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -2897,6 +2903,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
+    async fn npc_trade(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> npc_trade_command::NpcTradeStep {
+        npc_trade_command::npc_trade(self, actor, command, intent).await
+    }
+
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
@@ -3082,14 +3097,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
-        let blocking = if self
+        // The closed bundle doors are read live per candidate cell, not collected per step: a
+        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
+        let (none, bundle_doors, legacy);
+        let blocking: &dyn crate::map::floor::CellBlocker = if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
-            std::collections::BTreeSet::new()
+            none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+            &none
+        } else if let Some(map) = self.bundle_map() {
+            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            &bundle_doors
         } else {
-            self.door.lock().await.blocking_cells().clone()
+            legacy = self.door.lock().await.blocking_cells().clone();
+            &legacy
         };
         let equipped_speed_delta = equipment
             .as_ref()
@@ -3104,7 +3126,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
                 None,
                 None,
@@ -3118,7 +3140,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 now,
                 cardinal,
-                &blocking,
+                blocking,
                 equipped_speed_delta,
             )
             .await
@@ -3145,6 +3167,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
+    async fn use_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> UseOutcome {
+        self.use_backpack_item(actor, command, item).await
     }
 
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
@@ -3577,10 +3609,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         result
     }
 
+    async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
+        self.input_gate.enter().await
+    }
+
     async fn resume(
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(AdmissionRefusal::Unavailable);
+        };
         let admitted = self.resume_lost(attempt).await?;
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
@@ -3626,6 +3666,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
+        // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
+        let Some(_permit) = self.input_gate.enter().await else {
+            return Err(Unavailable);
+        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
@@ -4466,19 +4510,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let item_fence = item_fence_of(current);
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
         // actor's first command, and only from Character-owned facts; a monk's Serene is
-        // evaluated here too (§8.2).
+        // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
+        // saved its health and mana takes them, capped at its maxima, in this same step.
+        let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
+            .then(|| last_position::admitted_vitals(&decided, self.world_id))
+            .flatten();
         if let Some(facts) = facts
             && self
                 .spell_states
                 .lock()
                 .await
-                .initialize(
+                .initialize_admitted(
                     &runtime,
                     actor,
                     game_session_id,
                     facts,
                     monk,
                     self.owner_now(),
+                    saved_vitals,
                 )
                 .is_none()
         {

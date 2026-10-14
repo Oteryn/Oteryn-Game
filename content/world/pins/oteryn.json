@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "c49538eb1ed44e9c02a9a8229e80cf4a169c7afb11803d5120c57dc7eef48524",
+  "digest": "1b04cc35a65bcced64dbc933fcb5ac9adad426a369149bb8c170b1aa80d04406",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "item-sem-use-2-consumables-20261013-r1",
@@ -10,5 +10,5 @@
     "y": 32238,
     "floor": -7
   },
-  "inputs_digest": "891ff4428728dd6010944fb1ce1c724f3391d5dd9ebbe3a766b1fe37e0d4ecab"
+  "inputs_digest": "1895a998b67d758eb74c20e4f1b6ab21a0e493fdf998abeb95c2d7b80cb4b1e3"
 }

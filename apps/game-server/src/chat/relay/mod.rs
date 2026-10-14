@@ -26,6 +26,10 @@ pub(crate) const FRESHNESS_MICROS: u64 = 30 * 1_000_000;
 /// Distinct `message_id`s kept per World inside the window. A full window refuses new lines
 /// rather than forgetting a fresh one, so a captured line can never be admitted twice.
 pub(crate) const REPLAY_WINDOW_LINES: usize = 8_192;
+/// How far ahead of the current database reading a listener stores its relay lease. A window
+/// receives only while its clock is inside a lease stored durably, and a restarted window starts
+/// past the highest lease stored, so its guarantees survive a restart and a clock rollback.
+pub(crate) const RELAY_LEASE_MICROS: u64 = 30 * 1_000_000;
 /// The sender name is at most 120 bytes (CHAT-0 §5).
 pub(crate) const SENDER_NAME_MAX_BYTES: usize = 120;
 
@@ -64,6 +68,9 @@ pub(crate) enum RelayError {
     /// The line was sent before this process started listening. Nothing sent then was ever
     /// delivered to it, so only a replay of a captured line can arrive here.
     BeforeStart,
+    /// The clock reading is past the lease stored for this listener: the line is dropped until
+    /// the listener stores a new lease ([`ReplayWindow::lease_due`]).
+    Unleased,
     /// The `message_id` was seen inside the window.
     Replayed,
     /// The de-duplication window is full of fresh lines.
@@ -84,6 +91,7 @@ impl Display for RelayError {
             Self::BadPayload => "chat relay payload is malformed",
             Self::Stale => "chat relay line is outside the freshness window",
             Self::BeforeStart => "chat relay line predates the listener",
+            Self::Unleased => "chat relay clock is past the stored lease",
             Self::Replayed => "chat relay line was already seen",
             Self::Saturated => "chat relay de-duplication window is full",
             Self::Random => "chat relay random source failed",
@@ -422,10 +430,20 @@ fn open(
 /// and expiry does not depend on arrival order.
 ///
 /// The window is process memory and starts empty, so it is created once per listener, at the
-/// moment `LISTEN` is established, with [`startup_floor`]: a line stamped before the floor, which
-/// includes every line an earlier process could have admitted, is `BeforeStart`, and the clock
-/// starts at the floor, so a key retired before the restart stays retired (it may retire up to
-/// `FRESHNESS_MICROS` early, which only fails closed).
+/// moment `LISTEN` is established, with [`ReplayWindow::resume`]. Its guarantees survive a restart
+/// through one durable value per World, the relay lease, and through nothing else:
+///
+/// - the window acts (opens or admits) only on a clock reading at most the lease the listener has
+///   stored durably and reported with [`ReplayWindow::lease_stored`]; past it every line is
+///   `Unleased` until a new lease is stored ([`ReplayWindow::lease_due`]);
+/// - so every line a process admitted is stamped at most the highest stored lease plus
+///   `FRESHNESS_MICROS`, and every key it found retired was retired at or before that lease;
+/// - a resumed window starts its floor and its clock past both, whatever the database clock reads
+///   at readiness, so a captured line (future-stamped ones included) is `BeforeStart` and a
+///   retired key stays retired across a restart, even with the database clock stepped back.
+///
+/// The listener stores the lease so that it never decreases (for example
+/// `GREATEST(stored, new)`) and passes the stored value back on restart.
 #[derive(Debug)]
 pub(crate) struct ReplayWindow {
     /// Lines sent before this instant are refused: the listener was not up to receive them.
@@ -434,24 +452,19 @@ pub(crate) struct ReplayWindow {
     /// database clock stepped back cannot make an evicted `message_id` admissible again or revive
     /// a retired key.
     high_water: u64,
+    /// The highest lease this listener has stored durably; `None` until the first one is.
+    leased_until: Option<u64>,
     expiry_of: HashMap<[u8; ID_BYTES], u64>,
     by_expiry: BTreeSet<(u64, [u8; ID_BYTES])>,
 }
 
-/// The clock floor for a new [`ReplayWindow`], from the database reading taken when the listener
-/// became ready and nothing else: the first instant a line may be stamped to be admitted.
+/// The clock floor for a new [`ReplayWindow`] from the database reading taken when the listener
+/// became ready: the first instant a line may be stamped to be admitted. No host wall clock takes
+/// part: `sent_at` and `now_micros` are both database time.
 ///
-/// A previous process admitted only lines stamped at most `FRESHNESS_MICROS` after its own
-/// database reading, which is at most this reading, so every line it could have admitted is
-/// stamped before the floor and cannot be delivered again. No host wall clock takes part: `sent_at`
-/// and `now_micros` are both database time, and a host clock that disagrees with it must neither
-/// reject legitimate lines nor let a replay through.
-///
-/// Deliberate availability cost: for the first `FRESHNESS_MICROS` after a restart every line is
-/// `BeforeStart`, legitimate ones included. Chat is best-effort and a restart already drops the
-/// connection, so this is accepted rather than persisting replay state. A database clock stepped
-/// back across a restart is outside this threat model, as is a retired key's material, which is
-/// removed from the environment after its overlap (CHAT0-RL-12).
+/// Deliberate availability cost: for up to `FRESHNESS_MICROS` plus `RELAY_LEASE_MICROS` after a
+/// restart every line is `BeforeStart`, legitimate ones included. Chat is best-effort and a restart
+/// already drops the connection.
 pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
     db_now_micros
         .saturating_add(FRESHNESS_MICROS)
@@ -459,20 +472,61 @@ pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
 }
 
 impl ReplayWindow {
-    /// An empty window for a listener that became ready at `floor` ([`startup_floor`]).
-    pub(crate) fn starting_at(floor_micros: u64) -> Self {
+    /// An empty window for a listener that became ready at database time `db_now_micros`.
+    /// `stored_lease_micros` is the relay lease stored durably for this World by any earlier
+    /// listener (`None` only when none was ever stored). The floor and the clock start past both
+    /// the readiness reading and that lease, so nothing an earlier process admitted or retired can
+    /// come back, even if the database clock now reads earlier than it did then.
+    pub(crate) fn resume(db_now_micros: u64, stored_lease_micros: Option<u64>) -> Self {
+        let past_lease = stored_lease_micros.map_or(0, startup_floor);
+        let floor = startup_floor(db_now_micros).max(past_lease);
         Self {
-            floor: floor_micros,
-            high_water: floor_micros,
+            floor,
+            high_water: floor,
+            leased_until: None,
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
         }
     }
 
+    /// A window with `floor` and a lease that never runs out, for the rules tests.
+    #[cfg(test)]
+    fn starting_at(floor_micros: u64) -> Self {
+        Self {
+            floor: floor_micros,
+            high_water: floor_micros,
+            leased_until: Some(u64::MAX),
+            expiry_of: HashMap::new(),
+            by_expiry: BTreeSet::new(),
+        }
+    }
+
+    /// The lease the listener must store durably now, given its database reading, or `None` while
+    /// the stored lease still covers at least half of `RELAY_LEASE_MICROS` ahead. After the store
+    /// commits the listener calls [`Self::lease_stored`] with the same value; until then lines past
+    /// the old lease are `Unleased`.
+    pub(crate) fn lease_due(&mut self, now_micros: u64) -> Option<u64> {
+        let now_micros = self.observe(now_micros);
+        let renew_at = now_micros.saturating_add(RELAY_LEASE_MICROS / 2);
+        if self.leased_until.is_some_and(|until| until >= renew_at) {
+            return None;
+        }
+        Some(now_micros.saturating_add(RELAY_LEASE_MICROS))
+    }
+
+    /// `until_micros` is stored durably: the window may act on readings up to it.
+    pub(crate) fn lease_stored(&mut self, until_micros: u64) {
+        self.leased_until = Some(
+            self.leased_until
+                .map_or(until_micros, |l| l.max(until_micros)),
+        );
+    }
+
     /// Receives one `NOTIFY` text: opens it and admits it once, on a clock that never runs
     /// backwards. `now_micros` is the node's database-time reading, raised to the highest reading
     /// seen, so a database clock stepped back can neither revive a retired key nor re-admit an
-    /// evicted `message_id` or an expired line.
+    /// evicted `message_id` or an expired line. A reading past the stored lease is `Unleased`
+    /// before any key is consulted.
     pub(crate) fn receive(
         &mut self,
         ring: &RelayKeyRing,
@@ -481,6 +535,9 @@ impl ReplayWindow {
         now_micros: u64,
     ) -> Result<RelayLine, RelayError> {
         let now_micros = self.observe(now_micros);
+        if self.leased_until.is_none_or(|until| now_micros > until) {
+            return Err(RelayError::Unleased);
+        }
         let line = open(ring, channel, notify_text, now_micros)?;
         self.admit(&line, now_micros)?;
         Ok(line)

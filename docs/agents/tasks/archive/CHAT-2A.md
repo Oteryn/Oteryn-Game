@@ -17,7 +17,7 @@ final_head_sha: null
 owner: claude-code-session-016UMPeTGXu2gXmPn9iAd9s1
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-13
-updated_at: 2026-10-13
+updated_at: 2026-10-14
 owned_paths:
   - apps/game-server/src/chat/relay/**
   - apps/game-server/src/chat/mod.rs
@@ -44,7 +44,7 @@ rustls; no new crate enters `Cargo.lock`.
 
 - PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md` section 5 (layout, sealing, rotation, replay) and section 8 rows `CHAT0-RL-06`, `-12`, `-13`.
 - DERIVED: the channel is `oteryn_chat_<WorldId without hyphens>` (44 bytes) because production WorldIds are canonical UUIDv7 (`node/config.rs`); CHAT-0 section 5 writes `<world_id>` without fixing the encoding.
-- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce and 128-bit `message_id`; `ReplayWindow::receive` is the only receive path and runs open and admit on one monotonic high-water clock, so a database clock stepped back can neither re-admit an evicted id, accept an expired line nor revive a retired key. The window is the only security-relevant process state in the relay (the key ring is immutable configuration; nonces and `message_id`s are random, no counters): it is created per listener with `ReplayWindow::starting_at(startup_floor(db_now))`, where the floor is the readiness database reading plus the 30 s future allowance (database clock only, no host wall clock: `sent_at` and `now` are both database time), so every line an earlier process could have admitted, future-stamped ones included, is `BeforeStart` after a restart, and a key retired before the restart stays retired. Deliberate availability cost: for the first ~30 s after a restart every line is `BeforeStart`, legitimate ones included (chat is best-effort; persisting replay state was not worth it). A database clock stepped back across a restart is outside the threat model; the retired key's material is removed from the environment after its overlap. Sending stays stateless: with a stepped-back `sent_at` it may pick an older key, which receivers then refuse (fail closed). The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
+- DERIVED: a `sent_at` more than 30 s ahead of the node clock is stale too, and each de-duplication entry lives until its own line's `sent_at + 30 s`, the last instant the freshness check accepts it, so no accepted line can return after its entry is gone; `seal` draws its own random nonce and 128-bit `message_id`; `ReplayWindow::receive` is the only receive path and runs open and admit on one monotonic high-water clock, so a database clock stepped back can neither re-admit an evicted id, accept an expired line nor revive a retired key. The window is the only security-relevant process state in the relay (the key ring is immutable configuration; nonces and `message_id`s are random, no counters), and one durable value per World carries it across a restart: the relay lease. The window opens or admits only on a clock reading at most the lease the listener has stored durably (`lease_due` / `lease_stored`, `RELAY_LEASE_MICROS` = 30 s ahead, renewed at half; past it every line is `Unleased`), so every line a process admitted is stamped at most the highest stored lease plus 30 s and every key it found retired was retired by that lease. A restarted listener builds `ReplayWindow::resume(db_now, stored_lease)`, whose floor and clock start past both the readiness reading plus the 30 s future allowance and the stored lease plus 30 s (database clock only, no host wall clock), so a captured line, future-stamped ones included, is `BeforeStart` or stale and a retired key stays retired after a restart even when the database clock was stepped back. The listener stores the lease without ever lowering it and passes the stored value back on restart; that storage lives with the listener (follow-up batch). Deliberate availability cost: for up to ~60 s after a restart every line is dropped, legitimate ones included (chat is best-effort). Sending stays stateless: with a stepped-back `sent_at` it may pick an older key, which receivers then refuse (fail closed). The replay window size (8,192 lines per World) is an implementation bound, not a CHAT-0 row.
 - Plaintext is at most 1,185 bytes (two-byte length prefixes), sealed at most 1,214, base64 at most 1,624, inside the section 5 figures.
 
 ## Acceptance criteria
@@ -54,13 +54,15 @@ rustls; no new crate enters `Cargo.lock`.
 - [x] Wrong channel, altered ciphertext and a relabelled `key_id` fail authentication.
 - [x] Rotation (retirement also holds when the clock steps back): a key sends once its cluster-wide `activate_at` has passed (the newest activated key); every held key opens, and a key retires 24 hours after its successor's activation.
 - [x] Stale, future-dated and replayed lines are refused; a full window refuses.
+- [x] Restart: a window receives only inside a stored lease; after a restart, also with the database clock stepped back, a captured (also future-stamped) line is not delivered again and a retired key stays retired.
 - [x] `Debug` of a line or key never prints text or key bytes.
 
 ## Excluded scope (stays CHAT-2, follow-up batches)
 
 The `LISTEN`/`NOTIFY` connection and `NOTIFY` send, `log_parameter_max_length = 0` on it, listener
 readiness and `CHAT_UNAVAILABLE`, the `NOTIFY` queue watch (`CHAT0-RL-09`), delivery of relayed
-lines to sessions, private-message and room dispatch, the durable mute row
+lines to sessions, private-message and room dispatch, durable storage of the per-World relay
+lease that `ReplayWindow::resume` takes back (never lowered), the durable mute row
 (`game_character_chat_mutes`, needs a leased migration number) and any wire change. No protocol,
 registry, migration or content change here.
 
@@ -75,6 +77,14 @@ Run at the final authoring head:
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: exit 0, `workspace-boundaries: PASS`
 - `python tools/agents/validate_governance.py`: exit 0, 22 policy documents and 9 lanes validated
 - `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
+
+Merge of `main` and the relay lease (restart and clock-rollback review round):
+
+- `cargo fmt --all --check`: exit 0
+- `chat::relay` module with its tests, compiled as a standalone crate against the workspace lock (the full `oteryn-game-server` lib target was killed by the session memory limit, SIGKILL, before producing a result): `cargo test` 25 passed, 0 failed; `cargo clippy --all-targets -- -D warnings` with the package lint set: exit 0
+- `content/world/pins/oteryn.json` `inputs_digest` recomputed for the merged tree with the `inputs_digest` algorithm (cross-checked against the pins of `main` and of the pre-merge branch); `pin-check` itself was killed by the memory limit, so exact-head CI qualifies it
+- `python tools/agents/validate_governance.py`: exit 0; `python -m unittest discover -s tools/agents/tests`: 60 tests, OK
+- whole-package clippy and tests: left to exact-head CI
 
 ### Exact-head CI
 

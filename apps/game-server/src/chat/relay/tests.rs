@@ -444,19 +444,107 @@ fn the_startup_floor_depends_on_the_database_clock_only() {
     assert_eq!(window.receive(&ring, CHANNEL, &text, floor + 1), Ok(line));
 }
 
+/// A window resumed after a restart with its first lease stored, as a listener runs it.
+fn resumed(db_now: u64, stored: Option<u64>) -> (ReplayWindow, u64) {
+    let mut window = ReplayWindow::resume(db_now, stored);
+    let lease = window.lease_due(db_now).expect("a new window owes a lease");
+    window.lease_stored(lease);
+    (window, lease)
+}
+
+#[test]
+fn a_window_receives_only_inside_a_stored_lease() {
+    let ring = ring(&[(1, 0)]);
+    let mut window = ReplayWindow::resume(NOW, None);
+    let floor = startup_floor(NOW);
+    let line = room_line(1, floor);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    // Nothing is stored yet: the line is dropped before any key is consulted.
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &text, floor),
+        Err(RelayError::Unleased)
+    );
+    let lease = window.lease_due(floor).expect("due");
+    assert_eq!(lease, floor + RELAY_LEASE_MICROS);
+    window.lease_stored(lease);
+    assert_eq!(window.lease_due(floor), None);
+    assert_eq!(window.receive(&ring, CHANNEL, &text, floor), Ok(line));
+    // Past the stored lease the window stops until a new one is stored.
+    let later = room_line(2, lease + 1);
+    let later_text = seal_with_nonce(&ring, CHANNEL, &later, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &later_text, lease + 1),
+        Err(RelayError::Unleased)
+    );
+    let renewed = window.lease_due(lease + 1).expect("due again");
+    window.lease_stored(renewed);
+    // A lower value reported later never shrinks the lease.
+    window.lease_stored(lease);
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &later_text, lease + 1),
+        Ok(later)
+    );
+    assert_eq!(window.leased_until, Some(renewed));
+}
+
 #[test]
 fn a_retired_key_stays_retired_across_a_restart_and_a_clock_rollback() {
     let added = NOW;
     let ring = ring(&[(1, 0), (2, added)]);
     let old_only = self::ring(&[(1, 0)]);
     let at_expiry = added + KEY_OVERLAP_MICROS;
-    let text = seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
-    // The process restarts after the expiry with the database clock rolled back before it; the
-    // floor is taken from the reading at readiness, so the clock still starts past the expiry.
-    let rolled_back = added;
-    let mut window = ReplayWindow::starting_at(startup_floor(at_expiry));
+    // The old process sees the old key retire, under a lease stored at that reading.
+    let (mut before, stored) = resumed(at_expiry - FRESHNESS_MICROS - 1, None);
+    let probe = seal_with_nonce(&old_only, CHANNEL, &room_line(1, at_expiry), NONCE).expect("seal");
     assert_eq!(
-        window.receive(&ring, CHANNEL, &text, rolled_back),
+        before.receive(&ring, CHANNEL, &probe, at_expiry),
         Err(RelayError::UnknownKey)
+    );
+    // The database clock is rolled back to before the expiry and the node restarts: the readiness
+    // reading itself is rolled back, and a holder of the old key forges a line for that time.
+    for rolled_back in [added, at_expiry - FRESHNESS_MICROS, at_expiry - 1] {
+        let (mut after, _) = resumed(rolled_back, Some(stored));
+        let forged =
+            seal_with_nonce(&old_only, CHANNEL, &room_line(2, rolled_back), NONCE).expect("seal");
+        assert_eq!(
+            after.receive(&ring, CHANNEL, &forged, rolled_back),
+            Err(RelayError::UnknownKey),
+            "rolled back to {rolled_back}"
+        );
+    }
+}
+
+#[test]
+fn a_future_stamped_line_is_not_delivered_again_after_a_restart_and_a_clock_rollback() {
+    let ring = ring(&[(1, 0)]);
+    // The old process admits a line stamped the full future allowance ahead of its clock.
+    let (mut before, stored) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let line = room_line(1, NOW + FRESHNESS_MICROS);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(before.receive(&ring, CHANNEL, &text, NOW), Ok(line));
+    // It restarts at once, with the database clock at, or rolled back before, the old reading.
+    for ready in [NOW - FRESHNESS_MICROS, NOW - 1, NOW] {
+        let (mut after, _) = resumed(ready, Some(stored));
+        assert!(
+            matches!(
+                after.receive(&ring, CHANNEL, &text, ready),
+                Err(RelayError::Stale | RelayError::BeforeStart)
+            ),
+            "ready at {ready}"
+        );
+    }
+}
+
+#[test]
+fn a_resumed_window_starts_past_the_stored_lease() {
+    let lease = NOW + RELAY_LEASE_MICROS;
+    let window = ReplayWindow::resume(NOW - 1_000_000, Some(lease));
+    assert_eq!(window.floor, startup_floor(lease));
+    assert_eq!(window.high_water, window.floor);
+    // With no stored lease, or one already behind the readiness reading, the reading decides.
+    assert_eq!(ReplayWindow::resume(NOW, None).floor, startup_floor(NOW));
+    assert_eq!(
+        ReplayWindow::resume(NOW, Some(NOW - RELAY_LEASE_MICROS)).floor,
+        startup_floor(NOW)
     );
 }

@@ -150,6 +150,10 @@ name = "item_transfer_postgres"
 test = false
 
 [[test]]
+name = "item_use_postgres"
+test = false
+
+[[test]]
 name = "map_item_mint_postgres"
 test = false
 

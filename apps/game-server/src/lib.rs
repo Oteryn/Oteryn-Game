@@ -818,6 +818,11 @@ mod weak_spot_speech;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod welter_consume;
+#[allow(
+    dead_code,
+    reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
+)]
+mod world_clock;
 
 #[allow(
     dead_code,

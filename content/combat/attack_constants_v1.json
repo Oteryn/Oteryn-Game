@@ -3,6 +3,19 @@
   "decision": "ATTACK0-ATTACK-TARGET-AND-AUTO-ATTACK-V1 sections 4 and 5",
   "source": "Canary 04b83b51 vocations.xml:3-123, player.cpp:776-872,3991,4487-4503, weapons.cpp:88-100,226, creature.cpp:141-145,961-982 (OTS_HYPOTHESIS_ONLY)",
   "parity": "PARITY_PENDING",
+  "parity_by_value": {
+    "player_melee_offensive_attack": "PARITY_PENDING",
+    "player_melee_balanced_attack": "PARITY_PENDING",
+    "player_melee_defensive_attack": "PARITY_PENDING",
+    "monk_melee": "PARITY_PENDING",
+    "defence": "PARITY_PENDING",
+    "armor": "PARITY_PENDING",
+    "block": "PARITY_PENDING",
+    "creature_melee": "PARITY_PENDING",
+    "attack_interval_ms": "PARITY_PENDING",
+    "in_fight_ms": "PARITY_PENDING"
+  },
+  "player_melee_source": "tibiatools a1d368906caa8ae98bcb7123f2431733d318d710 src/lib/damage-calc/damage.ts:13-25 and character-state.ts:73-75 (ATTACK-PARITY-1 packet 1.3); min/max equal TibiaPal on all 1536 fixture rows, the uniform mean does not (1.4)",
   "attack_interval_ms": 2000,
   "in_fight_ms": 60000,
   "starting_skill": 10,
@@ -11,7 +24,7 @@
     "balanced": { "attack_factor": 0.75, "defence_factor_after_swing": 0.75, "zero_skill_defence": 1 },
     "defensive": { "attack_factor": 0.5, "defence_factor_after_swing": 1.0, "zero_skill_defence": 2 }
   },
-  "player_melee": { "damage_coefficient": 0.085 },
+  "player_melee": { "attack_numerator": 6, "attack_denominator": 5, "skill_offset": 4, "skill_divisor": 28, "minimum_divisor": 2, "maximum_multiplier": 2 },
   "fist": { "attack": 7, "defence": 7 },
   "creature_melee": { "skill_attack_coefficient": 0.05, "attack_coefficient": 0.5 },
   "defence": {

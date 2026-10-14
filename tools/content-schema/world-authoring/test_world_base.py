@@ -69,10 +69,12 @@ ITEMS_XML = (
 ITEMS_XML_WITH_TELEPORT = ITEMS_XML.replace(b"</items>", b'<item id="1949"/></items>')
 
 
-def write_transitions(root: Path, otbm: bytes) -> None:
-    """The Transition.Teleport shard `convert_world_metadata.py` writes for `otbm`,
-    reduced to the fields the base map validator reads."""
+def write_transitions(root: Path, otbm: bytes, scripted=()) -> None:
+    """The Transition.Teleport shard `convert_world_metadata.py` writes for `otbm` and the
+    `scripted` script teleports, reduced to the fields the base map validator reads."""
     links, _reasons = convert.teleport_links(otbm)
+    for entry in scripted:
+        links[(entry["from"], entry["item"], entry["to"])] += 1
     records = [
         {
             "declaration": {
@@ -273,7 +275,11 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(index["shards"], [row["path"] for row in index["regions"]])
         self.assertEqual(
             [row["path"] for row in index["source"]["files"]],
-            [convert.OTBM, convert.ITEMS_XML],
+            [
+                convert.OTBM,
+                *(s["path"] for s in convert.metadata.SCRIPT_TELEPORTS),
+                convert.ITEMS_XML,
+            ],
         )
         self.assertEqual(
             index["palette"],
@@ -539,6 +545,60 @@ class ConvertAndValidateTest(unittest.TestCase):
         ):
             summary = self.summary(convert.build(blobs, ITEMS_BY_SERVER_ID))
         self.assertEqual(summary["excluded_teleports"]["no_transition"], 1)
+
+    def scripted_build(self, entry, data):
+        base, blobs = self.teleport_map()
+        with mock.patch.object(convert.metadata, "SCRIPT_TELEPORTS", (entry,)):
+            return base, convert.build(
+                {**blobs, entry["path"]: data}, ITEMS_BY_SERVER_ID
+            )
+
+    def test_a_script_teleport_fills_the_unset_destination_of_its_tile(self):
+        data = fixtures.script_text(start=(1002, 1001, 7), end=(1001, 1001, 7))
+        entry = fixtures.script_entry(data, start=(1002, 1001, 7), end=(1001, 1001, 7))
+        base, out = self.scripted_build(entry, data)
+        summary = self.summary(out)
+        self.assertEqual(summary["item_attributes"], {"teleport": 4})
+        self.assertEqual(summary["excluded_teleports"]["unset_destination"], 1)
+        palette = [r["source_item_id"] for r in self.palette_of(out)]
+        _z, _rx, _ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        tiles = {
+            (x, y): [(palette[i], d, a) for i, d, a in items]
+            for _local, rows in sectors
+            for x, y, _f, _h, _z, items in rows
+        }
+        self.assertEqual(
+            tiles[(1002, 1001)],
+            [(100, 0, None), (1949, 0, {"teleport": (1001, 1001, 7)})],
+        )
+        root = self.install(out, base, (entry,))
+        self.assertEqual(validate.validate(root, workers=1), [])
+        # without its Transition record the scripted attribute is an extra teleport
+        root = self.install(out, base)
+        self.assertTrue(
+            any(
+                "have no Transition record" in e
+                for e in validate.validate(root, workers=1)
+            )
+        )
+
+    def test_a_script_teleport_without_its_unset_attribute_or_destination_fails(self):
+        for start, end, message in (
+            # outside-map teleport: the tile has no unset attribute to fill
+            ((1003, 1001, 7), (1001, 1001, 7), "without their unset attribute"),
+            ((1002, 1001, 7), (1500, 1500, 7), "without their unset attribute"),
+        ):
+            data = fixtures.script_text(start=start, end=end)
+            entry = fixtures.script_entry(data, start=start, end=end)
+            with (
+                self.subTest(start=start, end=end),
+                self.assertRaisesRegex(convert.ConvertError, message),
+            ):
+                self.scripted_build(entry, data)
+        data = fixtures.script_text(start=(1002, 1001, 7), end=(1001, 1001, 7))
+        entry = fixtures.script_entry(data, start=(1002, 1001, 7), end=(1001, 1001, 7))
+        with self.assertRaisesRegex(convert.ConvertError, "sha256 differs"):
+            self.scripted_build(entry, data + b"\n")
 
     def test_the_validator_matches_teleports_and_transition_records(self):
         base, blobs = self.teleport_map()
@@ -1287,7 +1347,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         with self.assertRaises(convert.ConvertError):
             convert.terrain_keys(root)
 
-    def install(self, out, otbm=None):
+    def install(self, out, otbm=None, scripted=()):
         """Write a build of `otbm` (default: the fixture map) into a fresh temp root and
         return it."""
         root = Path(tempfile.mkdtemp())
@@ -1298,7 +1358,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         (root / validate.ITEM_BINDINGS).parent.mkdir(parents=True, exist_ok=True)
         (root / validate.ITEM_BINDINGS).write_bytes(ITEMS_BY_SERVER_ID)
         write_definitions(root, ITEMS_BY_SERVER_ID)
-        write_transitions(root, otbm or self.blobs[convert.OTBM])
+        write_transitions(root, otbm or self.blobs[convert.OTBM], scripted)
         return root
 
     @staticmethod
