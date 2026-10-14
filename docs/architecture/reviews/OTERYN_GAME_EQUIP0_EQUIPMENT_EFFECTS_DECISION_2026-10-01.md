@@ -89,9 +89,11 @@ What does a worn item without time or charges do for its wearer, and in what ord
   flag; content validation rejects a definition whose flag and fields disagree.
 - A `timed` item grants nothing until TIMED-ITEM-0 decides its time or charges (fail closed: no free
   rings or amulets).
-- An item whose designated slot is the Extra slot (`ammo`, RANGED-0 §3.3; TibiaWiki `slot = Extra
-  Slot`, for example item 49176 with speed +25) contributes all its abilities there. Any other item
-  merely placed in the Extra slot contributes only `LIGHT` (the manual's torch).
+- The Extra slot (`ammo`, RANGED-0 §3.3) admits any whole item without `container` semantics, with
+  no level, vocation or Premium check, and grants only `LIGHT` (the manual's torch). Every other
+  ability of an item placed there is inactive, including an item whose designated slot is the Extra
+  slot (TibiaWiki `slot = Extra Slot`, for example item 49176 with speed +25). Amended on the owner's
+  approval of 2026-10-14 to agree with RANGED-0 §3.3.
 - The channel runtime's equipment owner keeps each actor's active set and recomputes it on equip,
   unequip, death, channel transfer, respawn and Premium changes. It writes nothing durable; after a
   transfer or restart the set is derived again from the equipped items.

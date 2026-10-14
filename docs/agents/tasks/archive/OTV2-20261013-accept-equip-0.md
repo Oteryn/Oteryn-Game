@@ -16,6 +16,7 @@ created_at: 2026-10-13
 updated_at: 2026-10-13
 execution_policy: continuous_progress
 owned_paths:
+  - docs/architecture/reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_EQUIP0_ACCEPTANCE_DECISION_2026-10-13.md
   - docs/architecture/reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md
   - docs/agents/tasks/archive/OTV2-20261013-accept-equip-0.md

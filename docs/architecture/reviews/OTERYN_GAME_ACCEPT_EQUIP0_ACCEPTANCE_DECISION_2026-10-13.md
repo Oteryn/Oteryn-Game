@@ -15,3 +15,5 @@
 
 - Owner: `blakinio`. Date: 2026-10-13. Basis: owner accepted via control plane.
 - Review history in the decision stays as written. Implementation children keep their own exact-head validation, independent review and protected integration.
+- Amendment covered by this acceptance: EQUIP-0 §3.2 now says the Extra (`ammo`) slot grants only `LIGHT` and runs no requirement checks, on the owner's approval of 2026-10-14. This agrees with RANGED-0 §3.3.
+- RANGED-0 stays CANDIDATE. Its acceptance is tracked separately and is not part of this PR. The two decisions now agree on the Extra slot.
