@@ -169,7 +169,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
   refused action spends nothing and draws nothing.
-- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys. The store on main already admits six more distinct keys that coexist with them (`Attributes`, `SpellSkills(1..=3)`, `SpellRegeneration(1)` and `Status(Drunk)`, `ability/condition.rs`; `drunk` is built by creature-condition parsing), so the worst case is 27 simultaneous keys, over 16. `COND0-RL-01` is 32 (27 and headroom for five later keys, including further `SpellSkills` or `SpellRegeneration` sub-ids); one instance per key, so no mutual exclusion is needed.
+- Worst case, counted exhaustively from the closed `ConflictKey` enum on main (`ability/condition.rs:75-88`), with no mutual exclusion between keys: four `Status` keys (`Invisible`, `Drunk`, `Rooted`, `Feared`), `Speed`, eight `Element` keys (poison, fire, energy, bleeding, drown, freezing, dazzled, cursed), `FoodRegeneration`, `Recovery`, `ManaShield`, `Light`, `Attributes`, `SpellSkills(1..=3)`, `SpellRegeneration(1)`, `Invisible` and `Outfit` are 24 keys (`Status(Invisible)` and `Invisible` are distinct keys and both are built in production), plus the four new keys `muted`, `pacified`, `powerless` and `agony`, is 28 simultaneous keys, over 16. `COND0-RL-01` is 32 (28 and headroom for four later keys or sub-ids); a new key or sub-id that would raise the exhaustive count above 32 needs an amendment of this row.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
 - Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
@@ -191,9 +191,8 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 27 today (the §3.5 worst case:
-  the 13 keys of §3 and the MAGIC-COND-1 scope, the eight §3.5 and previously separate keys, and the
-  six existing `Attributes`, `SpellSkills`, `SpellRegeneration` and `Status(Drunk)` keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
+- **Instance limit.** One instance per conflict key gives at most 28 today (the exhaustive §3.5
+  count: the 24 keys of the `ConflictKey` enum on main and the four new §3.5 keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
   past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
