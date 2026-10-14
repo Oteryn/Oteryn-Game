@@ -39,6 +39,24 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
 
+      # Restore only, as in the merge gate: the protected-main producer in rust.yml is the
+      # only cache writer, and every step below still builds and checks this exact head.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.95.0-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python3 tools/repository/normalize_cargo_mtimes.py
+
       - name: Export pinned predecessor package
         run: |
           set -euo pipefail

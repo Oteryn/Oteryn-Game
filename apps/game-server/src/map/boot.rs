@@ -415,6 +415,14 @@ impl BundleWorld {
         table_activation_spawns(&self.spawns, profile)
     }
 
+    /// Test only: this World with `table` as its spawn family (a booted bundle carries the
+    /// table its `spawn` section decoded to).
+    #[cfg(test)]
+    pub(crate) fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
+        self.spawns = Arc::new(table);
+        self
+    }
+
     pub fn base(&self) -> &Arc<WorldBase> {
         &self.base
     }

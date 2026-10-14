@@ -440,6 +440,21 @@ pub(crate) fn context() -> ProgressionRevisionContext<String> {
     }
 }
 
+pub(crate) fn item_fence() -> TestResult<crate::durability::item_transfer::CurrentCharacterItemFence>
+{
+    Ok(
+        crate::durability::item_transfer::CurrentCharacterItemFence {
+            character_id: CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+            game_session_id: crate::foundation::GameSessionId::decode(&id(SESSION))
+                .map_err(debug)?,
+            connection_generation: ConnectionGeneration::new(1).map_err(debug)?,
+            character_lease_generation: 1,
+            runtime_scope: scope()?,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
+        },
+    )
+}
+
 pub(crate) fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
     Ok(CurrentCharacterGameplayFence {
         character_id: CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,

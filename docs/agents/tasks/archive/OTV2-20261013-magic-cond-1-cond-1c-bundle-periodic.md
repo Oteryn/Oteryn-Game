@@ -1,0 +1,52 @@
+# OTV2-20261013-magic-cond-1-cond-1c-bundle-periodic
+
+```yaml
+task_id: OTV2-20261013-magic-cond-1-cond-1c-bundle-periodic
+title: MAGIC-COND-1 COND-1c -- open periodic player damage on a bundle World
+mode: IMPLEMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/magic-cond-1-cond-1-20261013
+pr: 2086
+base_sha: 39f77b53
+owner: "Oteryn: worker for control plane session_01XYC239givrMonrYoBwwECV"
+created_at: 2026-10-13
+updated_at: 2026-10-13
+owned_paths:
+  - apps/game-server/src/gameplay_transport/spell_periodic.rs
+  - docs/agents/tasks/archive/OTV2-20261013-magic-cond-1-cond-1c-bundle-periodic.md
+public_contracts:
+  - CONDITIONS0-ACTOR-CONDITIONS-V1 (§3.2)
+depends_on:
+  - "BUNDLE-COMBAT-ENABLE-1 (#2025) merged"
+```
+
+## Outcome
+
+COND-1a/1b and the owner wiring are on main. The remaining COND-1c gap was the bundle gate:
+`tick_spell_periodic` read `qualified_room`, which is `None` on a bundle World, so a player's
+damage-over-time and field ticks never ran there (BUNDLE-COMBAT-ENABLE-1 left "periodic player
+damage" closed for MAGIC-COND-1). It now reads `combat_room`, which is the fixture room on a
+fixture World and the room's bundle view (bundle-pin identities) on a bundle World. Every other
+`qualified_room` consumer stays closed (monster AI, world item and parameter casts, field step
+ingress, source map initialization).
+
+Codex round 1 (P2, accepted): a bundle's fields are static top Items of the bundle tile, not
+`game_item_ground_locations` rows, so the standing element read only the Ground rows and a
+same-element field was missed. The standing fact now merges the Ground rows with the tile's static
+top Items (policy by source id). Codex round 2 (P2, accepted): an Item with no policy is Unknown, not a
+known non-field, as is an unknown classification; neither consumes damage. Tests:
+`standing_fact_tests`.
+
+## Excluded scope
+
+COND-WIRE-1, protocol, migration, `foundation/**` (no change was needed).
+
+## Validation
+
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- PostgreSQL-backed tests: not run (no Docker daemon); no PG-owned code changed.
+- `cargo test --locked -p oteryn-game-server --lib spell`: pass.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
