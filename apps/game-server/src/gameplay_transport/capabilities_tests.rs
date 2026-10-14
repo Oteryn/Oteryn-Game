@@ -1180,7 +1180,11 @@ fn a_backpack_entry_is_used_only_under_capability_15() -> Result<(), Box<dyn Err
                     payloads.push(decode_command_result(envelope.payload())?.payload.to_vec());
                 }
             }
-            assert_eq!(payloads, [encode_use_result(disposition)], "{selected:?}");
+            assert_eq!(
+                payloads,
+                [encode_use_result(disposition).unwrap_or_default()],
+                "{selected:?}"
+            );
             assert_eq!(authority.item_uses.borrow().len(), used, "{selected:?}");
         }
         assert_eq!(

@@ -173,6 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            gate_message_id: None,
         }
     }
 
