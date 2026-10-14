@@ -188,8 +188,9 @@ impl ChatRuntime {
     /// The gate in front of the Channel lock (CHAT-0 §6): a line of a muted session or beyond its
     /// bucket (a yell included), a yell in its cooldown and a yell repeated soon after an
     /// under-level refusal (which takes its line) are refused here, before the runtime lock and
-    /// the entity clone, so a flood costs the Channel only this map lookup. `None` lets the intent
-    /// go on.
+    /// the entity clone, so a flood costs the Channel only this map lookup. An intent the runtime
+    /// does not serve yet (private messages and rooms, CHAT-2) is refused here too: it takes no
+    /// line, so letting it reach the locks would make it a free flood. `None` lets the intent go on.
     pub(crate) fn pre_gate(
         &self,
         session: GameSessionId,
@@ -197,7 +198,8 @@ impl ChatRuntime {
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
         let ChatIntent::Say { mode, text } = intent else {
-            return None;
+            // CHAT-2 gates these here when it implements them.
+            return Some(result(ChatDisposition::ChatUnavailable));
         };
         // Unusable text is refused here too, without the Channel and without a line, so it
         // cannot be repeated against the locks for free.
@@ -481,6 +483,7 @@ mod tests {
     use super::*;
     use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
     use crate::gameplay_transport::npc_talk::NpcTalkEntry;
+    use oteryn_protocol_oteryn::chat::ChatRoom;
 
     const BASE: SemanticTimeMicros = SemanticTimeMicros::from_micros(1_000_000);
 
@@ -668,8 +671,38 @@ mod tests {
                 .disposition,
             ChatDisposition::Rejected
         );
-        // An unknown session and a non-say intent are left to the full path.
+        // An unknown session is left to the full path.
         assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
+    }
+
+    #[test]
+    fn the_pre_gate_refuses_unserved_intents_without_the_channel() {
+        let (_runtime, chat, first, _) = two_players(0);
+        let unserved = [
+            ChatIntent::Private {
+                recipient_name: "Other".to_owned(),
+                text: "x".to_owned(),
+            },
+            ChatIntent::Room {
+                room: ChatRoom::World,
+                text: "x".to_owned(),
+            },
+            ChatIntent::OpenRoom(ChatRoom::Help),
+            ChatIntent::CloseRoom(ChatRoom::Help),
+        ];
+        for intent in &unserved {
+            for session in [first.1, session_of(0x7f)] {
+                assert_eq!(
+                    chat.pre_gate(session, intent, BASE)
+                        .expect("refused before the Channel")
+                        .disposition,
+                    ChatDisposition::ChatUnavailable,
+                    "{intent:?}"
+                );
+            }
+        }
+        // No line was taken: a say still passes the gate.
+        assert!(chat.pre_gate(first.1, &say("x"), BASE).is_none());
     }
 
     /// `chat_speak` without the async locks: the pre-gate, then the full Channel path, counting
