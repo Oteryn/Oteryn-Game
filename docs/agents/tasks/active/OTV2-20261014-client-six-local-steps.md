@@ -13,12 +13,11 @@ owner: root
 
 Owner requires all six planned local steps, not another premature stop at CI.
 Parent client-game-ui; sole root writer, AUTHORING. Owned runtime: game_ui.rs,
-preferences_hotkey_pages.rs, settings_ui.rs. No subagents, paid review, new
-dependency, protocol/capability/identity/authority/persistence-format changes,
+preferences_hotkey_pages.rs, settings_ui.rs. No subagents, paid review trigger,
+new dependency family, protocol/capability/identity/authority/persistence-format changes,
 production/account/trust access, E2E or HUD/graphics redesign. The older excluded
 point6 was HUD/graphics; this packet's step6 is reference/audio investigation.
-Base f8c68f18 is clean, remote/draft/MERGEABLE with32success/1skipped and actual
-same-head game-gate SUCCESS. New source needs its own native/CI qualification.
+Cargo patch/derived World input repair is also owned by this packet.
 
 ## 1 — finite source inventory and consumer gaps
 
@@ -50,9 +49,8 @@ Six routed PL/EN Remove/Cancel/Escape cases use the production Options window,
 actual header/modal clicks and a profile with a different action-row layout.
 Opening confirmation does not mutate; Cancel/Escape retain the entire draft;
 confirmed removal selects the surviving profile and its actual bar preferences.
-Inner dismissal never closes outer Options. Initial fixture PageState field and
-PreferenceAction comparison errors were repaired without changing production
-types/lints. Original removal was never invoked in the reference; its exact
+Inner dismissal never closes outer Options. Initial fixture compile errors were
+fixed without changing production types/lints. Original removal was never invoked; exact
 confirmation parity remains UNKNOWN, not closed by Oteryn tests.
 
 ## 3 — existing action bars, no invented assignment path
@@ -112,10 +110,26 @@ reused. Their resource metadata is not a legal Oteryn playback bank or recovered
 native archive schema. Exact C++ defaults/soundEnabled/ZIP/minimap layouts remain
 UNKNOWN; global original configuration contains identity data and is not copied.
 
-New read-only Synology availability probe returns429; later allowed-root listing
-returns404/UNAVAILABLE. No fresh REA analysis is claimed, no process/account is
-restarted and no denied route/credential search used as a workaround. Restore
-the connector or supply private credential-free targeted resources/fixtures.
+Initial read-only Synology connector probes return429 and404/UNAVAILABLE.
+An independently authorized, per-call-gated host-only Desktop Commander route
+subsequently reaches the running otclient-track-a-kasmvnc container. Read-only
+REA README/project metadata is available: Qt indexes cover Authentication,
+GameClient and login/character controllers, not recovered Options/audio
+controllers. Full scans previously timed out; none is rerun or paid for.
+No process/account/configuration is restarted, copied or changed. The protected
+Tibia.new directory returns Permission denied and is not traversed via escalation.
+
+Version mismatch is now established. README's15.33.b21348 binary SHA256 is
+065f961b29904f3231b5c82be2f7748d88c7b74f3d324e12b5d5dd50b14afead;
+the current installed binary is
+accfc073244a48dbe3a9848c26b1c62458b934c5395ef3917ac7613837fdd7f8,
+with public package descriptor15.33.9d148f (not a proven runtime build number).
+Four independently accessible cached software copies share SHA256
+ed5469b9fa71349de688f719434d23875f76f28a3ebd08a36d30f7f6da0af6b8;
+none matches the README. Old REA addresses must not be applied to either changed
+binary. No targeted resource-extraction helper is found in the bounded project/
+temporary helper search. Version-matched resources and credential-free original
+archive fixtures remain missing; connector restoration is no longer the blocker.
 
 Public upstream source investigation: crates.io API returns403; independent
 authorized GitHub reads verify RustAudio/Rodio tagv0.23.0 at
@@ -137,13 +151,47 @@ a legally usable bank and real accepted producers. No fake beep/volume feature.
 One coherent input/transaction batch retains f8's exact Windows proof (PR body),
 adds the inventory and runs scoped full tests/strict/fmt/governance, then one
 exact-source MSVC/DX12 qualification. Keep failed regressions/fixture attempts.
-Linux client230/214/5,strict all-target Clippy,fmt and governance60 pass; exact
-new Windows qualification follows publication. About450handwritten lines is a
+Linux client230/214/5,strict all-target Clippy,fmt and governance60 pass. Published
+71bbdf89d1ab5c913c95adced7cd35827a2b0cbd also passes exact MSVC1.95
+client229/221/5+Session82,strict/fmt/release and DX12 at125%DPI:
+20pages/78 independently rehashed captures/0invalid. Release
+0.1.0+dev.ci.g71bbdf89d1ab, executable SHA256
+67cc2539a4b5a747ccdb0c7df073a449398ab9ea24dec89e102cd8e9f3e7948c,
+manifest SHA256
+8d1fdc253feb2ac674c620be0ddb342348684ed8cd197f12d0f743c2232258ed.
+Owned PC build is Downloads/oteryn-client-71bbdf89-20261014-native;
+audit is Downloads/oteryn-settings-audit-71bbdf89-20261014. Helper31924 exits0
+after134.73s. All new regressions execute; no autologin or owner-profile changes.
+This is not physical OS interaction or whole-client parity proof.
+About500–550handwritten lines is a
 review warning, not a cap;393 generated inventory rows are separately identified.
 No status-only publication or repeated unchanged heavy check. Source/native
 proof is not whole-client1:1, final review/freeze/MQ or an E2E waiver.
 
-All safe local investigation/repair steps are executed; physical OS and fresh
-REA cells remain explicitly incomplete. Required external inputs are isolated
-Windows fixture authority and restored REA/credential-free reference samples.
+## Supply-chain repair after real CI failure
+
+71bb's actual Merge gate run38572338828 fails Rust supply chain job115881144764,
+then validate/game-gate. GitHub logs and local cargo-deny independently identify
+RUSTSEC-2026-0346/0347/0348/0349 in locked rustls0.23.45; all require>=0.23.46.
+Protected main15b8f8bf still has0.23.45. Minimal upstream patch updates the exact
+workspace requirement and Cargo-generated lock checksum to0.23.46, with no
+ignored advisory, trust/wire change or dependency fork. cargo-deny then reports
+advisories/bans/licenses/sources OK. Changed Cargo.lock requires deriving the
+World input digest from the staged tree; bundle digest, entry and revision stay
+unchanged. Old native qualification is not inherited by the successor.
+
+First successor Linux compile fails from disk exhaustion, not an assertion;
+cargo clean -p oteryn-client --profile dev removes only reproducible client
+build caches (9.9GiB), preserving source, recovery bundles and PC evidence.
+Retry disables incremental compilation. Linux client230/214/5,Platform16,
+Session TCP2,strict all-target Clippy of client/Platform/TCP/server,fmt,
+workspace architecture and governance60 pass. World double-build retains
+25,089,907bytes and1b04cc35 bundle digest; staged input hash is e8d897f6.
+Server TLS unit selection:8pass/1already-ignored; no E2E performed.
+Required independent dependency/security
+review goes to the active control plane; root does not emit an owner-funded trigger.
+
+All safe local investigation/repair steps are executed; physical OS and version-
+matched reference cells remain explicitly incomplete. Required external inputs
+are isolated Windows fixture authority and credential-free reference samples.
 Audio bank/event inputs and post-B2 bar activation remain separate later gates.

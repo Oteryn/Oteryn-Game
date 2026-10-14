@@ -14,11 +14,20 @@ green same-head CI/game-gate. The local batch indexes393 catalogue declarations,
 repairs unfocused binding capture and IME/history ownership, and qualifies routed
 profile confirmation plus PL/EN import failure/retry. Do not conflate executable
 Custom Hotkeys Text with the currently disabled native bar Text category.
-Safe OS isolation and fresh REA are separate remaining evidence inputs; Synology
-transport429/404 prevents fresh original inspection. Source-backed audio candidate
+Safe OS isolation and version-matched REA are separate remaining evidence inputs.
+Initial Synology429/404 is superseded by a working per-call-gated host-only route;
+installed/reference binary hashes differ, so old REA addresses cannot be reused
+against the current binary. Source-backed audio candidate
 is Rodio taggedv0.23.0/CPAL0.18.2, not an installed backend or playable bank.
 Current packet: docs/agents/tasks/active/OTV2-20261014-client-six-local-steps.md;
 row index: UI-LOCAL-OPTION-INDEX.md. Older paragraphs below are dated evidence.
+
+Published71bbdf89 passes exact Linux230/214/5 and MSVC229/221/5+Session82,
+strict/fmt/release and native DX1220pages/78captures/0invalid. Its subsequent CI
+fails on four new Rustls0.23.45 advisories, not UI assertions. A minimal upstream
+0.23.46 patch/lock repair and derived World input repin are under qualification;
+no advisory ignored, policy weakened or unchanged CI rerun. Exact proof and
+remaining external inputs are in the six-local-steps packet above.
 
 Latest local follow-up: preserve cfa72fca evidence with an actual input repair,
 not a status-only publication. New production-widget regression proves and fixes

@@ -4,6 +4,18 @@ Draft #1942 is AUTHORING. Presence of a panel or persisted preference does not
 establish visual parity or working gameplay. Original reference captures and
 assets remain private; the product ships independently authored code/artwork.
 
+Latest local-input qualification:71bbdf89d1ab5c913c95adced7cd35827a2b0cbd
+passes Linux230/214/5 and exact MSVC229/221/5+Session82,strict/fmt/release,
+plus native DX12 at125%DPI20pages/78rehashed captures/0invalid. Unfocused
+binding capture, IME/history ownership, profile confirmation and PL/EN import
+failure/retry are actual consumer tests, not saved-field completion. Full hashes
+and paths: docs/agents/tasks/active/OTV2-20261014-client-six-local-steps.md.
+Physical OS interactions, version-matched original resources, legal audio bank
+and post-B2/B3 action-bar activation remain unqualified. Original installed SHA
+now differs from historical REA evidence; old binary addresses are not reused.
+71bb CI subsequently fails four Rustls0.23.45 advisories; the0.23.46 upstream
+patch/lock successor requires fresh qualification and independent security review.
+
 ## Reference audit correction
 
 [Live observations](UI-REFERENCE-OBSERVATIONS.md) establish **35 HUD conditions**
