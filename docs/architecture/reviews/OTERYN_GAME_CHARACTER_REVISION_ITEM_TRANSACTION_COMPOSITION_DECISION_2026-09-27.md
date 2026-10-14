@@ -199,8 +199,9 @@ grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.2).** Rule 1
 also covers a weapon swing's DUR-03 transaction (`WeaponUseCause`): it advances no
 `CharacterRevision`. Rules 2 and 3 apply in the server-originated variant above: the cause lock is the
-swing key `(WorldId, ChannelId, scope ownership generation, runtime actor id, actor generation, swing
-sequence, CharacterId)`, and the fence is the actor's current admitted session's
+allocated UUIDv7 TransactionId frozen at PREPARE (RANGED-0 §6.2, R8; no actor generation or swing
+sequence key), with provenance `(WorldId, ChannelId, scope ownership generation, runtime actor id,
+CharacterId)` for audit and the restart read, and the fence is the actor's current admitted session's
 `CurrentCharacterItemFence` without a CommandRef, whose Character and World equal the key's; a Ground
 drop adds the DUR-03 §32 scope fence. Rule 4's lock order applies as extended by ITEM-MOVE-WIRE-1 §7.2
 and BAGS-0 §4.2.

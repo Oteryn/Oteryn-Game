@@ -117,15 +117,16 @@ degrade and resync dispositions are unchanged
 **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs rank with players and creatures as actors.
 VIS-3 does not offer capability 6 before NPC-VIS-1 adds kind 5 to `world_spatial_v1.proto`
 `EntityKind`.
-**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
-tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
+**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** None: RANGED-0 adds no `ground_ordinal`
+and makes no change to this section (the Ground order is the existing `stack_ordinal`, and the client's
+in-tile order and the 256 cutoff are unchanged); the earlier pending amendment is withdrawn. The
+rule below is the current rule.
 Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
 actors first as above; items by floor distance, Chebyshev distance, then the canonical tile key
 `(floor, y, x)` in native floor coordinates (`OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1` §11) so
-tiles at equal distance have a total order, then within one tile from the top down (descending
-`ground_ordinal`, then entity identity for legacy rows at ordinal 0). A cutoff inside a tile
+tiles at equal distance have a total order, then within one tile from the top down (`stack_ordinal DESC NULLS FIRST`, the migration 0034 column, then entity identity for legacy rows whose `stack_ordinal` is NULL). A cutoff inside a tile
 therefore drops its bottom items, never its top item. **Emission** (the order the client stacks a
-tile's selected items): ascending `ground_ordinal`, top last. `WorldSpatialEntityV1` carries no
+tile's selected items): the exact reverse of the selection order, `stack_ordinal ASC NULLS LAST`, with legacy NULL rows last and their entity-identity order reversed, top last. `WorldSpatialEntityV1` carries no
 ordinal, so a delta may add an item to a tile the client already shows only when it lands above
 every shown item of that tile (a new top); any other change of a shown tile's selected items (a
 cutoff moving inside the tile, a lower item entering) is sent as a new snapshot (the "resync"
