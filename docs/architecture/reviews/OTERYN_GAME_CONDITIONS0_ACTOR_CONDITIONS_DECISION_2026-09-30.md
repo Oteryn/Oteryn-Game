@@ -169,6 +169,13 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
   refused action spends nothing and draws nothing.
+- Precedence against the existing admission refusals: the action is first identified (the spell
+  words resolve to a spell, the rune resolves through its item definition, the attack intent names
+  its target id); then the condition gates run before every other existing cast and attack admission
+  check (protection zone, vocation, level, learned, premium, target, range and line of sight
+  included). A gated actor therefore always gets the condition refusal and its §7 disposition, never
+  the protection-zone or another existing disposition, and the audit records that one reason; an
+  action no gate refuses keeps the existing checks in their existing order.
 - When several gates refuse the same action, the first in the order `muted`, `pacified`, `powerless`
   answers alone (`agony` gates nothing), so a muted actor's attack spell keeps the `MUTED` detail and
   the audit records that one reason.
@@ -316,7 +323,8 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - **Must decide now:** YES. Charms, spells, monster attacks and food need it, and movement needs
   speed.
-- **Minimum sufficient:** six families, closed conflict keys, one dispel selector, runtime
+- **Minimum sufficient:** six families (`SPEED`, `DAMAGE_OVER_TIME`, `FOOD_REGENERATION`, `RECOVERY`,
+  `MANA_SHIELD`, `LIGHT`), closed conflict keys, one dispel selector, runtime
   instances except food time, one vitals revision and one entity field.
 - **Superseding evidence:** official tick or refresh rules; DUR-02 durable vitals.
 - **Deliberately not decided:** drunk, invisible, outfit, skill boosts, fear, root; diagonal steps;
