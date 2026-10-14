@@ -12,6 +12,9 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
+
+CANONICAL_CHECK = "game-gate"  # .github/repository-policy.json required status
 
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
@@ -41,6 +44,13 @@ def _flag(value) -> bool:
     return value
 
 
+def _timestamp(value) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"expected an ISO-8601 timestamp, got {value!r}")
+    datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return value
+
+
 def evaluate(snapshot) -> dict:
     """Return {"verdict", "blockers", "ready_at"}; any malformed input fails closed."""
     try:
@@ -56,7 +66,7 @@ def _evaluate(s: dict) -> dict:
     if len(head) != 40:
         raise ValueError("candidate.head_sha must be a full 40-character SHA")
     pr = cand["pr"]
-    if _flag(cand.get("merged", False)) or _flag(cand.get("queued", False)):
+    if _flag(cand["merged"]) or _flag(cand["queued"]):
         return {"verdict": "NOOP", "blockers": [], "ready_at": None}
 
     found: dict[str, dict] = {}
@@ -72,7 +82,10 @@ def _evaluate(s: dict) -> dict:
             "CANDIDATE_NOT_OPEN_READY", "writer", f"PR {pr} open, ready for review, base main")
 
     runs = s["checks"]["runs"]
-    for name in s["checks"]["required"]:
+    required = s["checks"]["required"]
+    if not isinstance(required, list) or CANONICAL_CHECK not in required:
+        raise ValueError(f"checks.required must include {CANONICAL_CHECK}")
+    for name in required:
         hit = [r for r in runs if r["name"] == name and r["head_sha"] == head]
         if len(hit) > 1:
             # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
@@ -127,10 +140,8 @@ def _evaluate(s: dict) -> dict:
         if failure["head_sha"] != head:
             continue
         if _flag(failure["cause_addressed"]):
-            # Optional: when the diagnosis showing the cause is outside the candidate was recorded.
-            at = _text(failure.get("addressed_at"))
-            if at:
-                stamps.append(at)
+            # Required: when the diagnosis showing the cause is outside the candidate was recorded.
+            stamps.append(_timestamp(failure.get("addressed_at")))
         else:
             found["PRIOR_MQ_FAILURE"] = _blocker(
                 "PRIOR_MQ_FAILURE_UNRESOLVED", "writer",
@@ -139,6 +150,9 @@ def _evaluate(s: dict) -> dict:
             break
 
     auth = s["authorization"]
+    scope = auth["scope"]
+    if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
+        raise ValueError("authorization.scope must be a list of strings")
     if (auth["head_sha"] != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
             or not _text(auth.get("granted_by"))):
         found["AUTHORIZATION"] = _blocker(

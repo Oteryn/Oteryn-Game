@@ -13,7 +13,8 @@ OTHER = "b" * 40
 
 def ready() -> dict:
     return {
-        "candidate": {"pr": 1, "head_sha": HEAD, "state": "open", "draft": False, "base_ref": "main"},
+        "candidate": {"pr": 1, "head_sha": HEAD, "state": "open", "draft": False, "base_ref": "main",
+                      "merged": False, "queued": False},
         "checks": {
             "required": ["game-gate"],
             "runs": [{"name": "game-gate", "head_sha": HEAD, "status": "completed",
@@ -102,6 +103,7 @@ class EnqueueReadinessTest(unittest.TestCase):
             {"head_sha": HEAD, "cause": "lint", "cause_addressed": False, "at": "2026-10-14T10:20:00Z"}]
         self.assertEqual(reasons(snap), ["PRIOR_MQ_FAILURE_UNRESOLVED"])
         snap["queue"]["prior_failures"][0]["cause_addressed"] = True
+        snap["queue"]["prior_failures"][0]["addressed_at"] = "2026-10-14T10:30:00Z"
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
 
     def test_failure_of_older_head_does_not_block_new_head(self):
@@ -179,6 +181,29 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True,
                                             "addressed_at": "2026-10-14T12:00:00Z"}]
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T12:00:00Z")
+
+    def test_canonical_check_required(self):
+        for required in ([], ["other"]):
+            snap = ready()
+            snap["checks"]["required"] = required
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], required)
+
+    def test_addressed_failure_requires_timestamp(self):
+        for extra in ({}, {"addressed_at": "nope"}):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [dict({"head_sha": HEAD, "cause_addressed": True}, **extra)]
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], extra)
+
+    def test_scalar_scope_rejected(self):
+        snap = ready()
+        snap["authorization"]["scope"] = "no-enqueue"
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_candidate_flags_must_be_present(self):
+        for flag in ("queued", "merged"):
+            snap = ready()
+            del snap["candidate"][flag]
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], flag)
 
 
 if __name__ == "__main__":
