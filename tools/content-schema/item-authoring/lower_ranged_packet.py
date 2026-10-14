@@ -177,7 +177,7 @@ def _parse_damage(raw):
     if not match:
         return None
     low, high = int(match[1] or match[3]), int(match[2] or match[4])
-    return (low, high) if 0 < low <= high <= 65535 else None
+    return (low, high) if 0 <= low <= high <= 65535 else None
 
 
 def _parse_element(raw):
@@ -392,11 +392,11 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             row["break_chance_pct"] = _uint(raw_break, 0, 100) if raw_break else 0
             if row["break_chance_pct"] is None:
                 reasons.append("break_chance_malformed")
-            sources["break_chance_pct"] = "CANARY"
+            sources["break_chance_pct"] = "CANARY" if raw_break else "DERIVED"
             row["on_use"] = (
                 "CONSUME" if nested.get("action") == "removecount" else "DROP"
             )
-            sources["on_use"] = "CANARY"
+            sources["on_use"] = "CANARY" if nested.get("action") else "DERIVED"
         elif kind == "AMMUNITION":
             if nested.get("action") != "removecount":
                 reasons.append("ammunition_action_unknown")
@@ -424,7 +424,7 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             low, high = _uint(nested.get("fromdamage")), _uint(nested.get("todamage"))
             canary_damage = (
                 (low, high)
-                if low is not None and high is not None and 0 < low <= high
+                if low is not None and high is not None and 0 <= low <= high
                 else None
             )
             if damage is not None:

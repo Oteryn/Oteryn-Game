@@ -202,6 +202,18 @@ def test_quiver_requirements_have_provenance_and_parity():
     assert found["parity_pending"] == ["min_level"]
 
 
+def test_zero_minimum_damage_and_derived_throwing_defaults():
+    assert lower._parse_damage("0-10") == (0, 10)
+    assert lower._parse_damage("10-0") is None
+    assert lower._parse_damage("5-70000") is None
+    found = row(run(snapshot(), {1: SNOWBALL}, {1})[0], 1)
+    assert found["break_chance_pct"] == 0
+    assert found["sources"]["break_chance_pct"] == "DERIVED"
+    assert found["sources"]["on_use"] == "CANARY"
+    spear = row(run(snapshot(), {1: SPEAR}, {1})[0], 1)
+    assert spear["sources"]["break_chance_pct"] == "CANARY"
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})
