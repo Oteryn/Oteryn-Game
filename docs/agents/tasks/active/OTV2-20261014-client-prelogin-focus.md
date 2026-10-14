@@ -106,3 +106,42 @@ evidence update remains local for the next material batch; PR body and own
 coordination comment carry the exact proof immediately. Earlier native evidence
 is retained, not inherited. Original1:1, E2E, later capabilities and completion
 remain explicitly unproved.
+
+## Normal-client native focus acceptance
+
+Same published source690e22ad/executable hash above, without an audit flag.
+Own client34888/HWND13893678, private child-only LOCALAPPDATA under
+C:/Users/barte/Downloads/oteryn-focus-690e22ad-20261014. Endpoints unset in
+that child; no login/account operation, clipboard read/write, OS configuration
+or owner preference access. Every host call uses the unchanged protected exact
+per-call gate with fresh GitHub metadata. Controllers execute in memory only.
+
+Actual OS SendInput F10 opens/hides/reopens Options. A blank own WinForms
+window takes real foreground; owned-client PostMessage WM_KEYDOWN/UP supplies
+queued background F10 in both closed and open states. The client neither steals
+focus nor toggles Options. These queued-message tests are not physical-keyboard
+parity or winit is_synthetic lifecycle proof; the latter remains component-tested.
+After real focus recovery, ordinary F10 still works. Actual Advanced checkbox
+changes visible Basic→Controls navigation; F10 hide/reopen retains this draft.
+Explicit Escape followed by F10 restores visible Basic and unchecked Advanced.
+No active settings file exists at any stage, proving neither implicit Apply nor
+an accidental saved value is being counted as draft behavior.
+
+Successful controller28044 exits0/7.65s. Four key captures are visually inspected:
+04 closed/background,07 open/background/Advanced,09 foreground retained draft,
+11 after Cancel/Basic. Report-close controller6960 exits0/1.16s; all8 successful
+stage captures are independently rehashed and decoded1125x775/120DPI,0invalid.
+Report native-focus-report.json SHA256:
+8030baaf57ca05654ed7a51bd0711e5409ec750deffae097df79cc4d26c8eb93.
+Client34888 closes normally exit0; blank windows are disposed. Other processes,
+installation and personal state remain untouched; all12 PNGs are retained, not
+12passed cases. First x35 click missed the checkbox, so its misleading filename
+02-unsaved-advanced is NOT draft-change proof. First blank fixture failed to
+activate before key messages and safely exited1; the owned form was disposed.
+Using the already-tested WinForms Activate/TextBox.Focus/DoEvents path repairs
+that fixture, not client code. Retain both failed/partial attempts.
+
+This closes the scoped normal-client F10/focus/draft check only, not whole-client
+1:1, gameplay/E2E, supplementary input, audio or later capability gates. Runtime
+is unchanged; no rebuild, no status-only source push. Evidence waits locally for
+the next material authoring batch, with immediate PR/canonical-comment proof.
