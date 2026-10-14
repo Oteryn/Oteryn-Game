@@ -131,6 +131,7 @@ def shared_cache_completion_regressions() -> None:
         ("rust.yml", ("linux",)),
         ("merge-gate.yml", ("rust_fast",)),
         ("merge-group-gate.yml", ("rust_linux", "durability_postgres")),
+        ("g4-canonical-worldproject-package-seed.yml", ("qualify",)),
     )
     for filename, jobs in consumers:
         text = (root / ".github/workflows" / filename).read_text(encoding="utf-8")

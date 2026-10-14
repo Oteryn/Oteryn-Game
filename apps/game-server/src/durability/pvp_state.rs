@@ -131,7 +131,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_session_fence(&mut tx, &fence, &node).await? {
+                    if let Err(error) = assert_session_fence(&mut tx, &fence.item_fence(), &node).await? {
                         return Ok(Err(error));
                     }
                     for target in &targets {
@@ -194,7 +194,9 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_session_fence(&mut tx, &fence, &node).await? {
+                    if let Err(error) =
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
                         return Ok(Err(error));
                     }
                     let stored = load_pvp_state(&mut tx, fence.character_id).await?;

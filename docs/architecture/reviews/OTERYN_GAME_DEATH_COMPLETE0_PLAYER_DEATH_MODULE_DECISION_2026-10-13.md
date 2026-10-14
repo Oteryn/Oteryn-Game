@@ -7,7 +7,8 @@
 - Lifts: the D1022 waiver of DEATH-3 (`OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`,
   Resolution 2026-10-13, §4.4 "Delivery gap")
 - Builds on: the Reference first player death decision (D58-D68), DEATH-0 receipt decision (§3.1,
-  §3.3, §3.4), PARTY-PVP-0 §9-§10, DUR-03 contract §15 and §39, D3 corpse decision
+  §3.3, §3.4), PARTY-PVP-0 §9-§10, DUR-03 contract §15 and §39, D3 corpse decision, GOLD-FEE-1 §4.3
+  with BANK-FEE-0 §§3-4 (blessing payment), PREMIUM-ACTIVATION0 §1.2 (the Premium gate)
 - Admission baseline: `main@59f9fb12`
 - Runtime, registry, migration, protocol and production authority: **NONE**. Each batch below needs its
   own allocation.
@@ -90,15 +91,27 @@ contents are not listed in the set: they travel with the container.
 
 - **Exemptions.** No selection and no amulet use for a character at or below level 8 (D65), without a
   vocation, or at or below the level of a verified Global exemption read at the target date.
-- **Amulet of Loss.** Selected when worn, the character has fewer than 5 regular blessings, the death is
-  not PvP and the character is not exempt. It is the necklace slot item with the content key of the
-  amulet. When selected, the lost-item set is empty. When not selected (5 or more blessings, exempt, PvP
-  skull rule of PARTY-PVP-0 §10), it stays equipped.
+- **Amulet of Loss.** Selected when worn, the character has fewer than 5 regular blessings, the character is
+  not exempt, the death is not a red- or black-skull death, and the death is not an `adventurer_applied`
+  death (PARTY-PVP-0 §10.2: an active Adventurer's Blessing, Open world, level 20 or less, `adventurer_forfeited`
+  false, loses no XP, item or blessing, so it is evaluated before amulet selection and drawing and neither
+  consumes the amulet nor drops items; red/black skull deaths bypass the amulet; every other PvP death uses the PvE
+  amulet and ladder rules). It is the necklace slot item with the content key of the
+  amulet. When selected, the lost-item set is empty. When not selected (5 or more blessings, exempt,
+  red/black skull death), it stays equipped.
+- **Skull death.** At red or black skull every equipped item and the backpack are lost (D65 exemptions
+  still apply); no draw.
 - **Draw.** Otherwise each equipped item and the backpack is drawn independently against the D62 ladder
   in parts per thousand: backpack 1000/700/450/250/100/0 and equipped item 100/70/45/25/10/0 for 0/1/2/3/4
-  and 5 or more regular blessings. The draw for slot `s` is the first 16 bits (modulo 1000) of a
-  domain-separated SHA-256 over the death occurrence, the policy digest and the slot index; the item is
-  lost when the draw is below the threshold. No other source of randomness is used. The slot order is
+  and 5 or more regular blessings. The draw for slot `s` reuses the canonical sampler already on `main`
+  (`apps/game-server/src/domain/death.rs`), with no second generator: `deterministic_decision_u64`
+  (`crates/simulation-determinism`: decision domain v1, active profile revision, the World's gameplay
+  decision root, the death occurrence, the purpose `oteryn.death.item_loss.v1`, and the slot's draw
+  index) mapped onto 0..999 by `per_mille_roll`, the 64-bit multiply-shift `(draw · 1000) >> 64`. No
+  modulo is taken; each value has either floor or ceil of 2^64/1000 preimages, a deviation below
+  10^-16 that this decision accepts. The item is lost when the roll is below the threshold. A change
+  to the sampler, its purpose string or the draw indices is a new purpose version with its own
+  decision. No other source of randomness is used. The slot order is
   fixed in the death policy.
 - Everything above is recorded in the receipt and `command_binding`; a retry returns the first result.
 
@@ -151,14 +164,36 @@ PVP-RT-1b.
 
 ### 4.7 Blessing state and purchase (batch E)
 
-- A purchase is a composed workflow keyed by a purchase occurrence (UUIDv7): (1) the NPC service
-  validates eligibility (the 3 Premium blessings need current Premium at purchase, D67), the level price
-  and the blessing not already held; (2) payment through a DUR-03 burn with a new typed sink
-  `BlessingPurchaseCause` (BANK-FEE0 gold rules, no silent deletion); (3) one Character transaction
-  inserts the blessing with provenance and a grant receipt keyed by the purchase occurrence. It does not
-  advance `CharacterRevision` (DEATH-0 §3.3).
-- Order and recovery: the grant is written only after the payment committed. A committed payment without
-  a grant is completed on retry. A grant without payment never exists.
+- A purchase is one atomic PostgreSQL transaction under the Character fence, keyed by a purchase
+  occurrence (UUIDv7), by the GOLD-FEE-1 §4.3 composition (D177) as BANK-FEE-0 (GOLD-FEE-2) amends it:
+  the blessing grant and its Character grant receipt advance `CharacterRevision` exactly once (DUR-02
+  rule 2), the price is paid as one fee with the new typed sink `BlessingPurchaseCause`, and the
+  mandatory DUR-03 fee event commits in the same transaction. All or none: a payment never commits
+  without its blessing and a blessing never without its payment.
+- **Payment (BANK-FEE-0 §§3-4).** With `T` the worth of the eligible carried coins and `F` the price:
+  `T >= F` pays by BURN lines with change MINT as GOLD-FEE-1 §4.2 defines, and the bank is not touched;
+  `T < F` for a non-junior payer burns every eligible coin input whole (no change) and debits `F - T`
+  from the payer's (Account, World) bank balance by one `FEE_DEBIT` ledger entry referencing the fee
+  record, carried as the fee event's `FEE_DEBIT` value line; the balance row is locked after the
+  backpack and its coin entries (BANK-0 §4.1). A lower balance, or `T < F` for a junior character
+  (BANK-0 §4.4), is refused as `InsufficientFunds` and writes nothing. The grant receipt binds the bank
+  part (gold fee §4.3 as BANK-FEE-0 §6 amends it). The payment uses the shared fee writer; batch E
+  adds no second gold or bank path.
+- **Premium (PREMIUM-ACTIVATION0 §1.2).** A purchase of one of the 3 Premium blessings (D67) runs inside
+  exactly one `with_premium_gate(account_id, …)` invocation for the admitted controller's Account; the
+  closure refuses unless the status is `Current` (`NotActivated` and `NotCurrent` are refused, the
+  blessings have no pre-delivery behaviour) and otherwise opens the purchase transaction itself and
+  commits it before the closure returns. Premium is never read a second time and never cached across
+  the gate; the purchase transaction takes no gate lock. Until PREM-WIRE-1 provides the gate, batch E
+  refuses the 3 Premium blessings and reads Premium no other way. Non-Premium blessings take no gate.
+- **Eligibility.** The NPC service may pre-check the level price and that the blessing is not already
+  held, as a fast refusal only; the transaction re-checks these durable facts (character level, held
+  blessings) under the Character fence, and that re-check decides.
+- The grant receipt is a further kind in the Character receipt chain (the twelfth at this commit). At this commit the latest full
+  guard union is `0073_character_progression_guard_wheel_union.sql` with eleven kinds (XP, death, stance,
+  bestiary, charm, monk, build, proficiency, familiar, quest, wheel as that migration lists them). Batch E's
+  migration must extend the then-latest full guard union, preserving every existing arm and adding the
+  grant kind, never the old two-kind DEATH-0 §3.2 shape.
 - The price table and the Twist of Fate acquisition are read at the target date; Twist of Fate is a
   PARTY-PVP-0 matter (`twist_of_fate_used`), not purchased here.
 
@@ -168,7 +203,7 @@ PVP-RT-1b.
   single registry PR, after the first client end-to-end proof.
 - Event, proto and resource registries: batch B only, after #2039 and #2040 merge.
 - Migrations: one for B (storage change of container entries), one for C (receipt), one for E (grant
-  receipt); D needs none (§4.2). Numbers are leased by the control plane after 0083; one migration PR at a
+  receipt kind and chain guard); D needs none (§4.2). Numbers are leased by the control plane after 0083; one migration PR at a
   time, in merge order.
 
 ## 5. Delivery: minimum batches
@@ -202,6 +237,12 @@ primitives, C owns every use of them.
   rules (one receipt change, the container rule, the gate).
 - **Minimum sufficient:** reuse the existing receipt columns, one new cause per item operation, no corpse
   Item, one migration per storage concern.
+- **What becomes harder or impossible later:** the receipt shape and its checks are fixed for good
+  (a later item rule needs a new migration, as DEATH-0 showed); a container stays attached to its
+  re-keyed entries, so a deeper nesting or a split of contents needs a new decision; one lost-set bound
+  of 10 ties the receipt to the ten equipment slots; the chain gets a further receipt kind (the twelfth at this commit) with a
+  guard change (E) that every later Character receipt kind must keep compatible; the module is
+  accepted whole, so a defect in one batch delays enabling all of them.
 - **Superseding evidence:** measured limits from batch B; the Global exemption at the target date; a
   decision on the corpse sprite.
 
@@ -225,7 +266,7 @@ required_revalidation:
   - "B: a death drop moves one item once per cause; a container keeps its contents and is never split; the amulet burn has a typed sink; replay, conflict and stale fence write nothing; max and max+1 for each registered row"
   - "C: the ladder per blessing count 0-5 at levels 1, 8, 9, 24 and 500; amulet selection and no-selection cases; restart mid-workflow resumes every cause once; no placement before all causes commit; no duplication"
   - "D: a PvP death writes the receipt fields; black skull respawn 40 HP and 0 mana; Twist of Fate and Adventurer's Blessing per PARTY-PVP-0 §10"
-  - "E: payment before grant; retry completes a paid purchase; Premium blessing without Premium is refused"
+  - "E: payment and grant commit atomically, one revision advance, no payment without grant; coins-only, coins-plus-bank and bank-only payments (non-junior) and the junior refusal; Premium blessing purchase runs in one gate invocation and is refused for NotActivated and NotCurrent"
 remaining_unknowns: [Newhaven exemption, Ground cell limit and decay, blessing prices, amulet item key, container enumeration need]
 next_action: "#1622 routes the independent review, then allocates B after #2039 and #2040."
 ```

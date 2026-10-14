@@ -96,7 +96,17 @@ fn checked_in_table_carries_the_decision_values() {
         1.0
     );
     assert_eq!((table.fist.attack, table.fist.defence), (7, 7));
-    assert_eq!(table.player_melee.damage_coefficient, 0.085);
+    assert_eq!(
+        (
+            table.player_melee.attack_numerator,
+            table.player_melee.attack_denominator,
+            table.player_melee.skill_offset,
+            table.player_melee.skill_divisor,
+            table.player_melee.minimum_divisor,
+            table.player_melee.maximum_multiplier,
+        ),
+        (6, 5, 4, 28, 2, 2)
+    );
     assert_eq!(table.defence.scaling_shield, 0.16);
     assert_eq!(table.defence.scaling_weapon, 0.146);
     assert_eq!(table.defence.scaling_fist, 0.15);
@@ -139,37 +149,37 @@ fn table_parse_rejects_bad_tables() {
 // --- formulas ---
 
 #[test]
-fn fist_damage_matches_canary_per_fight_mode() {
+fn fist_damage_follows_the_pinned_tibiatools_expression_per_fight_mode() {
     let fist = player_fist_formula(table());
     assert!(!fist.reads(Input::AttackValue));
     let cases = [
-        (8, 10, FightMode::Offensive, 7),
-        (8, 10, FightMode::Balanced, 5),
-        (8, 10, FightMode::Defensive, 4),
-        (100, 50, FightMode::Offensive, 50),
+        (8, 10, FightMode::Offensive, 3, 9),
+        (8, 10, FightMode::Balanced, 2, 7),
+        (8, 10, FightMode::Defensive, 2, 5),
+        (100, 50, FightMode::Offensive, 27, 50),
     ];
-    for (level, skill, mode, maximum) in cases {
+    for (level, skill, mode, minimum, maximum) in cases {
         // The attack value input is ignored: fists always hit with attack 7.
         let inputs = attack_inputs(level, skill, 999, mode);
         assert_eq!(
             fist.bounds(&inputs),
-            Ok((0, maximum)),
+            Ok((minimum, maximum)),
             "{level} {skill} {mode:?}"
         );
     }
 }
 
 #[test]
-fn melee_damage_matches_canary() {
+fn melee_damage_follows_the_pinned_tibiatools_expression() {
     let melee = player_melee_formula(table());
     assert!(melee.reads(Input::AttackValue));
     assert_eq!(
         melee.bounds(&attack_inputs(100, 100, 50, FightMode::Offensive)),
-        Ok((0, 445))
+        Ok((131, 465))
     );
     assert_eq!(
         melee.bounds(&attack_inputs(300, 120, 45, FightMode::Balanced)),
-        Ok((0, 404))
+        Ok((149, 418))
     );
 }
 
@@ -179,12 +189,12 @@ fn melee_level_term_follows_the_official_curve() {
     // Up to level 500 the curve equals Canary's level / 5.
     assert_eq!(
         fist.bounds(&attack_inputs(500, 10, 0, FightMode::Offensive)),
-        Ok((0, 106))
+        Ok((102, 108))
     );
-    // Above it the official curve (116 at 600) replaces level / 5 (120).
+    // Above it the official curve (the level term at 600 is 116, not 120).
     assert_eq!(
         fist.bounds(&attack_inputs(600, 10, 0, FightMode::Offensive)),
-        Ok((0, 122))
+        Ok((118, 124))
     );
 }
 
@@ -545,6 +555,42 @@ fn waiting_target_is_held_and_cleared_target_is_dropped() {
         state.poll_swing(ms(2_700), interval, &facts()),
         SwingPoll::NoTarget
     );
+}
+
+/// CHASE-1 is client-driven (LOOP-COMBAT-MODES-1): the client walks after its target, so the
+/// server must keep an out-of-range target through every poll while it runs and swing the
+/// moment the client has closed the distance, without spending an interval while it waited.
+#[test]
+fn a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach() {
+    let interval = table().attack_interval_micros();
+    let mut state = AttackState::<u32, u8>::default();
+    state.set_target(9, 0, &facts()).unwrap();
+    for (at, distance) in [(250, 2), (500, 4), (750, 6), (1_000, 5), (1_250, 2)] {
+        let fleeing = TargetFacts {
+            distance,
+            ..facts()
+        };
+        assert_eq!(
+            state.poll_swing(ms(at), interval, &fleeing),
+            SwingPoll::Waiting(SwingWait::OutOfRange),
+            "distance {distance} at {at} ms"
+        );
+        assert_eq!(state.target(), Some(9));
+    }
+    assert_eq!(
+        swing_at(state.poll_swing(ms(1_500), interval, &facts())).0,
+        1_500
+    );
+    // Out of sight is the only way a runaway ends the chase.
+    let gone = TargetFacts {
+        present_and_visible: false,
+        ..facts()
+    };
+    assert_eq!(
+        state.poll_swing(ms(2_000), interval, &gone),
+        SwingPoll::Cleared(TargetCleared::Vanished)
+    );
+    assert_eq!(state.target(), None);
 }
 
 #[test]

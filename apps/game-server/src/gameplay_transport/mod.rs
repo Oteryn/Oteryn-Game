@@ -15,6 +15,7 @@ mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod item_move;
 mod item_ref_admission;
+mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
@@ -29,6 +30,7 @@ mod monster_ai_cycle;
 mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
+mod npc_trade_command;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
@@ -2897,6 +2899,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
+    async fn npc_trade(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> npc_trade_command::NpcTradeStep {
+        npc_trade_command::npc_trade(self, actor, command, intent).await
+    }
+
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
@@ -3145,6 +3156,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
+    async fn use_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> UseOutcome {
+        self.use_backpack_item(actor, command, item).await
     }
 
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162

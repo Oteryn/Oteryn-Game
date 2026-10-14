@@ -143,8 +143,12 @@ impl LastPositionFlush {
     /// writes, and mark it done only once none failed. The node stops waiting at its budget.
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
+        let mut monks_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
-            if authority.write_due_last_positions(true).await == 0 {
+            // OPS-SAVE-1: the monk values of the live actors go with the positions.
+            let failed = authority.write_due_last_positions(true).await
+                + authority.flush_monk_states(&mut monks_settled).await;
+            if failed == 0 {
                 self.done.cancel();
                 return;
             }
@@ -250,6 +254,19 @@ impl LastPositions {
 
     fn tracked(&self, session: GameSessionId) -> Option<Track> {
         self.tracks.lock().ok()?.get(&session).copied()
+    }
+
+    /// OPS-SAVE-1: every tracked session with its actor, for the shutdown flush of actor state.
+    pub(super) fn tracked_actors(&self) -> Vec<(GameSessionId, ExactActorRef)> {
+        self.tracks
+            .lock()
+            .map(|tracks| {
+                tracks
+                    .iter()
+                    .map(|(session, track)| (*session, track.actor))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     /// The sessions due at `now`, or every tracked session when `all`, the most overdue first.

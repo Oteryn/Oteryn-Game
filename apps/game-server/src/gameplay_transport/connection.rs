@@ -37,6 +37,7 @@ use super::item_view::{
     ItemViewDelta, OpenDecision, SessionItemView, ViewItem,
 };
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
+use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
@@ -426,6 +427,17 @@ pub(crate) trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// ITEM-USE-1c: one `USE` of the main backpack direct entry `item` (food or a potion) under
+    /// capability 15. `command` is as for [`Self::use_object`].
+    fn use_item(
+        &self,
+        _actor: ExactActorRef,
+        _use: UseCommand,
+        _item: ItemKey,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
+    }
+
     /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
     /// (`read_character_backpack`) for domain 9, read for the snapshot and after each committed
     /// `USE`. `None` when it cannot be read: a session that selected capability 4 then fails
@@ -579,6 +591,21 @@ pub(crate) trait FreshAdmissionAuthority {
         _shown: Option<WireEntityRef>,
     ) -> impl Future<Output = Option<NpcUpdate>> {
         async { None }
+    }
+
+    /// NPC-TRADE-2: one `NPC_TRADE_INTENT` (command 8) of the admitted actor, keyed by its
+    /// CommandRef: replay first, then one durable NPC trade.
+    fn npc_trade(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> impl Future<Output = NpcTradeStep> {
+        async {
+            NpcTradeStep::Refused(super::npc_command::NpcTradeRefusal::only(
+                NpcIntentDisposition::Rejected,
+            ))
+        }
     }
 
     /// NPC-CMD-1a: one `NPC_TALK_INTENT` (command 7) of the admitted actor.
@@ -2090,6 +2117,9 @@ where
             Chat(ChatIntentResult),
             /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
             Npc(NpcIntentDisposition, NpcUpdate),
+            /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
+            /// 7 and 8 payloads.
+            NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -2168,11 +2198,36 @@ where
                             ContainerObservation::Container { .. } | ContainerObservation::TooFar
                         )
                     });
-                    let observation = match key.filter(|_| container.is_none()) {
+                    // ITEM-USE-1c: under capability 15 a main backpack entry that opens nothing
+                    // is used (food, a potion); every other handle keeps the corpse path.
+                    let consumable = container.is_none()
+                        && matches!(key, Some(ItemKey::Instance(_)))
+                        && admitted
+                            .continuity
+                            .selected_capabilities
+                            .contains(CAPABILITY_ITEM_USE_V1)
+                        && item_view
+                            .as_ref()
+                            .zip(key)
+                            .is_some_and(|(view, key)| view.is_backpack_entry(&key));
+                    let observation = match key.filter(|_| container.is_none() && !consumable) {
                         Some(key) => authority.observe_item_target(actor, key).await,
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
+                        (_, Some(key), _) if consumable => Dispatch::Use(
+                            authority
+                                .use_item(
+                                    actor,
+                                    UseCommand {
+                                        game_session_id: admitted.game_session_id,
+                                        command_id: command.command_id,
+                                        item_fence: admitted.item_fence,
+                                    },
+                                    key,
+                                )
+                                .await,
+                        ),
                         (Some(view), Some(key), _) if container.is_some() => {
                             let Some(views) = container_views.as_mut() else {
                                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -2374,9 +2429,54 @@ where
                 },
             )
         } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
-            // NPC-CMD-1a: trade is NPC-CMD-1b; the window is closed, so no intent can be valid.
-            let _ = decode_npc_trade_intent(command.payload);
-            Dispatch::Npc(NpcIntentDisposition::Rejected, NpcUpdate::default())
+            // NPC-TRADE-2: a malformed intent is REJECTED. A committed trade answers OK and the
+            // inventory delta (domain 9) follows when the session shows items; an unknown outcome
+            // ends the connection before the CommandId is sequenced, so the resend replays.
+            let step = match decode_npc_trade_intent(command.payload) {
+                Ok(intent) => {
+                    authority
+                        .npc_trade(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: command.command_id,
+                                item_fence: admitted.item_fence,
+                            },
+                            intent,
+                        )
+                        .await
+                }
+                Err(_) => NpcTradeStep::Refused(super::npc_command::NpcTradeRefusal::only(
+                    NpcIntentDisposition::Rejected,
+                )),
+            };
+            match step {
+                NpcTradeStep::Traded => {
+                    let mut deltas = Vec::new();
+                    if let Some(view) = item_view.as_mut() {
+                        let Some(inventory) = item_move::observe_inventory(
+                            authority,
+                            actor,
+                            admitted.game_session_id,
+                            view,
+                        )
+                        .await
+                        else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        let Ok(delta) = view.inventory_committed(inventory) else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        admitted.continuity.item_view = view.continuity();
+                        deltas.extend(delta);
+                    }
+                    Dispatch::NpcTrade(NpcIntentDisposition::Ok, NpcUpdate::default(), deltas)
+                }
+                NpcTradeStep::Refused(refusal) => {
+                    Dispatch::NpcTrade(refusal.disposition, refusal.update, Vec::new())
+                }
+                NpcTradeStep::Unknown => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            }
         } else if command.command_type == COMMAND_TYPE_ATTACK_TARGET_INTENT {
             // ATTACK-1b: over ATTACK0-RL-01 (25 per second per GameSession, sliding window) it is
             // REJECTED with an empty payload before decoding, as is a malformed intent.
@@ -2512,7 +2612,7 @@ where
                     payload,
                 )
             }
-            Dispatch::Npc(disposition, _) => (
+            Dispatch::Npc(disposition, _) | Dispatch::NpcTrade(disposition, _, _) => (
                 if *disposition == NpcIntentDisposition::Rejected {
                     CommandStatus::Rejected
                 } else {
@@ -2704,6 +2804,31 @@ where
                         }
                     }
                 }
+                // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
+                // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
+                if outcome.disposition == UseDisposition::Committed
+                    && admitted.continuity.vitals_revision != 0
+                    && let Some((to, value)) = authority
+                        .observe_vitals(actor, admitted.game_session_id)
+                        .await
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    admitted.continuity.vitals_revision = to;
+                }
                 // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
                 // per-connection: its "from" revision is always the committed entry's own
                 // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
@@ -2851,6 +2976,35 @@ where
             Dispatch::Chat(_) => {}
             // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
             // follow the result, to the speaker alone.
+            Dispatch::NpcTrade(_, update, deltas) => {
+                for delta in deltas {
+                    let Some((delta_sequence, frame)) =
+                        item_view_delta(generation, sequence, &delta)
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+                let Some(frames) = npc_update_frames(
+                    generation,
+                    &mut sequence,
+                    &mut admitted.continuity.npc,
+                    &update,
+                    &mut npc_shown,
+                ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                admitted.continuity.server_sequence = sequence;
+                for frame in frames {
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
             Dispatch::Npc(_, update) => {
                 let Some(frames) = npc_update_frames(
                     generation,
