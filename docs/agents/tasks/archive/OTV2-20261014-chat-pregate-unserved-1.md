@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/chat-pregate-unavailable-1
 issue: 1622
 governing_issue: 1622
-pr: null
+pr: 2104
 created_at: 2026-10-14
 updated_at: 2026-10-14
 execution_policy: continuous_progress
