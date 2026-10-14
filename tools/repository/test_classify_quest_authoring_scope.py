@@ -122,6 +122,25 @@ class SyntheticTree(unittest.TestCase):
         self.write(f"{TOOL}/abs_ok/other.json", json.dumps({"doc": f"/{TOOL}/other/README.md"}))
         self.assertEqual(self.verdict([rec(f"{TOOL}/abs_ok/README.md")]), "docs_only")
 
+    def test_encoded_file_names_take_full_path(self):
+        cases = {
+            "enc4": ("R%45ADME.md", "README.md"),
+            "enc5": ("./%52%45ADME%2Emd", "README.md"),
+            "enc6": ("R%2545ADME.md", "README.md"),  # double encoded
+            "enc7": ("nested%2FREADME.md", "nested/README.md"),
+        }
+        for d, (ref, name) in cases.items():
+            doc = f"{TOOL}/{d}/{name}"
+            self.write(doc, "d\n")
+            self.write(f"{TOOL}/{d}/pins.json", json.dumps({"doc": ref}))
+            self.assertEqual(self.verdict([rec(doc)]), "full", ref)
+
+    def test_undecodable_percent_chain_fails_closed(self):
+        doc = f"{TOOL}/chain/README.md"
+        self.write(doc, "d\n")
+        self.write(f"{TOOL}/chain/pins.json", "%" + "25" * 40 + "41")
+        self.assertEqual(self.verdict([rec(doc)]), "full")
+
     def test_long_reference_paths_take_full_path(self):
         doc = f"{TOOL}/long/README.md"
         self.write(doc, "d\n")

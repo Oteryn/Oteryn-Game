@@ -82,18 +82,46 @@ def _mentions(data: bytes, doc: str, current_rel: str) -> bool:
     file's directory, the repository root and the tool directory. A tool-relative bare name is only
     a pin for its own directory.
     """
-    base_name = posixpath.basename(doc)
-    # The file name may appear plain or percent-encoded (any hex case, "+" for a space).
-    needles = {base_name}
-    for encode in (urllib.parse.quote, lambda t: urllib.parse.quote(t, safe=""), urllib.parse.quote_plus):
-        encoded = encode(base_name)
-        needles |= {encoded, re.sub(r"%[0-9A-F]{2}", lambda m: m.group().lower(), encoded)}
     tool_form = posixpath.relpath(doc, TOOL_DIR)
     tool_ok = posixpath.dirname(doc) != TOOL_DIR
-    for needle_text in needles:
-        if _scan(data, needle_text.encode(), doc, current_rel, tool_form, tool_ok):
+    needle = posixpath.basename(doc).encode()
+    try:
+        views = _decoded_views(data, plus=b" " in needle)
+    except ValueError:
+        return True  # unsettled encoding: any doubt is the full path
+    for view in views:
+        if _scan(view, needle, doc, current_rel, tool_form, tool_ok):
             return True
     return False
+
+
+MAX_DECODE_ROUNDS = 8
+
+
+def _decoded_views(data: bytes, plus: bool) -> list[bytes]:
+    """The raw text plus its percent-decoded forms, decoded repeatedly until nothing changes.
+
+    A reference may spell any character as %XX (even "R%45ADME.md"), once or several times. The
+    plus-for-space decoding is also searched when the doc's name contains a space. If decoding does not settle within the round
+    limit it raises ValueError and the caller treats the file as mentioning the doc (fail closed).
+    """
+    views = [data]
+    if b"+" in data and plus:
+        views.append(data.replace(b"+", b" "))
+    if b"%" not in data:
+        return views
+    for plus_mode in {False, plus}:
+        current = data
+        for _ in range(MAX_DECODE_ROUNDS):
+            base = current.replace(b"+", b" ") if plus_mode else current
+            decoded = urllib.parse.unquote_to_bytes(base)
+            if decoded == current:
+                break
+            views.append(decoded)
+            current = decoded
+        else:
+            raise ValueError("percent-decoding did not reach a fixed point")
+    return views
 
 
 def _scan(data: bytes, needle: bytes, doc: str, current_rel: str, tool_form: str, tool_ok: bool) -> bool:
