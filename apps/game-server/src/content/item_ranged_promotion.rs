@@ -103,6 +103,43 @@ pub fn apply_item_ranged_promotion_v1(draft: &mut ProjectV2Draft) -> Result<Appl
     if world_project_sha256(ITEM_RANGED_PACKET) != ITEM_RANGED_PACKET_SHA256 {
         return Err("item ranged packet digest drift".into());
     }
+    let counts = |applied: &Applied| {
+        (
+            applied.fields_set,
+            applied.fields_unchanged,
+            applied.conflicts,
+            applied.quivers_deferred,
+        )
+    };
+    let pinned = (
+        ITEM_RANGED_FIELDS_SET,
+        ITEM_RANGED_FIELDS_UNCHANGED,
+        ITEM_RANGED_CONFLICTS,
+        ITEM_RANGED_QUIVER_ROWS,
+    );
+    // Dry run on copies: a drift (error or count) leaves the draft untouched.
+    let mut copies: Vec<_> = draft
+        .core
+        .records
+        .iter()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item {
+                identity,
+                semantics,
+                ..
+            } => Some((identity, semantics.clone())),
+            _ => None,
+        })
+        .collect();
+    let dry = apply_rows(
+        copies
+            .iter_mut()
+            .map(|(identity, semantics)| (*identity, semantics)),
+        ITEM_RANGED_PACKET,
+    )?;
+    if counts(&dry) != pinned {
+        return Err(format!("item ranged promotion count drift: {dry:?}"));
+    }
     let items = draft
         .core
         .records
@@ -116,16 +153,7 @@ pub fn apply_item_ranged_promotion_v1(draft: &mut ProjectV2Draft) -> Result<Appl
             _ => None,
         });
     let applied = apply_rows(items, ITEM_RANGED_PACKET)?;
-    if (
-        applied.fields_set,
-        applied.fields_unchanged,
-        applied.conflicts,
-    ) != (
-        ITEM_RANGED_FIELDS_SET,
-        ITEM_RANGED_FIELDS_UNCHANGED,
-        ITEM_RANGED_CONFLICTS,
-    ) || applied.quivers_deferred != ITEM_RANGED_QUIVER_ROWS
-    {
+    if counts(&applied) != pinned {
         return Err(format!("item ranged promotion count drift: {applied:?}"));
     }
     Ok(applied)
