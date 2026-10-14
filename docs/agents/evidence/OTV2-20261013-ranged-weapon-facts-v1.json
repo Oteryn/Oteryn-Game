@@ -1923,11 +1923,6 @@
       "item_key": "oteryn:item.tibia.i7438",
       "on_use": "NONE",
       "range_tiles": 6,
-      "requirements": {
-        "vocations": [
-          "NONE"
-        ]
-      },
       "sources": {
         "ammo_type": "CANARY",
         "hit_chance": "CANARY",

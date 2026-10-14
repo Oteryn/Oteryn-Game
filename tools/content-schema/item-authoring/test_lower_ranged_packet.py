@@ -224,6 +224,13 @@ def test_snapshot_digest_is_verified():
         raise AssertionError("tampered wiki snapshot accepted")
 
 
+def test_literal_none_vocation_is_no_restriction():
+    wiki = snapshot(i1=[{"vocrequired": "None"}])
+    promotions, _, conflicts, _ = run(wiki, {1: SPEAR}, {1})
+    assert "vocations" not in row(promotions, 1).get("requirements", {})
+    assert not [c for c in conflicts if c["field"] == "vocrequired"]
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})

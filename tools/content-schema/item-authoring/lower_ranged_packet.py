@@ -185,7 +185,10 @@ def _parse_element(raw):
 
 
 def _parse_vocations(raw):
-    """Wiki `vocrequired`: base vocations joined by commas or `and`; `without` is `NONE`."""
+    """Wiki `vocrequired`: base vocations joined by commas or `and`; `without` is `NONE`; a
+    literal `None` is no restriction (`[]`, as in lower_wiki_stats_packet.vocations)."""
+    if raw.strip() == "None":
+        return []
     parts = re.split(r",\s*|\s+and\s+", raw.strip().lower())
     values = [
         VOCATIONS.get(p[:-1] if p.endswith("s") and p != "without" else p)
