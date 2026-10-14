@@ -10,7 +10,9 @@
 //! reading keeps its own lower bound, and its upper bound is raised to the highest upper bound
 //! already read, so a step back of the kernel clock never makes Premium current again after a
 //! cutoff the process has passed. A reading wholly before an earlier lower bound contradicts it
-//! and reads `None`.
+//! and reads `None` until the clock catches up. The check and the update run under one lock, so
+//! concurrent readings cannot pass a stale check after a newer reading raised the high water.
+//! No reading itself is cached.
 
 use super::TrustedNow;
 use std::sync::Mutex;
@@ -106,6 +108,33 @@ mod tests {
         assert_eq!(
             bounds(hold_monotonic(&mut high_water, at(999_995, 10))),
             Some((999_985, 1_000_010))
+        );
+    }
+
+    #[test]
+    fn a_reading_before_the_trusted_high_water_mark_fails_closed() {
+        let mut high_water = None;
+        let at = |now_us| at(now_us, 1_000_000);
+        assert_eq!(
+            hold_monotonic(&mut high_water, at(100_000_000)),
+            Some(at(100_000_000))
+        );
+        // Stepped back 60 s: wholly before the trusted lower bound.
+        assert_eq!(hold_monotonic(&mut high_water, at(40_000_000)), None);
+        // A step back within the uncertainty overlaps the mark and stays admitted, its upper
+        // bound held at the highest one read.
+        assert_eq!(
+            bounds(hold_monotonic(&mut high_water, at(99_500_000))),
+            Some((98_500_000, 101_000_000))
+        );
+        // Once the clock catches up, readings pass unchanged and the mark advances.
+        assert_eq!(
+            hold_monotonic(&mut high_water, at(101_000_000)),
+            Some(at(101_000_000))
+        );
+        assert_eq!(
+            high_water.map(|seen| (seen.lower_us(), seen.upper_us())),
+            Some((100_000_000, 102_000_000))
         );
     }
 }
