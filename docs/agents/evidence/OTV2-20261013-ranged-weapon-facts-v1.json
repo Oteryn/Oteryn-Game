@@ -3474,9 +3474,17 @@
       "container_size": 8,
       "item_key": "oteryn:item.tibia.i35524",
       "quiver": true,
+      "requirements": {
+        "min_level": 150,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "min_level": "WIKI",
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         92877
@@ -3486,9 +3494,16 @@
       "container_size": 6,
       "item_key": "oteryn:item.tibia.i35562",
       "quiver": true,
+      "requirements": {
+        "vocations": [
+          "PALADIN",
+          "NONE"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         92656
@@ -3498,9 +3513,16 @@
       "container_size": 6,
       "item_key": "oteryn:item.tibia.i35848",
       "quiver": true,
+      "requirements": {
+        "vocations": [
+          "PALADIN",
+          "NONE"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         92660
@@ -3510,9 +3532,16 @@
       "container_size": 6,
       "item_key": "oteryn:item.tibia.i35849",
       "quiver": true,
+      "requirements": {
+        "vocations": [
+          "PALADIN",
+          "NONE"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         92659
@@ -3549,9 +3578,17 @@
       "container_size": 8,
       "item_key": "oteryn:item.tibia.i36666",
       "quiver": true,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "min_level": "WIKI",
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         94411
@@ -3685,9 +3722,17 @@
       "container_size": 12,
       "item_key": "oteryn:item.tibia.i39150",
       "quiver": true,
+      "requirements": {
+        "min_level": 400,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "min_level": "WIKI",
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         98473
@@ -3697,9 +3742,17 @@
       "container_size": 8,
       "item_key": "oteryn:item.tibia.i39160",
       "quiver": true,
+      "requirements": {
+        "min_level": 250,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "min_level": "WIKI",
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         98474
@@ -3901,9 +3954,17 @@
       "container_size": 8,
       "item_key": "oteryn:item.tibia.i45644",
       "quiver": true,
+      "requirements": {
+        "min_level": 200,
+        "vocations": [
+          "PALADIN"
+        ]
+      },
       "sources": {
         "container_size": "CANARY",
-        "quiver": "WIKI"
+        "min_level": "WIKI",
+        "quiver": "WIKI",
+        "vocations": "WIKI"
       },
       "wiki_pages": [
         105215

@@ -187,6 +187,21 @@ def test_ammunition_break_chance_is_derived():
     assert found["sources"]["break_chance_pct"] == "DERIVED"
 
 
+def test_quiver_requirements_have_provenance_and_parity():
+    quiver = {
+        "top": {"primarytype": "quivers", "containersize": "10"},
+        "nested": {"level": "1"},
+    }
+    wiki = snapshot(
+        i3=[{"primarytype": "Quivers", "levelrequired": "0", "vocrequired": "Paladins"}]
+    )
+    found = row(run(wiki, {3: quiver}, {3})[0], 3)
+    assert found["requirements"] == {"vocations": ["PALADIN"]}
+    assert found["sources"]["min_level"] == "WIKI"
+    assert found["sources"]["vocations"] == "WIKI"
+    assert found["parity_pending"] == ["min_level"]
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})

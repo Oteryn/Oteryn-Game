@@ -226,6 +226,41 @@ def closed_weapon_owners():
     return {r["target"]["key"] for r in proof["records"]}
 
 
+def _requirements(merged, nested, local_conflicts, item_id, parity, sources):
+    """Level, magic level and vocations: wiki first, Canary fallback, with provenance and parity."""
+    requirements = {}
+
+    def pick_requirement(name, wiki_value, canary_value):
+        if wiki_value is not None:
+            if canary_value is not None and canary_value != wiki_value:
+                parity.append(name)
+            value, source = wiki_value, "WIKI"
+        elif canary_value is not None:
+            value, source = canary_value, "CANARY"
+        else:
+            return
+        sources[name] = source
+        if value:
+            requirements[name] = value
+
+    pick_requirement(
+        "min_level",
+        _wiki_value(merged, "levelrequired", _uint, local_conflicts, item_id),
+        _uint(nested.get("level")),
+    )
+    pick_requirement(
+        "min_magic_level",
+        _wiki_value(merged, "mlrequired", _uint, local_conflicts, item_id),
+        None,
+    )
+    pick_requirement(
+        "vocations",
+        _wiki_value(merged, "vocrequired", _parse_vocations, local_conflicts, item_id),
+        _canary_vocations(nested.get("vocation")),
+    )
+    return requirements
+
+
 def build(snapshot, canary, content_ids, owned=frozenset()):
     """(promotions, holds, conflicts, counts)."""
     wiki = wiki_fields(snapshot)
@@ -273,10 +308,14 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
                 _quiver_row(
                     item_id,
                     top,
+                    nested,
+                    merged,
                     pages,
                     "WIKI" if "Quivers" in wiki_primary else "CANARY",
+                    local_conflicts,
                 )
             )
+            conflicts.extend(local_conflicts)
             continue
         if is_quiver:
             holds.append({"item_key": _key(item_id), "reasons": ["quiver_and_weapon"]})
@@ -406,49 +445,8 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             )
             if "element" not in row:
                 reasons.append("element_unknown")
-        requirements = {}
-
-        def pick_requirement(
-            name,
-            wiki_value,
-            canary_value,
-            parity=parity,
-            sources=sources,
-            requirements=requirements,
-        ):
-            """Wiki first, Canary fallback, with provenance and a parity flag like `pick`."""
-            if wiki_value is not None:
-                if canary_value is not None and canary_value != wiki_value:
-                    parity.append(name)
-                value, source = wiki_value, "WIKI"
-            elif canary_value is not None:
-                value, source = canary_value, "CANARY"
-            else:
-                return
-            sources[name] = source
-            if value:
-                requirements[name] = value
-
-        pick_requirement(
-            "min_level",
-            _wiki_value(
-                merged, "levelrequired", lambda r: _uint(r), local_conflicts, item_id
-            ),
-            _uint(nested.get("level")),
-        )
-        pick_requirement(
-            "min_magic_level",
-            _wiki_value(
-                merged, "mlrequired", lambda r: _uint(r), local_conflicts, item_id
-            ),
-            None,
-        )
-        pick_requirement(
-            "vocations",
-            _wiki_value(
-                merged, "vocrequired", _parse_vocations, local_conflicts, item_id
-            ),
-            _canary_vocations(nested.get("vocation")),
+        requirements = _requirements(
+            merged, nested, local_conflicts, item_id, parity, sources
         )
         if requirements:
             row["requirements"] = requirements
@@ -481,18 +479,27 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
     return promotions, holds, conflicts, dict(sorted(counts.items()))
 
 
-def _quiver_row(item_id, top, pages, quiver_source):
+def _quiver_row(item_id, top, nested, merged, pages, quiver_source, local_conflicts):
     row = {
         "item_key": _key(item_id),
         "quiver": True,
-        "sources": {"quiver": quiver_source},
     }
+    sources = {"quiver": quiver_source}
     size = _uint(top.get("containersize"), 1, 255)
     if size is not None:
         row["container_size"] = size
-        row["sources"]["container_size"] = "CANARY"
+        sources["container_size"] = "CANARY"
+    parity = []
+    requirements = _requirements(
+        merged, nested or {}, local_conflicts, item_id, parity, sources
+    )
+    if requirements:
+        row["requirements"] = requirements
+    row["sources"] = dict(sorted(sources.items()))
     if pages:
         row["wiki_pages"] = pages
+    if parity:
+        row["parity_pending"] = sorted(set(parity))
     return row
 
 
