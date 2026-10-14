@@ -132,6 +132,24 @@ fn current_index_positions_and_actor_generations_are_independently_checked() {
 }
 
 #[test]
+fn native_floors_rank_like_their_tibia_floors() {
+    let at = |x, y, floor| MovementLocalPosition { x, y, floor };
+    // Native -7 sees native -6 one floor up: Tibia 7 sees 6, projected one tile south-east.
+    assert_eq!(
+        plane_distance(at(100, 100, -7), at(101, 101, -6)).unwrap(),
+        plane_distance(at(100, 100, 7), at(101, 101, 6)).unwrap()
+    );
+    assert_eq!(
+        plane_distance(at(100, 100, -7), at(101, 101, -6)).unwrap(),
+        (1, 0)
+    );
+    assert!(matches!(
+        plane_distance(at(0, 0, -7), at(0, 0, -16)),
+        Err(Error::UnknownFrame)
+    ));
+}
+
+#[test]
 fn target_outside_view_and_stale_context_emit_nothing() {
     let (mut runtime, caster, _, session) = runtime();
     let mut owner = SpellPresentationOwner::new(&runtime);
