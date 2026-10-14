@@ -191,8 +191,10 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 13 today, under `COND0-RL-01`
-  (24, §3.5); a family that would pass it needs an amendment, and a transition past it is refused.
+- **Instance limit.** One instance per conflict key gives at most 21 today (the §3.5 worst case:
+  the 13 keys of §3 and the MAGIC-COND-1 scope plus the eight §3.5 and previously separate keys),
+  under `COND0-RL-01` (24, §3.5); a family that would pass it needs an amendment, and a transition
+  past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
 
@@ -282,7 +284,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
   5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
-- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and the client shows the typed refusal only. No bit, capability or field is registered by this decision.
+- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`); offensive rune use has no wire command yet (RUNE-USE-0 is a candidate), so its refusal disposition for `pacified` and `powerless` is defined by that child's own protocol review; `agony` gates nothing. The typed gate reason stays server-side (audit and log) and reaches the client only through the refusal extension that COND-WIRE-2 carries. No bit, capability, field or enum value is registered by this decision.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.
 - **Other actors.** The VIS-2 `WORLD_SPATIAL_ENTITIES` entry gains `speed` (u16) behind the same
