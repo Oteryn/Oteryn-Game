@@ -1415,6 +1415,10 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Step(direction)) => {
                 match session.step_with_receipt(step_direction(direction)).await {
                     Ok(outcome) => {
+                        // A step exchange can receive unrelated domain pushes.
+                        // Expose their admitted projections before the shell
+                        // observes completion or accepts another item action.
+                        lock(&outbox.0).game = session.game_state();
                         outbox.stepped_with_receipt(outcome);
                         publish(&mut session, &outbox, &mut held);
                         continue;
@@ -1737,6 +1741,109 @@ mod tests {
         );
         let (fresh, _commands, _outbox) = play_channel();
         assert!(fresh.request_step_at(now, || Ok(Some(StepDir::North)))?);
+        Ok(())
+    }
+
+    #[test]
+    fn completed_step_exposes_received_projections_without_waiting_for_idle()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct ProjectionStepper {
+            state: GameState,
+            next: GameState,
+            release: tokio::sync::oneshot::Receiver<()>,
+        }
+        impl Stepper for ProjectionStepper {
+            fn game_state(&self) -> GameState {
+                self.state.clone()
+            }
+            async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                (&mut self.release)
+                    .await
+                    .map_err(|_| SessionError::SessionUnusable)?;
+                self.state.clone_from(&self.next);
+                Ok(moved_to(100, 199, 0))
+            }
+            async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+                // No successful idle exchange may hide the missing step refresh.
+                std::future::pending().await
+            }
+            fn drain(&mut self) -> Vec<SessionEvent> {
+                Vec::new()
+            }
+            async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+        }
+        let item = oteryn_session::ItemEntry {
+            handle: std::num::NonZeroU64::new(101).ok_or("item handle")?,
+            item_definition_ref: std::num::NonZeroU32::new(201).ok_or("definition")?,
+            count: std::num::NonZeroU32::new(9).ok_or("count")?,
+            sub_type: 0,
+        };
+        for closed in [false, true] {
+            let before = GameState {
+                vitals: Some(oteryn_session::ActorVitals {
+                    health: 37,
+                    ..Default::default()
+                }),
+                inventory: Some(oteryn_session::CharacterInventory {
+                    entries: vec![item],
+                    equipment: Vec::new(),
+                    main_backpack: None,
+                }),
+                container: Some(oteryn_session::OpenContainer {
+                    container_handle: std::num::NonZeroU64::new(1000),
+                    entries: vec![item],
+                }),
+                ..Default::default()
+            };
+            let after = GameState {
+                vitals: Some(oteryn_session::ActorVitals {
+                    health: 23,
+                    ..Default::default()
+                }),
+                inventory: Some(oteryn_session::CharacterInventory {
+                    entries: Vec::new(),
+                    equipment: Vec::new(),
+                    main_backpack: None,
+                }),
+                container: if closed {
+                    Some(oteryn_session::OpenContainer::default())
+                } else {
+                    Some(oteryn_session::OpenContainer {
+                        container_handle: std::num::NonZeroU64::new(1000),
+                        entries: Vec::new(),
+                    })
+                },
+                chat: Some(oteryn_session::ChatLog::default()),
+                ..Default::default()
+            };
+            let (release, released) = tokio::sync::oneshot::channel();
+            let (link, commands, outbox) = play_channel();
+            let mut task = std::pin::pin!(run_session(
+                ProjectionStepper {
+                    state: before.clone(),
+                    next: after.clone(),
+                    release: released,
+                },
+                commands,
+                outbox
+            ));
+            assert!(link.request(StepDir::North));
+            let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(task.as_mut().poll(&mut cx).is_pending());
+            assert_eq!(link.game_state(), before);
+            assert!(link.poll().is_none());
+            assert!(release.send(()).is_ok());
+            assert!(task.as_mut().poll(&mut cx).is_pending());
+            assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
+            assert_eq!(link.game_state(), after);
+            assert!(link.poll().is_none());
+            // Taking a displayed copy cannot resurrect a stale source.
+            let mut copy = link.game_state();
+            copy.container = before.container;
+            assert_eq!(link.game_state(), after);
+        }
         Ok(())
     }
 

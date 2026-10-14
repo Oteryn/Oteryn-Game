@@ -976,6 +976,26 @@ scripted Unavailable result is not wire/server/delta/live-gameplay proof.
 Current packet: `docs/agents/tasks/active/OTV2-20261013-client-item-menu-safety.md`.
 Changed-runtime native qualification remains pending; do not inherit a65 proof.
 
+## Continuation — 2026-10-14, point6 excluded
+
+Owner explicitly excludes HUD/graphics redesign from the current completion
+scope. Accepted main71c014d4 is normally merged via32ee396e (after3295351a), preserving client
+runtime. Remote00198640 has19/19 successful checks; new source must qualify
+independently. Read-only mapping confirms existing NPC talk/trade producers,
+unoffered item-use15 and acceptance-only2084/2085, not supplied live setup.
+
+One existing-path stability repair refreshes admitted GameState before a step
+completion becomes visible. The production mailbox regression fails without
+the repair and passes with it, covering received changes and closed/emptied
+containers while idle remains pending. It does not fabricate received inventory
+or count a saved setting as a function. Exact-source native qualification follows
+the runtime publication; retained older artifacts are not removed or inherited.
+Packet: docs/agents/tasks/active/OTV2-20261014-client-step-projections.md.
+
+Canonical #1622 still lacks the dedicated QA/node/ON-OFF/harness/retirement
+setup needed for B2. The Windows PC is online; this is build access, not server
+or account authority. Later gameplay capability activation remains gated.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

@@ -6,7 +6,26 @@ warm bronze/brass, ivory text, spacious rows and restrained serif headings. Lega
 pixel-art chrome and rough procedural shortcut sketches are not the visual target. Draft #1942 remains
 AUTHORING. This plan is the execution order, not a completion declaration.
 
-## Current continuation — 2026-10-13
+## Current continuation — 2026-10-14
+
+Latest owner scope: finish remaining points1–5 and7–10; point6 (HUD/graphics)
+is explicitly excluded. Preserve existing runtime and native artifacts. The
+owner's Windows PC is available for isolated builds/acceptance, not server,
+account, personal-profile or trust mutations.
+
+Accepted main71c014d4 is normally merged in32ee396e, retaining the earlier
+15c6cab7 reconciliation3295351a. Neither refresh changes the client,
+Session or protocol source. Latest remote1942 head00198640 is still draft
+AUTHORING with19/19 successful checks. Subsequent source needs its own checks.
+The pre-B2 stability packet refreshes already-admitted GameState before step
+completion so interleaved inventory/container/vitals/chat changes cannot remain
+stale until an idle exchange. No later capability or gameplay control activates.
+
+Fresh293-comment #1622 read:6149042654 is still operationally unanswered;
+6155885167 allocates a different WORLDINT registry lease. Neither that comment
+nor acceptance-only2084/2085 supplies the dedicated QA/deployed node/switch/
+harness/retirement prerequisites. B2 and post-first-proof activation remain gated.
+The dated qualification snapshots below are retained evidence, not current-head CI.
 
 Owner task: `OTV2-20261009-client-game-ui`; branch
 `feat/client-completion-20261009`; draft [PR1942](https://github.com/Oteryn/Oteryn-Game/pull/1942).
@@ -120,8 +139,13 @@ conversation/reply/read-only offers consumer. Re-export existing codecs, enforce
 bounded revisions/identity/generation and test empty admission/close/range-loss,
 correlation and malformed data. Do not assume each successful talk claims a delta.
 Advertise3 only after complete routing, then qualify against the live bundle.
-Command8 remains rejected in the current server transport; merged2040 durability
-primitives alone do not authorize or implement BUY/SELL/purchase controls.
+Accepted NPC-TRADE-2 (#2077) now routes command8 for selected capability3 on a
+bundle World. Charged/fluid/foreign-currency offers remain unsupported; this
+source does not prove deployed trade or a client consumer. Session/NPC UI still
+need the complete typed routes and first native gameplay proof. ITEM-USE-1c
+(#2082) implements selected-cap15 backpack food/potions, but15 remains unoffered;
+it does not activate use-with/by-definition or ordinary client item controls.
+ACCEPT-SPELL-NPC-MAP-0/ACCEPT-SPELL-PRESENT-0 remain PROPOSED, NOT EFFECTIVE.
 
 ## Coverage of the nine settings lanes
 
