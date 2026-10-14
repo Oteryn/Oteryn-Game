@@ -8,8 +8,8 @@
 //!
 //! - [`PremiumConsumer::premium_current`]: true only for [`PremiumClass::CurrentAuthority`];
 //!   every other class reads as Free. Every Premium check in Game reads it, as the
-//!   [`PremiumGate`] of [`PremiumConsumer::gate`] or, for a spell cast's time-bounded projection,
-//!   [`PremiumConsumer::current_premium`] (PREM-WIRE-1).
+//!   `PremiumGate` of the spell Premium coordinator or, for a spell cast's time-bounded
+//!   projection, [`PremiumConsumer::current_premium`] (PREM-WIRE-1).
 //! - [`PremiumConsumer::premium_entitlement_ended`]: the entitlement itself ended; the only
 //!   input of the login relocation (PREMIUM-ACTIVATION §4.5 as amended). A lapsed lease, missing
 //!   evidence or a failed pull never makes it true.
@@ -29,7 +29,6 @@ pub mod snapshot;
 #[cfg(test)]
 pub mod test_producer;
 
-use crate::domain::premium::PremiumGate;
 use crate::durability::premium_fence::{
     EntitlementState, PremiumAccountRecord, PremiumEvidence, PremiumFenceOutcome, PremiumFenceView,
 };
@@ -312,11 +311,6 @@ impl PremiumConsumer {
     /// The one Premium read of Game (PREMIUM-DELIVERY-0 §6).
     pub fn premium_current(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> bool {
         self.class(account_id, now) == PremiumClass::CurrentAuthority
-    }
-
-    /// PREM-WIRE-1: the gate every Premium-gated decision reads (PREMIUM-ACTIVATION §4.1).
-    pub fn gate(&self, account_id: [u8; 16], now: Option<TrustedNow>) -> PremiumGate {
-        PremiumGate::from_fence_read(self.premium_current(account_id, now))
     }
 
     /// The same read as [`Self::premium_current`], with what a time-bounded projection needs.

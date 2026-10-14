@@ -54,7 +54,9 @@ impl RegisteredSpellAccessOwner {
                 consumer,
                 clock,
             } => match clock.read_current_window() {
-                Some(now) => consumer.gate(*account, Some(now)),
+                Some(now) => {
+                    PremiumGate::from_fence_read(consumer.premium_current(*account, Some(now)))
+                }
                 None => PremiumGate::CLOSED,
             },
         }
