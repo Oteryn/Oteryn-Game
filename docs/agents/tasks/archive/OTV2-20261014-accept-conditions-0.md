@@ -20,6 +20,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_CONDITIONS0_ACCEPTANCE_DECISION_2026-10-14.md
   - docs/agents/tasks/archive/OTV2-20261014-accept-conditions-0.md
   - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md
+  - docs/architecture/reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md
 public_contracts: []
 depends_on: []
 blocks: []
