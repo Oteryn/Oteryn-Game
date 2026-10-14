@@ -167,6 +167,12 @@ def test_quiver_source_follows_the_wiki_type():
     assert row(run(wiki, {3: quiver}, {3})[0], 3)["sources"]["quiver"] == "WIKI"
 
 
+def test_wiki_damage_with_average_prefix():
+    assert lower._parse_damage("107 (98-116)") == (98, 116)
+    assert lower._parse_damage("98-116") == (98, 116)
+    assert lower._parse_damage("107 (98-116") is None
+
+
 def test_conflicts_use_canary_and_are_reported():
     wiki = snapshot(i3=[{"range": "?"}], i1=[{"range": "4"}, {"range": "5"}])
     promotions, _, conflicts, _ = run(wiki, {1: SPEAR, 3: BOW}, {1, 3})

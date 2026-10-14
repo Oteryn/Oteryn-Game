@@ -159,10 +159,13 @@ def _parse_percent(raw):
 
 
 def _parse_damage(raw):
-    match = re.fullmatch(r"([0-9]+)-([0-9]+)", raw)
+    # Wiki writes `min-max` or `average (min-max)`; the average is derived, only the range counts.
+    match = re.fullmatch(
+        r"(?:[0-9]+\s*\(\s*([0-9]+)\s*-\s*([0-9]+)\s*\)|([0-9]+)-([0-9]+))", raw.strip()
+    )
     if not match:
         return None
-    low, high = int(match[1]), int(match[2])
+    low, high = int(match[1] or match[3]), int(match[2] or match[4])
     return (low, high) if 0 < low <= high <= 65535 else None
 
 

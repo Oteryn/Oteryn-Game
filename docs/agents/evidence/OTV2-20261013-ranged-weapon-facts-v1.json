@@ -7,28 +7,8 @@
       "reason": "wiki_unparseable"
     },
     {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i3071",
-      "reason": "wiki_unparseable"
-    },
-    {
       "field": "manacost",
       "item_key": "oteryn:item.tibia.i3072",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i3072",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i3073",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i3074",
       "reason": "wiki_unparseable"
     },
     {
@@ -37,33 +17,8 @@
       "reason": "wiki_unparseable"
     },
     {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i3075",
-      "reason": "wiki_unparseable"
-    },
-    {
       "field": "manacost",
       "item_key": "oteryn:item.tibia.i8092",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i8092",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i8093",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i8094",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i16115",
       "reason": "wiki_unparseable"
     },
     {
@@ -74,11 +29,6 @@
     {
       "field": "range",
       "item_key": "oteryn:item.tibia.i22870",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i25700",
       "reason": "wiki_unparseable"
     },
     {
@@ -173,42 +123,7 @@
     },
     {
       "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i27457",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i28825",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i28826",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i29425",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i30399",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i36668",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
       "item_key": "oteryn:item.tibia.i47373",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i49528",
       "reason": "wiki_unparseable"
     },
     {
@@ -237,18 +152,8 @@
       "reason": "wiki_unparseable"
     },
     {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i52336",
-      "reason": "wiki_unparseable"
-    },
-    {
       "field": "damagetype",
       "item_key": "oteryn:item.tibia.i52336",
-      "reason": "wiki_unparseable"
-    },
-    {
-      "field": "damagerange",
-      "item_key": "oteryn:item.tibia.i52337",
       "reason": "wiki_unparseable"
     },
     {
@@ -268,14 +173,14 @@
     }
   ],
   "counts": {
-    "conflicts": 53,
+    "conflicts": 34,
     "holds": 193,
     "items": 98,
     "kind_AMMUNITION": 2,
     "kind_DISTANCE": 9,
     "kind_THROWING": 13,
     "kind_WAND": 66,
-    "parity_pending_items": 22,
+    "parity_pending_items": 23,
     "quivers": 8
   },
   "decision": "RANGED-0 section 7",
@@ -1457,7 +1362,6 @@
     {
       "item_key": "oteryn:item.tibia.i52336",
       "reasons": [
-        "damage_unknown",
         "element_unknown",
         "mana_per_shot_unknown",
         "missile_unknown",
@@ -1467,7 +1371,6 @@
     {
       "item_key": "oteryn:item.tibia.i52337",
       "reasons": [
-        "damage_unknown",
         "element_unknown",
         "mana_per_shot_unknown",
         "missile_unknown",
@@ -1792,7 +1695,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -1826,7 +1729,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
         "min_level": "WIKI",
@@ -1857,7 +1760,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -1891,7 +1794,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -1925,7 +1828,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
         "min_level": "WIKI",
@@ -2398,7 +2301,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
         "min_level": "WIKI",
@@ -2429,7 +2332,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -2460,7 +2363,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -2635,7 +2538,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -2975,7 +2878,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3119,7 +3022,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3244,7 +3147,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3276,7 +3179,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3308,7 +3211,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3339,7 +3242,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -3679,7 +3582,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "WIKI",
         "min_level": "WIKI",
@@ -4078,13 +3981,16 @@
       ]
     },
     {
-      "damage_max": 115,
-      "damage_min": 95,
+      "damage_max": 116,
+      "damage_min": 98,
       "element": "DEATH",
       "item_key": "oteryn:item.tibia.i49528",
       "mana_per_shot": 21,
       "missile": "death",
       "on_use": "NONE",
+      "parity_pending": [
+        "damage"
+      ],
       "range_tiles": 5,
       "requirements": {
         "min_level": 300,
@@ -4093,7 +3999,7 @@
         ]
       },
       "sources": {
-        "damage": "CANARY",
+        "damage": "WIKI",
         "element": "WIKI",
         "mana_per_shot": "CANARY",
         "min_level": "WIKI",
