@@ -13,6 +13,7 @@ OTHER = "b" * 40
 
 def ready() -> dict:
     return {
+        "observed_at": "2026-10-14T12:00:00Z",
         "candidate": {"pr": 1, "head_sha": HEAD, "state": "open", "draft": False, "base_ref": "main",
                       "merged": False, "queued": False, "state_at": "2026-10-14T07:00:00Z"},
         "checks": {
@@ -88,6 +89,34 @@ class EnqueueReadinessTest(unittest.TestCase):
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
         snap = ready()
         del snap["review"]["reviews"][0]["reviewer"]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_owner_login_review_needs_fallback_provenance(self):
+        snap = ready()
+        snap["review"]["reviews"][0]["reviewer"] = "blakinio"
+        self.assertEqual(reasons(snap), ["REVIEW_NOT_ON_EXACT_HEAD"])
+        snap["review"]["reviews"][0]["provider"] = "claude-fallback"
+        self.assertEqual(reasons(snap), ["REVIEW_NOT_ON_EXACT_HEAD"])
+        snap["review"]["reviews"][0]["fallback_evidence"] = "https://claude.ai/code/session_x"
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        snap["review"]["reviews"][0]["provider"] = "codex"
+        self.assertEqual(reasons(snap), ["REVIEW_NOT_ON_EXACT_HEAD"])
+
+    def test_event_after_observed_at_is_rejected(self):
+        snap = ready()
+        snap["checks"]["runs"][0]["at"] = "2026-10-14T12:05:00Z"
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["checks"]["runs"][0]["at"] = "2026-10-14T12:01:00Z"  # within the documented skew
+        result = evaluate(snap)
+        self.assertEqual((result["verdict"], result["ready_at"]), ("ENQUEUE_ELIGIBLE", "2026-10-14T12:01:00Z"))
+
+    def test_observed_at_is_required_and_valid(self):
+        for bad in (None, "", "2026-10-14T12:00:00", "nope", 5):
+            snap = ready()
+            snap["observed_at"] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        del snap["observed_at"]
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_evidence_must_name_its_artifact(self):
@@ -316,6 +345,7 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
 
     def test_newest_check_run_is_chosen_by_parsed_datetime(self):
         snap = ready()
+        snap["observed_at"] = "2026-10-14T16:00:00Z"
         # String order disagrees with chronological order across offsets.
         old_fail = {"name": "game-gate", "head_sha": HEAD, "status": "completed",
                     "conclusion": "failure", "at": "2026-10-14T09:00:00-05:00"}  # 14:00Z

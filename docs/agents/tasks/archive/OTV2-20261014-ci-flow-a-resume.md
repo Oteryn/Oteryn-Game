@@ -65,7 +65,7 @@ integrator is the control plane running the Work Delivery Coordinator prompt (D2
 ### Focused
 
 - `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: OK
+- `python -m unittest discover -s tools/agents/tests`: OK (incl. fallback-provenance and `observed_at` tests)
 - `git diff --check`: pass
 
 ### Component/integration

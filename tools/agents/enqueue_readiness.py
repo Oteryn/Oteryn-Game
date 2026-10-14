@@ -23,6 +23,13 @@ TRUSTED_GRANT_AUTHORS = frozenset({"blakinio"})
 # Platform-reported logins whose exact-head review qualifies (D245): Codex, and the owner's account, under which
 # the control plane records the Claude fallback review. Any other reviewer's record is ignored, never trusted.
 TRUSTED_REVIEWERS = frozenset({"chatgpt-codex-connector[bot]", "blakinio"})
+# The owner's account also authors ordinary comments, so its login alone never proves a Claude fallback review
+# (AGENTS.md: independent review). Such a record qualifies only with this explicit readback provider and a
+# non-empty `fallback_evidence` reference (the recorded Claude review) set by the control plane's readback.
+FALLBACK_PROVIDER = "claude-fallback"
+FALLBACK_LOGINS = frozenset({"blakinio"})
+# Readback and platform clocks may differ slightly; an event this far past `observed_at` is still accepted.
+CLOCK_SKEW_SECONDS = 120
 
 # Fixed evaluation order. Each blocker names its owner and the single event that clears it.
 ORDER = (
@@ -108,10 +115,15 @@ def _evaluate(s: dict) -> dict:
 
     found: dict[str, dict] = {}
     stamps: list[tuple[datetime, str]] = []
+    # The time the readback was taken: no qualifying event can lie after it, so ready_at is never in the future.
+    observed = _parse_at(s["observed_at"])
 
     def stamp(item, key: str = "at") -> None:
         at = item[key]
-        stamps.append((_parse_at(at), at))
+        parsed = _parse_at(at)
+        if (parsed - observed).total_seconds() > CLOCK_SKEW_SECONDS:
+            raise ValueError(f"event time {at!r} is later than observed_at {s['observed_at']!r}")
+        stamps.append((parsed, at))
 
     state, base_ref = cand["state"], cand["base_ref"]
     if not isinstance(state, str) or not isinstance(base_ref, str):
@@ -153,8 +165,13 @@ def _evaluate(s: dict) -> dict:
         reviews = _list(review["reviews"], "review.reviews")
         if not all(_text(r["reviewer"]) for r in reviews):
             raise ValueError("review.reviews[].reviewer must be the platform-reported login")
-        exact = [r for r in reviews
-                 if r["reviewer"].lower() in TRUSTED_REVIEWERS and _sha(r["head_sha"]) == head]
+        def qualifies(r) -> bool:
+            login = r["reviewer"].lower()
+            if login in FALLBACK_LOGINS and r.get("provider") == FALLBACK_PROVIDER and _text(r.get("fallback_evidence")):
+                return True
+            return login in TRUSTED_REVIEWERS - FALLBACK_LOGINS
+
+        exact = [r for r in reviews if qualifies(r) and _sha(r["head_sha"]) == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         elif any(r["state"] != "completed" for r in exact):
