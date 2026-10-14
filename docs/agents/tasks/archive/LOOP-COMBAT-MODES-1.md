@@ -4,13 +4,13 @@
 task_id: LOOP-COMBAT-MODES-1
 title: "LOOP-COMBAT-MODES-1: fight, chase and secure modes (mechanics plan row 20)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/loop-combat-modes-1-chase-20261014
 issue: 2049
 governing_issue: 1622
-pr: null
+pr: 2113
 base_sha: 67cacb76
 head_sha: null
 final_head_sha: null
@@ -26,6 +26,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs
   - docs/agents/tasks/active/LOOP-COMBAT-MODES-1.md
+  - docs/agents/tasks/archive/LOOP-COMBAT-MODES-1.md
 public_contracts: []
 external_repositories: []
 ```
@@ -63,9 +64,9 @@ to PVP-RT-1 (see below).
 
 ## Validation
 
-- `cargo +1.95.0 fmt --all --check`
-- `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
-- `cargo +1.95.0 test --locked -p oteryn-game-server --lib`
-- `python tools/agents/validate_governance.py`
-- `python -m unittest discover -s tools/agents/tests`
-- `git diff --check`
+- `cargo +1.95.0 fmt --all --check`: pass
+- `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo +1.95.0 test --locked -p oteryn-game-server --lib`: pass (3002 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: OK
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `git diff --check`: pass
