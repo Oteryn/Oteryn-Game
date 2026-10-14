@@ -76,6 +76,13 @@ def _count(value) -> int:
     return value
 
 
+def _pr(value) -> int:
+    """A PR number: a real positive JSON integer; without one the record names no PR."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"expected a positive PR number, got {value!r}")
+    return value
+
+
 def _list(value, field: str) -> list:
     """A gate collection must be a real JSON array; an object or string iterates as empty or per character."""
     if not isinstance(value, list):
@@ -95,7 +102,7 @@ def evaluate(snapshot) -> dict:
 def _evaluate(s: dict) -> dict:
     cand = s["candidate"]
     head = _sha(cand["head_sha"])
-    pr = cand["pr"]
+    pr = _pr(cand["pr"])
     if _flag(cand["merged"]) or _flag(cand["queued"]):
         return {"verdict": "NOOP", "blockers": [], "ready_at": None}
 
@@ -178,11 +185,12 @@ def _evaluate(s: dict) -> dict:
         stamp(item)
 
     for dep in _list(s["dependencies"], "dependencies"):
+        dep_pr = _pr(dep["pr"])
         dep_base = dep["base_ref"]  # platform-reported base the dependency PR merged into
         if not isinstance(dep_base, str):
             raise ValueError("dependencies[].base_ref must be a string")
         if not _flag(dep["merged"]) or dep_base != "main":
-            found["DEPENDENCIES"] = _blocker("DEPENDENCY_NOT_MERGED", "control_plane", f"PR {dep['pr']} merged to main")
+            found["DEPENDENCIES"] = _blocker("DEPENDENCY_NOT_MERGED", "control_plane", f"PR {dep_pr} merged to main")
             break
         stamp(dep)
 

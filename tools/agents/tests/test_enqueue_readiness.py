@@ -26,7 +26,7 @@ def ready() -> dict:
         "threads": {"total": 0, "unresolved": 0},
         "evidence": {"required": [{"name": "task-record", "head_sha": HEAD, "present": True,
                                    "at": "2026-10-14T09:00:00Z"}]},
-        "dependencies": [{"pr": 0, "merged": True, "base_ref": "main", "at": "2026-10-14T08:00:00Z"}],
+        "dependencies": [{"pr": 2, "merged": True, "base_ref": "main", "at": "2026-10-14T08:00:00Z"}],
         "queue": {"prior_failures": []},
         "authorization": {"head_sha": HEAD, "scope": ["enqueue"], "revoked": False,
                           "granted_by": "owner", "author": "blakinio", "at": "2026-10-14T09:30:00Z"},
@@ -130,6 +130,17 @@ class EnqueueReadinessTest(unittest.TestCase):
             else:
                 snap["dependencies"][0]["base_ref"] = bad
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], bad)
+
+    def test_pr_numbers_must_be_positive_integers(self):
+        for where in ("candidate", "dependency"):
+            for bad in (None, 0, -1, True, "2", 2.0):
+                snap = ready()
+                target = snap["candidate"] if where == "candidate" else snap["dependencies"][0]
+                if bad is None:
+                    del target["pr"]
+                else:
+                    target["pr"] = bad
+                self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (where, bad))
 
     def test_candidate_becoming_ready_can_be_the_latest_event(self):
         snap = ready()
