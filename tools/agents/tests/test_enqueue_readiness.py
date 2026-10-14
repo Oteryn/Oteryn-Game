@@ -268,6 +268,12 @@ class EnqueueReadinessTest(unittest.TestCase):
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
         snap["authorization"] = [grant, dict(grant)]
         self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+        # A tie that differs only in granted_by is ambiguous in either order.
+        for pair in ([dict(grant, granted_by=""), grant], [grant, dict(grant, granted_by="")]):
+            snap["authorization"] = pair
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["authorization"] = [grant, dict(grant, scope=list(reversed(grant["scope"])))]
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
         snap["authorization"] = []
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
         snap["authorization"] = grant  # a bare object is not a history

@@ -275,7 +275,8 @@ def _evaluate(s: dict, now: datetime) -> dict:
     # Only records by a trusted login count; an untrusted record can neither grant nor revoke.
     trusted = [r for r in records if r[1]["author"].lower() in TRUSTED_GRANT_AUTHORS]
     newest = [r for r in trusted if r[0] == max(x[0] for x in trusted)] if trusted else []
-    if len({(r[2], r[3], tuple(r[1]["scope"])) for r in newest}) > 1:
+    # The tie key holds every field the decision below reads, so array order can never pick the verdict.
+    if len({(r[2], r[3], tuple(sorted(r[1]["scope"])), _text(r[1].get("granted_by"))) for r in newest}) > 1:
         raise ValueError("conflicting authorization records at the same newest time")
     if (not newest or newest[0][2] != head or "enqueue" not in newest[0][1]["scope"] or newest[0][3]
             or not _text(newest[0][1].get("granted_by"))):
