@@ -554,8 +554,14 @@ pub fn decode_use_result_with_gate(
     Ok((disposition, gate_message_id))
 }
 
+/// A result without a gate message id, the mirror of `encode_use_result`. A `SEALED` result (which
+/// always carries one) is refused here rather than returned without its id: a capability 11 client
+/// decodes with `decode_use_result_with_gate`, so no decode path drops the gate's reason.
 pub fn decode_use_result(payload: &[u8]) -> Result<UseDisposition, WorldObjectError> {
-    decode_use_result_with_gate(payload).map(|(disposition, _)| disposition)
+    match decode_use_result_with_gate(payload)? {
+        (disposition, None) => Ok(disposition),
+        (_, Some(_)) => Err(WorldObjectError::Malformed),
+    }
 }
 
 /// Refuses to emit a `placement` or `state` over `MAX_KEY_BYTES` rather than publish a
@@ -1038,6 +1044,15 @@ mod tests {
         assert_eq!(
             encode_use_result(UseDisposition::Sealed),
             Err(WorldObjectError::Malformed)
+        );
+        // Nor does the gate-less decoder drop a SEALED gate id: it refuses the result, which the
+        // gate-aware decoder carries whole.
+        let sealed =
+            encode_use_result_with_gate(UseDisposition::Sealed, Some(5)).unwrap_or_default();
+        assert_eq!(decode_use_result(&sealed), Err(WorldObjectError::Malformed));
+        assert_eq!(
+            decode_use_result_with_gate(&sealed),
+            Ok((UseDisposition::Sealed, Some(5)))
         );
         assert_eq!(
             decode_use_result(&[0x08, 0x12]),

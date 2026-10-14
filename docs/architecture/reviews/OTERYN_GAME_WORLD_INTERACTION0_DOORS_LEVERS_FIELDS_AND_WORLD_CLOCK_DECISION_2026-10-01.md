@@ -563,8 +563,8 @@ quest doors, quest format §3.1) stays sealed.
   grates and torch bearers. **Field 4 `use_with`** gains a `map_item {handle}` arm (a tool or key on
   a map item); its field number is assigned by WORLDINT-WIRE-1. The payload stays within 529 bytes
   (`WORLDINT0-RL-22`).
-  **Amendment (2026-10-14; #1622 control-plane decision under the owner's delegation,
-  WORLDINT-WIRE-1 #2094).** The map view publishes a nonmovable base object, such as a door, as a
+  **Amendment (2026-10-14; owner decision, WORLDINT-WIRE-1 #2094: USE-WITH keeps the `map_object`
+  arm and this section is amended accordingly).** The map view publishes a nonmovable base object, such as a door, as a
   base ordinal without a handle, so `map_item {handle}` cannot name it. `use_with` (`UseWithV1`)
   therefore also has a `map_object` arm, field 4: a `WorldObjectTargetV1` (placement and observed
   overlay revision, as USE field 1 names the object), with a non-empty placement of at most 496

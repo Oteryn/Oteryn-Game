@@ -65,9 +65,9 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
   takes the `WorldObjectTargetV1` that USE field 1 already uses for such objects (placement and
   observed revision), a new field inside `UseWithV1` and so wire-compatible. The placement is
   non-empty and at most 496 bytes, so a u64 tool handle plus the arm stays within the unchanged
-  529-byte `WORLDINT0-RL-22`; `PUSH_INTENT` (41 bytes) is not affected. The #1622 control plane,
-  under the owner's delegation, chose this arm (option 1) on 2026-10-14; WORLD-INTERACTION-0 §10.1
-  is amended with it (and the `WORLDINT0-RL-22` row names both map arms; 529 bytes unchanged).
+  529-byte `WORLDINT0-RL-22`; `PUSH_INTENT` (41 bytes) is not affected. OWNER DECISION (2026-10-14):
+  USE-WITH keeps the `map_object` arm and WORLD-INTERACTION-0 §10.1 is amended accordingly (the
+  amendment cites that decision; the `WORLDINT0-RL-22` row names both map arms; 529 bytes unchanged).
 - `ITEM_MOVE_OUTCOME_BLOCKED` is annotated as capability 12 or capability 11 (Codex P2).
 - `PUSH_INTENT` is flat: identity, the full `uint64` generation, destination x and y over the full
   `sint32` domain, both always present (zero is an explicit varint; a payload without either fails
@@ -81,7 +81,9 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
   stays within 4 bytes); other dispositions refuse it and `SEALED` without it fails closed. The server
   carries it from `UseOutcome.gate_message_id` through the gate-aware codec (an invalid pair becomes
   `Rejected`), covered end to end.
-- The session crate fails closed on dispositions 11 to 17 or a gate id without a negotiated capability 11.
+- The session crate fails closed on dispositions 11 to 17 or a gate id without a negotiated capability 11,
+  and exposes the gate id as `gate_message_id`. The gate-less `decode_use_result` refuses a `SEALED`
+  result (as `encode_use_result` does) instead of dropping its gate id.
 - Command 9 under capability 11: sources are item handles, so a map-item or Ground source needs no new
   field; the capability admits the `GROUND` destination (field 4) and the `BLOCKED` result, while
   `EQUIPMENT` and results 10 and 11 stay with capability 12. The server answers `NOT_SUPPORTED` until
@@ -107,6 +109,12 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 - §10.1 amendment and P2 commit: fmt, clippy `-D warnings` and `cargo test --locked -p
   oteryn-protocol-oteryn` pass (226, with a schema assert on the BLOCKED annotation); governance
   validation passes
+- Codex round on 4d0e8bb (gate-less decode refuses `SEALED`, owner-decision citation for
+  `map_object`, proto header): `cargo fmt --all --check` pass; `cargo clippy --locked -p
+  oteryn-protocol-oteryn --all-targets -- -D warnings` pass; `cargo test --locked -p
+  oteryn-protocol-oteryn` pass (226); `cargo test --locked -p oteryn-session` pass (60);
+  `python tools/agents/validate_governance.py` pass; `python -m unittest discover -s
+  tools/agents/tests` pass (60); `git diff --check` pass
 - `oteryn-architecture-check workspace .`: pass
 
 ## Self-review
