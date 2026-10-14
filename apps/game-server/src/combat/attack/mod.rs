@@ -17,6 +17,8 @@
 mod block;
 mod constants;
 mod formulas;
+#[cfg(test)]
+mod parity_tests;
 mod target;
 #[cfg(test)]
 mod tests;

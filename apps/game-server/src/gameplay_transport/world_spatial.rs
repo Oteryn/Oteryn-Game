@@ -336,21 +336,66 @@ impl SessionVisibility {
     }
 }
 
-/// Server side (SPEED-1, CONDITIONS-0 §4.3): the command type 1 result one session receives.
-/// `TOO_EARLY` reaches only a session that selected capability 13 `PACED_MOVEMENT_V1`; every other
-/// session gets `REJECTED` for the same refusal.
+/// Server side (SPEED-1, CONDITIONS-0 §4.3; STEP-PACE-WIRE-1): the command type 1 result one
+/// session receives. `TOO_EARLY` and the `step_wait_ms` pacing receipt (field 2) reach only a
+/// session that selected capability 13 `PACED_MOVEMENT_V1`; every other session gets `REJECTED`
+/// for the same refusal and the exact receipt-less bytes it always got. `step_wait_ms` is 0 for
+/// no receipt; a receipt outside the STEP-PACE-WIRE-0 contract (on `BLOCKED` or `REJECTED`, a
+/// `MOVED` duration off the 50 ms beat, above [`MAX_STEP_WAIT_MS`]) is dropped, never sent.
 pub(crate) fn encode_step_outcome(
     selected_capabilities: &[u32],
     disposition: StepDisposition,
+    step_wait_ms: u32,
 ) -> Vec<u8> {
-    match disposition {
-        StepDisposition::TooEarly
-            if !selected_capabilities.contains(&CAPABILITY_PACED_MOVEMENT_V1) =>
-        {
-            encode_step_result(StepDisposition::Rejected)
-        }
-        disposition => encode_step_result(disposition),
+    if !selected_capabilities.contains(&CAPABILITY_PACED_MOVEMENT_V1) {
+        return encode_step_result(match disposition {
+            StepDisposition::TooEarly => StepDisposition::Rejected,
+            disposition => disposition,
+        });
     }
+    let result = StepResult {
+        disposition,
+        step_wait_ms,
+    };
+    encode_step_result_paced(result, true).unwrap_or_else(|_| encode_step_result(disposition))
+}
+
+/// STEP-PACE-WIRE-1 rollout switch, the environment variable of the `serve` process. Capability 13
+/// clients built before STEP-PACE-WIRE-0 (#2034) refuse field 2, so the server writes no receipt
+/// until the operator sets it to exactly `1`, after the updated capability 13 decoder client is
+/// released. Unset or any other value: off, every step result keeps its former bytes.
+pub(crate) const STEP_WAIT_RECEIPTS_ENV: &str = "OTERYN_STEP_WAIT_RECEIPTS";
+
+/// Whether the switch value turns the receipt on: only exactly `1` does.
+fn step_wait_receipts_switch(value: Option<&std::ffi::OsStr>) -> bool {
+    value.is_some_and(|value| value == "1")
+}
+
+/// The process-wide [`STEP_WAIT_RECEIPTS_ENV`] switch, read once and fixed for the process.
+pub(crate) fn step_wait_receipts_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        step_wait_receipts_switch(std::env::var_os(STEP_WAIT_RECEIPTS_ENV).as_deref())
+    })
+}
+
+/// STEP-PACE-WIRE-1: the `MOVED` receipt, the exact step duration the pacing clock recorded, in
+/// milliseconds; 0 (no receipt) without a duration or for one that is not a whole number of
+/// milliseconds within `u32`.
+pub(crate) fn moved_step_wait_ms(duration: Option<std::time::Duration>) -> u32 {
+    duration
+        .filter(|duration| duration.subsec_nanos() % 1_000_000 == 0)
+        .and_then(|duration| u32::try_from(duration.as_millis()).ok())
+        .unwrap_or(0)
+}
+
+/// STEP-PACE-WIRE-1: the `TOO_EARLY` receipt, the time `left` until the pacing clock is due,
+/// rounded up to whole milliseconds (saturating); 0 (no receipt) when no deadline runs.
+pub(crate) fn too_early_step_wait_ms(left: Option<std::time::Duration>) -> u32 {
+    left.map_or(0, |left| {
+        let millis = left.as_nanos().div_ceil(1_000_000);
+        u32::try_from(millis).unwrap_or(u32::MAX)
+    })
 }
 
 #[cfg(test)]
@@ -463,13 +508,13 @@ mod tests {
         let paced = [CAPABILITY_PACED_MOVEMENT_V1];
         assert_eq!(
             decode_step_result_paced(
-                &encode_step_outcome(&paced, StepDisposition::TooEarly),
+                &encode_step_outcome(&paced, StepDisposition::TooEarly, 0),
                 true
             ),
             Ok(StepDisposition::TooEarly)
         );
         assert_eq!(
-            decode_step_result(&encode_step_outcome(&[], StepDisposition::TooEarly)),
+            decode_step_result(&encode_step_outcome(&[], StepDisposition::TooEarly, 0)),
             Ok(StepDisposition::Rejected)
         );
         for disposition in [
@@ -479,11 +524,163 @@ mod tests {
         ] {
             for selected in [&paced[..], &[]] {
                 assert_eq!(
-                    encode_step_outcome(selected, disposition),
+                    encode_step_outcome(selected, disposition, 0),
                     encode_step_result(disposition)
                 );
             }
         }
+    }
+
+    /// A proto3 reader that knows only field 1 and skips every unknown varint field, as the
+    /// protobuf rules require of an older client: what such a client makes of the result.
+    fn field_1_only(payload: &[u8]) -> Option<u64> {
+        fn varint(input: &[u8], cursor: &mut usize) -> Option<u64> {
+            let mut value = 0_u64;
+            for shift in (0..64).step_by(7) {
+                let byte = *input.get(*cursor)?;
+                *cursor += 1;
+                value |= u64::from(byte & 0x7f) << shift;
+                if byte & 0x80 == 0 {
+                    return Some(value);
+                }
+            }
+            None
+        }
+        let (mut cursor, mut disposition) = (0, None);
+        while cursor < payload.len() {
+            let key = varint(payload, &mut cursor)?;
+            if key & 7 != 0 {
+                return None;
+            }
+            let value = varint(payload, &mut cursor)?;
+            if key >> 3 == 1 {
+                disposition = Some(value);
+            }
+        }
+        disposition
+    }
+
+    /// STEP-PACE-WIRE-1 field-2 compatibility gate: golden bytes with and without the receipt,
+    /// field 2 only under capability 13, a round trip through the shared decoder, and a reader
+    /// that ignores field 2 still decodes every result.
+    #[test]
+    fn step_wait_ms_is_sent_only_under_capability_13_and_old_readers_still_decode() {
+        let paced = [CAPABILITY_PACED_MOVEMENT_V1];
+        let cases: [(StepDisposition, u32, &[u8], &[u8]); 7] = [
+            // (disposition, wait, capability 13 bytes, bytes without capability 13)
+            (
+                StepDisposition::Moved,
+                50,
+                &[0x08, 0x01, 0x10, 0x32],
+                &[0x08, 0x01],
+            ),
+            (
+                StepDisposition::Moved,
+                100,
+                &[0x08, 0x01, 0x10, 0x64],
+                &[0x08, 0x01],
+            ),
+            (
+                StepDisposition::Moved,
+                MAX_STEP_WAIT_MS,
+                &[0x08, 0x01, 0x10, 0xae, 0xe4, 0x06],
+                &[0x08, 0x01],
+            ),
+            (StepDisposition::Moved, 0, &[0x08, 0x01], &[0x08, 0x01]),
+            (
+                StepDisposition::TooEarly,
+                37,
+                &[0x08, 0x04, 0x10, 0x25],
+                &[0x08, 0x03],
+            ),
+            (StepDisposition::TooEarly, 0, &[0x08, 0x04], &[0x08, 0x03]),
+            (StepDisposition::Blocked, 0, &[0x08, 0x02], &[0x08, 0x02]),
+        ];
+        for (disposition, wait, with, without) in cases {
+            let sent = encode_step_outcome(&paced, disposition, wait);
+            assert_eq!(sent, with, "{disposition:?} {wait}");
+            assert!(sent.len() <= MAX_PACED_STEP_RESULT_BYTES);
+            assert_eq!(
+                decode_step_result_receipt(&sent, true),
+                Ok(StepResult {
+                    disposition,
+                    step_wait_ms: wait
+                })
+            );
+            assert_eq!(field_1_only(&sent), Some(disposition as u64));
+            // Without capability 13: never field 2, the exact receipt-less bytes, which the
+            // strict pre-receipt decoder accepts within its 4-byte bound.
+            let legacy = encode_step_outcome(&[], disposition, wait);
+            assert_eq!(legacy, without, "{disposition:?} {wait}");
+            assert!(legacy.len() <= MAX_STEP_RESULT_BYTES);
+            assert!(decode_step_result(&legacy).is_ok());
+            assert_eq!(field_1_only(&legacy), field_1_only(without));
+        }
+        // The strict decoder of a session without capability 13 refuses field 2: that is why
+        // the receipt is never sent to one.
+        assert!(decode_step_result(&[0x08, 0x01, 0x10, 0x64]).is_err());
+    }
+
+    /// A receipt outside the STEP-PACE-WIRE-0 contract is dropped, never sent: the result keeps
+    /// its disposition and goes out without field 2.
+    #[test]
+    fn an_out_of_contract_step_wait_ms_is_dropped() {
+        let paced = [CAPABILITY_PACED_MOVEMENT_V1];
+        for (disposition, wait) in [
+            (StepDisposition::Moved, 80),
+            (StepDisposition::Moved, 1),
+            (StepDisposition::Moved, MAX_STEP_WAIT_MS + STEP_WAIT_BEAT_MS),
+            (StepDisposition::TooEarly, MAX_STEP_WAIT_MS + 1),
+            (StepDisposition::TooEarly, u32::MAX),
+            (StepDisposition::Blocked, 50),
+            (StepDisposition::Rejected, 50),
+        ] {
+            assert_eq!(
+                encode_step_outcome(&paced, disposition, wait),
+                encode_step_result(disposition),
+                "{disposition:?} {wait}"
+            );
+        }
+    }
+
+    /// The rollout switch is off unless it is exactly `1`.
+    #[test]
+    fn the_step_wait_receipt_switch_is_off_unless_exactly_1() {
+        use std::ffi::OsStr;
+        assert!(!step_wait_receipts_switch(None));
+        for off in ["", "0", "true", "on", "yes", " 1", "1 ", "01", "TRUE"] {
+            assert!(!step_wait_receipts_switch(Some(OsStr::new(off))), "{off:?}");
+        }
+        assert!(step_wait_receipts_switch(Some(OsStr::new("1"))));
+        assert_eq!(STEP_WAIT_RECEIPTS_ENV, "OTERYN_STEP_WAIT_RECEIPTS");
+    }
+
+    #[test]
+    fn the_receipt_is_the_recorded_duration_or_the_time_left_rounded_up() {
+        use std::time::Duration;
+        assert_eq!(moved_step_wait_ms(Some(Duration::from_millis(100))), 100);
+        assert_eq!(
+            moved_step_wait_ms(Some(Duration::from_millis(111_150))),
+            111_150
+        );
+        assert_eq!(moved_step_wait_ms(Some(Duration::from_micros(100_500))), 0);
+        assert_eq!(moved_step_wait_ms(Some(Duration::from_secs(1 << 40))), 0);
+        assert_eq!(moved_step_wait_ms(None), 0);
+        assert_eq!(too_early_step_wait_ms(None), 0);
+        assert_eq!(too_early_step_wait_ms(Some(Duration::ZERO)), 0);
+        assert_eq!(too_early_step_wait_ms(Some(Duration::from_nanos(1))), 1);
+        assert_eq!(
+            too_early_step_wait_ms(Some(Duration::from_micros(99_001))),
+            100
+        );
+        assert_eq!(
+            too_early_step_wait_ms(Some(Duration::from_millis(100))),
+            100
+        );
+        assert_eq!(
+            too_early_step_wait_ms(Some(Duration::from_secs(1 << 40))),
+            u32::MAX
+        );
     }
 
     /// ITEM-VIEW-1b: with capability 4 every object carries its item handle on the snapshot and

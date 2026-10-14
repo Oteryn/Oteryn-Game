@@ -312,7 +312,8 @@ pub struct OneItemMintV1 {
 /// [`super::reward_claim_mint_audit`]) and the D3-6 `decay_retire` (tag 5,
 /// [`super::item_decay_retire_audit`]), the GOLD-FEE `fee_burn` (tag 6) and the TIMED-RT-1b
 /// `timed_expiry` (tag 7, [`super::item_timed_state_audit`]) and the MAP-OVERLAY-1b
-/// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]).
+/// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]), `npc_trade` (tag 9,
+/// [`super::npc_trade_audit`]) and `item_use` (tag 10, [`super::item_use_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
@@ -331,13 +332,15 @@ pub enum OneItemOperationV1 {
     MapItemMint(super::map_item_mint_audit::OneItemMapItemMintV1),
     #[prost(message, tag = "9")]
     NpcTrade(super::npc_trade_audit::OneItemNpcTradeV1),
+    #[prost(message, tag = "10")]
+    ItemUse(super::item_use_audit::OneItemUseV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10")]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -1917,6 +1920,7 @@ pub(super) mod tests {
                 "src/durability/item_mint.rs",
                 "src/durability/item_timed_state.rs",
                 "src/durability/item_transfer.rs",
+                "src/durability/item_use.rs",
                 "src/durability/map_item_mint.rs",
                 "src/durability/npc_trade.rs",
                 "src/durability/reward_claim_mint.rs",

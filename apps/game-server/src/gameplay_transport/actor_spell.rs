@@ -98,6 +98,8 @@ pub(crate) struct ChannelSpellStates {
     >,
     pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
     pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
+    /// ITEM-USE-1c: the item-use gate of each present actor (cooldowns, the one use in flight).
+    pub(in crate::gameplay_transport) item_uses: super::item_use::ItemUseGates,
     pub(crate) pending_native: Vec<
         PendingSpellMarker<
             native_combat_cast::NativeMarkerIntent,
@@ -247,6 +249,7 @@ impl Default for ChannelSpellStates {
             pending_familiars: Default::default(),
             pending_familiar_lifecycle: Default::default(),
             pending_familiar_logouts: Default::default(),
+            item_uses: Default::default(),
             pending_native: Default::default(),
             pending_world_items: Default::default(),
             pending_parameters: Default::default(),
@@ -666,13 +669,20 @@ impl ChannelSpellStates {
         self.actors.get(index).map(|(_, _, state)| state)
     }
 
+    /// Whether `actor` of `session` holds training state a forced checkpoint would write.
+    pub(crate) fn has_training_to_flush(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        self.get(runtime, actor, game_session_id)
+            .is_some_and(|state| state.has_training_to_flush())
+    }
+
     /// Commit a resolved health credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_health_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -696,10 +706,6 @@ impl ChannelSpellStates {
     /// Commit a resolved mana credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_mana_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -718,6 +724,39 @@ impl ChannelSpellStates {
         }
         self.commit(runtime, actor, game_session_id, next)
             .then_some((gained, revision))
+    }
+
+    /// True while no spell commit is pending for the committed player and no durable spell holds
+    /// the actor reserved: nothing then stages a successor of its spell state.
+    pub(in crate::gameplay_transport) fn spell_idle(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        !self.has_pending_spell_commit(actor, game_session_id)
+            && runtime.assert_actor_spell_unreserved(actor).is_ok()
+    }
+
+    /// Compare-commit the fed time of one eaten food (ITEM-USE-1c) as the direct successor
+    /// revision. `None` when the actor is dead, stale, or eating is refused; nothing changes then.
+    pub(in crate::gameplay_transport) fn apply_food(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        regeneration_seconds: u16,
+        now_ms: u64,
+    ) -> Option<u64> {
+        if self.is_dead(actor) {
+            return None;
+        }
+        let next = self
+            .get(runtime, actor, game_session_id)?
+            .after_food(regeneration_seconds, now_ms)?;
+        let revision = next.revision();
+        self.commit(runtime, actor, game_session_id, next)
+            .then_some(revision)
     }
 
     /// DEATH-2 §4.2: true from the lethal write until the respawn. A dead player takes no input.
@@ -1239,6 +1278,41 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn eaten_food_commits_as_the_direct_successor_revision() {
+        let (runtime, actor, session) = runtime_with_player(0x77);
+        let mut states = ChannelSpellStates::default();
+        assert_eq!(states.apply_food(&runtime, actor, session, 30, 0), None);
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        assert!(states.spell_idle(&runtime, actor, session));
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("present")
+            .revision();
+        assert_eq!(
+            states.apply_food(&runtime, actor, session, 30, 0),
+            Some(before + 1)
+        );
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
+        let full = states.apply_food(&runtime, actor, session, 1_200, 0);
+        assert_eq!(full, None);
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
+    }
+
+    #[test]
     fn vitals_credit_refuses_foreign_sessions_and_ended_generations() {
         let (mut runtime, actor, session) = runtime_with_player(0x75);
         let other = GameSessionId::decode(&uuid_v7(0x76)).expect("other session");
@@ -1681,6 +1755,7 @@ pub(crate) mod tests {
             .expect("actual logical reservation");
         assert!(!runtime.actor_spell_reserved(actor));
         assert!(states.has_pending_spell_commit(actor, session));
+        assert!(!states.spell_idle(&runtime, actor, session));
         let before = states
             .get(&runtime, actor, session)
             .expect("before")
@@ -3942,7 +4017,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now_us: u64,
         direction: crate::movement::CardinalStep,
-        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
         contact: Option<CreatureFieldContact>,

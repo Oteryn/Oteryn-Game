@@ -6,15 +6,18 @@
 //! limited to `NPC0-RL-04` intents per second, and the reply goes to the speaker alone as a whole
 //! domain 7 payload. Domain 8 is a read-only trade window (NPC-CMD-1b-read): a talk intent that asks
 //! to `trade` of a conversation with an NPC that has offers opens it for the speaker alone, and it
-//! closes with the conversation. A trade intent (command 8) is still `REJECTED` until NPC-TRADE-1.
-//! Nothing here is durable.
+//! closes with the conversation. A trade intent (command 8, NPC-TRADE-2) names an offer of the
+//! window open on the NPC of the session's conversation; [`NpcConversations::trade_in`] resolves it
+//! against the server catalogue and the connection commits it as one durable NPC trade
+//! (NPC-TRADE-1). Nothing here is durable.
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 
 use oteryn_protocol_oteryn::npc_service::{
     MAX_OFFERS, MAX_TALK_INTENTS_PER_SECOND, NpcConversation, NpcConversationState,
-    NpcIntentDisposition, NpcOffer, NpcTalkIntent, NpcTradeSide, NpcTradeWindow, TALK_RANGE_TILES,
+    NpcIntentDisposition, NpcOffer, NpcTalkIntent, NpcTradeIntent, NpcTradeSide, NpcTradeWindow,
+    TALK_RANGE_TILES,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -84,16 +87,24 @@ impl NpcTalkOutcome {
 
 /// The offers of `offers` the window shows, in order: an Item offer whose definition the pinned
 /// index names at the offer's own revision and whose count and price fit the wire. The index in
-/// the result is the offer index a trade intent will name, so the commit slice reads this same
-/// projection. At most [`MAX_OFFERS`].
+/// the result is the offer index a trade intent names, so [`NpcConversations::trade_in`] reads this
+/// same projection. At most [`MAX_OFFERS`].
 pub(crate) fn project_offers(
     offers: &[ProjectV2ServiceOffer],
     items: &ItemDefinitionIndex,
 ) -> Vec<NpcOffer> {
+    projected(offers, items).map(|(offer, _)| offer).collect()
+}
+
+/// Each projected offer with the catalogue offer it shows.
+fn projected<'a>(
+    offers: &'a [ProjectV2ServiceOffer],
+    items: &'a ItemDefinitionIndex,
+) -> impl Iterator<Item = (NpcOffer, &'a ProjectV2ServiceOffer)> {
     offers
         .iter()
         .filter_map(|offer| {
-            Some(NpcOffer {
+            let shown = NpcOffer {
                 item_definition_ref: items
                     .definition_ref(ITEM_FAMILY, &offer.item.key, &offer.item.revision)?
                     .get(),
@@ -103,11 +114,45 @@ pub(crate) fn project_offers(
                 },
                 count: offer.count.unwrap_or(1).max(1),
                 unit_price: u32::try_from(offer.unit_price).ok()?,
-            })
+            };
+            Some((shown, offer))
         })
         .take(MAX_OFFERS)
-        .collect()
 }
+
+/// The offer a trade intent names, as the server catalogue holds it at the window's revision.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct NpcTradeOffer {
+    pub(crate) npc_key: String,
+    pub(crate) catalogue_revision: u64,
+    pub(crate) offer_index: u32,
+    pub(crate) side: NpcTradeSide,
+    pub(crate) quantity: u32,
+    /// Units per trade row.
+    pub(crate) count: u32,
+    pub(crate) unit_price: u32,
+    /// The offered Item's definition key and revision.
+    pub(crate) item_key: String,
+    pub(crate) item_revision: String,
+}
+
+/// A trade intent that is not committed: its disposition and the domain 7 and 8 payloads to send.
+pub(crate) struct NpcTradeRefusal {
+    pub(crate) disposition: NpcIntentDisposition,
+    pub(crate) update: NpcUpdate,
+}
+
+impl NpcTradeRefusal {
+    pub(crate) fn only(disposition: NpcIntentDisposition) -> Self {
+        Self {
+            disposition,
+            update: NpcUpdate::default(),
+        }
+    }
+}
+
+/// `NPC0` §5: at most this many offer rows in one trade.
+const MAX_TRADE_QUANTITY: u32 = 100;
 
 impl NpcConversations {
     /// The session is retired: its rate window goes with it. The conversation itself lives in
@@ -220,6 +265,109 @@ impl NpcConversations {
             None => self.close_window(session, talking_to.map(|npc| npc.placement_identity())),
         };
         outcome
+    }
+
+    /// One trade intent of the admitted `actor`, under the runtime lock the caller holds (NPC-0
+    /// §5.1). The named NPC must be the visible one of this generation (else `STALE`), the one the
+    /// session's conversation is held with (else `NO_CONVERSATION`) and within the talk range
+    /// (else `NOT_IN_RANGE`). The window must be open on it and the quantity within 1..=100 (else
+    /// `REJECTED`). The catalogue revision, the offer index, the side and the unit price must be
+    /// the server's at that revision: any mismatch is `STALE` and re-projects the window. Charged,
+    /// fluid and non-gold offers are outside the trade commit and `REJECTED`.
+    pub(crate) fn trade_in(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        use NpcIntentDisposition as Disposition;
+        let visible = runtime.visible_entities();
+        let Some(speaker) = visible.players.iter().find(|entry| entry.actor == actor) else {
+            return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
+        };
+        let Some(npc) = visible.npcs.iter().find(|npc| {
+            npc.actor.placement_identity() == intent.npc_actor.identity
+                && npc.generation == intent.npc_actor.generation
+        }) else {
+            return Err(Box::new(NpcTradeRefusal::only(Disposition::Stale)));
+        };
+        if chat.engaged(session) != Some(npc.actor) {
+            return Err(Box::new(NpcTradeRefusal::only(Disposition::NoConversation)));
+        }
+        if speaker.position.floor != npc.position.floor
+            || speaker.position.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
+            || speaker.position.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
+        {
+            return Err(Box::new(NpcTradeRefusal::only(Disposition::NotInRange)));
+        }
+        let shown = self
+            .sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).and_then(|state| state.window));
+        if shown != Some(intent.npc_actor) {
+            // No window is open on this NPC: there is nothing to re-project.
+            return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
+        }
+        // NPC-0 §5.1: the client's revision, offer and price are only stale checks; a mismatch
+        // is STALE and re-projects the window.
+        let stale = || {
+            let window = open_window(chat, runtime, intent.npc_actor, items).unwrap_or_default();
+            if window.open.is_none()
+                && let Ok(mut sessions) = self.sessions.lock()
+                && let Some(state) = sessions.get_mut(&session)
+            {
+                state.window = None;
+            }
+            NpcTradeRefusal {
+                disposition: Disposition::Stale,
+                update: NpcUpdate {
+                    conversation: None,
+                    window: Some(window),
+                },
+            }
+        };
+        let rejected = || NpcTradeRefusal::only(Disposition::Rejected);
+        let (Some(book), Some(items), Some(npc_key)) =
+            (chat.npc_talk(), items, runtime.npc_key(npc.actor))
+        else {
+            return Err(Box::new(rejected()));
+        };
+        let Some(entry) = book.get(npc_key) else {
+            return Err(Box::new(rejected()));
+        };
+        if !(1..=MAX_TRADE_QUANTITY).contains(&intent.quantity) {
+            return Err(Box::new(rejected()));
+        }
+        if intent.catalogue_revision != book.catalogue_revision() {
+            return Err(Box::new(stale()));
+        }
+        let Some((offer, source)) = usize::try_from(intent.offer_index)
+            .ok()
+            .and_then(|index| projected(entry.offers(), items).nth(index))
+        else {
+            return Err(Box::new(stale()));
+        };
+        if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
+            return Err(Box::new(stale()));
+        }
+        if source.currency.is_some() || source.sub_type.is_some() {
+            return Err(Box::new(rejected()));
+        }
+        Ok(NpcTradeOffer {
+            npc_key: npc_key.to_owned(),
+            catalogue_revision: intent.catalogue_revision,
+            offer_index: intent.offer_index,
+            side: offer.side,
+            quantity: intent.quantity,
+            count: offer.count,
+            unit_price: offer.unit_price,
+            item_key: source.item.key.clone(),
+            item_revision: source.item.revision.clone(),
+        })
     }
 
     /// A talk intent with no pinned Item index, so no window.

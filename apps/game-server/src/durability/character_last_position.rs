@@ -174,7 +174,9 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_session_fence(&mut tx, &fence, &node).await? {
+                    if let Err(error) =
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
                         return Ok(Err(error));
                     }
                     let key = LastPositionKey {
@@ -255,7 +257,9 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_session_fence(&mut tx, &fence, &node).await? {
+                    if let Err(error) =
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
                         return Ok(Err(error));
                     }
                     let stored = load_last_position(&mut tx, fence.character_id).await?;
@@ -281,7 +285,7 @@ async fn write_periodic(
     if write.write_sequence == 0 {
         return Ok(Err(CharacterProgressionError::InvalidInput));
     }
-    if let Err(error) = assert_session_fence(tx, &write.fence, node).await? {
+    if let Err(error) = assert_session_fence(tx, &write.fence.item_fence(), node).await? {
         return Ok(Err(error));
     }
     let key = LastPositionKey {

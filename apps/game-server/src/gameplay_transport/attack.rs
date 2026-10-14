@@ -6,7 +6,10 @@
 //! committed by the physical owner under the swing identity `(character, lease generation,
 //! session, lineage, swing ordinal)`: the lineage is the `CommandRef` of the `ATTACK_TARGET`
 //! command that set the target and the ordinal counts the swings of that lineage from 0.
-//! Player targets (PvP), chase, distance weapons and creature defence/armor are out of scope.
+//! Player targets (PvP), distance weapons and creature defence/armor are out of scope. Server-driven
+//! chase (CHASE-1) is not implemented: today the server only holds the out-of-range target and never
+//! steps the player, so `CHASE` behaves like `STAND`; owner/CP decision (LOOP-COMBAT-MODES-1) keeps
+//! chase client-driven (#1942) until the follow-up. `secure` has no creature-target effect before PvP.
 
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{
@@ -565,17 +568,18 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 /// The swing as one Ability plan: a client-proposed damage effect on the held target,
-/// committed atomically by the Channel owner under the swing's identity.
+/// committed atomically by the Channel owner under the swing's identity. The target atom is the
+/// creature slot's `target_identity` (its definition key), which the owner commit compares.
 fn swing_plan(
     attacker: ExactActorRef,
-    target: ExactActorRef,
     lineage: CommandRef,
     ordinal: u16,
     magnitude: i64,
     content_digest: &[u8; 32],
+    target_identity: &str,
 ) -> Option<EffectPlan> {
     let issuer = actor_atom(attacker);
-    let target_atom = actor_atom(target);
+    let target_atom = target_identity.to_owned();
     let occurrence_id = format!(
         "auto-attack:{}:{}:{}:{ordinal}",
         hex(&attacker.placement_identity()),
@@ -737,11 +741,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let Some(plan) = swing_plan(
                 entry.actor,
-                target,
                 swing.lineage,
                 ordinal,
                 magnitude,
                 &digest,
+                &race_key,
             ) else {
                 continue;
             };

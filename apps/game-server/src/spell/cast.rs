@@ -46,11 +46,15 @@ macro_rules! starter {
 }
 
 /// The V1 castable set of §6 among the candidate starter bundles: self heal and condition removal
-/// (`exana pox`, `exura gran`, `exura`).
-const V1_BUNDLES: [(&str, &str); 3] = [
+/// (`exana pox`, `exura gran`, `exura`, `exura infir`). Every member is a plain self-target instant
+/// on the `healing` cooldown group. The stock client bar casts index 1-4 only (`SPELL_SLOTS`), so
+/// `ultimate_healing` and `wound_cleansing` (indices 5-6) and `bruise_bane` (sorts first, shifts
+/// indices 1-3) wait for the client bar and the index-pinned tests.
+const V1_BUNDLES: [(&str, &str); 4] = [
     starter!("instant-cure_poison"),
     starter!("instant-intense_healing"),
     starter!("instant-light_healing"),
+    starter!("instant-magic_patch"),
 ];
 
 /// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
@@ -387,6 +391,16 @@ impl PlayerSpellState {
         }
         self.health = health;
         self.mana = mana.min(self.facts.max_mana);
+    }
+
+    /// FOOD-REGEN-1 successor: the fed time extended by `regeneration_seconds` under one successor
+    /// revision, so the new condition is published like any other ACTOR_VITALS-revision change.
+    /// `None` when eating is refused (full or unrepresentable) or the revision is exhausted.
+    pub(crate) fn after_food(&self, regeneration_seconds: u16, now_ms: u64) -> Option<Self> {
+        let mut next = self.clone();
+        super::actor_conditions::eat_food(&mut next, regeneration_seconds, now_ms).ok()?;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
     }
 
     /// Test only: stages a wounded actor (no damage owner exists yet).

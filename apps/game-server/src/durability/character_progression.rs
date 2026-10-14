@@ -8,6 +8,7 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::progression::{
@@ -55,6 +56,20 @@ pub struct CurrentCharacterGameplayFence {
     pub runtime_scope: RuntimeScopeRefV1,
     pub scope_ownership_generation: ScopeOwnershipGeneration,
     pub expected_character_revision: CharacterRevision,
+}
+
+impl CurrentCharacterGameplayFence {
+    /// The same session, lease and scope authority without the CharacterRevision.
+    pub(super) const fn item_fence(&self) -> CurrentCharacterItemFence {
+        CurrentCharacterItemFence {
+            character_id: self.character_id,
+            game_session_id: self.game_session_id,
+            connection_generation: self.connection_generation,
+            character_lease_generation: self.character_lease_generation,
+            runtime_scope: self.runtime_scope,
+            scope_ownership_generation: self.scope_ownership_generation,
+        }
+    }
 }
 
 /// Complete semantic input to the existing pure progression calculator.
@@ -642,8 +657,8 @@ impl DurabilityRoot {
 pub(super) struct FencedCharacterRoot {
     pub(super) revision: u64,
     profile_revision: String,
-    ruleset_revision: String,
-    content_revision: String,
+    pub(super) ruleset_revision: String,
+    pub(super) content_revision: String,
 }
 
 /// The composition rule 2 session checks of the gameplay fence, with no Character root lock:
@@ -654,7 +669,7 @@ pub(super) struct FencedCharacterRoot {
 /// alone.
 pub(super) async fn assert_session_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    fence: &CurrentCharacterGameplayFence,
+    fence: &CurrentCharacterItemFence,
     node: &NodeIncarnationProof,
 ) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
     let RuntimeScopeRefV1::Channel {
@@ -763,6 +778,38 @@ pub(super) async fn assert_gameplay_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
+    assert_fenced_root(
+        tx,
+        &fence.item_fence(),
+        Some(fence.expected_character_revision.get()),
+        node,
+    )
+    .await
+}
+
+/// [`assert_gameplay_fence`] for an item-only transaction: the same session, scope, guard,
+/// root-lock and interpretation proofs and no CharacterRevision equality (composition rule 2
+/// never uses `expected_character_revision` as an item-only authority fence).
+pub(super) async fn assert_item_only_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    assert_fenced_root(tx, fence, None, node).await
+}
+
+async fn assert_fenced_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    expected_revision: Option<u64>,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
     let account_text = match assert_session_fence(tx, fence, node).await? {
         Ok(account_text) => account_text,
         Err(error) => return Ok(Err(error)),
@@ -791,7 +838,7 @@ pub(super) async fn assert_gameplay_fence(
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     }
     let root_revision = numeric_u64(&root, "character_revision")?;
-    if root_revision != fence.expected_character_revision.get() {
+    if expected_revision.is_some_and(|expected| root_revision != expected) {
         return Ok(Err(CharacterProgressionError::CharacterRevisionMismatch));
     }
 
