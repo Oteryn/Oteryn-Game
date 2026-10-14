@@ -126,8 +126,9 @@ def _evaluate(s: dict, now: datetime) -> dict:
     def stamp(item, key: str = "at") -> None:
         at = item[key]
         parsed = _parse_at(at)
-        if (parsed - observed).total_seconds() > CLOCK_SKEW_SECONDS:
-            raise ValueError(f"event time {at!r} is later than observed_at {s['observed_at']!r}")
+        # One shared tolerance, measured against the evaluator clock: skews never add up past now + skew.
+        if (parsed - now).total_seconds() > CLOCK_SKEW_SECONDS:
+            raise ValueError(f"event time {at!r} is later than the evaluator clock")
         stamps.append((parsed, at))
 
     state, base_ref = cand["state"], cand["base_ref"]

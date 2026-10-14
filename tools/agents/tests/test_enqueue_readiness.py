@@ -118,6 +118,15 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["observed_at"] = snap["checks"]["runs"][0]["at"] = "2026-10-14T12:03:00Z"  # 150 s ahead
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
+    def test_skews_do_not_compose_past_the_evaluator_clock(self):
+        snap = ready()
+        snap["observed_at"] = "2026-10-14T12:02:00Z"  # within 120 s of NOW (12:00:30)
+        snap["checks"]["runs"][0]["at"] = "2026-10-14T12:04:00Z"  # within 120 s of observed_at, 210 s past NOW
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["checks"]["runs"][0]["at"] = "2026-10-14T12:02:30Z"  # exactly now + 120 s
+        result = evaluate(snap)
+        self.assertEqual((result["verdict"], result["ready_at"]), ("ENQUEUE_ELIGIBLE", "2026-10-14T12:02:30Z"))
+
     def test_latest_review_is_authoritative(self):
         snap = ready()
         base = snap["review"]["reviews"][0]
