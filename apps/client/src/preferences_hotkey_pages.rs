@@ -1098,11 +1098,12 @@ fn general(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut 
     } else {
         &mut profile.general_chat_off
     };
-    table_header(ui, en);
     egui::Grid::new("general-hotkey-table")
         .striped(true)
         .num_columns(3)
+        .max_col_width(hotkey_action_column_width(ui))
         .show(ui, |ui| {
+            table_header(ui, en);
             for (id, labels) in GENERAL_ACTIONS {
                 let label = labels[usize::from(en)];
                 if !matches_search(&state.search_applied, label) {
@@ -1145,11 +1146,12 @@ fn general(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut 
 }
 
 fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
-    table_header(ui, en);
     egui::Grid::new("action-hotkey-table")
         .striped(true)
         .num_columns(3)
+        .max_col_width(hotkey_action_column_width(ui))
         .show(ui, |ui| {
+            table_header(ui, en);
             for row in 0..ACTION_BAR_ROWS {
                 let Some(preferences) = draft.action_bar.row(row) else {
                     continue;
@@ -1192,12 +1194,13 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
     let Some(profile) = draft.hotkeys.active_mut() else {
         return;
     };
-    table_header(ui, en);
     let mut remove = None;
     egui::Grid::new("custom-hotkey-table")
         .striped(true)
         .num_columns(3)
+        .max_col_width(hotkey_action_column_width(ui))
         .show(ui, |ui| {
+            table_header(ui, en);
             for (index, action) in profile.custom.iter_mut().enumerate() {
                 let label = custom_label(&action.action, en);
                 if !matches_search(&state.search_applied, &label) {
@@ -1498,11 +1501,17 @@ fn add_new_action(profile: &mut HotkeyProfile, state: &mut State, kind: NewActio
 }
 
 fn table_header(ui: &mut egui::Ui, en: bool) {
-    ui.columns(3, |cols| {
-        cols[0].strong(if en { "Action" } else { "Czynność" });
-        cols[1].strong(if en { "First Key" } else { "Pierwszy skrót" });
-        cols[2].strong(if en { "Second Key" } else { "Drugi skrót" });
-    });
+    // Headers and rows share the same Grid's measured column widths.
+    ui.strong(if en { "Action" } else { "Czynność" });
+    ui.strong(if en { "First Key" } else { "Pierwszy skrót" });
+    ui.strong(if en { "Second Key" } else { "Drugi skrót" });
+    ui.end_row();
+}
+
+fn hotkey_action_column_width(ui: &egui::Ui) -> f32 {
+    // Wrap long action/text names before they displace either fixed key target
+    // outside the viewport. Grid provides upstream wrapping, not truncation.
+    (ui.available_width() - 2.0 * BINDING_CELL_WIDTH - 2.0 * ui.spacing().item_spacing.x).max(1.0)
 }
 
 fn binding_button(
@@ -2151,6 +2160,177 @@ mod tests {
     use super::*;
     use crate::preferences_browser::test_support::{button_position, click, frame};
     use std::collections::BTreeSet;
+
+    #[test]
+    fn hotkey_table_headers_align_with_both_keys_and_stay_inside_the_viewport()
+    -> Result<(), &'static str> {
+        fn draw(
+            ctx: &egui::Context,
+            width: f32,
+            family: &str,
+            draft: &mut ClientSettings,
+            state: &mut State,
+        ) {
+            egui::Area::new(egui::Id::new("hotkey-table-geometry"))
+                .fixed_pos(egui::pos2(8.0, 8.0))
+                .show(ctx, |ui| {
+                    ui.set_width(width);
+                    ui.set_clip_rect(egui::Rect::from_min_size(
+                        ui.min_rect().min,
+                        egui::vec2(width, 400.0),
+                    ));
+                    if family == "general" {
+                        general(ui, draft, draft.english, state);
+                    } else if family == "action" {
+                        action_bars(ui, draft, draft.english, state);
+                    } else {
+                        custom(ui, draft, draft.english, state);
+                    }
+                });
+        }
+        for english in [false, true] {
+            for width in [620.0, 480.0] {
+                for family in ["general", "action", "custom"] {
+                    for chat_on in [false, true] {
+                        let ctx = egui::Context::default();
+                        let size = egui::vec2(width + 40.0, 440.0);
+                        let mut draft = ClientSettings {
+                            english,
+                            ..Default::default()
+                        };
+                        let pair = HotkeyPair {
+                            first: Some(ShortcutBinding {
+                                key: 67,
+                                ctrl: false,
+                                alt: false,
+                                shift: false,
+                                meta: false,
+                            }),
+                            second: Some(ShortcutBinding {
+                                key: 68,
+                                ctrl: false,
+                                alt: false,
+                                shift: false,
+                                meta: false,
+                            }),
+                        };
+                        if family == "action" {
+                            if chat_on {
+                                draft.action_bar.chat_on_shortcuts[0] =
+                                    pair.first.map(binding_to_slot);
+                                draft.action_bar.chat_on_secondary_shortcuts[0] =
+                                    pair.second.map(binding_to_slot);
+                            } else {
+                                draft.action_bar.shortcuts[0] = pair.first.map(binding_to_slot);
+                                draft.action_bar.secondary_shortcuts[0] =
+                                    pair.second.map(binding_to_slot);
+                            }
+                        } else {
+                            let profile = draft.hotkeys.active_mut().ok_or("profile")?;
+                            if family == "general" {
+                                let map = if chat_on {
+                                    &mut profile.general_chat_on
+                                } else {
+                                    &mut profile.general_chat_off
+                                };
+                                map.insert("action.bottom.1".into(), pair);
+                            } else {
+                                profile.custom.push(CustomHotkey {
+                                    action: CustomHotkeyAction::Text {
+                                        text: "Zażółć 日本語 🦀 ".repeat(8),
+                                        send_automatically: false,
+                                    },
+                                    chat_on: pair,
+                                    chat_off: pair,
+                                });
+                            }
+                        }
+                        let original = draft.clone();
+                        let mut state = State {
+                            chat_on,
+                            ..Default::default()
+                        };
+                        let mut output = egui::FullOutput::default();
+                        for _ in 0..4 {
+                            output = frame(&ctx, size, vec![], |ctx| {
+                                draw(ctx, width, family, &mut draft, &mut state);
+                            })
+                            .1;
+                        }
+                        let text_rect = |label: &str| {
+                            output.shapes.iter().find_map(|shape| match &shape.shape {
+                                egui::Shape::Text(text) if text.galley.job.text == label => {
+                                    Some(text.visual_bounding_rect())
+                                }
+                                _ => None,
+                            })
+                        };
+                        for (header, key) in [
+                            (
+                                if english {
+                                    "First Key"
+                                } else {
+                                    "Pierwszy skrót"
+                                },
+                                "F10",
+                            ),
+                            (
+                                if english {
+                                    "Second Key"
+                                } else {
+                                    "Drugi skrót"
+                                },
+                                "F11",
+                            ),
+                        ] {
+                            let heading = text_rect(header).ok_or("heading")?;
+                            let binding = text_rect(key).ok_or("key label")?;
+                            let key_left = binding.center().x - BINDING_CELL_WIDTH / 2.0;
+                            assert!(
+                                (heading.left() - key_left).abs() < 2.0,
+                                "{header}: header {}, key {key_left}, width {width}",
+                                heading.left()
+                            );
+                            assert!(
+                                binding.center().x + BINDING_CELL_WIDTH / 2.0 < width + 9.0,
+                                "{key} cell clipped at width {width}"
+                            );
+                        }
+                        assert_eq!(
+                            draft, original,
+                            "rendering {family} must not change the profile"
+                        );
+                        let second =
+                            button_position(&output, size, "F11").ok_or("second target")?;
+                        click(&ctx, size, second, |ctx| {
+                            draw(ctx, width, family, &mut draft, &mut state)
+                        });
+                        if family == "action" {
+                            assert!(
+                                state.binding_editor.is_none(),
+                                "unavailable native bar bindings must stay disabled"
+                            );
+                        } else {
+                            let target = &state
+                                .binding_editor
+                                .as_ref()
+                                .ok_or("reachable second-key editor")?
+                                .target;
+                            assert!(matches!(target,
+                                BindingTarget::General { second: true, chat_on: context, .. }
+                                | BindingTarget::Custom { second: true, chat_on: context, .. } if *context == chat_on
+                            ));
+                        }
+                        assert_eq!(
+                            draft, original,
+                            "opening the editor must not Apply a binding"
+                        );
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn text_editor_buttons_preserve_rejected_input_and_commit_only_valid_bounded_actions()

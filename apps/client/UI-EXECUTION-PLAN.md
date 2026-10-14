@@ -8,6 +8,14 @@ AUTHORING. This plan is the execution order, not a completion declaration.
 
 ## Current continuation — 2026-10-14
 
+Native normal-client F10/focus/draft acceptance now passes on690e22ad, without
+game login or clipboard access; proof is in prelogin-focus.md. The next coherent
+packet, client-hotkey-table-fit.md, repairs a newly observed shared table defect:
+equal-third headings disagree with naturally sized rows and the second key target
+is partially clipped. Reuse the same upstream Grid and bounded wrapping for all
+three tables. This changes fit/reachability, not unavailable-action activation.
+Failed native Copy/Remove/binding fixture attempts remain explicitly unqualified.
+
 Newest packet: OTV2-20261014-client-prelogin-focus. Published ab111236 CI is
 terminal green including game-gate; current-main conflict still needs normal
 composition. Native OS packet OTV2-20261014-client-native-os-input supersedes

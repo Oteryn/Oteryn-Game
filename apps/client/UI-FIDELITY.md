@@ -1109,6 +1109,14 @@ Packet: docs/agents/tasks/active/OTV2-20261014-client-export-destination.md.
 
 ## Required evidence per page/panel
 
+Normal-client690e22ad F10/focus proof (prelogin-focus.md) now includes actual
+foreground loss, queued background keys, unsaved Advanced navigation retention
+and explicit Escape discard. It does not establish physical keyboard/IME parity.
+The next table-fit packet fixes a newly observed per-row gap that the20-page
+audit did not prove: header/key-column alignment and full second-key hit targets.
+Profiles Add/Apply is independently proved; later native Copy/Remove/key-capture
+fixture filenames are rejected because they show the wrong screen, not success.
+
 Latest native OS evidence is in OTV2-20261014-client-native-os-input: bounded
 current-desktop permission supersedes older isolation requirements, and actual
 Options clipboard/pickers/import+Apply/wheel tests pass on ab111236. Emoji
