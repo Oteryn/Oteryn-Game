@@ -61,7 +61,7 @@ applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
   - "TransactionId is an allocated UUIDv7 frozen at PREPARE; it is never derived from the swing tuple."
-  - "Restart order: the claim commits under the character_root lock before any receipt read and advances only the generation that changed (a character reconnect advances the CharacterLease/GameSession generation; a scope-owner replacement advances the scope generation through the scope-assignment authority, never both on the claim's own authority); only then is the newest receipt read (LIMIT 1) and a new TransactionId allocated."
+  - "Restart order: the claim commits under the character_root lock before any receipt read and advances only the generation that changed (an eligible same-GameSession reconnect advances only connection_generation and needs no restart read; a GameSession or lease replacement advances the lease/GameSession generation through the character's claim; a scope-owner replacement advances the scope generation through the scope-assignment authority; never more than one on the claim's own authority); only then is the newest receipt read (LIMIT 1) and a new TransactionId allocated."
   - "At most one outstanding ambiguous TransactionId per character: after the 2,000 ms window the slot is freed for every use except another weapon swing."
   - "A replay or reconciliation read returns the first outcome and credits nothing."
   - "Weapon swings stay refused (fail closed) while the restart read fails or a swing is unobserved or ambiguous."
