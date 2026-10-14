@@ -443,6 +443,24 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// CHASE-1 (RANGED-0 §8): the actor-owned pacing deadline of `actor` still ahead, which a
+    /// replaced or resumed connection starts from. Fixtures without one keep this default.
+    fn actor_step_deadline(
+        &self,
+        _actor: ExactActorRef,
+    ) -> impl Future<Output = Option<tokio::time::Instant>> {
+        async { None }
+    }
+
+    /// CHASE-1: `actor`'s pacing clock is now due at `due`.
+    fn record_actor_step_deadline(
+        &self,
+        _actor: ExactActorRef,
+        _due: tokio::time::Instant,
+    ) -> impl Future<Output = ()> {
+        async {}
+    }
+
     /// CHASE-1: a client step of `actor` arrived; it wins over the chase, whose route is dropped.
     fn yield_chase_to_client(
         &self,
@@ -1808,12 +1826,14 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
-    // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
-    // frames read while a step waits in it. Those frames run, in order, only after the buffered
-    // step's result, because results commit in CommandId order (FND-02 §13); a step among them
-    // arrived while the buffer was full and is refused. All of it ends with the connection, so
-    // the buffer is dropped at disconnect and a resumed connection starts empty.
-    let mut pacer = StepPacer::default();
+    // SPEED-1 (CONDITIONS-0 §4.3): the actor's pacing clock, this connection's one-step buffer
+    // and the frames read while a step waits in it. Those frames run, in order, only after the
+    // buffered step's result, because results commit in CommandId order (FND-02 §13); a step
+    // among them arrived while the buffer was full and is refused. The buffer ends with the
+    // connection, so a resumed connection starts with an empty one; the clock is the actor's
+    // (CHASE-1, RANGED-0 §8): it starts from the actor's deadline and records to it, so a
+    // replaced or resumed connection never steps sooner.
+    let mut pacer = StepPacer::resumed(authority.actor_step_deadline(actor).await);
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
@@ -2106,7 +2126,7 @@ where
                 else {
                     continue;
                 };
-                pacer.record(tokio::time::Instant::now(), duration);
+                record_actor_step(&mut pacer, authority, actor, duration).await;
                 let Some(observation) = outcome.moved_to else {
                     continue;
                 };
@@ -2381,7 +2401,7 @@ where
                         .await;
                     // The clock starts when the step committed, so a slow owner turn never
                     // shortens the next step's wait.
-                    pacer.record(tokio::time::Instant::now(), duration);
+                    record_actor_step(&mut pacer, authority, actor, duration).await;
                     // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
                     let wait = if outcome.disposition == StepDisposition::Moved {
                         moved_step_wait_ms(duration)
@@ -3301,6 +3321,21 @@ fn item_view_delta(
 /// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
 /// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
 /// result, a chase step (CHASE-1) on its own. `None` ends the connection.
+/// SPEED-1 with CHASE-1: a step of `actor` just committed; its pacing clock starts now, on the
+/// connection's copy and on the actor's own deadline (RANGED-0 §8). Only a moved step has a
+/// duration.
+async fn record_actor_step<A: FreshAdmissionAuthority>(
+    pacer: &mut StepPacer,
+    authority: &A,
+    actor: ExactActorRef,
+    duration: Option<std::time::Duration>,
+) {
+    pacer.record(tokio::time::Instant::now(), duration);
+    if let (Some(_), Some(due)) = (duration, pacer.next_due()) {
+        authority.record_actor_step_deadline(actor, due).await;
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn moved_step_frames<S, A>(
     stream: &mut S,

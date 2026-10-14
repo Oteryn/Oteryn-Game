@@ -1325,6 +1325,32 @@ fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
 }
 
 #[test]
+fn the_actor_pacing_deadline_survives_a_replaced_connection() {
+    // CHASE-1 (RANGED-0 §8): the deadline is the actor's, not its connection's, so a resumed or
+    // replaced connection starts from it and never steps sooner.
+    let mut attack = ChannelAttackStates::default();
+    let player = owner().player;
+    let now = tokio::time::Instant::now();
+    let due = now + std::time::Duration::from_millis(400);
+    attack.record_step_deadline(player, now, due);
+    // The new connection reads it; a pacer resumed from it waits until it.
+    let resumed = crate::movement::pacing::StepPacer::resumed(attack.step_deadline(player, now));
+    assert_eq!(resumed.wait_until(now), Some(due));
+    assert_eq!(resumed.wait_until(due), None);
+    // A later step replaces it; a passed deadline is gone.
+    let later = due + std::time::Duration::from_millis(300);
+    attack.record_step_deadline(player, due, later);
+    assert_eq!(attack.step_deadline(player, due), Some(later));
+    assert_eq!(attack.step_deadline(player, later), None);
+    attack.record_step_deadline(player, later, later);
+    assert_eq!(
+        attack.step_deadline(player, now),
+        None,
+        "a passed deadline is dropped"
+    );
+}
+
+#[test]
 fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
     let mut owner = owner();
     let rat = owner.rat;

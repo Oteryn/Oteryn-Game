@@ -176,11 +176,38 @@ pub(crate) struct ChannelAttackStates {
     /// CHASE-1: the Channel's player chase searches in the current owner window
     /// (`RANGED0-RL-03`).
     chase_searches: ChaseSearchBudget,
+    /// CHASE-1 (RANGED-0 §8): each player actor's pacing deadline, owned by the actor rather
+    /// than its connection, so a client step and a chase step share one clock and a replaced or
+    /// resumed connection keeps it. Only deadlines still ahead are kept.
+    step_deadlines: Vec<(ExactActorRef, Instant)>,
 }
 
 impl ChannelAttackStates {
     pub(crate) const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
         &self.kills
+    }
+
+    /// CHASE-1: the pacing deadline of `actor` still ahead of `now`, if any.
+    pub(crate) fn step_deadline(&self, actor: ExactActorRef, now: Instant) -> Option<Instant> {
+        self.step_deadlines
+            .iter()
+            .find(|(owner, due)| *owner == actor && now < *due)
+            .map(|(_, due)| *due)
+    }
+
+    /// CHASE-1: `actor`'s pacing clock is due at `due`, set at `now`; deadlines already past
+    /// are dropped.
+    pub(crate) fn record_step_deadline(
+        &mut self,
+        actor: ExactActorRef,
+        now: Instant,
+        due: Instant,
+    ) {
+        self.step_deadlines
+            .retain(|(owner, kept)| *owner != actor && now < *kept);
+        if now < due {
+            self.step_deadlines.push((actor, due));
+        }
     }
 }
 
@@ -561,6 +588,21 @@ impl ChannelAttackStates {
             entry.chase.reset();
             return None;
         }
+        // RANGED0-RL-03: the due searches that waited longer, or as long with a lower actor id,
+        // keep their places in the window.
+        let own = (
+            entry.chase.search_waiting_since().unwrap_or(now.get()),
+            actor_order(actor),
+        );
+        let ahead = entries
+            .iter()
+            .filter(|other| other.actor != actor || other.session != session)
+            .filter_map(|other| {
+                let since = other.chase.search_waiting_since()?;
+                ((since, actor_order(other.actor)) < own).then_some(())
+            })
+            .count();
+        let entry = &mut entries[index];
         // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
         // another player; never the chasing player), and the target's own tile is no path tile.
         let mut occupied: Option<std::collections::BTreeSet<(i32, i32)>> = None;
@@ -568,7 +610,7 @@ impl ChannelAttackStates {
             now.get(),
             from,
             to,
-            || chase_searches.admit(now.get()),
+            || chase_searches.admit(now.get(), ahead),
             |cell| {
                 if cell == to || !path_tile(cell) {
                     return None;
@@ -629,6 +671,11 @@ impl ChannelAttackStates {
             }
         }
     }
+}
+
+/// CHASE-1: the actor-id order of `RANGED0-RL-03` within one Channel.
+const fn actor_order(actor: ExactActorRef) -> (u32, u64) {
+    (actor.actor_local_id(), actor.actor_local_generation())
 }
 
 /// CHASE-1: whether a player chase may path over `cell` (CREATURE-AI-0 §5.3 with RANGED-0 §8). It
@@ -826,6 +873,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chase_step_refused(actor, session, now, blocked);
         }
         Some((outcome, duration))
+    }
+
+    /// CHASE-1: the actor-owned pacing deadline of `actor` still ahead of now.
+    pub(in crate::gameplay_transport) async fn actor_step_deadline_now(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<Instant> {
+        self.attack
+            .lock()
+            .await
+            .step_deadline(actor, Instant::now())
+    }
+
+    /// CHASE-1: `actor`'s pacing clock is now due at `due`.
+    pub(in crate::gameplay_transport) async fn record_actor_step_deadline_now(
+        &self,
+        actor: ExactActorRef,
+        due: Instant,
+    ) {
+        self.attack
+            .lock()
+            .await
+            .record_step_deadline(actor, Instant::now(), due);
     }
 
     /// CHASE-1: a client step of `actor` wins over its chase.

@@ -56,14 +56,15 @@ to PVP-RT-1 (see below).
 ## Acceptance criteria
 
 - [x] Path search: fewest steps, deterministic ties, wall detour, +40 creature cost, the 12-tile chase distance and 128-step route bound, a dearer shorter route under the step bound, the 1,024/1,025 expansion boundary on a corridor, an unreachable goal within the work bound (`movement::path_search::tests`).
-- [x] Route state: one search per 1,000 ms, 2,000 ms after a failure, refused step drops the route, a transient refusal keeps the cell, a 12-tile chase search and a target beyond it, client step yields, Channel budget of 64 per window, a blocking item the owner refuses on the shortest route is detoured, refused cells expire after 2 s and at most 8 are kept (`combat_attack::chase::tests`).
-- [x] Owner: CHASE steps towards a distant held rat, STAND never moves, adjacent or re-entry protected holds, clearing the target ends the chase (`channel_owner_auto_attack_tests`).
+- [x] Route state: one search per 1,000 ms, 2,000 ms after a failure, refused step drops the route, a transient refusal keeps the cell, a 12-tile chase search and a target beyond it, client step yields, Channel budget of 64 per window with oldest-waiting-then-actor-id places, a blocking item the owner refuses on the shortest route is detoured, refused cells expire after 2 s and at most 8 are kept (`combat_attack::chase::tests`).
+- [x] Owner: CHASE steps towards a distant held rat, STAND never moves, adjacent or re-entry protected holds, clearing the target ends the chase, the actor-owned pacing deadline survives a replaced connection (`channel_owner_auto_attack_tests`).
 
 ## Excluded scope and recorded gaps
 
 - Secure mode: `set_target` refuses visible players (`TargetNotACreature`) before any PvP legality, so `combat/pvp/legality.rs`'s `SecureMode` refusal cannot be called cleanly; deferred to PVP-RT-1 (accepted by CP 2026-10-14).
 - The VSL-MOVE-01 §5 `CHASE` movement-occurrence kind has no runtime representation yet (no `MovementOccurrence` type); a chase step commits as an ordinary player step.
-- `RANGED0-RL-03` "served after creature searches in actor-id order": chase checks run per connection, so the per-window budget is first-come; the ordering is `PARITY_PENDING`.
+- `RANGED0-RL-03`: due searches keep their places oldest-waiting first, then actor id (`ChannelAttackStates`). Sharing CREATURE-AI-0 `RL-09` with its 16-search chase reserve lands with CREATURE-MOVE-1, the first creature user of the shared search; until then no creature search competes with chase.
+- Pacing: the step deadline is the actor's (`ChannelAttackStates`), read by a new connection and written by client and chase steps, so a replaced or resumed connection keeps it (RANGED-0 §8); the one-step buffer stays connection-local.
 - Canary searches without the 12-tile search distance: `PARITY_PENDING`.
 - Client: the ATTACK-WIRE-1 client ships the chase toggle disabled until CHASE-1; enabling it is a client follow-up (CLIENT-COMBAT-INPUT-1 #1938).
 - W2b seam: the auto-attack swing resolves at one site (`drain_auto_attacks`, after `record_hit`), where a fist skill try can hook.

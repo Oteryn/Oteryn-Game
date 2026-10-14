@@ -3228,6 +3228,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chase_yield_to_client(actor, session).await;
     }
 
+    async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.actor_step_deadline_now(actor).await
+    }
+
+    async fn record_actor_step_deadline(&self, actor: ExactActorRef, due: tokio::time::Instant) {
+        self.record_actor_step_deadline_now(actor, due).await;
+    }
+
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
     async fn use_item(
         &self,

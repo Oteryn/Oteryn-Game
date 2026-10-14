@@ -20,7 +20,8 @@ pub(crate) use crate::movement::path_search::CREATURE_COST;
 pub(crate) const CHASE_SEARCH_INTERVAL_MICROS: u64 = 1_000_000;
 /// `RANGED0-RL-07` (RANGED-0 §8): a failed search waits this long before the next one (Canary).
 pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
-/// `RANGED0-RL-03`: player chase searches per owner window per Channel.
+/// `RANGED0-RL-03`: player chase searches per owner window per Channel, served oldest-waiting
+/// request first, then actor id.
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
@@ -46,6 +47,9 @@ pub(crate) struct ChaseState {
     /// in-memory projection), so the search avoids what it just refused instead of re-reading
     /// them.
     refused: VecDeque<(MovementLocalPosition, u64)>,
+    /// `RANGED0-RL-03`: the owner time since which a due search has waited for the Channel's
+    /// window budget.
+    waiting_since: Option<u64>,
 }
 
 /// What a chase check decided.
@@ -58,8 +62,8 @@ pub(crate) enum ChaseDecision {
 }
 
 impl ChaseState {
-    /// Drop the route and the refused cells (target or mode change). The per-player search
-    /// cooldown stays (`RANGED0-RL-06`, `-07`), so repeated target or mode changes never search
+    /// Drop the route, the refused cells and a waiting search (target or mode change). The
+    /// per-player search cooldown stays (`RANGED0-RL-06`, `-07`), so repeated target or mode changes never search
     /// more often than it allows.
     pub(crate) fn reset(&mut self) {
         *self = Self {
@@ -74,15 +78,22 @@ impl ChaseState {
         self.route.clear();
         self.expected_at = None;
         self.goal = None;
+        self.waiting_since = None;
         self.next_search_us = self
             .next_search_us
             .max(now_us.saturating_add(CHASE_SEARCH_INTERVAL_MICROS));
     }
 
+    /// `RANGED0-RL-03`: since when a due search has waited for the Channel's window budget.
+    pub(crate) const fn search_waiting_since(&self) -> Option<u64> {
+        self.waiting_since
+    }
+
     /// The step the chase takes from `at` towards `target` at `now_us`. A route is followed while
     /// the attacker holds the position it expects; it is searched again when none is held or its
     /// target moved, at most once per [`CHASE_SEARCH_INTERVAL_MICROS`] and only when `admit`
-    /// grants a search from the Channel's window budget. Until a search runs, a route whose
+    /// grants a search from the Channel's window budget; a due search it refuses keeps waiting
+    /// from the time it first became due. Until a search runs, a route whose
     /// target moved is still followed (CREATURE-AI-0 §5.3: the previous path while valid).
     pub(crate) fn decide(
         &mut self,
@@ -97,6 +108,7 @@ impl ChaseState {
             self.route.clear();
             self.expected_at = None;
             self.goal = None;
+            self.waiting_since = None;
             return ChaseDecision::Hold;
         }
         if self.expected_at != Some(at) {
@@ -105,7 +117,12 @@ impl ChaseState {
             self.goal = None;
         }
         let stale = self.route.is_empty() || self.goal != Some(target);
-        if stale && now_us >= self.next_search_us && admit() {
+        let due = stale && now_us >= self.next_search_us;
+        if due {
+            self.waiting_since.get_or_insert(now_us);
+        }
+        if due && admit() {
+            self.waiting_since = None;
             let refused = &self.refused;
             let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
                 if refused.iter().any(|&(blocked, _)| blocked == cell) {
@@ -141,7 +158,8 @@ impl ChaseState {
     }
 
     /// The step just taken was refused for any reason but a blocked cell (a transient refusal):
-    /// the route is dropped (RANGED-0 §8); the cell stays a path tile.
+    /// the route is dropped and nothing is remembered (`RANGED0-RL-08`); the cell stays a path
+    /// tile.
     pub(crate) fn step_refused(&mut self) {
         self.route.clear();
         self.expected_at = None;
@@ -150,7 +168,9 @@ impl ChaseState {
 
     /// The Movement owner refused the step just taken because its cell is blocked, at `now_us`:
     /// the route is dropped (RANGED-0 §8) and the cell stays out of the search for
-    /// [`CHASE_REFUSED_CELL_MICROS`].
+    /// [`CHASE_REFUSED_CELL_MICROS`] (`RANGED0-RL-08`). No backoff starts: the next search, at
+    /// most [`CHASE_SEARCH_INTERVAL_MICROS`] after the last, detours around the cell while it is
+    /// remembered.
     pub(crate) fn step_blocked(&mut self, now_us: u64) {
         if let Some(cell) = self.expected_at {
             self.refused.retain(|&(blocked, _)| blocked != cell);
@@ -174,14 +194,18 @@ pub(crate) struct ChaseSearchBudget {
 }
 
 impl ChaseSearchBudget {
-    /// Whether one more search fits the owner window of `now_us`; if so it is counted.
-    pub(crate) fn admit(&mut self, now_us: u64) -> bool {
+    /// Whether one more search fits the owner window of `now_us` when `ahead` searches that
+    /// waited longer (or as long, with a lower actor id) still wait for it; if so it is counted.
+    /// The waiting ones keep their places, so every request is served within a bounded number of
+    /// windows.
+    pub(crate) fn admit(&mut self, now_us: u64, ahead: usize) -> bool {
         let window = now_us / CHASE_WINDOW_MICROS;
         if window != self.window {
             self.window = window;
             self.used = 0;
         }
-        if self.used >= CHASE_SEARCHES_PER_WINDOW {
+        let ahead = u32::try_from(ahead).unwrap_or(u32::MAX);
+        if self.used.saturating_add(ahead) >= CHASE_SEARCHES_PER_WINDOW {
             return false;
         }
         self.used += 1;
@@ -466,18 +490,42 @@ mod tests {
             ChaseDecision::Hold
         );
         assert_eq!(
+            chase.decide(10_000, at(0, 0), at(4, 0), || false, open),
+            ChaseDecision::Hold
+        );
+        assert_eq!(
+            chase.search_waiting_since(),
+            Some(0),
+            "a refused search keeps waiting from when it first became due"
+        );
+        assert_eq!(
             chase.decide(50_000, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
+        assert_eq!(chase.search_waiting_since(), None);
     }
 
     #[test]
     fn the_channel_admits_sixty_four_searches_per_owner_window() {
         let mut budget = ChaseSearchBudget::default();
         for _ in 0..CHASE_SEARCHES_PER_WINDOW {
-            assert!(budget.admit(10_000));
+            assert!(budget.admit(10_000, 0));
         }
-        assert!(!budget.admit(49_999));
-        assert!(budget.admit(50_000), "a new window starts its own count");
+        assert!(!budget.admit(49_999, 0));
+        assert!(budget.admit(50_000, 0), "a new window starts its own count");
+    }
+
+    #[test]
+    fn searches_that_waited_longer_keep_their_places_in_the_window() {
+        let mut budget = ChaseSearchBudget::default();
+        let places = usize::try_from(CHASE_SEARCHES_PER_WINDOW).unwrap();
+        for _ in 0..places - 2 {
+            assert!(budget.admit(0, 0));
+        }
+        // Two searches that waited longer still wait: the newer one leaves both places to them.
+        assert!(!budget.admit(0, 2));
+        assert!(budget.admit(0, 1), "the second-oldest takes one place");
+        assert!(budget.admit(0, 0), "the oldest takes the last place");
+        assert!(!budget.admit(0, 0));
     }
 }
