@@ -1,24 +1,31 @@
-//! Candidate bounded account coordinator. Only fresh authenticated Platform pulls committed by
-//! the real durable consumer issue a benefit view; restart never reconstructs cached grants.
-#![allow(
-    dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
-)]
+//! PREM-WIRE-1: the spell casts read the one Premium fence of Game, the PREM-1
+//! [`PremiumConsumer`] the node's [`PremiumRefresher`](crate::premium::refresh::PremiumRefresher)
+//! pulls, fences and proves (PREMIUM-DELIVERY-0 §6). There is no second Premium store: a view
+//! reads the consumer live at every use, so a failed pull, a revocation, a lapsed lease or a lost
+//! clock closes it at once, and a restart reconstructs nothing.
+//!
+//! [`SpellPremiumCoordinator::premium_gate`] and [`ComposedFreshAdmission::premium_gate`] are the
+//! account-level reads, for Premium-gated decisions that are not spell casts. Every read needs a
+//! registered trusted clock owner; without one every account reads Free.
 use super::{
     ComposedFreshAdmission,
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
-    spell_entitlements::{PremiumAccessOwner, PremiumSource, TrustedTime},
+};
+use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
+use crate::durability::premium_activation_latch::{
+    EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
 use crate::durability::{
-    fresh_admission::FreshAdmissionStore, item_transfer::CurrentCharacterItemFence,
+    DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore,
+    item_transfer::CurrentCharacterItemFence,
 };
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
-use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding};
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, Weak},
-};
-const MAX_ACCOUNTS: usize = 64;
+use crate::premium::{PremiumConsumer, TrustedNow};
+use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding, CurrentProjection};
+use std::future::Future;
+use std::marker::PhantomData;
+use std::pin::Pin;
+use std::sync::{Arc, OnceLock};
 /// Explicit registration from a genuine independent trusted clock owner. SystemTime, database
 /// receipt time and a readiness field with guessed zero uncertainty cannot implement this port.
 pub(crate) mod clock_registration {
@@ -27,28 +34,238 @@ pub(crate) mod clock_registration {
 pub(crate) trait RegisteredPremiumClock:
     clock_registration::Registered + Send + Sync
 {
-    fn read_current_window(&self) -> Option<TrustedTime>;
+    /// The current trusted window (consumer contract §7), or `None` while unsynchronized.
+    fn read_current_window(&self) -> Option<TrustedNow>;
+}
+/// The production clock owner: the kernel's NTP-disciplined clock and its maximum error
+/// (PREMIUM-ACTIVATION-0 §1.1), read at every use.
+pub(crate) struct SystemTrustedClock;
+impl clock_registration::Registered for SystemTrustedClock {}
+impl RegisteredPremiumClock for SystemTrustedClock {
+    fn read_current_window(&self) -> Option<TrustedNow> {
+        crate::premium::clock::system_trusted_now()
+    }
+}
+/// The configured Premium activation record: its id and switch-over instant `S`, in Unix
+/// microseconds (PREMIUM-ACTIVATION-0 §1.2, PREMIUM-DELIVERY-0 §10.3). Production composition
+/// passes `None`: setting one needs PREM-1's activation record and separate owner authority.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PremiumActivation {
+    pub(crate) activation_id: String,
+    pub(crate) switch_over_us: i64,
+}
+/// Whether Premium has been delivered on this deployment: the configured activation and the
+/// durable latch row, once this process has read or written it. Only ever moves from "none held"
+/// to "held"; while none is held, the gate re-reads the table.
+#[derive(Debug, Default)]
+pub(crate) struct PremiumDelivery {
+    activation: Option<PremiumActivation>,
+    held: OnceLock<PremiumActivationLatch>,
+}
+impl PremiumDelivery {
+    pub(crate) fn new(activation: Option<PremiumActivation>) -> Self {
+        Self {
+            activation,
+            held: OnceLock::new(),
+        }
+    }
+    fn hold(&self, latch: PremiumActivationLatch) {
+        let _ = self.held.set(latch);
+    }
+    /// §1.2 step 1, from memory: `Some(now)` only when a row is held, it is the configured
+    /// activation, the clock reads and the whole window is at or after `S`. `None` otherwise.
+    fn delivered_now(&self, now: Option<TrustedNow>) -> Option<TrustedNow> {
+        let latch = self.held.get()?;
+        let activation = self.activation.as_ref()?;
+        let now = now?;
+        (activation.activation_id == latch.activation_id
+            && activation.switch_over_us == latch.switch_over_us
+            && now.lower_us() >= latch.switch_over_us)
+            .then_some(now)
+    }
+    /// The status of `account` with a held row (§1.2 step 1): never `NotActivated`.
+    fn delivered_status(
+        &self,
+        consumer: &PremiumConsumer,
+        account: [u8; 16],
+        now: Option<TrustedNow>,
+    ) -> PremiumStatus<'static> {
+        match self.delivered_now(now) {
+            Some(now) if consumer.premium_current(account, Some(now)) => PremiumStatus::Current,
+            _ => PremiumStatus::NotCurrent,
+        }
+    }
+}
+/// What the gate decides for an empty latch table, from the activation and the clock (§1.2 steps
+/// 3-6), before it reads the table.
+enum EmptyLatch {
+    NotActivated,
+    NotCurrent,
+    Latch { now: TrustedNow },
+}
+/// A Premium gate operation: runs once with the account's status and, for `NotActivated` only,
+/// the gate's transaction (PREMIUM-ACTIVATION-0 §1.2). It owns what it captures.
+pub(crate) trait PremiumGateOperation<T>:
+    for<'g, 't> FnOnce(
+        PremiumStatus<'g>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> PremiumGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            PremiumStatus<'g>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// A multi-account Premium gate operation: runs once with one status per account, in order, and,
+/// for `NotActivated` only, the gate's transaction (PREMIUM-ACTIVATION-0 §1.2).
+pub(crate) trait PremiumBatchGateOperation<T>:
+    for<'g, 't> FnOnce(
+        Vec<PremiumStatus<'g>>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> PremiumBatchGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            Vec<PremiumStatus<'g>>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// What the gate settled for one command: the bypass applied in its transaction, or handed back
+/// with whether a held row decides the status.
+enum Settled<B: PreDeliveryBypass> {
+    Applied(B::Output),
+    Decided { bypass: B, delivered: bool },
+}
+/// An operation with a status decided after delivery: no transaction.
+async fn run_delivered<T, F: PremiumGateOperation<T>>(
+    operation: F,
+    status: PremiumStatus<'static>,
+) -> T {
+    operation(status, None).await
+}
+/// The operation as the latch read's pre-delivery bypass.
+struct GateBypass<T, F> {
+    operation: F,
+    _output: PhantomData<fn() -> T>,
+}
+impl<T: Send, F: PremiumGateOperation<T>> PreDeliveryBypass for GateBypass<T, F> {
+    type Output = T;
+    fn apply<'a, 't>(
+        self,
+        held: &'a EmptyLatchHeld,
+        tx: &'a mut PremiumGateTx<'t>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        (self.operation)(
+            PremiumStatus::NotActivated(PreDelivery::inside_gate(held)),
+            Some(tx),
+        )
+    }
+}
+/// The multi-account operation as the latch read's pre-delivery bypass: every account is
+/// `NotActivated`.
+struct BatchBypass<T, F> {
+    accounts: usize,
+    operation: F,
+    _output: PhantomData<fn() -> T>,
+}
+impl<T: Send, F: PremiumBatchGateOperation<T>> PreDeliveryBypass for BatchBypass<T, F> {
+    type Output = T;
+    fn apply<'a, 't>(
+        self,
+        held: &'a EmptyLatchHeld,
+        tx: &'a mut PremiumGateTx<'t>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        let statuses = (0..self.accounts)
+            .map(|_| PremiumStatus::NotActivated(PreDelivery::inside_gate(held)))
+            .collect();
+        (self.operation)(statuses, Some(tx))
+    }
 }
 pub(crate) enum RegisteredSpellAccessOwner {
     Unavailable {
         account: Option<[u8; 16]>,
     },
     Premium {
-        owner: Box<PremiumAccessOwner>,
-        gate: AccountViewGate,
+        account: [u8; 16],
+        consumer: Arc<PremiumConsumer>,
+        clock: Arc<dyn RegisteredPremiumClock>,
+        delivery: Arc<PremiumDelivery>,
     },
 }
 impl RegisteredSpellAccessOwner {
     pub(crate) fn unavailable() -> Self {
         Self::Unavailable { account: None }
     }
+    /// The account's Premium standing now, from memory: open only once Premium has been
+    /// delivered (a held latch row) and the account reads current authority (§1.2 step 1).
+    /// Closed for an unavailable view, a lost clock and every other class.
+    #[cfg_attr(
+        not(test),
+        allow(dead_code, reason = "MAGIC-CAST-1 §4.6 reads the gate from the view")
+    )]
+    pub(crate) fn premium_gate(&self) -> PremiumGate {
+        match self {
+            Self::Unavailable { .. } => PremiumGate::CLOSED,
+            Self::Premium {
+                account,
+                consumer,
+                clock,
+                delivery,
+            } => delivery
+                .delivered_status(consumer, *account, clock.read_current_window())
+                .gate(),
+        }
+    }
+}
+/// The Premium projection of `account` for `binding`, read live: present only once Premium has
+/// been delivered and for current authority, valid in the owner's monotonic domain (`now`) until
+/// the benefit ends. The remaining time is taken from the conservative upper bound of the trusted
+/// window.
+fn premium_projection(
+    consumer: &PremiumConsumer,
+    clock: &dyn RegisteredPremiumClock,
+    delivery: &PremiumDelivery,
+    account: [u8; 16],
+    binding: &CastFactsBinding,
+    now: u64,
+) -> Option<CurrentProjection<bool>> {
+    let trusted = delivery.delivered_now(clock.read_current_window())?;
+    let current = consumer.current_premium(account, Some(trusted))?;
+    let remaining = u64::try_from(current.benefit_until_us.checked_sub(trusted.upper_us())?)
+        .ok()
+        .filter(|remaining| *remaining > 0)?;
+    Some(CurrentProjection {
+        binding: binding.clone(),
+        authority_revision: current.authority_revision,
+        valid_until_micros: now.checked_add(remaining)?,
+        value: true,
+    })
 }
 impl owner_registration::Registered for RegisteredSpellAccessOwner {}
 impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
     fn account_id(&self) -> Option<[u8; 16]> {
         match self {
             Self::Unavailable { account } => *account,
-            Self::Premium { owner, .. } => Some(owner.account()),
+            Self::Premium { account, .. } => Some(*account),
         }
     }
     fn read_current(
@@ -56,13 +273,25 @@ impl CurrentSpellAccessOwner for RegisteredSpellAccessOwner {
         binding: &CastFactsBinding,
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
-        match self {
-            Self::Unavailable { .. } => Ok(AccessProjections::default()),
-            Self::Premium { owner, gate } => match gate.current_time() {
-                Some(time) => owner.read_current_at_trusted_time(binding, now, time),
-                None => Ok(AccessProjections::default()),
+        Ok(match self {
+            Self::Unavailable { .. } => AccessProjections::default(),
+            Self::Premium {
+                account,
+                consumer,
+                clock,
+                delivery,
+            } => AccessProjections {
+                premium: premium_projection(
+                    consumer,
+                    clock.as_ref(),
+                    delivery,
+                    *account,
+                    binding,
+                    now,
+                ),
+                ..AccessProjections::default()
             },
-        }
+        })
     }
 }
 impl owner_registration::Registered for Arc<RegisteredSpellAccessOwner> {}
@@ -78,223 +307,261 @@ impl CurrentSpellAccessOwner for Arc<RegisteredSpellAccessOwner> {
         self.as_ref().read_current(binding, now)
     }
 }
-struct Entry {
-    epoch: u64,
-    in_flight: bool,
-    view: Arc<RegisteredSpellAccessOwner>,
-}
-pub(crate) struct AccountViewGate {
-    views: Weak<Mutex<BTreeMap<[u8; 16], Entry>>>,
-    account: [u8; 16],
-    epoch: u64,
-    clock: Arc<dyn RegisteredPremiumClock>,
-}
-impl AccountViewGate {
-    fn current_time(&self) -> Option<TrustedTime> {
-        let views = self.views.upgrade()?;
-        let time = self.clock.read_current_window();
-        let mut views = views.lock().ok()?;
-        let entry = views.get_mut(&self.account)?;
-        if entry.epoch != self.epoch {
-            return None;
-        }
-        if time.is_none() {
-            entry.epoch = entry.epoch.saturating_add(1);
-            entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(self.account),
-            });
-        }
-        time
-    }
-}
+/// The node's Premium reads: the one PREM-1 consumer, the registered trusted clock owner, the
+/// configured activation and the durable activation latch.
 pub(crate) struct SpellPremiumCoordinator {
-    source: Option<Arc<PremiumSource>>,
+    consumer: Arc<PremiumConsumer>,
     clock: Option<Arc<dyn RegisteredPremiumClock>>,
-    views: Arc<Mutex<BTreeMap<[u8; 16], Entry>>>,
+    delivery: Arc<PremiumDelivery>,
+    latch: Option<DurabilityRoot>,
 }
 impl SpellPremiumCoordinator {
     pub(crate) fn new(
-        source: Option<Arc<PremiumSource>>,
+        consumer: Arc<PremiumConsumer>,
         clock: Option<Arc<dyn RegisteredPremiumClock>>,
+        activation: Option<PremiumActivation>,
+        latch: Option<DurabilityRoot>,
     ) -> Self {
         Self {
-            source,
+            consumer,
             clock,
-            views: Arc::new(Mutex::new(BTreeMap::new())),
+            delivery: Arc::new(PremiumDelivery::new(activation)),
+            latch,
         }
     }
-    pub(crate) fn current(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
-        self.views
-            .lock()
-            .ok()
-            .and_then(|views| views.get(&account).map(|entry| Arc::clone(&entry.view)))
-            .unwrap_or_else(|| {
-                Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                })
-            })
+    /// The consumer the node's Premium refresher must pull into: the same fence these reads use.
+    pub(crate) fn consumer(&self) -> Arc<PremiumConsumer> {
+        Arc::clone(&self.consumer)
     }
-    fn deny(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
-        let denied = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-            account: Some(account),
-        });
-        if let Ok(mut views) = self.views.lock()
-            && let Some(entry) = views.get_mut(&account)
-        {
-            entry.epoch = entry.epoch.saturating_add(1);
-            entry.view = Arc::clone(&denied);
-        }
-        denied
+    /// The configured activation: `None` in production composition.
+    #[cfg(test)]
+    pub(crate) fn activation(&self) -> Option<&PremiumActivation> {
+        self.delivery.activation.as_ref()
     }
-    fn finish(
+    /// Whether the gate reads the durable latch.
+    #[cfg(test)]
+    pub(crate) const fn reads_latch(&self) -> bool {
+        self.latch.is_some()
+    }
+    /// Whether a clock owner is registered.
+    #[cfg(test)]
+    pub(crate) const fn has_clock(&self) -> bool {
+        self.clock.is_some()
+    }
+    /// The live view of `account`. Unavailable without a registered clock owner. It reads the
+    /// latch from memory, so a caller settles delivery with [`Self::premium_gate`] first.
+    pub(crate) fn view(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
+        Arc::new(match &self.clock {
+            Some(clock) => RegisteredSpellAccessOwner::Premium {
+                account,
+                consumer: Arc::clone(&self.consumer),
+                clock: Arc::clone(clock),
+                delivery: Arc::clone(&self.delivery),
+            },
+            None => RegisteredSpellAccessOwner::Unavailable {
+                account: Some(account),
+            },
+        })
+    }
+    /// The Premium gate (PREMIUM-ACTIVATION-0 §1.2): decide `account`'s [`PremiumStatus`] once
+    /// and run `operation` with it, once. The clock is read once.
+    ///
+    /// `NotActivated` is only ever given inside a transaction that took the latch's shared lock
+    /// and read an empty table: `operation` gets that transaction as `tx`, applies its bypass in
+    /// it and the gate commits after it returns. Every other status gets `tx = None`. A failed
+    /// lock, read or latch gives `NotCurrent`. `operation` owns what it captures.
+    ///
+    /// The gate commits whatever `operation` left in `tx`, whatever it returns. An operation that
+    /// can reject after a write makes its writes in a savepoint (`tx.begin()`) and commits that
+    /// savepoint only on success; dropping it rolls the writes back.
+    ///
+    /// # Errors
+    /// Only when `operation` ran with `NotActivated` and its transaction did not commit: its
+    /// writes are not durable and the outcome of the command is unknown.
+    pub(crate) async fn with_premium_gate<T, F>(
         &self,
         account: [u8; 16],
-        owner: PremiumAccessOwner,
-    ) -> Arc<RegisteredSpellAccessOwner> {
-        let Some(clock) = &self.clock else {
-            return self.deny(account);
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumGateOperation<T>,
+    {
+        let now = self.read_now();
+        let bypass = GateBypass {
+            operation,
+            _output: PhantomData,
         };
-        let Ok(mut views) = self.views.lock() else {
-            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-        };
-        let Some(entry) = views.get_mut(&account) else {
-            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-        };
-        let Some(epoch) = entry.epoch.checked_add(1).filter(|v| *v < u64::MAX) else {
-            entry.epoch = u64::MAX;
-            entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: Some(account),
-            });
-            return Arc::clone(&entry.view);
-        };
-        entry.epoch = epoch;
-        let view = Arc::new(RegisteredSpellAccessOwner::Premium {
-            owner: Box::new(owner),
-            gate: AccountViewGate {
-                views: Arc::downgrade(&self.views),
-                account,
-                epoch,
-                clock: Arc::clone(clock),
-            },
-        });
-        entry.view = Arc::clone(&view);
-        view
+        match self.settle(now, bypass).await? {
+            Settled::Applied(applied) => Ok(applied),
+            Settled::Decided { bypass, delivered } => {
+                let status = if delivered {
+                    self.delivered_status(account, now)
+                } else {
+                    PremiumStatus::NotCurrent
+                };
+                Ok(run_delivered(bypass.operation, status).await)
+            }
+        }
     }
-    async fn refresh(
+    /// The multi-account Premium gate (PREMIUM-ACTIVATION-0 §1.2; the GUILD daily job and HOUSE
+    /// settlement): delivery is decided once, under one shared latch lock, before the operation
+    /// takes any guild or house rows, and `operation` runs once with one status per account, in
+    /// the order of `accounts`. `NotActivated` is decided for the deployment, so it is given to
+    /// every account at once, with the gate's transaction as `tx`; otherwise each account is
+    /// `Current` or `NotCurrent` on its own and `tx = None`. The clock is read once.
+    ///
+    /// # Errors
+    /// As [`Self::with_premium_gate`].
+    pub(crate) async fn with_premium_batch_gate<T, F>(
         &self,
-        owner: &ComposedFreshAdmission<'_, '_, '_>,
-        before: PremiumOwnerBinding,
-    ) -> Arc<RegisteredSpellAccessOwner> {
-        let account = before.account;
-        {
-            let Ok(mut views) = self.views.lock() else {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
-            };
-            if !views.contains_key(&account) && views.len() >= MAX_ACCOUNTS {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumBatchGateOperation<T>,
+    {
+        let now = self.read_now();
+        let bypass = BatchBypass {
+            accounts: accounts.len(),
+            operation,
+            _output: PhantomData,
+        };
+        match self.settle(now, bypass).await? {
+            Settled::Applied(applied) => Ok(applied),
+            Settled::Decided { bypass, delivered } => {
+                let statuses = accounts
+                    .iter()
+                    .map(|account| {
+                        if delivered {
+                            self.delivered_status(*account, now)
+                        } else {
+                            PremiumStatus::NotCurrent
+                        }
+                    })
+                    .collect();
+                Ok((bypass.operation)(statuses, None).await)
             }
-            let entry = views.entry(account).or_insert_with(|| Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                }),
+        }
+    }
+    fn read_now(&self) -> Option<TrustedNow> {
+        self.clock
+            .as_ref()
+            .and_then(|clock| clock.read_current_window())
+    }
+    /// §1.2 for one command: apply `bypass` inside the shared-lock transaction that read an empty
+    /// table (`NotActivated`), or hand it back with whether a held row decides each status
+    /// (`delivered`). A failed lock, read or latch is not delivered: `NotCurrent`.
+    async fn settle<B: PreDeliveryBypass>(
+        &self,
+        now: Option<TrustedNow>,
+        bypass: B,
+    ) -> Result<Settled<B>, DurabilityError> {
+        if self.delivery.held.get().is_some() {
+            return Ok(Settled::Decided {
+                bypass,
+                delivered: true,
             });
-            if entry.in_flight {
-                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some(account),
-                });
+        }
+        let empty = match (&self.delivery.activation, now) {
+            (None, _) => EmptyLatch::NotActivated,
+            (Some(_), None) => EmptyLatch::NotCurrent,
+            (Some(activation), Some(now)) if now.upper_us() < activation.switch_over_us => {
+                EmptyLatch::NotActivated
             }
-            entry.in_flight = true;
+            (Some(_), Some(now)) => EmptyLatch::Latch { now },
+        };
+        let Some(root) = &self.latch else {
+            return Ok(Settled::Decided {
+                bypass,
+                delivered: false,
+            });
+        };
+        if !matches!(empty, EmptyLatch::NotActivated) {
+            let read = root.read_premium_activation::<B::Output>().await;
+            let delivered = self.after_read(&empty, read).await;
+            return Ok(Settled::Decided { bypass, delivered });
         }
-        struct Guard<'a> {
-            coordinator: &'a SpellPremiumCoordinator,
-            account: [u8; 16],
-            completed: bool,
+        // The read takes the bypass only if the table is empty.
+        let mut slot = Some(bypass);
+        let read = root.read_premium_activation_with(&mut slot).await;
+        match (read, slot) {
+            (Ok(PremiumActivationRead::PreDelivery(applied)), _) => Ok(Settled::Applied(applied)),
+            (Ok(PremiumActivationRead::Latched(latch)), Some(bypass)) => {
+                self.delivery.hold(latch);
+                Ok(Settled::Decided {
+                    bypass,
+                    delivered: true,
+                })
+            }
+            (Ok(PremiumActivationRead::Empty) | Err(_), Some(bypass)) => Ok(Settled::Decided {
+                bypass,
+                delivered: false,
+            }),
+            // The bypass ran and its transaction did not commit.
+            (Err(error), None) => Err(error),
+            (Ok(_), None) => Err(DurabilityError::InvalidStoredState),
         }
-        impl Drop for Guard<'_> {
-            fn drop(&mut self) {
-                if let Ok(mut views) = self.coordinator.views.lock()
-                    && let Some(entry) = views.get_mut(&self.account)
-                {
-                    entry.in_flight = false;
-                    if !self.completed {
-                        entry.epoch = entry.epoch.saturating_add(1);
-                        entry.view = Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                            account: Some(self.account),
-                        });
-                    }
+    }
+    /// The gate after a read that ran no bypass: a found row is held (step 1); an empty table is
+    /// latched or stays undelivered (steps 4 and 6); a failure is undelivered.
+    async fn after_read<T>(
+        &self,
+        empty: &EmptyLatch,
+        read: Result<PremiumActivationRead<T>, DurabilityError>,
+    ) -> bool {
+        match (read, empty, &self.delivery.activation, &self.latch) {
+            (Ok(PremiumActivationRead::Latched(latch)), _, _, _) => {
+                self.delivery.hold(latch);
+                true
+            }
+            (
+                Ok(PremiumActivationRead::Empty),
+                EmptyLatch::Latch { now: at },
+                Some(activation),
+                Some(root),
+            ) => match root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    at.upper_us(),
+                )
+                .await
+            {
+                Ok(latch) => {
+                    self.delivery.hold(latch);
+                    true
                 }
+                Err(_) => false,
+            },
+            _ => false,
+        }
+    }
+    fn delivered_status(
+        &self,
+        account: [u8; 16],
+        now: Option<TrustedNow>,
+    ) -> PremiumStatus<'static> {
+        self.delivery.delivered_status(&self.consumer, account, now)
+    }
+    /// The account's Premium gate, for a consumer with no pre-delivery rule: open only for
+    /// `Current`. Before any row is held, with no activation configured, it is closed without a
+    /// read: a row of another activation and an empty table both read Free.
+    ///
+    /// Erased, so a caller's future need not prove `Send` for the gate's higher-ranked operation.
+    pub(crate) fn premium_gate(
+        &self,
+        account: [u8; 16],
+    ) -> Pin<Box<dyn Future<Output = PremiumGate> + Send + '_>> {
+        Box::pin(async move {
+            if self.delivery.held.get().is_none() && self.delivery.activation.is_none() {
+                return PremiumGate::CLOSED;
             }
-        }
-        let mut guard = Guard {
-            coordinator: self,
-            account,
-            completed: false,
-        };
-        let Some(source) = &self.source else {
-            return self.deny(account);
-        };
-        let Some(clock) = &self.clock else {
-            return self.deny(account);
-        };
-        if clock.read_current_window().is_none() {
-            return self.deny(account);
-        }
-        let snapshot = match source.pull(account).await {
-            Ok(snapshot) => snapshot,
-            Err(_) => {
-                let _ = owner.root.premium_failed_pull(account).await;
-                return self.deny(account);
-            }
-        };
-        if snapshot.account() != account {
-            return self.deny(account);
-        }
-        let Some(after) = owner
-            .current_premium_binding(before.actor, before.session)
-            .await
-        else {
-            return self.deny(account);
-        };
-        if after != before {
-            return self.deny(account);
-        }
-        let committed = match owner.root.consume_premium_snapshot(snapshot).await {
-            Ok(read) => read,
-            Err(_) => return self.deny(account),
-        };
-        // A lease/root/actor handover during durable consumer commit never installs a live view.
-        let Some(final_binding) = owner
-            .current_premium_binding(before.actor, before.session)
-            .await
-        else {
-            return self.deny(account);
-        };
-        if final_binding != before {
-            return self.deny(account);
-        }
-        let observed = owner.owner_now().get();
-        let Some(time) = clock.read_current_window() else {
-            return self.deny(account);
-        };
-        let access = PremiumAccessOwner::from_committed(
-            committed,
-            time,
-            observed,
-            AccessProjections::default(),
-        );
-        let result = self.finish(account, access);
-        guard.completed = true;
-        result
+            self.with_premium_gate(account, |status, _| Box::pin(async move { status.gate() }))
+                .await
+                .unwrap_or(PremiumGate::CLOSED)
+        })
     }
 }
 /// Private binding produced only by actual session/Character/recovery/node/owner reads below.
@@ -499,135 +766,376 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(coordinator) = self.premium_coordinator else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
-        let Some(before) = self.current_premium_binding(actor, session).await else {
+        let Some(current) = self.current_premium_binding(actor, session).await else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
-        coordinator.refresh(self, before).await
+        // Settle delivery (§1.2 steps 2-6) before the view reads the latch from memory.
+        let _ = coordinator.premium_gate(current.account).await;
+        coordinator.view(current.account)
+    }
+    /// PREM-WIRE-1: the Premium gate of `account` (PREMIUM-ACTIVATION-0 §1.2) for MAGIC-CAST-1
+    /// §4.6, GUILD-1 and HOUSE-1a: see [`SpellPremiumCoordinator::with_premium_gate`]. A node
+    /// without the Premium reads gives `NotCurrent`.
+    ///
+    /// # Errors
+    /// Only when `operation` ran with `NotActivated` and its transaction did not commit.
+    #[allow(
+        dead_code,
+        reason = "the gate of MAGIC-CAST-1 §4.6, GUILD-1 and HOUSE-1a pre-delivery bypasses"
+    )]
+    pub(crate) async fn with_premium_gate<T, F>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumGateOperation<T>,
+    {
+        match self.premium_coordinator {
+            Some(coordinator) => coordinator.with_premium_gate(account, operation).await,
+            None => Ok(run_delivered(operation, PremiumStatus::NotCurrent).await),
+        }
+    }
+    /// The multi-account Premium gate: see [`SpellPremiumCoordinator::with_premium_batch_gate`].
+    /// Every account is `NotCurrent` on a node without the Premium reads.
+    ///
+    /// # Errors
+    /// Only when `operation` ran with `NotActivated` and its transaction did not commit.
+    #[allow(
+        dead_code,
+        reason = "the gate of the GUILD-1 daily job and HOUSE-1a settlement"
+    )]
+    pub(crate) async fn with_premium_batch_gate<T, F>(
+        &self,
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumBatchGateOperation<T>,
+    {
+        match self.premium_coordinator {
+            Some(coordinator) => {
+                coordinator
+                    .with_premium_batch_gate(accounts, operation)
+                    .await
+            }
+            None => {
+                let statuses = accounts.iter().map(|_| PremiumStatus::NotCurrent).collect();
+                Ok(operation(statuses, None).await)
+            }
+        }
+    }
+    /// The Premium gate of `account` for a consumer with no pre-delivery rule (Premium areas,
+    /// purchases, chat): open only for `Current`. Closed on a node without the Premium reads.
+    pub(crate) async fn premium_gate(&self, account: [u8; 16]) -> PremiumGate {
+        match self.premium_coordinator {
+            Some(coordinator) => coordinator.premium_gate(account).await,
+            None => PremiumGate::CLOSED,
+        }
+    }
+    /// The account admitted with `session` on this node, from its Premium registration: the
+    /// account a session's Premium gate reads.
+    pub(crate) fn session_account(&self, session: GameSessionId) -> Option<[u8; 16]> {
+        self.premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .account_of(session)
+    }
+    /// The Premium gate of the account admitted with `session`: closed for a session holding no
+    /// Premium registration.
+    pub(crate) async fn session_premium_gate(&self, session: GameSessionId) -> PremiumGate {
+        match self.session_account(session) {
+            Some(account) => self.premium_gate(account).await,
+            None => PremiumGate::CLOSED,
+        }
     }
 }
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    #[test]
-    fn restart_missing_source_and_clock_never_reconstruct_cached_allow() {
-        let first = SpellPremiumCoordinator::new(None, None);
-        let account = [1; 16];
-        assert!(
-            matches!(first.current(account).as_ref(),RegisteredSpellAccessOwner::Unavailable{account:Some(a)} if *a==account)
-        );
-        let second = SpellPremiumCoordinator::new(None, None);
-        assert!(matches!(
-            second.current(account).as_ref(),
-            RegisteredSpellAccessOwner::Unavailable { .. }
-        ));
-    }
-    #[test]
-    fn failure_replaces_owned_view_and_never_changes_another_account() {
-        let owner = SpellPremiumCoordinator::new(None, None);
-        let a = [1; 16];
-        let b = [2; 16];
-        owner.views.lock().unwrap().insert(
-            a,
-            Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable { account: Some(a) }),
-            },
-        );
-        owner.views.lock().unwrap().insert(
-            b,
-            Entry {
-                epoch: 0,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable { account: Some(b) }),
-            },
-        );
-        let retained_b = owner.current(b);
-        let denied = owner.deny(a);
-        assert!(Arc::ptr_eq(&denied, &owner.current(a)));
-        assert!(Arc::ptr_eq(&retained_b, &owner.current(b)));
-    }
-    struct TestClock(Mutex<Option<TrustedTime>>);
+    use crate::domain::premium::PremiumRefusal;
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    use std::sync::Mutex;
+
+    const ACCOUNT: [u8; 16] = [1; 16];
+    /// 2026-10-01T00:00:00Z in Unix microseconds.
+    const T0: i64 = 1_790_812_800_000_000;
+    const MINUTE: i64 = 60_000_000;
+
+    struct TestClock(Mutex<Option<TrustedNow>>);
     impl clock_registration::Registered for TestClock {}
     impl RegisteredPremiumClock for TestClock {
-        fn read_current_window(&self) -> Option<TrustedTime> {
-            *self.0.lock().ok()?
+        fn read_current_window(&self) -> Option<TrustedNow> {
+            *self.0.lock().unwrap()
         }
     }
-    #[test]
-    fn failed_clock_invalidates_retained_epoch_even_if_clock_recovers() {
-        // This fixture tests revocation of the private epoch gate only. It constructs
-        // no Premium snapshot, committed receipt, benefit or production clock registration.
-        let clock = Arc::new(TestClock(Mutex::new(
-            TrustedTime::from_current_clock_owner(100, 101).ok(),
-        )));
-        let views = Arc::new(Mutex::new(BTreeMap::from([(
-            [1; 16],
-            Entry {
-                epoch: 1,
-                in_flight: false,
-                view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                    account: Some([1; 16]),
-                }),
-            },
-        )])));
-        let gate = AccountViewGate {
-            views: Arc::downgrade(&views),
-            account: [1; 16],
-            epoch: 1,
-            clock: clock.clone(),
-        };
-        assert!(gate.current_time().is_some());
-        *clock.0.lock().unwrap() = None;
-        assert!(gate.current_time().is_none());
-        *clock.0.lock().unwrap() = TrustedTime::from_current_clock_owner(102, 103).ok();
-        assert!(gate.current_time().is_none());
-        assert_eq!(views.lock().unwrap().get(&[1; 16]).unwrap().epoch, 2);
+    fn clock_at(now_us: i64) -> Arc<TestClock> {
+        Arc::new(TestClock(Mutex::new(TrustedNow::new(now_us, 1_000_000))))
     }
-    #[test]
-    fn denied_account_revokes_its_retained_gate_without_revoking_other_accounts() {
-        // Private epoch gate qualification only: no fake grant or Platform source.
-        let clock = Arc::new(TestClock(Mutex::new(
-            TrustedTime::from_current_clock_owner(100, 101).ok(),
-        )));
-        let coordinator = SpellPremiumCoordinator::new(None, Some(clock.clone()));
-        for account in [[1; 16], [2; 16]] {
-            coordinator.views.lock().unwrap().insert(
-                account,
-                Entry {
-                    epoch: 1,
-                    in_flight: false,
-                    view: Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                        account: Some(account),
-                    }),
-                },
-            );
+    /// Evidence issued at `T0` with a one-hour lease and `refresh_after` at 30 minutes.
+    fn evidence(state: EntitlementState, effective_until_us: i64) -> PremiumEvidence {
+        PremiumEvidence {
+            account_id: ACCOUNT,
+            producer_revision: "1".repeat(40),
+            producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
+            product_id: crate::premium::PRODUCT_ID.to_owned(),
+            product_version: crate::premium::PRODUCT_VERSION,
+            entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
+            state,
+            lifecycle_revision: 1,
+            authority_revision: 7,
+            effective_from_us: T0 - 30 * 24 * 60 * MINUTE,
+            effective_until_us,
+            authority_issued_at_us: T0,
+            authority_valid_until_us: T0 + 60 * MINUTE,
+            refresh_after_us: T0 + 30 * MINUTE,
         }
-        let gate = |account| AccountViewGate {
-            views: Arc::downgrade(&coordinator.views),
-            account,
-            epoch: 1,
-            clock: clock.clone(),
-        };
-        let first = gate([1; 16]);
-        let second = gate([2; 16]);
-        assert!(first.current_time().is_some());
-        assert!(second.current_time().is_some());
-        coordinator.deny([1; 16]);
-        assert!(first.current_time().is_none());
-        assert!(second.current_time().is_some());
+    }
+    fn proven(state: EntitlementState, effective_until_us: i64) -> Arc<PremiumConsumer> {
+        let consumer = Arc::new(PremiumConsumer::default());
+        consumer.prove_for_test(evidence(state, effective_until_us));
+        consumer
+    }
+    fn binding() -> CastFactsBinding {
+        let (_, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(87);
+        CastFactsBinding {
+            actor,
+            session,
+            character: [3; 16],
+            character_revision: 1,
+            lease_generation: 1,
+            connection_generation: 1,
+            player_revision: 1,
+            content_digest: [4; 32],
+            equipment_revision: 1,
+        }
+    }
+    const FAR: i64 = T0 + 30 * 24 * 60 * MINUTE;
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
+    fn activation(switch_over_us: i64) -> PremiumActivation {
+        PremiumActivation {
+            activation_id: "premium-activation-1".to_owned(),
+            switch_over_us,
+        }
+    }
+    fn latch(activation_id: &str, switch_over_us: i64) -> PremiumActivationLatch {
+        PremiumActivationLatch {
+            activation_id: activation_id.to_owned(),
+            switch_over_us,
+            latched_at_us: switch_over_us,
+        }
+    }
+    /// A coordinator on a deployment where Premium was delivered at `T0 - MINUTE`.
+    fn delivered(
+        consumer: Arc<PremiumConsumer>,
+        clock: Option<Arc<dyn RegisteredPremiumClock>>,
+    ) -> SpellPremiumCoordinator {
+        let coordinator =
+            SpellPremiumCoordinator::new(consumer, clock, Some(activation(T0 - MINUTE)), None);
+        coordinator
+            .delivery
+            .hold(latch("premium-activation-1", T0 - MINUTE));
+        coordinator
+    }
+    fn gate(coordinator: &SpellPremiumCoordinator, account: [u8; 16]) -> PremiumGate {
+        block_on(coordinator.premium_gate(account))
+    }
+    fn status_name(coordinator: &SpellPremiumCoordinator) -> &'static str {
+        block_on(coordinator.with_premium_gate(ACCOUNT, |status, tx| {
+            Box::pin(async move {
+                match (status, tx.is_some()) {
+                    (PremiumStatus::NotActivated(_), _) => "not-activated",
+                    (PremiumStatus::Current, false) => "current",
+                    (PremiumStatus::NotCurrent, false) => "not-current",
+                    _ => "transaction",
+                }
+            })
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn a_proven_current_account_opens_the_gate_and_the_spell_projection() {
+        let clock = clock_at(T0 + MINUTE);
+        let coordinator = delivered(proven(EntitlementState::Active, FAR), Some(clock));
+        assert_eq!(gate(&coordinator, ACCOUNT).require(), Ok(()));
+        assert_eq!(status_name(&coordinator), "current");
+        let view = coordinator.view(ACCOUNT);
+        assert_eq!(view.premium_gate(), gate(&coordinator, ACCOUNT));
+        let projection = view
+            .read_current(&binding(), 5_000)
+            .unwrap()
+            .premium
+            .unwrap();
+        assert!(projection.value);
+        assert_eq!(projection.authority_revision, 7);
+        // Valid until `refresh_after`, from the window's upper bound, in the owner's domain.
         assert_eq!(
-            coordinator
-                .views
-                .lock()
-                .unwrap()
-                .get(&[1; 16])
-                .unwrap()
-                .epoch,
-            2
+            projection.valid_until_micros,
+            5_000 + u64::try_from(29 * MINUTE - 1_000_000).unwrap()
         );
-        coordinator.views.lock().unwrap().remove(&[2; 16]);
-        assert!(second.current_time().is_none());
+        assert!(projection.current(&binding(), projection.valid_until_micros - 1));
+        assert!(!projection.current(&binding(), projection.valid_until_micros));
+    }
+
+    #[test]
+    fn unknown_expired_and_every_other_class_fail_closed() {
+        let ended = [
+            (EntitlementState::Expired, FAR, T0 + MINUTE),
+            (EntitlementState::Revoked, FAR, T0 + MINUTE),
+            (EntitlementState::None, FAR, T0 + MINUTE),
+            (EntitlementState::NotYetEffective, FAR, T0 + MINUTE),
+            // effective_until passed, refresh_after passed, the authority lease lapsed.
+            (EntitlementState::Active, T0 + 10 * MINUTE, T0 + 10 * MINUTE),
+            (EntitlementState::Active, FAR, T0 + 30 * MINUTE),
+            (EntitlementState::Active, FAR, T0 + 60 * MINUTE),
+        ];
+        for (state, until, now) in ended {
+            let coordinator = delivered(proven(state, until), Some(clock_at(now)));
+            assert_eq!(
+                gate(&coordinator, ACCOUNT).require(),
+                Err(PremiumRefusal::NotCurrent)
+            );
+            let access = coordinator
+                .view(ACCOUNT)
+                .read_current(&binding(), 1)
+                .unwrap();
+            assert!(access.premium.is_none());
+        }
+        // An unknown account, and the same proven account on another account's gate.
+        let coordinator = delivered(
+            proven(EntitlementState::Active, FAR),
+            Some(clock_at(T0 + MINUTE)),
+        );
+        assert_eq!(gate(&coordinator, [2; 16]), PremiumGate::CLOSED);
+        // A failed pull and a released account close it at once, for views already issued.
+        let view = coordinator.view(ACCOUNT);
+        let ticket = coordinator.consumer().ticket();
+        coordinator.consumer().pull_failed(ACCOUNT, ticket);
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
+        assert!(view.read_current(&binding(), 1).unwrap().premium.is_none());
+        let coordinator = delivered(
+            proven(EntitlementState::Active, FAR),
+            Some(clock_at(T0 + MINUTE)),
+        );
+        let view = coordinator.view(ACCOUNT);
+        coordinator.consumer().release(ACCOUNT);
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
+    }
+
+    #[test]
+    fn no_clock_owner_a_lost_clock_and_a_restart_fail_closed() {
+        // No registered clock owner: every view is unavailable.
+        let unclocked = delivered(proven(EntitlementState::Active, FAR), None);
+        assert_eq!(gate(&unclocked, ACCOUNT), PremiumGate::CLOSED);
+        assert!(matches!(
+            unclocked.view(ACCOUNT).as_ref(),
+            RegisteredSpellAccessOwner::Unavailable { account: Some(a) } if *a == ACCOUNT
+        ));
+        assert_eq!(
+            RegisteredSpellAccessOwner::unavailable().premium_gate(),
+            PremiumGate::CLOSED
+        );
+        // A clock that loses synchronization closes views already issued.
+        let clock = clock_at(T0 + MINUTE);
+        let coordinator = delivered(proven(EntitlementState::Active, FAR), Some(clock.clone()));
+        let view = coordinator.view(ACCOUNT);
+        assert!(view.premium_gate().premium_current());
+        *clock.0.lock().unwrap() = None;
+        assert_eq!(view.premium_gate(), PremiumGate::CLOSED);
+        assert!(view.read_current(&binding(), 1).unwrap().premium.is_none());
+        // A restart: a fresh consumer holds nothing proven.
+        let restarted = delivered(Arc::default(), Some(clock_at(T0 + MINUTE)));
+        assert_eq!(gate(&restarted, ACCOUNT), PremiumGate::CLOSED);
+    }
+
+    #[test]
+    fn the_status_is_current_only_after_delivery_of_the_configured_activation() {
+        let consumer = || proven(EntitlementState::Active, FAR);
+        let clock = || -> Option<Arc<dyn RegisteredPremiumClock>> { Some(clock_at(T0 + MINUTE)) };
+        // No activation configured: closed without a read, and no transaction without the latch.
+        let free = SpellPremiumCoordinator::new(consumer(), clock(), None, None);
+        assert_eq!(gate(&free, ACCOUNT), PremiumGate::CLOSED);
+        assert_eq!(status_name(&free), "not-current");
+        // An activation but no latch read: Premium is not current.
+        let unread = SpellPremiumCoordinator::new(consumer(), clock(), Some(activation(T0)), None);
+        assert_eq!(status_name(&unread), "not-current");
+        // A held row of another activation, or one whose window is not wholly after `S`.
+        let other = SpellPremiumCoordinator::new(consumer(), clock(), Some(activation(T0)), None);
+        other.delivery.hold(latch("premium-activation-0", T0));
+        assert_eq!(status_name(&other), "not-current");
+        let early =
+            SpellPremiumCoordinator::new(consumer(), clock(), Some(activation(T0 + MINUTE)), None);
+        early
+            .delivery
+            .hold(latch("premium-activation-1", T0 + MINUTE));
+        assert_eq!(status_name(&early), "not-current");
+        // The held row of the configured activation, with the window after `S`.
+        let current = delivered(consumer(), clock());
+        assert_eq!(status_name(&current), "current");
+        // A held row is never undone by a later, different latch.
+        current.delivery.hold(latch("premium-activation-0", T0));
+        assert_eq!(status_name(&current), "current");
+    }
+
+    fn batch_names(
+        coordinator: &SpellPremiumCoordinator,
+        accounts: &[[u8; 16]],
+    ) -> Vec<&'static str> {
+        block_on(
+            coordinator.with_premium_batch_gate(accounts, |statuses, tx| {
+                Box::pin(async move {
+                    let in_tx = tx.is_some();
+                    statuses
+                        .into_iter()
+                        .map(|status| match (status, in_tx) {
+                            (PremiumStatus::NotActivated(_), _) => "not-activated",
+                            (PremiumStatus::Current, false) => "current",
+                            (PremiumStatus::NotCurrent, false) => "not-current",
+                            _ => "transaction",
+                        })
+                        .collect()
+                })
+            }),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn the_batch_gate_classifies_every_account_in_order_under_one_decision() {
+        let clock = || -> Option<Arc<dyn RegisteredPremiumClock>> { Some(clock_at(T0 + MINUTE)) };
+        let current = delivered(proven(EntitlementState::Active, FAR), clock());
+        // N accounts, one of them ineligible, in the order given; none runs in a transaction.
+        assert_eq!(
+            batch_names(&current, &[ACCOUNT, [2; 16], ACCOUNT, [3; 16]]),
+            ["current", "not-current", "current", "not-current"]
+        );
+        assert_eq!(batch_names(&current, &[]), Vec::<&str>::new());
+        // An ineligible proven account: every account reads not current.
+        let expired = delivered(proven(EntitlementState::Expired, FAR), clock());
+        assert_eq!(
+            batch_names(&expired, &[ACCOUNT, [2; 16]]),
+            ["not-current", "not-current"]
+        );
+        // Not delivered, without the latch: every account is not current.
+        let unread = SpellPremiumCoordinator::new(
+            proven(EntitlementState::Active, FAR),
+            clock(),
+            Some(activation(T0)),
+            None,
+        );
+        assert_eq!(
+            batch_names(&unread, &[ACCOUNT, [2; 16]]),
+            ["not-current", "not-current"]
+        );
     }
 }
