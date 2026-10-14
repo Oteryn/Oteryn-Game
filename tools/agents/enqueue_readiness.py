@@ -306,7 +306,14 @@ def _evaluate(s: dict, now: datetime) -> dict:
     blockers = [found[key] for key in ORDER if key in found]
     if blockers:
         return {"verdict": "BLOCKED", "blockers": blockers, "ready_at": None}
-    return {"verdict": "ENQUEUE_ELIGIBLE", "blockers": [], "ready_at": max(stamps)[1] if stamps else None}
+    if not stamps:
+        return {"verdict": "ENQUEUE_ELIGIBLE", "blockers": [], "ready_at": None}
+    # The skew tolerance only validates input; the recorded metric is clamped to the readback and evaluator clock,
+    # so ready_at is never future-dated and the ready-to-enqueue interval is never negative.
+    latest, raw = max(stamps)
+    bound = min(now, observed)
+    ready_at = raw if latest <= bound else bound.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return {"verdict": "ENQUEUE_ELIGIBLE", "blockers": [], "ready_at": ready_at}
 
 
 def main(argv: list[str]) -> int:
