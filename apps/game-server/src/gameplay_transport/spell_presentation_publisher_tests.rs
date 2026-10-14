@@ -112,11 +112,20 @@ fn current_index_positions_and_actor_generations_are_independently_checked() {
         owned_observer(&runtime, &index, replacement, session, 1),
         Err(Error::InvalidIndex)
     ));
-    assert!(matches!(
+    // VIS-1: a source world's native floor -5 is Tibia floor 5; -16 is outside every frame.
+    assert!(
         view(MovementLocalPosition {
             x: 0,
             y: 0,
             floor: -5
+        })
+        .is_ok()
+    );
+    assert!(matches!(
+        view(MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: -16
         }),
         Err(Error::UnknownFrame)
     ));
