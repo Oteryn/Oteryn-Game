@@ -20,10 +20,13 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_ENCOUNTER_RT0_ACCEPTANCE_DECISION_2026-10-14.md
   - docs/agents/tasks/archive/OTV2-20261014-accept-encounter-rt-0.md
 public_contracts:
-  - DUR-03 §32/§39 InstanceRuntime Ground custody (Ground location row carries the InstanceId scope ref)
-  - DUR-03 closed cause EncounterDropCause and InstanceRetire (retirement of live Ground roots when an instance ends)
-  - WORLD-INTERACTION-0 §5 BOSS_ENTRY lever child (BOSS-LEVER-1)
-  - ADR-0021 WorldReset amendment
+  - "DUR-03 §32 InstanceRuntime Ground custody (Ground location row carries the InstanceId scope ref): persistence review"
+  - "DUR-03 §39.3 closed causes EncounterDropCause and InstanceRetire (ENC-OUTCOME-1 MINT, INSTANCE-GROUND-1 retirement): persistence and security review"
+  - "WORLD-INTERACTION-0 §5 BOSS_ENTRY lever child (BOSS-LEVER-1): security and combat review"
+  - "Encounter authoring format V1 §10 runtime amendment (OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:244: one instance per scope owner, FIFO trigger queue, ENCOUNTER_DRAW, outcome delivery): determinism review"
+  - "CREATURE-AI-0 §3 ownership amendment (encounter link to one instance of the same scope owner; overrides end with the creature or instance): determinism and combat review"
+  - "BOSS-RAID-0 §6.5 durable instance allocation states RETIRING and RETIRED (persistent boss-room lifecycle, BOSS-ROOM-1 recovery): persistence review"
+  - "ADR-0021 WorldReset amendment: persistence review"
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -32,7 +35,7 @@ external_repositories: []
 
 ## Outcome
 
-- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change is made by this PR, but acceptance makes the decision's pending amendments effective as contract text: the DUR-03 InstanceRuntime Ground custody, EncounterDropCause and InstanceRetire (§8), and the BOSS_ENTRY lever (§7). Nothing is enabled: every runtime, migration and production step needs its own child, review and #162 allocation.
+- ENCOUNTER-RT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change is made by this PR, but acceptance makes the decision's pending amendments effective as contract text: the DUR-03 InstanceRuntime Ground custody, EncounterDropCause and InstanceRetire (§8), and the BOSS_ENTRY lever (§7), the encounter format, CREATURE-AI-0 and BOSS-RAID-0 amendments (all listed in `public_contracts`; a repo-wide search found exactly the amendments citing "pending on acceptance of ENCOUNTER-RT-0" in DUR-03 (two), the encounter format, BOSS-RAID-0, CREATURE-AI-0 and WORLD-INTERACTION-0). Nothing is enabled: every runtime, migration and production step needs its own child, review and #162 allocation.
 
 ## Architecture and source of truth
 
