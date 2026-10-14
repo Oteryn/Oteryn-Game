@@ -484,7 +484,7 @@ authority until RANGED-1 is allocated.
   | `RANGED0-RL-06` searches per player | 1 per second |
   | `RANGED0-RL-07` backoff after a failed search | 2 s (the player holds position and keeps target and mode) |
 
-  `RANGED0-RL-04` (1,024 expansions) is a bound distinct from CREATURE-AI-0 §5's creature cap ("A* at most 512 nodes", `astarnodes.hpp:37`): the 512 cap does not apply to player chase searches, and the shared CREATURE-MOVE-1 §5.3 search takes the node cap as a parameter.
+  `RANGED0-RL-04` (1,024 expansions) is the same bound as the accepted creature search (`AI01-PATH-SEARCH-WORK` 1,024, CREATURE-MOVE-1 §5.3, CREATURE-AI-0 §5.3): the shared search takes one cap and the 512-node figure in CREATURE-AI-0 §5 is Canary reference evidence (`astarnodes.hpp:37`), not an Oteryn bound.
 
   The path uses the CREATURE-MOVE-1 profile with player differences (no creature bans that do not
   apply to players; the floor, zone and door rules of the Movement owner apply to every step; protection-zone tiles are never entered or crossed by a chase step, so a target reachable only through a protection zone is "cannot be reached" and starts the backoff), a goal
