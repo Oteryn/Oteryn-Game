@@ -73,6 +73,13 @@ def _count(value) -> int:
     return value
 
 
+def _list(value, field: str) -> list:
+    """A gate collection must be a real JSON array; an object or string iterates as empty or per character."""
+    if not isinstance(value, list):
+        raise ValueError(f"{field} must be a JSON array, got {value!r}")
+    return value
+
+
 def evaluate(snapshot) -> dict:
     """Return {"verdict", "blockers", "ready_at"}; any malformed input fails closed."""
     try:
@@ -103,7 +110,7 @@ def _evaluate(s: dict) -> dict:
         found["CANDIDATE_STATE"] = _blocker(
             "CANDIDATE_NOT_OPEN_READY", "writer", f"PR {pr} open, ready for review, base main")
 
-    runs = s["checks"]["runs"]
+    runs = _list(s["checks"]["runs"], "checks.runs")
     required = s["checks"]["required"]
     if not isinstance(required, list) or CANONICAL_CHECK not in required:
         raise ValueError(f"checks.required must include {CANONICAL_CHECK}")
@@ -126,7 +133,7 @@ def _evaluate(s: dict) -> dict:
 
     review = s["review"]
     if _flag(review["required"]):
-        exact = [r for r in review["reviews"] if _sha(r["head_sha"]) == head]
+        exact = [r for r in _list(review["reviews"], "review.reviews") if _sha(r["head_sha"]) == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         elif any(r["state"] != "completed" for r in exact):
@@ -148,19 +155,19 @@ def _evaluate(s: dict) -> dict:
         # A PR that had threads was unblocked when the last one was resolved; that time is required.
         stamp(threads, "resolved_at")
 
-    for item in s["evidence"]["required"]:
+    for item in _list(s["evidence"]["required"], "evidence.required"):
         if not _flag(item["present"]) or _sha(item["head_sha"]) != head:
             found["EVIDENCE"] = _blocker("EVIDENCE_MISSING", "writer", f"evidence {item['name']} bound to head {head[:12]}")
             break
         stamp(item)
 
-    for dep in s["dependencies"]:
+    for dep in _list(s["dependencies"], "dependencies"):
         if not _flag(dep["merged"]):
             found["DEPENDENCIES"] = _blocker("DEPENDENCY_NOT_MERGED", "control_plane", f"PR {dep['pr']} merged to main")
             break
         stamp(dep)
 
-    for failure in s["queue"]["prior_failures"]:
+    for failure in _list(s["queue"]["prior_failures"], "queue.prior_failures"):
         if _sha(failure["head_sha"]) != head:
             continue
         if _flag(failure["cause_addressed"]):

@@ -199,6 +199,18 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["authorization"]["scope"] = "no-enqueue"
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
+    def test_gate_collections_must_be_arrays(self):
+        paths = (("checks", "runs"), ("review", "reviews"), ("evidence", "required"),
+                 ("dependencies",), ("queue", "prior_failures"))
+        for path in paths:
+            for bad in ({}, "", "x"):
+                snap = ready()
+                parent = snap
+                for key in path[:-1]:
+                    parent = parent[key]
+                parent[path[-1]] = bad
+                self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (path, bad))
+
     def test_candidate_flags_must_be_present(self):
         for flag in ("queued", "merged"):
             snap = ready()
