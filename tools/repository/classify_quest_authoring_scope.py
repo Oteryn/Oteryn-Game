@@ -51,7 +51,6 @@ def referenced_docs(
         wanted[doc] = [hashlib.sha256(blob).hexdigest().encode() for blob in blobs]
     found: dict[str, str] = {}
     base = root / TOOL_DIR
-    token_re = re.compile(rb"[\w./\-]*\.md(?![\w\-])")
     for current, _dirs, names in os.walk(base):
         current_rel = Path(current).relative_to(root).as_posix()
         pending = [doc for doc in docs if doc not in found]
@@ -61,28 +60,48 @@ def referenced_docs(
             if name.endswith(".md") or name.endswith((".gz", ".png", ".jpg", ".zip", ".otbm")):
                 continue
             data = (Path(current) / name).read_bytes()
-            todo = [doc for doc in pending if doc not in found]
-            hit = [doc for doc in todo if posixpath.basename(doc).encode() in data]
-            if hit:
-                # Normalize each path-like token ("./README.md", "a/../README.md", "../x/README.md")
-                # against the referring file's directory, the tool directory and the repository root.
-                resolved: set[str] = set()
-                for match in token_re.finditer(data):
-                    token = match.group().decode("utf-8", "replace")
-                    if token.startswith("/"):
-                        continue
-                    resolved.add(posixpath.normpath(token))
-                    resolved.add(posixpath.normpath(posixpath.join(current_rel, token)))
-                    resolved.add("tool:" + posixpath.normpath(token))
-                for doc in hit:
-                    tool_form = "tool:" + posixpath.relpath(doc, TOOL_DIR)
-                    # A tool-relative bare name is only a pin for its own directory.
-                    if doc in resolved or (posixpath.dirname(doc) != TOOL_DIR and tool_form in resolved):
-                        found[doc] = f"referenced by {current_rel}/{name}"
-            for doc in todo:
-                if doc not in found and any(digest in data for digest in wanted[doc]):
+            for doc in [doc for doc in pending if doc not in found]:
+                if _mentions(data, doc, current_rel):
+                    found[doc] = f"referenced by {current_rel}/{name}"
+                elif any(digest in data for digest in wanted[doc]):
                     found[doc] = f"content hash pinned by {current_rel}/{name}"
     return found
+
+
+_START_BREAKS = frozenset(b" \t\r\n\"'`()[]{}<>=,;:|")
+_WORD = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
+
+
+def _mentions(data: bytes, doc: str, current_rel: str) -> bool:
+    """True if `data` names `doc` by any path that resolves to it, with no limit on the alphabet.
+
+    For each occurrence of the doc's file name, every text span that ends there and starts after a
+    delimiter (or space) is normalized (./, ../, backslashes, percent escapes) against the referring
+    file's directory, the repository root and the tool directory. A tool-relative bare name is only
+    a pin for its own directory.
+    """
+    needle = posixpath.basename(doc).encode()
+    tool_form = posixpath.relpath(doc, TOOL_DIR)
+    tool_ok = posixpath.dirname(doc) != TOOL_DIR
+    start = data.find(needle)
+    while start != -1:
+        end = start + len(needle)
+        if end >= len(data) or data[end] not in _WORD:
+            line_start = max(data.rfind(b"\n", 0, start) + 1, start - 1000)
+            for pos in range(start, line_start - 1, -1):
+                if pos == line_start or data[pos - 1] in _START_BREAKS:
+                    raw = data[pos:end].decode("utf-8", "replace")
+                    for text in {raw, raw.replace("\\", "/"), urllib.parse.unquote(raw)}:
+                        if text.startswith("/"):
+                            continue
+                        if (
+                            posixpath.normpath(text) == doc
+                            or posixpath.normpath(posixpath.join(current_rel, text)) == doc
+                            or (tool_ok and posixpath.normpath(text) == tool_form)
+                        ):
+                            return True
+        start = data.find(needle, start + 1)
+    return False
 
 
 def classify(
@@ -107,6 +126,8 @@ def classify(
             return "full", f"{status} {path}"
         if not path.startswith(TOOL_DIR + "/") or not path.endswith(".md"):
             return "full", f"not a Quest tool doc: {path}"
+        if not re.fullmatch(r"[A-Za-z0-9._ +@/-]+", path):
+            return "full", "doc path outside the plain alphabet"
         if ".." in path.split("/") or (root / path).is_symlink() or not (root / path).is_file():
             return "full", f"unreadable doc: {path}"
         docs.append(path)

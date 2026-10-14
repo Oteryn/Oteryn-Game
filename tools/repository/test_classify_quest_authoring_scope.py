@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import subprocess
 import tempfile
@@ -104,6 +105,19 @@ class SyntheticTree(unittest.TestCase):
         self.write(f"{TOOL}/dots4/pins.json", f'{{"doc": "./{TOOL}/dots4/README.md"}}\n')
         for d in ("dots", "dots2", "dots3", "dots4"):
             self.assertEqual(self.verdict([rec(f"{TOOL}/{d}/README.md")]), "full", d)
+
+    def test_odd_alphabet_references_take_full_path(self):
+        for i, name in enumerate(("my doc.md", "a+b@c.md", "x y/README.md")):
+            d = f"odd{i}"
+            self.write(f"{TOOL}/{d}/{name}", "d\n")
+            self.write(f"{TOOL}/{d}/pins.json", json.dumps({"doc": f"./{name}"}))
+            self.write(f"{TOOL}/{d}/pins2.txt", f"see {name} for details\n")
+            self.assertEqual(self.verdict([rec(f"{TOOL}/{d}/{name}")]), "full", name)
+        self.write(f"{TOOL}/odd9/my doc.md", "d\n")
+        self.write(f"{TOOL}/odd9/notes.txt", "mention of other my doc.mdx only\n")
+        self.assertEqual(self.verdict([rec(f"{TOOL}/odd9/my doc.md")]), "docs_only")
+        self.write(f"{TOOL}/odd8/caf\u00e9.md", "d\n")
+        self.assertEqual(self.verdict([rec(f"{TOOL}/odd8/caf\u00e9.md")]), "full")
 
     def test_symlinked_doc_takes_full_path(self):
         (self.root / TOOL / "link.md").symlink_to(self.root / "docs/note.md")
