@@ -39,13 +39,18 @@ message UseIntentV1 {
 
 // Field 4 of UseIntentV1: the entity (EntityRefV1 fields 1 and 2, flat: a 16-byte identity and a
 // non-zero generation) a potion is used on, or, under capability 11 WORLD_INTERACTION_V1
-// (WORLD-INTERACTION-0 §10.1), the map item a tool or key is used on: the `map_item` arm, field 3,
-// an ItemTargetV1 handle (non-zero). The arms are exclusive; the entity arm needs capability 15 and
-// the map item arm capabilities 15 and 11. Valid only with field 2 or 5, at most once.
+// (WORLD-INTERACTION-0 §10.1), the map item a tool or key is used on. A handle-bearing map entry
+// (a movable base item, an added or Ground item) is the `map_item` arm, field 3, an ItemTargetV1
+// handle (non-zero). A nonmovable base object, which WORLD_MAP_VIEW publishes as a base ordinal
+// without a handle (a door), is the `map_object` arm, field 4: its placement and observed overlay
+// revision, as UseIntentV1 field 1 names it, with a non-empty placement of at most 496 bytes so
+// the intent stays within 529. Exactly one arm; the entity arm needs capability 15 and the map arms
+// capabilities 15 and 11. Valid only with field 2 or 5, at most once.
 message UseWithV1 {
   bytes identity = 1;
   uint64 generation = 2;
   oteryn.protocol.v1.item_view.ItemTargetV1 map_item = 3;
+  WorldObjectTargetV1 map_object = 4;
 }
 
 // An item named by its 1-based definition index in the active content generation (the

@@ -50,9 +50,9 @@ external_repositories: []
 
 Registers capability 11 `WORLD_INTERACTION_V1` (requires 15 and 18, `offered: false`, gate WORLDINT-USE-1)
 and command type 15 `PUSH_INTENT` (`PushIntentV1`, flat, at most 41 bytes; result at most 4 bytes), adds
-the `map_item` arm of `UseIntentV1` field 4 `use_with` (`UseWithV1` field 3, a handle; needs capabilities 15 and 11, exclusive with the entity arm), the `GROUND` destination and the `BLOCKED` result of command type 9 for a map-item or Ground source under capability 11 (`EQUIPMENT` stays with capability 12) and the USE dispositions
+the map arms of `UseIntentV1` field 4 `use_with` (`UseWithV1` field 3 `map_item`, a handle, and field 4 `map_object`, a placement and revision for a handleless base object; both need capabilities 15 and 11 and exclude each other and the entity arm), the `GROUND` destination and the `BLOCKED` result of command type 9 for a map-item or Ground source under capability 11 (`EQUIPMENT` stays with capability 12) and the USE dispositions
 11 to 17 (LOCKED, KEY_MISMATCH, SEALED, PZ_BLOCKED, NOT_MOVABLE, NO_ROOM, NOT_POSSIBLE), per
-WORLD-INTERACTION-0 §10.1. The server gates command 15, rejects the map arm and refuses dispositions 11 to 17
+WORLD-INTERACTION-0 §10.1. The server gates command 15, rejects the map arms and refuses dispositions 11 to 17
 without capability 11. Wire only: no runtime, no migration, nothing offered.
 
 ## Deviations (reported to the control plane)
@@ -60,6 +60,12 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 - Field 4 of `UseIntentV1` becomes the `UseWithV1` message (`EntityRefV1` fields 1 and 2 plus the
   `map_item` arm, field 3), wire-compatible with the previous entity-only field 4. This replaces the
   earlier top-level fields 6 and 7 (never shipped; the contract fixes the arm under field 4).
+- `UseWithV1` field 4 `map_object` (Codex P1 on af9d5e47): §10.1 names the arm `map_item {handle}`,
+  but the map view gives a nonmovable base object (a door) no handle, only a base ordinal. The arm
+  takes the `WorldObjectTargetV1` that USE field 1 already uses for such objects (placement and
+  observed revision), a new field inside `UseWithV1` and so wire-compatible. The placement is
+  non-empty and at most 496 bytes, so a u64 tool handle plus the arm stays within the unchanged
+  529-byte `WORLDINT0-RL-22`; `PUSH_INTENT` (41 bytes) is not affected.
 - `PUSH_INTENT` is flat: identity, the full `uint64` generation, destination x and y over the full
   `sint32` domain, both always present (zero is an explicit varint; a payload without either fails
   closed). OWNER DECISION (2026-10-14, option A): keep the `uint64` generation and the full `sint32`
@@ -92,6 +98,9 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
   `cargo clippy --locked -p oteryn-protocol-oteryn --all-targets -- -D warnings` pass;
   `cargo test --locked -p oteryn-protocol-oteryn` pass (225, including the registry checks);
   governance validation and `tools/agents/tests` (60) pass; `git diff --check` pass
+- `map_object` arm commit: fmt and clippy pass; `cargo test --locked -p oteryn-protocol-oteryn` pass
+  (226); the game-server matches `use_with_map_item` only as `Some(_)`/`None` and was left to CI
+  (local disk too small for a game-server build)
 - `oteryn-architecture-check workspace .`: pass
 
 ## Self-review

@@ -46,9 +46,14 @@ pub const SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1: u32 = 1;
 ///
 /// `ITEMUSE0-RL-03`: fields 4 and 5 keep this bound. The largest intent with them is field 2 (a
 /// 10-byte handle: 2 + 11 = 13) or field 5 (a 5-byte index: 2 + 6 = 8) plus field 4 (2 + 29 = 31),
-/// so 44 bytes; field 4 never combines with field 1. The `map_item` arm of field 4 (capability 11)
-/// is a handle (3 + 11 = 14 inside, 16 wrapped) and fits the same bound.
+/// so 44 bytes; field 4 never combines with field 1. Under capability 11 the `map_item` arm of
+/// field 4 is a handle (3 + 11 = 14 inside, 16 wrapped) and the `map_object` arm a
+/// `WorldObjectTargetV1` whose placement is capped at `MAX_USE_WITH_PLACEMENT_BYTES` so that field 2
+/// plus field 4 stays within the same bound.
 pub const MAX_USE_INTENT_BYTES: usize = 529;
+/// The `map_object` arm's placement: field 2 (13) + field 4 (3) + `UseWithV1` field 4 (3) +
+/// placement (3 + 496) + `expected_revision` (11) = 529. Bundle placements are 40 bytes.
+pub const MAX_USE_WITH_PLACEMENT_BYTES: usize = 496;
 /// The encoded `EntityRefV1` of field 4: identity (1 + 1 + 16) and generation (1 + 10).
 const MAX_USE_WITH_BYTES: usize = 29;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
@@ -97,14 +102,28 @@ pub enum UseTarget {
 
 /// A decoded `UseIntentV1`: the target and field 4 `use_with`, which is either the creature a potion
 /// is used on (`use_with`, absent means the user) or, under capability 11 (WORLD-INTERACTION-0
-/// §10.1), the map item a tool or key is used on (`use_with_map_item`, the `map_item` arm, field 3
-/// of the field 4 message). The two arms are exclusive. Field 4 is accepted only under capability
-/// 15, the map item arm only under capabilities 15 and 11, only with field 2 or 5, at most once.
+/// §10.1), the map item a tool or key is used on (`use_with_map_item`: the `map_item` arm, field 3
+/// of the field 4 message, or the `map_object` arm, field 4 of it). The arms are exclusive. Field 4
+/// is accepted only under capability 15, the map arms only under capabilities 15 and 11, only with
+/// field 2 or 5, at most once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseIntent {
     pub target: UseTarget,
     pub use_with: Option<EntityRef>,
-    pub use_with_map_item: Option<ItemHandle>,
+    pub use_with_map_item: Option<MapUseTarget>,
+}
+
+/// The map item a tool or key is used on (capability 11). A handle-bearing entry (a movable base
+/// item, an overlay-added or Ground item) is named by its handle; a nonmovable base object, which
+/// the map view publishes as a base ordinal without a handle (a door), by its placement and the
+/// overlay revision the client observed, as `UseIntentV1` field 1 names it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MapUseTarget {
+    /// `UseWithV1` field 3 `map_item`.
+    Item(ItemHandle),
+    /// `UseWithV1` field 4 `map_object`: a non-empty placement of at most
+    /// `MAX_USE_WITH_PLACEMENT_BYTES`.
+    Object(WorldObjectTarget),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -258,7 +277,8 @@ pub fn encode_use_item_intent(handle: ItemHandle) -> Vec<u8> {
 
 /// `ClientCommand.payload` of command type 2 for a session that selected capability 15: field 2
 /// or 5, then field 4 when present. Refuses what the decoder refuses: field 4 with a world-object
-/// target, and a `use_with` whose generation is zero.
+/// target, a `use_with` whose generation is zero, and a `map_object` placement that is empty or
+/// over `MAX_USE_WITH_PLACEMENT_BYTES`.
 pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObjectError> {
     let mut output = match &intent.target {
         UseTarget::WorldObject(target)
@@ -287,9 +307,16 @@ pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObject
             push_varint_field(&mut inner, 2, creature.generation);
             push_bytes_field(&mut output, 4, &inner);
         }
-        (None, Some(handle)) => {
+        (None, Some(MapUseTarget::Item(handle))) => {
             let mut inner = Vec::with_capacity(MAX_USE_WITH_BYTES);
             push_bytes_field(&mut inner, 3, &encode_item_target(*handle));
+            push_bytes_field(&mut output, 4, &inner);
+        }
+        (None, Some(MapUseTarget::Object(object))) => {
+            map_object_placement(&object.placement)?;
+            let target = encode_world_object_target(object)?;
+            let mut inner = Vec::with_capacity(3 + target.len());
+            push_bytes_field(&mut inner, 4, &target);
             push_bytes_field(&mut output, 4, &inner);
         }
         (None, None) => {}
@@ -323,14 +350,27 @@ fn decode_item_by_definition(input: &[u8]) -> Result<NonZeroU32, WorldObjectErro
     NonZeroU32::new(index.unwrap_or(0)).ok_or(WorldObjectError::Malformed)
 }
 
+/// The `map_object` arm names a real placement within its share of the intent bound.
+fn map_object_placement(placement: &[u8]) -> Result<(), WorldObjectError> {
+    if placement.is_empty() {
+        return Err(WorldObjectError::Malformed);
+    }
+    if placement.len() > MAX_USE_WITH_PLACEMENT_BYTES {
+        return Err(WorldObjectError::LimitExceeded);
+    }
+    Ok(())
+}
+
 /// Field 4: an `EntityRefV1` (exactly 16 identity bytes and a non-zero generation) or, under
-/// capability 11, the `map_item` arm (field 3, an item handle). The two never combine.
+/// capability 11, the `map_item` arm (field 3, an item handle) or the `map_object` arm (field 4, a
+/// `WorldObjectTargetV1` with a non-empty placement). Exactly one arm.
 fn decode_use_with(
     input: &[u8],
     map_item_use: bool,
-) -> Result<(Option<EntityRef>, Option<ItemHandle>), WorldObjectError> {
+) -> Result<(Option<EntityRef>, Option<MapUseTarget>), WorldObjectError> {
     let mut cursor = 0;
     let (mut identity, mut generation, mut map_item) = (None, None, None);
+    let mut map_object = None;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x0a if identity.is_none() => {
@@ -343,11 +383,22 @@ fn decode_use_with(
             0x1a if map_item_use && map_item.is_none() => {
                 map_item = Some(map_item_handle(read_bytes(input, &mut cursor)?)?);
             }
+            0x22 if map_item_use && map_object.is_none() => {
+                let object = decode_world_object_target(read_bytes(input, &mut cursor)?)?;
+                map_object_placement(&object.placement)?;
+                map_object = Some(object);
+            }
             _ => return Err(WorldObjectError::Malformed),
         }
     }
-    match (identity, generation, map_item) {
-        (None, None, Some(handle)) => Ok((None, Some(handle))),
+    let map = match (map_item, map_object) {
+        (Some(handle), None) => Some(MapUseTarget::Item(handle)),
+        (None, Some(object)) => Some(MapUseTarget::Object(object)),
+        (None, None) => None,
+        (Some(_), Some(_)) => return Err(WorldObjectError::Malformed),
+    };
+    match (identity, generation, map) {
+        (None, None, Some(map)) => Ok((None, Some(map))),
         (Some(identity), Some(generation), None) if generation != 0 => Ok((
             Some(EntityRef {
                 identity,
@@ -362,7 +413,7 @@ fn decode_use_with(
 /// Exactly one target. Field 2 is accepted only when the session selected capability 4, and fields
 /// 4 and 5 only when it selected capability 15 (ITEM-USE-0 §3); without them, and always for the
 /// reserved field 3, the intent fails closed. Field 4 needs field 2 or 5: alone or with field 1 it
-/// fails closed. Its `map_item` arm additionally needs capability 11.
+/// fails closed. Its `map_item` and `map_object` arms additionally need capability 11.
 pub fn decode_use_intent_target(
     selected_capabilities: &[u32],
     payload: &[u8],
