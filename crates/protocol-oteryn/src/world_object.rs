@@ -30,7 +30,7 @@ pub const CAPABILITY_ITEM_USE_V1: u32 = 15;
 /// The registry `requires` of capability 15.
 pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
 /// Registered capability `WORLD_INTERACTION_V1` (WORLDINT-WIRE-1); see `world_interaction.rs`. It
-/// extends command type 2 with field 6 and the dispositions 11 to 17.
+/// extends command type 2 with the `map_item` arm of field 4 and the dispositions 11 to 17.
 pub use crate::world_interaction::CAPABILITY_WORLD_INTERACTION_V1;
 
 pub const COMMAND_TYPE_USE_INTENT: u32 = 2;

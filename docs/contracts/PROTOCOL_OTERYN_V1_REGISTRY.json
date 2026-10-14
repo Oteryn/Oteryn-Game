@@ -124,7 +124,7 @@
       "command_types": [15],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, USE field 6, the dispositions 11 to 17 and the gate message id are never sent and command type 15 is refused. It changes no other command."
+      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, the map_item arm of USE field 4 use_with, the GROUND destination and BLOCKED result of command type 9 for map-item and Ground sources, the dispositions 11 to 17 and the gate message id are never accepted or sent, and command type 15 is refused. It extends command types 2 and 9 only; EQUIPMENT and results 10 and 11 of command type 9 stay with capability 12."
     },
     {
       "id": 12,

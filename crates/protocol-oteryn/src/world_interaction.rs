@@ -4,11 +4,13 @@
 //! §10.1. Capability 11 `WORLD_INTERACTION_V1` (requires 15 `ITEM_USE_V1` and 18
 //! `WORLD_MAP_VIEW_V1`) and command type 15 `PUSH_INTENT` are registered in
 //! `PROTOCOL_OTERYN_V1_REGISTRY.json`, leased by the #1622 control plane. The capability also adds
-//! `UseIntentV1` field 6 and the use dispositions 11 to 17 (`world_object.rs`); the server does not
-//! offer it before WORLDINT-USE-1 composes the interaction gate.
+//! the `map_item` arm of `UseIntentV1` field 4 `use_with` and the use dispositions 11 to 17
+//! (`world_object.rs`); the server does not offer it before WORLDINT-USE-1 composes the interaction
+//! gate.
 //!
-//! The capability changes no other command: command type 9 keeps its meaning, and its map-item and
-//! Ground sources are a separate registry change.
+//! It also extends command type 9 (`item_view.rs`, `ItemMoveSelection::world_interaction`): the
+//! `GROUND` destination and the `BLOCKED` result for map-item and Ground sources (item handles, so
+//! the source field is unchanged). `EQUIPMENT` and results 10 and 11 stay with capability 12.
 //!
 //! `PUSH_INTENT` is flat: the 16-byte identity, the full `uint64` generation, and the destination x
 //! and y, both always present (zero is an explicit varint, never an absent field). That is 37
