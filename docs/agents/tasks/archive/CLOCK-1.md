@@ -63,6 +63,9 @@ Mechanics #15 (world clock) and #16 (server-side light) are closed from PARTIAL.
   - The epoch comes from no World ruleset field (default 0, CP-approved).
 - `RESOURCE_LIMITS_REGISTRY.json` gains only the `WORLDINT0-RL-18` and `WORLDINT0-RL-20` rows
   (CP grant).
+- Follow-up (SIM-DETERMINISM, accepted by the CP, Codex 4274232194): a recorded normalized UTC
+  tick/admission fact and a replay envelope for domain 18. Until then the UTC fact is read from
+  the wall clock once per process and advanced on the monotonic clock.
 
 ## Validation
 
