@@ -70,6 +70,8 @@ The plan row BUNDLE-GATES-1 carries the same inventory and stays open until no g
 - cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings: pass
 - cargo test --locked -p oteryn-game-server --lib: 3036 passed, 0 failed, 29 ignored
 - negative check (world_item_cast.rs switched to combat_room): `every_seam_room_read_is_inventoried` fails as intended
+- negative check (plan row loses `auto-attack drain`): `every_gate_is_recorded_in_the_plan_row` fails as intended
+- negative check (a comment and string literals naming `self.combat_room` added): guard still passes
 - python tools/agents/validate_governance.py: pass
 - python -m unittest discover -s tools/agents/tests: OK
-- review: Codex auto-review on the PR head
+- review: Codex round 1 (two P2: count only code reads; tie each plan assertion to its gate) fixed in one push; Codex auto-review on the new head
