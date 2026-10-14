@@ -3,7 +3,8 @@
 - Decision: `CONDITIONS0-ACTOR-CONDITIONS-V1`
 - Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by
   `OTERYN_GAME_ACCEPT_CONDITIONS0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-CONDITIONS0-V1`); it takes
-  effect after exact-head independent review, CI and protected integration of that PR. §3.5 is the
+  effect after exact-head validation, independent review (combat, determinism and protocol) and
+  protected integration of that PR. §3.5 is the
   scope amendment accepted with it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane's request (#162 5913838260: CONDITIONS-0 next) and the charm lane's
@@ -168,7 +169,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
   refused action spends nothing and draws nothing.
-- The four new instance keys bring the worst case to 17, over 16, so `COND0-RL-01` is 20.
+- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys, over 16. `COND0-RL-01` is 24 (21 and headroom for three later keys); one instance per key, so no mutual exclusion is needed.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
 - Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
@@ -191,7 +192,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
 - **Instance limit.** One instance per conflict key gives at most 13 today, under `COND0-RL-01`
-  (16); a family that would pass it needs an amendment, and a transition past it is refused.
+  (24, §3.5); a family that would pass it needs an amendment, and a transition past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
 
@@ -291,7 +292,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 | Row | Value |
 |---|---|
-| `COND0-RL-01` instances per actor | 20 (was 16; §3.5) |
+| `COND0-RL-01` instances per actor | 24 (was 16; §3.5) |
 | `COND0-RL-02` minimum tick interval | 1,000 ms |
 | `COND0-RL-03` damage ticks per actor per simulation tick | 4 |
 

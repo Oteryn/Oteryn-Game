@@ -1,7 +1,7 @@
 # ACCEPT-CONDITIONS-0 Acceptance of the actor conditions decision
 
 - Decision: `ACCEPT-CONDITIONS0-V1`
-- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**. Owner `blakinio` accepted CONDITIONS-0 with the §3.5 scope amendment (owner accepted via control plane). The acceptance takes effect only when this PR passes exact-head independent review and CI on its frozen head and is integrated through the protected merge path. It changes no code, wire, migration or content.
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**. Owner `blakinio` accepted CONDITIONS-0 with the §3.5 scope amendment (owner accepted via control plane). The acceptance takes effect only when this PR passes exact-head validation, independent review (combat, determinism and protocol) and CI on its frozen head and is integrated through the protected merge path. It changes no code, wire, migration or content.
 - Accepts: `reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md` (`CONDITIONS0-ACTOR-CONDITIONS-V1`).
 - Answers: MAGIC-COND-1 (mechanics 27, 28, 29) cites the decision while it still reads CANDIDATE.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -9,7 +9,7 @@
 ## 1. What becomes effective
 
 - Once the condition in the status line is met, the CONDITIONS-0 status line reads ACCEPTED, pointing here.
-- §3.5 is new rule text accepted with it: keys, policies and gates for `muted`, `pacified`, `powerless` and `agony`, `exhaust` and `infight` as projections only, and `COND0-RL-01` raised from 16 to 20.
+- §3.5 is new rule text accepted with it: keys, policies and gates for `muted`, `pacified`, `powerless` and `agony`, `exhaust` and `infight` as projections only, and `COND0-RL-01` raised from 16 to 24.
 - Amendments that other decisions wrote as "pending on acceptance" keep their wording; each takes effect only when its own source decision is accepted.
 
 ## 2. Acceptance record
