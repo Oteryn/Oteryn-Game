@@ -686,6 +686,7 @@ mod connection {
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
+                gate_message_id: None,
             }
         }
 
@@ -752,7 +753,7 @@ mod connection {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
         .expect("result")
     }

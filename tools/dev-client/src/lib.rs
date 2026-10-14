@@ -1624,7 +1624,7 @@ mod tests {
             sequence,
             command_id,
             CommandStatus::Accepted,
-            &world_object::encode_use_result(disposition),
+            &world_object::encode_use_result(disposition).unwrap_or_default(),
         )
     }
 
@@ -1823,6 +1823,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: overlay,
+            gate_message_id: None,
         }
     }
 
@@ -1839,6 +1840,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: spatial,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         }
     }
 
@@ -2643,7 +2645,7 @@ mod tests {
     #[test]
     fn an_inconsistent_status_and_disposition_pairing_is_rejected() -> Result<(), BoxError> {
         let step = |disposition| world_spatial::encode_step_result(disposition);
-        let use_ = |disposition| world_object::encode_use_result(disposition);
+        let use_ = |disposition| world_object::encode_use_result(disposition).unwrap_or_default();
         for (action, status, payload) in [
             (
                 Action::Step,

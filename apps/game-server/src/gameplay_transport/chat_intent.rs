@@ -163,15 +163,32 @@ impl ChatRuntime {
         }
     }
 
-    /// Every undelivered line of `session`, oldest first.
+    /// The next undelivered line of `session`, oldest first. It counts against the undelivered
+    /// bound until [`Self::delivered`].
+    pub(crate) fn next(&self, session: GameSessionId) -> Option<ChatLine> {
+        let mut sessions = self.sessions.lock().ok()?;
+        sessions.get_mut(&session)?.egress.next_for_write()
+    }
+
+    /// Every undelivered line of `session`, oldest first, as if each were written at once.
+    #[cfg(test)]
     pub(crate) fn drain(&self, session: GameSessionId) -> Vec<ChatLine> {
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return Vec::new();
-        };
-        let Some(entry) = sessions.get_mut(&session) else {
-            return Vec::new();
-        };
-        std::iter::from_fn(|| entry.egress.pop()).collect()
+        let mut lines = Vec::new();
+        while let Some(line) = self.next(session) {
+            self.delivered(session);
+            lines.push(line);
+        }
+        lines
+    }
+
+    /// The line last returned by [`Self::next`] reached the client: it no longer counts against
+    /// the session's undelivered bound.
+    pub(crate) fn delivered(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.egress.delivered();
+        }
     }
 
     /// The answer of a cast by a muted `session` (CHAT-0 §6: a muted character cannot cast any
@@ -206,8 +223,15 @@ impl ChatRuntime {
         if ChatText::parse(text).is_err() {
             return Some(result(ChatDisposition::Rejected));
         }
-        let mut sessions = self.sessions.lock().ok()?;
-        let entry = sessions.get_mut(&session)?;
+        // A session without chat state (its open failed) or a poisoned map ends in
+        // `ChatUnavailable` on the full path too; refusing it here keeps it off the locks.
+        let unavailable = || Some(result(ChatDisposition::ChatUnavailable));
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return unavailable();
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return unavailable();
+        };
         entry
             .limiter
             .pre_gate(speech_mode(*mode), now)
@@ -671,8 +695,13 @@ mod tests {
                 .disposition,
             ChatDisposition::Rejected
         );
-        // An unknown session is left to the full path.
-        assert!(chat.pre_gate(session_of(0x7f), &say("x"), BASE).is_none());
+        // An unknown session (its chat open failed) is refused before the Channel.
+        assert_eq!(
+            chat.pre_gate(session_of(0x7f), &say("x"), BASE)
+                .expect("unknown session")
+                .disposition,
+            ChatDisposition::ChatUnavailable
+        );
     }
 
     #[test]

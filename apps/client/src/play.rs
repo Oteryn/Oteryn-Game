@@ -721,6 +721,7 @@ mod tests {
                 },
             }),
             world_object_overlay_delta: None,
+            gate_message_id: None,
         }
     }
 

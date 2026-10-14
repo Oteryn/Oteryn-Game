@@ -1011,3 +1011,128 @@ fn the_ordinary_owner_cast_refuses_a_spell_outside_the_book_and_an_unaccepting_m
         Err(SpellCastDisposition::Rejected)
     );
 }
+
+/// MAGIC-CAST-1 (#50): a bundle World serves healing and support self casts. The caster stands on
+/// the bundle tile flagged as a protection zone (BUNDLE-TILES-1), which the combat room of a bundle
+/// World reads (BUNDLE-COMBAT-ENABLE-1); the real native book casts a heal and a haste there, and an
+/// aggressive spell stays refused on the same tile.
+#[test]
+fn a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression() {
+    use crate::map::spell_tiles::tests::{id, world as bundle_world};
+    let world = bundle_world();
+    let world_id = crate::foundation::WorldId::decode(&id(1)).expect("world");
+    let entry = crate::content::qualify_native_entry_room(world_id).expect("entry room");
+    let start = world.start();
+    let room = entry
+        .bundle_view(
+            world.movement_cells(entry.movement_cells()).expect("cells"),
+            world.frame_binding_digest(world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: -i16::from(start.floor),
+            },
+        )
+        .expect("bundle view");
+    let cells = room.movement_cells();
+    let zone = cells
+        .spell_tiles()
+        .lookup(
+            cells.scope(),
+            crate::content::LogicalCell { x: 2, y: 0, z: 7 },
+        )
+        .expect("the bundle zone tile")
+        .flags()
+        .protection_zone;
+    assert!(zone);
+
+    let manifest =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
+        .expect("canonical manifest");
+    let catalog =
+        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)
+            .expect("catalog");
+    let selections = crate::spell::executable_catalog::compile_source_selection(
+        &input.source_selection.bytes,
+        &input.source_selection.sha256,
+        &catalog,
+    )
+    .expect("selection");
+    let book = catalog
+        .into_spell_book_with_selections(&selections)
+        .expect("native book");
+    let facts = CharacterCastFacts {
+        vocation: Vocation::Druid,
+        level: 100,
+        magic_level: 50,
+        max_health: 1000,
+        max_mana: 5000,
+        max_soul: 100,
+    };
+    let mut state = PlayerSpellState {
+        health: 100,
+        ..PlayerSpellState::new(facts, 0, 0).expect("state")
+    };
+    state
+        .apply_owner_premium_transition(true, Some(u64::MAX / 2))
+        .expect("premium");
+    state.make_playable(at(0)).expect("playable");
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 2,
+            y: 0,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: zone,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let cast_on = |name: &str, operational: &OperationalCastFacts| {
+        let spell = book.spells.iter().find(|s| s.name == name).expect(name);
+        let caster = state.caster(state.owned_harmony_multiplier(spell).expect(name));
+        prepare_ordinary_owner_cast_with_caster(
+            &book,
+            &state,
+            spell,
+            operational,
+            at(1),
+            &caster,
+            None,
+            None,
+            &mut |_, maximum| maximum,
+        )
+    };
+    let cast = |name: &str| cast_on(name, &operational);
+    for name in ["Light Healing", "Intense Healing", "Light", "Cure Poison"] {
+        let paid = cast(name).expect(name);
+        assert!(!paid.resolution.effects.is_empty(), "{name}");
+        assert!(paid.anchor.paid_mana > 0, "{name}");
+        assert_eq!(paid.next.revision(), state.revision() + 1, "{name}");
+    }
+    let light = cast("Light Healing").expect("Light Healing");
+    assert!(
+        light
+            .resolution
+            .effects
+            .iter()
+            .any(|e| matches!(e, ResolvedEffect::Heal { magnitude } if *magnitude > 0))
+    );
+    // The zone is what refuses the aggressive spell: off the zone it casts.
+    // The zone is what refuses the druid's aggressive wave: off the zone it casts.
+    assert_eq!(
+        cast("Terra Wave").map(|_| ()),
+        Err(SpellCastDisposition::Rejected)
+    );
+    let open = OperationalCastFacts {
+        in_protection_zone: false,
+        ..operational.clone()
+    };
+    assert!(cast_on("Terra Wave", &open).is_ok());
+}

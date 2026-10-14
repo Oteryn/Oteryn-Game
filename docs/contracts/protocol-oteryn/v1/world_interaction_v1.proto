@@ -1,0 +1,36 @@
+// WORLD-INTERACTION-0 §10.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md):
+// typed payloads of capability 11 WORLD_INTERACTION_V1 (requires 15 ITEM_USE_V1 and 18
+// WORLD_MAP_VIEW_V1) and command type 15 PUSH_INTENT. Numbers leased to WORLDINT-WIRE-1 by the
+// #1622 control plane. The capability also extends existing messages and owns no domain:
+// world_object_v1.proto UseIntentV1 field 4 use_with (the map_item arm, UseWithV1 field 3, and the
+// map_object arm, field 4, for a handleless nonmovable base object) and UseDispositionV1 values 11
+// to 17 with UseResultV1 field 2 gate_message_id. It also extends command
+// type 9 (item_view_v1.proto): the GROUND destination (field 4) is admitted for a map-item or Ground
+// source, and the BLOCKED result, as under capability 12 (which stays the only home of EQUIPMENT). Unknown
+// and repeated fields, zero and unknown enum values, an identity other than 16 bytes, a zero
+// generation and a payload over its bound all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_interaction;
+
+import "world_object_v1.proto";
+
+// ClientCommand.payload of command type 15. A creature or player the session sees in
+// WORLD_SPATIAL_ENTITIES (EntityRefV1 fields 1 and 2, flat) and the tile it is pushed to on its
+// own floor: a creature push never changes floor. At most 41 bytes, the WORLDINT0-RL-21 bound as
+// amended by the owner on 2026-10-14: the identity (1 + 1 + 16), the full uint64 generation
+// (1 + 10), x (1 + 5) and y (1 + 5). x and y take the full sint32 domain and are always present:
+// zero is written explicitly (optional), and a payload without either fails closed. Non-durable.
+message PushIntentV1 {
+  bytes target_identity = 1;
+  uint64 target_generation = 2;
+  optional sint32 to_x = 3;
+  optional sint32 to_y = 4;
+}
+
+// CommandResult.payload of command type 15. At most 4 bytes. Uses the USE dispositions and, with
+// SEALED, the gate message id of UseResultV1 field 2.
+message PushResultV1 {
+  oteryn.protocol.v1.world_object.UseDispositionV1 disposition = 1;
+  uint32 gate_message_id = 2;
+}

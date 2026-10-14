@@ -38,6 +38,32 @@ use sqlx::{Postgres, Transaction};
 
 const MAX_PENDING_PARAMETERS: usize = 256;
 
+/// The `native_behavior` key of a native profile spell, empty for any other execution.
+fn native_key(spell: &SpellDefinition) -> &str {
+    match &spell.execution {
+        Execution::NativeProfile(profile) => profile.spell()["execution"]["native_behavior"]["key"]
+            .as_str()
+            .unwrap_or(""),
+        _ => "",
+    }
+}
+
+/// MAGIC-CAST-1 (BUNDLE-GATES-1): the room a parameter cast reads. A locate message reads it
+/// only for the caster's protection-zone tile, which the combat room serves on both World
+/// kinds (on a bundle World it is the entry room's bundle view, BUNDLE-COMBAT-ENABLE-1).
+/// House access and vertical moves read the fixture room's house and floor facts, so they keep
+/// the fixture room and stay closed on a bundle World, which has none.
+fn parameter_room<'a>(
+    key: &str,
+    qualified: Option<&'a QualifiedNativeEntryRoom>,
+    combat: Option<&'a QualifiedNativeEntryRoom>,
+) -> Option<&'a QualifiedNativeEntryRoom> {
+    match key {
+        "locate_message" => combat,
+        _ => qualified,
+    }
+}
+
 pub(super) fn named_player_spell(spell: &SpellDefinition) -> bool {
     matches!(
         spell.name.as_str(),
@@ -881,7 +907,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if self.qualified_room.is_none() {
+        if parameter_room(key, self.qualified_room, self.combat_room).is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -1047,8 +1073,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.intent.spell).ok_or(DurabilityError::Unavailable)?;
+            let room=parameter_room(native_key(spell),owner.qualified_room,owner.combat_room).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
                 runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};
@@ -1287,5 +1313,37 @@ mod tests {
         );
         assert_eq!(protected.effect, PrivateSpellEffect::None);
         assert!(source_feedback("unqualified_source_message", None).is_err());
+    }
+    /// MAGIC-CAST-1: on a bundle World (no fixture room, the combat room is the entry room's
+    /// bundle view) a locate message reads the combat room, while house access and vertical moves
+    /// stay closed; on a fixture World every parameter cast reads the fixture room.
+    #[test]
+    fn bundle_world_opens_locate_message_only() {
+        use crate::map::spell_tiles::tests::{id, world as bundle_world};
+        let world = bundle_world();
+        let world_id = crate::foundation::WorldId::decode(&id(1)).unwrap();
+        let entry = crate::content::qualify_native_entry_room(world_id).unwrap();
+        let start = world.start();
+        let view = entry
+            .bundle_view(
+                world.movement_cells(entry.movement_cells()).unwrap(),
+                world.frame_binding_digest(world_id),
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: i32::from(start.x),
+                    y: i32::from(start.y),
+                    floor: -i16::from(start.floor),
+                },
+            )
+            .unwrap();
+        let bundle = parameter_room("locate_message", None, Some(&view)).unwrap();
+        assert!(std::ptr::eq(bundle, &view));
+        for key in ["house_access", "vertical_move", ""] {
+            assert!(parameter_room(key, None, Some(&view)).is_none(), "{key}");
+        }
+        for key in ["locate_message", "house_access", "vertical_move"] {
+            let fixture = parameter_room(key, Some(&entry), Some(&entry)).unwrap();
+            assert!(std::ptr::eq(fixture, &entry), "{key}");
+        }
     }
 }

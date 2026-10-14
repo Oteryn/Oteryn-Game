@@ -563,10 +563,23 @@ quest doors, quest format §3.1) stays sealed.
   grates and torch bearers. **Field 4 `use_with`** gains a `map_item {handle}` arm (a tool or key on
   a map item); its field number is assigned by WORLDINT-WIRE-1. The payload stays within 529 bytes
   (`WORLDINT0-RL-22`).
+  **Amendment (2026-10-14; owner decision, WORLDINT-WIRE-1 #2094: USE-WITH keeps the `map_object`
+  arm and this section is amended accordingly).** The map view publishes a nonmovable base object, such as a door, as a
+  base ordinal without a handle, so `map_item {handle}` cannot name it. `use_with` (`UseWithV1`)
+  therefore also has a `map_object` arm, field 4: a `WorldObjectTargetV1` (placement and observed
+  overlay revision, as USE field 1 names the object), with a non-empty placement of at most 496
+  bytes. It is for handleless nonmovable base objects only. It excludes the `map_item` and entity
+  arms and, like `map_item`, needs capabilities 15 and 11. The sizes are unchanged: the largest
+  intent (a 13-byte tool handle plus the arm with a 496-byte placement) is exactly 529 bytes, and
+  `WORLDINT0-RL-22` is unchanged.
 - **Command 9** gains, under the capability, the sources `map_item {handle}` (a movable base item)
   and a Ground item handle (domain 1), each with the `GROUND {position}` destination (§7.2).
 - **New command `PUSH_INTENT`** (type number reserved at allocation): `{target {actor_id,
-  generation}, to WorldTilePosition}`, at most `WORLDINT0-RL-21` (32 bytes), non-durable.
+  generation}, to WorldTilePosition}`, at most `WORLDINT0-RL-21` (41 bytes), non-durable.
+  **Amendment (2026-10-14; owner decision, WORLDINT-WIRE-1 #2094).** `WORLDINT0-RL-21` was 32
+  bytes. The owner chose to keep the full `uint64` `session-generation` width and the full `sint32`
+  destination coordinates rather than narrow either, so the bound is 41 bytes: identity 1 + 1 + 16,
+  generation 1 + 10, x 1 + 5, y 1 + 5. Docs-only; the result bound (4 bytes) is unchanged.
 - **Dispositions**, under the capability, at most 4 bytes: `TOO_FAR`, `LOCKED`, `KEY_MISMATCH`,
   `SEALED` (with the gate's message id), `PZ_BLOCKED`, `NOT_MOVABLE`, `NO_ROOM`, `NOT_POSSIBLE`;
   the existing `EXHAUSTED`, `STALE`, `BLOCKED` and `NOTHING_TO_USE` are reused.
@@ -662,8 +675,8 @@ quest doors, quest format §3.1) stays sealed.
 | `WORLDINT0-RL-18` `WORLD_CLOCK` deltas per session; payload | at most 1 per 10,000 ms; at most 9 bytes |
 | `WORLDINT0-RL-19` clock skew between channels of a World | at most 1,000 ms, alarm above |
 | `WORLDINT0-RL-20` VIS-2 `light` field; updates per entity | at most 6 bytes; at most 1 per 1,000 ms |
-| `WORLDINT0-RL-21` `PUSH_INTENT` payload; result | at most 32 bytes; at most 4 bytes |
-| `WORLDINT0-RL-22` `USE_INTENT` payload with the `map_item` arm of field 4 | at most 529 bytes (unchanged), measured by WORLDINT-WIRE-1 |
+| `WORLDINT0-RL-21` `PUSH_INTENT` payload; result | at most 41 bytes (amended from 32 on 2026-10-14, §10.1); at most 4 bytes |
+| `WORLDINT0-RL-22` `USE_INTENT` payload with the `map_item` or `map_object` arm of field 4 | at most 529 bytes (unchanged), measured by WORLDINT-WIRE-1 |
 | `DUR03-RL-01-GROUND-MOVE` touched items | 1 (a tree: `DUR03-RL-01-TREE-MOVE`, 500) |
 | `DUR03-RL-02-GROUND-MOVE` location lines | 2 |
 | `DUR03-RL-06-GROUND-MOVE` participants / work units | 1 / 3 (a tree: 1 / 502) |
