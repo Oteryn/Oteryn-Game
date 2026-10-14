@@ -80,7 +80,7 @@
     "kind_DISTANCE": 9,
     "kind_THROWING": 13,
     "kind_WAND": 66,
-    "parity_pending_items": 23,
+    "parity_pending_items": 24,
     "quivers": 8
   },
   "decision": "RANGED-0 section 7",
@@ -1919,13 +1919,16 @@
     },
     {
       "ammo_type": "ARROW",
-      "hit_chance": 5,
+      "hit_chance": 3,
       "item_key": "oteryn:item.tibia.i7438",
       "on_use": "NONE",
+      "parity_pending": [
+        "hit_chance"
+      ],
       "range_tiles": 6,
       "sources": {
         "ammo_type": "CANARY",
-        "hit_chance": "CANARY",
+        "hit_chance": "WIKI",
         "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
@@ -1951,7 +1954,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
-        "hit_chance": "CANARY",
+        "hit_chance": "WIKI",
         "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
@@ -1977,7 +1980,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
-        "hit_chance": "CANARY",
+        "hit_chance": "WIKI",
         "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
@@ -2027,7 +2030,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
-        "hit_chance": "CANARY",
+        "hit_chance": "WIKI",
         "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
@@ -2053,7 +2056,7 @@
       },
       "sources": {
         "ammo_type": "CANARY",
-        "hit_chance": "CANARY",
+        "hit_chance": "WIKI",
         "min_level": "WIKI",
         "on_use": "DERIVED",
         "range_tiles": "WIKI",
@@ -3368,7 +3371,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "min_level": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
@@ -3388,7 +3391,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
       },
@@ -3407,7 +3410,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
       },
@@ -3426,7 +3429,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
       },
@@ -3472,7 +3475,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "min_level": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
@@ -3616,7 +3619,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "min_level": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
@@ -3636,7 +3639,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "min_level": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"
@@ -3848,7 +3851,7 @@
         ]
       },
       "sources": {
-        "container_size": "CANARY",
+        "container_size": "WIKI",
         "min_level": "WIKI",
         "quiver": "WIKI",
         "vocations": "WIKI"

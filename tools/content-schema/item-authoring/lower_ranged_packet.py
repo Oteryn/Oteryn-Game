@@ -169,6 +169,15 @@ def _parse_percent(raw):
     return int(match[1]) if match and 0 <= int(match[1]) <= 100 else None
 
 
+def _parse_signed(raw):
+    """Wiki `hit_mod`: the relative hit-chance bonus, `+5`, `6` or `-20`."""
+    return _sint(raw.strip().removeprefix("+"))
+
+
+def _parse_volume(raw):
+    return _uint(raw.strip(), 1, 255)
+
+
 def _parse_damage(raw):
     # Wiki writes `min-max` or `average (min-max)`; the average is derived, only the range counts.
     match = re.fullmatch(
@@ -376,7 +385,11 @@ def build(snapshot, canary, content_ids, owned=frozenset()):
             reasons.append("range_tiles_unknown")
         # Canary `hitchance` is the relative bonus a bow or ammunition adds (the tree `hit_chance`);
         # the wiki "Hit chance" and Canary `maxhitchance` are the absolute cap (`max_hit_chance`).
-        pick("hit_chance", None, _sint(top.get("hitchance")))
+        pick(
+            "hit_chance",
+            _wiki_value(merged, "hit_mod", _parse_signed, local_conflicts, item_id),
+            _sint(top.get("hitchance")),
+        )
         if kind in ("DISTANCE", "THROWING", "AMMUNITION"):
             cap = _wiki_value(
                 merged, "hit_chance", _parse_percent, local_conflicts, item_id
@@ -488,11 +501,15 @@ def _quiver_row(item_id, top, nested, merged, pages, quiver_source, local_confli
         "quiver": True,
     }
     sources = {"quiver": quiver_source}
-    size = _uint(top.get("containersize"), 1, 255)
+    parity = []
+    wiki_size = _wiki_value(merged, "volume", _parse_volume, local_conflicts, item_id)
+    canary_size = _uint(top.get("containersize"), 1, 255)
+    size = wiki_size if wiki_size is not None else canary_size
     if size is not None:
         row["container_size"] = size
-        sources["container_size"] = "CANARY"
-    parity = []
+        sources["container_size"] = "WIKI" if wiki_size is not None else "CANARY"
+        if wiki_size is not None and canary_size not in (None, wiki_size):
+            parity.append("container_size")
     requirements = _requirements(
         merged, nested or {}, local_conflicts, item_id, parity, sources
     )

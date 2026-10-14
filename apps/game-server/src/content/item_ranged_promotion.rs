@@ -26,13 +26,13 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_RANGED_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261013-ranged-weapon-facts-v1.json");
 pub const ITEM_RANGED_PACKET_SHA256: &str =
-    "2a3e4d90813884f26e3214db59cf1395d09e756711571cade4b3091f938ebc81";
+    "6abc8a8c6339646458b68af68208b2c70f73e85463b4148171fea1207e7fd004";
 pub const ITEM_RANGED_WEAPON_ROWS: usize = 90;
 pub const ITEM_RANGED_QUIVER_ROWS: usize = 8;
 /// What the pinned packet does to the consumables-admitted tree (checked on every run).
 pub const ITEM_RANGED_FIELDS_SET: usize = 24;
-pub const ITEM_RANGED_FIELDS_UNCHANGED: usize = 184;
-pub const ITEM_RANGED_CONFLICTS: usize = 0;
+pub const ITEM_RANGED_FIELDS_UNCHANGED: usize = 183;
+pub const ITEM_RANGED_CONFLICTS: usize = 1;
 const SCHEMA: &str = "OTERYN_ITEM_RANGED_PROMOTION/v1";
 
 #[derive(Deserialize)]

@@ -167,6 +167,26 @@ def test_quiver_source_follows_the_wiki_type():
     assert row(run(wiki, {3: quiver}, {3})[0], 3)["sources"]["quiver"] == "WIKI"
 
 
+def test_wiki_hit_modifier_and_quiver_volume_come_first():
+    assert [lower._parse_signed(x) for x in ("+3", "6", "-20", "x")] == [
+        3,
+        6,
+        -20,
+        None,
+    ]
+    bow = {"top": dict(BOW["top"], hitchance="5"), "nested": BOW["nested"]}
+    found = row(run(snapshot(i3=[{"hit_mod": "+3"}]), {3: bow}, {3})[0], 3)
+    assert found["hit_chance"] == 3
+    assert found["sources"]["hit_chance"] == "WIKI"
+    assert "hit_chance" in found["parity_pending"]
+    quiver = {"top": {"primarytype": "quivers", "containersize": "10"}, "nested": {}}
+    wiki = snapshot(i3=[{"primarytype": "Quivers", "volume": "8"}])
+    found = row(run(wiki, {3: quiver}, {3})[0], 3)
+    assert found["container_size"] == 8
+    assert found["sources"]["container_size"] == "WIKI"
+    assert found["parity_pending"] == ["container_size"]
+
+
 def test_wiki_damage_with_average_prefix():
     assert lower._parse_damage("107 (98-116)") == (98, 116)
     assert lower._parse_damage("98-116") == (98, 116)
