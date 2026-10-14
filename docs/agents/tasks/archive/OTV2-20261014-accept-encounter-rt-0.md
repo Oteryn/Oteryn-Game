@@ -22,6 +22,7 @@ owned_paths:
 public_contracts:
   - "DUR-03 §32 InstanceRuntime Ground custody (Ground location row carries the InstanceId scope ref): persistence review"
   - "DUR-03 §39.3 closed causes EncounterDropCause and InstanceRetire (ENC-OUTCOME-1 MINT, INSTANCE-GROUND-1 retirement): persistence and security review"
+  - "Decision §6.4 EncounterOutcomeV1 consumer and recovery contract (ENC-OUTCOME-1): every bound consumer writes under its own contract and fence, idempotent by the outcome key (encounter instance, occurrence sequence, action index); a reward-boss death record with its credited set commits with the death in the death composition and its draws, MINTs, Bosstiary kills and other bound consumers resume after restart idempotent by the death key; every other outcome is delivered at most once and never replayed from memory; content admission (E4) refuses an outcome name with no bound consumer: persistence and security review"
   - "WORLD-INTERACTION-0 §5 BOSS_ENTRY lever child (BOSS-LEVER-1): security and combat review"
   - "Encounter authoring format V1 §10 runtime amendment (OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:244: one instance per scope owner, FIFO trigger queue, ENCOUNTER_DRAW, outcome delivery): determinism review"
   - "CREATURE-AI-0 §3 ownership amendment (encounter link to one instance of the same scope owner; overrides end with the creature or instance): determinism and combat review"
@@ -50,7 +51,7 @@ external_repositories: []
 
 ## High-risk authority/recovery qualification
 
-`APPLICABLE` to the contract effects, not to this PR's diff: the accepted text governs persistence (DUR-03 Ground custody in an instance scope, retirement causes) and security-relevant admission (boss entry, instance ownership fence). This PR changes no code and enables nothing, but it needs the decision's own independent review domains (determinism, combat, persistence and security) on the exact head, and every implementation child keeps the hard-worker plus independent persistence and security review before it can merge.
+`APPLICABLE` to the contract effects, not to this PR's diff: the accepted text governs persistence (DUR-03 Ground custody in an instance scope, retirement causes, and the §6.4 outcome contract: consumer writes idempotent by the outcome key, the reward-boss death record committed with the death and resumed after restart by the death key, every other outcome at most once) and security-relevant admission (boss entry, instance ownership fence). This PR changes no code and enables nothing, but it needs the decision's own independent review domains (determinism, combat, persistence and security) on the exact head, and every implementation child keeps the hard-worker plus independent persistence and security review before it can merge.
 
 ## Acceptance criteria
 
