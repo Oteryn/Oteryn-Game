@@ -160,3 +160,35 @@ Local/native component tests and compiled page capture are complete for this
 packet, not every physical OS interaction or full original1:1. No personal
 clipboard/profile/picker operation, new server activation, deployment or live
 QA action is performed. B2/main-channel/final protected integration remain open.
+
+## Local input follow-up — retained focus ownership
+
+Owner requested continuing available work without B2 setup. Fresh PR readback
+still has remote c53099c9, draft AUTHORING/MERGEABLE,32 successful checks and
+one genuinely skipped check. The local cfa72fca Windows evidence is preserved
+and included with this actual repair, not published as a status-only checkpoint.
+
+PROVEN: a new production GameUi.show/mailbox regression fails before repair:
+Enter followed by Shift+Up in one input frame sends the recalled historical
+line rather than the draft Enter committed. The ordered adapter checked focus
+only at frame entry. Up then Enter must still send the intentionally recalled
+line. Recheck upstream editor focus after each ordinary input segment before
+recall, preserving the existing egui editor and command path. Four PL/EN/order
+cases verify exact admitted ChatIntent text,one enqueue and an emptied draft;
+no successful server echo is synthesized.
+
+Twelve PL/EN/order clipboard-event cases exercise actual Unicode selection,
+Copy/Cut/Paste before and after recall, single-line CR/LF normalization, final
+paint, scratch recovery and no extra mailbox submission/received line. Copy
+emits exactly the selected text once; recall collapses the cursor, so a later
+Copy/Cut does not use an obsolete selection. Paste after recall edits that line
+and ends browsing. Seven history regressions pass, including prior boundaries,
+refusal and visibility gates. These inspect egui platform commands, not the
+owner's OS clipboard; physical OS transfer,IME,pickers and trackpad parity
+remain UNKNOWN. Existing picker dispatch/import/export/error transactions are
+retained, not relabelled as physical native acceptance.
+
+Scoped Linux230/211/5,strict all-target client Clippy,fmt and governance60 pass.
+Exact-source MSVC qualification follows publication. No dependencies,protocol,capabilities,preferences,
+server/operator changes,paid review or HUD/graphics redesign. Dedicated B2
+QA/node/ON-OFF/harness/retirement prerequisites remain unsupplied.

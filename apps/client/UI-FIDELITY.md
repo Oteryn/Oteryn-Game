@@ -1055,6 +1055,22 @@ evidence is in the local-input packet. This docs-only successor waits locally
 without repeating Windows or cancelling useful CI. No full1:1/physical OS/
 live-gameplay/main-channel qualification is inferred from these component proofs.
 
+## Local input focus ownership follow-up — 2026-10-14
+
+Production widget/mailbox regression proves Enter→Shift+Up in one frame could
+submit the historical line instead of the committed draft. Recall now rechecks
+editor focus after each ordinary input segment; Shift+Up→Enter still submits
+the intentionally recalled line. Four PL/EN/order cases check exact command
+text and one enqueue. Twelve Copy/Cut/Paste cases check Unicode selection,
+ordered recall, CR/LF normalization, final paint and scratch recovery without
+fabricating received chat or accessing the owner's clipboard. All seven history
+regressions pass; Linux230/211/5,strict all-target Clippy,fmt/governance60 pass.
+Exact new MSVC/native qualification follows publication.
+Physical OS clipboard/picker/IME parity remains open. Prior c530 proof and green
+CI belong to that unchanged source, not this repaired candidate. Packet:
+docs/agents/tasks/active/OTV2-20261014-client-local-input.md. No post-B2 activation
+or HUD/graphics redesign is authorized by this local repair.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

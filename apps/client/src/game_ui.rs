@@ -530,7 +530,10 @@ impl GameUi {
                 changed = true;
             }
             remaining.extend(ui.input_mut(|input| std::mem::take(&mut input.events)));
+            // An earlier segment may have submitted with Enter or moved focus.
+            // Never replace the line after its editor relinquished ownership.
             if let Some(older) = direction
+                && ui.memory(|memory| memory.has_focus(id))
                 && let Some(text) = self.chat_history.recall(older, &self.draft)
             {
                 self.draft = text;
@@ -2499,6 +2502,157 @@ mod tests {
                 }
             );
             assert_eq!(menu_lock(&sent).len(), 1);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_enter_and_recall_do_not_send_a_different_line() -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        for english in [false, true] {
+            for enter_first in [false, true] {
+                let ctx = egui::Context::default();
+                let (fixture, task, sent) = menu_fixture(english, 42)?;
+                let mut chat = ChatConsumer::new(&fixture, english)?;
+                if let Some(profile) = chat.settings.hotkeys.active_mut() {
+                    profile.general_chat_on.remove("chat.send");
+                }
+                let mut task = Box::pin(task);
+                poll_menu_task(task.as_mut());
+                assert!(chat.game.submit_chat_text(
+                    "history 🦀".into(),
+                    true,
+                    english,
+                    |intent| fixture.link.send_chat(intent)
+                ));
+                poll_menu_task(task.as_mut());
+                chat.game.draft = "new Zażółć".into();
+                for _ in 0..3 {
+                    frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture));
+                }
+                let id = chat.game.chat_composer_id.ok_or("composer")?;
+                ctx.memory_mut(|memory| memory.request_focus(id));
+                let enter = egui::Event::Key {
+                    key: egui::Key::Enter,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                };
+                let mut events = vec![recall_key(true), enter];
+                if enter_first {
+                    events.reverse();
+                }
+                frame(&ctx, size, events, |ctx| chat.show(ctx, &fixture));
+                poll_menu_task(task.as_mut());
+                let actions = menu_lock(&sent);
+                assert_eq!(actions.len(), 2, "one submission, not a replay");
+                assert!(matches!(actions.last(), Some(
+                    oteryn_client::action_bar::ActionBarCommand::Chat(
+                        oteryn_session::ChatIntent::Say { text, .. }
+                    )
+                ) if text == if enter_first { "new Zażółć" } else { "history 🦀" }));
+                assert!(chat.game.draft.is_empty());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_clipboard_events_keep_unicode_selection_and_event_order()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        let scratch = "Zażółć 🦀";
+        let pasted = "pasted 🦀\r\nź";
+        for english in [false, true] {
+            for operation in [
+                egui::Event::Copy,
+                egui::Event::Cut,
+                egui::Event::Paste(pasted.into()),
+            ] {
+                for recall_first in [false, true] {
+                    let ctx = egui::Context::default();
+                    let (fixture, task, sent) = menu_fixture(english, 42)?;
+                    let mut chat = ChatConsumer::new(&fixture, english)?;
+                    let mut task = Box::pin(task);
+                    poll_menu_task(task.as_mut());
+                    assert!(chat.game.submit_chat_text(
+                        "history 🦀".into(),
+                        true,
+                        english,
+                        |intent| fixture.link.send_chat(intent)
+                    ));
+                    poll_menu_task(task.as_mut());
+                    chat.game.draft = scratch.into();
+                    for _ in 0..3 {
+                        frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture));
+                    }
+                    let id = chat.game.chat_composer_id.ok_or("composer")?;
+                    select_copy_text(&ctx, id, 0, scratch.chars().count())?;
+                    let mut events = vec![operation.clone(), recall_key(true)];
+                    if recall_first {
+                        events.reverse();
+                    }
+                    let output = frame(&ctx, size, events, |ctx| chat.show(ctx, &fixture)).1;
+                    let copy = output
+                        .platform_output
+                        .commands
+                        .iter()
+                        .filter_map(|command| {
+                            if let egui::OutputCommand::CopyText(text) = command {
+                                Some(text.as_str())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    let expected_copy = if !recall_first
+                        && matches!(operation, egui::Event::Copy | egui::Event::Cut)
+                    {
+                        vec![scratch]
+                    } else {
+                        vec![]
+                    };
+                    assert_eq!(
+                        copy, expected_copy,
+                        "{operation:?}, recall_first={recall_first}"
+                    );
+                    let edited_after_recall =
+                        recall_first && matches!(operation, egui::Event::Paste(_));
+                    let expected = if edited_after_recall {
+                        "history 🦀pasted 🦀  ź"
+                    } else {
+                        "history 🦀"
+                    };
+                    assert_eq!(chat.game.draft, expected);
+                    assert!(output.shapes.iter().any(|shape| {
+                        matches!(&shape.shape, egui::Shape::Text(text) if text.galley.job.text == expected)
+                    }));
+                    frame(&ctx, size, vec![recall_key(false)], |ctx| {
+                        chat.show(ctx, &fixture)
+                    });
+                    assert_eq!(
+                        chat.game.draft,
+                        if edited_after_recall {
+                            expected
+                        } else if recall_first {
+                            scratch
+                        } else {
+                            match operation {
+                                egui::Event::Cut => "",
+                                egui::Event::Paste(_) => "pasted 🦀  ź",
+                                _ => scratch,
+                            }
+                        }
+                    );
+                    poll_menu_task(task.as_mut());
+                    assert_eq!(menu_lock(&sent).len(), 1, "clipboard/history never sends");
+                    assert_eq!(
+                        fixture.link.game_state().chat.ok_or("received chat")?.len(),
+                        0
+                    );
+                }
+            }
         }
         Ok(())
     }

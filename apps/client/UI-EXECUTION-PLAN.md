@@ -8,6 +8,14 @@ AUTHORING. This plan is the execution order, not a completion declaration.
 
 ## Current continuation — 2026-10-14
 
+Latest local follow-up: preserve cfa72fca evidence with an actual input repair,
+not a status-only publication. New production-widget regression proves and fixes
+Enter→history replacing the committed line after focus loss; seven history
+regressions now include Unicode Copy/Cut/Paste ordering. Fresh remote c530 CI
+is32success/1skipped/0failed, not successor qualification. Exact new Linux/MSVC
+checks follow; OS clipboard/picker isolation and B2 gates remain open. Details:
+docs/agents/tasks/active/OTV2-20261014-client-local-input.md.
+
 Latest owner scope: finish remaining points1–5 and7–10; point6 (HUD/graphics)
 is explicitly excluded. Preserve existing runtime and native artifacts. The
 owner's Windows PC is available for isolated builds/acceptance, not server,
