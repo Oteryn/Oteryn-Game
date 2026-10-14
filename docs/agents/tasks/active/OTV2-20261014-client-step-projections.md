@@ -51,7 +51,7 @@ Remote source00198640 has19/19 successful checks; no status transfers to a new
 head. Post-merge Rust1.95 locked all-target Linux client229/203/5+Session82,
 strict all-target Clippy, fmt, governance60 and diff checks pass. Clone-on-Copy
 fixture lint findings were repaired and the full selected checks rerun. Windows
-qualification is pending; it uses a new client-owned worktree/audit directory and prior
+qualification below uses a new client-owned worktree/audit directory and prior
 owned build cache; no existing binaries/checkouts/processes are removed.
 
 PC access is confirmed. A bounded read reverified source001986403edb21731bad44d83c7f56b1a59c7004
@@ -59,6 +59,40 @@ and executable f1ff20379929f35bf73bb9e9646897deae5e66cfd4855908282fb952bbfda8b0
 under its target/x86_64-pc-windows-msvc/release directory. Former loginPID20744
 is absent; it was not terminated by root. The initial lookup incorrectly used
 target/release, then the target-qualified path resolved successfully.
+
+### Exact published-source native proof
+
+Source6f217f1632eeead19a0f5c799c6843c440e0ecdf: Rust1.95 MSVC client228/209/5
+and Session82, strict all-target client/Session Clippy, fmt and release pass.
+Named projection regression, all three item-menu regressions and Windows-only
+toolbar rollback execute and pass. Release0.1.0+dev.ci.g6f217f1632ee;
+executable b87ef4e040fdbe89f5a14d788db9baa2bc5954b0436ba042cdca14f641a7b500.
+DX12 at125%DPI:20pages/78 independently rehashed captures/0invalid; manifest
+fa864d07e2e8f8f06e659c265554ce8f82aa73221e8d87c05d5e90952b3c1426.
+Build C:\Users\barte\Downloads\oteryn-client-6f217f16-20261014-native-attempt2;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-6f217f16-20261014-attempt2.
+
+Attempt1/PID32272 refused before compilation: --no-checkout left an empty index,
+so sparse configuration alone did not materialize tracked source. Its directory
+is retained. Attempt2/PID19356 initializes only the fresh owned checkout with
+read-tree -mu, then passes exact clean-source fences; nothing is reset/deleted
+in an existing checkout. Qualification marker reports143.184seconds. Its native
+launcher child may keep the wrapper pipe open; no outer-exit0 claim is made.
+An independent bounded read verifies new loginPID11608/window461552, exact
+executable/hash, responsiveness and source-correct U+2014 title. Existing public
+launcher/CA and explicit asset root are reused without automatic sign-in, trust,
+personal preferences, installation, starter, account or server changes.
+
+Guarded6f publication/readback passes; recovery
+/workspace/oteryn-client-publication-6f217f16.bundle SHA256
+37e63e1d1804a243d4067900d505a5d55a8981805d5817978a4160ca98b56698.
+Bounded same-6f CI read:13success/4running/0failed; final game-gate not yet
+available. Do not inherit parent's19/19. This evidence-only successor changes
+no runtime bytes and waits locally to avoid cancelling useful running CI.
+Same-head final review/CI/MQ/main-channel artifact and full live E2E remain open.
+Native captures qualify compiled page reachability/integrity, not fresh manual
+comparison of every pixel/control, OS picker/clipboard/trackpad, original1:1
+or native gameplay. HUD/graphics redesign remains explicitly outside this task.
 
 ## Reuse map and blockers (2026-10-14)
 

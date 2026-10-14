@@ -988,8 +988,16 @@ One existing-path stability repair refreshes admitted GameState before a step
 completion becomes visible. The production mailbox regression fails without
 the repair and passes with it, covering received changes and closed/emptied
 containers while idle remains pending. It does not fabricate received inventory
-or count a saved setting as a function. Exact-source native qualification follows
-the runtime publication; retained older artifacts are not removed or inherited.
+or count a saved setting as a function. Published source6f217f16 passes Linux
+client229/203/5+Session82 and native MSVC228/209/5+Session82, strict checks and
+release. DX12 at125%DPI validates20pages/78 independently rehashed captures/
+0invalid, not every original control or live gameplay. Release0.1.0+dev.ci.g6f217f1632ee;
+binary b87ef4e040fdbe89f5a14d788db9baa2bc5954b0436ba042cdca14f641a7b500;
+manifest fa864d07e2e8f8f06e659c265554ce8f82aa73221e8d87c05d5e90952b3c1426.
+Source-bound loginPID11608/window461552 responds without automatic sign-in.
+Attempt1 empty-index refusal and all older artifacts remain retained. Same-6f
+CI is13success/4running/0failed, not final qualification. This docs-only
+checkpoint waits locally rather than cancelling useful CI on unchanged runtime.
 Packet: docs/agents/tasks/active/OTV2-20261014-client-step-projections.md.
 
 Canonical #1622 still lacks the dedicated QA/node/ON-OFF/harness/retirement

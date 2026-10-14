@@ -56,8 +56,13 @@ command9/MainBackpack execution is reused unchanged. Locked all-target Linux
 client228/203/5+Session82, strict client+Session Clippy, workspace fmt,
 governance validation/55tests and diff checks pass. Fixture-only unwrap/borrow
 lint findings are fixed without exceptions or weakened gates. Native
-compilation/audit follow before qualification;
-older a65 B1 native evidence is retained, not inherited by changed runtime.
+source00198640 additionally passed exact native MSVC227/209/5+Session82,
+strict checks/release and DX1220pages/78captures/0invalid. Its binary/source
+are reverified2026-10-14. New source6f217f16 also executes all three item-menu
+tests on Windows, alongside the new step-projection regression; MSVC228/209/5
+and Session82, strict checks/release and DX1220pages/78captures pass. Exact
+digests, paths and retained attempts are in the2026-10-14 step-projection packet.
+These are native component/page proofs, not wire/live inventory or original drag.
 
 ## External boundaries
 
