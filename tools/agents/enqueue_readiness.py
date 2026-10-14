@@ -111,8 +111,11 @@ def _evaluate(s: dict) -> dict:
             "CANDIDATE_NOT_OPEN_READY", "writer", f"PR {pr} open, ready for review, base main")
 
     runs = _list(s["checks"]["runs"], "checks.runs")
-    required = s["checks"]["required"]
-    if not isinstance(required, list) or CANONICAL_CHECK not in required:
+    required = _list(s["checks"]["required"], "checks.required")
+    # Check contexts are strings: a fabricated non-string name could otherwise match itself.
+    if not all(_text(name) for name in required) or not all(_text(r["name"]) for r in runs):
+        raise ValueError("check names must be non-empty strings")
+    if CANONICAL_CHECK not in required:
         raise ValueError(f"checks.required must include {CANONICAL_CHECK}")
     for name in required:
         hit = [r for r in runs if r["name"] == name and _sha(r["head_sha"]) == head]

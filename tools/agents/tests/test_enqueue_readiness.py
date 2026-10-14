@@ -211,6 +211,13 @@ class EnqueueReadinessTest(unittest.TestCase):
                 parent[path[-1]] = bad
                 self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (path, bad))
 
+    def test_check_names_must_be_strings(self):
+        for bad in (7, {}, None, ""):
+            snap = ready()
+            snap["checks"]["required"].append(bad)
+            snap["checks"]["runs"].append(dict(snap["checks"]["runs"][0], name=bad))
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], bad)
+
     def test_candidate_flags_must_be_present(self):
         for flag in ("queued", "merged"):
             snap = ready()
