@@ -71,6 +71,38 @@ architecture passes. Strict all-target Clippy of client/Session,fmt and governan
 validator+124unit checks pass on the repaired merged source;
 the previous pre-map-fix Clippy run failed and is not counted as green.
 
-Fresh native qualification follows this repair and main reconciliation. Published
-predecessor evidence is preserved, not inherited. No status-only publication, original1:1 or completion
-claim, review trigger, freeze or protected integration is made here.
+## Exact successor qualification
+
+Published690e22adc7d02c36fe50de54719f148d5faa53a2 normally contains accepted
+main62546990. Guarded publication/readback and recovery bundle validation pass:
+/workspace/oteryn-client-publication-690e22ad.bundle,
+SHA2562f78d61abe7474b67f8205a8a539557d7a62dda44bb6984c446072eef7bfea7c.
+Source is clean. Retained native OS packet aa346df0 is included, not lost.
+
+Exact Rust1.95 MSVC tests pass:client229/223/5,Platform16,Session84,TCP2;
+strict all-target Clippy,fmt and release build also pass. Owned controller19336
+exits0 after131.79s; helper measures131.42s. Corrected owned harness uses native
+Start-Process -Wait -PassThru, avoiding the previous null-exit-code wrapper
+failure. No changed current-candidate check fails on Windows.
+
+Release0.1.0+dev.ci.g690e22adc7d0. Executable SHA256:
+7f77cc4e88d449bde3eec47706ba5c1402c8b72d2f6d789f54ab41a838a2c644.
+DX12 at125%DPI:20pages,78independently rehashed lossless WebP captures,
+0invalid; actual image dimensions checked against manifest, with footer,
+markers,geometry and nonmutation guards. Manifest SHA256:
+7f143c9b1052f9b2dd70551eefcb9b667d32393c9e6a31931c2d4d19c0ea9ced.
+Own build C:/Users/barte/Downloads/oteryn-client-690e22ad-20261014-native;
+audit C:/Users/barte/Downloads/oteryn-settings-audit-690e22ad-20261014.
+Current Controls and Help images are visually inspected; no claim that every
+reference control or all20page images were newly visually compared. The audit
+client closes normally, with no login/account action or older process termination.
+Private script SHA256666c41668d5f84c5e8aa857d8d842012b0524f71cfdcac2821c690e27d713bbc.
+
+Fresh PR is draft/Open/MERGEABLE at690e22ad. CI snapshot:12success/5running/
+0failure,17checks; Merge gate38604005606 has green supply chain, World and
+routing, but changed-crate/validate/game-gate are not yet terminal. No polling
+loop, status-only push, review trigger, freeze or protected integration. This
+evidence update remains local for the next material batch; PR body and own
+coordination comment carry the exact proof immediately. Earlier native evidence
+is retained, not inherited. Original1:1, E2E, later capabilities and completion
+remain explicitly unproved.
