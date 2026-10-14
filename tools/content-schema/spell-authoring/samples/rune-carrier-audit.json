@@ -2,6 +2,15 @@
  "carriers": [
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -75,6 +84,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -118,6 +136,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -191,6 +218,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -234,6 +270,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -309,6 +354,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -352,6 +406,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -425,6 +488,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -468,6 +540,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -541,6 +622,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -584,6 +674,16 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "resolution": "S27 D.2: Disintegrate is non-aggressive; protected item deletion remains governed by the native item operation.",
+     "verdict": "native_resolution"
+    },
     "allow_far_use": {
      "ours": false,
      "pass": true,
@@ -657,6 +757,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -700,6 +809,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -773,6 +891,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -816,6 +943,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -891,6 +1027,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -934,6 +1079,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1009,6 +1163,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1052,6 +1215,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1127,6 +1299,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1170,6 +1351,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1245,6 +1435,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1288,6 +1487,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1363,6 +1571,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1406,6 +1623,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1481,6 +1707,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1524,6 +1759,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1599,6 +1843,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1642,6 +1895,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1717,6 +1979,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1760,6 +2031,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1835,6 +2115,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1878,6 +2167,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -1953,6 +2251,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -1996,6 +2303,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2071,6 +2387,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2105,6 +2430,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2180,6 +2514,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2223,6 +2566,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2296,6 +2648,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2342,6 +2703,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2417,6 +2787,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2460,6 +2839,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2532,6 +2920,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2549,6 +2946,9 @@
       "sorcerer"
      ],
      "pass": true,
+     "recorded_winner": [
+      "fandom"
+     ],
      "references": {
       "br": [
        "druid",
@@ -2574,6 +2974,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2646,6 +3055,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2686,6 +3104,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2758,6 +3185,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2775,6 +3211,9 @@
       "sorcerer"
      ],
      "pass": true,
+     "recorded_winner": [
+      "fandom"
+     ],
      "references": {
       "br": [
        "druid",
@@ -2800,6 +3239,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2875,6 +3323,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -2918,6 +3375,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -2990,6 +3456,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3026,6 +3501,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3101,6 +3585,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3144,6 +3637,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3219,6 +3721,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3262,6 +3773,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3337,6 +3857,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3380,6 +3909,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3455,6 +3993,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3498,6 +4045,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3573,6 +4129,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3616,6 +4181,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3691,6 +4265,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3734,6 +4317,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3809,6 +4401,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3852,6 +4453,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -3927,6 +4537,15 @@
      },
      "verdict": "agree"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -3970,6 +4589,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -4043,6 +4671,15 @@
      "references": {},
      "verdict": "no_source"
     },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
+    },
     "stack": {
      "pass": true,
      "stack_class": "StackCapable",
@@ -4060,6 +4697,9 @@
       "sorcerer"
      ],
      "pass": true,
+     "recorded_winner": [
+      "fandom"
+     ],
      "references": {
       "fandom": [
        "druid",
@@ -4087,6 +4727,15 @@
   },
   {
    "checks": {
+    "aggressive": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "allow_far_use": {
      "ours": true,
      "pass": true,
@@ -4159,6 +4808,15 @@
      "pass": true,
      "references": {
       "tibiopedia": 7
+     },
+     "verdict": "agree"
+    },
+    "self_target": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },

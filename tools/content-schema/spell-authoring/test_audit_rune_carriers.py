@@ -10,13 +10,14 @@ def profile(key, stackable=True, stack_max=100, stack_class='StackCapable'):
                 'stack_max': {'state': 'KNOWN', 'value': stack_max}}}}}
 
 
-def carrier(name, item, charges, area=None, creates_fields=False, group='attack', vocations=('sorcerer',)):
+def carrier(name, item, charges, area=None, creates_fields=False, group='attack', vocations=('sorcerer',),
+            aggressive=True):
     abilities = [{'area': {'matrix': {'north': area}}}] if area else [{}]
     effects = [{'operation': 'create_item'}] if creates_fields else []
     return {'bundle': {'spell': {
         'name': name, 'carrier': 'rune', 'requirements': {'level': 1, 'vocations': list(vocations)},
         'costs': {'mana': 0, 'soul': 0}, 'groups': [{'group': group, 'cooldown_ms': 2000}],
-        'targeting': {'needs_target': False},
+        'targeting': {'needs_target': False, 'aggressive': aggressive, 'self_target': False},
         'rune': {'item': {'key': f'candidate:item/{item}'}, 'charges': charges, 'magic_level': 1,
                  'allow_far_use': True, 'blocking': {'solid': False, 'creature': False}},
         'execution': {'ability': {}}}}, 'dependencies': {'abilities': abilities, 'effects': effects}}
@@ -75,6 +76,25 @@ class RuneCarrierAuditTest(unittest.TestCase):
         _, rows = run(entries, [profile('candidate:item/3155')], resolution)
         self.assertEqual(rows['sudden death rune']['failed'], ['group'])
         self.assertEqual(rows['sudden death rune']['checks']['group']['verdict'], 'current_resolution')
+
+    def test_conflict_follows_the_recorded_winner(self):
+        found = {'br': ['druid'], 'fandom': ['druid', 'monk']}
+        fandom = {'sources': {'fandom'}}
+        self.assertTrue(audit.check(['druid', 'monk'], found, recorded=fandom)['pass'])
+        self.assertFalse(audit.check(['druid'], found, recorded=fandom)['pass'])
+        self.assertFalse(audit.check(['druid'], found)['pass'])
+        source = {'api': 'https://tibia.fandom.com/api.php'}
+        entry = {'manifest': {'sources': [source], 'entries': [
+            {'destination': '/d', 'status': 'mapped', 'source_index': 0},
+            {'destination': '/n', 'status': 'resolved_native_behavior', 'source_index': 0, 'resolution': 'S27'}]}}
+        self.assertEqual(audit.recorded(entry, '/d'), {'sources': {'fandom'}, 'native': None})
+        self.assertEqual(audit.recorded(entry, '/n')['native'], 'S27')
+
+    def test_targeting_flags_and_native_resolution(self):
+        _, rows = run([carrier('sudden death rune', 3155, 3, aggressive=False)], [profile('candidate:item/3155')])
+        self.assertEqual(rows['sudden death rune']['failed'], ['aggressive'])
+        native = audit.check(False, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
+        self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
 
     def test_missing_item_evidence_fails(self):
         _, rows = run([carrier('unknown rune', 9999, 1)], [profile('candidate:item/9999')])

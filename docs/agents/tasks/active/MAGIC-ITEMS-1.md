@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
 branch: claude/magic-items-1-20261014
-pr: null
+pr: 2116
 base_sha: 75ec7985
 head_sha: null
 final_head_sha: null
@@ -36,7 +36,10 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - `audit_rune_carriers.py` audits the 36 rune carriers of `content/abilities/definitions/player-spells.json`
   and writes `samples/rune-carrier-audit.json`; `--check` fails when the committed audit is stale. Checks
   per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
-  registrars where no wiki states them), cooldown group and targeting flags (registrars), range (wikis),
+  registrars where no wiki states them), cooldown group, far use and the targeting flags `aggressive`,
+  `self_target` and `needs_target` (registrars), range (wikis). Where the references conflict, our value
+  must be that of the source the catalogue manifest records as the winner (S3/S11/S13/S14); a value no
+  reference states passes only under a recorded native resolution (S27, Disintegrate non-aggressive);
   the dated `rune-use-source-resolutions.json` facts (they replace the field they name), `rune.charges` =
   the conjuring spell's `count` where both exist (§3), the native Item profile stack facts (stackable,
   100, `StackCapable`), and the authored area against `RUNEUSE0-RL-08` (≤ 37 tiles, so the victim cap
@@ -62,10 +65,17 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - RUNE-CONJ-1 (and gate `RUNEUSE0-C1`; conjure is ungated today): RUNE-1, SPELL-D4.
 - FIELD-1, FIELD-WIRE-1, Soulfire: COND-1 / CONDITIONS-0 (#2106).
 
+## Review
+
+- Codex P2 on 7401dd64 (conflicts passed on any matching reference): repaired; a conflict now passes only
+  on the manifest-recorded winning source.
+- Codex P2 on 7401dd64 (`aggressive` and `self_target` unchecked): repaired; both are checked against the
+  registrars with the converter defaults.
+
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 5 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 7 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok

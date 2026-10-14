@@ -6,8 +6,10 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune item ID against the wikis (S3) and the Canary and Crystal registrars;
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
-- the cooldown group and the targeting flags against the Canary and Crystal registrars, and the range
-  against the wikis;
+- the cooldown group, the targeting flags (aggressive, self target, needs target) and far use against the Canary and Crystal registrars, and the range
+  against the wikis; where the references conflict, our value must be the one the catalogue manifest
+  records as the winning source (S3/S11/S13/S14), and a value no reference states passes only under a
+  recorded native resolution (S27);
 - the dated current rune-use facts of `rune-use-source-resolutions.json`, which replace the field
   they name;
 - `rune.charges` against the conjuring spell's `count` where both exist (§3);
@@ -62,7 +64,10 @@ GROUPS = {
         'destroy field rune', 'paralyze rune')),
 }
 REQUIRED = ('item_id', 'vocations', 'group')
-
+# Registrar-backed targeting flags the converter maps (`convert_spells.py` targeting), by registrar call.
+TARGETING_FLAGS = (('aggressive', 'isAggressive'), ('self_target', 'isSelfTarget'), ('needs_target', 'needTarget'))
+# The registrar defaults of an omitted call (`convert_spells.DEFAULTS`).
+REGISTRAR_DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'allowFarUse': False}
 
 def group_of(name):
     for group, (needs, names) in GROUPS.items():
@@ -88,14 +93,50 @@ def registrars(census):
     return found
 
 
-def check(ours, found, required=False):
+def check(ours, found, required=False, recorded=None):
+    """Compare our value with its references. On a reference conflict our value must be that of the source the
+    catalogue manifest records as the winner of its S3/S11/S13/S14 resolution; matching any reference is not enough.
+    A value that differs from every reference passes only under a recorded native resolution (S27)."""
+    recorded = recorded or {}
     verdict, follows = vs.classify(ours, found)
-    passed = verdict == 'agree' or (verdict == 'sources_disagree' and bool(follows)) or (
-        verdict == 'no_source' and not required)
-    row = {'ours': ours, 'references': found, 'verdict': verdict, 'pass': passed}
-    if follows and verdict == 'sources_disagree':
+    passed = verdict == 'agree' or (verdict == 'no_source' and not required)
+    row = {'ours': ours, 'references': found, 'verdict': verdict}
+    if verdict == 'sources_disagree':
         row['follows'] = follows
+        row['recorded_winner'] = sorted(recorded.get('sources', ()))
+        passed = bool(set(follows) & recorded.get('sources', set()))
+    elif verdict == 'ours_differs' and recorded.get('native'):
+        row['verdict'], row['resolution'] = 'native_resolution', recorded['native']
+        passed = True
+    row['pass'] = passed
     return row
+
+
+def source_ref(source):
+    """The reference key of one manifest source (`verify_spells.FACTS` keys and the registrar names)."""
+    origin = source.get('api') or source.get('repository') or ''
+    for marker, ref in (('tibia.fandom.com', 'fandom'), ('tibiawiki.com.br', 'br'), ('opentibiabr/canary', 'canary'),
+                        ('zimbadev/crystalserver', 'crystal')):
+        if marker in origin:
+            return ref
+    return None
+
+
+def recorded(entry, destination):
+    """What the catalogue manifest records for one destination: the sources it was mapped from, and the
+    resolution text of a native-behaviour override."""
+    sources, native = set(), None
+    manifest = entry.get('manifest', {})
+    for row in manifest.get('entries', []):
+        if row.get('destination') != destination:
+            continue
+        if row.get('status') == 'mapped':
+            ref = source_ref(manifest['sources'][row['source_index']])
+            if ref:
+                sources.add(ref)
+        elif row.get('status') == 'resolved_native_behavior':
+            native = row.get('resolution')
+    return {'sources': sources, 'native': native}
 
 
 def wiki_values(pages, field):
@@ -157,21 +198,28 @@ def audit_carrier(entry, references, registrar, resolutions, conjures, profiles)
     ours = vs.our_rune_values(spell)
     targeting = spell.get('targeting', {})
     rune = spell['rune']
+    base = '/spell/spell/'
+    flag = lambda key: registrar_values(registrar, key, REGISTRAR_DEFAULTS[key]) if registrar else {}
     checks = {
         'item_id': check(item_id, {**wiki_values(pages, 'itemid'), **registrar_values(registrar, 'runeId')},
-                         required=True),
+                         required=True, recorded=recorded(entry, base + 'rune/item')),
         'vocations': check(ours['vocrequired'],
-                           wiki_values(pages, 'vocrequired') or registrar_vocations(registrar), required=True),
+                           wiki_values(pages, 'vocrequired') or registrar_vocations(registrar), required=True,
+                           recorded=recorded(entry, base + 'requirements/vocations')),
         'group': check(vs.group_key(spell['groups'][0]['group']) if spell.get('groups') else None,
-                       registrar_values(registrar, 'group'), required=True),
-        'range_tiles': check(targeting.get('range_tiles'), wiki_values(pages, 'spellrange')),
-        'needs_target': check(targeting.get('needs_target'),
-                              registrar_values(registrar, 'needTarget', False) if registrar else {}),
-        'allow_far_use': check(rune.get('allow_far_use'),
-                               registrar_values(registrar, 'allowFarUse', False) if registrar else {}),
-        'blocking_solid': check(rune.get('blocking', {}).get('solid'), registrar_blocking(registrar, 0)),
-        'blocking_creature': check(rune.get('blocking', {}).get('creature'), registrar_blocking(registrar, 1)),
+                       registrar_values(registrar, 'group'), required=True,
+                       recorded=recorded(entry, base + 'groups/0/group')),
+        'range_tiles': check(targeting.get('range_tiles'), wiki_values(pages, 'spellrange'),
+                             recorded=recorded(entry, base + 'targeting/range_tiles')),
+        'blocking_solid': check(rune.get('blocking', {}).get('solid'), registrar_blocking(registrar, 0),
+                                recorded=recorded(entry, base + 'rune/blocking/solid')),
+        'blocking_creature': check(rune.get('blocking', {}).get('creature'), registrar_blocking(registrar, 1),
+                                   recorded=recorded(entry, base + 'rune/blocking/creature')),
+        'allow_far_use': check(rune.get('allow_far_use'), flag('allowFarUse'),
+                               recorded=recorded(entry, base + 'rune/allow_far_use')),
     }
+    for field, key in TARGETING_FLAGS:
+        checks[field] = check(targeting.get(field), flag(key), recorded=recorded(entry, base + 'targeting/' + field))
     if issues:
         checks['item_id']['pass'] = False
         checks['item_id']['reference_match_issues'] = issues
