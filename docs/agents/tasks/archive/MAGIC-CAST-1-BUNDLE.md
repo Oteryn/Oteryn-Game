@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 2048
 base_branch: main
 branch: claude/magic-cast-1-cast-20261014
-pr: TBD
+pr: 2112
 base_sha: 67cacb76
 owner: claude-code-session-01PuXSgNvMavAtgh4pb4U6TA
 control_plane: session_01XYC239givrMonrYoBwwECV
@@ -62,6 +62,7 @@ depends_on: []
 - `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo +1.95.0 test --locked -p oteryn-game-server --lib -- spell:: gameplay_transport::parameter_cast gameplay_transport::actor_spell`: 451 passed, 0 failed
 - `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 60 tests, OK (code head 436788b1; this commit changes only this record)
 - New tests:
   - `bundle_world_opens_locate_message_only`
   - `a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression`
