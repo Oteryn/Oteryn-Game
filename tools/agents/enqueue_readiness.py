@@ -123,13 +123,17 @@ def _evaluate(s: dict, now: datetime) -> dict:
     if (observed - now).total_seconds() > CLOCK_SKEW_SECONDS:
         raise ValueError(f"observed_at {s['observed_at']!r} is later than the evaluator clock")
 
-    def stamp(item, key: str = "at") -> None:
-        at = item[key]
+    def moment(at) -> datetime:
+        """Parse an event time and bound it by the evaluator clock. One shared tolerance, so skews never add up
+        past now + skew. Applied to every time that selects or orders a record, not only to the ones that qualify."""
         parsed = _parse_at(at)
-        # One shared tolerance, measured against the evaluator clock: skews never add up past now + skew.
         if (parsed - now).total_seconds() > CLOCK_SKEW_SECONDS:
             raise ValueError(f"event time {at!r} is later than the evaluator clock")
-        stamps.append((parsed, at))
+        return parsed
+
+    def stamp(item, key: str = "at") -> None:
+        at = item[key]
+        stamps.append((moment(at), at))
 
     state, base_ref = cand["state"], cand["base_ref"]
     if not isinstance(state, str) or not isinstance(base_ref, str):
@@ -153,7 +157,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
         hit = [r for r in runs if r["name"] == name and _sha(r["head_sha"]) == head]
         if len(hit) > 1:
             # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
-            ats = [_parse_at(r.get("at")) for r in hit]
+            ats = [moment(r.get("at")) for r in hit]
             if ats.count(max(ats)) != 1:
                 raise ValueError(f"ambiguous duplicate runs for required check {name}")
             hit = [hit[ats.index(max(ats))]]
@@ -182,7 +186,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         else:
             # Re-reviews: only the newest qualifying exact-head review is authoritative, as for check reruns.
-            ats = [_parse_at(r.get("at")) for r in exact]
+            ats = [moment(r.get("at")) for r in exact]
             latest = [r for r, a in zip(exact, ats) if a == max(ats)]
             if len({(r["state"], r["verdict"]) for r in latest}) > 1:
                 raise ValueError("conflicting exact-head reviews at the same latest time")
@@ -226,14 +230,15 @@ def _evaluate(s: dict, now: datetime) -> dict:
     for failure in _list(s["queue"]["prior_failures"], "queue.prior_failures"):
         if _sha(failure["head_sha"]) != head:
             continue
-        if _flag(failure["cause_addressed"]):
-            # Required: when the diagnosis showing the cause is outside the candidate was recorded.
+        failed_at = moment(failure["at"])  # when this head was removed from the queue; required
+        # The diagnosis counts only if it was recorded at or after the removal it claims to explain.
+        if _flag(failure["cause_addressed"]) and moment(failure["addressed_at"]) >= failed_at:
             stamp(failure, "addressed_at")
         else:
             found["PRIOR_MQ_FAILURE"] = _blocker(
                 "PRIOR_MQ_FAILURE_UNRESOLVED", "writer",
                 "new head, or a recorded diagnosis showing the cause is outside the candidate",
-                f"removed from queue at {failure.get('at', 'unknown time')}: {failure.get('cause', 'undiagnosed')}")
+                f"removed from queue at {failure['at']}: {failure.get('cause', 'undiagnosed')}")
             break
 
     # The snapshot carries the whole authorization history; the newest record by parsed `at` governs, so an older
@@ -249,7 +254,7 @@ def _evaluate(s: dict, now: datetime) -> dict:
         author = auth["author"]  # platform-reported login of the record, set by the readback, not by the grantee
         if not isinstance(author, str):
             raise ValueError("authorization.author must be a string login")
-        records.append((_parse_at(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
+        records.append((moment(auth["at"]), auth, _sha(auth["head_sha"]), _flag(auth["revoked"])))
     # Only records by a trusted login count; an untrusted record can neither grant nor revoke.
     trusted = [r for r in records if r[1]["author"].lower() in TRUSTED_GRANT_AUTHORS]
     newest = [r for r in trusted if r[0] == max(x[0] for x in trusted)] if trusted else []

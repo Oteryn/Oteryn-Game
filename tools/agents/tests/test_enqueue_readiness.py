@@ -338,7 +338,7 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap = ready()
         snap["threads"].update(total=1, resolved_at="2026-10-14T11:00:00Z")
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T11:00:00Z")
-        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True,
+        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z",
                                             "addressed_at": "2026-10-14T12:00:00Z"}]
         self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T12:00:00Z")
 
@@ -351,8 +351,43 @@ class EnqueueReadinessTest(unittest.TestCase):
     def test_addressed_failure_requires_timestamp(self):
         for extra in ({}, {"addressed_at": "nope"}):
             snap = ready()
-            snap["queue"]["prior_failures"] = [dict({"head_sha": HEAD, "cause_addressed": True}, **extra)]
+            snap["queue"]["prior_failures"] = [dict({"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}, **extra)]
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], extra)
+
+    def test_failure_diagnosis_must_follow_the_failure(self):
+        base = {"head_sha": HEAD, "cause_addressed": True, "at": "2026-10-14T10:20:00Z"}
+        for addressed_at, expected in (("2026-10-14T10:19:59Z", ["PRIOR_MQ_FAILURE_UNRESOLVED"]),
+                                       ("2026-10-14T10:20:00Z", [])):
+            snap = ready()
+            snap["queue"]["prior_failures"] = [dict(base, addressed_at=addressed_at)]
+            self.assertEqual(reasons(snap), expected, addressed_at)
+        for bad in (None, "", "nope", "2026-10-14T10:20:00", 5):  # same-head failure needs a valid failure time
+            for flag in (True, False):
+                snap = ready()
+                snap["queue"]["prior_failures"] = [dict(base, cause_addressed=flag, addressed_at="2026-10-14T11:00:00Z")]
+                snap["queue"]["prior_failures"][0]["at"] = bad
+                self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (bad, flag))
+        snap = ready()
+        del base["at"]
+        snap["queue"]["prior_failures"] = [dict(base, addressed_at="2026-10-14T11:00:00Z")]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap["queue"]["prior_failures"] = [dict(base, at="2026-10-14T10:20:00Z", addressed_at="2026-10-14T12:05:00Z")]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])  # addressed_at beyond now + skew
+
+    def test_future_dated_selecting_records_are_rejected(self):
+        future = "2026-10-14T12:10:00Z"
+        snap = ready()  # a future-dated review, rerun, authorization or failure cannot become "newest"
+        snap["review"]["reviews"].append(dict(snap["review"]["reviews"][0], state="running", at=future))
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        snap["checks"]["runs"].append(dict(snap["checks"]["runs"][0], conclusion="failure", at=future))
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        snap["authorization"].append(dict(snap["authorization"][0], revoked=True, at=future))
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+        snap = ready()
+        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": False, "at": future}]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
     def test_scalar_scope_rejected(self):
         snap = ready()
