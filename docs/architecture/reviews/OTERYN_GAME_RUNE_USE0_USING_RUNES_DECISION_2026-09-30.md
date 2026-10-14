@@ -1,7 +1,7 @@
 # RUNE-USE-0 Using runes
 
 - Decision: `RUNE-USE0-USING-RUNES-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by `OTERYN_GAME_ACCEPT_RUNE_USE0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-RUNE_USE0-V1`); it takes effect after exact-head independent review, CI and protected integration of that PR. Original acceptance conditions: Acceptance needs exact-head validation, independent review (protocol,
   persistence and combat) and protected integration. It extends ITEM-USE-0, whose item target,
   hotkey form and `ItemUseCause` it reuses, and integrates after it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
