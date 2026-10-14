@@ -133,6 +133,13 @@ impl BuildFormula for CompiledTrainingFormula {
             (value.is_finite() && value < 9_223_372_036_854_775_808.0)
                 .then_some(value.floor() as u64)
         } else {
+            // SKILLS-0 §2: a promoted vocation trains skills with its base vocation's row (the
+            // pinned elite_knight row swaps fist and distance, a Canary data error).
+            let v = self
+                .profile
+                .vocations
+                .iter()
+                .find(|row| row.key == skill_vocation(vocation))?;
             let index = family.checked_sub(1)?;
             skill_tries_required(
                 *self.profile.skill_bases.get(index)?,
@@ -146,6 +153,18 @@ impl BuildFormula for CompiledTrainingFormula {
     }
     fn content_revision(&self) -> &str {
         &self.content_revision
+    }
+}
+
+/// The base vocation whose skill multipliers a promoted vocation uses (SKILLS-0 §2).
+fn skill_vocation(vocation: &str) -> &str {
+    match vocation {
+        "elder_druid" => "druid",
+        "elite_knight" => "knight",
+        "exalted_monk" => "monk",
+        "master_sorcerer" => "sorcerer",
+        "royal_paladin" => "paladin",
+        other => other,
     }
 }
 
@@ -282,12 +301,12 @@ impl LiveManaTraining {
         }
         let after = DurableBuildState::new(vocation, magic, skills)
             .map_err(|_| TrainingError::InvalidBuild)?;
-        // A cast leaves the skill tries pending in a new checkpoint window; the next tick banks
-        // them (and at once if they reach a level).
+        // A cast leaves the skill tries pending in their original checkpoint window, so casting
+        // never postpones them: the next tick past that window banks them.
         let (pending_skills, checkpoint_started_micros) = if with_skills || !skills_pending {
             ([0; 7], None)
         } else {
-            (live.pending_skills, Some(now))
+            (live.pending_skills, Some(started))
         };
         let request = BuildChangeRequest {
             occurrence,
@@ -393,6 +412,28 @@ mod tests {
         assert_eq!(f.required("none", 0, 2), Some(6400));
         assert_eq!(f.required("missing", 0, 1), None);
         assert_eq!(f.required("druid", 7, 11), Some(20));
+        // SKILLS-0 §2: the elite knight trains skills on the knight row, not the swapped one.
+        assert_eq!(f.required("elite_knight", 1, 12), Some(55));
+        // 30 x 1.4f (binary32, 1.39999998) floors to 41, as the pinned source computes it.
+        assert_eq!(f.required("elite_knight", 5, 12), Some(41));
+        assert_eq!(
+            f.required("elite_knight", 5, 12),
+            f.required("knight", 5, 12)
+        );
+        for (promoted, base) in [
+            ("elder_druid", "druid"),
+            ("elite_knight", "knight"),
+            ("exalted_monk", "monk"),
+            ("master_sorcerer", "sorcerer"),
+            ("royal_paladin", "paladin"),
+        ] {
+            for family in 0..=7 {
+                assert_eq!(
+                    f.required(promoted, family, 12),
+                    f.required(base, family, 12)
+                );
+            }
+        }
         let mut profile: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../tools/content-schema/native-gameplay/build-training.json"
         ))
@@ -505,6 +546,33 @@ mod tests {
         assert_eq!(cast.request.after.magic(), (1, 0));
         assert_eq!(cast.request.after.skills(), seed().skills());
         assert_eq!(cast.after.pending_skills()[2], 60);
+        // The cast keeps the skill window opened by the first try at t=1.
+        assert!(
+            cast.after
+                .prepare_checkpoint(60_000_001, &f, occurrence(), false)
+                .unwrap()
+                .is_some()
+        );
+        let mut slow = LiveManaTraining::from_owned_build(&seed());
+        slow.record_skill_tries(SkillFamily::Sword, 5, 1).unwrap();
+        let TrainingStage::Durable(slow_cast) =
+            slow.prepare_paid_cast(1600, 2, &f, occurrence()).unwrap()
+        else {
+            panic!()
+        };
+        assert!(
+            slow_cast
+                .after
+                .prepare_checkpoint(60_000_000, &f, occurrence(), false)
+                .unwrap()
+                .is_none()
+        );
+        let window = slow_cast
+            .after
+            .prepare_checkpoint(60_000_001, &f, occurrence(), false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(window.request.after.skills()[2], (10, 5));
         let TrainingStage::Live(only_mana) =
             live.prepare_paid_cast(20, 3, &f, occurrence()).unwrap()
         else {
