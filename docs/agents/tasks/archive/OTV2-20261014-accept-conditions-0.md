@@ -78,7 +78,7 @@ external_repositories: []
 ## Independent review
 
 - required: the control plane owns the review call; the owner acceptance is recorded here.
-- verdict: acceptance recorded by the control plane.
+- verdict: pending; the control plane runs the exact-head combat, determinism and protocol reviews on the frozen head, and the owner acceptance does not substitute for them.
 
 ## PR and closeout
 
@@ -95,5 +95,5 @@ status: completed
 branch: claude/conditions-0-accept-20261014
 pr: 2106
 blocker: null
-next_action: control plane sends the PR to merge
+next_action: control plane runs the exact-head independent review (combat, determinism, protocol), then sends the PR to merge
 ```

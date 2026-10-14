@@ -169,7 +169,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
   refused action spends nothing and draws nothing.
-- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys. The store on main already admits five more distinct keys that coexist with them (`Attributes`, `SpellSkills(1..=3)` and `SpellRegeneration(1)`, `ability/condition.rs`), so the worst case is 26 simultaneous keys, over 16. `COND0-RL-01` is 32 (26 and headroom for six later keys, including further `SpellSkills` or `SpellRegeneration` sub-ids); one instance per key, so no mutual exclusion is needed.
+- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys. The store on main already admits six more distinct keys that coexist with them (`Attributes`, `SpellSkills(1..=3)`, `SpellRegeneration(1)` and `Status(Drunk)`, `ability/condition.rs`; `drunk` is built by creature-condition parsing), so the worst case is 27 simultaneous keys, over 16. `COND0-RL-01` is 32 (27 and headroom for five later keys, including further `SpellSkills` or `SpellRegeneration` sub-ids); one instance per key, so no mutual exclusion is needed.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
 - Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
@@ -191,9 +191,9 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 26 today (the §3.5 worst case:
+- **Instance limit.** One instance per conflict key gives at most 27 today (the §3.5 worst case:
   the 13 keys of §3 and the MAGIC-COND-1 scope, the eight §3.5 and previously separate keys, and the
-  five existing `Attributes`, `SpellSkills` and `SpellRegeneration` keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
+  six existing `Attributes`, `SpellSkills`, `SpellRegeneration` and `Status(Drunk)` keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
   past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
@@ -284,7 +284,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
   5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
-- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`); offensive rune use has no wire command yet (RUNE-USE-0 is a candidate), so its refusal disposition for `pacified` and `powerless` is defined by that child's own protocol review; `agony` gates nothing. The typed gate reason stays server-side (audit and log) and reaches the client only through the refusal extension that COND-WIRE-2 carries. No bit, capability, field or enum value is registered by this decision.
+- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their client display is routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`); offensive rune use has no wire command yet (RUNE-USE-0 is a candidate), so its refusal disposition for `pacified` and `powerless` is defined by that child's own protocol review; `agony` gates nothing. A cast refused by `muted` keeps the already accepted SPELL-PRESENT-0 §§6 and 8 result `detail` `MUTED` (no refusal smoke) unchanged. The typed reasons new in §3.5 (`pacified`, `powerless`) stay server-side (audit and log) and reach the client only through the refusal extension that COND-WIRE-2 carries. No bit, capability, field or enum value is registered by this decision.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.
 - **Other actors.** The VIS-2 `WORLD_SPATIAL_ENTITIES` entry gains `speed` (u16) behind the same
