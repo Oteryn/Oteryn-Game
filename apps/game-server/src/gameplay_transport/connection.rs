@@ -561,12 +561,12 @@ pub(crate) trait FreshAdmissionAuthority {
         }
     }
 
-    /// CHAT-WIRE-1: every line queued for the session since the last call, oldest first.
-    fn chat_drain(&self, _session: GameSessionId) -> impl Future<Output = Vec<ChatLine>> {
-        async { Vec::new() }
+    /// CHAT-WIRE-1: the oldest line queued for the session, if any.
+    fn chat_next(&self, _session: GameSessionId) -> impl Future<Output = Option<ChatLine>> {
+        async { None }
     }
 
-    /// CHAT-WIRE-1: `lines` lines of the batch last returned by `chat_drain` were written to the
+    /// CHAT-WIRE-1: `lines` lines of the one last returned by `chat_next` were written to the
     /// client; they stop counting against `CHAT0-RL-11`.
     fn chat_delivered(&self, _session: GameSessionId, _lines: usize) -> impl Future<Output = ()> {
         async {}
@@ -1868,7 +1868,7 @@ where
             Next::Chat => {
                 // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
                 // delta; an empty queue sends nothing.
-                for line in authority.chat_drain(admitted.game_session_id).await {
+                while let Some(line) = authority.chat_next(admitted.game_session_id).await {
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
                         generation,
                         sequence,

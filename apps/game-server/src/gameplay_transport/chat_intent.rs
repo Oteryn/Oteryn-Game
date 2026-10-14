@@ -163,19 +163,26 @@ impl ChatRuntime {
         }
     }
 
-    /// Every undelivered line of `session`, oldest first.
-    pub(crate) fn drain(&self, session: GameSessionId) -> Vec<ChatLine> {
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return Vec::new();
-        };
-        let Some(entry) = sessions.get_mut(&session) else {
-            return Vec::new();
-        };
-        entry.egress.drain_batch()
+    /// The next undelivered line of `session`, oldest first. It counts against the undelivered
+    /// bound until [`Self::delivered`].
+    pub(crate) fn next(&self, session: GameSessionId) -> Option<ChatLine> {
+        let mut sessions = self.sessions.lock().ok()?;
+        sessions.get_mut(&session)?.egress.next_for_write()
     }
 
-    /// `lines` lines of the batch last returned by [`Self::drain`] reached the client: they no
-    /// longer count against the session's undelivered bound.
+    /// Every undelivered line of `session`, oldest first, as if each were written at once.
+    #[cfg(test)]
+    pub(crate) fn drain(&self, session: GameSessionId) -> Vec<ChatLine> {
+        let mut lines = Vec::new();
+        while let Some(line) = self.next(session) {
+            self.delivered(session, 1);
+            lines.push(line);
+        }
+        lines
+    }
+
+    /// The line last returned by [`Self::next`] reached the client: it no longer counts against
+    /// the session's undelivered bound.
     pub(crate) fn delivered(&self, session: GameSessionId, lines: usize) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)

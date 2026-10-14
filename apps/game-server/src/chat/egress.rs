@@ -4,8 +4,8 @@
 //! the cheapest class is dropped (room, then local, then private) and one
 //! [`ChatLine::Dropped`] marker is owed; the marker takes no slot and is handed out once, ahead
 //! of the next line. Overflow after it re-arms nothing until a line has been sent, so a flood
-//! can neither grow a session's backlog nor starve its queued lines. A batch handed out by
-//! [`ChatEgress::drain_batch`] stays counted against the bound until each is [`ChatEgress::delivered`],
+//! can neither grow a session's backlog nor starve its queued lines. The one line handed out by
+//! [`ChatEgress::next_for_write`] stays counted against the bound until [`ChatEgress::delivered`],
 //! so queued plus in-flight lines never exceed [`EGRESS_MAX_LINES`].
 
 use std::collections::VecDeque;
@@ -31,8 +31,8 @@ pub(crate) struct ChatEgress {
     marker_owed: bool,
     /// A marker was sent and no line has been sent since: further overflow stays covered by it.
     marker_sent: bool,
-    /// Lines handed out by [`Self::drain_batch`] and not yet written to the client.
-    in_flight: usize,
+    /// The line handed out by [`Self::next_for_write`] and not yet written to the client.
+    in_flight: usize, // 0 or 1
 }
 
 impl ChatEgress {
@@ -72,18 +72,16 @@ impl ChatEgress {
         line
     }
 
-    /// Hands out every queued line (the owed marker first). The lines count against the bound
-    /// until [`Self::delivered`].
-    pub(crate) fn drain_batch(&mut self) -> Vec<ChatLine> {
-        let batch: Vec<ChatLine> = std::iter::from_fn(|| self.pop()).collect();
-        self.in_flight = batch
-            .iter()
-            .filter(|line| !matches!(line, ChatLine::Dropped))
-            .count();
-        batch
+    /// Hands out the next line to write (the owed marker first). A real line counts against the
+    /// bound until [`Self::delivered`]; one line at a time keeps every other undelivered line
+    /// queued and so subject to the drop order.
+    pub(crate) fn next_for_write(&mut self) -> Option<ChatLine> {
+        let line = self.pop()?;
+        self.in_flight = usize::from(!matches!(line, ChatLine::Dropped));
+        Some(line)
     }
 
-    /// `lines` lines of the last [`Self::drain_batch`] were written to the client.
+    /// `lines` lines of the last [`Self::next_for_write`] were written to the client.
     pub(crate) fn delivered(&mut self, lines: usize) {
         self.in_flight = self.in_flight.saturating_sub(lines);
     }

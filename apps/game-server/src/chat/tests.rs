@@ -656,21 +656,31 @@ fn egress_bound_is_the_registered_chat0_rl_11_row() {
 }
 
 #[test]
-fn a_drained_batch_counts_against_the_bound_until_delivered() {
+fn a_line_being_written_counts_against_the_bound_until_delivered() {
     let mut egress = ChatEgress::new();
     for n in 0..EGRESS_MAX_LINES {
         egress.push(room_text(n));
     }
-    let batch = egress.drain_batch();
-    assert_eq!(batch.len(), EGRESS_MAX_LINES);
-    // The whole bound is in flight: a new line is dropped and owes one marker.
+    assert_eq!(egress.next_for_write(), Some(room_text(0)));
+    // 63 queued plus the one being written fill the bound: a new room line evicts the oldest
+    // queued room line and owes one marker.
     egress.push(room_text(100));
-    assert_eq!(egress.len(), 0);
-    assert!(!egress.is_empty());
-    // Each written line frees one slot at once, before the rest of the batch is written.
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
     egress.delivered(1);
     egress.push(room_text(101));
-    egress.push(room_text(102));
-    // The second line met the bound again: the oldest queued room line (101) was dropped.
-    assert_eq!(drain(&mut egress), vec![ChatLine::Dropped, room_text(102)]);
+    assert_eq!(egress.len(), EGRESS_MAX_LINES);
+}
+
+#[test]
+fn a_private_line_outranks_queued_room_lines_while_one_is_being_written() {
+    let mut egress = ChatEgress::new();
+    for n in 0..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    assert_eq!(egress.next_for_write(), Some(room_text(0)));
+    let private = private_line("Alice", &text("hi"));
+    egress.push(private.clone());
+    let rest = drain(&mut egress);
+    assert_eq!(rest.first(), Some(&ChatLine::Dropped));
+    assert_eq!(rest.last(), Some(&private));
 }

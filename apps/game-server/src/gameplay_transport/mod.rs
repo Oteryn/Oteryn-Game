@@ -2854,11 +2854,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat_speak(actor, session, &intent).await
     }
 
-    async fn chat_drain(
+    async fn chat_next(
         &self,
         session: GameSessionId,
-    ) -> Vec<oteryn_protocol_oteryn::chat::ChatLine> {
-        self.chat.drain(session)
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.chat.next(session)
     }
 
     async fn chat_delivered(&self, session: GameSessionId, lines: usize) {
