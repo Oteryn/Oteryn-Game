@@ -436,6 +436,21 @@ fn destination(
     closed: &BTreeSet<LogicalCell>,
 ) -> Result<MovementLocalPosition, MovementError> {
     let floor = i32::from(origin.floor);
+    // A closed door on the entered tile blocks the step before any teleport on it applies
+    // (WORLD-INTERACTION-0 blocking-solid rule); `closed` otherwise only guards the landing.
+    let (dx, dy) = match direction {
+        CardinalStep::North => (0, -1),
+        CardinalStep::East => (1, 0),
+        CardinalStep::South => (0, 1),
+        CardinalStep::West => (-1, 0),
+    };
+    if closed.contains(&LogicalCell {
+        x: origin.x + dx,
+        y: origin.y + dy,
+        z: floor,
+    }) {
+        return Err(MovementError::Blocked);
+    }
     let (x, y, z) = resolve_landing(
         table,
         ground_of(cells),

@@ -678,6 +678,31 @@ mod tests {
     }
 
     #[test]
+    fn newhaven_teleport_a_closed_door_on_the_entered_teleport_tile_blocks_the_step() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        // The entered tile (0, 1, 8) is a teleport whose destination is open, yet a door closed
+        // on the entered tile itself refuses the step (Codex 4264376553).
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 0, y: 1, z: 8 }]);
+        let before = at(&mut runtime, actor);
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &closed,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(at(&mut runtime, actor), before);
+    }
+
+    #[test]
     fn map_floor_an_initialized_player_changes_floors_at_its_own_speed() {
         let (mut runtime, mut states, cells, actor, session) = bundle_owner();
         let facts = CharacterCastFacts {
