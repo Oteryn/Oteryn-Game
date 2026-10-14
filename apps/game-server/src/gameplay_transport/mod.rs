@@ -3037,27 +3037,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation,
         ))
         .collect();
-        // CLOCK-1 (§11.4): a player's light is its current LIGHT condition, read under the same
-        // runtime lock (lock order: runtime, then spell_states). Equipped items and monster
-        // content carry no light source yet, so they show none.
+        // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
+        // runtime actor-condition owner (players and creatures) and, for a player, its spell
+        // state, read under the same runtime lock (lock order: runtime, then spell_states). A
+        // store whose owner time is ahead of `now_us` gives no light. Equipped items and monster
+        // content carry no light source yet, so they add none.
         let now_us = self.owner_now().get();
         let mut lights = world_spatial::EntityLights::new();
         if let Ok(census) = runtime.positioned_actor_census() {
             let states = self.spell_states.lock().await;
-            for (player, _, session) in census {
-                let Some(state) = session.and_then(|session| states.get(&runtime, player, session))
-                else {
-                    continue;
+            for (actor, _, session) in census {
+                let spell = session
+                    .and_then(|session| states.get(&runtime, actor, session))
+                    .map(|state| state.owned_conditions())
+                    .filter(|conditions| conditions.accepts_time(now_us))
+                    .and_then(|conditions| conditions.light_at(now_us));
+                let owned = runtime
+                    .actor_conditions_at(actor, session, now_us)
+                    .ok()
+                    .and_then(|conditions| conditions.light_at(now_us));
+                let brightest = match (spell, owned) {
+                    (Some(a), Some(b)) => Some(if b.0 > a.0 { b } else { a }),
+                    (a, b) => a.or(b),
                 };
-                let conditions = state.owned_conditions();
-                if !conditions.accepts_time(now_us) {
-                    continue;
-                }
-                if let Some((level, color)) = conditions.light_at(now_us)
+                if let Some((level, color)) = brightest
                     && level != 0
                 {
                     lights.insert(
-                        player.placement_identity(),
+                        actor.placement_identity(),
                         world_spatial::EntityLight {
                             level,
                             color: color.unwrap_or(crate::world_clock::LIGHT_COLOR),

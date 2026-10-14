@@ -3,8 +3,8 @@
 //! One clock per World: the Tibian minute is a pure function of a UTC time fact and the World's
 //! `world_clock_epoch_utc_ms`, so every channel of a World agrees without sending the clock to
 //! another. The caller supplies the time fact (the input's or tick's recorded UTC time,
-//! SIM-DETERMINISM-01 §15); this module never reads a wall clock. The wire payload is
-//! `oteryn_protocol_oteryn::world_clock`.
+//! SIM-DETERMINISM-01 §15); only `now_utc_ms` reads the wall clock, once per process. The wire
+//! payload is `oteryn_protocol_oteryn::world_clock`.
 
 use oteryn_protocol_oteryn::world_clock::{TIBIAN_MINUTES_PER_DAY, WorldClock};
 
@@ -29,12 +29,23 @@ pub(crate) const MIN_DELTA_INTERVAL_MS: u64 = 10_000;
 /// Unix epoch, a whole UTC hour (§11.1).
 pub(crate) const DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS: u64 = 0;
 
-/// The process's UTC wall-clock time fact in milliseconds; `None` when it cannot be read.
+/// The process's UTC time fact in milliseconds (§11.2), normalized onto the monotonic owner clock:
+/// the wall clock is read once, on the first call, and every later fact is that reading plus the
+/// monotonic time since it. A wall-clock adjustment therefore never moves the World clock, and
+/// the facts never go backward. `None` when the wall clock cannot be read.
 pub(crate) fn now_utc_ms() -> Option<u64> {
-    let elapsed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .ok()?;
-    u64::try_from(elapsed.as_millis()).ok()
+    static ANCHOR: std::sync::OnceLock<Option<(u64, std::time::Instant)>> =
+        std::sync::OnceLock::new();
+    let (utc_ms, at) = (*ANCHOR.get_or_init(|| {
+        let elapsed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?;
+        Some((
+            u64::try_from(elapsed.as_millis()).ok()?,
+            std::time::Instant::now(),
+        ))
+    }))?;
+    utc_ms.checked_add(u64::try_from(at.elapsed().as_millis()).ok()?)
 }
 const TIBIAN_HOUR_MINUTES: u32 = 60;
 
@@ -140,6 +151,14 @@ mod tests {
     use super::*;
 
     const HOUR_MS: u64 = 3_600_000;
+
+    #[test]
+    fn the_utc_fact_is_anchored_once_and_never_goes_backward() {
+        let first = now_utc_ms().expect("utc fact");
+        let second = now_utc_ms().expect("utc fact");
+        assert!(second >= first);
+        assert!(first > 0);
+    }
 
     #[test]
     fn minute_is_a_pure_function_of_the_epoch() {
