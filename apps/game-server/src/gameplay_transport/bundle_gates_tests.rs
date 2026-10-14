@@ -293,12 +293,14 @@ fn compact(text: &str) -> String {
     text.split_whitespace().collect()
 }
 
-/// The source without comments and string literals, so only code is counted. A char literal
-/// is kept whole; a lifetime is kept as written.
+/// The source without comments, so only code is counted. A string literal (raw too) becomes
+/// `"<hex of its text>"`: its value can still be matched, but text inside it is no code. A char
+/// literal becomes `' '`; a lifetime is kept as written.
 fn code_only(source: &str) -> String {
     let chars: Vec<char> = source.chars().collect();
     let mut code = String::with_capacity(source.len());
     let at = |index: usize| chars.get(index).copied();
+    let literal = |text: &[char]| format!("\"{}\"", hex(&text.iter().collect::<String>()));
     let mut i = 0;
     while i < chars.len() {
         match chars[i] {
@@ -337,6 +339,7 @@ fn code_only(source: &str) -> String {
                     continue;
                 }
                 i += 2 + hashes;
+                let start = i;
                 while i < chars.len()
                     && !(chars[i] == '"'
                         && chars[i + 1..].iter().take(hashes).all(|c| *c == '#')
@@ -344,16 +347,17 @@ fn code_only(source: &str) -> String {
                 {
                     i += 1;
                 }
+                code.push_str(&literal(&chars[start..i.min(chars.len())]));
                 i += 1 + hashes;
-                code.push_str("\"\"");
             }
             '"' => {
                 i += 1;
+                let start = i;
                 while i < chars.len() && chars[i] != '"' {
                     i += if chars[i] == '\\' { 2 } else { 1 };
                 }
+                code.push_str(&literal(&chars[start..i.min(chars.len())]));
                 i += 1;
-                code.push_str("\"\"");
             }
             '\'' if at(i + 1) == Some('\\') => {
                 i += 2;
@@ -376,17 +380,39 @@ fn code_only(source: &str) -> String {
     code
 }
 
+fn hex(text: &str) -> String {
+    text.bytes().map(|byte| format!("{byte:02x}")).collect()
+}
+
+/// The source as compacted code: no comments or whitespace, string literals as hex.
+fn code(source: &str) -> String {
+    compact(&code_only(source))
+}
+
 #[allow(clippy::expect_used)]
 fn module_reads() -> BTreeMap<(String, String), usize> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
     let mut reads = BTreeMap::new();
-    for entry in std::fs::read_dir(&dir).expect("gameplay_transport sources") {
-        let path = entry.expect("source entry").path();
+    // The whole module tree: a gate moved into a nested module is still counted.
+    let mut pending = vec![dir.clone()];
+    let mut sources = Vec::new();
+    while let Some(next) = pending.pop() {
+        for entry in std::fs::read_dir(&next).expect("gameplay_transport sources") {
+            let path = entry.expect("source entry").path();
+            if path.is_dir() {
+                pending.push(path);
+            } else {
+                sources.push(path);
+            }
+        }
+    }
+    for path in sources {
         let name = path
-            .file_name()
+            .strip_prefix(&dir)
+            .ok()
             .and_then(|name| name.to_str())
             .expect("source name")
-            .to_owned();
+            .replace('\\', "/");
         if !name.ends_with(".rs") || name.ends_with("_tests.rs") {
             continue;
         }
@@ -535,7 +561,7 @@ fn a_bundle_world_seam_has_no_qualified_room() {
         std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/node/serve.rs"))
             .expect("serve.rs");
     assert!(
-        compact(&serve).contains("qualified_room:bundle.is_none().then_some(&qualified_room),"),
+        code(&serve).contains("qualified_room:bundle.is_none().then_some(&qualified_room),"),
         "serve.rs no longer withholds `qualified_room` from a bundle World: every closed gate \
          would open at once without its owner"
     );
@@ -544,14 +570,18 @@ fn a_bundle_world_seam_has_no_qualified_room() {
 #[test]
 #[allow(clippy::expect_used)]
 fn parameter_room_opens_only_the_locate_message() {
-    let source = compact(
+    let source = code(
         &std::fs::read_to_string(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport/parameter_cast.rs"),
         )
         .expect("parameter_cast.rs"),
     );
+    let arms = format!(
+        "matchkey{{\"{}\"=>combat,_=>qualified,}}",
+        hex("locate_message")
+    );
     assert!(
-        source.contains("matchkey{\"locate_message\"=>combat,_=>qualified,}"),
+        source.contains(&arms),
         "`parameter_room` changed which parameter keys read the combat room: record the opened \
          keys in INVENTORY"
     );
