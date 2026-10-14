@@ -16,6 +16,10 @@ fn ring(keys: &[(u8, u64)]) -> RelayKeyRing {
     .expect("ring")
 }
 
+fn chat_text(text: &str) -> ChatText {
+    ChatText::parse(text).expect("valid chat text")
+}
+
 fn room_line(id: u8, sent_at: u64) -> RelayLine {
     RelayLine {
         message_id: [id; ID_BYTES],
@@ -24,7 +28,7 @@ fn room_line(id: u8, sent_at: u64) -> RelayLine {
             room: ChatRoom::English,
         },
         sender_name: "Sender".to_owned(),
-        text: "hello world".to_owned(),
+        text: chat_text("hello world"),
     }
 }
 
@@ -52,7 +56,8 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
             recipient: [9; ID_BYTES],
         },
         sender_name: "n".repeat(SENDER_NAME_MAX_BYTES),
-        text: "ą".repeat(TEXT_MAX_BYTES / 2),
+        // 255 four-byte scalars: both the character and the byte bound of CHAT-0 §4.
+        text: chat_text(&"\u{10348}".repeat(255)),
         ..room_line(1, NOW)
     };
     let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
@@ -65,20 +70,15 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
 #[test]
 fn an_oversized_field_is_rejected_not_truncated() {
     let ring = ring(&[(1, 0)]);
-    let long_text = RelayLine {
-        text: "a".repeat(TEXT_MAX_BYTES + 1),
-        ..room_line(1, NOW)
-    };
     let long_name = RelayLine {
         sender_name: "n".repeat(SENDER_NAME_MAX_BYTES + 1),
         ..room_line(1, NOW)
     };
-    for line in [long_text, long_name] {
-        assert_eq!(
-            seal_with_nonce(&ring, CHANNEL, &line, NONCE),
-            Err(RelayError::Oversized)
-        );
-    }
+    // An over-long text cannot be built: `ChatText` bounds it before it reaches the relay.
+    assert_eq!(
+        seal_with_nonce(&ring, CHANNEL, &long_name, NONCE),
+        Err(RelayError::Oversized)
+    );
 }
 
 #[test]
@@ -340,7 +340,7 @@ fn randomness_differs_and_debug_never_shows_text_or_key() {
             room: ChatRoom::English,
         },
         sender_name: "Sender".to_owned(),
-        text: "hello".to_owned(),
+        text: chat_text("hello"),
     };
     let a = open(
         &ring,
@@ -358,7 +358,7 @@ fn randomness_differs_and_debug_never_shows_text_or_key() {
     .expect("open b");
     assert_ne!(a.message_id, b.message_id);
     let line = RelayLine {
-        text: "secret words".to_owned(),
+        text: chat_text("secret words"),
         ..room_line(1, NOW)
     };
     assert!(!format!("{line:?}").contains("secret"));
@@ -656,4 +656,28 @@ fn debug_never_shows_a_private_recipient() {
     }
     // A room is not private and stays readable.
     assert!(format!("{:?}", room_line(1, NOW)).contains("English"));
+}
+
+#[test]
+fn a_received_text_that_chat_text_refuses_is_a_bad_payload() {
+    let ring = ring(&[(1, 0)]);
+    let valid = room_line(1, NOW);
+    let mut prefix = valid.encode().expect("encode");
+    prefix.truncate(prefix.len() - 2 - valid.text.as_str().len());
+    for text in [
+        "a".repeat(256),
+        "   ".to_owned(),
+        "line\nbreak".to_owned(),
+        " padded".to_owned(),
+        String::new(),
+    ] {
+        let mut plaintext = prefix.clone();
+        push_prefixed(&mut plaintext, text.as_bytes()).expect("prefixed");
+        let sealed = seal_plaintext(&ring, CHANNEL, NOW, plaintext, NONCE).expect("seal");
+        assert_eq!(
+            open(&ring, CHANNEL, &sealed, NOW),
+            Err(RelayError::BadPayload),
+            "{text:?}"
+        );
+    }
 }

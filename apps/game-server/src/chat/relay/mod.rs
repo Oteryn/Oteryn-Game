@@ -15,7 +15,7 @@ use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use oteryn_protocol_oteryn::chat::ChatRoom;
 
-use super::TEXT_MAX_BYTES;
+use super::{ChatText, TEXT_MAX_BYTES};
 
 /// `CHAT0-RL-06`: the `NOTIFY` text is at most 2,048 bytes.
 pub(crate) const NOTIFY_MAX_BYTES: usize = 2_048;
@@ -128,7 +128,9 @@ pub(crate) struct RelayLine {
     pub(crate) sent_at_micros: u64,
     pub(crate) destination: RelayDestination,
     pub(crate) sender_name: String,
-    pub(crate) text: String,
+    /// Valid chat text (CHAT-0 §4) on both sides: a sender cannot seal, and a receiver does not
+    /// open, a text that `ChatText::parse` refuses.
+    pub(crate) text: ChatText,
 }
 
 // Text and the sender are private chat and the recipient is redacted by
@@ -143,7 +145,9 @@ impl fmt::Debug for RelayLine {
 
 impl RelayLine {
     fn encode(&self) -> Result<Vec<u8>, RelayError> {
-        if self.sender_name.len() > SENDER_NAME_MAX_BYTES || self.text.len() > TEXT_MAX_BYTES {
+        if self.sender_name.len() > SENDER_NAME_MAX_BYTES
+            || self.text.as_str().len() > TEXT_MAX_BYTES
+        {
             return Err(RelayError::Oversized);
         }
         let mut out = Vec::with_capacity(PLAINTEXT_MAX_BYTES);
@@ -158,7 +162,7 @@ impl RelayLine {
             RelayDestination::Room { room } => out.push(room as u8),
         }
         push_prefixed(&mut out, self.sender_name.as_bytes())?;
-        push_prefixed(&mut out, self.text.as_bytes())?;
+        push_prefixed(&mut out, self.text.as_str().as_bytes())?;
         Ok(out)
     }
 
@@ -182,7 +186,12 @@ impl RelayLine {
             _ => return Err(RelayError::BadPayload),
         };
         let sender_name = cursor.prefixed(SENDER_NAME_MAX_BYTES)?;
-        let text = cursor.prefixed(TEXT_MAX_BYTES)?;
+        let raw = cursor.prefixed(TEXT_MAX_BYTES)?;
+        // Only the canonical (already trimmed) form a sender can seal is accepted.
+        let text = ChatText::parse(&raw)
+            .ok()
+            .filter(|text| text.as_str() == raw)
+            .ok_or(RelayError::BadPayload)?;
         if !cursor.0.is_empty() {
             return Err(RelayError::BadPayload);
         }
@@ -351,7 +360,7 @@ pub(crate) struct OutgoingLine {
     pub(crate) sent_at_micros: u64,
     pub(crate) destination: RelayDestination,
     pub(crate) sender_name: String,
-    pub(crate) text: String,
+    pub(crate) text: ChatText,
 }
 
 /// Seals `line` for `channel` with the newest key and a fresh random nonce, and returns the
@@ -379,8 +388,17 @@ fn seal_with_nonce(
     line: &RelayLine,
     nonce: [u8; NONCE_BYTES],
 ) -> Result<String, RelayError> {
-    let key = ring.sending(line.sent_at_micros)?;
-    let mut buffer = line.encode()?;
+    seal_plaintext(ring, channel, line.sent_at_micros, line.encode()?, nonce)
+}
+
+fn seal_plaintext(
+    ring: &RelayKeyRing,
+    channel: &str,
+    sent_at_micros: u64,
+    mut buffer: Vec<u8>,
+    nonce: [u8; NONCE_BYTES],
+) -> Result<String, RelayError> {
+    let key = ring.sending(sent_at_micros)?;
     let sealing = aead_key(key)?;
     let aad = [channel.as_bytes(), &[key.key_id]].concat();
     sealing
