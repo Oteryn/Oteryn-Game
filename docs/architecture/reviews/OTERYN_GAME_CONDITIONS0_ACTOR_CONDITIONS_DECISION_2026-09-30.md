@@ -169,7 +169,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 - Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
   refused action spends nothing and draws nothing.
-- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys, over 16. `COND0-RL-01` is 24 (21 and headroom for three later keys); one instance per key, so no mutual exclusion is needed.
+- Worst case: the 13 keys of §3 and the MAGIC-COND-1 scope, plus `muted`, `pacified`, `powerless`, `agony` and the previously separate `invisible`, `outfit`, `rooted`, `feared`, is 21 simultaneous keys. The store on main already admits five more distinct keys that coexist with them (`Attributes`, `SpellSkills(1..=3)` and `SpellRegeneration(1)`, `ability/condition.rs`), so the worst case is 26 simultaneous keys, over 16. `COND0-RL-01` is 32 (26 and headroom for six later keys, including further `SpellSkills` or `SpellRegeneration` sub-ids); one instance per key, so no mutual exclusion is needed.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
 - Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
@@ -191,9 +191,9 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
 - **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 21 today (the §3.5 worst case:
-  the 13 keys of §3 and the MAGIC-COND-1 scope plus the eight §3.5 and previously separate keys),
-  under `COND0-RL-01` (24, §3.5); a family that would pass it needs an amendment, and a transition
+- **Instance limit.** One instance per conflict key gives at most 26 today (the §3.5 worst case:
+  the 13 keys of §3 and the MAGIC-COND-1 scope, the eight §3.5 and previously separate keys, and the
+  five existing `Attributes`, `SpellSkills` and `SpellRegeneration` keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
   past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
@@ -295,7 +295,7 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 | Row | Value |
 |---|---|
-| `COND0-RL-01` instances per actor | 24 (was 16; §3.5) |
+| `COND0-RL-01` instances per actor | 32 (was 16; §3.5) |
 | `COND0-RL-02` minimum tick interval | 1,000 ms |
 | `COND0-RL-03` damage ticks per actor per simulation tick | 4 |
 

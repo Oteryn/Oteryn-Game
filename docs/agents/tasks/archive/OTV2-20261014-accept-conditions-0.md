@@ -28,7 +28,7 @@ external_repositories: []
 
 ## Outcome
 
-- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 24; no code, wire, content or pin change.
+- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 32; no code, wire, content or pin change.
 
 ## Architecture and source of truth
 
