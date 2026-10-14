@@ -1,8 +1,11 @@
 # ACCEPT-SPELL-NPC-MAP-0 Acceptance packet for the spell and NPC handoff mapping decision
 
 - Decision: `ACCEPT-SPELL-NPC-MAP0-V1`
-- Status: **ACCEPTED, CONDITIONAL**. The owner confirmed the acceptance in the worker's chat on
-  2026-10-13 ("tak") and told the worker to continue on 2026-10-14. It takes effect only when the
+- Status: **ACCEPTED, CONDITIONAL**. The owner confirmed the acceptance directly to the control plane
+  (session `session_01XYC239givrMonrYoBwwECV`) in the 2026-10-14 conversation ("2. przekaz ze
+  akceptuje", "tak zlecam" and the answer "all,PREMIUM_ACTIVATION,EQUIP-0,CHAT-0,CHAR-VITALS-0"),
+  recorded in the control plane STATE comment
+  https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-5969258663; no worker report is the source. It takes effect only when the
   PR carrying this status passes exact-head independent review (spell and content) and CI on its
   frozen head and is integrated through the protected merge path; until then SPELL-NPC-MAP-0 is
   not effective as ACCEPTED, whatever the status line says on an unmerged branch. It adds no rule

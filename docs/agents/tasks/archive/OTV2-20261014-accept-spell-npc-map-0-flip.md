@@ -18,7 +18,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_SPELL_NPC_MAP0_ACCEPTANCE_DECISION_2026-10-13.md
   - docs/architecture/reviews/OTERYN_GAME_SPELL_NPC_MAP0_SPELL_AND_NPC_HANDOFF_MAPPING_DECISION_2026-10-04.md
-  - docs/agents/tasks/archive/OTV2-20261013-accept-spell-npc-map-0-flip.md
+  - docs/agents/tasks/archive/OTV2-20261014-accept-spell-npc-map-0-flip.md
 public_contracts: []
 depends_on: []
 blocks: []
