@@ -199,8 +199,9 @@ impl ChaseSearchBudget {
     /// The waiting ones keep their places, so every request is served within a bounded number of
     /// windows.
     pub(crate) fn admit(&mut self, now_us: u64, ahead: usize) -> bool {
+        // A caller's earlier window never reopens a counted one.
         let window = now_us / CHASE_WINDOW_MICROS;
-        if window != self.window {
+        if window > self.window {
             self.window = window;
             self.used = 0;
         }
@@ -513,6 +514,13 @@ mod tests {
         }
         assert!(!budget.admit(49_999, 0));
         assert!(budget.admit(50_000, 0), "a new window starts its own count");
+        for _ in 1..CHASE_SEARCHES_PER_WINDOW {
+            assert!(budget.admit(50_000, 0));
+        }
+        assert!(
+            !budget.admit(49_999, 0),
+            "a late caller's earlier window never reopens the count"
+        );
     }
 
     #[test]

@@ -1282,6 +1282,13 @@ impl Owner {
             |cell| chase_path_tile(room.movement_cells(), &none, cell),
         )
     }
+
+    /// A due chase search registers in its owner window and is admitted from the next one
+    /// (`RANGED0-RL-03`).
+    fn searched(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        assert_eq!(self.chase(now), None, "a due search first registers");
+        self.chase(now + crate::combat_attack::CHASE_WINDOW_MICROS)
+    }
 }
 
 #[test]
@@ -1293,7 +1300,7 @@ fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
     owner.chase_modes(ChaseMode::Stand);
     assert_eq!(owner.chase(T0), None, "STAND never moves the player");
     owner.chase_modes(ChaseMode::Chase);
-    let step = owner.chase(T0).expect("a chase step");
+    let step = owner.searched(T0).expect("a chase step");
     let (dx, _) = match step {
         crate::movement::CardinalStep::East => (1, 0),
         crate::movement::CardinalStep::West => (-1, 0),
@@ -1307,18 +1314,18 @@ fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
     // interval and keeps the refused cell out of the route.
     owner
         .attack
-        .chase_step_refused(owner.player, owner.session, at(T0), true);
-    assert_eq!(owner.chase(T0 + 1), None);
-    assert!(owner.chase(T0 + 1_000_000).is_some());
+        .chase_step_refused(owner.player, owner.session, at(T0 + 50_000), true);
+    assert_eq!(owner.chase(T0 + 50_001), None);
+    assert!(owner.searched(T0 + 1_050_000).is_some());
     // A client step wins; chase re-paths a second later.
     owner
         .attack
-        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1_100_000));
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1_150_000));
     assert_eq!(owner.chase(T0 + 1_200_000), None);
-    assert!(owner.chase(T0 + 2_100_000).is_some());
+    assert!(owner.searched(T0 + 2_150_000).is_some());
     // Clearing the target ends the chase.
     assert_eq!(
-        owner.target(T0 + 2_200_000, None, 2),
+        owner.target(T0 + 2_300_000, None, 2),
         AttackIntentDisposition::Ok
     );
     assert_eq!(owner.chase(T0 + 5_000_000), None);
@@ -1393,5 +1400,5 @@ fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
         None,
         "re-entry protection ends the chase"
     );
-    assert!(owner.chase(T0 + 4_000_000).is_some());
+    assert!(owner.searched(T0 + 4_000_000).is_some());
 }

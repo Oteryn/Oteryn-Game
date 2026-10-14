@@ -38,8 +38,9 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState,
-    FightMode, SwingPoll, TargetFacts, TargetRefusal, player_fist_formula,
+    AttackConstants, AttackState, CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision,
+    ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
+    player_fist_formula,
 };
 use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
 use crate::foundation::{
@@ -637,20 +638,25 @@ impl ChannelAttackStates {
             entry.chase.reset();
             return None;
         }
-        // RANGED0-RL-03: the due searches that waited longer, or as long with a lower actor id,
-        // keep their places in the window.
-        let own = (
-            entry.chase.search_waiting_since().unwrap_or(now.get()),
-            actor_order(actor),
-        );
+        // RANGED0-RL-03: a due search first registers in its owner window and is admitted from
+        // the next one, so every search due in one window is known before any of them is
+        // admitted; those that waited from an earlier window, or from the same one with a lower
+        // actor id, keep their places.
+        let window = now.get() / CHASE_WINDOW_MICROS;
+        let registered = entry
+            .chase
+            .search_waiting_since()
+            .map(|since| since / CHASE_WINDOW_MICROS);
+        let own = (registered.unwrap_or(window), actor_order(actor));
         let ahead = entries
             .iter()
             .filter(|other| other.actor != actor || other.session != session)
             .filter_map(|other| {
-                let since = other.chase.search_waiting_since()?;
+                let since = other.chase.search_waiting_since()? / CHASE_WINDOW_MICROS;
                 ((since, actor_order(other.actor)) < own).then_some(())
             })
             .count();
+        let admissible = registered.is_some_and(|since| since < window);
         let entry = &mut entries[index];
         // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
         // another player; never the chasing player), and the target's own tile is no path tile.
@@ -659,7 +665,7 @@ impl ChannelAttackStates {
             now.get(),
             from,
             to,
-            || chase_searches.admit(now.get(), ahead),
+            || admissible && chase_searches.admit(now.get(), ahead),
             |cell| {
                 if cell == to || !path_tile(cell) {
                     return None;
@@ -884,7 +890,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<(super::StepOutcome, Option<Duration>)> {
         use super::FreshAdmissionAuthority as _;
         let room = self.combat_room?;
-        let now = self.owner_now();
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
@@ -909,14 +914,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &legacy
             };
             let cells = self.movement_cells;
-            self.attack.lock().await.chase_decision(
-                &runtime,
-                room,
-                actor,
-                session,
-                now,
-                |cell| chase_path_tile(cells, blocking, cell),
-            )?
+            let mut attack = self.attack.lock().await;
+            // Owner time is read once the locks that serialize chase decisions are held, so the
+            // Channel search budget sees its windows in order (`RANGED0-RL-03`).
+            let now = self.owner_now();
+            attack.chase_decision(&runtime, room, actor, session, now, |cell| {
+                chase_path_tile(cells, blocking, cell)
+            })?
         };
         let direction = match step {
             CardinalStep::North => super::StepDirection::North,
@@ -927,10 +931,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (outcome, duration) = self.paced_step(actor, session, direction).await;
         if outcome.moved_to.is_none() {
             let blocked = outcome.disposition == super::StepDisposition::Blocked;
-            self.attack
-                .lock()
-                .await
-                .chase_step_refused(actor, session, now, blocked);
+            // The refused cell's 2 s starts when the refusal returned (`RANGED0-RL-08`).
+            let mut attack = self.attack.lock().await;
+            let now = self.owner_now();
+            attack.chase_step_refused(actor, session, now, blocked);
         }
         Some((outcome, duration))
     }
