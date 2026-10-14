@@ -247,7 +247,7 @@ fn yell_needs_level_20_or_premium_and_never_level_1() {
         limiter.admit_local(SpeechMode::Yell, level_1_premium, at_ms(0)),
         Err(ChatRefusal::LevelTooLow)
     );
-    // A refused yell takes nothing from the bucket; the gate does not apply to say.
+    // The gate does not apply to say; each refused yell took its line, so two are left.
     assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
     let premium = YellGate {
         level: 2,
@@ -257,6 +257,31 @@ fn yell_needs_level_20_or_premium_and_never_level_1() {
         limiter.admit_local(SpeechMode::Yell, premium, at_ms(0)),
         Ok(())
     );
+    assert!(matches!(
+        limiter.admit_local(SpeechMode::Say, low, at_ms(0)),
+        Err(ChatRefusal::Muted { .. })
+    ));
+}
+
+#[test]
+fn an_under_level_yell_takes_its_line_and_a_yell_beyond_the_bucket_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    for _ in 0..BUCKET_LINES {
+        assert_eq!(
+            limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+            Err(ChatRefusal::LevelTooLow)
+        );
+    }
+    // The bucket is checked before the level: the fifth under-level yell is an offence.
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(4_999)));
 }
 
 #[test]
@@ -594,48 +619,67 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
 }
 
 #[test]
-fn the_pre_gate_refuses_a_repeated_under_level_yell_without_a_line_or_a_mute() {
+fn the_pre_gate_charges_a_repeated_under_level_yell_a_line_and_mutes_a_flood() {
     let mut limiter = ChatLimiter::new(at_ms(0));
     let low = YellGate {
         level: 19,
         premium_current: false,
     };
-    // The first under-level yell reaches the level check of the full path.
+    // The first under-level yell reaches the level check of the full path and takes a line.
     assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
     assert_eq!(
         limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
         Err(ChatRefusal::LevelTooLow)
     );
-    // Repeats inside the recheck window are refused at the gate: no line, no mute.
-    for ms in [0, 1_000, 2_499] {
+    // Repeats inside the recheck window are refused at the gate, each taking a line.
+    for ms in [0, 1_000, 2_000] {
         assert_eq!(
             limiter.pre_gate(SpeechMode::Yell, at_ms(ms)),
             Err(ChatRefusal::LevelTooLow)
         );
     }
-    assert!(!limiter.is_muted(at_ms(2_499)));
-    for _ in 0..BUCKET_LINES {
-        assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(2_499)), Ok(()));
-        assert_eq!(
-            limiter.admit_local(SpeechMode::Say, low, at_ms(2_499)),
-            Ok(())
-        );
-    }
-    // With the bucket empty the gated yell is still LEVEL_TOO_LOW, never a mute.
+    assert!(!limiter.is_muted(at_ms(2_000)));
+    // The bucket is empty: the next yell is an offence at the gate, as a say would be.
     assert_eq!(
-        limiter.pre_gate(SpeechMode::Yell, at_ms(2_499)),
-        Err(ChatRefusal::LevelTooLow)
+        limiter.pre_gate(SpeechMode::Yell, at_ms(2_000)),
+        Err(ChatRefusal::Muted { seconds: 5 })
     );
-    assert!(!limiter.is_muted(at_ms(2_499)));
-    // After the window the full path checks the level again; a level gained (with a line back
-    // in the bucket) is admitted and clears the recheck.
-    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(2_500)), Ok(()));
-    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(5_000)), Ok(()));
+    assert!(limiter.is_muted(at_ms(6_999)));
+    assert!(matches!(
+        limiter.pre_gate(SpeechMode::Say, at_ms(2_000)),
+        Err(ChatRefusal::Muted { .. })
+    ));
+    // After the mute (and the window) the full path checks the level again; a level gained is
+    // admitted and clears the recheck.
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(7_000)), Ok(()));
     assert_eq!(
-        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(5_000)),
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(7_000)),
         Ok(())
     );
     assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(40_000)), Ok(()));
+}
+
+#[test]
+fn a_say_after_an_under_level_yell_is_not_refused_by_the_recheck() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::LevelTooLow)
+    );
+    // The recheck window holds yells only; the three lines left still pass as says.
+    for _ in 1..BUCKET_LINES {
+        assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(0)), Ok(()));
+        assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
+    }
+    assert!(matches!(
+        limiter.pre_gate(SpeechMode::Say, at_ms(0)),
+        Err(ChatRefusal::Muted { .. })
+    ));
 }
 
 #[test]
@@ -660,23 +704,19 @@ fn the_pre_gate_refuses_a_yell_in_its_cooldown_and_takes_no_line() {
 }
 
 #[test]
-fn the_pre_gate_leaves_an_empty_bucket_yell_to_the_level_check() {
+fn the_pre_gate_mutes_an_empty_bucket_yell_before_the_level_is_known() {
     let mut limiter = ChatLimiter::new(at_ms(0));
     let low = YellGate {
         level: 19,
         premium_current: false,
     };
-    for _ in 0..4 {
+    for _ in 0..BUCKET_LINES {
         assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
     }
-    // An under-level yell is LEVEL_TOO_LOW, not a mute, even with the bucket empty.
-    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    // A yell beyond the bucket is an offence at the gate, without the Channel's level.
     assert_eq!(
-        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
-        Err(ChatRefusal::LevelTooLow)
+        limiter.pre_gate(SpeechMode::Yell, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
     );
-    assert!(matches!(
-        limiter.pre_gate(SpeechMode::Say, at_ms(0)),
-        Err(ChatRefusal::Muted { .. })
-    ));
+    assert!(limiter.is_muted(at_ms(0)));
 }
