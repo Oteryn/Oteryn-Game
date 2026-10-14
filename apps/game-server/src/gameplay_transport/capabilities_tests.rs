@@ -1306,8 +1306,8 @@ mod chat_wire {
             self.chat.next(session)
         }
 
-        async fn chat_delivered(&self, session: GameSessionId, lines: usize) {
-            self.chat.delivered(session, lines);
+        async fn chat_delivered(&self, session: GameSessionId) {
+            self.chat.delivered(session);
         }
     }
 

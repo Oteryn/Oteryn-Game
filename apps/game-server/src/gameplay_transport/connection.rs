@@ -566,9 +566,9 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// CHAT-WIRE-1: `lines` lines of the one last returned by `chat_next` were written to the
-    /// client; they stop counting against `CHAT0-RL-11`.
-    fn chat_delivered(&self, _session: GameSessionId, _lines: usize) -> impl Future<Output = ()> {
+    /// CHAT-WIRE-1: the real line last returned by `chat_next` was written to the client; it
+    /// stops counting against `CHAT0-RL-11`.
+    fn chat_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
         async {}
     }
 
@@ -1884,10 +1884,9 @@ where
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     // A marker takes no slot, so only a real line frees one.
-                    let freed = usize::from(!matches!(line, ChatLine::Dropped));
-                    authority
-                        .chat_delivered(admitted.game_session_id, freed)
-                        .await;
+                    if !matches!(line, ChatLine::Dropped) {
+                        authority.chat_delivered(admitted.game_session_id).await;
+                    }
                 }
                 continue;
             }

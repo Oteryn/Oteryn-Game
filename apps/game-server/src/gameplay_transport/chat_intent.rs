@@ -175,7 +175,7 @@ impl ChatRuntime {
     pub(crate) fn drain(&self, session: GameSessionId) -> Vec<ChatLine> {
         let mut lines = Vec::new();
         while let Some(line) = self.next(session) {
-            self.delivered(session, 1);
+            self.delivered(session);
             lines.push(line);
         }
         lines
@@ -183,11 +183,11 @@ impl ChatRuntime {
 
     /// The line last returned by [`Self::next`] reached the client: it no longer counts against
     /// the session's undelivered bound.
-    pub(crate) fn delivered(&self, session: GameSessionId, lines: usize) {
+    pub(crate) fn delivered(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
-            entry.egress.delivered(lines);
+            entry.egress.delivered();
         }
     }
 

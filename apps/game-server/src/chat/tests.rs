@@ -658,29 +658,56 @@ fn egress_bound_is_the_registered_chat0_rl_11_row() {
 #[test]
 fn a_line_being_written_counts_against_the_bound_until_delivered() {
     let mut egress = ChatEgress::new();
-    for n in 0..EGRESS_MAX_LINES {
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
         egress.push(room_text(n));
     }
-    assert_eq!(egress.next_for_write(), Some(room_text(0)));
+    assert_eq!(
+        egress.next_for_write(),
+        Some(private_line("Alice", &text("first")))
+    );
     // 63 queued plus the one being written fill the bound: a new room line evicts the oldest
     // queued room line and owes one marker.
     egress.push(room_text(100));
     assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
-    egress.delivered(1);
-    egress.push(room_text(101));
-    assert_eq!(egress.len(), EGRESS_MAX_LINES);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert_eq!(egress.next_for_write(), Some(room_text(2)));
 }
 
 #[test]
-fn a_private_line_outranks_queued_room_lines_while_one_is_being_written() {
+fn the_drop_order_covers_the_line_being_written() {
     let mut egress = ChatEgress::new();
-    for n in 0..EGRESS_MAX_LINES {
-        egress.push(room_text(n));
+    egress.push(room_text(0));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(private_line("Alice", &text(&format!("p{n}"))));
     }
     assert_eq!(egress.next_for_write(), Some(room_text(0)));
-    let private = private_line("Alice", &text("hi"));
-    egress.push(private.clone());
+    // The cheapest line is the room line already being written: a new private line takes its
+    // slot rather than being dropped, and nothing is lost, so no marker is owed.
+    let local = private_line("Bob", &text("new"));
+    egress.push(local.clone());
+    assert_eq!(egress.len(), EGRESS_MAX_LINES);
     let rest = drain(&mut egress);
-    assert_eq!(rest.first(), Some(&ChatLine::Dropped));
-    assert_eq!(rest.last(), Some(&private));
+    assert!(!rest.contains(&ChatLine::Dropped));
+    assert_eq!(rest.last(), Some(&local));
+}
+
+#[test]
+fn a_marker_keeps_covering_overflow_until_a_line_is_delivered() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    egress.push(room_text(100));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert!(egress.next_for_write().is_some());
+    // The line is written but not yet delivered: the marker still covers this overflow.
+    egress.push(room_text(101));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    egress.delivered();
+    // Delivered: the marker no longer covers later overflow.
+    egress.push(room_text(102));
+    egress.push(room_text(103));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
 }

@@ -29,10 +29,14 @@ fn drop_rank(line: &ChatLine) -> u8 {
 pub(crate) struct ChatEgress {
     lines: VecDeque<ChatLine>,
     marker_owed: bool,
-    /// A marker was sent and no line has been sent since: further overflow stays covered by it.
+    /// A marker was sent and no line has been delivered since: further overflow stays covered
+    /// by it.
     marker_sent: bool,
-    /// The line handed out by [`Self::next_for_write`] and not yet written to the client.
-    in_flight: usize, // 0 or 1
+    /// Drop rank of the line handed out by [`Self::next_for_write`] and not yet delivered; 0
+    /// when the slot is free (nothing in flight, or the line was retracted from the count).
+    in_flight_rank: u8,
+    /// A real line is being written to the client.
+    writing: bool,
 }
 
 impl ChatEgress {
@@ -46,14 +50,24 @@ impl ChatEgress {
             self.marker_owed = true;
             return;
         }
-        if self.lines.len() + self.in_flight >= EGRESS_MAX_LINES {
-            self.marker_owed = !self.marker_sent;
-            let worst = self.lines.iter().map(drop_rank).max().unwrap_or(0);
+        let slot = usize::from(self.in_flight_rank > 0);
+        if self.lines.len() + slot >= EGRESS_MAX_LINES {
+            let queued_worst = self.lines.iter().map(drop_rank).max().unwrap_or(0);
+            let worst = queued_worst.max(self.in_flight_rank);
             if drop_rank(&line) > worst {
+                self.marker_owed = !self.marker_sent;
                 return;
             }
-            if let Some(index) = self.lines.iter().position(|q| drop_rank(q) == worst) {
-                self.lines.remove(index);
+            if self.in_flight_rank == worst {
+                // The in-flight line is the oldest of the cheapest class. It is already being
+                // written and still reaches the client, so it is retracted from the count only:
+                // nothing is lost and no marker is owed.
+                self.in_flight_rank = 0;
+            } else {
+                self.marker_owed = !self.marker_sent;
+                if let Some(index) = self.lines.iter().position(|q| drop_rank(q) == worst) {
+                    self.lines.remove(index);
+                }
             }
         }
         self.lines.push_back(line);
@@ -61,34 +75,45 @@ impl ChatEgress {
 
     /// The next line to send: the owed marker first, then the oldest line.
     pub(crate) fn pop(&mut self) -> Option<ChatLine> {
+        let line = self.take()?;
+        if !matches!(line, ChatLine::Dropped) {
+            self.marker_sent = false;
+        }
+        Some(line)
+    }
+
+    fn take(&mut self) -> Option<ChatLine> {
         if std::mem::take(&mut self.marker_owed) {
             self.marker_sent = true;
             return Some(ChatLine::Dropped);
         }
-        let line = self.lines.pop_front();
-        if line.is_some() {
-            self.marker_sent = false;
-        }
-        line
+        self.lines.pop_front()
     }
 
     /// Hands out the next line to write (the owed marker first). A real line counts against the
     /// bound until [`Self::delivered`]; one line at a time keeps every other undelivered line
     /// queued and so subject to the drop order.
     pub(crate) fn next_for_write(&mut self) -> Option<ChatLine> {
-        let line = self.pop()?;
-        self.in_flight = usize::from(!matches!(line, ChatLine::Dropped));
+        let line = self.take()?;
+        let real = !matches!(line, ChatLine::Dropped);
+        self.writing = real;
+        self.in_flight_rank = if real { drop_rank(&line) } else { 0 };
         Some(line)
     }
 
-    /// `lines` lines of the last [`Self::next_for_write`] were written to the client.
-    pub(crate) fn delivered(&mut self, lines: usize) {
-        self.in_flight = self.in_flight.saturating_sub(lines);
+    /// The last real line of [`Self::next_for_write`] was written to the client: its slot is
+    /// free and a marker no longer covers later overflow.
+    pub(crate) fn delivered(&mut self) {
+        if std::mem::take(&mut self.writing) {
+            self.marker_sent = false;
+        }
+        self.in_flight_rank = 0;
     }
 
     /// Drops every queued line without a marker (a replacement snapshot drops lines).
     pub(crate) fn clear(&mut self) {
-        self.in_flight = 0;
+        self.in_flight_rank = 0;
+        self.writing = false;
         self.lines.clear();
         self.marker_owed = false;
         self.marker_sent = false;
