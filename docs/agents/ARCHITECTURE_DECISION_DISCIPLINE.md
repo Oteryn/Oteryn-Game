@@ -105,3 +105,9 @@ Architecture review classifies open PRs as `KEEP`, `FIX`, `REBASE`, `SUPERSEDED`
 Do not close a repairable PR merely because it is old or CI is red. Automatic close is appropriate only with concrete evidence of duplicate, obsolete or superseded work and only when repository/owner authority permits it.
 
 A failed required gate means `FIX`/`BLOCKED`, not "merge anyway".
+
+## One PR per mechanic (owner, 2026-10-14)
+
+- An acceptance carries its Status flip in the same PR: the packet, the decision's Status line (`CANDIDATE` to `ACCEPTED`, pointing at the packet) and the task record merge together, effective only on exact-head review, CI and protected integration of that PR. Do not write a "follow-up PR changes only the Status line" step into a packet.
+- A Codex or CI finding on an open PR, a pre-gate or other fix the decision's review asks for, and a registry row the mechanic needs are commits on that mechanic's open PR, never a new PR.
+- A separate PR is allowed only for a protocol, persistence or security change that needs its own review; name that reason in the PR body.

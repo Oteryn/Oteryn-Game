@@ -57,7 +57,7 @@ For a local merge of `main`, run `sh tools/merge-driver/install.sh` once per clo
 
 ## Dispatching workers
 
-Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. Each worker gets only this packet:
+Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. One `task_id` and one PR per mechanic (owner, 2026-10-14): its decision or acceptance with the Status flip, code, content, registry rows and task record ride one PR; sub-steps are commits on it, not new packets. Before opening any PR, check for an open PR of the mechanic and commit there; a Codex/CI fix or status change is never a new PR. Split only a protocol, persistence or security change that needs its own review (`ARCHITECTURE_DECISION_DISCIPLINE.md`, *One PR per mechanic*). Every push re-runs the heavy builds, so batch all fixes for a head into one push. Each worker gets only this packet:
 
 ```yaml
 repository: Oteryn/Oteryn-Game
