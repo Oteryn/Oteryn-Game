@@ -37,7 +37,7 @@ external_repositories: []
 
 ## High-risk authority/recovery qualification
 
-`NOT_APPLICABLE`: documentation only. No mutation, no code, nothing enabled.
+`NOT_APPLICABLE`: no production mutation, fence, authority grant or recovery evidence. The one code change (Codex P1 on #2088) makes the chat pre-gate refuse a session without chat state with the `CHAT_UNAVAILABLE` the full path already answers; it changes no disposition, wire or persistence.
 
 ## Acceptance criteria
 
@@ -46,7 +46,7 @@ external_repositories: []
 
 ## Excluded scope
 
-- No code, content, migration or protocol change.
+- No content, migration or protocol change. The only code is the pre-gate refusal of a session without chat state in `apps/game-server/src/gameplay_transport/chat_intent.rs` (security re-review finding).
 
 ## Validation
 
@@ -58,11 +58,13 @@ external_repositories: []
 
 ### Component/integration
 
-- `NOT_APPLICABLE`: documentation only.
+- `cargo fmt -p oteryn-game-server -- --check`: pass
+- `cargo clippy -p oteryn-game-server --lib`: no finding in the crate
+- `cargo test -p oteryn-game-server` (the updated `the_pre_gate_refuses_a_flood_without_the_channel_and_takes_no_line` asserts the unknown-session refusal): run by the exact-head `game-gate` CI; the local test build is OOM-killed on this machine.
 
 ### E2E
 
-- `NOT_APPLICABLE`: documentation only.
+- `NOT_APPLICABLE`: a pre-gate refusal with an existing disposition; no client-visible flow changes.
 
 ### Exact-head CI
 
@@ -83,7 +85,7 @@ external_repositories: []
 
 ## PR and closeout
 
-- changed-file review: documentation paths only
+- changed-file review: documentation paths and the chat pre-gate (`chat_intent.rs`)
 - unresolved review threads: none
 - protected auto-merge: control plane
 - ownership release: on merge
