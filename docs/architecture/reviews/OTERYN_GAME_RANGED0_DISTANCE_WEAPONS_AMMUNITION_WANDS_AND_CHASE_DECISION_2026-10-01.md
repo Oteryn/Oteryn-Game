@@ -29,7 +29,7 @@
 | RANGED-CONTENT-1 | content lane | weapon rows on Item definitions (§7), lowered from the formal schema's mapped `weapontype` and TibiaWiki first, Canary `items.xml` as fallback; quivers | ITEM-SEM-2b |
 | QUIVER-1 | impl, persistence review | the quiver tree in the left hand and the Extra slot (§3) | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | hard (combat, persistence), combat and persistence review | distance, throwing and wand swings (§4-§5); the weapon-use slot, reservation and `WeaponUseCause` shapes (§6); wand mana | ATTACK-1; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b (RANGED-1 itself registers the §6.4 aggregate rows, receipt and audit tables; the missile also needs the SPELL-PRESENT-0 stream and its key to u16 table, §7, and the slot-9 key reconciliation is QUIVER-1's, §3.3) |
-| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09 ordering, AI01-ROUTE-STEPS resolved to the 12-tile bound `RANGED0-RL-05`); #2113 lands that shared search module (player chase first, creature reuse by CREATURE-MOVE-1), not a player-only copy; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
+| CHASE-1 | hard (movement), movement and determinism review | server-driven chase (§8): the chase search budget and rows `RANGED0-RL-03` to `-07`, the player chase step source, the per-actor pacing order | ATTACK-1; the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09 ordering, AI01-ROUTE-STEPS stays 128 as the route-step bound; `RANGED0-RL-05` is the 12-tile search radius); #2113 lands that shared search module (player chase first, creature reuse by CREATURE-MOVE-1), not a player-only copy; LOOP-COMBAT-MODES-1 (#2113) rebased on this §8. CHASE-1 itself moves the pacing clock to the actor (§8) |
 | RANGED-PARITY-1 | impl | fixtures of §5 against TibiaPal and Canary; break rates over 10,000 seeded draws | RANGED-1 |
 
 No new command, state domain or capability. Ranged swings reuse `ATTACK_TARGET_INTENT`,
@@ -471,7 +471,7 @@ authority until RANGED-1 is allocated.
   |---|---|
   | `RANGED0-RL-03` chase searches per window per channel | 64 per 50 ms, served oldest-waiting request first, then actor id (so every player's request is served within a bounded number of windows), inside CREATURE-AI-0's `RL-09` work-unit budget, with 16 of the 64 searches (16,384 units) reserved for chase so a full creature queue cannot starve it (a request over budget waits for the next window) |
   | `RANGED0-RL-04` expansions per search | 1,024 (A*, one work unit per expansion) |
-  | `RANGED0-RL-05` path length | 12 tiles |
+  | `RANGED0-RL-05` search radius around the chaser (Chebyshev) | 12 tiles (not a route-length cap: AI01-ROUTE-STEPS stays 128, so a detour inside the radius may take more than 12 steps) |
   | `RANGED0-RL-06` searches per player | 1 per second |
   | `RANGED0-RL-07` backoff after a failed search | 2 s (the player holds position and keeps target and mode) |
 
@@ -483,7 +483,9 @@ authority until RANGED-1 is allocated.
   and it re-searches when the target moves, within the rows above. A search never fails because of
   the budget. **The chase ends, and schedules no further search or backoff, when the target is on
   another floor** (chase steps cannot change floors); the chaser keeps the target and mode like an
-  out-of-range swing, as ATTACK-0 §4 clears a target only when it is dead or gone. A floor-change
+  out-of-range swing, as ATTACK-0 §4 clears a target only when it is dead or gone. On a floor change
+  the chase holds: the route resets and the target is kept, with no search or backoff until the target
+  is back on the floor. A floor-change
   test is CHASE-1 scope.
 - **Movement authority.** VSL-MOVE-01 §3 holds: only the Movement owner commits a step. A chase step
   is a movement occurrence whose source is the server (VSL-MOVE-01 §5), validated by the same rules
@@ -497,7 +499,7 @@ authority until RANGED-1 is allocated.
   path and no new wire are sent. Rejection and position correction use the existing movement
   correction. The Protocol lane confirms there is no new field (CHASE-1 review).
 - **CHASE-1 depends on** the shared CREATURE-MOVE-1 §5.3 path search in code (one profile, RL-09
-  ordering, AI01-ROUTE-STEPS resolved to the 12-tile bound `RANGED0-RL-05`; today `ai_think.rs` and
+  ordering, AI01-ROUTE-STEPS stays 128 as the route-step bound and `RANGED0-RL-05` is the 12-tile search radius; today `ai_think.rs` and
   `path_proposal.rs` do not carry it; VSL-MOVE-01 §8 requires "its own accepted implementation
   profile") and the actor-level clock above. #2113 lands that shared search module (player chase
   first, creature reuse by CREATURE-MOVE-1), not a player-only copy.
