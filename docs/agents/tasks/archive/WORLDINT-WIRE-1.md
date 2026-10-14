@@ -40,6 +40,7 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto
   - docs/contracts/protocol-oteryn/v1/world_object_v1.proto
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
+  - docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md
   - docs/agents/tasks/archive/WORLDINT-WIRE-1.md
 public_contracts: [PROTOCOL_OTERYN_V1_REGISTRY.json]
 external_repositories: []
@@ -48,7 +49,7 @@ external_repositories: []
 ## Outcome
 
 Registers capability 11 `WORLD_INTERACTION_V1` (requires 15 and 18, `offered: false`, gate WORLDINT-USE-1)
-and command type 15 `PUSH_INTENT` (`PushIntentV1`, flat, at most 37 bytes; result at most 4 bytes), adds
+and command type 15 `PUSH_INTENT` (`PushIntentV1`, flat, at most 41 bytes; result at most 4 bytes), adds
 the `map_item` arm of `UseIntentV1` field 4 `use_with` (`UseWithV1` field 3, a handle; needs capabilities 15 and 11, exclusive with the entity arm), the `GROUND` destination and the `BLOCKED` result of command type 9 for a map-item or Ground source under capability 11 (`EQUIPMENT` stays with capability 12) and the USE dispositions
 11 to 17 (LOCKED, KEY_MISMATCH, SEALED, PZ_BLOCKED, NOT_MOVABLE, NO_ROOM, NOT_POSSIBLE), per
 WORLD-INTERACTION-0 §10.1. The server gates command 15, rejects the map arm and refuses dispositions 11 to 17
@@ -59,11 +60,12 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 - Field 4 of `UseIntentV1` becomes the `UseWithV1` message (`EntityRefV1` fields 1 and 2 plus the
   `map_item` arm, field 3), wire-compatible with the previous entity-only field 4. This replaces the
   earlier top-level fields 6 and 7 (never shipped; the contract fixes the arm under field 4).
-- `PUSH_INTENT` is flat: identity, the full `uint64` generation, destination x and y (-2^20 to 2^20 - 1),
-  both always present (zero is an explicit varint; a payload without either fails closed). The bound is
-  37 bytes, 5 over `WORLDINT0-RL-21`'s 32: a flat absolute destination with a `uint64` generation cannot
-  fit 32. OWNER DECISION PENDING: `uint32` generation = exactly 32 B (narrows the session-generation
-  width), or a one-byte relative direction = 31 B with `uint64`. The destination floor is not sent: a
+- `PUSH_INTENT` is flat: identity, the full `uint64` generation, destination x and y over the full
+  `sint32` domain, both always present (zero is an explicit varint; a payload without either fails
+  closed). OWNER DECISION (2026-10-14, option A): keep the `uint64` generation and the full `sint32`
+  coordinates, so the bound is 41 bytes (18 + 11 + 6 + 6) and `WORLDINT0-RL-21` is amended docs-only from
+  32 to 41 in the WORLD-INTERACTION-0 decision (§10.1 and §12). This also closes the Codex P1 on the
+  former 3-byte coordinate range check, which is removed. The destination floor is not sent: a
   creature push never changes floor (Canary `Game::playerMoveCreature`: throw range 1 against z
   distance times 4).
 - `SEALED` carries the gate message id (`UseResultV1` / `PushResultV1` field 2, 1 to 127, so the result
@@ -86,6 +88,10 @@ without capability 11. Wire only: no runtime, no migration, nothing offered.
 - `python tools/agents/validate_governance.py`: pass ("Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy documents and 9 project lanes.")
 - `python -m unittest discover -s tools/agents/tests`: pass ("Ran 60 tests ... OK")
 - `cargo clippy` on both crates: no findings in the changed files
+- RL-21 amendment commit (41-byte bound, full `sint32` coordinates): `cargo fmt --all --check` pass;
+  `cargo clippy --locked -p oteryn-protocol-oteryn --all-targets -- -D warnings` pass;
+  `cargo test --locked -p oteryn-protocol-oteryn` pass (225, including the registry checks);
+  governance validation and `tools/agents/tests` (60) pass; `git diff --check` pass
 - `oteryn-architecture-check workspace .`: pass
 
 ## Self-review

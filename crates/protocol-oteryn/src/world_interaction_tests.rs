@@ -38,37 +38,37 @@ fn a_push_round_trips_and_the_largest_fits_the_bound() {
     let small = push(1, 32_000, 31_000);
     let bytes = encode_push_intent(&small).expect("encode");
     assert_eq!(decode_push_intent(&bytes), Ok(small));
+    // The full sint32 domain round-trips; i32::MIN and i32::MAX are both 5-byte zigzag varints.
     for largest in [
-        push(u64::MAX, MIN_PUSH_COORDINATE, MIN_PUSH_COORDINATE),
-        push(u64::MAX, MAX_PUSH_COORDINATE, MAX_PUSH_COORDINATE),
+        push(u64::MAX, i32::MIN, i32::MIN),
+        push(u64::MAX, i32::MAX, i32::MAX),
+        push(u64::MAX, i32::MIN, i32::MAX),
+        push(u64::MAX, i32::MAX, i32::MIN),
     ] {
         let bytes = encode_push_intent(&largest).expect("encode");
         assert_eq!(bytes.len(), MAX_PUSH_INTENT_BYTES);
         assert_eq!(decode_push_intent(&bytes), Ok(largest));
     }
-    let bytes = encode_push_intent(&push(u64::MAX, MIN_PUSH_COORDINATE, 1_000)).expect("encode");
-    assert_eq!(decode_push_intent(&bytes).expect("decode").to_y, 1_000);
+    for (to_x, to_y) in [(i32::MIN, 1_000), (-1, i32::MAX), (1 << 20, -(1 << 20) - 1)] {
+        let intent = push(1, to_x, to_y);
+        let bytes = encode_push_intent(&intent).expect("encode");
+        assert!(bytes.len() <= MAX_PUSH_INTENT_BYTES);
+        assert_eq!(decode_push_intent(&bytes), Ok(intent));
+    }
     // A zero coordinate is written explicitly and round-trips.
     let origin = push(2, 0, 0);
     let bytes = encode_push_intent(&origin).expect("encode");
     assert_eq!(&bytes[bytes.len() - 4..], &[0x18, 0, 0x20, 0]);
     assert_eq!(decode_push_intent(&bytes), Ok(origin));
-    assert_eq!(MAX_PUSH_INTENT_BYTES, 37);
+    assert_eq!(MAX_PUSH_INTENT_BYTES, 41);
 }
 
 #[test]
 fn malformed_pushes_fail_closed() {
-    for bad in [
-        push(0, 1, 1),
-        push(1, MAX_PUSH_COORDINATE + 1, 1),
-        push(1, 1, MIN_PUSH_COORDINATE - 1),
-    ] {
-        assert_eq!(
-            encode_push_intent(&bad),
-            Err(WorldInteractionWireError::Malformed),
-            "{bad:?}"
-        );
-    }
+    assert_eq!(
+        encode_push_intent(&push(0, 1, 1)),
+        Err(WorldInteractionWireError::Malformed)
+    );
     let good = encode_push_intent(&push(3, 10, 11)).expect("encode");
     let mut no_identity = Vec::new();
     push_varint_field(&mut no_identity, 2, 3);
@@ -92,9 +92,15 @@ fn malformed_pushes_fail_closed() {
     let mut far = Vec::new();
     push_message_field(&mut far, 1, &[1; 16]);
     push_varint_field(&mut far, 2, 1);
-    push_varint_field(&mut far, 3, 1 << 22);
+    push_varint_field(&mut far, 3, 1 << 32);
+    push_varint_field(&mut far, 4, 1);
     let mut oversized = good.clone();
     oversized.extend_from_slice(&[0; MAX_PUSH_INTENT_BYTES]);
+    // One byte over the bound fails on length before any field is read.
+    let mut one_over = encode_push_intent(&push(u64::MAX, i32::MIN, i32::MAX)).expect("encode");
+    assert_eq!(one_over.len(), MAX_PUSH_INTENT_BYTES);
+    push_varint(&mut one_over, 0);
+    assert_eq!(one_over.len(), MAX_PUSH_INTENT_BYTES + 1);
     for (payload, error) in [
         (Vec::new(), WorldInteractionWireError::Malformed),
         (no_identity, WorldInteractionWireError::Malformed),
@@ -108,6 +114,7 @@ fn malformed_pushes_fail_closed() {
         (truncated, WorldInteractionWireError::Malformed),
         (far, WorldInteractionWireError::Malformed),
         (oversized, WorldInteractionWireError::LimitExceeded),
+        (one_over, WorldInteractionWireError::LimitExceeded),
     ] {
         assert_eq!(decode_push_intent(&payload), Err(error), "{payload:?}");
     }

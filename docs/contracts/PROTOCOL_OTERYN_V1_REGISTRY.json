@@ -337,7 +337,7 @@
       "capability": 11,
       "payload_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushIntentV1",
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushResultV1",
-      "max_payload_bytes": 37,
+      "max_payload_bytes": 41,
       "max_result_payload_bytes": 4
     },
     {

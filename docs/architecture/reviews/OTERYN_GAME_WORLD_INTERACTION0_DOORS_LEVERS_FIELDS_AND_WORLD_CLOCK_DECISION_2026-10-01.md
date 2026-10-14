@@ -566,7 +566,11 @@ quest doors, quest format §3.1) stays sealed.
 - **Command 9** gains, under the capability, the sources `map_item {handle}` (a movable base item)
   and a Ground item handle (domain 1), each with the `GROUND {position}` destination (§7.2).
 - **New command `PUSH_INTENT`** (type number reserved at allocation): `{target {actor_id,
-  generation}, to WorldTilePosition}`, at most `WORLDINT0-RL-21` (32 bytes), non-durable.
+  generation}, to WorldTilePosition}`, at most `WORLDINT0-RL-21` (41 bytes), non-durable.
+  **Amendment (2026-10-14; owner decision, WORLDINT-WIRE-1 #2094).** `WORLDINT0-RL-21` was 32
+  bytes. The owner chose to keep the full `uint64` `session-generation` width and the full `sint32`
+  destination coordinates rather than narrow either, so the bound is 41 bytes: identity 1 + 1 + 16,
+  generation 1 + 10, x 1 + 5, y 1 + 5. Docs-only; the result bound (4 bytes) is unchanged.
 - **Dispositions**, under the capability, at most 4 bytes: `TOO_FAR`, `LOCKED`, `KEY_MISMATCH`,
   `SEALED` (with the gate's message id), `PZ_BLOCKED`, `NOT_MOVABLE`, `NO_ROOM`, `NOT_POSSIBLE`;
   the existing `EXHAUSTED`, `STALE`, `BLOCKED` and `NOTHING_TO_USE` are reused.
@@ -662,7 +666,7 @@ quest doors, quest format §3.1) stays sealed.
 | `WORLDINT0-RL-18` `WORLD_CLOCK` deltas per session; payload | at most 1 per 10,000 ms; at most 9 bytes |
 | `WORLDINT0-RL-19` clock skew between channels of a World | at most 1,000 ms, alarm above |
 | `WORLDINT0-RL-20` VIS-2 `light` field; updates per entity | at most 6 bytes; at most 1 per 1,000 ms |
-| `WORLDINT0-RL-21` `PUSH_INTENT` payload; result | at most 32 bytes; at most 4 bytes |
+| `WORLDINT0-RL-21` `PUSH_INTENT` payload; result | at most 41 bytes (amended from 32 on 2026-10-14, §10.1); at most 4 bytes |
 | `WORLDINT0-RL-22` `USE_INTENT` payload with the `map_item` arm of field 4 | at most 529 bytes (unchanged), measured by WORLDINT-WIRE-1 |
 | `DUR03-RL-01-GROUND-MOVE` touched items | 1 (a tree: `DUR03-RL-01-TREE-MOVE`, 500) |
 | `DUR03-RL-02-GROUND-MOVE` location lines | 2 |

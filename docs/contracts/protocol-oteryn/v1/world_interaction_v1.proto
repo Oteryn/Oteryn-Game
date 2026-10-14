@@ -16,11 +16,10 @@ import "world_object_v1.proto";
 
 // ClientCommand.payload of command type 15. A creature or player the session sees in
 // WORLD_SPATIAL_ENTITIES (EntityRefV1 fields 1 and 2, flat) and the tile it is pushed to on its
-// own floor: a creature push never changes floor. At most 37 bytes: the identity (1 + 1 + 16), the
-// full uint64 generation (1 + 10), x (1 + 3) and y (1 + 3). That is 5 over WORLDINT0-RL-21's 32,
-// kept because a uint32 generation would narrow the session-generation fence; the owner decides.
-// x and y are -2^20 to 2^20 - 1 and always present: zero is written explicitly (optional), and a
-// payload without either fails closed. Non-durable.
+// own floor: a creature push never changes floor. At most 41 bytes, the WORLDINT0-RL-21 bound as
+// amended by the owner on 2026-10-14: the identity (1 + 1 + 16), the full uint64 generation
+// (1 + 10), x (1 + 5) and y (1 + 5). x and y take the full sint32 domain and are always present:
+// zero is written explicitly (optional), and a payload without either fails closed. Non-durable.
 message PushIntentV1 {
   bytes target_identity = 1;
   uint64 target_generation = 2;
