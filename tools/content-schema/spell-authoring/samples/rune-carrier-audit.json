@@ -20,11 +20,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -51,6 +69,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "support",
      "pass": true,
@@ -67,6 +94,15 @@
       "canary": 3203,
       "crystal": 3203,
       "fandom": 3203
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -110,6 +146,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -166,11 +211,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -197,6 +260,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "healing",
      "pass": true,
@@ -213,6 +285,15 @@
       "canary": 3153,
       "crystal": 3153,
       "fandom": 3153
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -256,6 +337,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -312,11 +402,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 37,
      "victim_cap": 74
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -343,6 +451,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -359,6 +476,15 @@
       "canary": 3161,
       "crystal": 3161,
       "fandom": 3161
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -404,6 +530,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -460,11 +595,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -491,6 +644,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "support",
      "pass": true,
@@ -507,6 +669,15 @@
       "canary": 3178,
       "crystal": 3178,
       "fandom": 3178
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -550,6 +721,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -606,11 +786,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -637,6 +835,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "support",
      "pass": true,
@@ -653,6 +860,15 @@
       "canary": 3177,
       "crystal": 3177,
       "fandom": 3177
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -696,6 +912,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -753,11 +978,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -784,6 +1027,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "support",
      "pass": true,
@@ -800,6 +1052,15 @@
       "canary": 3197,
       "crystal": 3197,
       "fandom": 3197
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -846,6 +1107,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -902,11 +1172,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -933,6 +1221,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "support",
      "pass": true,
@@ -949,6 +1246,15 @@
       "canary": 3148,
       "crystal": 3148,
       "fandom": 3148
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -995,6 +1301,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1051,11 +1366,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1082,6 +1415,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1098,6 +1440,15 @@
       "canary": 3164,
       "crystal": 3164,
       "fandom": 3164
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1143,6 +1494,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1199,11 +1559,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 12,
      "victim_cap": 24
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1230,6 +1608,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1246,6 +1633,15 @@
       "canary": 3166,
       "crystal": 3166,
       "fandom": 3166
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1291,6 +1687,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1347,11 +1752,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1378,6 +1801,15 @@
      "ours": 2,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1394,6 +1826,15 @@
       "canary": 3149,
       "crystal": 3149,
       "fandom": 3149
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1439,6 +1880,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1495,11 +1945,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1526,6 +1994,15 @@
      "ours": 6,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1542,6 +2019,15 @@
       "canary": 3200,
       "crystal": 3200,
       "fandom": 3200
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1587,6 +2073,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1643,11 +2138,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1674,6 +2187,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1690,6 +2212,15 @@
       "canary": 3188,
       "crystal": 3188,
       "fandom": 3188
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1735,6 +2266,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1791,11 +2331,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1822,6 +2380,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1838,6 +2405,15 @@
       "canary": 3190,
       "crystal": 3190,
       "fandom": 3190
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -1883,6 +2459,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -1939,11 +2524,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -1970,6 +2573,15 @@
      "ours": 5,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -1986,6 +2598,15 @@
       "canary": 3189,
       "crystal": 3189,
       "fandom": 3189
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2031,6 +2652,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2087,11 +2717,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2118,6 +2766,15 @@
      "ours": 2,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -2134,6 +2791,15 @@
       "canary": 3192,
       "crystal": 3192,
       "fandom": 3192
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2179,6 +2845,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2235,11 +2910,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 37,
      "victim_cap": 74
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2266,6 +2959,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -2282,6 +2984,15 @@
       "canary": 3191,
       "crystal": 3191,
       "fandom": 3191
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2327,6 +3038,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2383,11 +3103,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2414,6 +3152,15 @@
      "ours": 10,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -2430,6 +3177,15 @@
       "canary": 3198,
       "crystal": 3198,
       "fandom": 3198
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2475,6 +3231,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2531,11 +3296,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2562,6 +3345,15 @@
      "ours": 5,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -2578,6 +3370,15 @@
       "canary": 3182,
       "crystal": 3182,
       "fandom": 3182
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2623,6 +3424,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2670,11 +3480,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2701,6 +3529,15 @@
      "ours": 5,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -2717,6 +3554,15 @@
       "canary": 3158,
       "crystal": 3158,
       "fandom": 3158
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2762,6 +3608,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -2818,11 +3673,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -2849,6 +3722,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "healing",
      "pass": true,
@@ -2865,6 +3747,15 @@
       "canary": 3152,
       "crystal": 3152,
       "fandom": 3152
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -2908,6 +3799,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "captured": "2026-10-09",
@@ -2967,11 +3867,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3000,6 +3918,15 @@
      "ours": 10,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3016,6 +3943,15 @@
       "canary": 3174,
       "crystal": 3174,
       "fandom": 3174
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3061,6 +3997,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -3117,11 +4062,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 5,
      "victim_cap": 10
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3146,6 +4109,15 @@
      "pass": true,
      "verdict": "no_conjuring_spell"
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3162,6 +4134,15 @@
       "canary": 21351,
       "crystal": 21351,
       "fandom": 21351
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3205,6 +4186,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "follows": [
@@ -3263,11 +4253,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3292,6 +4300,15 @@
      "pass": true,
      "verdict": "no_conjuring_spell"
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3308,6 +4325,15 @@
       "canary": 17512,
       "crystal": 17512,
       "fandom": 17512
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3351,6 +4377,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -3404,11 +4439,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3433,6 +4486,15 @@
      "pass": true,
      "verdict": "no_conjuring_spell"
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3449,6 +4511,15 @@
       "canary": 21352,
       "crystal": 21352,
       "fandom": 21352
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3492,6 +4563,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "follows": [
@@ -3550,11 +4630,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": true,
@@ -3581,6 +4679,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3597,6 +4704,15 @@
       "canary": 3180,
       "crystal": 3180,
       "fandom": 3180
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3642,6 +4758,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -3698,11 +4823,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3729,6 +4872,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "captured": "2026-10-09",
      "current": "attack",
@@ -3744,6 +4896,15 @@
       "canary": 3165,
       "crystal": 3165,
       "fandom": 3165
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3787,6 +4948,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -3836,11 +5006,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -3867,6 +5055,15 @@
      "ours": 2,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -3883,6 +5080,15 @@
       "canary": 3173,
       "crystal": 3173,
       "fandom": 3173
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -3928,6 +5134,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -3984,11 +5199,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4015,6 +5248,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4031,6 +5273,15 @@
       "canary": 3172,
       "crystal": 3172,
       "fandom": 3172
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4076,6 +5327,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4132,11 +5392,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 9,
      "victim_cap": 18
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4163,6 +5441,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4179,6 +5466,15 @@
       "canary": 3176,
       "crystal": 3176,
       "fandom": 3176
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4224,6 +5520,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4280,11 +5585,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4311,6 +5634,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4327,6 +5659,15 @@
       "canary": 3195,
       "crystal": 3195,
       "fandom": 3195
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4372,6 +5713,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4428,11 +5778,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4459,6 +5827,15 @@
      "ours": 10,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4475,6 +5852,15 @@
       "canary": 3179,
       "crystal": 3179,
       "fandom": 3179
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4520,6 +5906,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4576,11 +5971,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 37,
      "victim_cap": 74
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4607,6 +6020,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4623,6 +6045,15 @@
       "canary": 3175,
       "crystal": 3175,
       "fandom": 3175
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4668,6 +6099,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4724,11 +6164,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4755,6 +6213,15 @@
      "ours": 3,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4771,6 +6238,15 @@
       "canary": 3155,
       "crystal": 3155,
       "fandom": 3155
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4816,6 +6292,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -4872,11 +6357,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 37,
      "victim_cap": 74
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -4903,6 +6406,15 @@
      "ours": 4,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -4919,6 +6431,15 @@
       "canary": 3202,
       "crystal": 3202,
       "fandom": 3202
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -4964,6 +6485,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -5020,11 +6550,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": false,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": false,
@@ -5051,6 +6599,15 @@
      "ours": 1,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "healing",
      "pass": true,
@@ -5067,6 +6624,15 @@
       "canary": 3160,
       "crystal": 3160,
       "fandom": 3160
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -5110,6 +6676,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "follows": [
@@ -5170,11 +6745,29 @@
      },
      "verdict": "agree"
     },
+    "allow_on_self": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "area": {
      "creates_fields": true,
      "pass": true,
      "tiles": 1,
      "victim_cap": 2
+    },
+    "block_walls": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
     },
     "blocking_creature": {
      "ours": true,
@@ -5201,6 +6794,15 @@
      "ours": 2,
      "pass": true
     },
+    "check_floor": {
+     "ours": true,
+     "pass": true,
+     "references": {
+      "canary": true,
+      "crystal": true
+     },
+     "verdict": "agree"
+    },
     "group": {
      "ours": "attack",
      "pass": true,
@@ -5217,6 +6819,15 @@
       "canary": 3156,
       "crystal": 3156,
       "fandom": 3156
+     },
+     "verdict": "agree"
+    },
+    "needs_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
      },
      "verdict": "agree"
     },
@@ -5262,6 +6873,15 @@
      "stack_class": "StackCapable",
      "stack_max": 100,
      "stackable": true
+    },
+    "target_or_direction": {
+     "ours": false,
+     "pass": true,
+     "references": {
+      "canary": false,
+      "crystal": false
+     },
+     "verdict": "agree"
     },
     "vocations": {
      "ours": [
@@ -5316,6 +6936,7 @@
   ],
   "checks_pass": 34,
   "inventory": {
+   "duplicates": [],
    "expected": 36,
    "missing": [],
    "unexpected": []

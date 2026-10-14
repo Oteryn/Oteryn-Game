@@ -11,13 +11,15 @@ def profile(key, stackable=True, stack_max=100, stack_class='StackCapable'):
 
 
 def carrier(name, item, charges, area=None, creates_fields=False, group='attack', vocations=('sorcerer',),
-            aggressive=True):
+            aggressive=True, **targeting):
     abilities = [{'area': {'matrix': {'north': area}}}] if area else [{}]
     effects = [{'operation': 'create_item'}] if creates_fields else []
     return {'bundle': {'spell': {
         'name': name, 'carrier': 'rune', 'requirements': {'level': 1, 'vocations': list(vocations)},
         'costs': {'mana': 0, 'soul': 0}, 'groups': [{'group': group, 'cooldown_ms': 2000}],
-        'targeting': {'needs_target': False, 'aggressive': aggressive, 'self_target': False},
+        'targeting': {'needs_target': False, 'aggressive': aggressive, 'self_target': False, 'needs_direction': False,
+                      'target_or_direction': False, 'block_walls': True, 'allow_on_self': True, 'check_floor': True,
+                      **targeting},
         'rune': {'item': {'key': f'candidate:item/{item}'}, 'charges': charges, 'magic_level': 1,
                  'allow_far_use': True, 'blocking': {'solid': False, 'creature': False}},
         'execution': {'ability': {}}}}, 'dependencies': {'abilities': abilities, 'effects': effects}}
@@ -104,6 +106,9 @@ class RuneCarrierAuditTest(unittest.TestCase):
     def test_targeting_flags_and_native_resolution(self):
         _, rows = run([carrier('sudden death rune', 3155, 3, aggressive=False)], [profile('candidate:item/3155')])
         self.assertEqual(rows['sudden death rune']['failed'], ['aggressive'])
+        _, rows = run([carrier('sudden death rune', 3155, 3, block_walls=False, needs_direction=True)],
+                      [profile('candidate:item/3155')])
+        self.assertEqual(rows['sudden death rune']['failed'], ['block_walls', 'needs_direction'])
         native = audit.check(False, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
         self.assertEqual((native['verdict'], native['pass']), ('native_resolution', True))
         reverted = audit.check(True, {'canary': True, 'crystal': True}, recorded={'native': 'S27 D.2'})
@@ -125,6 +130,11 @@ class RuneCarrierAuditTest(unittest.TestCase):
         self.assertEqual(rows['unknown rune']['failed'], ['group', 'item_id', 'registrars', 'vocations'])
         self.assertEqual(summary['inventory']['unexpected'], ['unknown rune'])
         self.assertIsNone(rows['unknown rune']['section_9_group'])
+
+    def test_duplicate_carriers_are_reported(self):
+        entries = [carrier('sudden death rune', 3155, 3), carrier('sudden death rune', 3155, 3)]
+        summary, _ = run(entries, [profile('candidate:item/3155')])
+        self.assertEqual(summary['inventory']['duplicates'], ['sudden death rune'])
 
     def test_committed_audit_is_current(self):
         self.assertEqual(audit.main(['--check']), 0)

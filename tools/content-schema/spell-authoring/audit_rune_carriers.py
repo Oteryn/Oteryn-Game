@@ -7,7 +7,7 @@ carrier in `content/abilities/definitions/player-spells.json` the audit checks:
 - the rune users (vocations) against the wikis (S3), or, where no wiki states them, the agreeing
   Canary and Crystal registrars;
 - that both the Canary and the Crystal registrar records exist;
-- the cooldown group, the targeting flags (aggressive, self target, needs target) and far use against
+- the cooldown group, every targeting flag the converter maps (`TARGETING_FLAGS`) and far use against
   the Canary and Crystal registrars, and the range against the wikis and the registrars; where the
   references conflict, our value must be the one the catalogue manifest records as the winning source
   (S3/S11/S13/S14), and a recorded native resolution (S27) requires a value that differs from the
@@ -68,9 +68,13 @@ GROUPS = {
 }
 REQUIRED = ('item_id', 'vocations', 'group')
 # Registrar-backed targeting flags the converter maps (`convert_spells.py` targeting), by registrar call.
-TARGETING_FLAGS = (('aggressive', 'isAggressive'), ('self_target', 'isSelfTarget'), ('needs_target', 'needTarget'))
+TARGETING_FLAGS = (('aggressive', 'isAggressive'), ('self_target', 'isSelfTarget'), ('needs_target', 'needTarget'),
+                   ('needs_direction', 'needDirection'), ('target_or_direction', 'needCasterTargetOrDirection'),
+                   ('block_walls', 'blockWalls'), ('allow_on_self', 'allowOnSelf'), ('check_floor', 'checkFloor'))
 # The registrar defaults of an omitted call (`convert_spells.DEFAULTS`).
-REGISTRAR_DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'allowFarUse': False}
+REGISTRAR_DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
+                      'needCasterTargetOrDirection': False, 'blockWalls': True, 'allowOnSelf': True,
+                      'checkFloor': True, 'allowFarUse': False}
 
 def group_of(name):
     for group, (needs, names) in GROUPS.items():
@@ -278,10 +282,11 @@ def audit(catalogue, documents, census, resolutions, profiles):
                 for entry in catalogue['bundles'] if entry['bundle']['spell']['carrier'] == 'rune']
     carriers.sort(key=lambda row: row['name'])
     names = {row['name'] for row in carriers}
+    duplicates = sorted(name for name in names if sum(row['name'] == name for row in carriers) > 1)
     expected = {name for _, group in GROUPS.values() for name in group}
     summary = {'carriers': len(carriers),
                'inventory': {'expected': len(expected), 'missing': sorted(expected - names),
-                             'unexpected': sorted(names - expected)},
+                             'unexpected': sorted(names - expected), 'duplicates': duplicates},
                'checks_pass': sum(1 for row in carriers if row['verdict'] == 'checks_pass'),
                'checks_fail': sorted(row['name'] for row in carriers if row['verdict'] == 'checks_fail'),
                'largest_area_tiles': max((row['checks']['area']['tiles'] for row in carriers), default=0),
@@ -315,7 +320,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     doc = document()
     inventory = doc['summary']['inventory']
-    if inventory['missing'] or inventory['unexpected']:
+    if inventory['missing'] or inventory['unexpected'] or inventory['duplicates']:
         print(f'rune carrier inventory differs from RUNE-USE-0 section 9: {inventory}', file=sys.stderr)
         return 1
     text = render(doc)

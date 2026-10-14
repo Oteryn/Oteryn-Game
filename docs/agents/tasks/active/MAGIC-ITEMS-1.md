@@ -36,8 +36,9 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - `audit_rune_carriers.py` audits the 36 rune carriers of `content/abilities/definitions/player-spells.json`
   and writes `samples/rune-carrier-audit.json`; `--check` fails when the committed audit is stale. Checks
   per carrier: rune item ID (wikis, Canary and Crystal registrars), vocations (wikis, S3; the agreeing
-  registrars where no wiki states them), cooldown group, far use and the targeting flags `aggressive`,
-  `self_target` and `needs_target` (registrars), range (wikis and registrars). Where the references
+  registrars where no wiki states them), cooldown group, far use and every targeting flag the converter
+  maps (`aggressive`, `self_target`, `needs_target`, `needs_direction`, `target_or_direction`, `block_walls`,
+  `allow_on_self`, `check_floor`; registrars), range (wikis and registrars). Where the references
   conflict, our value must be that of the source the catalogue manifest records as the winner
   (S3/S11/S13/S14); a recorded native resolution (S27, Disintegrate non-aggressive) requires a value
   that differs from the references;
@@ -82,11 +83,16 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
   registrar `range` (Desintegrate 1 and Destroy Field 5 now agree instead of `no_source`).
 - Codex P2 on e38bbac5 (a native override reverted to the reference value passes): repaired; a recorded
   native resolution now requires a value that differs from the references.
+- Codex P2 on b83699ad (remaining converter targeting fields unaudited): repaired; `needs_direction`,
+  `target_or_direction`, `block_walls`, `allow_on_self` and `check_floor` are checked against the registrars
+  with the converter defaults (all 36 agree).
+- Codex P2 on b83699ad (duplicate carriers pass the inventory): repaired; the inventory reports duplicate
+  names and the tool exits 1 without writing when any exist.
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 10 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 11 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok
