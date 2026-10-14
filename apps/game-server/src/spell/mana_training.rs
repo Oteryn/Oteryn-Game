@@ -207,6 +207,27 @@ impl LiveManaTraining {
     pub(crate) fn pending_skills(&self) -> [u64; 7] {
         self.pending_skills
     }
+    /// Whether the pending tries of `family` reach its next level.
+    fn skill_level_due(
+        &self,
+        formula: &CompiledTrainingFormula,
+        family: SkillFamily,
+    ) -> Result<bool, TrainingError> {
+        let vocation = self.durable.vocation();
+        if formula.required(vocation, 0, 1).is_none() {
+            return Err(TrainingError::UnknownVocation);
+        }
+        let index = family.index();
+        let skill = self.durable.skills()[index];
+        Ok(advance(
+            formula,
+            vocation,
+            index + 1,
+            skill,
+            self.pending_skills[index],
+        )
+        .0 != skill.0)
+    }
     /// The hit streaks the caller resolves a hit with, before it records the tries.
     pub(crate) fn hits_mut(&mut self) -> &mut HitTrainingCounters {
         &mut self.hits
@@ -603,17 +624,36 @@ mod tests {
         // Without owned training (the production off switch) nothing trains.
         assert_eq!(
             state
-                .train_skill(SkillFamily::Sword, 1, |c| c
+                .train_skill(SkillFamily::Sword, 1, &f, |c| c
                     .melee_hit(hit_training::HitBlock::Unblocked))
                 .unwrap(),
-            0
+            TrainedSkill::default()
         );
         state.load_owned_build(&seed()).unwrap();
         state.enable_owned_training(&seed(), &f).unwrap();
         assert!(!state.has_training_to_flush());
+        // 49 of the 50 druid sword tries wait for the cadence; the 50th is due at once.
         assert_eq!(
-            state.train_skill(SkillFamily::Sword, 2, |_| 50).unwrap(),
-            50
+            state
+                .train_skill(SkillFamily::Sword, 2, &f, |_| 49)
+                .unwrap(),
+            TrainedSkill {
+                tries: 49,
+                checkpoint_due: false
+            }
+        );
+        assert!(
+            state
+                .prepare_training_checkpoint(2, &f, occurrence(), false)
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            state.train_skill(SkillFamily::Sword, 2, &f, |_| 1).unwrap(),
+            TrainedSkill {
+                tries: 1,
+                checkpoint_due: true
+            }
         );
         assert!(state.has_training_to_flush());
         assert_eq!(state.owned_skills.unwrap()[2], 10);
@@ -903,6 +943,14 @@ impl TrainingPaymentWitness {
     }
 }
 
+/// The outcome of [`super::cast::PlayerSpellState::train_skill`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct TrainedSkill {
+    pub(crate) tries: u64,
+    /// The pending tries reach a level: the caller saves the checkpoint now.
+    pub(crate) checkpoint_due: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RetainedTrainingCheckpoint {
     pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
@@ -952,26 +1000,36 @@ impl super::cast::PlayerSpellState {
             })
     }
     /// W2b: one resolved hit or use trains `family` by the tries `rule` derives from the hit
-    /// streaks. Returns the tries banked. Without owned training (no active formula, the
-    /// production off switch) nothing trains. While a checkpoint is retained for replay the
-    /// tries are dropped, since the replay only commits onto its exact `before`.
+    /// streaks. Without owned training (no active formula, the production off switch) nothing
+    /// trains. While a checkpoint is retained for replay the tries are dropped, since the replay
+    /// only commits onto its exact `before`.
+    ///
+    /// SKILLS-0 §3.4: a level advance commits at once. When the banked tries reach a level the
+    /// result says `checkpoint_due`, and the caller saves the training checkpoint in the same
+    /// owner turn (`save_spell_training`), not at the cadence tick. The level is live only after
+    /// that receipt (A13 §2).
     pub(crate) fn train_skill(
         &mut self,
         family: SkillFamily,
         now: u64,
+        formula: &CompiledTrainingFormula,
         rule: impl FnOnce(&mut HitTrainingCounters) -> u64,
-    ) -> Result<u64, TrainingError> {
+    ) -> Result<TrainedSkill, TrainingError> {
         if self.training_checkpoint.is_some() {
-            return Ok(0);
+            return Ok(TrainedSkill::default());
         }
         let Some(current) = self.training.as_ref() else {
-            return Ok(0);
+            return Ok(TrainedSkill::default());
         };
         let mut next = current.clone();
         let tries = rule(next.hits_mut());
         next.record_skill_tries(family, tries, now)?;
+        let checkpoint_due = next.skill_level_due(formula, family)?;
         self.training = Some(next);
-        Ok(tries)
+        Ok(TrainedSkill {
+            tries,
+            checkpoint_due,
+        })
     }
     pub(crate) fn pending_training_checkpoint(&self) -> Option<&RetainedTrainingCheckpoint> {
         self.training_checkpoint.as_deref()
