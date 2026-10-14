@@ -399,8 +399,9 @@ These are the caps of the §6.4 named aggregate. The one-item caps (`DUR03-RL-01
 | `DUR03-RL-02-WEAPON` location lines; quantity changes | burn 1 removal at zero, else 0 location and 1 quantity change; split 1 location, 2 quantity changes; whole drop 2 location; merge 0 location (1 removal when the source retires), 2 quantity changes |
 | `DUR03-RL-06-WEAPON` participants / effect work units | one participant per touched item: burn 1 / 3 (participant, removal, retirement at zero); split 2 / 4; whole drop 1 / 3; merge 2 / 5 (source participant, decrement, retirement at zero; receiver participant, increment); with max and max+1 boundary tests |
 | `DUR03-RL-07-WEAPON-EVENTS` | 1 event per logical transaction |
-| `DUR03-RL-07-WEAPON-PAYLOAD-BYTES` | 8,192 (the one-item 7,936 plus 256 for the second participant, as B3 §4.5) |
-| `DUR03-RL-07-WEAPON-ENVELOPE-BYTES` | 9,472 (the one-item 9,216 plus the same 256); RANGED-1 proves the worst case (split, merge) within them with max and max+1 tests |
+| `DUR03-RL-07-WEAPON-PAYLOAD-BYTES` | 7,936 (the existing one-item `DUR03-RL-07-PAYLOAD-BYTES`, unchanged) |
+| `DUR03-RL-07-WEAPON-ENVELOPE-BYTES` | 9,216 (the existing one-item envelope, unchanged) |
+| Fit proof | RANGED-1 serializes the split and the merge worst cases (B3 §4.5 measured its two-participant worst case at 7,821 bytes under the same caps) and records them with max and max+1 tests; a larger cap needs a measured amendment, not a guess |
 | `RANGED0-RL-01` weapon transactions in flight per channel | 256; above it a due swing makes no attack (a stall) |
 | `RANGED0-RL-02` ambiguous commit bound | 2,000 ms |
 
