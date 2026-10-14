@@ -112,6 +112,9 @@ fn premium_activation_latch_waits_for_a_bypass_holding_the_shared_lock() -> Test
         );
         assert_eq!(harness.count("game_premium_activation_latch").await?, 0);
         bypass.commit().await?;
+        // The failed pass retired its holder: the root is ready again after one maintenance
+        // window, as after any failed pass.
+        assert!(root.maintain_ready_once().await?);
         root.latch_premium_activation("activation-1", S, S).await?;
         // A latch holding the lock exclusively blocks a new shared reader until it commits.
         let mut latching = harness.pool.begin().await?;
