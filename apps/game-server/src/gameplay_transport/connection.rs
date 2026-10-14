@@ -58,6 +58,7 @@ use super::world_spatial::{
     encode_world_spatial, moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
+use crate::chat::EGRESS_MAX_LINES;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
@@ -582,9 +583,15 @@ pub(crate) trait FreshAdmissionAuthority {
         }
     }
 
-    /// CHAT-WIRE-1: every line queued for the session since the last call, oldest first.
-    fn chat_drain(&self, _session: GameSessionId) -> impl Future<Output = Vec<ChatLine>> {
-        async { Vec::new() }
+    /// CHAT-WIRE-1: the oldest line queued for the session, if any.
+    fn chat_next(&self, _session: GameSessionId) -> impl Future<Output = Option<ChatLine>> {
+        async { None }
+    }
+
+    /// CHAT-WIRE-1: the real line last returned by `chat_next` was written to the client; it
+    /// stops counting against `CHAT0-RL-11`.
+    fn chat_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
+        async {}
     }
 
     /// NPC-CMD-1a: a session with capability 3 starts (or restarts) without a conversation.
@@ -1887,7 +1894,12 @@ where
             Next::Chat => {
                 // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
                 // delta; an empty queue sends nothing.
-                for line in authority.chat_drain(admitted.game_session_id).await {
+                // At most one full queue per refresh: lines that keep arriving cannot hold the
+                // connection here, and the rest waits for the next tick.
+                for _ in 0..EGRESS_MAX_LINES {
+                    let Some(line) = authority.chat_next(admitted.game_session_id).await else {
+                        break;
+                    };
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
                         generation,
                         sequence,
@@ -1901,6 +1913,10 @@ where
                     admitted.continuity.chat_revision = revision;
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    // A marker takes no slot, so only a real line frees one.
+                    if !matches!(line, ChatLine::Dropped) {
+                        authority.chat_delivered(admitted.game_session_id).await;
                     }
                 }
                 continue;

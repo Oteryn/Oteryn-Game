@@ -603,7 +603,7 @@ fn line_values_carry_the_mode_text_and_position() {
 }
 
 #[test]
-fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
+fn a_sent_marker_covers_further_overflow_until_a_line_is_delivered() {
     let mut egress = ChatEgress::new();
     for n in 0..EGRESS_MAX_LINES {
         egress.push(room_text(n));
@@ -612,7 +612,7 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
     egress.push(room_text(101));
     assert_eq!(egress.pop(), Some(room_text(2)));
-    // A line was sent: the next overflow owes a new marker.
+    // A line was delivered: the next overflow owes a new marker.
     egress.push(room_text(102));
     egress.push(room_text(103));
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
@@ -719,4 +719,77 @@ fn the_pre_gate_mutes_an_empty_bucket_yell_before_the_level_is_known() {
         Err(ChatRefusal::Muted { seconds: 5 })
     );
     assert!(limiter.is_muted(at_ms(0)));
+}
+
+#[test]
+fn egress_bound_is_the_registered_chat0_rl_11_row() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .expect("resource registry");
+    let rows: Vec<&serde_json::Value> = registry["entries"]
+        .as_array()
+        .expect("entries")
+        .iter()
+        .filter(|entry| entry["id"] == "CHAT0-RL-11")
+        .collect();
+    assert_eq!(rows.len(), 1, "CHAT0-RL-11 registered once");
+    assert_eq!(
+        rows[0]["hard_maximum"].as_u64(),
+        Some(EGRESS_MAX_LINES as u64)
+    );
+}
+
+#[test]
+fn a_line_being_written_counts_against_the_bound_until_delivered() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    assert_eq!(
+        egress.next_for_write(),
+        Some(private_line("Alice", &text("first")))
+    );
+    // 63 queued plus the one being written fill the bound: a new room line evicts the oldest
+    // queued room line and owes one marker.
+    egress.push(room_text(100));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert_eq!(egress.next_for_write(), Some(room_text(2)));
+}
+
+#[test]
+fn the_line_being_written_keeps_its_slot_and_is_never_retracted() {
+    let mut egress = ChatEgress::new();
+    egress.push(room_text(0));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(private_line("Alice", &text(&format!("p{n}"))));
+    }
+    assert_eq!(egress.next_for_write(), Some(room_text(0)));
+    // 63 queued plus the one being written fill the bound: an equal-rank private line evicts
+    // the oldest queued private line, so queued plus in-flight never exceed 64.
+    egress.push(private_line("Bob", &text("new")));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+}
+
+#[test]
+fn a_marker_keeps_covering_overflow_until_a_line_is_delivered() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    egress.push(room_text(100));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert!(egress.next_for_write().is_some());
+    // The line is written but not yet delivered: the marker still covers this overflow.
+    egress.push(room_text(101));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    egress.delivered();
+    // Delivered: the marker no longer covers later overflow.
+    egress.push(room_text(102));
+    egress.push(room_text(103));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
 }
