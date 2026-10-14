@@ -6,7 +6,8 @@
 //! of the next line. Overflow after it re-arms nothing until a line has been sent, so a flood
 //! can neither grow a session's backlog nor starve its queued lines. The one line handed out by
 //! [`ChatEgress::next_for_write`] stays counted against the bound until [`ChatEgress::delivered`],
-//! so queued plus in-flight lines never exceed [`EGRESS_MAX_LINES`].
+//! so queued plus in-flight lines never exceed [`EGRESS_MAX_LINES`]. The in-flight line is already
+//! on its way to the client and cannot be retracted, so the drop order covers the queued lines only.
 
 use std::collections::VecDeque;
 
@@ -32,11 +33,9 @@ pub(crate) struct ChatEgress {
     /// A marker was sent and no line has been delivered since: further overflow stays covered
     /// by it.
     marker_sent: bool,
-    /// Drop rank of the line handed out by [`Self::next_for_write`] and not yet delivered; 0
-    /// when the slot is free (nothing in flight, or the line was retracted from the count).
-    in_flight_rank: u8,
-    /// A real line is being written to the client.
-    writing: bool,
+    /// A real line was handed out by [`Self::next_for_write`] and is not yet delivered. It is
+    /// being written to the client, so it cannot be retracted: it keeps its slot until then.
+    in_flight: bool,
 }
 
 impl ChatEgress {
@@ -50,24 +49,14 @@ impl ChatEgress {
             self.marker_owed = true;
             return;
         }
-        let slot = usize::from(self.in_flight_rank > 0);
-        if self.lines.len() + slot >= EGRESS_MAX_LINES {
-            let queued_worst = self.lines.iter().map(drop_rank).max().unwrap_or(0);
-            let worst = queued_worst.max(self.in_flight_rank);
+        if self.lines.len() + usize::from(self.in_flight) >= EGRESS_MAX_LINES {
+            self.marker_owed = !self.marker_sent;
+            let worst = self.lines.iter().map(drop_rank).max().unwrap_or(0);
             if drop_rank(&line) > worst {
-                self.marker_owed = !self.marker_sent;
                 return;
             }
-            if self.in_flight_rank == worst {
-                // The in-flight line is the oldest of the cheapest class. It is already being
-                // written and still reaches the client, so it is retracted from the count only:
-                // nothing is lost and no marker is owed.
-                self.in_flight_rank = 0;
-            } else {
-                self.marker_owed = !self.marker_sent;
-                if let Some(index) = self.lines.iter().position(|q| drop_rank(q) == worst) {
-                    self.lines.remove(index);
-                }
+            if let Some(index) = self.lines.iter().position(|q| drop_rank(q) == worst) {
+                self.lines.remove(index);
             }
         }
         self.lines.push_back(line);
@@ -95,25 +84,21 @@ impl ChatEgress {
     /// queued and so subject to the drop order.
     pub(crate) fn next_for_write(&mut self) -> Option<ChatLine> {
         let line = self.take()?;
-        let real = !matches!(line, ChatLine::Dropped);
-        self.writing = real;
-        self.in_flight_rank = if real { drop_rank(&line) } else { 0 };
+        self.in_flight = !matches!(line, ChatLine::Dropped);
         Some(line)
     }
 
     /// The last real line of [`Self::next_for_write`] was written to the client: its slot is
     /// free and a marker no longer covers later overflow.
     pub(crate) fn delivered(&mut self) {
-        if std::mem::take(&mut self.writing) {
+        if std::mem::take(&mut self.in_flight) {
             self.marker_sent = false;
         }
-        self.in_flight_rank = 0;
     }
 
     /// Drops every queued line without a marker (a replacement snapshot drops lines).
     pub(crate) fn clear(&mut self) {
-        self.in_flight_rank = 0;
-        self.writing = false;
+        self.in_flight = false;
         self.lines.clear();
         self.marker_owed = false;
         self.marker_sent = false;

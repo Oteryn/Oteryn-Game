@@ -55,6 +55,7 @@ use super::world_spatial::{
     encode_world_spatial, moved_step_wait_ms, step_wait_receipts_enabled, too_early_step_wait_ms,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
+use crate::chat::EGRESS_MAX_LINES;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
@@ -1868,7 +1869,12 @@ where
             Next::Chat => {
                 // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
                 // delta; an empty queue sends nothing.
-                while let Some(line) = authority.chat_next(admitted.game_session_id).await {
+                // At most one full queue per refresh: lines that keep arriving cannot hold the
+                // connection here, and the rest waits for the next tick.
+                for _ in 0..EGRESS_MAX_LINES {
+                    let Some(line) = authority.chat_next(admitted.game_session_id).await else {
+                        break;
+                    };
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
                         generation,
                         sequence,

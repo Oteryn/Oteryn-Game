@@ -8203,12 +8203,12 @@
         "maximum": 64
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination. The connection takes one line at a time, so at most 1 line is in flight and at most 63 more are queued; the in-flight line stays counted until it is written. The drop order covers the in-flight line too: when it is the cheapest, a new line takes its slot (it is already being written and still reaches the client, so nothing is lost and no marker is owed). A marker keeps covering later overflow until a real line is delivered.",
+      "allocation_impact": "The per-session egress queue never holds more than 64 lines; beyond it the oldest line of the cheapest class is dropped (room, then local, then private) and one DROPPED marker (domain 12 delta type 1) is owed ahead of the next line. The marker takes no slot, so a room flood cannot grow the backlog or trip slow-client termination. The connection takes one line at a time, so at most 1 line is in flight and at most 63 more are queued; the in-flight line stays counted until it is written. The in-flight line is already being written and cannot be retracted, so it keeps its slot until delivered and the drop order covers the queued lines only. A marker keeps covering later overflow until a real line is delivered.",
       "client_visible": true,
       "boundary_tests": [
         "max=64: 64 queued lines are all kept and none owes a marker",
         "max+1=65: a 65th line drops the oldest room line and owes exactly one marker; a sent marker covers further overflow until a line is sent",
-        "in flight: 1 line being written plus 63 queued fill the bound, and a new line evicts the cheapest queued line or, when the in-flight line is cheapest, takes its slot; a marker covers overflow until a line is delivered"
+        "in flight: 1 line being written plus 63 queued fill the bound, and a new line evicts the cheapest queued line and queued plus in-flight never exceed 64; a marker covers overflow until a line is delivered"
       ],
       "consumers": [
         "apps/game-server/src/chat/egress.rs EGRESS_MAX_LINES, ChatEgress::push",

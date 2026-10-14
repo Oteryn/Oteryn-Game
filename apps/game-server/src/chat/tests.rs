@@ -675,21 +675,18 @@ fn a_line_being_written_counts_against_the_bound_until_delivered() {
 }
 
 #[test]
-fn the_drop_order_covers_the_line_being_written() {
+fn the_line_being_written_keeps_its_slot_and_is_never_retracted() {
     let mut egress = ChatEgress::new();
     egress.push(room_text(0));
     for n in 1..EGRESS_MAX_LINES {
         egress.push(private_line("Alice", &text(&format!("p{n}"))));
     }
     assert_eq!(egress.next_for_write(), Some(room_text(0)));
-    // The cheapest line is the room line already being written: a new private line takes its
-    // slot rather than being dropped, and nothing is lost, so no marker is owed.
-    let local = private_line("Bob", &text("new"));
-    egress.push(local.clone());
-    assert_eq!(egress.len(), EGRESS_MAX_LINES);
-    let rest = drain(&mut egress);
-    assert!(!rest.contains(&ChatLine::Dropped));
-    assert_eq!(rest.last(), Some(&local));
+    // 63 queued plus the one being written fill the bound: an equal-rank private line evicts
+    // the oldest queued private line, so queued plus in-flight never exceed 64.
+    egress.push(private_line("Bob", &text("new")));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
 }
 
 #[test]
