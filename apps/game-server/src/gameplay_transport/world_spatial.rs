@@ -264,7 +264,8 @@ impl SessionVisibility {
             .filter(|light| light.level != 0)
     }
 
-    /// Records `light` as sent for `identity` at `now`.
+    /// Records `light` as sent for `identity` at `now`. Showing an entity unlit is a sent light
+    /// too: its first shown time starts the interval, so a light it gains next waits its turn.
     fn send_light(
         &mut self,
         identity: [u8; ENTITY_IDENTITY_BYTES],
@@ -272,6 +273,7 @@ impl SessionVisibility {
         now: u64,
     ) {
         if self.lights.get(&identity).copied() == light {
+            self.light_sent_at.entry(identity).or_insert(now);
             return;
         }
         self.light_sent_at.insert(identity, now);
@@ -1036,6 +1038,40 @@ mod tests {
         view.refresh(&lit(channel([]), 600, &[]), &mut no_handles)
             .expect("leave");
         assert!(view.lights().is_empty());
+    }
+
+    #[test]
+    fn an_entity_shown_unlit_gains_a_light_only_once_due() {
+        let others = || [at(1, VisibleKind::Player, 101, 100, 7)];
+        let mut view = SessionVisibility::default().lit(true);
+        view.snapshot(&lit(channel(others()), 0, &[]), &mut no_handles)
+            .expect("snapshot");
+        assert!(view.lights().is_empty());
+        let early = view
+            .refresh(&lit(channel(others()), 250, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(early, VisibilityUpdate::Unchanged));
+        assert!(view.lights().is_empty());
+        let due = view
+            .refresh(&lit(channel(others()), 1_000, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&due), [id(1)]);
+        assert_eq!(view.lights().get(&id(1)).map(|light| light.level), Some(40));
+
+        // An entity entering unlit starts its interval at the enter as well.
+        let mut view = SessionVisibility::default().lit(true);
+        view.snapshot(&lit(channel([]), 0, &[]), &mut no_handles)
+            .expect("snapshot");
+        view.refresh(&lit(channel(others()), 2_000, &[]), &mut no_handles)
+            .expect("enter");
+        let early = view
+            .refresh(&lit(channel(others()), 2_250, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(early, VisibilityUpdate::Unchanged));
+        let due = view
+            .refresh(&lit(channel(others()), 3_000, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&due), [id(1)]);
     }
 
     fn no_handles(_: &mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError> {
