@@ -28,6 +28,7 @@ use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
+use super::input_gate::InputPermit;
 use super::item_move::{
     self, EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
     ItemMoveStep,
@@ -327,6 +328,13 @@ pub(crate) trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
+    /// OPS-SAVE-2: the permit one player command runs under, or `None` once the node is
+    /// quiescing for its shutdown save: the command then has no effect and gets a rejected
+    /// result. Authorities without a shutdown save never refuse.
+    fn enter_input(&self) -> impl Future<Output = Option<InputPermit<'_>>> {
+        async { Some(InputPermit::ungated()) }
+    }
+
     /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
     /// the registry's offered set; tests inject theirs.
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
@@ -423,6 +431,17 @@ pub(crate) trait FreshAdmissionAuthority {
         _actor: ExactActorRef,
         _use: UseCommand,
         _target: super::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
+    }
+
+    /// ITEM-USE-1c: one `USE` of the main backpack direct entry `item` (food or a potion) under
+    /// capability 15. `command` is as for [`Self::use_object`].
+    fn use_item(
+        &self,
+        _actor: ExactActorRef,
+        _use: UseCommand,
+        _item: ItemKey,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
     }
@@ -2113,10 +2132,14 @@ where
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
         // like an unregistered one, before any decode or authority call.
-        let mut dispatch = if !admitted
-            .continuity
-            .selected_capabilities
-            .command_selected(command.command_type)
+        // OPS-SAVE-2: the permit is held while the command runs, not while its result is
+        // written, so the shutdown snapshot waits for the effect only.
+        let input_permit = authority.enter_input().await;
+        let mut dispatch = if input_permit.is_none()
+            || !admitted
+                .continuity
+                .selected_capabilities
+                .command_selected(command.command_type)
         {
             Dispatch::Unregistered
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
@@ -2187,11 +2210,36 @@ where
                             ContainerObservation::Container { .. } | ContainerObservation::TooFar
                         )
                     });
-                    let observation = match key.filter(|_| container.is_none()) {
+                    // ITEM-USE-1c: under capability 15 a main backpack entry that opens nothing
+                    // is used (food, a potion); every other handle keeps the corpse path.
+                    let consumable = container.is_none()
+                        && matches!(key, Some(ItemKey::Instance(_)))
+                        && admitted
+                            .continuity
+                            .selected_capabilities
+                            .contains(CAPABILITY_ITEM_USE_V1)
+                        && item_view
+                            .as_ref()
+                            .zip(key)
+                            .is_some_and(|(view, key)| view.is_backpack_entry(&key));
+                    let observation = match key.filter(|_| container.is_none() && !consumable) {
                         Some(key) => authority.observe_item_target(actor, key).await,
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
+                        (_, Some(key), _) if consumable => Dispatch::Use(
+                            authority
+                                .use_item(
+                                    actor,
+                                    UseCommand {
+                                        game_session_id: admitted.game_session_id,
+                                        command_id: command.command_id,
+                                        item_fence: admitted.item_fence,
+                                    },
+                                    key,
+                                )
+                                .await,
+                        ),
                         (Some(view), Some(key), _) if container.is_some() => {
                             let Some(views) = container_views.as_mut() else {
                                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -2492,6 +2540,7 @@ where
         } else {
             Dispatch::Unregistered
         };
+        drop(input_permit);
         let (Some(result_sequence), Some(following)) =
             (sequence.checked_add(1), next_command.checked_add(1))
         else {
@@ -2767,6 +2816,31 @@ where
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
+                }
+                // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
+                // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
+                if outcome.disposition == UseDisposition::Committed
+                    && admitted.continuity.vitals_revision != 0
+                    && let Some((to, value)) = authority
+                        .observe_vitals(actor, admitted.game_session_id)
+                        .await
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    admitted.continuity.vitals_revision = to;
                 }
                 // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
                 // per-connection: its "from" revision is always the committed entry's own
