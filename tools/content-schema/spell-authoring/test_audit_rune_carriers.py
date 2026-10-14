@@ -160,6 +160,11 @@ class RuneCarrierAuditTest(unittest.TestCase):
         row = audit.check(99, {'canary': 5, 'crystal': 5})
         self.assertEqual((row['verdict'], row['pass']), ('ours_differs', False))
 
+    def test_source_silent_field_must_stay_absent(self):
+        self.assertTrue(audit.check(None, {})['pass'])
+        row = audit.check(99, {})
+        self.assertEqual((row['verdict'], row['pass']), ('no_source', False))
+
     def test_both_registrar_records_are_required(self):
         entries = [carrier('sudden death rune', 3155, 3)]
         _, rows = run(entries, [profile('candidate:item/3155')], drop='crystal')
@@ -169,7 +174,11 @@ class RuneCarrierAuditTest(unittest.TestCase):
 
     def test_missing_item_evidence_fails(self):
         summary, rows = run([carrier('unknown rune', 9999, 1)], [profile('candidate:item/9999')])
-        self.assertEqual(rows['unknown rune']['failed'], ['group', 'item_id', 'registrars', 'vocations'])
+        failed = set(rows['unknown rune']['failed'])
+        self.assertLessEqual({'group', 'item_id', 'registrars', 'vocations'}, failed)
+        # With no reference at all, every flag the catalogue states is an unsourced value and fails too.
+        self.assertIn('block_walls', failed)
+        self.assertNotIn('range_tiles', failed)
         self.assertEqual(summary['inventory']['unexpected'], ['unknown rune'])
         self.assertIsNone(rows['unknown rune']['section_9_group'])
 

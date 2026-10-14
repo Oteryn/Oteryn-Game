@@ -120,10 +120,11 @@ def check(ours, found, required=False, recorded=None):
     Several recorded sources are agreement provenance, not a winner: when they now diverge, the converter's S4 rule
     applies (Canary decides a registrar-only conflict) and any other such conflict fails.
     A recorded native resolution (S27) requires our value to differ from the agreeing references; it is the only
-    way such a value passes."""
+    way such a value passes. When every reference is silent the field must stay absent."""
     recorded = recorded or {}
     verdict, follows = vs.classify(ours, found)
-    passed = verdict == 'agree' or (verdict == 'no_source' and not required)
+    # A source-silent field passes only while absent, as the converter omits it then; a value needs a source.
+    passed = verdict == 'agree' or (verdict == 'no_source' and not required and ours is None)
     row = {'ours': ours, 'references': found, 'verdict': verdict}
     if verdict == 'sources_disagree':
         row['follows'] = follows

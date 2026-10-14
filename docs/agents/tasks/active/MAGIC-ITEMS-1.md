@@ -106,11 +106,14 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - Codex P2 on 34edef0b (`pz_locks_caster` unaudited): repaired; `pz_locks_caster` and `needs_weapon`,
   the converter's registrar-only spell flags, are checked against both registrars (all 36 agree). The
   other mapped spell facts are wiki-stated and already compared by `verify_spells.py`.
+- Codex P2 on db42842a (an unsourced `range_tiles` passes as `no_source`): repaired at the root; a
+  source-silent field now passes only while absent, as the converter omits it, so any value without a
+  reference fails. All 36 carriers keep their verdicts (the 10 source-silent ranges are absent).
 
 ## Validation
 
 - `python3 tools/content-schema/spell-authoring/audit_rune_carriers.py --check`: up to date
-- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 15 tests OK
+- `python3 -m unittest test_audit_rune_carriers` (spell-authoring): 16 tests OK
 - spell-authoring `unittest discover`: 337 run; the 8 errors need the pinned engine checkouts
   (`_sources/canary`) and are identical on `main`
 - `python3 verify_spells.py self-test`: ok
