@@ -263,5 +263,28 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
         self.assert_incomplete(snap)
 
 
+class ShaValidationTest(unittest.TestCase):
+    def test_non_hex_or_short_sha_fails_closed_everywhere(self):
+        spots = (
+            lambda s: s["candidate"], lambda s: s["checks"]["runs"][0], lambda s: s["review"]["reviews"][0],
+            lambda s: s["evidence"]["required"][0], lambda s: s["authorization"],
+        )
+        for bad in ("g" * 40, "a" * 39, "", None, 5):
+            for get in spots:
+                snap = ready()
+                get(snap)["head_sha"] = bad
+                self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], (bad, get(snap)))
+
+    def test_non_hex_sha_in_prior_failure_fails_closed(self):
+        snap = ready()
+        snap["queue"]["prior_failures"] = [{"head_sha": "g" * 40, "cause_addressed": False}]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_uppercase_hex_matches_same_head(self):
+        snap = ready()
+        snap["candidate"]["head_sha"] = HEAD.upper()
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+
 if __name__ == "__main__":
     unittest.main()

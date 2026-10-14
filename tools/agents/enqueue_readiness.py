@@ -11,6 +11,7 @@ Exit code: 0 ENQUEUE_ELIGIBLE, 3 BLOCKED, 4 NOOP (already queued or merged), 2 i
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime
 
@@ -54,6 +55,13 @@ def _parse_at(value) -> datetime:
     return parsed
 
 
+def _sha(value) -> str:
+    """A git object id: exactly 40 hex digits (case-insensitive), normalised to lowercase."""
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", value):
+        raise ValueError(f"expected a 40-character hex SHA, got {value!r}")
+    return value.lower()
+
+
 def _count(value) -> int:
     """A count must be a real non-negative JSON integer (not bool, float or string)."""
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
@@ -72,9 +80,7 @@ def evaluate(snapshot) -> dict:
 
 def _evaluate(s: dict) -> dict:
     cand = s["candidate"]
-    head = _text(cand["head_sha"])
-    if len(head) != 40:
-        raise ValueError("candidate.head_sha must be a full 40-character SHA")
+    head = _sha(cand["head_sha"])
     pr = cand["pr"]
     if _flag(cand["merged"]) or _flag(cand["queued"]):
         return {"verdict": "NOOP", "blockers": [], "ready_at": None}
@@ -95,7 +101,7 @@ def _evaluate(s: dict) -> dict:
     if not isinstance(required, list) or CANONICAL_CHECK not in required:
         raise ValueError(f"checks.required must include {CANONICAL_CHECK}")
     for name in required:
-        hit = [r for r in runs if r["name"] == name and r["head_sha"] == head]
+        hit = [r for r in runs if r["name"] == name and _sha(r["head_sha"]) == head]
         if len(hit) > 1:
             # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
             ats = [_parse_at(r.get("at")) for r in hit]
@@ -113,7 +119,7 @@ def _evaluate(s: dict) -> dict:
 
     review = s["review"]
     if _flag(review["required"]):
-        exact = [r for r in review["reviews"] if r["head_sha"] == head]
+        exact = [r for r in review["reviews"] if _sha(r["head_sha"]) == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
         elif any(r["state"] != "completed" for r in exact):
@@ -133,7 +139,7 @@ def _evaluate(s: dict) -> dict:
             stamp(s["threads"], "resolved_at")
 
     for item in s["evidence"]["required"]:
-        if not _flag(item["present"]) or item["head_sha"] != head:
+        if not _flag(item["present"]) or _sha(item["head_sha"]) != head:
             found["EVIDENCE"] = _blocker("EVIDENCE_MISSING", "writer", f"evidence {item['name']} bound to head {head[:12]}")
             break
         stamp(item)
@@ -145,7 +151,7 @@ def _evaluate(s: dict) -> dict:
         stamp(dep)
 
     for failure in s["queue"]["prior_failures"]:
-        if failure["head_sha"] != head:
+        if _sha(failure["head_sha"]) != head:
             continue
         if _flag(failure["cause_addressed"]):
             # Required: when the diagnosis showing the cause is outside the candidate was recorded.
@@ -161,7 +167,7 @@ def _evaluate(s: dict) -> dict:
     scope = auth["scope"]
     if not isinstance(scope, list) or not all(isinstance(x, str) for x in scope):
         raise ValueError("authorization.scope must be a list of strings")
-    if (auth["head_sha"] != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
+    if (_sha(auth["head_sha"]) != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
             or not _text(auth.get("granted_by"))):
         found["AUTHORIZATION"] = _blocker(
             "AUTHORIZATION_MISSING", "owner", f"enqueue authorization recorded for head {head[:12]}")
