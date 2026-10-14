@@ -369,8 +369,12 @@ The content `on_use` decides:
   read**; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
   ownership generation and `CurrentCharacterItemFence` in the same transaction that writes the
   receipt (DUR-03 §7.2), so no commit of the old generation can land after the claim; (c) before the
-  character's first weapon swing the replacement reads the receipts by CharacterId and the old
-  generation; (d) a committed receipt is applied as committed (the unit is spent, the landing item
+  character's first weapon swing the replacement reads **the newest one receipt** by CharacterId and the old
+  generation (a single indexed `LIMIT 1` read, ordered by the receipt's commit sequence): the owner serializes a
+  character's swings (the next swing waits for the previous commit outcome), so at most one TransactionId of the old
+  generation can be unobserved, and every earlier receipt was observed and applied by the live owner. The read is
+  bounded work (one row, one retry budget of DUR-03 §23, DUR-03 §28); if it fails or exhausts the budget the
+  character's weapon swings stay refused (fail closed) and the read is retried, never skipped; (d) a committed receipt is applied as committed (the unit is spent, the landing item
   exists, no damage is re-run), and no receipt after the claim means proven non-committed (the unit
   is untouched); (e) only then is a new TransactionId allocated for a new swing, an intentionally
   new logical intent (§20, §25, §47). The receipt index on provenance is part of the RANGED-1 receipt
