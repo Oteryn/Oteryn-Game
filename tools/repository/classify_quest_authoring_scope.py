@@ -68,6 +68,8 @@ def referenced_docs(
     return found
 
 
+# Longest reference span scanned back from a mention; a longer line prefix fails closed.
+MAX_SPAN = 4096
 _START_BREAKS = frozenset(b" \t\r\n\"'`()[]{}<>=,;:|")
 _WORD = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
 
@@ -99,7 +101,10 @@ def _scan(data: bytes, needle: bytes, doc: str, current_rel: str, tool_form: str
     while start != -1:
         end = start + len(needle)
         if end >= len(data) or data[end] not in _WORD:
-            line_start = max(data.rfind(b"\n", 0, start) + 1, start - 1000)
+            line_start = data.rfind(b"\n", 0, start) + 1
+            if start - line_start > MAX_SPAN:
+                # The true start of a long reference is out of reach: any doubt is the full path.
+                return True
             for pos in range(start, line_start - 1, -1):
                 if pos == line_start or data[pos - 1] in _START_BREAKS:
                     raw = data[pos:end].decode("utf-8", "replace")

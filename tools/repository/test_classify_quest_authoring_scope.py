@@ -122,6 +122,17 @@ class SyntheticTree(unittest.TestCase):
         self.write(f"{TOOL}/abs_ok/other.json", json.dumps({"doc": f"/{TOOL}/other/README.md"}))
         self.assertEqual(self.verdict([rec(f"{TOOL}/abs_ok/README.md")]), "docs_only")
 
+    def test_long_reference_paths_take_full_path(self):
+        doc = f"{TOOL}/long/README.md"
+        self.write(doc, "d\n")
+        # Reference longer than the old 1000 B window, resolving to the doc through many "x/../".
+        ref = "x/../" * 300 + f"/{doc}"
+        self.write(f"{TOOL}/long/pins.json", json.dumps({"doc": ref}))
+        self.assertEqual(self.verdict([rec(doc)]), "full")
+        # Beyond the scan limit the classifier cannot see the start of the reference: full.
+        self.write(f"{TOOL}/long/pins.json", json.dumps({"doc": "y" * 5000 + "/README.md"}))
+        self.assertEqual(self.verdict([rec(doc)]), "full")
+
     def test_odd_alphabet_references_take_full_path(self):
         for i, name in enumerate(("my doc.md", "a+b@c.md", "x y/README.md")):
             d = f"odd{i}"
