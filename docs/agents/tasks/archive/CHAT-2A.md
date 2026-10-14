@@ -107,6 +107,11 @@ Codex round on `32ca793` (UUIDv7 version and variant in the channel name; the CH
 - `git diff --check`: exit 0
 - whole-package clippy and tests: left to exact-head CI
 
+Codex round on `34f542cf` (private recipient as raw bytes):
+
+- the private destination holds a `CharacterId`; `decode` validates it, so zero bytes, non-v7 versions and bad variants are `BadPayload` (`a_private_recipient_that_is_not_a_character_id_is_a_bad_payload`); `Debug` redaction unchanged
+- `chat::relay` as a standalone crate against the workspace lock (the lib test target is OOM-killed here): 29 passed, 0 failed; clippy with the package lint set: exit 0; `cargo +1.95.0 fmt --all --check` and `git diff --check`: exit 0
+
 ### Exact-head CI
 
 Recorded in the PR checks of the frozen head.

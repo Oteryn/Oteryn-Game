@@ -13,6 +13,7 @@ use aws_lc_rs::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 use aws_lc_rs::rand::fill;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
+use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::chat::ChatRoom;
 
 use super::{ChatText, TEXT_MAX_BYTES};
@@ -105,7 +106,7 @@ impl Error for RelayError {}
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelayDestination {
     /// A private message, keyed by the recipient CharacterId (server side only).
-    Private { recipient: [u8; ID_BYTES] },
+    Private { recipient: CharacterId },
     /// A World room: each node delivers to its sessions that opened it.
     Room { room: ChatRoom },
 }
@@ -158,7 +159,7 @@ impl RelayLine {
         out.extend_from_slice(&self.message_id);
         out.extend_from_slice(&self.sent_at_micros.to_be_bytes());
         match self.destination {
-            RelayDestination::Private { recipient } => out.extend_from_slice(&recipient),
+            RelayDestination::Private { recipient } => out.extend_from_slice(recipient.as_bytes()),
             RelayDestination::Room { room } => out.push(room as u8),
         }
         push_prefixed(&mut out, self.sender_name.as_bytes())?;
@@ -172,8 +173,10 @@ impl RelayLine {
         let message_id = cursor.array()?;
         let sent_at_micros = u64::from_be_bytes(cursor.array()?);
         let destination = match kind {
+            // A zero or non-UUIDv7 recipient is refused like any other malformed identifier.
             KIND_PRIVATE => RelayDestination::Private {
-                recipient: cursor.array()?,
+                recipient: CharacterId::decode(&cursor.array::<ID_BYTES>()?)
+                    .map_err(|_| RelayError::BadPayload)?,
             },
             KIND_ROOM => {
                 let code = cursor.take(1)?[0];

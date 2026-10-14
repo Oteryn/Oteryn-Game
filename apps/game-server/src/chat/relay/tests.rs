@@ -20,6 +20,13 @@ fn chat_text(text: &str) -> ChatText {
     ChatText::parse(text).expect("valid chat text")
 }
 
+fn recipient(marker: u8) -> CharacterId {
+    let mut bytes = [marker; ID_BYTES];
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    CharacterId::decode(&bytes).expect("valid UUIDv7 character id")
+}
+
 fn room_line(id: u8, sent_at: u64) -> RelayLine {
     RelayLine {
         message_id: [id; ID_BYTES],
@@ -38,7 +45,7 @@ fn a_room_and_a_private_line_round_trip() {
     let room = room_line(1, NOW);
     let private = RelayLine {
         destination: RelayDestination::Private {
-            recipient: [9; ID_BYTES],
+            recipient: recipient(9),
         },
         ..room_line(2, NOW)
     };
@@ -53,7 +60,7 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
     let ring = ring(&[(1, 0)]);
     let line = RelayLine {
         destination: RelayDestination::Private {
-            recipient: [9; ID_BYTES],
+            recipient: recipient(9),
         },
         sender_name: "n".repeat(SENDER_NAME_MAX_BYTES),
         // 255 four-byte scalars: both the character and the byte bound of CHAT-0 §4.
@@ -643,7 +650,7 @@ fn a_rolling_restart_does_not_push_the_lease_ahead() {
 
 #[test]
 fn debug_never_shows_a_private_recipient() {
-    let recipient = [201_u8; ID_BYTES];
+    let recipient = recipient(201);
     let destination = RelayDestination::Private { recipient };
     let line = RelayLine {
         destination,
@@ -653,6 +660,7 @@ fn debug_never_shows_a_private_recipient() {
         assert!(rendered.contains("Private"));
         assert!(!rendered.contains("201"));
         assert!(!rendered.contains(&format!("{recipient:?}")));
+        assert!(!rendered.contains("CharacterId"));
     }
     // A room is not private and stays readable.
     assert!(format!("{:?}", room_line(1, NOW)).contains("English"));
@@ -678,6 +686,33 @@ fn a_received_text_that_chat_text_refuses_is_a_bad_payload() {
             open(&ring, CHANNEL, &sealed, NOW),
             Err(RelayError::BadPayload),
             "{text:?}"
+        );
+    }
+}
+
+#[test]
+fn a_private_recipient_that_is_not_a_character_id_is_a_bad_payload() {
+    let ring = ring(&[(1, 0)]);
+    let valid = RelayLine {
+        destination: RelayDestination::Private {
+            recipient: recipient(9),
+        },
+        ..room_line(1, NOW)
+    };
+    let plaintext = valid.encode().expect("encode");
+    let start = 1 + ID_BYTES + 8;
+    let mut non_v7 = *recipient(9).as_bytes();
+    non_v7[6] = 0x40;
+    let mut bad_variant = *recipient(9).as_bytes();
+    bad_variant[8] = 0xc0;
+    for bytes in [[0_u8; ID_BYTES], non_v7, bad_variant] {
+        let mut forged = plaintext.clone();
+        forged[start..start + ID_BYTES].copy_from_slice(&bytes);
+        let sealed = seal_plaintext(&ring, CHANNEL, NOW, forged, NONCE).expect("seal");
+        assert_eq!(
+            open(&ring, CHANNEL, &sealed, NOW),
+            Err(RelayError::BadPayload),
+            "{bytes:?}"
         );
     }
 }
