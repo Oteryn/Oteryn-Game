@@ -301,7 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         now_us: u64,
         direction: CardinalStep,
-        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
     ) -> super::actor_movement::StepInChannel {
         use super::actor_movement::step_in_channel;
@@ -420,7 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match validation {
                 Ok(contact)=>{
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,blocking,equipment_delta,proof,contact));
+                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
                 },
                 Err(error)=>*outcome=Some(Err(error)),
             }

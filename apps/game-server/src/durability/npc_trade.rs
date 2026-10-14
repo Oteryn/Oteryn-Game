@@ -28,7 +28,10 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
 use super::character_progression::numeric_u64;
-use super::db::{begin_type2_transaction, lock_admission_relations};
+use super::db::{
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
+};
 use super::item_mint::{TypedDefinitionRef, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemStateV1,
@@ -187,6 +190,18 @@ pub struct CommittedNpcTrade {
     pub minted_gold_units: u64,
     /// In order: every BURN line, then every MINT line.
     pub lines: Vec<NpcTradeLine>,
+}
+
+/// The intent a committed trade answered (NPC-TRADE-2 replay first): what command 8 named and the
+/// server price it was charged at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NpcTradeReceipt {
+    pub npc_key: String,
+    pub catalogue_revision: u64,
+    pub offer_index: u32,
+    pub side: NpcTradeSide,
+    pub quantity: u32,
+    pub unit_price: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -556,7 +571,85 @@ fn first_mint_ordinal(entries: &[Entry]) -> Result<u64> {
         .ok_or(NpcTradeError::DoesNotFit)
 }
 
+/// Takes the occurrence's trade lock: a commit and a replay read of one occurrence serialize.
+async fn lock_occurrence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    occurrence: &[u8; 16],
+) -> std::result::Result<(), sqlx::Error> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+           'oteryn:npc-trade:' || encode($1,'hex'), 0))",
+    )
+    .bind(occurrence.as_slice())
+    .execute(&mut **tx)
+    .await
+    .map(|_| ())
+}
+
 impl DurabilityRoot {
+    /// NPC-TRADE-2 replay first: the intent the trade of `command` of the Character
+    /// `character_id` answered when it committed as `occurrence`, else `None`. The occurrence lock
+    /// waits for any in-flight attempt, so `None` proves nothing committed for it; a trade of the
+    /// command committed as another occurrence (the occurrence binds the intent's NPC actor) is
+    /// `ConflictingOccurrence`. Read-only; never reacquires session authority.
+    pub async fn read_npc_trade(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+        occurrence: [u8; 16],
+    ) -> Result<Option<NpcTradeReceipt>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| NpcTradeError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_occurrence(&mut tx, &occurrence).await?;
+                    let Some(row) = sqlx::query(
+                        "SELECT occurrence_id::text, npc_key, catalogue_revision::text, \
+                                offer_index, side, quantity, unit_price::text \
+                           FROM game_npc_trades \
+                          WHERE game_session_id = encode($1,'hex')::uuid \
+                            AND command_id = $2::text::numeric(20,0) \
+                            AND character_id = encode($3,'hex')::uuid",
+                    )
+                    .bind(command.game_session_id().as_bytes().as_slice())
+                    .bind(command.command_id().get().to_string())
+                    .bind(character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    };
+                    if uuid_text(&row.try_get::<String, _>("occurrence_id")?)? != occurrence {
+                        return Ok(Err(NpcTradeError::ConflictingOccurrence));
+                    }
+                    let side = match row.try_get::<i16, _>("side")? {
+                        1 => NpcTradeSide::Buy,
+                        2 => NpcTradeSide::Sell,
+                        _ => return Err(DurabilityError::InvalidStoredState),
+                    };
+                    let receipt = NpcTradeReceipt {
+                        npc_key: row.try_get("npc_key")?,
+                        catalogue_revision: numeric_u64(&row, "catalogue_revision")?,
+                        offer_index: u32::try_from(row.try_get::<i32, _>("offer_index")?)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        side,
+                        quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        unit_price: numeric_u64(&row, "unit_price")?,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(receipt)))
+                })
+            })
+            .await?
+    }
+
     /// Commit one NPC trade under the complete current Character item fence (see the module
     /// documentation). An occurrence that already committed returns its first outcome under the
     /// current recovery fence; a changed binding conflicts. Any error writes nothing.
@@ -583,13 +676,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let occurrence = request.cause.occurrence;
-                    sqlx::query(
-                        "SELECT pg_advisory_xact_lock(hashtextextended(\
-                           'oteryn:npc-trade:' || encode($1,'hex'), 0))",
-                    )
-                    .bind(occurrence.as_slice())
-                    .execute(&mut **tx)
-                    .await?;
+                    lock_occurrence(&mut tx, &occurrence).await?;
 
                     if let Some(committed) =
                         load_trade(&mut tx, &occurrence, fence.character_id, &binding).await?
