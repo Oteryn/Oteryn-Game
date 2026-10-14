@@ -29,7 +29,7 @@ external_repositories: []
 
 ## Outcome
 
-- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 32. The CONDITIONS-0 facts record the merged COND-1 slices, its brief narrows COND-1 to the §3.5 residual and adds COND-CONTENT-2 and COND-WIRE-2, and the MAGIC-COND-1 graph of the mechanics plan lists both children. No code, wire, content or pin change.
+- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 32. The CONDITIONS-0 facts record the merged COND-1 slices and the merged SPEED-1 scope (paced player steps), with live creature step pacing left to the GAME-AI-01 amendment; its brief narrows COND-1 to the §3.5 residual and adds COND-CONTENT-2 and COND-WIRE-2, and the MAGIC-COND-1 graph of the mechanics plan lists both children. No code, wire, content or pin change.
 
 ## Architecture and source of truth
 
@@ -42,7 +42,7 @@ external_repositories: []
 ## Acceptance criteria
 
 - [x] The acceptance decision records the owner, date and basis.
-- [x] No rule text changes beyond §3.5 and COND0-RL-01.
+- [x] No rule text changes beyond §3.5 and COND0-RL-01. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree.
 - [x] Every child the brief defines (COND-CONTENT-2 and COND-WIRE-2 included) is in the mechanics plan's MAGIC-COND-1 graph with its class and prerequisites.
 
 ## Excluded scope

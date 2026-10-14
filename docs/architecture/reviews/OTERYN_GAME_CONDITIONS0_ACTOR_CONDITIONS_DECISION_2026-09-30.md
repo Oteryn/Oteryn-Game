@@ -31,7 +31,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | COND-1 | hard (combat), combat and determinism review | COND-1a/1b/1c are merged (the store, transitions, tick scheduler, §3 families, provenance, dispel, lifecycle and owner wiring). Remaining: the §3.5 `ConflictKey` values `muted`, `pacified`, `powerless` and `agony` within `COND0-RL-01` (32), the `agony` tick, and the §3.5 admission gates with their precedence and typed server-side reasons | this decision |
-| SPEED-1 | impl, movement review | effective speed, the step-speed table and step pacing for players and creatures (§4) | COND-1; the GAME-AI-01 step cadence (§4.3) |
+| SPEED-1 | impl, movement review | MERGED (#1715): effective speed, the step-speed table and paced player steps (§4.1, §4.2, §4.3 Players). Remaining: creature steps at their step duration on the live path (§4.3 Creatures; the cadence type from #1807 exists), carried by the GAME-AI-01 step cadence amendment | the GAME-AI-01 step cadence (§4.3) |
 | COND-WIRE-1 | impl, protocol review | the vitals revision with condition icons and the mana shield, and `speed` on VIS-2 entities (§7) | COND-1; SPEED-1; VIS-2 |
 | COND-DUR-1 | hard (persistence), persistence review | the durable remaining food time (§6.3), in the SPELL-D8 H-1 pattern | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | content lane | `ConditionDefinition` records for the spells, runes, potions, food, fields and monster attacks that use §3 families | this decision |
@@ -40,9 +40,9 @@
 
 FOOD-REGEN-1 (ITEM-USE-0) builds its definition on COND-1. After COND-1, the charm lane wires
 Cleanse and the player-side cases to it. The speed charms (Cripple, Numb, Adrenaline Burst) stay
-failing closed (`CharmMissingSystem::ParalysisCondition` / `HasteCondition`) until SPEED-1 and,
-for creature targets, the GAME-AI-01 step cadence amendment (§4.3) have landed; before that a speed
-condition would change nothing. Their speed values come from one `ConditionDefinition` per charm
+failing closed (`CharmMissingSystem::ParalysisCondition` / `HasteCondition`). SPEED-1 is merged
+(#1715); for creature targets they also wait for the GAME-AI-01 step cadence amendment (§4.3),
+since before it a speed condition would change no creature step. Their speed values come from one `ConditionDefinition` per charm
 (`charm.cripple`, `charm.numb`, `charm.adrenaline_burst`, COND-CONTENT-1); the charm variant keeps
 only its `duration_ms` (`charm_effects.rs:153-158`) and names the definition by key.
 
@@ -67,8 +67,12 @@ and show?
   COND-1b (mana shield, dispel, lifecycle) and the COND-1c owner wiring, including bundle-World
   periodic damage (#2086), are on main, as are SPEED-1 (#1715) and COND-CONTENT-1 (#1400). COND-1's
   remaining scope is only the §3.5 keys and admission gates (see the brief).
-- Movement has no speed: `step_cardinal` has no step duration and cardinal steps only;
-  `StepDisposition` is `Moved`, `Blocked`, `Rejected` (`world_spatial.rs:37-41`).
+- At the 2026-09-30 decision movement had no speed: `step_cardinal` had no step duration and
+  `StepDisposition` was `Moved`, `Blocked`, `Rejected`. Since SPEED-1 (#1715), effective speed and
+  the step-speed table are in `movement/speed.rs`, and a player step is paced by its step duration
+  (`movement/pacing.rs`, `TOO_EARLY` behind `PACED_MOVEMENT_V1`). The creature step cadence type
+  (`CreatureMovementCadence`, #1807) exists; taking every creature step at its step duration on the
+  live path is the remaining creature-movement work (§4.3, the GAME-AI-01 amendment), not COND-1.
 - Creatures think once per 1,000 ms and take at most one step per think (D115, `ai_think.rs`).
 - Vitals are runtime-actor-local (SPELL-D2). `ACTOR_VITALS` is at most 32 bytes and rejects unknown
   fields (`crates/protocol-oteryn/src/actor_spell.rs:37`); its worst case is 27 bytes (SPELL-D8).
@@ -167,10 +171,10 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 
 | Family | Conflict key | Policy | Gate or effect |
 |---|---|---|---|
-| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes are unaffected, and the condition itself does not gate chat (a CHAT-0 §6 mute is a separate rule). Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death or the §6.3 lifecycle boundaries |
-| `PACIFIED` | `pacified` | refresh the duration | refuses every offensive action, which is exactly: setting an attack target (melee and distance auto-attack), and every spell or rune whose authored profile has `targeting.aggressive: true` (the same sole predicate as `POWERLESS`; the cooldown group never classifies, so Animate Dead Rune is refused); a running attack target is cleared on application. Non-aggressive spells and runes and non-rune items are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death or the §6.3 lifecycle boundaries |
-| `POWERLESS` | `powerless` | refresh the duration | refuses every spell and rune whose authored profile has `targeting.aggressive: true`; that flag is the sole predicate, and the cooldown group never classifies (so Animate Dead Rune, group `support` but aggressive, is refused). A rune is an item resolved through its definition (RUNE-USE-0 §3), so this refusal takes precedence over the item rule. Non-aggressive spells and runes, non-rune items and melee are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death or the §6.3 lifecycle boundaries |
-| `AGONY` | `agony` | replace when the new total is at least the remaining one; a replacement follows §3.1 (keeps the current tick timing, deals one tick at once unless the definition is `delayed`, takes the new source as its provenance) | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it (an explicit exception to §3.2); ends only by duration, death or the V1 lifecycle boundaries of §6.3 (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
+| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes are unaffected, and the condition itself does not gate chat (a CHAT-0 §6 mute is a separate rule). Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `PACIFIED` | `pacified` | refresh the duration | refuses every offensive action, which is exactly: setting an attack target (melee and distance auto-attack), and every spell or rune whose authored profile has `targeting.aggressive: true` (the same sole predicate as `POWERLESS`; the cooldown group never classifies, so Animate Dead Rune is refused); a running attack target is cleared on application. Non-aggressive spells and runes and non-rune items are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `POWERLESS` | `powerless` | refresh the duration | refuses every spell and rune whose authored profile has `targeting.aggressive: true`; that flag is the sole predicate, and the cooldown group never classifies (so Animate Dead Rune, group `support` but aggressive, is refused). A rune is an item resolved through its definition (RUNE-USE-0 §3), so this refusal takes precedence over the item rule. Non-aggressive spells and runes, non-rune items and melee are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it, so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `AGONY` | `agony` | replace when the new total is at least the remaining one; a replacement follows §3.1 (keeps the current tick timing, deals one tick at once unless the definition is `delayed`, takes the new source as its provenance) | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it; creature and cleanse immunity do not refuse it; a mana shield does not absorb it (an explicit exception to §3.2); ends only by duration, death, the V1 lifecycle boundaries of §6.3 or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
 | `EXHAUST` | none | not a condition | projection of the GAME-ABILITY-01 cooldown group (the "You are exhausted" refusal); no `ConditionInstance` exists and no key is spent |
 | `INFIGHT` | none | not a condition | projection of the ATTACK-0 60 s in-fight deadline for the client icon only; ATTACK-0 stays its sole owner and the lifecycle (§6.1) is unchanged |
 
