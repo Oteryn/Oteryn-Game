@@ -74,4 +74,4 @@ The plan row BUNDLE-GATES-1 carries the same inventory and stays open until no g
 - negative check (a comment and string literals naming `self.combat_room` added): guard still passes
 - python tools/agents/validate_governance.py: pass
 - python -m unittest discover -s tools/agents/tests: OK
-- review: Codex round 1 (two P2: count only code reads; tie each plan assertion to its gate) fixed in one push; Codex auto-review on the new head
+- review: Codex round 1 (two P2: count only code reads; tie each plan assertion to its gate) fixed in one push; Codex round 2 (one P2: count every receiver and form, not six spellings) fixed in one push, negative-checked with `(*x).combat_room`, a split `admission\n.qualified_room` and a destructuring pattern; Codex auto-review on the new head

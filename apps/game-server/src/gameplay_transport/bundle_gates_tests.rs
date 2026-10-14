@@ -4,8 +4,10 @@
 //! entry room's bundle view (BUNDLE-COMBAT-ENABLE-1, #2025). A seam read of `combat_room` is a
 //! gate open on a bundle World; a read of `qualified_room` is a gate closed there. Every read in
 //! this module's sources is listed below: an open gate names the merged PR that opened it, a closed
-//! gate names the plan batch that opens it. A read that is added, removed or switched without an
-//! update of this table fails `every_seam_room_read_is_inventoried`.
+//! gate names the plan batch that opens it. Every mention of either field in the module's code is
+//! counted, whatever its receiver (`x.combat_room`, `(*self).combat_room`) or form (a declaration,
+//! initializer or destructuring pattern); one that is added, removed or switched without an update
+//! of this table fails `every_seam_room_read_is_inventoried`.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -22,6 +24,8 @@ enum Gate {
     SourceWorldBranch,
     /// Moves the two fields from `GameplaySeamOwners` into the composed owner.
     Plumbing,
+    /// Declares or sets the field without reading it: a struct field or an initializer.
+    Declaration,
 }
 
 struct Read {
@@ -243,16 +247,43 @@ const INVENTORY: &[Read] = &[
         1,
         Gate::Plumbing,
     ),
+    // The two fields of `GameplaySeamOwners` and of the composed owner, and the owner initializer.
+    read(
+        "seam field declarations and initializer",
+        "",
+        "mod.rs",
+        "qualified_room",
+        3,
+        Gate::Declaration,
+    ),
+    read(
+        "seam field declarations and initializer",
+        "",
+        "mod.rs",
+        "combat_room",
+        3,
+        Gate::Declaration,
+    ),
+    // The qualification harness seats its fixture World's room in both fields.
+    read(
+        "qualification harness seam",
+        "",
+        "qualification.rs",
+        "qualified_room",
+        1,
+        Gate::Declaration,
+    ),
+    read(
+        "qualification harness seam",
+        "",
+        "qualification.rs",
+        "combat_room",
+        1,
+        Gate::Declaration,
+    ),
 ];
 
-const FIELDS: &[&str] = &[
-    "self.qualified_room",
-    "owner.qualified_room",
-    "owners.qualified_room",
-    "self.combat_room",
-    "owner.combat_room",
-    "owners.combat_room",
-];
+const FIELDS: &[&str] = &["qualified_room", "combat_room"];
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -346,7 +377,7 @@ fn code_only(source: &str) -> String {
 }
 
 #[allow(clippy::expect_used)]
-fn module_reads() -> BTreeMap<(String, &'static str), usize> {
+fn module_reads() -> BTreeMap<(String, String), usize> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
     let mut reads = BTreeMap::new();
     for entry in std::fs::read_dir(&dir).expect("gameplay_transport sources") {
@@ -359,17 +390,41 @@ fn module_reads() -> BTreeMap<(String, &'static str), usize> {
         if !name.ends_with(".rs") || name.ends_with("_tests.rs") {
             continue;
         }
-        let source = compact(&code_only(
-            &std::fs::read_to_string(&path).expect("source text"),
-        ));
+        let source = code_only(&std::fs::read_to_string(&path).expect("source text"));
         for field in FIELDS {
-            let count = source.matches(field).count();
-            if count > 0 {
-                reads.insert((name.clone(), *field), count);
+            for mention in mentions(&source, field) {
+                *reads.entry((name.clone(), mention)).or_insert(0) += 1;
             }
         }
     }
     reads
+}
+
+/// Each whole-word mention of `field` in code: `<receiver>.<field>` for a field access (`<expr>`
+/// when the receiver is not a plain name), the bare `<field>` for any other form. A method call
+/// `.<field>(` is another item's method, not the seam field.
+fn mentions(source: &str, field: &str) -> Vec<String> {
+    let word = |c: char| c.is_alphanumeric() || c == '_';
+    let mut found = Vec::new();
+    for (at, _) in source.match_indices(field) {
+        let before = &source[..at];
+        let after = &source[at + field.len()..];
+        if before.ends_with(word) || after.starts_with(word) {
+            continue;
+        }
+        let Some(receiver) = before.trim_end().strip_suffix('.') else {
+            found.push(field.to_owned());
+            continue;
+        };
+        if after.trim_start().starts_with('(') {
+            continue;
+        }
+        let receiver = receiver.trim_end();
+        let name = &receiver[receiver.trim_end_matches(word).len()..];
+        let name = if name.is_empty() { "<expr>" } else { name };
+        found.push(format!("{name}.{field}"));
+    }
+    found
 }
 
 #[allow(clippy::expect_used)]
@@ -382,7 +437,7 @@ fn every_seam_room_read_is_inventoried() {
     let mut expected = BTreeMap::new();
     for read in INVENTORY {
         *expected
-            .entry((read.file.to_owned(), read.field))
+            .entry((read.file.to_owned(), read.field.to_owned()))
             .or_insert(0) += read.count;
     }
     assert_eq!(
@@ -412,6 +467,7 @@ fn each_gate_reads_the_room_its_state_says() {
             }
             Gate::SourceWorldBranch => assert!(!combat, "`{}`", read.gate),
             Gate::Plumbing => assert!(read.field.starts_with("owners."), "`{}`", read.gate),
+            Gate::Declaration => assert!(!read.field.contains('.'), "`{}`", read.gate),
         }
     }
 }
@@ -467,7 +523,7 @@ fn every_gate_is_recorded_in_the_plan_row() {
                 "the plan row does not record the source-World branch `{}`",
                 read.gate
             ),
-            Gate::Plumbing => {}
+            Gate::Plumbing | Gate::Declaration => {}
         }
     }
 }
