@@ -112,6 +112,10 @@ def _evaluate(s: dict) -> dict:
     if state != "open" or _flag(cand["draft"]) or base_ref != "main":
         found["CANDIDATE_STATE"] = _blocker(
             "CANDIDATE_NOT_OPEN_READY", "writer", f"PR {pr} open, ready for review, base main")
+    else:
+        # When the PR last became open, ready for review and based on main (opened, reopened, marked ready or
+        # retargeted): that transition can be the event that unblocks it, so its time is required.
+        stamp(cand, "state_at")
 
     runs = _list(s["checks"]["runs"], "checks.runs")
     required = _list(s["checks"]["required"], "checks.required")
@@ -174,7 +178,10 @@ def _evaluate(s: dict) -> dict:
         stamp(item)
 
     for dep in _list(s["dependencies"], "dependencies"):
-        if not _flag(dep["merged"]):
+        dep_base = dep["base_ref"]  # platform-reported base the dependency PR merged into
+        if not isinstance(dep_base, str):
+            raise ValueError("dependencies[].base_ref must be a string")
+        if not _flag(dep["merged"]) or dep_base != "main":
             found["DEPENDENCIES"] = _blocker("DEPENDENCY_NOT_MERGED", "control_plane", f"PR {dep['pr']} merged to main")
             break
         stamp(dep)

@@ -14,7 +14,7 @@ OTHER = "b" * 40
 def ready() -> dict:
     return {
         "candidate": {"pr": 1, "head_sha": HEAD, "state": "open", "draft": False, "base_ref": "main",
-                      "merged": False, "queued": False},
+                      "merged": False, "queued": False, "state_at": "2026-10-14T07:00:00Z"},
         "checks": {
             "required": ["game-gate"],
             "runs": [{"name": "game-gate", "head_sha": HEAD, "status": "completed",
@@ -26,7 +26,7 @@ def ready() -> dict:
         "threads": {"total": 0, "unresolved": 0},
         "evidence": {"required": [{"name": "task-record", "head_sha": HEAD, "present": True,
                                    "at": "2026-10-14T09:00:00Z"}]},
-        "dependencies": [{"pr": 0, "merged": True, "at": "2026-10-14T08:00:00Z"}],
+        "dependencies": [{"pr": 0, "merged": True, "base_ref": "main", "at": "2026-10-14T08:00:00Z"}],
         "queue": {"prior_failures": []},
         "authorization": {"head_sha": HEAD, "scope": ["enqueue"], "revoked": False,
                           "granted_by": "owner", "author": "blakinio", "at": "2026-10-14T09:30:00Z"},
@@ -118,6 +118,23 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap = ready()
         snap["dependencies"][0]["merged"] = False
         self.assertEqual(reasons(snap), ["DEPENDENCY_NOT_MERGED"])
+
+    def test_dependency_merged_elsewhere_blocks(self):
+        snap = ready()
+        snap["dependencies"][0]["base_ref"] = "release"
+        self.assertEqual(reasons(snap), ["DEPENDENCY_NOT_MERGED"])
+        for bad in (None, 1):
+            snap = ready()
+            if bad is None:
+                del snap["dependencies"][0]["base_ref"]
+            else:
+                snap["dependencies"][0]["base_ref"] = bad
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], bad)
+
+    def test_candidate_becoming_ready_can_be_the_latest_event(self):
+        snap = ready()
+        snap["candidate"]["state_at"] = "2026-10-14T11:00:00Z"
+        self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T11:00:00Z")
 
     def test_prior_mq_failure_blocks_same_head_until_addressed(self):
         snap = ready()
@@ -264,20 +281,21 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
 
     def test_missing_or_invalid_at_is_not_eligible(self):
         paths = (
-            lambda s: s["checks"]["runs"][0],
-            lambda s: s["review"]["reviews"][0],
-            lambda s: s["evidence"]["required"][0],
-            lambda s: s["dependencies"][0],
-            lambda s: s["authorization"],
+            (lambda s: s["candidate"], "state_at"),
+            (lambda s: s["checks"]["runs"][0], "at"),
+            (lambda s: s["review"]["reviews"][0], "at"),
+            (lambda s: s["evidence"]["required"][0], "at"),
+            (lambda s: s["dependencies"][0], "at"),
+            (lambda s: s["authorization"], "at"),
         )
-        for get in paths:
+        for get, key in paths:
             for mode in ("missing", "bad", "naive", "empty"):
                 snap = ready()
                 item = get(snap)
                 if mode == "missing":
-                    del item["at"]
+                    del item[key]
                 else:
-                    item["at"] = {"bad": "not-a-time", "naive": "2026-10-14T10:00:00", "empty": ""}[mode]
+                    item[key] = {"bad": "not-a-time", "naive": "2026-10-14T10:00:00", "empty": ""}[mode]
                 self.assert_incomplete(snap)
 
     def test_invalid_resolved_at_is_not_eligible(self):
