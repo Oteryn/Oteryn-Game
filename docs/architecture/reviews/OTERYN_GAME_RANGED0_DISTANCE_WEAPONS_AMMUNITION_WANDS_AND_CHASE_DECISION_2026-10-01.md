@@ -464,7 +464,7 @@ authority until RANGED-1 is allocated.
   is to be rebased on this section by #2113; its task file is not flipped yet). The client sends only the chase mode and the target (ATTACK-WIRE-1's
   existing intents); it does not path. With `chase` set and a live target out of reach, the server
   walks the player toward the target. `chase` loses ATTACK-0 §3's "no effect on the server" for the
-  player; `stand` and `balanced` keep it.
+  player; `stand` keeps it. `balanced` is a fight mode, independent of the chase mode, and does not disable chase.
 - **Search bounds** (rows registered by CHASE-1; values fixed here):
 
   | Row | Value |
@@ -478,7 +478,7 @@ authority until RANGED-1 is allocated.
   `RANGED0-RL-04` (1,024 expansions) is a bound distinct from CREATURE-AI-0 §5's creature cap ("A* at most 512 nodes", `astarnodes.hpp:37`): the 512 cap does not apply to player chase searches, and the shared CREATURE-MOVE-1 §5.3 search takes the node cap as a parameter.
 
   The path uses the CREATURE-MOVE-1 profile with player differences (no creature bans that do not
-  apply to players; the floor, zone and door rules of the Movement owner apply to every step), a goal
+  apply to players; the floor, zone and door rules of the Movement owner apply to every step; protection-zone tiles are never entered or crossed by a chase step, so a target reachable only through a protection zone is "cannot be reached" and starts the backoff), a goal
   of adjacency for melee and of in-range and in-sight for distance and throwing weapons and wands,
   and it re-searches when the target moves, within the rows above. A search never fails because of
   the budget. **The chase ends, and schedules no further search or backoff, when the target is on
