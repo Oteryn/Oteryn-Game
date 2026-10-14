@@ -337,7 +337,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 | EQUIP-PARITY-1 | EQUIP0 | impl |  | EQUIP-RT-1 |
 | CHARM-DEF-1 | CHARM4 | combat lane, combat and determinism review |  | ATTACK-1b (creature attacks on characters) |
 | COND-1 | CONDITIONS0 | **COND-1a/1b/1c MERGED (#1405, #2086).** Residual: the §3.5 keys, the `agony` tick, the admission gates and the `PACIFIED` clearing of a running attack target. hard (combat), combat and determinism review |  | this decision |
-| SPEED-1 | CONDITIONS0 | **MERGED (#1715).** impl, movement review |  | COND-1; the GAME-AI-01 step cadence (§4.3) |
+| SPEED-1 | CONDITIONS0 | **MERGED (#1715).** No residual: the creature step timer is CREATURE-MOVE-1's (CONDITIONS-0 §4.3). impl, movement review |  | none (merged) |
 | COND-WIRE-1 | CONDITIONS0 | impl, protocol review | yes | COND-1; SPEED-1 (merged); VIS-2 |
 | COND-DUR-1 | CONDITIONS0 | hard (persistence), persistence review |  | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | CONDITIONS0 | **MERGED (#1400).** content |  | this decision |
