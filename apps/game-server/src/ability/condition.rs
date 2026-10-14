@@ -33,8 +33,8 @@ mod damage_schedule;
 use damage_schedule::DamageCursor;
 pub(crate) use damage_schedule::{DamageSchedule, DamageSegment};
 
-/// `COND0-RL-01`: instances per actor.
-pub(crate) const COND0_RL_01_INSTANCES_PER_ACTOR: usize = 16;
+/// `COND0-RL-01`: instances per actor (§3.5: 29 exhaustive keys and headroom for three).
+pub(crate) const COND0_RL_01_INSTANCES_PER_ACTOR: usize = 32;
 /// `COND0-RL-02`: minimum tick interval, in milliseconds.
 pub(crate) const COND0_RL_02_MIN_TICK_INTERVAL_MS: u32 = 1_000;
 /// `COND0-RL-03`: damage ticks per actor per simulation tick. The store also counts regeneration
@@ -69,8 +69,17 @@ pub(crate) enum DotElement {
     Cursed,
 }
 
+/// §3.5: the gate families `muted`, `pacified` and `powerless`, one conflict key each. The
+/// declaration order is the refusal order when several gates refuse the same action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) enum ConditionGate {
+    Muted,
+    Pacified,
+    Powerless,
+}
+
 /// At most one instance exists per conflict key. Source spell subids extend the
-/// candidate key vocabulary; the actual per-actor instance cap remains 16.
+/// candidate key vocabulary; the per-actor instance cap is `COND0-RL-01`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum ConflictKey {
     Status(StatusKind),
@@ -85,6 +94,9 @@ pub(crate) enum ConflictKey {
     SpellRegeneration(u8),
     Invisible,
     Outfit,
+    Gate(ConditionGate),
+    /// §3.5 `agony`.
+    Agony,
 }
 
 /// The closed condition types. A creature's content immunities name these; haste and paralysis
@@ -104,6 +116,8 @@ pub(crate) enum ConditionType {
     SpellRegeneration(u8),
     Invisible,
     Outfit,
+    Gate(ConditionGate),
+    Agony,
 }
 
 impl ConditionType {
@@ -121,10 +135,13 @@ impl ConditionType {
             Self::SpellRegeneration(id) => ConflictKey::SpellRegeneration(id),
             Self::Invisible => ConflictKey::Invisible,
             Self::Outfit => ConflictKey::Outfit,
+            Self::Gate(gate) => ConflictKey::Gate(gate),
+            Self::Agony => ConflictKey::Agony,
         }
     }
 
-    /// §5: the `negative` dispel tag: damage over time and paralysis.
+    /// §5: the `negative` dispel tag: damage over time and paralysis. §3.5: the gate families
+    /// and `agony` are not tagged, so Cleanse and the `negative` selector never select them.
     pub(crate) const fn is_negative(self) -> bool {
         matches!(
             self,
@@ -285,6 +302,28 @@ pub(crate) enum ConditionValues {
     ItemOutfit {
         duration_ms: u32,
     },
+    /// §3.5: a gate family; a new application refreshes the duration.
+    #[allow(
+        dead_code,
+        reason = "content mapping constructs it in the MAGIC-COND-1 wiring slice"
+    )]
+    Gate {
+        gate: ConditionGate,
+        duration_ms: u32,
+    },
+    /// §3.5: damage over time of an undefined element, shaped like `DamageOverTime`.
+    #[allow(
+        dead_code,
+        reason = "content mapping constructs it in the MAGIC-COND-1 wiring slice"
+    )]
+    Agony {
+        total_min: u32,
+        total_max: u32,
+        per_tick: u32,
+        interval_ms: u32,
+        /// `false`: the first tick is dealt at once on application.
+        delayed: bool,
+    },
 }
 
 /// An item appearance retains the exact activated Item identity and generation.
@@ -331,7 +370,8 @@ impl ConditionDefinition {
         let valid = valid_atom(key)
             && match values {
                 ConditionValues::DamageSchedule { .. } => false,
-                ConditionValues::TimedStatus { duration_ms, .. } => duration_ms > 0,
+                ConditionValues::TimedStatus { duration_ms, .. }
+                | ConditionValues::Gate { duration_ms, .. } => duration_ms > 0,
                 ConditionValues::SourceAttributes {
                     modifiers,
                     duration_ms,
@@ -386,6 +426,13 @@ impl ConditionDefinition {
                         && interval_ok(mana_interval_ms)
                 }
                 ConditionValues::DamageOverTime {
+                    total_min,
+                    total_max,
+                    per_tick,
+                    interval_ms,
+                    ..
+                }
+                | ConditionValues::Agony {
                     total_min,
                     total_max,
                     per_tick,
@@ -545,6 +592,8 @@ impl ConditionDefinition {
             ConditionValues::Outfit { .. } | ConditionValues::ItemOutfit { .. } => {
                 ConditionType::Outfit
             }
+            ConditionValues::Gate { gate, .. } => ConditionType::Gate(gate),
+            ConditionValues::Agony { .. } => ConditionType::Agony,
         }
     }
 }
@@ -841,6 +890,7 @@ impl<S: Clone> ConditionStore<S> {
         self.get(ConflictKey::Status(kind))
             .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
     }
+
     pub(crate) fn instances(&self) -> &[ConditionInstance<S>] {
         &self.instances
     }
@@ -899,6 +949,7 @@ impl<S: Clone> ConditionStore<S> {
             !matches!(
                 instance.definition.values,
                 ConditionValues::TimedStatus { .. }
+                    | ConditionValues::Gate { .. }
                     | ConditionValues::SourceAttributes { .. }
                     | ConditionValues::SpellLight { .. }
                     | ConditionValues::SpellSkills { .. }
@@ -940,6 +991,7 @@ impl<S: Clone> ConditionStore<S> {
         let bound_ms = match definition.values {
             ConditionValues::DamageSchedule { .. } => 0, // Source cursor application checks its first interval below; later advances use checked_add.
             ConditionValues::TimedStatus { duration_ms, .. }
+            | ConditionValues::Gate { duration_ms, .. }
             | ConditionValues::SourceAttributes { duration_ms, .. }
             | ConditionValues::RationalSpeed { duration_ms, .. } => duration_ms,
             ConditionValues::DamageSequence { steps, len, .. } => {
@@ -957,19 +1009,22 @@ impl<S: Clone> ConditionStore<S> {
             | ConditionValues::Invisible { duration_ms }
             | ConditionValues::ItemOutfit { duration_ms }
             | ConditionValues::Outfit { duration_ms, .. } => duration_ms,
-            ConditionValues::DamageOverTime { interval_ms, .. } => interval_ms,
+            ConditionValues::DamageOverTime { interval_ms, .. }
+            | ConditionValues::Agony { interval_ms, .. } => interval_ms,
             ConditionValues::FoodRegeneration { .. } => FOOD_REGENERATION_CAP_MS,
         };
         now.checked_add(u64::from(bound_ms) * MICROS_PER_MS)
             .ok_or(ConditionRefusal::ArithmeticBounds)?;
         let condition_type = definition.condition_type();
         let key = condition_type.conflict_key();
-        if immunities.contains(&condition_type)
+        // §3.5: neither creature nor Cleanse immunity refuses `agony`.
+        if condition_type != ConditionType::Agony && immunities.contains(&condition_type)
             || matches!(condition_type, ConditionType::SpellSkills(_))
                 && immunities.contains(&ConditionType::Attributes)
             || matches!(condition_type, ConditionType::SpellRegeneration(_))
                 && immunities.contains(&ConditionType::Recovery)
-            || self.cleanse_immunity_remaining(key, now) > 0
+            || condition_type != ConditionType::Agony
+                && self.cleanse_immunity_remaining(key, now) > 0
         {
             return Err(ConditionRefusal::Immune);
         }
@@ -1137,6 +1192,33 @@ impl<S: Clone> ConditionStore<S> {
                 instance.remaining_total = total;
                 instance.next_tick_at = Some(keep_timing(steps[0].interval_ms)?);
                 instance.immediate_due = (!delayed).then_some(now);
+            }
+            ConditionValues::Agony {
+                total_min,
+                total_max,
+                interval_ms,
+                delayed,
+                ..
+            } => {
+                // §3.5: replace when the new total is at least the remaining one; an undrawn
+                // total counts as the midpoint (§3.1). The replacement follows §3.1.
+                if let Some(existing) = existing {
+                    let midpoint = (u64::from(total_min) + u64::from(total_max)) / 2;
+                    if midpoint < u64::from(existing.remaining_total) {
+                        return Err(ConditionRefusal::KeptCurrent);
+                    }
+                }
+                instance.remaining_total =
+                    draw_in_range(total_min, total_max, facts, COND_DOT_TOTAL_DRAW)?;
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
+                instance.immediate_due = (!delayed).then_some(now);
+            }
+            ConditionValues::Gate { duration_ms, .. } => {
+                // §3.5: refresh the duration, also when the new one is shorter.
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
             }
             ConditionValues::FoodRegeneration {
                 added_ms,
@@ -1358,6 +1440,11 @@ impl<S: Clone> ConditionStore<S> {
                     {
                         return None;
                     }
+                    // §3.5 `agony` deals damage of an undefined element, which no `TickKind`
+                    // carries yet: its schedule stays due and nothing is dealt or dropped.
+                    if matches!(instance.definition.values, ConditionValues::Agony { .. }) {
+                        return None;
+                    }
                     let scheduled = instance
                         .next_tick_at
                         .filter(|&due| instance.ends_at.is_none_or(|end| due <= end));
@@ -1531,7 +1618,12 @@ impl<S: Clone> ConditionStore<S> {
         ticks
     }
 
+    /// §3.5: the gate families and `agony` end only by their duration, death or the §6.3
+    /// lifecycle; no dispel names them.
     pub(crate) fn dispel_key(&mut self, key: ConflictKey) -> usize {
+        if matches!(key, ConflictKey::Gate(_) | ConflictKey::Agony) {
+            return 0;
+        }
         let before = self.instances.len();
         self.instances
             .retain(|instance| instance.definition.condition_type().conflict_key() != key);
@@ -1548,6 +1640,50 @@ impl<S: Clone> ConditionStore<S> {
     pub(crate) fn clear_on_death(&mut self) {
         self.instances.clear();
         self.cleanse_immunities.clear();
+    }
+}
+
+/// §3.5 gates. Once the action is identified they run before every other cast and attack
+/// admission check (protection zone included), before cost and cooldown; a refusal spends nothing.
+#[allow(
+    dead_code,
+    reason = "the action admissions call them in the MAGIC-COND-1 wiring slice"
+)]
+impl<S: Clone> ConditionStore<S> {
+    /// §3.5: the same current-time view for a gate family.
+    pub(crate) fn has_gate(&self, gate: ConditionGate, now: u64) -> bool {
+        self.get(ConflictKey::Gate(gate))
+            .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
+    }
+
+    /// §3.5 spell cast admission: `muted` refuses any spell cast; `pacified` and `powerless`
+    /// refuse one whose authored profile is `targeting.aggressive`. The first refusal in the
+    /// order `muted`, `pacified`, `powerless` answers alone.
+    pub(crate) fn spell_cast_gate(&self, aggressive: bool, now: u64) -> Result<(), ConditionGate> {
+        if self.has_gate(ConditionGate::Muted, now) {
+            return Err(ConditionGate::Muted);
+        }
+        self.rune_gate(aggressive, now)
+    }
+
+    /// §3.5 rune admission: `pacified` and `powerless` refuse an aggressive rune, in that
+    /// order; `muted` never gates a rune.
+    pub(crate) fn rune_gate(&self, aggressive: bool, now: u64) -> Result<(), ConditionGate> {
+        if !aggressive {
+            return Ok(());
+        }
+        [ConditionGate::Pacified, ConditionGate::Powerless]
+            .into_iter()
+            .find(|&gate| self.has_gate(gate, now))
+            .map_or(Ok(()), Err)
+    }
+
+    /// §3.5 attack target admission: `pacified` refuses setting an attack target.
+    pub(crate) fn attack_target_gate(&self, now: u64) -> Result<(), ConditionGate> {
+        if self.has_gate(ConditionGate::Pacified, now) {
+            return Err(ConditionGate::Pacified);
+        }
+        Ok(())
     }
 }
 
@@ -1659,3 +1795,7 @@ mod reconciled_condition_tests;
 #[cfg(test)]
 #[path = "reconciled_schedule_tests.rs"]
 mod reconciled_schedule_tests;
+
+#[cfg(test)]
+#[path = "condition_gate_tests.rs"]
+mod condition_gate_tests;

@@ -602,6 +602,41 @@ pub(crate) fn stage_creature_hit(
     ),
     SpellCastDisposition,
 > {
+    stage_hit(state, magnitude, now, true)
+}
+
+/// CONDITIONS-0 §3.5: an `agony` tick is damage of an undefined element, which the mana
+/// shield never absorbs (§3.3); every other stage is that of [`stage_creature_hit`].
+#[allow(
+    dead_code,
+    reason = "the agony tick consumer calls it in the MAGIC-COND-1 wiring slice"
+)]
+pub(crate) fn stage_agony_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, false)
+}
+
+fn stage_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mana_shield: bool,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
     use crate::ability::condition::ConflictKey;
     if !state.conditions.accepts_time(now)
         || state.health == 0
@@ -627,7 +662,7 @@ pub(crate) fn stage_creature_hit(
             .checked_sub(u32::try_from(removed).map_err(|_| SpellCastDisposition::Rejected)?)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
-    if let Some(capacity) = next.conditions.mana_shield_at(now) {
+    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mana_shield) {
         let absorbed = remaining.min(capacity).min(next.mana);
         if absorbed > 0 {
             next.conditions
@@ -1381,3 +1416,7 @@ mod source_attribute_projection_tests {
         assert!(state.owned_skill_adjustments(1999).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "actor_conditions_agony_tests.rs"]
+mod agony_tests;
