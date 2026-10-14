@@ -4510,19 +4510,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let item_fence = item_fence_of(current);
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
         // actor's first command, and only from Character-owned facts; a monk's Serene is
-        // evaluated here too (§8.2).
+        // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
+        // saved its health and mana takes them, capped at its maxima, in this same step.
+        let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
+            .then(|| last_position::admitted_vitals(&decided, self.world_id))
+            .flatten();
         if let Some(facts) = facts
             && self
                 .spell_states
                 .lock()
                 .await
-                .initialize(
+                .initialize_admitted(
                     &runtime,
                     actor,
                     game_session_id,
                     facts,
                     monk,
                     self.owner_now(),
+                    saved_vitals,
                 )
                 .is_none()
         {

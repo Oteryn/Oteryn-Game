@@ -625,6 +625,50 @@ impl ChannelSpellStates {
             .monk_save_values(now)
     }
 
+    /// CHAR-VITALS-1: the (health, mana) a last-position write saves for the committed player
+    /// of `game_session_id`: `Some(None)` when both are at their maxima, and `None` when it has
+    /// no spell state, so the caller keeps the vitals already stored rather than saving the
+    /// maxima. A dead actor is never captured (its caller checks [`Self::is_dead`] first).
+    pub(crate) fn saved_vitals(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<Option<(u32, u32)>> {
+        self.get(runtime, actor, game_session_id)
+            .map(PlayerSpellState::saved_vitals)
+    }
+
+    /// CHAR-VITALS-1: [`Self::initialize`] in the first-entry owner step, which also restores the
+    /// `saved` (health, mana) of the Character's last-position row when this call creates the
+    /// actor's state. A state that already existed (a retry, a same-GameSession reconnect) keeps
+    /// its vitals exactly, as [`Self::initialize`] keeps them.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the initialize inputs plus the saved vitals of the admission"
+    )]
+    pub(crate) fn initialize_admitted(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        facts: CharacterCastFacts,
+        monk: (u8, u64),
+        now: SemanticTimeMicros,
+        saved: Option<(u32, u32)>,
+    ) -> Option<&PlayerSpellState> {
+        let created = self.index(actor, game_session_id).is_none();
+        self.initialize(runtime, actor, game_session_id, facts, monk, now)?;
+        let index = self.index(actor, game_session_id)?;
+        if created && let Some((health, mana)) = saved {
+            self.actors
+                .get_mut(index)?
+                .2
+                .restore_saved_vitals(health, mana);
+        }
+        self.actors.get(index).map(|(_, _, state)| state)
+    }
+
     /// Whether `actor` of `session` holds training state a forced checkpoint would write.
     pub(crate) fn has_training_to_flush(
         &self,
@@ -1425,6 +1469,72 @@ pub(crate) mod tests {
                 vitals: None,
             }
         );
+    }
+
+    /// CHAR-VITALS-1: a newly created actor takes its saved vitals capped at its maxima, with no
+    /// revision; a present actor keeps its own; a saved full actor (`None`) and a zero health
+    /// leave the maxima; the save reads `None` at the maxima and the live values otherwise.
+    #[test]
+    fn an_admitted_actor_restores_its_saved_vitals_only_when_created() {
+        let (runtime, actor, session) = runtime_with_player(0x7a);
+        let mut states = ChannelSpellStates::default();
+        let created = states
+            .initialize_admitted(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                now(0),
+                Some((40, 500)),
+            )
+            .expect("created")
+            .clone();
+        assert_eq!(
+            (
+                created.revision(),
+                created.vitals().health,
+                created.vitals().mana
+            ),
+            (1, 40, 90)
+        );
+        assert_eq!(
+            states.saved_vitals(&runtime, actor, session),
+            Some(Some((40, 90)))
+        );
+        // A retry or a same-GameSession reconnect keeps the live vitals.
+        wound(&mut states, actor, session, 50);
+        let kept = states
+            .initialize_admitted(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                now(0),
+                Some((7, 7)),
+            )
+            .expect("kept")
+            .clone();
+        assert_eq!((kept.vitals().health, kept.vitals().mana), (50, 90));
+
+        for (seed, saved) in [(0x7b, None), (0x7c, Some((0, 10)))] {
+            let (runtime, actor, session) = runtime_with_player(seed);
+            let mut states = ChannelSpellStates::default();
+            let fresh = states
+                .initialize_admitted(&runtime, actor, session, FACTS, (0, 0), now(0), saved)
+                .expect("created")
+                .clone();
+            assert_eq!(
+                (fresh.vitals().health, fresh.vitals().mana),
+                (FACTS.max_health, FACTS.max_mana),
+                "{saved:?}"
+            );
+            assert_eq!(states.saved_vitals(&runtime, actor, session), Some(None));
+        }
+        // Another session's actor has no spell state: the stored vitals are kept.
+        let other = GameSessionId::decode(&uuid_v7(0x7d)).expect("session");
+        assert_eq!(states.saved_vitals(&runtime, actor, other), None);
     }
 
     #[test]

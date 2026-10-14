@@ -1,4 +1,5 @@
-//! CHAR-POSITION-1 last-position writer on PostgreSQL 17.6 (decision CHAR-POSITION-0 §3.1-§3.3).
+//! CHAR-POSITION-1 last-position writer on PostgreSQL 17.6 (decision CHAR-POSITION-0 §3.1-§3.3),
+//! with the saved vitals of CHAR-VITALS-1 (migration 0084).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, context, debug, fence, id,
@@ -11,7 +12,7 @@ use crate::durability::character_death::{
 };
 use crate::durability::character_last_position::{
     FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionRecord, LastPositionWrite,
-    StoredLastPosition,
+    LastVitals, StoredLastPosition,
 };
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
@@ -42,7 +43,27 @@ fn record(x: i32) -> LastPositionRecord {
         coordinate_frame_digest: [1; 32],
         map_revision_digest: [2; 32],
         server_artifact_digest: [3; 32],
+        vitals: None,
     }
+}
+
+/// CHAR-VITALS-1: `record(x)` of a wounded actor.
+fn wounded(x: i32, health: u32, mana: u32) -> LastPositionRecord {
+    LastPositionRecord {
+        vitals: LastVitals::new(health, mana),
+        ..record(x)
+    }
+}
+
+/// The stored row's cell x and vitals as text (`-` for a NULL vital).
+async fn vitals_row(harness: &Harness) -> TestResult<Option<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT concat_ws('|', tile_x, coalesce(health::text, '-'), coalesce(mana::text, '-')) \
+           FROM game_character_last_positions WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(CHARACTER).as_slice())
+    .fetch_optional(&harness.pool)
+    .await?)
 }
 
 /// The stored row as text: cell, key and digests' first bytes.
@@ -372,10 +393,17 @@ fn an_in_session_respawn_writes_the_placed_cell_with_its_consumption() -> TestRe
             // The living actor's last periodic write, before the death.
             assert!(matches!(
                 h.root
-                    .write_character_last_position(&authority, &h.node, fence(1)?, 50, record(400))
+                    .write_character_last_position(
+                        &authority,
+                        &h.node,
+                        fence(1)?,
+                        50,
+                        wounded(400, 9, 2)
+                    )
                     .await,
                 Ok(LastPositionWrite::Written)
             ));
+            assert_eq!(vitals_row(&h).await?.as_deref(), Some("400|9|2"));
             let sequencer = CharacterRevisionSequencer::new();
             h.root
                 .settle_player_death(&sequencer, &authority, &h.node, fence(1)?, death(81)?)
@@ -447,6 +475,9 @@ fn an_in_session_respawn_writes_the_placed_cell_with_its_consumption() -> TestRe
             );
             assert_eq!(h.count("game_character_pending_respawns").await?, 0);
             assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
+            // CHAR-VITALS-1: the respawned actor is at its maxima, so the placement clears the
+            // vitals the pre-death write saved; a later login never restores a dying actor's.
+            assert_eq!(vitals_row(&h).await?.as_deref(), Some("401|-|-"));
             // A retry after the consumption is handed no row and writes nothing more.
             assert!(
                 h.root
@@ -465,14 +496,21 @@ fn an_in_session_respawn_writes_the_placed_cell_with_its_consumption() -> TestRe
                     .map_err(debug)?
             );
             assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
-            // A capture taken before the placed record never overwrites it.
+            // A capture taken before the placed record never overwrites it, nor its vitals.
             assert!(matches!(
                 h.root
-                    .write_character_last_position(&authority, &h.node, fence(2)?, 50, record(403))
+                    .write_character_last_position(
+                        &authority,
+                        &h.node,
+                        fence(2)?,
+                        50,
+                        wounded(403, 1, 0)
+                    )
                     .await,
                 Ok(LastPositionWrite::Superseded)
             ));
             assert_eq!(row(&h).await?.as_deref(), Some("t|401|6|7|1|51|1|2|3"));
+            assert_eq!(vitals_row(&h).await?.as_deref(), Some("401|-|-"));
             drop(authority);
             drop(seal);
             TestResult::Ok(())
@@ -480,6 +518,100 @@ fn an_in_session_respawn_writes_the_placed_cell_with_its_consumption() -> TestRe
         .await;
         h.cleanup().await?;
         outcome
+    })
+}
+
+/// CHAR-VITALS-1: the vitals ride the cell's upsert, so they are ordered and fenced with it: a
+/// lower or equal key and every stale fence leave the stored vitals; a greater key replaces the
+/// cell and the vitals together, a row without vitals clears them; a new node process reads them
+/// back. No write advances the CharacterRevision.
+#[test]
+fn saved_vitals_are_ordered_and_fenced_with_the_cell_and_survive_a_restart() -> TestResult {
+    run("last_position_vitals", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let write = async |fence, sequence: u64, record: LastPositionRecord| {
+            h.root
+                .write_character_last_position(&authority, &h.node, fence, sequence, record)
+                .await
+        };
+        assert!(matches!(
+            write(fence(1)?, 10, wounded(500, 40, 3)).await,
+            Ok(LastPositionWrite::Written)
+        ));
+        assert_eq!(vitals_row(h).await?.as_deref(), Some("500|40|3"));
+        // A capture taken earlier never overwrites the vitals, even with the same cell.
+        for sequence in [9, 10] {
+            assert!(matches!(
+                write(fence(1)?, sequence, wounded(500, 1, 1)).await,
+                Ok(LastPositionWrite::Superseded)
+            ));
+        }
+        // Every stale fence writes neither the cell nor the vitals.
+        let mut connection = fence(1)?;
+        connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let mut lease = fence(1)?;
+        lease.character_lease_generation = 2;
+        let mut scope = fence(1)?;
+        scope.scope_ownership_generation = ScopeOwnershipGeneration::new(2).map_err(debug)?;
+        for stale in [connection, lease, scope] {
+            assert!(matches!(
+                write(stale, 11, wounded(500, 2, 2)).await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+        }
+        let mut session = fence(1)?;
+        session.game_session_id = GameSessionId::decode(&id(51)).map_err(debug)?;
+        assert!(write(session, 11, wounded(500, 2, 2)).await.is_err());
+        assert_eq!(vitals_row(h).await?.as_deref(), Some("500|40|3"));
+        // A later capture of the same cell with other vitals is a write of its own.
+        assert!(matches!(
+            write(fence(1)?, 11, wounded(500, 41, 0)).await,
+            Ok(LastPositionWrite::Written)
+        ));
+        assert_eq!(vitals_row(h).await?.as_deref(), Some("500|41|0"));
+        // An actor saved at its maxima stores none.
+        assert!(matches!(
+            write(fence(1)?, 12, record(501)).await,
+            Ok(LastPositionWrite::Written)
+        ));
+        assert_eq!(vitals_row(h).await?.as_deref(), Some("501|-|-"));
+        assert!(matches!(
+            write(fence(1)?, 13, wounded(502, 7, 5)).await,
+            Ok(LastPositionWrite::Written)
+        ));
+        // The writes advance no CharacterRevision and leave no receipt.
+        assert_eq!(h.root_revision().await?, "1");
+
+        // Restart: a new node process reads the vitals back with the cell.
+        let restarted = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let restart_seal = h.recovery.seal_current().map_err(debug)?;
+        let restart_authority = restarted
+            .open_character_authority(&restart_seal)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            restarted
+                .read_character_last_position(&restart_authority, &h.node, fence(1)?)
+                .await
+                .map_err(debug)?,
+            Some(StoredLastPosition {
+                record: wounded(502, 7, 5),
+                key: LastPositionKey {
+                    character_lease_generation: 1,
+                    write_sequence: 13,
+                },
+            })
+        );
+        drop(restart_authority);
+        drop(restart_seal);
+        drop(restarted);
+        Ok(())
     })
 }
 
@@ -514,6 +646,44 @@ fn the_table_refuses_foreign_worlds_lower_keys_and_deletes() -> TestResult {
         sqlx::query("UPDATE game_character_last_positions SET tile_x = 9, write_sequence = 6")
             .execute(&h.pool)
             .await?;
+        // CHAR-VITALS-1 (migration 0084): both vitals or neither, a living health and both
+        // within the wire bound, whatever the key; a row of migration 0080 holds none.
+        assert!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT health IS NULL AND mana IS NULL FROM game_character_last_positions"
+            )
+            .fetch_one(&h.pool)
+            .await?
+        );
+        for update in [
+            "UPDATE game_character_last_positions SET health = 5, mana = NULL, write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = NULL, mana = 5, write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = 0, mana = 5, write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = -1, mana = 5, write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = 5, mana = -1, write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = 268435456, mana = 5, \
+                    write_sequence = 7",
+            "UPDATE game_character_last_positions SET health = 5, mana = 268435456, \
+                    write_sequence = 7",
+        ] {
+            assert!(
+                sqlx::query(update).execute(&h.pool).await.is_err(),
+                "{update}"
+            );
+        }
+        // Vitals change only with a raised key, as the cell does.
+        assert!(
+            sqlx::query("UPDATE game_character_last_positions SET health = 5, mana = 0")
+                .execute(&h.pool)
+                .await
+                .is_err()
+        );
+        sqlx::query(
+            "UPDATE game_character_last_positions SET health = 268435455, mana = 268435455, \
+                    write_sequence = 7",
+        )
+        .execute(&h.pool)
+        .await?;
         assert!(
             sqlx::query("TRUNCATE game_character_last_positions")
                 .execute(&h.pool)
