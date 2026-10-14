@@ -96,6 +96,7 @@ finding_dispositions:
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 on b07ed26f and c5d78959 (critical-charm hook, wand swings): fixed"
+    - "Codex P1 on e5e6b0bb (separate scope-owner and character-session recovery cases): fixed"
     - "Codex P1/P2 on ed1d264a (CREATURE-MOVE-1 packet order reconciled; oldest-waiting-first fairness inside the chase reserve): fixed"
 ```
 

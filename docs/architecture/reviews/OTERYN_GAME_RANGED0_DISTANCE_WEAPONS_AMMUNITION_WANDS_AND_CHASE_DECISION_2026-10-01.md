@@ -367,9 +367,14 @@ The content `on_use` decides:
   runtime only (§7.1) and dies with the owner; the unit is durably held by its item row, whose
   quantity changes only in the committed transaction. In this order: (a) the replacement owner's
   generation claim commits in the database under the `character_root` lock **before any receipt
-  read**, and the claim, in the same transaction, advances the scope ownership generation and the
-  CharacterLease/GameSession generation that `CurrentCharacterItemFence` checks, so every old-generation
-  commit of a burn or drop fails the fence; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
+  read**, and the claim advances only the generation that actually changed, in the same transaction, and
+  never both on its own authority: (i) a character reconnect or controller replacement under a live
+  `ChannelRuntime` advances the CharacterLease/GameSession generation that `CurrentCharacterItemFence`
+  checks, through the character's own admission claim; (ii) a scope-owner replacement advances the
+  scope ownership generation only through the scope-assignment authority (FND-03 §4.2), and the
+  character claims under the new owner then follow case (i). A character recovery path never
+  replaces channel authority. In either case every old-generation commit of a burn or drop fails the
+  fence, which checks both generations; (b) the old owner's TransactionIds are then terminal, because a commit validates the scope
   ownership generation and `CurrentCharacterItemFence` in the same transaction that writes the
   receipt (DUR-03 §7.2), so no commit of the old generation can land after the claim; (c) before the
   character's first weapon swing the replacement reads **the newest one receipt** by CharacterId and the old
