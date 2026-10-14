@@ -476,7 +476,10 @@ authority until RANGED-1 is allocated.
   apply to players; the floor, zone and door rules of the Movement owner apply to every step), a goal
   of adjacency for melee and of in-range and in-sight for distance and throwing weapons and wands,
   and it re-searches when the target moves, within the rows above. A search never fails because of
-  the budget.
+  the budget. **The chase ends, and schedules no further search or backoff, when the target is on
+  another floor** (chase steps cannot change floors); the chaser keeps the target and mode like an
+  out-of-range swing, as ATTACK-0 §4 clears a target only when it is dead or gone. A floor-change
+  test is CHASE-1 scope.
 - **Movement authority.** VSL-MOVE-01 §3 holds: only the Movement owner commits a step. A chase step
   is a movement occurrence whose source is the server (VSL-MOVE-01 §5), validated by the same rules
   as a client step; a refused step drops the path and starts the backoff.
