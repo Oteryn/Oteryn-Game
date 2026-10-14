@@ -19,6 +19,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCEPT_CHAT0_ACCEPTANCE_DECISION_2026-10-13.md
   - docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20261013-accept-chat-0.md
+  - apps/game-server/src/gameplay_transport/chat_intent.rs
 public_contracts: []
 depends_on: []
 blocks: []
