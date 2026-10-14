@@ -628,14 +628,15 @@ impl ChannelAttackStates {
             .zip(runtime.read_actor_position(target).ok())
             .map(|(from, to)| (from.position(), to.position()));
         let facts = target_facts(runtime, room, actor, session, target, now);
+        // The target stays held here, so only its route goes (RANGED-0 §8, `RANGED0-RL-08`).
         let (Some((from, to)), Some(facts)) = (positions, facts) else {
-            entry.chase.reset();
+            entry.chase.hold();
             return None;
         };
         if !(facts.present_and_visible && facts.alive && facts.same_floor)
             || facts.attacker_reentry_protected
         {
-            entry.chase.reset();
+            entry.chase.hold();
             return None;
         }
         // RANGED0-RL-03: a due search first registers in its owner window and is admitted from

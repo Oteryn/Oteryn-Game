@@ -72,6 +72,17 @@ impl ChaseState {
         };
     }
 
+    /// The held target is out of chase for now (another floor, out of sight, or the attacker
+    /// re-entry protected): drop the route and a waiting search, keeping the target's refused
+    /// cells (`RANGED0-RL-08` clears them only on a target or mode change) and the search
+    /// cooldown. RANGED-0 §8: on a floor change the route resets and the target is kept.
+    pub(crate) fn hold(&mut self) {
+        self.route.clear();
+        self.expected_at = None;
+        self.goal = None;
+        self.waiting_since = None;
+    }
+
     /// A client step: drop the route; chase re-paths at its next 1,000 ms check (RANGED-0 §8,
     /// "client intent wins").
     pub(crate) fn yield_to_client(&mut self, now_us: u64) {
@@ -341,6 +352,8 @@ mod tests {
             chase.decide(1_999_999, at(0, 0), at(4, 0), || true, open),
             ChaseDecision::Step(CardinalStep::East)
         );
+        chase.hold();
+        assert_eq!(chase.refused.len(), 1, "a hold keeps the refused cells");
         chase.reset();
         assert_eq!(chase.refused.len(), 0, "a reset forgets the refused cells");
         chase.step_blocked(0);
