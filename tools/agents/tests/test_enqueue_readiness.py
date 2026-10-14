@@ -143,6 +143,43 @@ class EnqueueReadinessTest(unittest.TestCase):
         snap["candidate"]["head_sha"] = "abc"
         self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
 
+    def test_non_boolean_gate_fields_fail_closed(self):
+        for path in (("evidence", "required", 0, "present"), ("dependencies", 0, "merged"),
+                     ("authorization", "revoked"), ("review", "required")):
+            snap = ready()
+            node = snap
+            for key in path[:-1]:
+                node = node[key]
+            node[path[-1]] = "false"
+            self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], path)
+        snap = ready()
+        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": "false"}]
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_newest_rerun_is_authoritative(self):
+        snap = ready()
+        snap["checks"]["runs"].append({"name": "game-gate", "head_sha": HEAD, "status": "completed",
+                                       "conclusion": "failure", "at": "2026-10-14T10:10:00Z"})
+        self.assertEqual(reasons(snap), ["CHECKS_FAILED"])
+        snap = ready()
+        snap["checks"]["runs"][0]["conclusion"] = "failure"
+        snap["checks"]["runs"].append({"name": "game-gate", "head_sha": HEAD, "status": "completed",
+                                       "conclusion": "success", "at": "2026-10-14T10:10:00Z"})
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+    def test_ambiguous_duplicate_runs_fail_closed(self):
+        snap = ready()
+        snap["checks"]["runs"].append(dict(snap["checks"]["runs"][0], conclusion="failure"))
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_final_unblock_events_extend_ready_at(self):
+        snap = ready()
+        snap["threads"]["resolved_at"] = "2026-10-14T11:00:00Z"
+        self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T11:00:00Z")
+        snap["queue"]["prior_failures"] = [{"head_sha": HEAD, "cause_addressed": True,
+                                            "addressed_at": "2026-10-14T12:00:00Z"}]
+        self.assertEqual(evaluate(snap)["ready_at"], "2026-10-14T12:00:00Z")
+
 
 if __name__ == "__main__":
     unittest.main()

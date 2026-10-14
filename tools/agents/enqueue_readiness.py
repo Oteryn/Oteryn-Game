@@ -34,6 +34,13 @@ def _text(value) -> str:
     return value if isinstance(value, str) else ""
 
 
+def _flag(value) -> bool:
+    """Gate fields must be real JSON booleans; a string such as "false" is truthy and fails open."""
+    if not isinstance(value, bool):
+        raise ValueError(f"expected a JSON boolean, got {value!r}")
+    return value
+
+
 def evaluate(snapshot) -> dict:
     """Return {"verdict", "blockers", "ready_at"}; any malformed input fails closed."""
     try:
@@ -49,7 +56,7 @@ def _evaluate(s: dict) -> dict:
     if len(head) != 40:
         raise ValueError("candidate.head_sha must be a full 40-character SHA")
     pr = cand["pr"]
-    if cand.get("merged") or cand.get("queued"):
+    if _flag(cand.get("merged", False)) or _flag(cand.get("queued", False)):
         return {"verdict": "NOOP", "blockers": [], "ready_at": None}
 
     found: dict[str, dict] = {}
@@ -67,17 +74,23 @@ def _evaluate(s: dict) -> dict:
     runs = s["checks"]["runs"]
     for name in s["checks"]["required"]:
         hit = [r for r in runs if r["name"] == name and r["head_sha"] == head]
+        if len(hit) > 1:
+            # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
+            ats = [_text(r.get("at")) for r in hit]
+            if not all(ats) or ats.count(max(ats)) != 1:
+                raise ValueError(f"ambiguous duplicate runs for required check {name}")
+            hit = [max(hit, key=lambda r: _text(r["at"]))]
         if not hit or any(r["status"] != "completed" for r in hit):
             found["CHECKS"] = _blocker("CHECKS_PENDING", "ci", f"check_suite.completed {name} @ {head[:12]}")
             break
-        if not any(r["conclusion"] == "success" for r in hit):
+        if hit[0]["conclusion"] != "success":
             found["CHECKS"] = _blocker(
                 "CHECKS_FAILED", "writer", f"new head with {name} success", f"{name} did not succeed @ {head[:12]}")
             break
-        stamp(max(hit, key=lambda r: _text(r.get("at"))))
+        stamp(hit[0])
 
     review = s["review"]
-    if review["required"]:
+    if _flag(review["required"]):
         exact = [r for r in review["reviews"] if r["head_sha"] == head]
         if not exact:
             found["REVIEW"] = _blocker("REVIEW_NOT_ON_EXACT_HEAD", "control_plane", f"review for head {head[:12]} requested")
@@ -92,21 +105,33 @@ def _evaluate(s: dict) -> dict:
     if int(s["threads"]["unresolved"]) != 0:
         found["REVIEW_THREADS"] = _blocker(
             "REVIEW_THREADS_UNRESOLVED", "writer", "every review thread resolved", f"{s['threads']['unresolved']} open")
+    else:
+        # Optional: when the last thread was resolved (the unblocking event for REVIEW_THREADS).
+        at = _text(s["threads"].get("resolved_at"))
+        if at:
+            stamps.append(at)
 
     for item in s["evidence"]["required"]:
-        if not item["present"] or item["head_sha"] != head:
+        if not _flag(item["present"]) or item["head_sha"] != head:
             found["EVIDENCE"] = _blocker("EVIDENCE_MISSING", "writer", f"evidence {item['name']} bound to head {head[:12]}")
             break
         stamp(item)
 
     for dep in s["dependencies"]:
-        if not dep["merged"]:
+        if not _flag(dep["merged"]):
             found["DEPENDENCIES"] = _blocker("DEPENDENCY_NOT_MERGED", "control_plane", f"PR {dep['pr']} merged to main")
             break
         stamp(dep)
 
     for failure in s["queue"]["prior_failures"]:
-        if failure["head_sha"] == head and not failure["cause_addressed"]:
+        if failure["head_sha"] != head:
+            continue
+        if _flag(failure["cause_addressed"]):
+            # Optional: when the diagnosis showing the cause is outside the candidate was recorded.
+            at = _text(failure.get("addressed_at"))
+            if at:
+                stamps.append(at)
+        else:
             found["PRIOR_MQ_FAILURE"] = _blocker(
                 "PRIOR_MQ_FAILURE_UNRESOLVED", "writer",
                 "new head, or a recorded diagnosis showing the cause is outside the candidate",
@@ -114,7 +139,7 @@ def _evaluate(s: dict) -> dict:
             break
 
     auth = s["authorization"]
-    if (auth["head_sha"] != head or "enqueue" not in auth["scope"] or auth["revoked"]
+    if (auth["head_sha"] != head or "enqueue" not in auth["scope"] or _flag(auth["revoked"])
             or not _text(auth.get("granted_by"))):
         found["AUTHORIZATION"] = _blocker(
             "AUTHORIZATION_MISSING", "owner", f"enqueue authorization recorded for head {head[:12]}")
