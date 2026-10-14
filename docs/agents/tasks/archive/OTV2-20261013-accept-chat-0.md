@@ -29,11 +29,11 @@ external_repositories: []
 
 ## Outcome
 
-- CHAT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-13, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. No rule text, wire, content or pin change.
+- CHAT-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-13, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. It amends one rule, CHAT-0 §6 "Gate before the Channel lock" (a session without chat state and a failed limiter lock are refused `CHAT_UNAVAILABLE` before both locks), and records that amendment; no wire, content or pin change.
 
 ## Architecture and source of truth
 
-- PROVEN: the acceptance decision names the accepted document and adds no rule.
+- PROVEN: the acceptance decision names the accepted document and records its one rule amendment (CHAT-0 §6).
 
 ## High-risk authority/recovery qualification
 
@@ -42,7 +42,7 @@ external_repositories: []
 ## Acceptance criteria
 
 - [x] The acceptance decision records the owner, date and basis.
-- [x] No other rule text changes.
+- [x] The one rule amendment (CHAT-0 §6, refusal of a session without chat state) is recorded in the acceptance decision; no other rule text changes.
 
 ## Excluded scope
 
