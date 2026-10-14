@@ -20,6 +20,13 @@ normal-client probe now proves F10 incorrectly hides an actual key-capture modal
 The follow-up uses existing nested-dialog ownership rather than relying only on
 egui-winit consumed; six routed PL/EN cases include real F10 capture and recovery.
 This is a confirmed input repair, not a reason to claim whole-client completion.
+Published1954627d now passes fresh MSVC229/225/5+Platform16+Session84+TCP2,
+strict/fmt/release and DX12/125%DPI20pages/78rehashed captures/0invalid. Its
+normal Windows client also captures actual F10 inside the second-key editor;
+Escape leaves the parent open and ordinary F10 resumes afterwards. No Apply or
+active settings file, clipboard, account or E2E action. Source-bound report and
+all retained negative fixtures are in client-hotkey-table-fit.md. Current195 CI
+has only protected-base audit proof, not a qualified Merge gate/game-gate.
 
 Newest packet: OTV2-20261014-client-prelogin-focus. Published ab111236 CI is
 terminal green including game-gate; current-main conflict still needs normal

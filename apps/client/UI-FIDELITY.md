@@ -1121,7 +1121,16 @@ does open the second-key editor and proves F10 hides its parent instead of being
 captured. Existing modal ownership now also fences the prelogin global toggle;
 raw input remains with upstream egui. Six PL/EN binding/profile/reset cases pass
 without changing draft/current, with inner Escape and ordinary-F10 recovery.
-That successor still needs fresh native reproduction; e4's proof is not inherited.
+Published1954627d has fresh exact MSVC229/225/5+Platform16+Session84+TCP2,
+strict/fmt/release and DX12/125%DPI20pages/78rehashed captures/0invalid.
+A separately inspected normal195 client now paints actual F10 in the real
+second-key editor without hiding Options; Escape dismisses only the editor,
+then ordinary F10 hides/reopens the parent with the draft intact. No Apply or
+active settings file. All6 PNGs hash/decode1125x775/0invalid; report SHA256
+5a0ca6f15f627d9cd7649ee6c11b838f2c196cdf21029f1d912e182af2d6965e.
+This is OS-injected native modal acceptance, not gameplay/E2E, physical keyboard,
+native profile/reset confirmation coverage or whole-client1:1. Exact195 CI lacks
+Merge gate/game-gate proof; the protected-base audit alone does not qualify it.
 
 Latest native OS evidence is in OTV2-20261014-client-native-os-input: bounded
 current-desktop permission supersedes older isolation requirements, and actual

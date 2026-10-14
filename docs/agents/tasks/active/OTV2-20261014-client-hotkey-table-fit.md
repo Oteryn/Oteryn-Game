@@ -120,3 +120,47 @@ governance validator+124tests pass. The guard reads the existing active nested
 dialog state; no new stored state, fork or fabricated key. All six modal cases
 also explicitly clear egui focus before routing, rather than assuming that the
 consumed bit models ownership. Ordinary unconsumed F10 resumes after dismissal.
+
+## Exact195 native repair acceptance
+
+Published1954627d1db8c0c00aa0c041bbe1f39366709b28 passes fresh MSVC1.95:
+client229/225/5,Platform16,Session84,TCP2,strict all-target Clippy,fmt,release.
+Owned40532 exits0/131.15s; measured qualification130.73s. DX12/125%DPI:
+20pages/78independently rehashed and dimension-checked captures/0invalid.
+Unchanged full-scroll/geometry/marker/footer/nonmutation guards pass.
+Release0.1.0+dev.ci.g1954627d1db8; executable SHA256
+874620effe034b2ed3b278aff401a72e2f547eb1ee9ca6d7f5ce0c55db30ce75;
+manifest3701bf6de71e77502f7b16dcaf71222940052b05cdfcdbdbddb793979fe4a824.
+Private roots: Downloads/oteryn-client-1954627d-20261014-native and
+Downloads/oteryn-settings-audit-1954627d-20261014. Linux230/218/5 and
+native229/225/5 are different platform suites, not summed acceptance cases.
+
+Normal source-bound client45684/HWND1903916 uses a NEW private child profile
+under Downloads/oteryn-binding-1954627d-20261014. Actual second-key click
+opens the Chat Off editor; modal capture01 is inspected before the next input.
+Ordinary OS SendInput F10 now leaves Options and the editor open, paints F10
+and the existing conflict warning. Capture02 SHA256
+21de2a5fbd20139ea2567342f330e1a2c411f6f11ecb3e5f34b6cf30c8d3b624.
+Escape closes only the inner editor; capture03 shows the parent and unchanged
+blank second binding. Ordinary F10 then hides/reopens Options with the General
+Chat Off draft intact; captures04/05 are inspected. No candidate is accepted,
+no Apply occurs and the private active preferences file remains absent.
+This fixes the previously retained e4 negative reproduction, not merely a saved
+value. Native profile/reset F10 paths are not inferred: the six PL/EN actual-widget
+component cases separately cover them. No physical keyboard, gameplay or E2E claim.
+
+All6 PNGs independently hash/decode1125x775/0invalid. Controller8984 exits0/1.43s,
+normally closes only own45684 exit0 without force. Final generated report:
+native-binding-fixed-report.json SHA256
+5a0ca6f15f627d9cd7649ee6c11b838f2c196cdf21029f1d912e182af2d6965e.
+No clipboard, personal preferences, browser, credentials or admission action.
+All failed/partial earlier fixtures remain retained and explicitly unqualified.
+
+One fresh195 CI snapshot returns only the successful protected-base authority
+audit38613585458/job116022856484; the targeted PR-triggered workflow query
+returns no runs. This is NOT a green Merge gate/game-gate or closure proof.
+Do not inherit690/ab111 CI, poll in a loop, manufacture a retrigger commit or
+freeze/merge. Control plane needs exact final-head required CI/review at readiness.
+Source repair is published; this evidence-only checkpoint stays locally committed
+with recovery, rather than cancelling useful CI with a status-only source push.
+Parent client task, B2/B3, audio bank and separate VK_PACKET route remain open.
