@@ -1165,37 +1165,62 @@ mod tests {
         let directory = std::path::PathBuf::from(fixture);
         let active = directory.join("Oteryn/settings.json");
         assert_eq!(ClientSettings::path(), Some(active.clone()));
-        let current = ClientSettings {
-            english: true,
-            ..Default::default()
-        };
-        current.save(&active)?;
-        let original = std::fs::read(&active)?;
-        let imported = ClientSettings {
-            fullscreen: !current.fullscreen,
-            ..current.clone()
-        };
-        let source = directory.join("options.zip");
-        crate::options_export::save(&imported, &source)?;
-        let mut panel = SettingsPanel::for_settings_audit(current.clone());
-        assert!(panel.open_complete_section("help"));
-        panel.import_options_selected(Some(&source));
-        assert_eq!(panel.current, current);
-        assert_eq!(std::fs::read(&active)?, original);
-        let context = egui::Context::default();
-        let size = egui::vec2(900.0, 620.0);
-        let mut output = egui::FullOutput::default();
-        for _ in 0..3 {
-            output = frame(&context, size, Vec::new(), |ctx| {
-                panel.show(ctx, None, None)
-            })
-            .1;
+        for english in [false, true] {
+            let current = ClientSettings {
+                english,
+                ..Default::default()
+            };
+            current.save(&active)?;
+            let original = std::fs::read(&active)?;
+            let imported = ClientSettings {
+                fullscreen: !current.fullscreen,
+                ..current.clone()
+            };
+            let source = directory.join("options.zip");
+            crate::options_export::save(&imported, &source)?;
+            let archive = std::fs::read(&source)?;
+            let mut panel = SettingsPanel::for_settings_audit(current.clone());
+            assert!(panel.open_complete_section("help"));
+            panel.import_options_selected(Some(&source));
+            assert_eq!(panel.current, current);
+            assert_eq!(std::fs::read(&active)?, original);
+            let context = egui::Context::default();
+            let size = egui::vec2(900.0, 620.0);
+            let apply_label = if english { "Apply" } else { "Zastosuj" };
+            let mut output = egui::FullOutput::default();
+            for _ in 0..3 {
+                output = frame(&context, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+            }
+            // Force the actual persistence staging write to fail, not a mock save.
+            let staging = active.with_extension(format!("{}.tmp", std::process::id()));
+            std::fs::create_dir(&staging)?;
+            let apply = button_position(&output, size, apply_label).ok_or("Apply visible")?;
+            click(&context, size, apply, |ctx| panel.show(ctx, None, None));
+            assert_eq!(panel.current, current);
+            assert_eq!(panel.draft, imported);
+            assert!(!panel.applied && panel.open);
+            assert_eq!(std::fs::read(&active)?, original);
+            assert!(
+                panel
+                    .message
+                    .as_deref()
+                    .is_some_and(|message| message.starts_with(if english {
+                        "Not saved."
+                    } else {
+                        "Nie zapisano."
+                    }))
+            );
+            std::fs::remove_dir(&staging)?;
+            for _ in 0..3 {
+                output = frame(&context, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+            }
+            let apply = button_position(&output, size, apply_label).ok_or("Retry Apply visible")?;
+            click(&context, size, apply, |ctx| panel.show(ctx, None, None));
+            assert_eq!(panel.current, imported);
+            assert!(panel.applied && panel.open);
+            assert_eq!(ClientSettings::load(&active)?, imported);
+            assert_eq!(std::fs::read(&source)?, archive);
         }
-        let apply = button_position(&output, size, "Apply").ok_or("Apply visible")?;
-        let _ = click(&context, size, apply, |ctx| panel.show(ctx, None, None));
-        assert_eq!(panel.current, imported);
-        assert!(panel.applied && panel.open);
-        assert_eq!(ClientSettings::load(&active)?, imported);
         Ok(())
     }
 

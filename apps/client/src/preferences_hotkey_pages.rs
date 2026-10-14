@@ -1530,6 +1530,9 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
     };
     let mut close = false;
     let event = ui.input(|input| {
+        if !input.focused {
+            return None;
+        }
         input.events.iter().find_map(|event| {
             let egui::Event::Key {
                 key,
@@ -3041,6 +3044,186 @@ mod tests {
         ] {
             assert_eq!(key_name(key), expected);
         }
+    }
+
+    #[test]
+    fn profile_remove_confirmation_is_draft_only_and_cancel_or_escape_preserves_it()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::preferences_browser::{PreferenceAction, PreferencesBrowser};
+        for english in [false, true] {
+            for operation in ["accept", "cancel", "escape"] {
+                let ctx = egui::Context::default();
+                let size = egui::vec2(1200.0, 900.0);
+                let mut draft = ClientSettings {
+                    english,
+                    ..Default::default()
+                };
+                let mut second = draft.hotkeys.profiles[0].clone();
+                second.name = "Second".into();
+                let mut row = second.action_bar.row(0).ok_or("profile row")?;
+                row.visible = !row.visible;
+                second.action_bar.set_row(0, row)?;
+                draft.hotkeys.profiles.push(second);
+                draft.select_hotkey_profile(1)?;
+                let before = draft.clone();
+                let mut browser = PreferencesBrowser::new();
+                assert!(browser.open_section("general_hotkeys"));
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| {
+                        browser.show(ctx, &mut draft, None)
+                    })
+                    .1;
+                }
+                let remove_label = if english { "Remove" } else { "Usuń" };
+                let remove = button_position(&output, size, remove_label).ok_or("Remove button")?;
+                click(&ctx, size, remove, |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                });
+                assert!(browser.page_state.hotkeys.remove_confirmation);
+                assert_eq!(draft, before, "opening confirmation is not removal");
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| {
+                        browser.show(ctx, &mut draft, None)
+                    })
+                    .1;
+                }
+                if operation == "escape" {
+                    let (action, _) = frame(
+                        &ctx,
+                        size,
+                        vec![egui::Event::Key {
+                            key: egui::Key::Escape,
+                            physical_key: None,
+                            pressed: true,
+                            repeat: false,
+                            modifiers: egui::Modifiers::NONE,
+                        }],
+                        |ctx| browser.show(ctx, &mut draft, None),
+                    );
+                    assert!(matches!(action, PreferenceAction::None));
+                } else {
+                    let label = if operation == "accept" {
+                        remove_label
+                    } else if english {
+                        "Cancel"
+                    } else {
+                        "Anuluj"
+                    };
+                    let button = output
+                        .shapes
+                        .iter()
+                        .rev()
+                        .find_map(|shape| match &shape.shape {
+                            egui::Shape::Text(text) if text.galley.job.text == label => {
+                                Some(text.visual_bounding_rect().center())
+                            }
+                            _ => None,
+                        })
+                        .ok_or("confirmation button")?;
+                    click(&ctx, size, button, |ctx| {
+                        browser.show(ctx, &mut draft, None)
+                    });
+                }
+                assert!(browser.open, "inner confirmation must not close Options");
+                assert!(!browser.page_state.hotkeys.remove_confirmation);
+                if operation == "accept" {
+                    assert_eq!(draft.hotkeys.profiles.len(), 1);
+                    assert_eq!(draft.hotkeys.selected, 0);
+                    assert_eq!(draft.action_bar, before.hotkeys.profiles[0].action_bar);
+                    assert_eq!(draft.hotkeys.profiles[0], before.hotkeys.profiles[0]);
+                    draft.validate()?;
+                } else {
+                    assert_eq!(draft, before);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn binding_editor_ignores_unfocused_keys_and_resumes_physical_capture()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            for action in ["client.stop", "dialog.options"] {
+                for key in [egui::Key::Escape, egui::Key::F10, egui::Key::A] {
+                    let context = egui::Context::default();
+                    let mut settings = ClientSettings::default();
+                    let before = settings.clone();
+                    let mut state = State {
+                        binding_editor: Some(BindingEditor {
+                            target: BindingTarget::General {
+                                action,
+                                chat_on: true,
+                                second: false,
+                            },
+                            action: action.into(),
+                            captured: None,
+                        }),
+                        ..Default::default()
+                    };
+                    let key_event = |key, physical, modifiers| egui::Event::Key {
+                        key,
+                        physical_key: Some(physical),
+                        pressed: true,
+                        repeat: false,
+                        modifiers,
+                    };
+                    let _ = context.run_ui(
+                        egui::RawInput {
+                            focused: false,
+                            events: vec![
+                                key_event(key, key, egui::Modifiers::NONE),
+                                egui::Event::WindowFocused(false),
+                            ],
+                            ..Default::default()
+                        },
+                        |ui| binding_editor(ui, &mut settings, english, &mut state),
+                    );
+                    assert!(
+                        state.binding_editor.is_some(),
+                        "unfocused {key:?} must not dismiss {action}"
+                    );
+                    assert_eq!(
+                        state
+                            .binding_editor
+                            .as_ref()
+                            .ok_or("editor retained")?
+                            .captured,
+                        None
+                    );
+                    assert_eq!(settings, before);
+                    let _ = context.run_ui(
+                        egui::RawInput {
+                            focused: true,
+                            events: vec![key_event(
+                                egui::Key::A,
+                                egui::Key::Q,
+                                egui::Modifiers::CTRL,
+                            )],
+                            ..Default::default()
+                        },
+                        |ui| binding_editor(ui, &mut settings, english, &mut state),
+                    );
+                    assert_eq!(
+                        state
+                            .binding_editor
+                            .as_ref()
+                            .ok_or("focused editor")?
+                            .captured,
+                        Some(ShortcutBinding {
+                            key: 20,
+                            ctrl: true,
+                            alt: false,
+                            shift: false,
+                            meta: false
+                        })
+                    );
+                    assert_eq!(settings, before, "capture is not Apply");
+                }
+            }
+        }
+        Ok(())
     }
 
     #[test]

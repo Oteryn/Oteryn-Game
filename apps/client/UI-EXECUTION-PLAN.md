@@ -8,6 +8,18 @@ AUTHORING. This plan is the execution order, not a completion declaration.
 
 ## Current continuation — 2026-10-14
 
+Owner now requires all six local plan steps before stopping, explicitly without
+E2E and still excluding HUD/graphics redesign. Current baseline f8c68f18 has
+green same-head CI/game-gate. The local batch indexes393 catalogue declarations,
+repairs unfocused binding capture and IME/history ownership, and qualifies routed
+profile confirmation plus PL/EN import failure/retry. Do not conflate executable
+Custom Hotkeys Text with the currently disabled native bar Text category.
+Safe OS isolation and fresh REA are separate remaining evidence inputs; Synology
+transport429/404 prevents fresh original inspection. Source-backed audio candidate
+is Rodio taggedv0.23.0/CPAL0.18.2, not an installed backend or playable bank.
+Current packet: docs/agents/tasks/active/OTV2-20261014-client-six-local-steps.md;
+row index: UI-LOCAL-OPTION-INDEX.md. Older paragraphs below are dated evidence.
+
 Latest local follow-up: preserve cfa72fca evidence with an actual input repair,
 not a status-only publication. New production-widget regression proves and fixes
 Enter→history replacing the committed line after focus loss; seven history

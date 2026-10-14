@@ -1097,6 +1097,17 @@ Packet: docs/agents/tasks/active/OTV2-20261014-client-export-destination.md.
 
 ## Required evidence per page/panel
 
+Six local steps, without E2E: current packet
+docs/agents/tasks/active/OTV2-20261014-client-six-local-steps.md distinguishes
+catalogue declarations (UI-LOCAL-OPTION-INDEX.md) from actual consumers. Initially
+red unfocused key-capture and IME/history regressions are repaired above upstream
+egui. Routed profile confirmation and PL/EN import failure/retry use real widgets
+and local filesystem. Native bar Text remains unavailable, unlike Custom Hotkeys
+Text. Fresh REA transport and physical OS isolation are still absent; audio
+upstream choice is investigated, not playback. Linux230/214/5,strict Clippy/fmt
+and governance60 pass; exact new native checks follow. Prior f8 component/page
+proof is not inherited as changed-source qualification.
+
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.
 - Unknown settings remain unset; simply drawing a page must not persist defaults.

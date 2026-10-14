@@ -97,6 +97,7 @@ pub struct GameUi {
     character_name: Option<String>,
     draft: String,
     chat_history: ChatHistory,
+    chat_ime_preedit: bool,
     recipient: String,
     channel: usize,
     chat_read_only: [bool; 6],
@@ -189,6 +190,14 @@ fn chat_history_direction(event: &egui::Event) -> Option<bool> {
             _ => None,
         },
         _ => None,
+    }
+}
+
+fn chat_ime_active_after(event: &egui::Event, active: bool) -> bool {
+    match event {
+        egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => !text.is_empty(),
+        egui::Event::Ime(egui::ImeEvent::Commit(_)) => false,
+        _ => active,
     }
 }
 
@@ -467,18 +476,25 @@ impl GameUi {
         hint: &str,
     ) -> egui::Response {
         let id = ui.make_persistent_id("chat-composer");
-        let recall = enabled
+        let owns_input = enabled
             && ui.is_enabled()
             && !self.blocks_game_input()
             && self.chat_hotkey_context()
             && ui.memory(|memory| memory.has_focus(id))
-            && ui.input(|input| {
-                input.focused
-                    && input
-                        .events
-                        .iter()
-                        .any(|event| chat_history_direction(event).is_some())
-            });
+            && ui.input(|input| input.focused);
+        let initial_ime = owns_input && self.chat_ime_preedit;
+        let (recall, next_ime) = ui.input(|input| {
+            let mut composing = initial_ime;
+            let mut recall = false;
+            if owns_input {
+                for event in &input.events {
+                    composing = chat_ime_active_after(event, composing);
+                    recall |= !composing && chat_history_direction(event).is_some();
+                }
+            }
+            (recall, composing)
+        });
+        self.chat_ime_preedit = next_ime;
         if !recall {
             let response = ui.add_enabled(
                 enabled,
@@ -501,8 +517,10 @@ impl GameUi {
         let events = ui.input_mut(|input| std::mem::take(&mut input.events));
         let mut segments = Vec::new();
         let mut ordinary = Vec::new();
+        let mut composing = initial_ime;
         for event in events {
-            if let Some(older) = chat_history_direction(&event) {
+            composing = chat_ime_active_after(&event, composing);
+            if !composing && let Some(older) = chat_history_direction(&event) {
                 segments.push((std::mem::take(&mut ordinary), Some(older)));
             } else {
                 ordinary.push(event);
@@ -564,6 +582,7 @@ impl GameUi {
     }
 
     fn relinquish_hidden_chat_focus(&mut self, ctx: &egui::Context) {
+        self.chat_ime_preedit = false;
         self.set_chat_mode(ChatMode::Off);
         self.chat_focus_request = None;
         if let Some(id) = self.chat_composer_id {
@@ -2652,6 +2671,75 @@ mod tests {
                         0
                     );
                 }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn chat_history_never_replaces_an_active_ime_preedit() -> Result<(), &'static str> {
+        let size = egui::vec2(1200.0, 800.0);
+        for english in [false, true] {
+            for (same_frame, recall_with_commit) in
+                [(false, false), (false, true), (true, false), (true, true)]
+            {
+                let ctx = egui::Context::default();
+                let (fixture, task, sent) = menu_fixture(english, 42)?;
+                let mut chat = ChatConsumer::new(&fixture, english)?;
+                let mut task = Box::pin(task);
+                poll_menu_task(task.as_mut());
+                assert!(
+                    chat.game
+                        .submit_chat_text("history".into(), true, english, |intent| fixture
+                            .link
+                            .send_chat(intent))
+                );
+                poll_menu_task(task.as_mut());
+                chat.game.draft = "before ".into();
+                for _ in 0..3 {
+                    frame(&ctx, size, vec![], |ctx| chat.show(ctx, &fixture));
+                }
+                let id = chat.game.chat_composer_id.ok_or("IME composer")?;
+                select_copy_text(&ctx, id, 7, 7)?;
+                let preedit = egui::Event::Ime(egui::ImeEvent::Preedit {
+                    text: "漢字".into(),
+                    active_range_chars: Some(0..1),
+                });
+                if same_frame {
+                    frame(&ctx, size, vec![preedit, recall_key(true)], |ctx| {
+                        chat.show(ctx, &fixture)
+                    });
+                } else {
+                    frame(&ctx, size, vec![preedit], |ctx| chat.show(ctx, &fixture));
+                    frame(&ctx, size, vec![recall_key(true)], |ctx| {
+                        chat.show(ctx, &fixture)
+                    });
+                }
+                assert_eq!(
+                    chat.game.draft, "before 漢字",
+                    "history must not overwrite composing text"
+                );
+                let mut commit = vec![egui::Event::Ime(egui::ImeEvent::Commit("日本語🦀".into()))];
+                if recall_with_commit {
+                    commit.push(recall_key(true));
+                }
+                frame(&ctx, size, commit, |ctx| chat.show(ctx, &fixture));
+                if recall_with_commit {
+                    assert_eq!(chat.game.draft, "history");
+                    frame(&ctx, size, vec![recall_key(false)], |ctx| {
+                        chat.show(ctx, &fixture)
+                    });
+                }
+                assert!(chat.game.draft.contains("日本語🦀"));
+                assert!(!chat.game.draft.contains("history"));
+                assert!(chat.game.chat_history.position.is_none());
+                // Commit ends IME ownership: a later recall is functional again.
+                frame(&ctx, size, vec![recall_key(true)], |ctx| {
+                    chat.show(ctx, &fixture)
+                });
+                assert_eq!(chat.game.draft, "history");
+                poll_menu_task(task.as_mut());
+                assert_eq!(menu_lock(&sent).len(), 1);
             }
         }
         Ok(())
