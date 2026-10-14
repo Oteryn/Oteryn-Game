@@ -4008,7 +4008,7 @@ mod tests {
                 41,
                 7,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?;
             let (client, peer) = script_peer(vec![
                 Step::ReadCommand,
@@ -4045,7 +4045,7 @@ mod tests {
                 41,
                 7,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?;
             let (client, peer) = script_peer(vec![Step::ReadCommand, Step::Send(committed)]);
             let mut session = Session::admit(client, admission()?).await?;
@@ -5367,7 +5367,7 @@ mod tests {
             sequence,
             id,
             CommandStatus::Accepted,
-            &world_object::encode_use_result(disposition),
+            &world_object::encode_use_result(disposition).unwrap_or_default(),
         )?))
     }
 

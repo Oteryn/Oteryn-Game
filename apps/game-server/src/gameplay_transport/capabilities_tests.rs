@@ -1024,7 +1024,7 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         };
         let rejected = (
             CommandStatus::Rejected,
-            encode_use_result(UseDisposition::Rejected),
+            encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
         );
         for selected in [&[][..], &[CAPABILITY_ITEM_VIEW_MOVE_V1]] {
             let continuity = SessionContinuity {
@@ -1096,10 +1096,14 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
                     (
                         2,
                         CommandStatus::Accepted,
-                        encode_use_result(UseDisposition::NothingToUse)
+                        encode_use_result(UseDisposition::NothingToUse).unwrap_or_default()
                     ),
                     (3, rejected.0, rejected.1.clone()),
-                    (4, CommandStatus::Accepted, encode_use_result(disposition)),
+                    (
+                        4,
+                        CommandStatus::Accepted,
+                        encode_use_result(disposition).unwrap_or_default()
+                    ),
                 ],
                 "{disposition:?}"
             );

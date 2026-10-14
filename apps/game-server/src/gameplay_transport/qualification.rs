@@ -876,7 +876,7 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
     };
     let overlay_delta = |sequence, from, state: &str, to| -> TestResult<Vec<u8>> {

@@ -753,7 +753,7 @@ mod connection {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
         .expect("result")
     }

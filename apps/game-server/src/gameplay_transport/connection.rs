@@ -2545,11 +2545,9 @@ where
                     } else {
                         CommandStatus::Accepted
                     },
-                    match gate_message_id {
-                        Some(_) => encode_use_result_with_gate(disposition, gate_message_id)
-                            .unwrap_or_else(|_| encode_use_result(UseDisposition::Rejected)),
-                        None => encode_use_result(disposition),
-                    },
+                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
+                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
+                    ),
                 )
             }
             Dispatch::Spell(outcome) => (
@@ -2567,7 +2565,8 @@ where
                     OpenDecision::TooFar => UseDisposition::TooFar,
                     OpenDecision::StaleState => UseDisposition::StaleState,
                     OpenDecision::NothingToUse => UseDisposition::NothingToUse,
-                }),
+                })
+                .unwrap_or_default(),
             ),
             Dispatch::ContainerView(outcome, _) => (
                 CommandStatus::Accepted,
@@ -4782,7 +4781,7 @@ mod tests {
                     1,
                     1,
                     CommandStatus::Accepted,
-                    &encode_use_result(UseDisposition::Committed),
+                    &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
                 )?,
                 encode_state_delta(
                     1,
@@ -5087,7 +5086,7 @@ mod tests {
                 1,
                 1,
                 CommandStatus::Accepted,
-                &encode_use_result(UseDisposition::Committed),
+                &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?);
             assert_eq!(frames, expected);
             assert_eq!(
@@ -5151,7 +5150,7 @@ mod tests {
                     1,
                     1,
                     CommandStatus::Accepted,
-                    &encode_use_result(UseDisposition::NothingToUse),
+                    &encode_use_result(UseDisposition::NothingToUse).unwrap_or_default(),
                 )?,
                 encode_command_result(1, 2, 2, CommandStatus::Rejected, &[])?,
             ]);
@@ -5228,7 +5227,7 @@ mod tests {
             assert!(result_present(
                 &frames,
                 CommandStatus::Rejected,
-                &encode_use_result(UseDisposition::Rejected)
+                &encode_use_result(UseDisposition::Rejected).unwrap_or_default()
             ));
             Ok(())
         })
@@ -6020,7 +6019,7 @@ mod tests {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(UseDisposition::Committed),
+            &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
         )?)
     }
 

@@ -1009,7 +1009,7 @@ async fn scripted_server(
                 43,
                 id,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?,
             encode_state_delta(
                 GENERATION,
@@ -1828,7 +1828,7 @@ async fn item_server(
                 41,
                 id,
                 CommandStatus::Accepted,
-                &world_object::encode_use_result(UseDisposition::Committed),
+                &world_object::encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?,
             encode_state_delta(
                 GENERATION,

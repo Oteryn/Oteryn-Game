@@ -448,11 +448,10 @@ fn map_item_handle(input: &[u8]) -> Result<ItemHandle, WorldObjectError> {
     })
 }
 
-/// `SEALED` carries a gate message id: use `encode_use_result_with_gate` for it.
-pub fn encode_use_result(disposition: UseDisposition) -> Vec<u8> {
-    let mut output = Vec::with_capacity(2);
-    push_varint_field(&mut output, 1, disposition as u64);
-    output
+/// A result without a gate message id. `SEALED` requires one, so it is refused here rather than
+/// serialized into a payload `decode_use_result` rejects: use `encode_use_result_with_gate`.
+pub fn encode_use_result(disposition: UseDisposition) -> Result<Vec<u8>, WorldObjectError> {
+    encode_use_result_with_gate(disposition, None)
 }
 
 /// The gate message id of a `SEALED` result: 1 to 127, one varint byte, so the result stays within
@@ -469,7 +468,8 @@ pub fn encode_use_result_with_gate(
         (UseDisposition::Sealed, _) | (_, Some(_)) => return Err(WorldObjectError::Malformed),
         (_, None) => {}
     }
-    let mut output = encode_use_result(disposition);
+    let mut output = Vec::with_capacity(4);
+    push_varint_field(&mut output, 1, disposition as u64);
     if let Some(id) = gate_message_id {
         push_varint_field(&mut output, 2, u64::from(id));
     }
@@ -1000,12 +1000,18 @@ mod tests {
             UseDisposition::Locked,
             UseDisposition::NoRoom,
         ] {
-            let bytes = encode_use_result(disposition);
+            let bytes = encode_use_result(disposition).unwrap_or_default();
             assert!(bytes.len() <= MAX_USE_RESULT_BYTES);
             assert_eq!(decode_use_result(&bytes), Ok(disposition));
         }
         assert_eq!(
             decode_use_result(&[0x08, 0x00]),
+            Err(WorldObjectError::Malformed)
+        );
+        // SEALED has no gate-less form: the legacy encoder fails closed instead of emitting a
+        // payload the decoder rejects.
+        assert_eq!(
+            encode_use_result(UseDisposition::Sealed),
             Err(WorldObjectError::Malformed)
         );
         assert_eq!(

@@ -936,7 +936,7 @@ mod connection {
             let intent = open(handle_of(&view, instance(1)));
             let (_, opened) =
                 super::run(&mut state, &mut view, intent, Some(container(None, &[10])));
-            let used = |disposition| encode_use_result(disposition);
+            let used = |disposition| encode_use_result(disposition).unwrap_or_default();
             expected.extend([
                 result(
                     1,

@@ -1216,7 +1216,7 @@ fn capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
                 1,
                 1,
                 CommandStatus::Accepted,
-                &encode_use_result(UseDisposition::Committed),
+                &encode_use_result(UseDisposition::Committed).unwrap_or_default(),
             )?,
             delta_frame(2, &opened)?,
             move_result(3, 2, ItemMoveOutcome::Moved)?,
