@@ -69,6 +69,30 @@ class SyntheticTree(unittest.TestCase):
         self.assertEqual(self.verdict([rec(f"{TOOL}/hashed/README.md")]), "full")
         self.assertEqual(self.verdict([rec(f"{TOOL}/viaparent/README.md")]), "full")
 
+    def test_stale_pin_of_base_content_takes_full_path(self):
+        # The pin still matches the base content; the head README changed without updating it.
+        old = b"old readme\n"
+        self.write(f"{TOOL}/stale/README.md", "new readme\n")
+        self.write(f"{TOOL}/stale/pins.json", '{"sha": "%s"}\n' % hashlib.sha256(old).hexdigest())
+        records = [rec(f"{TOOL}/stale/README.md")]
+        self.assertEqual(scope.classify(records, self.root)[0], "docs_only")  # head-only view misses it
+        base = {f"{TOOL}/stale/README.md": old}
+        self.assertEqual(scope.classify(records, self.root, base_blobs=base)[0], "full")
+
+    def test_hostile_file_name_cannot_inject_github_output(self):
+        import json, os
+        from unittest import mock
+        name = f"{TOOL}/x\nfull=false\n.md"
+        records = self.root / "records.json"
+        records.write_text(json.dumps([rec(name)]), encoding="utf-8")
+        out = self.root / "out.txt"
+        with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(out)}):
+            scope.main(["--root", str(self.root), "--records", str(records)])
+        lines = out.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 2, lines)
+        self.assertEqual(lines[0], "full=true")
+        self.assertTrue(lines[1].startswith("reason="))
+
     def test_mixed_diff_takes_full_path(self):
         self.assertEqual(self.verdict([rec(f"{TOOL}/README.md"), rec(f"{TOOL}/run_checks.py")]), "full")
         self.assertEqual(self.verdict([rec(f"{TOOL}/README.md"), rec("docs/note.md")]), "full")
@@ -164,6 +188,7 @@ class WorkflowWiring(unittest.TestCase):
         self.assertIn("contents/tools/repository/classify_quest_authoring_scope.py?ref=$BASE_SHA", self.text)
         self.assertIn("github.event.pull_request.base.sha", self.text)
         self.assertIn("workflow_dispatch", self.text)
+        self.assertIn("--base-sha", self.text)
 
 
 class MergeGateOrdering(unittest.TestCase):

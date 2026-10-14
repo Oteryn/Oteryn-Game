@@ -58,7 +58,7 @@ jobs:
           elif curl -fsSL --retry 2 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json" \
               -o "$RUNNER_TEMP/classify_quest_scope.py" \
               "https://api.github.com/repos/$REPOSITORY/contents/tools/repository/classify_quest_authoring_scope.py?ref=$BASE_SHA"; then
-            python -I "$RUNNER_TEMP/classify_quest_scope.py" --root . --repository "$REPOSITORY" --pull-request "$PULL_NUMBER" \
+            python -I "$RUNNER_TEMP/classify_quest_scope.py" --root . --repository "$REPOSITORY" --pull-request "$PULL_NUMBER" --base-sha "$BASE_SHA" \
               || full "classifier failed"
           else
             full "protected-base classifier unavailable"

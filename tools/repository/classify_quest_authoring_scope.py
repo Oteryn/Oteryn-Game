@@ -27,6 +27,8 @@ import os
 import posixpath
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -36,9 +38,17 @@ DOC_STATUSES = {"added", "modified", "changed"}
 MAX_ENUMERATED = 3000
 
 
-def referenced_docs(root: Path, docs: list[str]) -> dict[str, str]:
+def referenced_docs(
+    root: Path, docs: list[str], base_blobs: dict[str, bytes] | None = None
+) -> dict[str, str]:
     """Return {doc: reason} for each doc that another file in the Quest tool directory refers to."""
-    wanted = {doc: hashlib.sha256((root / doc).read_bytes()).hexdigest().encode() for doc in docs if (root / doc).is_file()}
+    # A pin may match the head content or the base content (a file changed without its pin updated).
+    wanted: dict[str, list[bytes]] = {}
+    for doc in docs:
+        blobs = [(root / doc).read_bytes()] if (root / doc).is_file() else []
+        if base_blobs and doc in base_blobs:
+            blobs.append(base_blobs[doc])
+        wanted[doc] = [hashlib.sha256(blob).hexdigest().encode() for blob in blobs]
     found: dict[str, str] = {}
     base = root / TOOL_DIR
     for current, _dirs, names in os.walk(base):
@@ -71,12 +81,14 @@ def referenced_docs(root: Path, docs: list[str]) -> dict[str, str]:
                     continue
                 if posixpath.basename(doc).encode() in data and pattern.search(data):
                     found[doc] = f"referenced by {current_rel}/{name}"
-                elif doc in wanted and wanted[doc] in data:
+                elif any(digest in data for digest in wanted[doc]):
                     found[doc] = f"content hash pinned by {current_rel}/{name}"
     return found
 
 
-def classify(records: object, root: Path, *, complete: bool = True) -> tuple[str, str]:
+def classify(
+    records: object, root: Path, *, complete: bool = True, base_blobs: dict[str, bytes] | None = None
+) -> tuple[str, str]:
     """Return ("docs_only" | "full", reason) for the pull request file records."""
     if not complete:
         return "full", "changed-file list is incomplete"
@@ -99,7 +111,7 @@ def classify(records: object, root: Path, *, complete: bool = True) -> tuple[str
         if ".." in path.split("/") or not (root / path).is_file():
             return "full", f"unreadable doc: {path}"
         docs.append(path)
-    pinned = referenced_docs(root, docs)
+    pinned = referenced_docs(root, docs, base_blobs)
     if pinned:
         doc, why = sorted(pinned.items())[0]
         return "full", f"{doc} {why}"
@@ -132,12 +144,43 @@ def fetch_records(repository: str, number: str, token: str) -> tuple[list[dict],
     return records, False
 
 
+def fetch_base_blobs(repository: str, base_sha: str, token: str, records: object) -> dict[str, bytes]:
+    """Base-tree content of each changed doc; a file absent at base (added) has none."""
+    blobs: dict[str, bytes] = {}
+    for record in records if isinstance(records, list) else []:
+        path = record.get("filename") if isinstance(record, dict) else None
+        if not isinstance(path, str) or not path.endswith(".md") or record.get("status") == "added":
+            continue
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{repository}/contents/{urllib.parse.quote(path)}?ref={base_sha}",
+            headers={
+                "Accept": "application/vnd.github.raw+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "Oteryn-quest-scope",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                blobs[path] = response.read()
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+    return blobs
+
+
+def safe_reason(reason: str) -> str:
+    """Untrusted text (file names) never reaches GITHUB_OUTPUT: keep a fixed safe alphabet."""
+    return re.sub(r"[^A-Za-z0-9 ._/:(),-]", "?", reason)[:200]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--records", type=Path)
     parser.add_argument("--repository")
     parser.add_argument("--pull-request")
+    parser.add_argument("--base-sha")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     try:
@@ -147,9 +190,15 @@ def main(argv: list[str] | None = None) -> int:
             records, complete = fetch_records(args.repository, args.pull_request, os.environ.get("GH_TOKEN", ""))
         else:
             records, complete = [], False
-        verdict, reason = classify(records, root, complete=complete)
+        base_blobs = (
+            fetch_base_blobs(args.repository, args.base_sha, os.environ.get("GH_TOKEN", ""), records)
+            if args.base_sha and args.repository and not args.records
+            else None
+        )
+        verdict, reason = classify(records, root, complete=complete, base_blobs=base_blobs)
     except (OSError, ValueError) as error:
         verdict, reason = "full", f"classification failed closed: {type(error).__name__}"
+    reason = safe_reason(reason)
     print(f"Quest scope: {verdict} ({reason})")
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
