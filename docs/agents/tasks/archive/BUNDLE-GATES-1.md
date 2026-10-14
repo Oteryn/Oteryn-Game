@@ -23,6 +23,10 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md   # BUNDLE-GATES-1 row only
   - docs/agents/tasks/active/BUNDLE-GATES-1.md
   - docs/agents/tasks/archive/BUNDLE-GATES-1.md
+  - Cargo.toml   # syn dev-dependency of the guard test's parser only
+  - Cargo.lock   # syn dev-dependency of the guard test's parser only
+  - apps/game-server/Cargo.toml   # syn dev-dependency of the guard test's parser only
+  - content/world/pins/oteryn.json   # inputs_digest only: the Cargo inputs of the World bundle changed (rustls 0.23.46 precedent)
 public_contracts: []
 external_repositories: []
 ```
