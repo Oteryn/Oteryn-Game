@@ -131,3 +131,32 @@ bytes matching main's digest. No invented fingerprint or weakened gate.
 Post-merge Linux230/209/5+Session82, strict/fmt and governance60 pass; new
 native/CI qualification follows.99a8 proof remains bound to its exact source,
 not inherited by the changed placement fingerprint.
+
+## Exact post-merge native checkpoint
+
+Publishedc53099c9170bbc3c5e4630a795b90e8ee575b224 normally composes99a8 and
+accepted mainaf85035f. Source-only pin repair above restores real mergeability:
+fresh PR MERGEABLE, ordinary CI10success/7running/0failed, game-gate pending.
+No queue/release/final-review/all-green claim. This evidence-only successor is
+saved locally until useful running CI finishes; do not cancel it for a checkpoint.
+
+Exact c530 Rust1.95 MSVC229/215/5+Session82, strict Clippy/fmt/release pass;
+all named history/focus/closed-receiver/earlier menu/toolbar tests execute/pass.
+DX12 at125%DPI validates20pages/78 rehashed captures/0invalid. Release
+0.1.0+dev.ci.gc53099c9170b; executable SHA256
+4fd3e1b44171bacd68d9ddc46da46719a9c61c63dfbce4918e8bbe67b6a0d056;
+manifestedc8624c1f84cab9cda342df40d313d2d37dc9d99fe609e96d3da6f988a57c5c.
+Build C:\Users\barte\Downloads\oteryn-client-c53099c9-20261014-native;
+audit C:\Users\barte\Downloads\oteryn-settings-audit-c53099c9-20261014.
+QualificationPID19372 exits0 after127.86seconds. Separate launcher exits0;
+independent fence verifies loginPID26640/window4393676 responding with exact
+path/hash/U+2014 title and no automatic sign-in. Older sources/checkouts/binaries/
+windows are preserved, not terminated/relabelled or installed over the owner.
+Guarded c530 publication/readback passes; recovery
+/workspace/oteryn-client-publication-c53099c9.bundle SHA256
+58390826a469374e56547880d271f36ff14548a54a7f99882fdbfffcea6a2ab1.
+
+Local/native component tests and compiled page capture are complete for this
+packet, not every physical OS interaction or full original1:1. No personal
+clipboard/profile/picker operation, new server activation, deployment or live
+QA action is performed. B2/main-channel/final protected integration remain open.

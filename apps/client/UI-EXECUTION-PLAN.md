@@ -15,8 +15,8 @@ account, personal-profile or trust mutations.
 
 Accepted main71c014d4 was normally merged in32ee396e, retaining the earlier
 15c6cab7 reconciliation3295351a. Neither of those refreshes changes the client,
-Session or protocol source. Last remote1942 head6f217f16 is still draft
-AUTHORING with green CI/game-gate; subsequent source needs its own checks.
+Session or protocol source. Latest remote1942 headc53099c9 is still draft
+AUTHORING/MERGEABLE with10success/7running/0failed; game-gate is pending.
 The pre-B2 stability packet refreshes already-admitted GameState before step
 completion so interleaved inventory/container/vitals/chat changes cannot remain
 stale until an idle exchange. No later capability or gameplay control activates.
@@ -35,6 +35,11 @@ with newly accepted mainaf85035f. A normal merge and release double-build keep
 main's new1b04cc35 bundle/placement fingerprint and derive merged inputs883be88a.
 Entry/identity/content revision and live systems stay unchanged. New source
 must qualify independently; no empty CI retrigger or unqualified all-green claim.
+
+Post-mergec530 retains completed local input consumers and passes exact native
+MSVC229/215/5+Session82/strict/release and20pages/78captures. New source-bound
+login26640 responds. Proof checkpoint waits locally, preserving running CI.
+This does not complete physical OS/reference parity, B2 or the parent client task.
 
 Fresh293-comment #1622 read:6149042654 is still operationally unanswered;
 6155885167 allocates a different WORLDINT registry lease. Neither that comment

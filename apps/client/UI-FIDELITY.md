@@ -1043,6 +1043,18 @@ No server deployment/start/identity mutation or graphics redesign. Updated
 placement fingerprint requires new native qualification; retained99 proof does
 not qualify the successor or its final same-head CI/review/MQ/main-channel release.
 
+Exact post-merge sourcec53099c9 passes Linux230/209/5+Session82 and native
+MSVC229/215/5+Session82/strict/fmt/release, with all new consumer tests executed.
+DX12 at125%DPI:20pages/78rehashed captures/0invalid; binary
+4fd3e1b44171bacd68d9ddc46da46719a9c61c63dfbce4918e8bbe67b6a0d056;
+manifestedc8624c1f84cab9cda342df40d313d2d37dc9d99fe609e96d3da6f988a57c5c.
+Native helper exits0; source-bound login26640/window4393676 responds without
+automatic sign-in. Fresh PR MERGEABLE, ordinary CI10success/7running/0failed;
+game-gate/final review remain pending. Full release/path/recovery/retained-source
+evidence is in the local-input packet. This docs-only successor waits locally
+without repeating Windows or cancelling useful CI. No full1:1/physical OS/
+live-gameplay/main-channel qualification is inferred from these component proofs.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
