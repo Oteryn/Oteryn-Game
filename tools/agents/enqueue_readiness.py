@@ -44,10 +44,20 @@ def _flag(value) -> bool:
     return value
 
 
-def _timestamp(value) -> str:
+def _parse_at(value) -> datetime:
+    """Parse an ISO-8601 timestamp with an explicit offset; naive or malformed values are invalid."""
     if not isinstance(value, str) or not value:
         raise ValueError(f"expected an ISO-8601 timestamp, got {value!r}")
-    datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"timestamp must carry a UTC offset, got {value!r}")
+    return parsed
+
+
+def _count(value) -> int:
+    """A count must be a real non-negative JSON integer (not bool, float or string)."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"expected a non-negative JSON integer, got {value!r}")
     return value
 
 
@@ -70,12 +80,11 @@ def _evaluate(s: dict) -> dict:
         return {"verdict": "NOOP", "blockers": [], "ready_at": None}
 
     found: dict[str, dict] = {}
-    stamps: list[str] = []
+    stamps: list[tuple[datetime, str]] = []
 
-    def stamp(item) -> None:
-        at = _text(item.get("at"))
-        if at:
-            stamps.append(at)
+    def stamp(item, key: str = "at") -> None:
+        at = item[key]
+        stamps.append((_parse_at(at), at))
 
     if cand.get("state") != "open" or cand.get("draft") is not False or cand.get("base_ref") != "main":
         found["CANDIDATE_STATE"] = _blocker(
@@ -89,10 +98,10 @@ def _evaluate(s: dict) -> dict:
         hit = [r for r in runs if r["name"] == name and r["head_sha"] == head]
         if len(hit) > 1:
             # Reruns: only the newest run is authoritative; an unordered or tied history is ambiguous.
-            ats = [_text(r.get("at")) for r in hit]
-            if not all(ats) or ats.count(max(ats)) != 1:
+            ats = [_parse_at(r.get("at")) for r in hit]
+            if ats.count(max(ats)) != 1:
                 raise ValueError(f"ambiguous duplicate runs for required check {name}")
-            hit = [max(hit, key=lambda r: _text(r["at"]))]
+            hit = [hit[ats.index(max(ats))]]
         if not hit or any(r["status"] != "completed" for r in hit):
             found["CHECKS"] = _blocker("CHECKS_PENDING", "ci", f"check_suite.completed {name} @ {head[:12]}")
             break
@@ -115,14 +124,13 @@ def _evaluate(s: dict) -> dict:
             for r in exact:
                 stamp(r)
 
-    if int(s["threads"]["unresolved"]) != 0:
+    if _count(s["threads"]["unresolved"]) != 0:
         found["REVIEW_THREADS"] = _blocker(
             "REVIEW_THREADS_UNRESOLVED", "writer", "every review thread resolved", f"{s['threads']['unresolved']} open")
     else:
         # Optional: when the last thread was resolved (the unblocking event for REVIEW_THREADS).
-        at = _text(s["threads"].get("resolved_at"))
-        if at:
-            stamps.append(at)
+        if s["threads"].get("resolved_at") is not None:
+            stamp(s["threads"], "resolved_at")
 
     for item in s["evidence"]["required"]:
         if not _flag(item["present"]) or item["head_sha"] != head:
@@ -141,7 +149,7 @@ def _evaluate(s: dict) -> dict:
             continue
         if _flag(failure["cause_addressed"]):
             # Required: when the diagnosis showing the cause is outside the candidate was recorded.
-            stamps.append(_timestamp(failure.get("addressed_at")))
+            stamp(failure, "addressed_at")
         else:
             found["PRIOR_MQ_FAILURE"] = _blocker(
                 "PRIOR_MQ_FAILURE_UNRESOLVED", "writer",
@@ -163,7 +171,7 @@ def _evaluate(s: dict) -> dict:
     blockers = [found[key] for key in ORDER if key in found]
     if blockers:
         return {"verdict": "BLOCKED", "blockers": blockers, "ready_at": None}
-    return {"verdict": "ENQUEUE_ELIGIBLE", "blockers": [], "ready_at": max(stamps) if stamps else None}
+    return {"verdict": "ENQUEUE_ELIGIBLE", "blockers": [], "ready_at": max(stamps)[1] if stamps else None}
 
 
 def main(argv: list[str]) -> int:

@@ -206,5 +206,62 @@ class EnqueueReadinessTest(unittest.TestCase):
             self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"], flag)
 
 
+class FailClosedTimestampAndCountTest(unittest.TestCase):
+    def assert_incomplete(self, snap):
+        self.assertEqual(reasons(snap), ["INPUT_INCOMPLETE"])
+
+    def test_unresolved_must_be_non_negative_integer(self):
+        for bad in (0.0, False, "0", -1, None, 1.5):
+            snap = ready()
+            snap["threads"]["unresolved"] = bad
+            self.assert_incomplete(snap)
+
+    def test_unresolved_positive_integer_blocks(self):
+        snap = ready()
+        snap["threads"]["unresolved"] = 2
+        self.assertEqual(reasons(snap), ["REVIEW_THREADS_UNRESOLVED"])
+
+    def test_missing_or_invalid_at_is_not_eligible(self):
+        paths = (
+            lambda s: s["checks"]["runs"][0],
+            lambda s: s["review"]["reviews"][0],
+            lambda s: s["evidence"]["required"][0],
+            lambda s: s["dependencies"][0],
+            lambda s: s["authorization"],
+        )
+        for get in paths:
+            for mode in ("missing", "bad", "naive", "empty"):
+                snap = ready()
+                item = get(snap)
+                if mode == "missing":
+                    del item["at"]
+                else:
+                    item["at"] = {"bad": "not-a-time", "naive": "2026-10-14T10:00:00", "empty": ""}[mode]
+                self.assert_incomplete(snap)
+
+    def test_invalid_resolved_at_is_not_eligible(self):
+        snap = ready()
+        snap["threads"]["resolved_at"] = "2026-10-14T10:00:00"
+        self.assert_incomplete(snap)
+
+    def test_newest_check_run_is_chosen_by_parsed_datetime(self):
+        snap = ready()
+        # String order disagrees with chronological order across offsets.
+        old_fail = {"name": "game-gate", "head_sha": HEAD, "status": "completed",
+                    "conclusion": "failure", "at": "2026-10-14T09:00:00-05:00"}  # 14:00Z
+        new_pass = {"name": "game-gate", "head_sha": HEAD, "status": "completed",
+                    "conclusion": "success", "at": "2026-10-14T15:00:00+02:00"}  # 13:00Z
+        snap["checks"]["runs"] = [new_pass, old_fail]
+        self.assertEqual(reasons(snap), ["CHECKS_FAILED"])  # old_fail is actually newer
+        old_fail["at"] = "2026-10-14T07:00:00-05:00"  # 12:00Z, older than 13:00Z
+        self.assertEqual(evaluate(snap)["verdict"], "ENQUEUE_ELIGIBLE")
+
+    def test_duplicate_runs_with_naive_time_are_invalid(self):
+        snap = ready()
+        snap["checks"]["runs"].append({"name": "game-gate", "head_sha": HEAD, "status": "completed",
+                                       "conclusion": "success", "at": "2026-10-14T11:00:00"})
+        self.assert_incomplete(snap)
+
+
 if __name__ == "__main__":
     unittest.main()
