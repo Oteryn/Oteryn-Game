@@ -28,7 +28,7 @@ external_repositories: []
 
 ## Outcome
 
-- The presentation decision status line reads ACCEPTED (conditional on this PR passing review, CI and protected integration) and the packet status is conditional. The only text edit besides the status lines is the dependency name ATTACK-1 to ATTACK-1b (brief and section 5 of the decision). No other rule text, code, wire, content or sound change.
+- The presentation decision status line reads ACCEPTED (conditional on this PR passing review, CI and protected integration) and the packet status is conditional. The only text edits besides the status lines is the dependency name ATTACK-1 to ATTACK-1b and the deferral of the block, armour and immunity row to ATTACK-2 (brief and section 5 of the decision). No other rule text, code, wire, content or sound change.
 
 ## Architecture and source of truth
 
@@ -40,7 +40,7 @@ external_repositories: []
 
 ## Acceptance criteria
 
-- [x] Only the decision status line, the dependency name ATTACK-1 to ATTACK-1b (two places) and the packet status change.
+- [x] Only the decision status line, the dependency name ATTACK-1 to ATTACK-1b (two places), the ATTACK-2 deferral of the block row and the packet status change.
 - [x] The decision points at the packet.
 
 ## Excluded scope
