@@ -4,7 +4,7 @@
 task_id: OTV2-20261014-w2b-build-training-1
 title: "W2b: skill tries from hits banked with mana in the Character build training receipt (#38, #40, #41)"
 mode: IMPLEMENT
-status: validating
+status: implementing
 status_note: "#41 confirmed; #40 rules, banking and the owned-skill refresh; control plane 2026-10-14: attack.rs hook after LOOP-COMBAT-MODES-1, shielding hook deferred, Vocation::None split to LOOP-PROGRESS-1"
 repository: Oteryn/Oteryn-Game
 base_branch: main
