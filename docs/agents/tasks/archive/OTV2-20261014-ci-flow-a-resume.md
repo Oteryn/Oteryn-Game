@@ -18,6 +18,7 @@ created_at: 2026-10-14
 updated_at: 2026-10-14
 execution_policy: continuous_progress
 owned_paths:
+  - docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md
   - docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md
   - tools/agents/enqueue_readiness.py
   - tools/agents/tests/test_enqueue_readiness.py
@@ -84,7 +85,7 @@ integrator is the control plane running the Work Delivery Coordinator prompt (D2
 
 ## PR and closeout
 
-- changed-file review: prompt rule, evaluator, test and this record only
+- changed-file review: prompt rule, evaluator, test, this record and the owner's one-PR-per-mechanic rule (2026-10-14) in `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`, reviewed against the owner decision it records
 - unresolved review threads: none
 - protected auto-merge: not enabled by the worker; control plane owns enqueue
 - ownership release: on merge
