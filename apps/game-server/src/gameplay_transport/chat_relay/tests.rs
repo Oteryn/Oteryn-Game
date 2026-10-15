@@ -168,6 +168,12 @@ impl IsolatedDatabase {
                 self.database_name
             ))))
             .await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP ROLE IF EXISTS {}_relay",
+                self.database_name
+            ))))
+            .await?;
         Ok(())
     }
 }
@@ -185,7 +191,8 @@ where
         .block_on(Box::pin(future))
 }
 
-/// A migrated database; `quiet` makes it assert that no bind parameter is logged.
+/// A migrated database and the URL the relay connects with. `quiet` connects as the test admin,
+/// which may pin `log_parameter_max_length`; otherwise as a role that may not.
 async fn relay_database(
     test_name: &str,
     quiet: bool,
@@ -197,14 +204,17 @@ async fn relay_database(
         .apply_embedded_ledger()
         .await?;
     if quiet {
-        let mut admin = PgConnection::connect(&database.admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "ALTER DATABASE {} SET log_parameter_max_length = 0",
-                database.database_name
-            ))))
-            .await?;
+        return Ok((database, url));
     }
+    let role = format!("{}_relay", database.database_name);
+    let mut admin = PgConnection::connect(&database.admin_url).await?;
+    admin
+        .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+            "CREATE ROLE {role} LOGIN PASSWORD 'relay' NOSUPERUSER"
+        ))))
+        .await?;
+    let host = url.split_once('@').ok_or("invalid database URL")?.1;
+    let url = format!("postgresql://{role}:relay@{host}");
     Ok((database, url))
 }
 
@@ -413,6 +423,39 @@ fn a_database_that_may_log_bind_parameters_leaves_the_relay_not_ready() -> TestR
         drop(chat);
         database.cleanup().await?;
         finished.ok_or("the relay stopped")?;
+        Ok(())
+    })
+}
+
+#[test]
+fn a_send_on_a_session_that_may_log_bind_parameters_sends_nothing() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = relay_database("chat_relay_notify_gate", true).await?;
+        let channel = channel_name(&uuid_text(&WORLD)).expect("channel");
+        let mut listener = PgListener::connect(&url).await?;
+        listener.listen(&channel).await?;
+        let mut sender = PgConnection::connect(&url).await?;
+        sender
+            .execute("SET log_parameter_max_length = 64; SET log_parameter_max_length_on_error = 0")
+            .await?;
+        assert!(!notify_quietly(&mut sender, &channel, "logged").await?);
+        sender
+            .execute("SET log_parameter_max_length = 0; SET log_parameter_max_length_on_error = 64")
+            .await?;
+        assert!(!notify_quietly(&mut sender, &channel, "logged on error").await?);
+        sender
+            .execute("SET log_parameter_max_length_on_error = 0")
+            .await?;
+        assert!(notify_quietly(&mut sender, &channel, "quiet").await?);
+        let received = tokio::time::timeout(Duration::from_secs(5), listener.recv()).await??;
+        assert_eq!(
+            received.payload(),
+            "quiet",
+            "only the quiet send was notified"
+        );
+        drop(listener);
+        drop(sender);
+        database.cleanup().await?;
         Ok(())
     })
 }

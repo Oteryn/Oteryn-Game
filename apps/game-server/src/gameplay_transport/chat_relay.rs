@@ -8,11 +8,11 @@
 //!
 //! The relay runs on a small pool of its own, outside the WP3 durability root (the root is one
 //! physical connection on its own runtime and carries durability work only). The pool takes the
-//! root's verified endpoint and credentials. Each of its connections sets
-//! `log_parameter_max_length_on_error = 0` and requires `log_parameter_max_length = 0`, so no
-//! sealed line reaches a server log; a node whose database does not assert both is not ready and
-//! answers `CHAT_UNAVAILABLE`. A configuration reload can change the setting of an open session,
-//! so the listener checks it every tick and each send checks it on its own connection first. A node that is not listening, or whose notification queue is over
+//! root's verified endpoint and credentials. Each of its connections pins
+//! `log_parameter_max_length = 0` and `log_parameter_max_length_on_error = 0` for its session, so
+//! no sealed line reaches a server log and a configuration reload cannot undo it; a node whose
+//! database role may not pin both is not ready and answers `CHAT_UNAVAILABLE`. The relay role
+//! therefore needs `GRANT SET ON PARAMETER log_parameter_max_length`. A node that is not listening, or whose notification queue is over
 //! half full, refuses room and private lines the same way.
 //!
 //! Nothing here logs or stores chat text, sender or recipient (FND-02 §20): failures are counted
@@ -144,8 +144,14 @@ fn relay_pool(options: PgConnectOptions) -> PgPool {
         .acquire_timeout(ACQUIRE_TIMEOUT)
         .after_connect(|connection, _meta| {
             Box::pin(async move {
+                // Session values outrank the configuration file, so a reload cannot turn bind
+                // parameter logging back on for this connection. A role that may not pin the
+                // setting leaves the relay not ready.
                 connection
-                    .execute("SET log_parameter_max_length_on_error = 0")
+                    .execute(
+                        "SET log_parameter_max_length = 0; \
+                         SET log_parameter_max_length_on_error = 0",
+                    )
                     .await?;
                 if !logs_no_parameters(connection).await? {
                     return Err(sqlx::Error::Configuration(
@@ -158,16 +164,35 @@ fn relay_pool(options: PgConnectOptions) -> PgPool {
         .connect_lazy_with(options)
 }
 
-/// Whether `connection` logs no bind parameter now. A configuration reload reaches a session after
-/// its current command and can raise `log_parameter_max_length`, so a check at connect alone is not
-/// enough: the listener repeats it every tick and each send repeats it on its own connection.
-const LOGS_NO_PARAMETERS: &str = "SELECT current_setting('log_parameter_max_length') = '0' \
-     AND current_setting('log_parameter_max_length_on_error') = '0'";
-
+/// Whether `connection` logs no bind parameter now. Every relay connection pins both settings at
+/// connect.
 async fn logs_no_parameters(connection: &mut sqlx::PgConnection) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(LOGS_NO_PARAMETERS)
-        .fetch_one(connection)
-        .await
+    sqlx::query_scalar(
+        "SELECT current_setting('log_parameter_max_length') = '0' \
+         AND current_setting('log_parameter_max_length_on_error') = '0'",
+    )
+    .fetch_one(connection)
+    .await
+}
+
+/// Sends `sealed` on `channel` only if the session logs no bind parameter, checked in the same
+/// statement: a configuration reload takes effect between statements, never within one. `false`
+/// when the check refused the line.
+async fn notify_quietly<'c>(
+    executor: impl sqlx::PgExecutor<'c>,
+    channel: &str,
+    sealed: &str,
+) -> Result<bool, sqlx::Error> {
+    let sent = sqlx::query(
+        "SELECT pg_notify($1, $2) \
+         WHERE current_setting('log_parameter_max_length') = '0' \
+         AND current_setting('log_parameter_max_length_on_error') = '0'",
+    )
+    .bind(channel)
+    .bind(sealed)
+    .fetch_optional(executor)
+    .await?;
+    Ok(sent.is_some())
 }
 
 /// Why the listener stops and reconnects. Never carries a database error's text.
@@ -255,19 +280,7 @@ impl ChatRelay {
             RelayError::Oversized => ChatDisposition::Rejected,
             _ => ChatDisposition::ChatUnavailable,
         })?;
-        // The precondition is checked again on the connection that sends, right before the line.
-        let notify = async {
-            let mut connection = self.pool.acquire().await?;
-            if !logs_no_parameters(&mut connection).await? {
-                return Ok(false);
-            }
-            sqlx::query("SELECT pg_notify($1, $2)")
-                .bind(&self.channel)
-                .bind(&sealed)
-                .execute(&mut *connection)
-                .await
-                .map(|_| true)
-        };
+        let notify = notify_quietly(&self.pool, &self.channel, &sealed);
         match tokio::time::timeout(SEND_TIMEOUT, notify).await {
             Ok(Ok(true)) => Ok(()),
             _ => Err(ChatDisposition::ChatUnavailable),
@@ -400,7 +413,7 @@ impl ChatRelay {
         // Sends are stamped with the window's clock, and the relay is not ready until the window
         // admits what it stamps: after a start, a reconnect or a database clock stepped back a
         // send would otherwise return OK and be dropped here.
-        // A reload that lets the server log bind parameters makes the node not ready on this tick.
+        // A connection that could log bind parameters makes the node not ready on this tick.
         let clock = window
             .admitting_clock(now)
             .filter(|_| quiet && usage <= QUEUE_USAGE_MAX);

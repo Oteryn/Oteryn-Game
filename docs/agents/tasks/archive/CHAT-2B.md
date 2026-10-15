@@ -54,8 +54,9 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   - it is listening;
   - it has a database clock reading;
   - `pg_notification_queue_usage()` is at most 0.5;
-  - its connections assert `log_parameter_max_length = 0`. Every relay connection also sets
-    `log_parameter_max_length_on_error = 0`.
+  - its connections pin `log_parameter_max_length = 0` and
+    `log_parameter_max_length_on_error = 0` for their session, and the listener sees both at 0
+    every tick.
 
   A relay that is not ready answers `CHAT_UNAVAILABLE`.
 - **Rooms.** World, English, Help and Advertising. Opening and closing a room is answered before
@@ -103,7 +104,7 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 6 repair: `--lib -- chat npc` against PostgreSQL 17, 170 passed), 145 passed, including the two-node relay exchange,
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 7 repair: `--lib -- chat npc` against PostgreSQL 17, 170 passed), 145 passed, including the two-node relay exchange,
   the lease row and the not-ready-when-logging tests
 - `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
   33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
@@ -145,8 +146,12 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   stepped back during an outage a line stamped near the old readings could be replayed. Fixed:
   the floor follows the newest reading ever seen (`read_high`), which does not compound.
 - round 6 (P1): the bind-parameter logging precondition was checked only at connect, but a
-  configuration reload reaches open sessions. Fixed: the listener checks it every tick (not ready
-  otherwise) and each send checks it on its own connection right before `pg_notify`.
+  configuration reload reaches open sessions. (P1, round 7): a check before `pg_notify` still
+  races a reload between the two statements. Fixed: every relay connection pins
+  `log_parameter_max_length = 0` for its session (a session value outranks the configuration
+  file); each send checks both settings in the `pg_notify` statement itself (`WHERE`, no row
+  means `CHAT_UNAVAILABLE`), and the listener checks them every tick. A role that may not pin the
+  setting is not ready, so the relay role needs `GRANT SET ON PARAMETER log_parameter_max_length`.
 
 ## PR and closeout
 
