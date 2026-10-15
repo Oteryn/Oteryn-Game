@@ -119,3 +119,126 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded local preparation — 2026-10-15 (not full DAILY-1 acceptance)
+
+Authority basis: protected-main `3ef900c160c9713092a86bfcd1a8377c7587c898`
+accepts DAILY_REWARD0 without changing §§3–5 rules. The original skeleton and
+historical dependency/status rows above are preserved. The active allocation
+is `daily-1-allocation.json`, branch `skeleton/daily-1`, exact source
+`170c17c575d3623d9074025c94d872b5feb3bedc`; only the allocated domain and durability
+files, adjacent tests and this record are written. `QUEUE_READINESS.md` nominates
+bounded state/claim/pending-line preparation, not delivery-enabled claims.
+No existing native daily owner was found. Generic reward-chest MINT remains its
+own owner and is not copied or repurposed.
+
+Prepared component:
+
+- Domain lane/streak planning from explicit stored values: next-day wrap 7→1,
+  missed epochs do not advance the lane, all-or-nothing joker coverage, first
+  streak 1, saturated streak ceiling 100,000, equal/older epochs refused and
+  full u64 gap arithmetic without overflow. This function is data arithmetic;
+  it neither claims an epoch nor grants/spends a joker.
+- An embedded, uninstalled SQL schema candidate for state, Account+World jokers,
+  immutable joker entries, immutable epoch-keyed claims and ordered reward
+  lines. It delegates the actual World-reset source and UTC grant-month owner;
+  no replacement epoch table, wildcard balance, reward definitions or content
+  facts are introduced. Native Character-root RESTRICT references and the native
+  `TypedDefinitionRef` are reused. Character+World and Account+World state has
+  no Channel scope. Schema installation/numbering remains a CP slot.
+- Caller-transaction readers expose stored state, an existing locked joker row
+  (missing remains missing), and exact request-binding receipt classification.
+  A stored transaction identity survives reload/replay; a differing SHA-256
+  binding yields `BindingMismatch`, never a new receipt or delivery.
+- Pending rows lock in line order with PostgreSQL `FOR UPDATE`, without
+  `SKIP LOCKED`; callers must hold the locks through sink+status commit/rollback.
+  Runtime claims/ledger have SELECT+INSERT only, no UPDATE/DELETE. Lines expose
+  UPDATE only on status/delivering transaction/excess, and terminal lines reject
+  both downgrade and receipt rewrite. No mutation API is exposed.
+- A line's requested quantity must be positive. A fully capped wildcard credit
+  is represented by DELIVERED with `uncredited_excess == quantity`, recording
+  zero credited value without leaving the line retryable. Pending lines have
+  no delivering transaction or excess; other line kinds cannot carry excess.
+  These are storage constraints, not evidence that any value sink ran.
+
+Integration obligations (mandatory, incomplete):
+
+1. The current World-reset owner must provide the independently current epoch;
+   crash restart/session-generation changes cannot invent a new window. The
+   UTC calendar-month/reset history source must resolve lazy joker grants and
+   keep the immutable entry chain/balance in agreement. Raw epoch, month, stored
+   balance, receipt and arithmetic-plan values confer no current authority.
+2. The eventual claim writer must use native admission/recovery locks and
+   current session/lease/scope evidence (`character_item_fence_is_current`,
+   composition rule 2), then Character root and Account+World joker locks.
+   Shrine reach, current Account/World ownership and admitted content/picks
+   remain independently checked. Reconciliation needs its current recovery
+   fence. A request binding is opaque storage data here; canonical validated
+   picks/planned-output SHA-256 binding must be frozen before the first attempt.
+3. Reward state/jokers/entries/claim/complete line set and every available sink
+   remain one inseparable transaction, including refusal rollback. No separate
+   claim reservation, periodic worker or valuable grant is enabled. The writer
+   must create every line with its claim, never append lines on replay, enforce
+   per-claim item output bound 20, definition/vocation/count rules, immutable
+   intent and atomic Item binding rows. SQL constraints here do not prove those
+   aggregate/cross-table/content or ledger-chain invariants.
+4. Privileged Inbox delivery, closed `DailyRewardCause`, canonical mint/ledger/
+   outbox, item-binding lifecycle and PREY's actual Account wildcard writer are
+   required typed seams. XP remains pending until its accepted sink. No public
+   Inbox API, invented audit cause, admitted reward data or sink stub is added.
+   Free lane remains required until PREM-3; the receipt Premium field is history,
+   not current evidence. Joker UTC and lane parity remain PARITY_PENDING.
+5. CP must integrate migration/role grants with the inseparable writer, module
+   registrations, content, registries and wire; route these PostgreSQL tests
+   into the real PG lane (currently an unregistered adjacent test module).
+   Runtime raw SQL/table privileges alone do not qualify production authorization.
+
+Validation and source-bound evidence are recorded under
+`/workspace/oteryn-prep/daily-1-evidence/`; the disposable native validation
+snapshot registers these modules outside the branch only. Current-authority
+mutation operators are NOT_APPLICABLE to this candidate's read/lock/arithmetic
+APIs: no production grant, controller, PREPARE/COMMIT permission or session
+replacement is returned. Binding/scope substitution, stale epoch/replay,
+concurrent insertion, lock replacement/rollback and terminal-state mutations
+are tested at their actual data/storage boundaries. Full writer/fence/valuable
+sink/E2E qualification and independent architect acceptance remain incomplete.
+
+### Actual local validation result
+
+- PASS: 7/7 focused original owned test bodies: 3 domain cases and 4 isolated
+  PostgreSQL 17.6 cases. They cover exact/insufficient joker gaps, lane wrap,
+  first/equal/regressed/full-u64 epochs, streak ceiling/max+1, state/joker
+  bounds, rollback of state+joker+entries+claim+lines, receipt reload and exact
+  binding substitution, competing epoch uniqueness, runtime line lock timeout/
+  rollback/reacquisition, zero-credit terminal status, and immutable-column/
+  terminal downgrade/receipt-rewrite refusals. No real reward was granted.
+- PASS: Clippy metadata for the original untransformed native `--test` unit
+  target, retaining its actual Cargo extern/cfg/lint inputs and `-D warnings`.
+  No binary codegen or global unit suite success is claimed by this check.
+- PASS: actual native `cfg(test)` normal rlib plus a seven-case external test
+  runner. Validation-only snapshots remove only owned test attributes, expose
+  parent visibility and append forwarding functions; complete test bodies and
+  native fixtures/types stay unchanged. The four SQLx test attributes' database
+  lifecycle is replaced by a disclosed wrapper creating isolated real PG17.6
+  databases and applying the same actual native migrations. All transformations,
+  actual commands, public compile environment, body identity checks and hashes
+  are retained. The cfg(test) rlib reports baseline unused-helper warnings;
+  original unit Clippy is independently clean.
+- PASS: owned rustfmt, branch and original registered snapshot fmt; source
+  binding before/after for 82 actual owned/native/migration inputs. Module
+  registration changes exist outside the candidate only. Governance validation,
+  its 124 tests, owned-path and whole-diff/whitespace checks pass.
+- Preserved setup/resource failures separately: the first snapshot copy caught
+  a concurrent task-card append and stopped before Cargo (zero tests); the one
+  original global unit-codegen attempt stopped with tool exit 137 before any
+  test result. No unchanged global-unit retry occurred. Capturing the real
+  native unit invocation deliberately stopped its compiler before codegen;
+  the resulting command is used for original metadata Clippy and the bounded
+  normal-rlib runner. These are not behavioral RED outcomes.
+
+Evidence: `/workspace/oteryn-prep/daily-1-evidence/index.md`,
+`source-binding-before.json`, `source-binding-after.json`,
+`bridge-transformations.json`, `bridge-body-verification.json`,
+`bridge-only.diff`, `tests.log`, actual status/command JSON and final owned hash
+manifest. No commit, push, shared registration, migration installation,
+production activation, full DAILY-1 acceptance or architect approval occurred.
