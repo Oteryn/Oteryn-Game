@@ -7,10 +7,11 @@
 //! gate names the plan batch that opens it. The sources are parsed with `syn`, and every mention of
 //! either field in production code is counted, whatever its receiver (`x.combat_room`,
 //! `(*self).combat_room`) or form (a declaration, initializer or destructuring pattern), at its own
-//! site: its syntax path and its position in its function. One that is added, removed, moved or
+//! site: its syntax path (naming each enclosing call, method and macro) and its position in its
+//! function. One that is added, removed, moved or
 //! switched without an update of this table fails `every_seam_room_read_is_inventoried`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use syn::Token;
@@ -83,7 +84,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "attack_target",
         "self.combat_room",
-        "method_call/field/read",
+        "method_call:set_target/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -113,7 +114,7 @@ const INVENTORY: &[Read] = &[
         "native_combat_cast.rs",
         "cast_native_combat_inner",
         "owner.combat_room",
-        "let/await/method_call/closure/call/async/let/try/method_call/field/read",
+        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
         COMBAT_ENABLE,
     ),
@@ -123,7 +124,7 @@ const INVENTORY: &[Read] = &[
         "spell_timer_callbacks.rs",
         "drain_native_ai_timers",
         "owner.combat_room",
-        "if/try/method_call/await/method_call/closure/block/call/async/let/try/method_call/field/read",
+        "if/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let/try/method_call:ok_or/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -161,7 +162,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "cast_parameters_inner",
         "self.combat_room",
-        "if/method_call/call/field/read",
+        "if/method_call:is_none/call:parameter_room/field/read",
         2,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -174,7 +175,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "cast_parameters_inner",
         "owner.combat_room",
-        "let/await/method_call/closure/call/async/let/try/method_call/call/field/read",
+        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         4,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -188,7 +189,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "cast_parameters_inner",
         "self.qualified_room",
-        "if/method_call/call/field/read",
+        "if/method_call:is_none/call:parameter_room/field/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -200,7 +201,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "cast_parameters_inner",
         "owner.qualified_room",
-        "let/await/method_call/closure/call/async/let/try/method_call/call/field/read",
+        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         3,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -213,7 +214,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "cast_world_items_inner",
         "self.qualified_room",
-        "if/method_call/field/read",
+        "if/method_call:is_none/field/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -225,7 +226,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "cast_world_items_inner",
         "owner.qualified_room",
-        "let/await/method_call/closure/call/async/let/try/method_call/field/read",
+        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -250,7 +251,7 @@ const INVENTORY: &[Read] = &[
         "field_step_ingress.rs",
         "step_with_field_ingress",
         "owner.qualified_room",
-        "let/await/method_call/closure/call/async/let/try/method_call/field/read",
+        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["LOOP-WORLD-1"],
@@ -263,7 +264,7 @@ const INVENTORY: &[Read] = &[
         "source_item_cycle.rs",
         "ensure_source_map_initialized",
         "self.qualified_room",
-        "let_else/method_call/field/read",
+        "let_else/method_call:filter/field/read",
         1,
         Gate::Closed {
             owners: &["MAP-CUTOVER-1c"],
@@ -276,7 +277,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "observe_world_object_overlay",
         "self.qualified_room",
-        "if/binary/method_call/field/read",
+        "if/binary/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -286,7 +287,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "paced_step",
         "self.qualified_room",
-        "let/if/method_call/field/read",
+        "let/if/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -296,7 +297,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "use_object",
         "self.qualified_room",
-        "if/method_call/field/read",
+        "if/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -504,72 +505,67 @@ struct Site {
     ordinal: usize,
 }
 
-/// Every seam room mention of the module tree's production code, keyed by file. Test code is
-/// left out: a module declared `#[cfg(test)] mod x;` (with or without `#[path]`), a `*_tests.rs`
-/// file, and every `#[cfg(test)]` item, statement, expression, field or arm at any depth.
+/// Every seam room mention of the module tree's production code, keyed by file. The sources are
+/// the files the compiler loads for `gameplay_transport` outside tests: each production `mod`
+/// declaration is followed from `mod.rs`, with its `#[path]` when it has one, wherever that file
+/// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
+/// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
 #[allow(clippy::expect_used)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
-    // The whole module tree: a gate moved into a nested module is still counted.
-    let mut pending = vec![dir.clone()];
-    let mut sources = BTreeMap::new();
-    while let Some(next) = pending.pop() {
-        for entry in std::fs::read_dir(&next).expect("gameplay_transport sources") {
-            let path = entry.expect("source entry").path();
-            if path.is_dir() {
-                pending.push(path);
-            } else if path.extension().is_some_and(|extension| extension == "rs") {
-                let source = std::fs::read_to_string(&path).expect("source text");
-                sources.insert(path, scan(&source));
-            }
+    let root = dir.canonicalize().expect("gameplay_transport directory");
+    let mut pending = vec![(dir.join("mod.rs"), true)];
+    let mut seen = BTreeSet::new();
+    let mut reads = BTreeSet::new();
+    while let Some((path, mod_rs)) = pending.pop() {
+        let path = path.canonicalize().expect("module source");
+        if !seen.insert(path.clone()) {
+            continue;
         }
-    }
-    let mut test_files = Vec::new();
-    for (path, scan) in &sources {
+        let source = std::fs::read_to_string(&path).expect("source text");
+        let scan = scan(&source);
         let parent = path.parent().expect("source directory");
-        let children = if path.file_name().is_some_and(|name| name == "mod.rs") {
+        // A `mod.rs` or `#[path]` file holds its children beside it; `a.rs` holds them in `a/`.
+        let children = if mod_rs {
             parent.to_path_buf()
         } else {
             parent.join(path.file_stem().expect("source stem"))
         };
-        for (module, file) in &scan.declared {
-            match file {
-                Some(file) => test_files.push(parent.join(file)),
+        for module in &scan.modules {
+            let base = module
+                .inline
+                .iter()
+                .fold(children.clone(), |base, name| base.join(name));
+            let next = match &module.path {
+                Some(file) if module.inline.is_empty() => (parent.join(file), true),
+                Some(file) => (base.join(file), true),
                 None => {
-                    test_files.push(children.join(format!("{module}.rs")));
-                    test_files.push(children.join(module).join("mod.rs"));
+                    let file = base.join(format!("{}.rs", module.name));
+                    if file.exists() {
+                        (file, false)
+                    } else {
+                        (base.join(&module.name).join("mod.rs"), true)
+                    }
                 }
+            };
+            pending.push(next);
+        }
+        let name = match path.strip_prefix(&root) {
+            Ok(name) => name.to_str().expect("source name").to_owned(),
+            Err(_) => {
+                let src = root.parent().expect("src directory");
+                let name = path.strip_prefix(src).expect("source under src");
+                format!("../{}", name.to_str().expect("source name"))
             }
         }
-    }
-    let test_files: Vec<PathBuf> = test_files
-        .iter()
-        .filter_map(|file| file.canonicalize().ok())
-        .collect();
-    let mut reads = BTreeSet::new();
-    for (path, scan) in sources {
-        // A test module is declared `#[cfg(test)]`, or named `*_tests.rs` when it is declared
-        // inside another test module.
-        let test = path
-            .to_str()
-            .is_some_and(|path| path.ends_with("_tests.rs"))
-            || test_files.contains(&path.canonicalize().expect("source path"));
-        if test {
-            continue;
-        }
-        let name = path
-            .strip_prefix(&dir)
-            .ok()
-            .and_then(|name| name.to_str())
-            .expect("source name")
-            .replace('\\', "/");
+        .replace('\\', "/");
         reads.extend(scan.sites.into_iter().map(|site| (name.clone(), site)));
     }
     reads
 }
 
-/// The seam room mentions of one source file, parsed with `syn`, and the test modules it
-/// declares out of line (`#[cfg(test)] mod x;`), each with its `#[path]` when it has one.
+/// The seam room mentions of one source file, parsed with `syn`, and the production modules it
+/// declares out of line (`mod x;`), each with its `#[path]` when it has one.
 #[allow(clippy::expect_used)]
 fn scan(source: &str) -> Scan {
     let file = syn::parse_file(source).expect("gameplay_transport source parses");
@@ -581,9 +577,20 @@ fn scan(source: &str) -> Scan {
 #[derive(Default)]
 struct Scan {
     sites: Vec<Site>,
-    declared: Vec<(String, Option<String>)>,
+    modules: Vec<Module>,
+    inline: Vec<String>,
     functions: Vec<String>,
-    path: Vec<&'static str>,
+    path: Vec<String>,
+}
+
+/// A production `mod x;` declaration.
+#[derive(Debug, PartialEq, Eq)]
+struct Module {
+    /// The inline `mod m { ... }` blocks it sits in, outermost first.
+    inline: Vec<String>,
+    name: String,
+    /// Its `#[path = "..."]`.
+    path: Option<String>,
 }
 
 impl Scan {
@@ -602,7 +609,7 @@ impl Scan {
             .filter(|site| site.function == function)
             .count();
         let mut site = self.path.clone();
-        site.push(last);
+        site.push(last.to_owned());
         self.sites.push(Site {
             function,
             field,
@@ -618,8 +625,8 @@ impl Scan {
             .map(|field| (*field).to_owned())
     }
 
-    fn within(&mut self, kind: &'static str, visit: impl FnOnce(&mut Self)) {
-        self.path.push(kind);
+    fn within(&mut self, kind: impl Into<String>, visit: impl FnOnce(&mut Self)) {
+        self.path.push(kind.into());
         visit(self);
         self.path.pop();
     }
@@ -747,18 +754,26 @@ impl<'ast> Visit<'ast> for Scan {
     fn visit_item(&mut self, item: &'ast syn::Item) {
         let attrs = item_attrs(item);
         if test_only(attrs) {
-            if let syn::Item::Mod(module) = item
-                && module.content.is_none()
-            {
-                self.declared
-                    .push((module.ident.to_string(), module_path(attrs)));
+            return;
+        }
+        if let syn::Item::Mod(module) = item {
+            let name = module.ident.to_string();
+            if module.content.is_none() {
+                self.modules.push(Module {
+                    inline: self.inline.clone(),
+                    name,
+                    path: module_path(attrs),
+                });
+                return;
             }
+            self.inline.push(name);
+            self.within("mod", |scan| visit::visit_item(scan, item));
+            self.inline.pop();
             return;
         }
         let kind = match item {
             syn::Item::Struct(_) => "struct",
             syn::Item::Impl(_) => "impl",
-            syn::Item::Mod(_) => "mod",
             syn::Item::Const(_) => "const",
             syn::Item::Static(_) => "static",
             _ => "item",
@@ -806,17 +821,35 @@ impl<'ast> Visit<'ast> for Scan {
         self.within(kind, |scan| visit::visit_local(scan, local));
     }
 
-    fn visit_stmt_macro(&mut self, stmt: &'ast syn::StmtMacro) {
-        if !test_only(&stmt.attrs) {
-            visit::visit_stmt_macro(self, stmt);
-        }
-    }
-
     fn visit_expr(&mut self, expr: &'ast syn::Expr) {
         let (kind, attrs) = expr_kind(expr);
         if !test_only(attrs) {
+            // A call names its callee, so a read moved into another operation is another site.
+            let callee = match expr {
+                syn::Expr::Call(call) => match &*call.func {
+                    syn::Expr::Path(path) => path.path.segments.last().map(|s| s.ident.to_string()),
+                    _ => None,
+                },
+                syn::Expr::MethodCall(call) => Some(call.method.to_string()),
+                syn::Expr::Macro(mac) => mac.mac.path.segments.last().map(|s| s.ident.to_string()),
+                _ => None,
+            };
+            let kind = callee.map_or_else(|| kind.to_owned(), |callee| format!("{kind}:{callee}"));
             self.within(kind, |scan| visit::visit_expr(scan, expr));
         }
+    }
+
+    fn visit_stmt(&mut self, stmt: &'ast syn::Stmt) {
+        // A macro statement names its macro, as a macro expression does.
+        if let syn::Stmt::Macro(mac) = stmt {
+            if !test_only(&mac.attrs) {
+                let name = mac.mac.path.segments.last().map(|s| s.ident.to_string());
+                let kind = name.map_or_else(|| "macro".to_owned(), |name| format!("macro:{name}"));
+                self.within(kind, |scan| visit::visit_stmt_macro(scan, mac));
+            }
+            return;
+        }
+        visit::visit_stmt(self, stmt);
     }
 
     fn visit_expr_field(&mut self, expr: &'ast syn::ExprField) {
@@ -845,6 +878,12 @@ impl<'ast> Visit<'ast> for Scan {
             self.record(field, "binding");
         }
         visit::visit_pat_ident(self, pat);
+    }
+
+    fn visit_variant(&mut self, variant: &'ast syn::Variant) {
+        if !test_only(&variant.attrs) {
+            visit::visit_variant(self, variant);
+        }
     }
 
     fn visit_field(&mut self, field: &'ast syn::Field) {
@@ -1078,6 +1117,11 @@ fn every_test_only_item_is_left_out_at_any_depth() {
         }
         #[cfg(test)]
         struct Fixture { qualified_room: u8 }
+        enum Probe {
+            Live,
+            #[cfg(test)]
+            Fixture { qualified_room: u8 },
+        }
         #[cfg(test)]
         const ROOM: Owner<'static> = Owner { combat_room: None };
         #[cfg(test)]
@@ -1093,6 +1137,8 @@ fn every_test_only_item_is_left_out_at_any_depth() {
         #[cfg(test)]
         #[path = "elsewhere_checks.rs"]
         mod elsewhere;
+        #[path = "../shared/live.rs"]
+        mod live;
         mod nested {
             impl super::Owner<'_> {
                 #[cfg(test)]
@@ -1124,15 +1170,14 @@ fn every_test_only_item_is_left_out_at_any_depth() {
             site("production", "self.combat_room", "let/field/read", 1),
         ]
     );
+    // Only the production module is followed, wherever its `#[path]` points.
     assert_eq!(
-        scan.declared,
-        [
-            ("out_of_line".to_owned(), None),
-            (
-                "elsewhere".to_owned(),
-                Some("elsewhere_checks.rs".to_owned())
-            ),
-        ]
+        scan.modules,
+        [Module {
+            inline: Vec::new(),
+            name: "live".to_owned(),
+            path: Some("../shared/live.rs".to_owned()),
+        }]
     );
 }
 
@@ -1148,7 +1193,7 @@ fn each_read_in_a_function_is_its_own_site() {
         gate.sites,
         [
             site("cast", "self.combat_room", "let_else/field/read", 1),
-            site("cast", "self.combat_room", "call/field/read", 2),
+            site("cast", "self.combat_room", "call:commit/field/read", 2),
         ]
     );
     // The preflight gate removed and another read of the same form added later in the function:
@@ -1168,8 +1213,50 @@ fn each_read_in_a_function_is_its_own_site() {
     assert_eq!(
         twice.sites,
         [
-            site("drain", "owner.combat_room", "call/field/read", 1),
-            site("drain", "owner.combat_room", "call/field/read", 2),
+            site("drain", "owner.combat_room", "call:use_room/field/read", 1),
+            site("drain", "owner.combat_room", "call:use_room/field/read", 2),
         ]
     );
+    // The same read moved into another operation is another site.
+    let validated = scan("fn attack(&self) { validate_attack(self.combat_room); }");
+    let traded = scan("fn attack(&self) { commit_trade(self.combat_room); }");
+    assert_ne!(validated.sites, traded.sites);
+    let method = scan("fn attack(&self) { self.combat_room.ok_or(Missing)?; }");
+    assert_eq!(
+        method.sites,
+        [site(
+            "attack",
+            "self.combat_room",
+            "try/method_call:ok_or/field/read",
+            1
+        )]
+    );
+}
+
+#[test]
+fn every_production_module_is_followed_through_its_path() {
+    let sources: BTreeSet<String> = module_reads().into_iter().map(|(file, _)| file).collect();
+    // `item_view.rs` loads `interaction/corpse_open.rs` by `#[path]`; it is in the scan whether or
+    // not it reads a room, so check the module list rather than the reads.
+    let item_view = scan(
+        &std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport/item_view.rs"),
+        )
+        .unwrap_or_default(),
+    );
+    assert!(
+        item_view
+            .modules
+            .iter()
+            .any(|module| module.name == "corpse_open"
+                && module.path.as_deref() == Some("../interaction/corpse_open.rs"))
+    );
+    // A test module declared by `#[path]` is never followed.
+    assert!(
+        !item_view
+            .modules
+            .iter()
+            .any(|module| module.name == "tests")
+    );
+    assert!(sources.iter().all(|file| !file.ends_with("_tests.rs")));
 }
