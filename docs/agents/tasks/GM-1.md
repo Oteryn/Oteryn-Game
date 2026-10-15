@@ -108,3 +108,133 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local preparation — OPS-GM-AUDIT-1 (2026-10-15)
+
+This is a prerequisite and qualification packet, not delivery, acceptance or runtime
+authority. Existing draft #2181 remains a draft. Work is local only on
+`skeleton/gm-1` at `81e5a0f9263ff5cfac4628afa8e4fc54365164f0`; no commit,
+publication, registration, schema, key generation or shared wiring is authorized.
+The lead supplied META 3.1.0 binding
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`: one authoring writer, independently
+current authority at each consuming boundary, no new production grants or trust.
+
+### Accepted scope and source evidence
+
+- **PROVEN:** ARCH-LIVE-READINESS-0 §1 rulings 2 and 11 and its packet table
+  define OPS-GM-AUDIT-1, including the request-signature module, as **ALPHA,
+  first**. The lead independently verified the owning record on authoritative
+  main. LOGOUT-WIRE-1 gates SANCTION-2 and WRITE-MOD-1 gates REPORT-3 commands;
+  neither blocks this first child's preparation. No pending acceptance batch
+  is asserted for ARCH-LIVE-READINESS-0.
+- **PROVEN:** the accepted verifier is upstream `ssh-keygen -Y verify`, with
+  personal off-host OpenSSH signing, the reviewed namespace-limited
+  allowed-signers roster, restart-only environment/roster configuration, and
+  independently recorded roster activations. A local key list, self-declared
+  request environment or stored request alone cannot substitute for them.
+- **PROVEN at the source SHA above:** `apps/game-server/src/staff/` and
+  `docs/contracts/game-events/v2/staff_action.proto` are absent; the event
+  registry has types 1–3 and no `STAFF_ACTION` or its retention profile.
+  Bounded searches of `apps/game-server/src`, `crates`, `docs/contracts` and
+  Cargo manifests found no reusable staff signing implementation or contract.
+- **PROVEN:** `node/operator_files.rs` uses pretty JSON plus newline and
+  ordinary JSON decoding for existing unsigned operations. It defines no staff
+  signed-byte format or canonical-byte equality check. `NodeConfig` and
+  `OpsConfig` in `node/config.rs` expose no staff environment, signer-roster or
+  activation-history binding. `node/serve.rs::handle_control` accepts a bounded
+  bootstrap operation UUID, not a signed staff request.
+- **PROVEN:** ANL-01 §§2, 9 explicitly reject protobuf serialization as semantic
+  canonicalization. Its exact event-byte retention rule is not a canonical
+  operator-request signing format.
+
+### Prerequisites before signature or audit implementation
+
+1. **Canonical bytes (UNKNOWN binding):** §1 specifies the signed semantic
+   fields, but does not bind a concrete encoding, canonical rejection rules,
+   field representations or shared test vectors. Resolve the accepted codec
+   and version for complete typed requests, per-signer tuples, chain links and
+   submission receipts; bind timestamp units, digest encodings and digest
+   inputs. Requests must include every parameter, environment, roster digest,
+   `issued_at`, `control_seq` and previous-link digest. The receipt domain is
+   `oteryn-ops-submission-receipt-v1`. Bind account-ref component encoding for
+   the accepted SHA-256 domain formula without retaining AccountId. Do not
+   choose an independent JSON/protobuf envelope or handwritten cryptography.
+2. **Independent authority source (UNKNOWN interface):** bind the restart-only
+   verifier environment and reviewed roster bytes/digest, plus an off-host
+   private-deployment checkout's recorded activation sequence/digests. Define
+   how the verifier obtains the current chain head independently from the
+   submitted link. New submissions must name the newest activation; historical
+   verification needs retained roster revisions and exact recorded links.
+   No live keys or private deployment access is requested by this packet.
+3. **Clock and operation outcome binding (UNKNOWN interface):** the accepted
+   10-minute first-execution window is marked CANDIDATE; bind its limit and
+   future-time treatment. Resolve the durable atomic operation-id/request-
+   digest/outcome lookup and chain-append serialization. Identical bytes return
+   the stored outcome at any age; different bytes under that operation id
+   refuse. Stored signed evidence never supplies independently current facts.
+4. **Audit transaction contract (slot work):** lease event/schema and ops-error
+   identifiers through CP, register `STAFF_ACTION` and
+   `STAFF_ACTION_AUDIT_RETENTION_V1`, then bind the existing durable event writer
+   and authoritative mutation transaction. An audit failure must roll back its
+   mutation; inspect/list/trace must commit their audit before exposing data.
+   Retained evidence and signed `COMMITTED` receipts must outlive audit expiry
+   whenever a surviving domain row relies on them. No schema is assumed here.
+
+These are implementation-binding gaps, not a claim that the accepted security
+semantics are undecided. No Rust files are created while the exact signing and
+authority contracts are unbound. The accepted action/reason/result closed sets
+in §1 ruling 11 must be reused in full, including economy/privacy/restore kinds;
+no fallback string, value-minting command or unsigned bypass is allowed.
+
+### Boundary qualification required when the prerequisites land
+
+Each negative case must change one invariant while keeping unrelated facts
+valid; expected refusal means no authoritative mutation, audit insertion or data
+disclosure. This table is a test contract, **not executed runtime evidence**.
+
+| Consumer boundary | Invariant / single negative operator | Required observation |
+|---|---|---|
+| First submit | Identity: missing signature; unknown principal; wrong namespace, independently | Each refuses before a write |
+| First submit | Binding: other environment; other roster; altered typed target, reason or parameter, independently | Each refuses; execute only decoded verified bytes |
+| Decode before verify/execute | Provenance: missing/unknown field; alternate noncanonical bytes, independently | Refuse without accepting an unsigned sibling field |
+| First submit | Temporal: stale never-executed request; future request outside the bound policy | Refuse without applying; resolve exact future bound first |
+| Retry lookup | Replay: same operation id and same bytes after expiry | Return exact stored outcome once; freshness cannot force re-execution |
+| Retry lookup | Replay: same operation id and different bytes | Refuse without replacing stored outcome |
+| Chain append | Current authority: stale sequence; wrong previous digest; obsolete roster after activation, independently | Refuse with chain and database unchanged |
+| Concurrent submit | Replay/concurrency: two writers extend one predecessor | One ordered winner; typed loser, no fork or duplicate effect |
+| Historical audit/restore | Provenance: missing middle link; duplicate sequence/fork; changed previous digest; unrecorded activation, independently | Failing verification; restore applies nothing |
+| Historical audit/restore | Revocation: removed key signs old-roster bytes before/after activation | Recorded activation fixes history; flag and refuse replay |
+| Audit verification | Binding: event kind/target/reason/one parameter differs from signed bytes; missing bytes, independently | Flag each failing row |
+| Mutation verification | Provenance: missing receipt; valid REFUSED receipt; wrong request/outcome digest; changed receipt signer/namespace, independently | Row fails; intent never proves execution |
+| Restore | Replay: valid COMMITTED receipt and absent outcome | Re-run own checks once; a current refusal applies nothing |
+| Restore | Replay: valid REFUSED receipt whose original checks now pass | Preserve refusal; never execute or allow resolve-apply |
+| Restore | Missing provenance: no verifying receipt | No replay; restore stops pending signed resolution |
+| Read result | Audit commit fails | Inspect/list/trace expose no data |
+| Mutation transaction | Audit insert fails | Domain mutation rolls back atomically |
+| Retained domain row | Expired audit versus missing retained evidence/receipt/roster | Expired audit alone passes; missing verification material fails |
+
+Session-generation mutation tests are **NOT_APPLICABLE to this no-runtime-change
+packet**; future kick/sanction consumers must preserve their own current session
+fences. Signature/chain/clock/receipt cases above are **BLOCKED, not passed**,
+until the prerequisite interfaces and accepted fixture bytes exist.
+
+### Cross-domain findings and next allocation
+
+**REPORT_ONLY:** the packet's real executable integration paths are
+`apps/game-server/src/bin/oteryn-game-ops.rs` and `node/serve.rs`, with restart
+configuration in `node/config.rs`; they are outside this local worker's owned
+paths. Do not create a guessed `tools/oteryn-game-ops` replacement. CP must route
+those owners, migrations, proto, registry, error numbers and module registration
+at a later authorized slot. EXT off-host-head closure remains
+ARCH-CONTROL-ANCHOR-0; its absence does not cancel ALPHA first-child preparation.
+
+Whole-diff self-review: this change only records the accepted semantics,
+evidenced binding gaps and next qualification work. It introduces no new
+authority, signed envelope, trust root, production behavior or readiness claim.
+
+Local validation: `python tools/agents/validate_governance.py` PASS (22 policy
+documents, 9 project lanes); `python -m unittest discover -s tools/agents/tests`
+PASS (124 tests, 0 failures); `git diff --check` PASS. Owned-path inspection
+confirms only this task record changed and HEAD remains the source SHA above.
+No Rust/runtime tests ran, because there is no runtime change; the negative
+signature/authority/restore cases remain unqualified as stated above.
