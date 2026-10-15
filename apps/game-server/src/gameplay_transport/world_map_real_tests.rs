@@ -18,6 +18,7 @@ use crate::gameplay_transport::item_view::ItemViewContinuity;
 use crate::map::overlay::AddedItem;
 use crate::map::view::EntryFacts;
 use crate::map::{BundlePins, WorldBase, load, palette_appearance};
+use crate::movement::speed::{DEFAULT_GROUND_SPEED, StepSpeedTable};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use std::collections::HashSet;
 use std::num::NonZeroU32;
@@ -38,6 +39,15 @@ const VIEWS: usize = 504;
 const THREADS: [usize; 3] = [1, 4, 8];
 /// A step every 200 ms: the upper bound of §2.
 const STEPS_PER_SECOND: f64 = 5.0;
+/// Players per Channel (D128) and the map-view share of one core (§1.2).
+const PLAYERS: f64 = 500.0;
+const CORE_SHARE: f64 = 0.20;
+/// §1.5 (option B, provisional until MAP-VIEWPORT-BUDGET-REVAL): the share of a Channel's players
+/// that walk at any moment; the others stand and rebuild no view.
+const MOVING_SHARE: f64 = 0.5;
+/// §1.5: the walking pace is the SPEED-1 step of a level-100 player without haste or equipment
+/// speed (effective speed 209) on a ground without a ground speed of its own (150).
+const WALK_SPEED: u16 = 209;
 /// Positions drawn from towns and spawn areas, per 100 (§2: at least half).
 const ANCHORED_PER_100: u64 = 60;
 
@@ -745,6 +755,14 @@ fn report(threads: usize, results: &Results) {
     );
     let updates = (all_walk.len() + snapshots.len()) as u64 - results.walk_snapshots;
     let cpu_per_update = results.cpu_ns as f64 / updates.max(1) as f64;
+    let pace = walking_steps_per_second();
+    println!(
+        "Option B (§1.5, provisional): {:.0}% of {PLAYERS} players walking at {pace:.2} steps/s: {:.3} cores \
+         (budget {CORE_SHARE:.3}); fits up to {:.0}% walking.",
+        100.0 * MOVING_SHARE,
+        option_b_cores(cpu_per_update),
+        100.0 * CORE_SHARE / option_b_cores(cpu_per_update) * MOVING_SHARE,
+    );
     println!(
         "CPU per update (thread CPU time, scheduling excluded): {:.1} us over {updates} updates ({:.2} s). \
          Per player per second at {STEPS_PER_SECOND} steps/s: {:.0} us; at 500 players: {:.3} cores (budget 0.200). \
@@ -755,6 +773,34 @@ fn report(threads: usize, results: &Results) {
         500.0 * cpu_per_update * STEPS_PER_SECOND / 1e9,
         results.wall.as_secs_f64(),
     );
+}
+
+/// The walking pace of §1.5 in steps per second, from the SPEED-1 step duration.
+fn walking_steps_per_second() -> f64 {
+    let step = StepSpeedTable::embedded()
+        .and_then(|table| table.step_duration(WALK_SPEED, DEFAULT_GROUND_SPEED))
+        .expect("SPEED-1 step duration");
+    1.0 / step.as_secs_f64()
+}
+
+/// Cores the map views of a Channel take under §1.5 at `cpu_per_update_ns` per update: only the
+/// walking players rebuild a view, one update per step.
+fn option_b_cores(cpu_per_update_ns: f64) -> f64 {
+    PLAYERS * MOVING_SHARE * walking_steps_per_second() * cpu_per_update_ns / 1e9
+}
+
+/// §1.5 on the MAP-VIEWPORT-MEASURE-1 numbers: the walking pace is a 350 ms step, and the largest
+/// measured CPU per update (174.0 us, 4 threads) fits 20% of one core, where every player stepping
+/// every 200 ms (0.435 core) does not.
+#[test]
+fn option_b_budget_fits_the_measured_cost() {
+    let pace = walking_steps_per_second();
+    assert!((pace - 1000.0 / 350.0).abs() < 1e-9, "{pace}");
+    let measured = 174_000.0;
+    assert!(PLAYERS * STEPS_PER_SECOND * measured / 1e9 > CORE_SHARE);
+    let cores = option_b_cores(measured);
+    assert!(cores <= CORE_SHARE, "{cores}");
+    assert!((cores - 0.1243).abs() < 1e-3, "{cores}");
 }
 
 /// The staged update sends the same bytes as `SessionMapView::update`.

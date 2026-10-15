@@ -12,6 +12,8 @@
   `offer_gate` in `PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json`.
 - Runtime, migration, production and protected-World authority: NONE. MAP-VIEWPORT-MEASURE-1
   needs its own #162 allocation.
+- Amended 2026-10-15 by MAP-VIEWPORT-OPT-1 (owner decision **option B**, §1.5): the 20% share
+  counts only the players who walk. Provisional until MAP-VIEWPORT-BUDGET-REVAL.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
 ## 0. Implementation brief
@@ -77,6 +79,35 @@ Channel writer is held per update.
 MAP-VIEWPORT-PERF-2 lowers the snapshot from 3.264 ms to 1.683 ms p99 with byte-identical
 output. Under this decision it meets `MAP01-VIEWPORT-SNAPSHOT-US`; its evidence and record
 need no change. The CP merges it on its own review state.
+
+### 1.5 Option B: the share counts walking players (owner, 2026-10-15)
+
+MAP-VIEWPORT-MEASURE-1 measured 162.5-174.0 us of CPU per update, 0.41-0.44 core when every
+one of 500 players steps every 200 ms. That model does not fit the 20% share. The owner chose
+option B: keep 20% of one core, and size it with a realistic movement model.
+
+- **Who rebuilds a view.** A view is rebuilt only for a player who stepped onto another tile or
+  was moved (snapshot) in that tick. A player who stands rebuilds nothing. One walk step is one
+  delta, as in the measurement.
+- **Walking pace.** The SPEED-1 step duration (`movement/speed.rs`, CONDITIONS-0 §4.2) of a
+  level-100 player without haste or equipment speed (effective speed 209) on a ground with no
+  ground speed of its own (150): 350 ms, **2.86 steps per second**. Level 1 walks at 1.82 and
+  level 301 at 5.0 steps per second on the same ground.
+- **Moving share.** At any moment **50%** of the players of a Channel walk; the rest stand,
+  trade, talk, fight in place or wait.
+- **Budget.** `500 x moving share x steps per second x CPU per update <= 0.20 core`. On the
+  measured cost: 500 x 0.5 x 2.86 x 174.0 us = **0.124 core**, within 0.20. It fits up to
+  80% of the players walking at that pace, or every player walking at 2.30 steps per second.
+  The bench prints this line (`world_map_real_tests.rs`); a unit test keeps the arithmetic on
+  the MAP-VIEWPORT-MEASURE-1 numbers.
+- **Provisional.** The pace and the 50% are assumptions, not measurements of players. Follow-up
+  **MAP-VIEWPORT-BUDGET-REVAL** re-validates them with bots that simulate players (load-sim) on a
+  composed Channel: the measured moving share, the step rate and the CPU of the map views. If
+  either exceeds the break-even, the §1.2 next step applies again (a bounded optimisation slice
+  or a budget question to the owner).
+- **No optimisation now.** Under option B the measured cost fits, so the bounded optimisation
+  slice of §1.2 is not needed. MAP-VIEWPORT-LIMIT-1 derives the production snapshot and delta
+  rows from the MAP-VIEWPORT-MEASURE-1 evidence and this section.
 
 ## 2. Packet MAP-VIEWPORT-MEASURE-1 (impl worker)
 
@@ -146,5 +177,6 @@ validation:
 The decision holds if: `MAP01-VIEWPORT-US` is still 100 us for assembly; capability 18 is
 offered on a testing or preproduction bundle World only while the snapshot p99 is within
 `MAP01-VIEWPORT-SNAPSHOT-US`; no production World offers capability 18 before a later decision
-registers snapshot and delta limits derived from MAP-VIEWPORT-MEASURE-1 and D128; and no wire
-byte changed to meet any of these.
+registers snapshot and delta limits derived from MAP-VIEWPORT-MEASURE-1 and D128; the 20% share
+is counted for walking players under §1.5 until MAP-VIEWPORT-BUDGET-REVAL measures them; and no
+wire byte changed to meet any of these.
