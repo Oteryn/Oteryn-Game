@@ -19,7 +19,7 @@ type Result<T> = std::result::Result<T, HouseWireError>;
 pub const MAX_HOUSE_KEY_BYTES: usize = 512;
 /// HOUSEOWN0-RL-12, per list.
 pub const MAX_HOUSE_ACL_ENTRIES: usize = 200;
-/// Proposed flat bound:200 UUID fields(3600), position message(16), revision(11), envelope(3).
+/// Proposed flat bound:200 UUID fields(3600), native position message(12), revision(11), envelope(3), with6 spare bytes.
 pub const MAX_HOUSE_INTENT_BYTES: usize = 3632;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,7 +90,11 @@ fn validate(value: &HouseIntent) -> Result<()> {
             character_ids,
             ..
         } => {
-            if !(0..=15).contains(&position.floor) {
+            // Exactly the domain of native world_map::tile_pos; no sign mapping.
+            if u16::try_from(position.x).is_err()
+                || u16::try_from(position.y).is_err()
+                || !(-15..=0).contains(&position.floor)
+            {
                 return malformed();
             }
             validate_ids(character_ids)?;

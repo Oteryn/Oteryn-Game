@@ -218,3 +218,49 @@ artifact is released to root after the completed checks; no unchanged test repea
 
 Builder/CP rules remain: no ready, auto-merge, merge-main, shared slot edits or review triggers
 by this worker. Root may publish only the existing draft; CP owns later queue/integration.
+
+
+## Corrective coordinate batch (2026-10-15, after candidate c86b862)
+
+Root cross-module review found P2: the initial DoorSet validator and its fixtures used the
+broader ActorPosition wire shape rather than the actual native tile domain. The earlier
+252/5 direct-rustc passes are retained immutable as a prior qualification that missed this
+boundary; they do not qualify native door coordinates. This worker missed that source trace.
+
+The actual `gameplay_transport/world_map.rs::tile_pos` performs checked u16 x/y conversion,
+checked i8 floor conversion and accepts floor-15..0. `map::overlay::TilePos` stores u16 x/y
+and i8 floor. The corrected codec rejects x/y outside0..65535 and floor outside-15..0 on
+both encode/decode; it does not flip a floor sign or remap coordinates. Three new regressions
+first ran against unchanged published codec: valid underground positions, invalid positive
+floors and invalid axes. Raw RED logs and baseline/test hashes are retained separately in
+`/workspace/oteryn-prep/house-wire-1-coordinatefix-1-evidence/`.
+
+Corrected fixtures cover legal native endpoints and an independent signed-floor protobuf
+fixture. A real native TilePos type test verifies unchanged coordinate values through the
+prepared request; this is public type integration, not execution of the private tile helper
+or current door/house authority. The body field layout and3632-byte proposed limit stay
+unchanged (canonical largest native door body3626 bytes, six spare bytes). Prototype native
+coordinate comments are corrected; all earlier proposal/ACL selector/guild/query/result/
+activation/current-authority gates remain open. No shared source, registry, client or active
+dispatch changes.
+
+Corrective qualification: against the unchanged published codec, the three new regressions
+failed (0 passed/3 failed/252 filtered), exposing underground rejection and acceptance of
+negative axes/positive floors. The same regression bodies (whitespace only after formatting)
+then passed in the complete original protocol snapshot:255 passed/0 failed. The corrected
+native public-API harness passed6/6. Protocol and native-harness Clippy metadata with warnings
+denied and owned rustfmt-check passed. The narrow facade retains3 baseline unused-helper
+warnings; neither Clippy context has warnings. These are direct-rustc source-bound checks,
+not Cargo/full native unit, PostgreSQL, private tile-helper execution or live runtime tests.
+
+The first native attempt did not execute tests: the preserved MAP rlib could not resolve its
+changed shared dependency graph (E0463). Exact hashes show12/27 captured direct externs had
+drifted; this is a setup failure, not behavioral RED. No dependencies were swapped and no
+server rebuild was performed. Qualification resumed once using the freshly built genuine
+HOUSE-ACL native rlib (SHA256 5a805f39781821550dad290f2ae8caa37d585af86a597dca5cd48bb8c28512fd):
+all11 relevant package/lock/native-type/helper source inputs and27 current captured extern
+hashes matched under the Rust lock. Its other candidate ACL code is unused by this value/API
+harness. All commands, raw logs, preserved RED baseline, exact regression-body binding,
+source compatibility and artifact hashes are in the corrective evidence directory. The old
+252/5 packet and original evidence are unchanged. Governance and124 governance tests pass;
+owned scope and whitespace checks pass. No publication, registration or authority is claimed.

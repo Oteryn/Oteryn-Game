@@ -141,9 +141,9 @@ fn own_house_requests_preserve_exact_inputs_without_resolving_or_claiming_owner(
 #[test]
 fn door_request_keeps_revision_position_and_exact_session_correlation() {
     let pos = ActorPosition {
-        x: -10,
+        x: 10,
         y: 24,
-        floor: 7,
+        floor: -7,
     };
     let bytes = encode_house_intent(&HouseIntent::DoorSet {
         position: pos,
@@ -163,4 +163,51 @@ fn door_request_keeps_revision_position_and_exact_session_correlation() {
     );
     assert_eq!(first.action(), successor.action());
     assert_ne!(first.command(), successor.command());
+}
+
+#[test]
+fn prepared_door_coordinates_preserve_actual_native_tile_values() {
+    use crate::map::overlay::TilePos;
+    for tile in [
+        TilePos {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+        TilePos {
+            x: u16::MAX,
+            y: u16::MAX,
+            floor: -15,
+        },
+        TilePos {
+            x: 10,
+            y: 24,
+            floor: -7,
+        },
+    ] {
+        let position = ActorPosition {
+            x: i32::from(tile.x),
+            y: i32::from(tile.y),
+            floor: i16::from(tile.floor),
+        };
+        let request = prepare(HouseIntent::DoorSet {
+            position,
+            character_ids: vec![],
+            expected_revision: 0,
+        });
+        let PreparedHouseAction::DoorSet {
+            position: prepared, ..
+        } = request.action()
+        else {
+            panic!("not door")
+        };
+        assert_eq!(*prepared, position);
+    }
+    // Structurally valid signed-position bodies, independently encoded of the House validator.
+    for body in [[42, 4, 10, 2, 24, 2], [42, 4, 10, 2, 8, 1]] {
+        assert_eq!(
+            prepare_house_intent(&body, command(2), actor(), world(3)),
+            Err(HouseIntentPreparationError::Wire(HouseWireError::Malformed))
+        );
+    }
 }

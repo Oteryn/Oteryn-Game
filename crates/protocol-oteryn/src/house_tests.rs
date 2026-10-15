@@ -11,9 +11,9 @@ fn id(seed: u16) -> CharacterId {
 }
 fn position() -> ActorPosition {
     ActorPosition {
-        x: i32::MIN,
-        y: i32::MAX,
-        floor: 15,
+        x: 65535,
+        y: 65535,
+        floor: -15,
     }
 }
 fn oneof(tag: u64, body: &[u8]) -> Vec<u8> {
@@ -64,6 +64,20 @@ fn every_variant_round_trips_without_reordering_lists() {
 }
 #[test]
 fn fixed_proto3_fixtures_include_empty_variants_and_zero_max() {
+    let underground = HouseIntent::DoorSet {
+        position: ActorPosition {
+            x: 1,
+            y: 2,
+            floor: -1,
+        },
+        character_ids: vec![],
+        expected_revision: 0,
+    };
+    // Native signed floor is copied directly: -1 zigzags to1, never to positive floor1.
+    let fixture = [42, 8, 10, 6, 8, 2, 16, 4, 24, 1];
+    assert_eq!(encode_house_intent(&underground).unwrap(), fixture);
+    assert_eq!(decode_house_intent(&fixture), Ok(underground));
+
     assert_eq!(
         encode_house_intent(&HouseIntent::CancelMoveOut).unwrap(),
         [26, 0]
@@ -269,7 +283,7 @@ fn date_is_positive_signed_milliseconds_and_floor_uses_native_range() {
         decode_house_intent(&oneof(2, &body)),
         Err(HouseWireError::Malformed)
     );
-    for floor in [-1, 16] {
+    for floor in [-16, 1] {
         let mut wire = Vec::new();
         push_message_field(
             &mut wire,
@@ -288,5 +302,108 @@ fn date_is_positive_signed_milliseconds_and_floor_uses_native_range() {
             expected_revision: 0,
         };
         assert_eq!(encode_house_intent(&value), Err(HouseWireError::Malformed));
+    }
+}
+
+// Coordinate correction: native world_map::tile_pos, not the broader wire position shape.
+fn door_body_at(position: ActorPosition) -> Vec<u8> {
+    let mut body = Vec::new();
+    push_message_field(&mut body, 1, &encode_position(&position));
+    oneof(5, &body)
+}
+#[test]
+fn native_house_door_grid_accepts_underground_boundaries() {
+    for position in [
+        ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+        ActorPosition {
+            x: 1,
+            y: 2,
+            floor: -1,
+        },
+        ActorPosition {
+            x: 65535,
+            y: 65535,
+            floor: -15,
+        },
+    ] {
+        let value = HouseIntent::DoorSet {
+            position,
+            character_ids: vec![],
+            expected_revision: 0,
+        };
+        assert_eq!(
+            decode_house_intent(&door_body_at(position)),
+            Ok(value.clone())
+        );
+        assert_eq!(
+            decode_house_intent(&encode_house_intent(&value).unwrap()),
+            Ok(value)
+        );
+    }
+}
+#[test]
+fn native_house_door_grid_rejects_outside_floors() {
+    for floor in [1, 15, -16, i16::MIN, i16::MAX] {
+        let position = ActorPosition { x: 0, y: 0, floor };
+        let value = HouseIntent::DoorSet {
+            position,
+            character_ids: vec![],
+            expected_revision: 0,
+        };
+        assert_eq!(encode_house_intent(&value), Err(HouseWireError::Malformed));
+        assert_eq!(
+            decode_house_intent(&door_body_at(position)),
+            Err(HouseWireError::Malformed)
+        );
+    }
+}
+#[test]
+fn native_house_door_grid_rejects_outside_axes() {
+    for position in [
+        ActorPosition {
+            x: -1,
+            y: 0,
+            floor: 0,
+        },
+        ActorPosition {
+            x: 0,
+            y: -1,
+            floor: 0,
+        },
+        ActorPosition {
+            x: 65536,
+            y: 0,
+            floor: 0,
+        },
+        ActorPosition {
+            x: 0,
+            y: 65536,
+            floor: 0,
+        },
+        ActorPosition {
+            x: i32::MIN,
+            y: 0,
+            floor: 0,
+        },
+        ActorPosition {
+            x: 0,
+            y: i32::MAX,
+            floor: 0,
+        },
+    ] {
+        let value = HouseIntent::DoorSet {
+            position,
+            character_ids: vec![],
+            expected_revision: 0,
+        };
+        assert_eq!(encode_house_intent(&value), Err(HouseWireError::Malformed));
+        assert_eq!(
+            decode_house_intent(&door_body_at(position)),
+            Err(HouseWireError::Malformed)
+        );
     }
 }

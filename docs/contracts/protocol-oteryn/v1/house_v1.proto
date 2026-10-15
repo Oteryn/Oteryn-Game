@@ -6,8 +6,8 @@
 // Exactly one variant required. Unknown fields/wire types, repeated singular fields, invalid
 // UTF-8/UUIDv7, duplicate list identities and >200 list entries fail closed. Empty list clears.
 // Actor's current World supplies HouseId World; body never selects owner/World/session/lease.
-// Proposed max3632 bytes derives from existing200 list entries×18B +position16B +revision11B
-// +outer3B, with2B slack. CP must register/measure bounds before activation.
+// Proposed max3632 bytes derives from existing200 list entries×18B +position12B +revision11B
+// +outer3B, with6B slack. CP must register/measure bounds before activation.
 // Existing guild ACL amendment needs its own reviewed wire representation before this
 // character-only editing subset can claim complete ACL coverage. Query/domain projection,
 // common+house result mapping and client panel are NOT defined or activated by this proposal.
@@ -34,7 +34,8 @@ message HouseAclSetV1 {
 }
 // Same encoding as native world_spatial ActorPositionV1. Actual house/door membership is not
 // implied by a syntactically valid position; owning runtime resolves it at current revision.
-message HouseDoorPositionV1 { sint32 x = 1; sint32 y = 2; sint32 floor = 3; } //floor0..15
+// Native world_map::tile_pos copies the signed floor directly; no sign flip/coordinate remap.
+message HouseDoorPositionV1 { sint32 x = 1; sint32 y = 2; sint32 floor = 3; } //x/y0..65535; floor-15..0
 message HouseDoorSetV1 {
   HouseDoorPositionV1 position = 1;
   repeated bytes character_ids = 2;
