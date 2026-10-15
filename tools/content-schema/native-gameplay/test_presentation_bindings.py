@@ -1,0 +1,109 @@
+"""SPELL-PRESENT-0 §3 bindings: the committed files validate, and the checks reject bad bindings."""
+import unittest
+
+import build_creature_races as races
+import build_presentation_bindings as bindings
+import validate_presentation_bindings as validator
+
+
+def fixture():
+    client_ids = {'dynamic_keys': ['canary.appearance:missile/weapontype'], 'records': [
+        {'key': 'appearance:effect/poff', 'kind': 'effect', 'client_id': 3,
+         'source_member': 'CONST_ME_POFF'},
+        {'key': 'canary.appearance:missile/arrow', 'kind': 'missile', 'client_id': 3,
+         'source_member': 'CONST_ANI_ARROW'},
+        {'key': 'canary.sound:spell_or_rune', 'kind': 'sound', 'client_id': 10,
+         'source_member': 'SPELL_OR_RUNE'},
+        {'key': 'canary.appearance:effect/none', 'kind': 'effect', 'client_id': 0,
+         'source_member': 'CONST_ME_NONE'},
+    ]}
+    hits = {'player_race': 'blood',
+            'physical_by_race': [{'race': race, 'color': 'red'} for race in bindings.RACES],
+            'by_damage_type': [{'damage_type': damage, 'color': 'blue'}
+                               for damage in validator.DAMAGE_TYPES - {'physical'}]}
+    creature_races = {'record_count': 1, 'records': [{'creature': 'oteryn:creature.rat', 'race': 'blood'}]}
+    cues = {'records': [{'alias': 'appearance:effect/poff', 'value': 3}]}
+    keys = {record['key'] for record in client_ids['records']} | {'canary.appearance:missile/weapontype'}
+    return [client_ids, hits, creature_races, cues, keys,
+            {'effect': {3}, 'missile': {3}}, {'red', 'blue'}, {'oteryn:creature.rat'}]
+
+
+class CheckTests(unittest.TestCase):
+    def errors(self, change=None):
+        arguments = fixture()
+        if change:
+            change(arguments)
+        return validator.check(*arguments)
+
+    def test_fixture_passes(self):
+        self.assertEqual(self.errors(), [])
+
+    def test_unbound_and_stale_keys(self):
+        def change(a):
+            a[4] = a[4] - {'canary.sound:spell_or_rune'} | {'canary.sound:other'}
+        self.assertEqual(self.errors(change), ['content key without a client id canary.sound:other',
+                                               'client id record no content uses canary.sound:spell_or_rune'])
+
+    def test_id_missing_from_appearances(self):
+        def change(a):
+            a[5]['missile'] = {4}
+        self.assertEqual(self.errors(change),
+                         ['canary.appearance:missile/arrow id 3 is not in appearances.dat'])
+
+    def test_null_id_only_for_undefined_member(self):
+        def change(a):
+            a[0]['records'][0]['client_id'] = None
+        self.assertIn('client id missing for appearance:effect/poff', self.errors(change))
+
+    def test_colour_race_damage_and_creature_coverage(self):
+        def change(a):
+            a[1]['physical_by_race'][0]['color'] = 'white'
+            a[1]['physical_by_race'].pop()
+            a[1]['by_damage_type'].pop()
+            a[2]['records'][0]['race'] = 'slime'
+            a[7] = {'oteryn:creature.rat', 'oteryn:creature.wolf'}
+        self.assertEqual(self.errors(change), [
+            'hit table colour outside PresentationColor white',
+            'hit table races are not exactly the source races',
+            'hit table damage types are not exactly the Oteryn damage types',
+            'creature races do not cover exactly the Creature family',
+            'unknown race slime for oteryn:creature.rat'])
+
+    def test_spell_cues_disagreement(self):
+        def change(a):
+            a[3]['records'][0]['value'] = 4
+        self.assertEqual(self.errors(change),
+                         ['spell-cues.json and client-ids.json disagree on appearance:effect/poff'])
+
+
+class RaceTests(unittest.TestCase):
+    def test_explicit_commented_and_default(self):
+        self.assertEqual(races.source_race('monster.race = "undead"\n'), ('undead', 'explicit'))
+        self.assertEqual(races.source_race('-- monster.race = "fire"\n'), ('blood', 'source_default'))
+        self.assertEqual(races.source_race('--[[\nmonster.race = "fire"\n]]\n'), ('blood', 'source_default'))
+
+    def test_rejects_unknown_or_repeated_race(self):
+        with self.assertRaises(ValueError):
+            races.source_race('monster.race = "slime"\n')
+        with self.assertRaises(ValueError):
+            races.source_race('monster.race = "fire"\nmonster.race = "undead"\n')
+
+    def test_primal_variant_reads_its_registering_file(self):
+        path = races.SOURCES['canary/monster-file'][2]
+        self.assertEqual(path('reptiles/emerald_tortoise.lua#registered-type=Emerald Tortoise (Primal)'),
+                         'data-otservbr-global/monster/reptiles/emerald_tortoise.lua')
+        self.assertEqual(path('mammals/rat'), 'data-otservbr-global/monster/mammals/rat.lua')
+
+
+class CommittedTests(unittest.TestCase):
+    def test_committed_bindings_validate(self):
+        self.assertEqual(validator.main(), 0)
+
+    def test_colours_parse_from_protocol(self):
+        self.assertEqual(validator.colors(validator.COLOR_ENUM.read_text()),
+                         {'red', 'light_green', 'light_grey', 'orange', 'purple', 'sky_blue', 'yellow',
+                          'dark_red', 'light_blue', 'blue', 'pastel_red', 'maya_blue', 'white'})
+
+
+if __name__ == '__main__':
+    unittest.main()

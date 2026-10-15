@@ -26,6 +26,12 @@ on:
       - content/assets/files/appearances-*.dat
       - tools/content-census/stage_proficiencies.py
       - rulesets/items/imbuements/**
+      - content/presentations/**
+      - content/creatures/definitions/**
+      - crates/protocol-oteryn/src/presentation.rs
+      - tools/content-schema/native-gameplay/*presentation*.py
+      - tools/content-schema/native-gameplay/build_creature_races.py
+      - tools/content-schema/native-gameplay/build_spell_cues.py
       - tools/content-schema/item-authoring/requirements.txt
       - .github/workflows/content-tree-migration.yml
   workflow_dispatch:
@@ -71,6 +77,10 @@ jobs:
         run: |
           python tools/content-schema/imbuement-authoring/imbuement_content.py content --check
           python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py' -q
+
+      - name: Validate SPELL-PRESENT-0 presentation bindings
+        working-directory: tools/content-schema/native-gameplay
+        run: python -m unittest test_presentation_bindings -q
 
       - name: Validate successor Item/Mount tree against legacy WorldProject
         run: |

@@ -587,6 +587,15 @@
       "path": "content/npcs/definitions/npcs-01000-01281.json"
     },
     {
+      "path": "content/presentations/bindings/client-ids.json"
+    },
+    {
+      "path": "content/presentations/bindings/creature-races.json"
+    },
+    {
+      "path": "content/presentations/bindings/hit-table.json"
+    },
+    {
       "path": "content/presentations/bindings/index.json"
     },
     {
@@ -946,6 +955,44 @@
             "path": "tools/content-schema/native-gameplay/test_spell_cues.py"
           },
           "sha256": "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/bindings/client-ids.json",
+          "record_count": 421,
+          "representation": "client_id_bindings",
+          "runtime_activation": false,
+          "schema": "OTERYN_PRESENTATION_CLIENT_IDS/v1",
+          "schema_contract": {
+            "kind": "source_validator",
+            "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+          },
+          "sha256": "c909d5518444a3348632f0fc920c3adc6ab79c3c9972247c562bdf8fefbb8409"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/bindings/hit-table.json",
+          "representation": "hit_presentation_table",
+          "runtime_activation": false,
+          "schema": "OTERYN_PRESENTATION_HIT_TABLE/v1",
+          "schema_contract": {
+            "kind": "source_validator",
+            "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+          },
+          "sha256": "573c7cf169135fc40bfb62ff26d7e1ab58b0d99c956feb583c7aed10466aa71e"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/bindings/creature-races.json",
+          "record_count": 1863,
+          "representation": "creature_race_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_CREATURE_RACES/v1",
+          "schema_contract": {
+            "kind": "source_validator",
+            "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+          },
+          "sha256": "4b83c2bfcdf51bbfabff190eef06e84c9b9a9e9c860e74d5e473a98274ceedfd"
         }
       ]
     },
