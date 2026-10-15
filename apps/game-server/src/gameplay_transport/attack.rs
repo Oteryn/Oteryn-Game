@@ -227,6 +227,8 @@ struct ActorAttack {
     modes: FightModes,
     /// The wire reference of the held target, as the client named it.
     target_ref: Option<EntityRef>,
+    /// When the held target was set; a `pacified` applied since then clears it.
+    target_set_at: SemanticTimeMicros,
     /// The swing ordinal of the next swing of the held target's lineage.
     next_ordinal: u16,
     /// CHASE-1: the chase route towards the held target (runtime-only).
@@ -338,6 +340,37 @@ impl ChannelAttackStates {
             self.step_clocks.push((actor, StepClock::Due(due)));
         }
     }
+}
+
+/// CONDITIONS-0 §3.5: the actor's runtime condition slot holds a current `pacified`. An
+/// actor without a slot holds no condition there.
+fn pacified_slot(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: SemanticTimeMicros,
+) -> bool {
+    runtime
+        .actor_conditions(actor, Some(session))
+        .is_ok_and(|store| store.attack_target_gate(now.get()).is_err())
+}
+
+/// ATTACK-0 §4 (as amended by #2106): a `pacified` was applied to `actor`, in its player store
+/// or its runtime condition slot, at or after `since`, whether it is still current or not.
+fn pacified_applied_since(
+    runtime: &ChannelRuntimeV1,
+    states: &super::actor_spell::ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    since: SemanticTimeMicros,
+) -> bool {
+    states.get(runtime, actor, session).is_some_and(|player| {
+        player
+            .owned_conditions()
+            .pacified_applied_since(since.get())
+    }) || runtime
+        .actor_conditions(actor, Some(session))
+        .is_ok_and(|store| store.pacified_applied_since(since.get()))
 }
 
 /// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
@@ -541,6 +574,7 @@ impl ChannelAttackStates {
                     state: AttackState::default(),
                     modes: FightModes::DEFAULT,
                     target_ref: None,
+                    target_set_at: SemanticTimeMicros::from_micros(0),
                     next_ordinal: 0,
                     chase: ChaseState::default(),
                     weapon: None,
@@ -572,6 +606,10 @@ impl ChannelAttackStates {
             entry.clear_target();
             return AttackIntentDisposition::Ok;
         };
+        // CONDITIONS-0 §3.5: `pacified` refuses setting a target before every other check.
+        if pacified_slot(runtime, actor, session, now) {
+            return AttackIntentDisposition::Rejected;
+        }
         let Some(room) = room else {
             return AttackIntentDisposition::Rejected;
         };
@@ -607,6 +645,7 @@ impl ChannelAttackStates {
         {
             Ok(()) => {
                 entry.target_ref = Some(target_ref);
+                entry.target_set_at = now;
                 entry.next_ordinal = 0;
                 // RANGED0-RL-08: only a target change clears the route and the refused cells;
                 // reselecting the held target keeps them for their TTL.
@@ -675,6 +714,32 @@ impl ChannelAttackStates {
             .in_fight(now)
             .then(|| entry.state.in_fight_until())
             .flatten()
+    }
+
+    /// ATTACK-0 §4 (as amended by #2106): applying `pacified` clears the held target. The
+    /// condition appliers run under `runtime` and `spell_states` without this owner, so the clear
+    /// lands under the attack guard before the held target is read, sent or swung: the caster's
+    /// own cast completion and every reader settle it first. The condition store keeps the
+    /// latest application time past the gate's expiry, so a target held across a `pacified` that
+    /// ended before any reader ran is cleared as well. Returns whether a target was cleared.
+    pub(crate) fn settle_pacified_target(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &super::actor_spell::ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let Some(index) = self.index(actor, session) else {
+            return false;
+        };
+        let entry = &mut self.entries[index];
+        if entry.state.target().is_none()
+            || !pacified_applied_since(runtime, states, actor, session, entry.target_set_at)
+        {
+            return false;
+        }
+        entry.clear_target();
+        true
     }
 
     /// Stop attacking (reconnect, control loss); the in-fight deadline is kept (§3 Reconnect).
@@ -1175,6 +1240,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).
             let now = self.owner_now();
+            // ATTACK-0 §4: a `pacified` applied over the held target clears it before the chase
+            // reads it.
+            attack.settle_pacified_target(&runtime, &states, actor, session);
             attack.chase_decision(&runtime, room, actor, session, now, |cell| {
                 chase_path_tile(cells, blocking, cell)
             })?
@@ -1354,6 +1422,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             if states.is_dead(entry.actor) {
+                entry.clear_target();
+                continue;
+            }
+            // CONDITIONS-0 §3.5: applying `pacified` clears a running target.
+            if pacified_applied_since(
+                &runtime,
+                &states,
+                entry.actor,
+                entry.session,
+                entry.target_set_at,
+            ) {
                 entry.clear_target();
                 continue;
             }
@@ -1574,6 +1653,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "../foundation/channel_owner_auto_attack_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "attack_gate_tests.rs"]
+mod gate_tests;
 
 /// SPELL-TARGET-1: a held target inside the spell range but outside the reference window is
 /// out of sight (`TargetIllegal` in ordinary combat).

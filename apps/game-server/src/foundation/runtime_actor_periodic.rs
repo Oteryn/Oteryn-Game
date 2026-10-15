@@ -239,7 +239,38 @@ impl ChannelRuntimeV1 {
                         break;
                     }
                 }
+                // CONDITIONS-0 §3.2 (amended with §3.5): an agony tick skips mitigation,
+                // resistances, attributes and charms; only its commit step runs.
+                TickKind::Agony {
+                    amount,
+                    refused: false,
+                } => {
+                    let damage = if before.state.policy.flags.attackable {
+                        i64::from(amount)
+                    } else {
+                        0
+                    };
+                    had_damage |= damage > 0;
+                    if damage > 0 {
+                        after
+                            .conditions
+                            .remove_type(crate::foundation::condition::ConditionType::Invisible);
+                    }
+                    health_after = health_after
+                        .checked_sub(damage)
+                        .ok_or(CarrierError::DamageOverflow)?
+                        .max(0);
+                    total = before
+                        .health
+                        .checked_sub(health_after)
+                        .ok_or(CarrierError::DamageOverflow)?;
+                    if health_after == 0 {
+                        after.conditions.clear_on_death();
+                        break;
+                    }
+                }
                 TickKind::Damage { refused: true, .. }
+                | TickKind::Agony { refused: true, .. }
                 | TickKind::Regeneration {
                     suppressed: true, ..
                 }
@@ -508,6 +539,9 @@ mod tests {
         }
     }
     fn owner() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+        owner_with(policy("rat"))
+    }
+    fn owner_with(rat: CompiledCreaturePolicy) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         let world = WorldId::decode(&id(1)).unwrap();
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -527,8 +561,7 @@ mod tests {
         runtime.initialize_first_entry_position(actor).unwrap();
         runtime
             .install_companion_policies(
-                CompiledCreaturePolicies::from_active_artifact([1; 32], vec![policy("rat")])
-                    .unwrap(),
+                CompiledCreaturePolicies::from_active_artifact([1; 32], vec![rat]).unwrap(),
             )
             .unwrap();
         (runtime, actor, session)
@@ -576,6 +609,75 @@ mod tests {
             )
             .unwrap();
         runtime.compare_companion_state(&before, after).unwrap();
+    }
+    #[test]
+    fn agony_on_a_creature_ticks_raw_damage_past_mitigation_and_resistance() {
+        let mut tough = policy("rat");
+        tough.mitigation = Some(CreatureExactRatio {
+            numerator: 30,
+            denominator: 1,
+        });
+        let (mut runtime, owner, session) = owner_with(tough);
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        let definition = ConditionDefinition::new(
+            "test.source.agony",
+            1,
+            ConditionValues::Agony {
+                total_min: 300,
+                total_max: 300,
+                per_tick: 100,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .unwrap();
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        after
+            .conditions
+            .apply(
+                &definition,
+                None,
+                ConditionSourceKind::Field,
+                &[],
+                &ApplicationFacts {
+                    now: 0,
+                    base_speed: 220,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([5; 16]),
+                },
+            )
+            .unwrap();
+        runtime.compare_companion_state(&before, after).unwrap();
+        for second in 1..=3 {
+            let prepared = runtime
+                .stage_creature_periodic_turn(creature, second * 1_000_000, TickFacts::default())
+                .unwrap();
+            let result = runtime.commit_creature_periodic_turn(prepared).unwrap();
+            assert_eq!(result.health_before - result.health_after, 100);
+        }
+        let current = runtime.companion_snapshot(creature).unwrap();
+        assert_eq!(current.health, 512);
+        assert!(current.state.conditions.instances().is_empty());
     }
     #[test]
     fn physical_dot_more_than_sixteen_pulses_uses_actual_store_and_refuses_stale_tick_seal() {

@@ -130,14 +130,18 @@ impl ChannelSpellStates {
             None,
         )
         .ok()??;
-        if !preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
-                && t.provenance.source_kind == ConditionSourceKind::Creature
-        }) {
+        // CONDITIONS-0 §3.5: an agony hit the cycle could not deal (lethal) is a creature hit
+        // for this death-capable owner as well.
+        let hit = |kind: TickKind| matches!(kind, TickKind::Damage { .. } | TickKind::Agony { .. });
+        if !preview
+            .combat_ticks
+            .iter()
+            .any(|t| hit(t.kind) && t.provenance.source_kind == ConditionSourceKind::Creature)
+        {
             return None;
         }
         if preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
+            hit(t.kind)
                 && (t.provenance.source_kind != ConditionSourceKind::Creature
                     || !t
                         .provenance
