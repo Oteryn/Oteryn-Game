@@ -48,6 +48,7 @@ external_repositories: [Oteryn/Oteryn-Platform]
 - DERIVED: §5.4 reopens keep their original times and are decided by §5.4, so they are outside the per-interval cap.
 - DERIVED: a forward burst is bounded by the backlog. With 30 s rescan, 24 s listing and 6 s per read and receipt, the 300 s TTL covers 41 unseen keys, so the enabled backlog is at most 40.
 - DECIDED (control plane, fix round 1 for Codex P1 4281164563): Platform's `max_pending_intents` defaults to 40, and a configured value above 41 makes the command surface unavailable. Platform PR #1632 enforces it with a test.
+- DECIDED (control plane, fix round 2 for Codex P1 4281392029): the enforced bound is 40. A configured value above 40 makes `CharacterCommandSettings::current()` return null; the contract (§4.1, §13, §15) and Platform PR #1632 say and test the same.
 
 ## High-risk authority/recovery qualification
 
