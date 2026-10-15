@@ -11,7 +11,7 @@
 //! function. One that is added, removed, moved or
 //! switched without an update of this table fails `every_seam_room_read_is_inventoried`.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use syn::Token;
@@ -105,7 +105,7 @@ const INVENTORY: &[Read] = &[
         "native_combat_cast.rs",
         "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "self.combat_room",
-        "let_else/field/read",
+        "let_else#4/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -115,7 +115,7 @@ const INVENTORY: &[Read] = &[
         "native_combat_cast.rs",
         "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "owner.combat_room",
-        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
+        "let#15/await/method_call:run_with_context/closure/call:pin/async/let#5/try/method_call:ok_or/field/read",
         2,
         COMBAT_ENABLE,
     ),
@@ -125,9 +125,22 @@ const INVENTORY: &[Read] = &[
         "spell_timer_callbacks.rs",
         "ComposedFreshAdmission::drain_native_ai_timers",
         "owner.combat_room",
-        "if(Some saved unresolved)/then/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let/try/method_call:ok_or/field/read",
+        "if(Some saved unresolved)/then/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let#4/try/method_call:ok_or/field/read",
         1,
         COMBAT_ENABLE,
+    ),
+    read(
+        "chase step",
+        "chase step",
+        "attack.rs",
+        "ComposedFreshAdmission::chase_step_now",
+        "self.combat_room",
+        "let/try/field/read",
+        1,
+        Gate::Open {
+            batch: "LOOP-COMBAT-MODES-1",
+            pr: 2113,
+        },
     ),
     read(
         "monster AI",
@@ -148,7 +161,7 @@ const INVENTORY: &[Read] = &[
         "spell_periodic.rs",
         "ComposedFreshAdmission::tick_spell_periodic",
         "self.combat_room",
-        "let/try/field/read",
+        "let#6/try/field/read",
         1,
         Gate::Open {
             batch: "MAGIC-COND-1",
@@ -163,7 +176,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "self.combat_room",
-        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
+        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field#2/read",
         2,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -176,7 +189,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.combat_room",
-        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
+        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/call:parameter_room/field#2/read",
         4,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -202,7 +215,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.qualified_room",
-        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
+        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/call:parameter_room/field/read",
         3,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -227,7 +240,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "super::super::ComposedFreshAdmission::cast_world_items_inner",
         "owner.qualified_room",
-        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
+        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#5/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -240,7 +253,7 @@ const INVENTORY: &[Read] = &[
         "field_step_ingress.rs",
         "ComposedFreshAdmission::step_with_field_ingress",
         "self.qualified_room",
-        "let_else/field/read",
+        "let_else#2/field/read",
         1,
         Gate::Closed {
             owners: &["LOOP-WORLD-1"],
@@ -252,7 +265,7 @@ const INVENTORY: &[Read] = &[
         "field_step_ingress.rs",
         "ComposedFreshAdmission::step_with_field_ingress",
         "owner.qualified_room",
-        "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
+        "let#4/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["LOOP-WORLD-1"],
@@ -271,7 +284,8 @@ const INVENTORY: &[Read] = &[
             owners: &["MAP-CUTOVER-1c"],
         },
     ),
-    // The door overlay, step blocking and `use_object` serve a bundle World from `bundle_map`.
+    // The door overlay, step blocking, `use_object` and the chase step's door blocking serve a
+    // bundle World from `bundle_map`.
     read(
         "source World door overlay",
         "door overlay, step blocking, USE",
@@ -288,7 +302,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::paced_step",
         "self.qualified_room",
-        "let/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
+        "let#7/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -303,12 +317,22 @@ const INVENTORY: &[Read] = &[
         Gate::SourceWorldBranch,
     ),
     read(
+        "source World chase step blocking",
+        "chase step blocking",
+        "attack.rs",
+        "ComposedFreshAdmission::chase_step_now",
+        "self.qualified_room",
+        "let#2/block/let#4/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
+        2,
+        Gate::SourceWorldBranch,
+    ),
+    read(
         "seam owners",
         "",
         "mod.rs",
         "serve_gameplay",
         "owners.qualified_room",
-        "let/struct/field_value/field/read",
+        "let#3/struct/field_value#14/field/read",
         2,
         Gate::Plumbing,
     ),
@@ -318,7 +342,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "owners.combat_room",
-        "let/struct/field_value/field/read",
+        "let#3/struct/field_value#15/field/read",
         4,
         Gate::Plumbing,
     ),
@@ -349,7 +373,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "qualified_room",
-        "let/struct/initializer",
+        "let#3/struct/initializer",
         1,
         Gate::Declaration,
     ),
@@ -379,7 +403,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "combat_room",
-        "let/struct/initializer",
+        "let#3/struct/initializer",
         3,
         Gate::Declaration,
     ),
@@ -412,6 +436,8 @@ struct Site {
 /// declaration is followed from `mod.rs`, with its `#[path]` when it has one, wherever that file
 /// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
 /// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
+/// What the keys cannot resolve fails closed instead of passing: two functions of one file with
+/// one name, a production `include!`, and a seam field inside a `macro_rules!` definition.
 #[allow(clippy::expect_used, clippy::panic)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
@@ -461,6 +487,12 @@ fn module_reads() -> BTreeSet<(String, Site)> {
             }
         }
         .replace('\\', "/");
+        if let Some(function) = ambiguous(&scan.declared) {
+            panic!(
+                "{name}: two functions are both named `{function}`, so a read moved between them \
+                 keeps its site; give them distinct names or impls the inventory can tell apart"
+            );
+        }
         assert!(
             scan.includes == 0,
             "{name}: `include!` loads Rust source the inventory does not scan; declare it as a \
@@ -476,6 +508,12 @@ fn module_reads() -> BTreeSet<(String, Site)> {
         reads.extend(scan.sites.into_iter().map(|site| (name.clone(), site)));
     }
     reads
+}
+
+/// The first function name given twice, if any.
+fn ambiguous(declared: &[String]) -> Option<&String> {
+    let mut seen = BTreeSet::new();
+    declared.iter().find(|name| !seen.insert(name.as_str()))
 }
 
 /// Whether a mention lies inside a `macro_rules!` definition: its expansion sites cannot be told
@@ -504,7 +542,13 @@ struct Scan {
     owners: Vec<String>,
     /// Each production `include!` invocation: its file is loaded without being scanned.
     includes: usize,
+    /// The name of every production function, in source order. A name given to two functions is
+    /// ambiguous: a read moved between them would leave its site unchanged.
+    declared: Vec<String>,
     path: Vec<String>,
+    /// For each node of `path`, and for the function body under it, how often each component has
+    /// been entered among its children so far.
+    siblings: Vec<BTreeMap<String, usize>>,
 }
 
 /// A production `mod x;` declaration.
@@ -549,14 +593,30 @@ impl Scan {
             .map(|field| (*field).to_owned())
     }
 
+    /// Enters one syntax node. A node that repeats an earlier sibling's component (two `if armed`
+    /// in one block, two `let` statements) is numbered by its position among them, so a read
+    /// moved from one to the other changes its site.
     fn within(&mut self, kind: impl Into<String>, visit: impl FnOnce(&mut Self)) {
-        self.path.push(kind.into());
+        let kind = kind.into();
+        let seen = self.siblings.last_mut().map_or(1, |siblings| {
+            let seen = siblings.entry(kind.clone()).or_insert(0);
+            *seen += 1;
+            *seen
+        });
+        self.path.push(if seen == 1 {
+            kind
+        } else {
+            format!("{kind}#{seen}")
+        });
+        self.siblings.push(BTreeMap::new());
         visit(self);
+        self.siblings.pop();
         self.path.pop();
     }
 
     fn function_body(&mut self, name: &syn::Ident, visit: impl FnOnce(&mut Self)) {
         let path = std::mem::take(&mut self.path);
+        let siblings = std::mem::replace(&mut self.siblings, vec![BTreeMap::new()]);
         // A method is named with its impl's type and trait (or its trait), so the same method name
         // in two impls of one file is two functions.
         // A function in an inline `mod m { ... }` is named with its module path, so the same name
@@ -568,9 +628,15 @@ impl Scan {
         if !self.inline.is_empty() {
             name = format!("{}::{name}", self.inline.join("::"));
         }
+        // A function declared inside another is named with it.
+        if let Some(outer) = self.functions.last() {
+            name = format!("{outer}::{name}");
+        }
+        self.declared.push(name.clone());
         self.functions.push(name);
         visit(self);
         self.functions.pop();
+        self.siblings = siblings;
         self.path = path;
     }
 }
@@ -1710,7 +1776,12 @@ fn each_read_in_a_function_is_its_own_site() {
         twice.sites,
         [
             site("drain", "owner.combat_room", "call:use_room/field/read", 1),
-            site("drain", "owner.combat_room", "call:use_room/field/read", 2),
+            site(
+                "drain",
+                "owner.combat_room",
+                "call:use_room#2/field/read",
+                2
+            ),
         ]
     );
     // The same read moved into another operation is another site.
@@ -1796,6 +1867,54 @@ fn a_method_is_named_with_its_impl() {
         functions,
         ["Owner<u8>::room", "<&Owner<(A,B)> as From<[u8;4]>>::from"]
     );
+}
+
+#[test]
+fn two_functions_with_one_name_are_refused() {
+    let distinct = scan(
+        "impl Owner<u8> { fn room(&self) {} } impl Owner<u16> { fn room(&self) {} } \
+         fn outer() { fn helper() {} } fn other() { fn helper() {} } \
+         #[cfg(test)] fn outer() {}",
+    );
+    assert_eq!(ambiguous(&distinct.declared), None);
+    // A self type the identity cannot render still fails closed when it names two functions alike.
+    let collided = scan(
+        "impl Owner<{ N + 1 }> { fn room(&self) {} } impl Owner<{ N + 2 }> { fn room(&self) {} }",
+    );
+    assert_eq!(
+        ambiguous(&collided.declared).map(String::as_str),
+        Some("Owner<{N}>::room")
+    );
+    // Two production configurations of one function would collapse into one identity, so a gate
+    // dropped from one of them would go unseen: the name is refused.
+    let configured = scan(
+        "#[cfg(unix)] fn gate(owner: &Owner) { use_room(owner.combat_room); } \
+         #[cfg(windows)] fn gate(owner: &Owner) { use_room(owner.combat_room); }",
+    );
+    assert_eq!(
+        ambiguous(&configured.declared).map(String::as_str),
+        Some("gate")
+    );
+}
+
+#[test]
+fn a_read_moved_between_alike_siblings_changes_its_site() {
+    let first =
+        scan("fn cast(&self) { if armed { consume(self.combat_room); } disarm(); if armed {} }");
+    let second =
+        scan("fn cast(&self) { if armed {} disarm(); if armed { consume(self.combat_room); } }");
+    assert_eq!(
+        first.sites[0].site,
+        "if(armed)/then/call:consume/field/read"
+    );
+    assert_eq!(
+        second.sites[0].site,
+        "if(armed)#2/then/call:consume/field/read"
+    );
+    // Statements alike in form are numbered too, so a read cannot cross a statement unseen.
+    let early = scan("fn cast(&self) { let a = self.combat_room; let b = c?; let d = e; }");
+    let late = scan("fn cast(&self) { let a = b; let c = d?; let e = self.combat_room; }");
+    assert_ne!(early.sites, late.sites);
 }
 
 #[test]
