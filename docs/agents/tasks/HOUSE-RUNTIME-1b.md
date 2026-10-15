@@ -108,3 +108,263 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+
+## Allocated native owner/integration packet (2026-10-15, card only)
+
+Exact draft base `169675ea76351e5745db6ac2fc3af5b7704a6826`, branch
+`skeleton/house-runtime-1b`; reference protected main
+`bda15eba7a84f65fcb963a86e8b2bf18d69c800a`, read only. This allocation owns **only this
+card**. Original plan, builder/CP rules and six unchecked acceptance items above remain
+unchanged. Historical shared registration permission does not expand this lease. All new
+paths and interfaces below are **proposals for CP/architect review, not allocated files**;
+no Rust/runtime implementation, source wiring, schema, grants or registry changes occur.
+
+HOUSE-RUNTIME0 is accepted (SOCIAL-MAP #1771; reference main reconciles its heading), the
+HOUSE-RT-INBOX packet remains the split/access/exit-gate authority, and effective
+ACCEPT-BATCH #2209 accepts ADMIT0/BED0. Acceptance of ADMIT0 does not lift its §3.2 transfer
+protocol gate. Runtime1a is a prepared local/draft subset, not a merged complete writer.
+HOUSE-RT-INBOX §0.2 and §1.5 (reference main, exact source path in this card's briefs)
+retain the historical integration dependency: HOUSE-1a waits for1b/1c acceptance with all
+exit-dependent items met; HOUSE-1b, HOUSE-ACL-1, HOUSE-WIRE-1 and GUILDHALL-1 depend on
+HOUSE-1a. That dependency is distinct from the current CP queue classification:
+`/workspace/oteryn-prep/QUEUE.json` records HOUSE-1b as `BLOCKED_DEPENDENCY`, whereas
+HOUSE-ACL-1, HOUSE-WIRE-1 and GUILDHALL-1 are explicit `HELD` rows (the owning explicit hold
+source is `OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md` §0.1). This packet proposes no
+lift, reclassification or status override and creates no allocation, GUI/kick wire or
+guildhall contract.
+
+### Native source findings and concrete deltas
+
+1. Native `HouseId` (`durability/house_scope_handoff.rs`) is already World-global and
+   revision-free: WorldId plus the qualified house content key; `scope_key` is tagged02,
+   `instance_id()` is its deterministic native runtime identity. Use those exact APIs.
+   A generic `RuntimeScopeRefV1::Instance`, same generation integer or caller-supplied
+   instance UUID is not a House or current assignment proof. WorldId and ChannelId stay
+   distinct; origin Channel is routing evidence, never a selectable home Channel.
+2. SCOPE-HANDOFF-1 already owns migration0074, assignment commands/history, handoff rows,
+   prepare/commit/abort/reconcile, tile reservations and stale-generation cleanup. Native
+   `prepare_house_entry` / `commit_house_entry` keep recovery/admission locks, exact source
+   session/connection/lease/Channel generation, node incarnation, destination House generation,
+   and re-read `game_house_access` in the commit. The committed destination gets a fresh
+   GameSessionId and advanced lease, awaiting its transport/actor. Do not duplicate this
+   journal, idempotency store, session writer or handoff state machine in the runtime.
+3. **Exit remains closed on reference main:** `house_scope::exit_into_channel()` returns
+   `ExitNotAdmitted`; `validate_request` rejects Exit/non-Channel source. ADMIT0 §3.2 still
+   requires destination capability support/selection before commit, scope-identifying
+   postcommit acknowledgement, lost-ack recovery, and no snapshot/gated message before
+   acknowledgement/recovery, under the transfer owner's protocol/security review.
+   Therefore1b's top-level runtime guard must refuse **every entry HOUSE_CLOSED**, including
+   login activation, while the exit gate is closed. A successful lower-level entry fixture,
+   accepted ADMIT0, or prepared ADMIT-CAP arithmetic never opens this gate. Test the shipped
+   exit refusal; no feature flag, boolean injection or alternate fallback may bypass it.
+4. Native prepare currently requires the proving node to hold BOTH source Channel and
+   destination House; another-node House returns Busy. HOUSE-RUNTIME0 §3 allows placement
+   on another node of the same World when the origin node is full. That alternative requires
+   an independently qualified native cross-node handoff/custody seam, not forwarding an
+   in-memory actor or forging a source proof. Until then, retain same-node restriction and
+   typed refusal; do not claim the full hosting/fallback acceptance item is delivered.
+5. `assign_house_scope` is an actual control-role command with exact-house grants,
+   OperationKey replay, shared assignment-writer high water, source revision, predecessor
+   checks and current node registration. Runtime activation may request existing assignment
+   ownership, but cannot mint ControlActor/role/grant or update assignment tables itself.
+   Assignment rows/generations survive unload; replacement increments generation and excludes
+   incompatible bare instance sessions. An old assignment receipt is history, not current
+   node/house liveness. Reuse native NodeIncarnationProof and current assignment validation.
+6. `map::boot` checks pinned WorldBase, map revision, item definitions, collision/doors;
+   BundleFacts already records house tiles and excludes house doors from Channel DoorBook.
+   `NativeMovementCollisionIndex` is a sealed owner port; `ChannelRuntimeV1` is concretely
+   ChannelRuntimeAssignmentBinding + single fixed-slot actor carrier, not a generic House
+   runtime constructor. `ComposedFreshAdmission` is also Channel-bound. The shared actor/
+   collision/content adapters must be owned explicitly in CP: do not instantiate a fake
+   Channel for a House, copy the carrier, add a second actor/session store or implement
+   another pathfinder. `world_runtime::ScopeContentGenerationFence` cannot be synthesized
+   from a HouseId/generation or a test constructor to grant active content.
+   Existing `content/project/native_house_tiles.rs` also supplies QualifiedHouseTiles /
+   QualifiedHousePlacement with typed definition identity, exact scope-bound cells, doors
+   and an outside `entry_cell`; omission is Unknown, the retained strict source region
+   proves no houses, and `house_at` checks its native scope. Reuse these qualification
+   rules where applicable, but this candidate map port is not an installed bundle House
+   catalogue: current BundleFacts records only generic house-tile positions, not the full
+   HouseId→tiles/entrance binding. Mapping that source to the active bundle and exposing
+   exact-key/current entrance metadata requires the owning content/map adapter. In
+   particular `entry_cell` is not an interior arrival tile. Removed-house fallback needs
+   accepted retained entrance metadata or the real admission owner's fallback; never
+   guess a coordinate or treat missing metadata as an empty/valid house.
+7. Prepared1a (`a9e0277...` source; verified exported RESULT) contains structural/provenance/
+   role/audit validation and real fixture/native-wrapper checks. Its `HouseInteriorLocation`
+   and generation fields are audit inputs, not current authority. It implements no complete
+   transactional SECURITY DEFINER shapes or generation-qualified interior loader. Native0025
+   already owns durable HouseInterior locations/provenance and closes runtime direct table
+   writes;0074 access function is still a fail-closed no-row stub.1b must request the actual
+   owning read/shape seam, not treat prepared1a as an installed service or bypass grants.
+8. Existing `house_spell_acl::house_access_for_character` reads native ownership and simple
+   guest/subowner lists, but returns no complete property/content-fence/ACL+guild revision
+   contract required by the packet. It is not a substitute for `game_house_access`.
+   HOUSE-1a owns the final composed body, HOUSE-ACL-1 the grant part and HOUSE-1b the fence
+   part. Preserve property→fence→grant locks and exact revisions, including granting guild
+   and membership rows. Missing final property lifecycle or guild facts means refusal, not
+   invented current flags. Tests may replace the stub only in the isolated operator test
+   World; no fixture authority can reach production.
+
+### Proposed exact paths and native interfaces (CP decision required)
+
+| Proposed new file | Narrow role and interface obligation |
+|---|---|
+| `apps/game-server/src/gameplay_transport/house_runtime.rs` | Private HouseRuntimeOwner lifecycle and serialized actor-command owner, plus a node-local bounded HouseId→owner directory. Owns load/ready/closing/idle state and placement reservations; holds native actor handles/carrier adapters, not a second actor/session truth. Publicly reachable construction only after actual current assignment/incarnation/content qualification; local state never grants DB authority. |
+| `apps/game-server/src/gameplay_transport/house_runtime_loading.rs` | Private activation adapter over native pinned WorldBase/BundleFacts/collision/door facts and the1a-owned generation-qualified HouseInterior read. Validates exact house tile membership, native coordinates and current item obstruction; no new map storage, pathfinder, content ID or property reader. |
+| `apps/game-server/src/gameplay_transport/house_runtime_tests.rs` | Focused native owner-command/generation/closed-gate/tile/lifecycle tests; source included once by the runtime owner. |
+| `apps/game-server/tests/house_runtime_postgres.rs` | Actual native handoff/assignment/access/current-session/restart integration tests and bounded load evidence driver; explicit Cargo/aggregate registration decided in the CP slot to avoid duplicated test-bearing sources. |
+
+Interface sketches describe **obligations**, not new authority tokens or allocated APIs:
+
+- Activation accepts native HouseId, an independently current native assignment/incarnation
+  result, and the actual active content generation/World bundle. Requests assignment through
+  the existing owner using its exact grants; waits for the single winner, then revalidates
+  before Ready. A capacity proposal does not authorize placement or assignment.
+- Loading calls a native1a read owned by `durability/house_interior.rs` (future hook, not an
+  existing method) in a fenced, consistent transaction; validates each actual0025 item
+  location/provenance and its World/House/generation binding. It obtains only this house's
+  tile/door subset from active native facts, preserving map-authored handles vs durable
+  ItemInstanceId entities. Do not infer tile membership from arbitrary spatial-position
+  bytes or a map item's bed/head coordinate; use actual qualified native encoding.
+- Owner command inputs reuse native GameSessionId/ExactActorRef/HouseId/handoff ID and
+  independently current connection, lease, scope generation and content binding. Commands
+  are serialized with native actor movement/combat and item placement; they return existing
+  typed handoff/refusal outcomes or retained operation identity. A prepared request/receipt
+  is never sufficient current proof for an actor mutation.
+- Select/reserve uses existing `house_scope::handoff::select_entry_tile` over candidates
+  qualified by native walkability/house membership and native ordered radius3 fallback,
+  then atomically reserves through the real handoff owner. This helper does not qualify
+  candidates or enforce current authority. Revalidate before placement/commit; no-room is
+  typed. All simultaneous actors/item moves/other placements see that reservation until
+  durable placement release; no new pathfinding engine or separate SQL reservation ledger.
+- Move/use/leave dispatch reuses native movement/collision/WorldUse and local-object owners
+  with a CP-qualified House binding. PZ/no attacks/no regeneration/no creatures and entry
+  summon dismissal come from real actor policy owners, not duplicated online tick/combat
+  engines. Map-authored doors/depot/beds remain nonpickupable; BED owner supplies its own
+  accepted reservation/wake hooks, not a1b bed implementation. Client item movement stays
+  blocked behind HOUSE-ITEM-WIRE-1; this packet adds no capability or wire.
+
+### Ordered activation, entry, exit and closure flow
+
+1. Before any load/session mutation, check the shipped exit-admission gate. Closed means
+   HOUSE_CLOSED and source actor remains unchanged. When independently lifted later, freeze
+   the source only as one native actor owner command serialized with combat/locks/trade/
+   pending operations, rechecking them at prepare. Preserve existing runtime-first native
+   lock order; never hold destination/source actor mutexes across each other or arbitrary
+   async database waits. A combat restriction landing before commit aborts/reconciles
+   source; a raw `HouseEntryPrecheck` boolean is only a precheck, never current DB proof.
+2. Coalesce first activation by exact HouseId/generation and bound node load. Origin Channel
+   node is preferred if it has measured capacity; qualified fallback must remain same World.
+   Assignment acquired/observed through native control owner, then content+interior loaded
+   and current property/content closure rechecked before Ready. Duplicate activators wait;
+   load failure never publishes readiness or creates another owner. An empty house still
+   needs valid current content/property/assignment, not invented empty defaults.
+3. Reserve the qualified door-adjacent tile or native same-house radius3 fallback. Native
+   prepare counts live/reconnectable House sessions **plus PREPARED handoffs** toward200;
+   committed awaiting-transport sessions already count as sessions, not a second resident.
+   Local occupancy and durable reservations must agree; local actor count alone cannot
+   admit201. Before the commit revalidate chosen tile, source actor restrictions, property
+   state/fence, exact ACL and guild revisions under owning locks. Use the actual native
+   handoff commit; source becomes terminal only at its durable commit point, destination
+   session is fresh and preserves origin Channel. No separate transfer writer.
+4. Unknown prepare/commit/abort outcome retains the same handoff ID and native owner state;
+   query/reconcile its durable outcome before lifting source freeze, creating destination,
+   dropping reservation or sending snapshot. Committed means only destination can install;
+   uncommitted/aborted means only source resumes. Bind destination through actual admission/
+   transport/guard owner and publish only after required acknowledgement. Release the tile
+   through `release_house_entry_tile` using its actual persisted placement proof; an actor
+   counter or caller `placed=true` cannot discharge it.
+5. Door exit, leave, authorized kick, revoked grant, disposition and shutdown all call the
+   native reverse handoff seam **after it is qualified**, targeting recorded origin Channel
+   first. Unavailable/draining origin uses normal same-World Channel admission selection,
+   never player choice. Entrance blocked/occupied uses existing native last-position
+   radius3/step4 fallback, never refuses solely for that obstruction.1c must clear house
+   columns and write actual destination tile under new session's order key in the same
+   commit;1b calls that owner hook and cannot claim1c work. Closed exit gate means no
+   fabricated exit, placement or unsafe deletion of the source actor.
+6. Current ACL/guild revision change schedules revalidation of every resident through actual
+   current grants; revoked residents exit through step5. Item mutations independently
+   revalidate at their1a commit, including session and House generations; a refreshed runtime
+   cache is not a write grant. Kick policy keeps OWNER any / SUBOWNER guests / GUEST none
+   and exact current target presence; no new kick GUI/wire is allocated here.
+7. Content fence/disposition enters Closing, blocks new prepares/activation and drains all
+   committed residents plus pending handoffs before reporting quiescent to HOUSE-1b. Freeze
+   item admissions and resolve unknown writes through their real owner; no success while
+   a retained mutation/reservation can still commit. A fenced house cannot become Ready
+   from an older cached property row. VACANT alone does not authorize entry: without a
+   current owner/access grant the composed function still returns no access.
+8. Idle unload uses native monotonic owner time: five minutes with zero residents, no
+   unbound committed destinations, unresolved/pending handoffs, reservations or owner work
+   that could install a character. New entry resets/cancels idle and serializes against
+   unload; revalidate before releasing the native assignment via its qualified owner.
+   Durable items/provenance survive. Do not delete assignment/history or consume new
+   generation locally. At node shutdown/reset/replacement, close admission, reconcile or
+   drain through native handoff/recovery, retire old owner and invalidate callbacks before
+   activating new content/generation; no live hot content swap under the old fence.
+
+### Concrete shared call sites / owner gates
+
+| Existing owner/path | Required CP delta, not authored here |
+|---|---|
+| `foundation/runtime_actor_carrier.rs`, `gameplay_transport/mod.rs` (`ComposedFreshAdmission`) | Small native House binding/carrier/admission adapter and single actor ownership/retirement; preserve runtime→spell/attack lock discipline and source freeze. Existing Channel constructor is not a House constructor. |
+| `map/boot.rs`, `map/facts.rs`, `content/native_cell_lookup.rs`, `world_runtime.rs` | Qualified house tile/door/collision subset over the same bundle and active content generation; keep Channel house blocking, native coordinates, handles and existing collision/fallback. Expose only owner-approved House binding rather than copy map boot/pathfinding. |
+| `durability/house_interior.rs` (prepared1a), native0025 | Actual generation-qualified consistent load and the complete accepted SECURITY DEFINER transfer shapes; no runtime table grants. Revision projection belongs HOUSE-VIEW-1, not1a/1b speculative storage. Dynamic interior changes must reach movement/item obstruction through the real single writer/read seam. |
+| `durability/house_scope_handoff.rs`, `house_scope/mod.rs` | Qualify reverse exit + ADMIT selection/ack/recovery conditions and cross-node seam;1b adds genuine runtime callers only. Preserve existing replay/fences/reservations/recovery journal and control assignment grants. |
+| `durability/character_last_position.rs`, `gameplay_transport/last_position.rs` (1c) | House saved-position/current access and fallback, atomic house-column clear on exit/recovery and actual destination write; current Channel-only projection is not sufficient. |
+| `game_house_access` / HOUSE-1a, HOUSE-ACL-1, HOUSE-1b | One composed owner body plus separate dependency-gated grant/fence children, current property/guild/member locks and revisions; no replacement by simple spell ACL reads or fixture function. |
+| gameplay connection/mod/capabilities, lib/module registration and RL registry | Wire only actual allocated call sites at CP slot; packet adds no capability/message. Exact runtime paths and RL04 measured allocation need explicit CP acceptance first. |
+
+### Failure / unknown / restart / retired-owner matrix
+
+| Boundary/operator | Required observation before acceptance |
+|---|---|
+| Closed gate, missing grant/property/interior/readiness or unsupported destination selection | Typed refusal; no source termination, new session, load-ready authority, reservation leak or snapshot. Exit gate refusal remains the real shipped behavior until reviewed lifting. |
+| Concurrent first activation / node full / assignment replacement | One owner and one assigned generation; waiter observes winner, overload typed; different World/House/node/incarnation/generation never substitutes. Remote-host path remains refused without native cross-node proof. |
+| ACL/guild/member/content-fence changes between precheck/prepare/commit | Exactly current commit locks decide; loser source remains admitted or reconciles its retained handoff; never stale access accepted. Test each independently with unrelated fences valid. |
+| Tile/item obstruction or capacity200 race | One reservation wins; item write/placement respects it,201st refuses NoRoom. Freed/released tile reused only after actual native proof; no committed destination stranded by early release. |
+| Timeout/lost response at prepare/commit/abort/tile release | Reuse operation ID, recover immutable history and independently current authority; no abort of committed handoff, duplicate actor/session or new reservation on retry. |
+| Crash/restart with PREPARED or COMMITTED handoff, destination unbound | Existing reconcile/recover_stale methods run before either actor resumes. Before commit source wins; after commit destination wins. Retain committed reservation until placement/terminal/stale-owner proof. |
+| Old node/lease/connection/scope generation callback after replacement or shutdown | Cannot mutate actors/items/sessions, publish readiness/snapshot or reacquire control from retained receipt. Reconcile durable finality under independently current incarnation; never replay old owner authority. |
+| Unrecoverable house / rejected saved tile / unavailable origin / blocked entrance | Actual1c+exit owner records fallback Channel and chosen tile/cleared house columns atomically; fresh retry cannot return to old interior. Until exit gate lifts this remains acceptance-pending, not simulated success. |
+| Disposition or idle/reset racing prepare/resident/unknown item mutation | Closing rejects new work; zero proven residents and unresolved installs before quiescence/release. New generation uses actual refreshed content; old owner never revives. Durable item state/history retained through reload. |
+
+### Boundedness and measurements required before activation
+
+RL01 remains five-minute idle; RL03 is200 total residents/reserved admissions as native prepare
+counts it. Include unbound and reconnectable sessions; active/inflight counters use checked
+arithmetic and release only on confirmed outcome. Bound per-house candidate selection by the
+native tile set/radius fallback and existing item bound (HOUSEOWN0-RL-14, prepared1a2000);
+validate that installed registry/owner bound rather than trusting a raw number. Share immutable
+WorldBase per node instead of reloading/copying a World per house. No unbounded activation
+waiter queue, global house scan per movement or second O(WorldTiles) pathfinder per request;
+precompute the qualified per-house tile subset at load under the current bundle. Existing
+limits remain controlling; new queue/memory bounds require measured CP registry selection.
+
+RL02 target is end-to-end door transition **p99<=500ms**, measured before activation: source
+owner command/prechecks, activation+interior I/O when cold, tile reservation, durable prepare/
+commit, destination binding, required scope acknowledgement and usable replacement snapshot.
+Report cold vs warm separately; do not hide cold load or acknowledgement/network delay in a
+server-only timer. Retain stage timings, error/refusal rates and commit/reconcile counts;
+refusals/timeouts are reported separately, not discarded to improve success latency.
+
+RL04 remains **unset until measured**; propose a maximum active houses per node only from
+recorded hardware/container limits, release build/artifact/content hashes, World/map and
+PostgreSQL versions/config, warmup, sample count, concurrency/rate/house-size/resident/item
+mix, and repeat runs. Exercise empty/typical/max200 residents and max admitted interior
+items, concurrent cold activation,199/200/201, node saturation, idle/reload churn, assignment
+replacement and closing/recovery. Measure peak/steady RSS, shared-vs-per-house allocations,
+CPU/owner-step p95/p99, runtime tick lag, DB pool/lock waits and end-to-end transition p99.
+Increase active houses until the first latency/resource/owner-bound breach, then propose
+headroom and repeat at the candidate cap with simultaneous Channel load. Register the chosen
+RL04 and enforce typed overload before assignment/readiness; do not hard-code an arbitrary
+cap or call synthetic helper timing the required measurement. Final native PG/current-fence,
+real protocol ack/lost-ack, actor conservation and retired-owner tests accompany that result.
+No measurements or runtime tests were executed in this card-only round.
+
+Local qualification is governance plus its tests, whitespace/scope checks, exact base/main
+native source hashes and prepared1a exported-file hash verification. Evidence:
+`/workspace/oteryn-prep/house-runtime-1b-evidence`. Full1a/1b/1c delivery, path allocation,
+exit lifting, CP/architect exact-head independent qualification and every original open
+acceptance item remain pending.
