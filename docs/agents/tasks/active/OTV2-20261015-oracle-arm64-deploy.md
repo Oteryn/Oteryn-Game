@@ -4,12 +4,12 @@
 task_id: OTV2-20261015-oracle-arm64-deploy
 title: Oracle ARM64 runner and deployment
 mode: MIGRATE
-status: validating
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/oracle-arm64-deploy-20261015
+branch: null
 issue: 2217
-pr: 2218
+pr: null
 base_sha: 77af046ce14c81df6ed6cab03ae693a68acff32c
 head_sha: null
 final_head_sha: null
@@ -100,8 +100,26 @@ stale NAS writer restart, no arbitrary runner shell/root/Docker access.
 - python -m unittest discover -s tools/repository -p 'test_*.py': PASS (88 tests)
 - python tools/agents/validate_governance.py: PASS
 - python -m unittest discover -s tools/agents/tests: PASS (124 tests)
-- Exact game-gate and independent review: pending candidate publication.
+- Exact source candidate 26954117868d25f31575f3a5e1d3bd8f19405c69: game-gate PASS; independent Codex review completed with no findings (summary comment 6203346942).
+- Governed queue request 6203757391: executor run 38818727492/job 116709781838 succeeded; receipt 1bc51b72-cf9b-4b01-bd43-67be9149d709 sequence 1/2 readback verified.
+- Real merge_group run 38818782335 and game-gate check 116711350839: PASS at fb11de5c9845e4f3eacc0173074d9927834164ae; protected-main readback matched.
+- Protected-main governance subsequently detected the terminal active PR reference; this operational packet repair removes it while preserving the incomplete physical acceptance boundary.
 
 Review finding 4288835355 accepted: add the negative Docker capability probe
 before SSH, covering custom socket/context and DOCKER_HOST endpoints as well as
 the canonical socket. Apply the same guard to the sibling Platform workflow.
+
+## Operational continuation after source delivery
+
+Delivery PR #2218 owns the repository workflow step. The task continues under
+open Issue #2217 for main-only host acceptance, so it has no canonical active
+implementation PR after source delivery. Keep this operational packet waiting
+until the protected workflow, new incarnation and native entry are qualified,
+then archive it with the accepted post-deployment closeout exception. This avoids
+leaving a terminal PR as a live canonical dispatch target. Host implementation
+is Platform #1644; the separately authorized server contract repair is #2219.
+
+Source delivery PR #2218 merged at fb11de5c9845e4f3eacc0173074d9927834164ae;
+operational acceptance remains open under #2217. No source writer is allocated
+by this waiting packet. The exact queue receipt UUID and sequence1/2 readback
+were verified before protected-main readback.
