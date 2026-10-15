@@ -4,7 +4,7 @@
 task_id: VIP-1
 title: "VIP-1: VIP list store, consent lifecycle and wire"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -29,12 +29,12 @@ Children (allocate from the brief's child graph; the plan row is only the family
 
 VIP-1 (impl; persistence, protocol, privacy). VIP-2 (presence) is Wave 5.
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+## Dependencies (refreshed against protected main@3ef900c1, 2026-10-15)
 
 | Dependency | State |
 |---|---|
-| VIP-0 acceptance | BLOCKING (VIP0 CANDIDATE) |
-| PARTY-1 (`game_character_social_settings`) | BLOCKING (Wave 2) |
+| VIP-0 acceptance | ACCEPTED: effective ACCEPT-BATCH #2209 §1 on protected main |
+| PARTY-1 (`game_character_social_settings`) | IMPLEMENTED: migration 0046 and native world_party.rs |
 | PREMIUM-1 | MERGED (#2110) |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
@@ -110,3 +110,94 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+
+## Owned preparation (2026-10-15)
+
+This round is authoring on exact draft base `c09e640f7fce59f7b373c7eb5636a35b98ba34e4`;
+no merge/rebase or shared registration is performed. Protected acceptance snapshot
+`3ef900c160c9713092a86bfcd1a8377c7587c898` contains ACCEPT-BATCH-2026-10-15 §1 and VIP0's
+accepted §§4–6/§9. The skeleton's candidate/absent-PARTY assumptions are superseded above:
+`0046_world_parties.sql` already owns the actual social settings and blocks tables.
+This round's exact lease covers only domain/vip.rs, durability/vip.rs, vip_tests.rs,
+tests/vip_postgres.rs and this record; broader historical skeleton paths do not authorize
+wire, protocol or shared module changes. The allocated root wrapper is intentionally not
+created while the private native storage module is unregistered.
+
+### Concrete completed subset
+
+Preparation implements only **Withdraw by entry_no, Reject and Revoke** of existing consent.
+It does not implement invitation creation, acceptance, entry/group editing, hide-status,
+Premium-sensitive growth, presence or the wire. Existing consent must have the target view
+row produced when its invitation was created (§5.1); missing view state rolls the whole
+transaction back rather than manufacturing PARTY defaults. The proposed settings columns and
+VIP tables exist only in the explicit test fixture, not an installed migration.
+
+The private native `DurabilityRoot::end_vip_consent` opens/commits the existing semantic
+transaction. It obtains recovery provenance from the real root-bound capability and calls
+native `assert_recovery_fence` **before** reading the immutable receipt. A matching historical
+receipt returns before session, node, lease/scope, locks, rate or state checks; changed actor,
+operation or canonical SHA-256 request binding conflicts. New commands call unchanged native
+`assert_session_fence` after admission-relation locks. That checker resolves the actual
+session Account+World, generation, Character lease, distinct WorldId/ChannelId, scope
+assignment, registered node incarnation and admission guards from the database.
+No receipt or request reconstructs current authority.
+
+Withdraw resolves the stable local entry number from the actual owning Account+World list,
+then rechecks its mapping under the list lock. A disappearing entry becomes NOT_FOUND;
+a concurrently appearing/different target retries without touching an unlocked root.
+Reject/Revoke bind the full private invitation key and exact never-reused invitation number;
+the target is always the independently fenced acting Character. No new public ID is created.
+All involved Character roots lock in ascending CharacterId, then both possible list rows lock
+in ascending (AccountId, WorldId), followed by receipt recheck. No root revision is read as
+an authority fence or advanced; the code touches no items.
+
+Fresh outcomes, including NOT_FOUND and EXHAUSTED, are receipted atomically. Every fresh
+command advances the acting receipt/rate list once; successful cross-account target operations
+also advance the watcher list once. Successful erasure advances the target consent-view
+revision once and retains its shared entry/groups and other inviters' consent. Expired pending
+rows read as absent; accepted consent does not expire with its invitation deadline. The
+persisted bucket is 20 writes, one refill per 3 seconds, shared by Account+World; the clock is
+read after blocking list locks. Future/corrupt bucket times fail closed. No cap/Premium check
+blocks consent termination: these operations never grow entries or groups (VIP0 §6).
+
+### Qualification and remaining integration
+
+Native tests reuse the existing `bestiary_postgres_harness`: its real recovery root, current
+session/guards, registered node and assigned scope are checked by unchanged native functions.
+Administrative relationship rows are explicitly test-only consent fixtures, not gameplay
+invitation/acceptance producers. The fixture extends the existing PARTY settings table and
+creates the proposed private VIP tables/sequence; no production role receives DML rights.
+The first overlay compile failed because a test used unavailable tokio::join!, a concrete
+new-test compiler failure rather than product/regression or PostgreSQL setup evidence.
+The second run executed 11 tests (4 passed, 7 failed): added fixture Characters lacked their
+native creation receipts, so the unchanged recovery integrity check correctly refused them
+before the VIP writer. This was a fixture-integrity setup failure. The repaired fixture uses
+the actual bootstrap-intent decoder/binder to persist matching historical creation receipts;
+it still obtains recovery/session authority through the native database checks.
+
+Overlay-3 then passed all 11 focused native library tests (2 pure and 9 PostgreSQL 17.6;
+zero skipped). Cases cover exact invitation/state/expiry, retained shared entries/groups and
+other inviters, Account+World isolation, independently stale native fences, recovery-before-
+receipt and receipt-before-ended-session ordering, immutable refusal/rate receipts, rollback
+on missing target-view state, and competing distinct/identical commands. Native roots retain
+CharacterRevision 1. The final source differs only by two Clippy-requested nested-if to
+equivalent let-chain rewrites, recorded with both source hashes and an exact syntax diff;
+overlay-4 checks the final bytes with full native library Clippy. The executed-test hash
+remains explicitly bound to overlay-3 rather than claimed as an execution of overlay-4.
+Final native library Clippy (`-D warnings`), workspace/new-source formatting, governance
+validation and its 124 unit tests passed; the complete owned patch passes whitespace checks.
+
+The disposable native validation overlay contains exact copied source plus only literal
+VIP module registration lines in its own domain/mod.rs and durability/mod.rs. These are
+validation changes, not candidate wiring. Source hashes, original shared-file controls,
+logs and the overlay manifest remain in `/workspace/oteryn-prep/vip-1-evidence`.
+No auto-discovered root wrapper with invalid private imports is published.
+
+**cross_domain_finding / CP slot:** production VIP migration/table constraints, per-operation
+SECURITY DEFINER implementation/grants (runtime must not DML these tables), receipt retention,
+module registration, relay-listener readiness and list/consent hints, per-session handle
+resolution and VIP_V1 wire/capability/registries must land under their owning slot. The current
+private Rust transaction is storage/authority preparation tested with the isolated admin-owned
+fixture; it is not a production privilege-boundary qualification. Complete VIP-1 and every
+full acceptance checkbox above remain pending, including invitation producers and Premium caps.
