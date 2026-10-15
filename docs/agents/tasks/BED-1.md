@@ -4,7 +4,7 @@
 task_id: BED-1
 title: "BED-1: house beds: sleeper, bed USE, owner wake, settlement (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: authoring
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-1
@@ -39,7 +39,7 @@ Sleeper table, bed USE and sleep, owner wake and offline settlement per BED0 §4
 
 | Dependency | State | Gate |
 |---|---|---|
-| BED0 acceptance (CANDIDATE) | NOT ACCEPTED | **BLOCKING** |
+| BED0 acceptance | ACCEPTED: ACCEPT_BATCH §1, owner item 5 (#2209) | acceptance gate released; child dependencies remain |
 | OFFLINE-1 | NOT MERGED | **BLOCKING** |
 | STATUE-1 (shared activation path) | NOT MERGED | **BLOCKING** |
 | HOUSE-RUNTIME-1a, 1b, 1c | NOT MERGED (Wave 3) | **BLOCKING** |
@@ -113,3 +113,121 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded local preparation — 2026-10-15, draft #2147
+
+Exact floor `ac3a40da2b2b783b7015b90f3d6d9eb56bcab3f3`, branch
+`skeleton/bed-1`. The adjacent four-path allocation governs this preparation;
+no historical broad directory grant or registration exception expands it.
+Accepted BED0 was read at protected main
+`ac9f172836f00226b68088aa04db95ccf1ab994e`; no merge/rebase is performed.
+QUEUE_READINESS admits a private sleeper component, not an atomic native writer.
+
+### Implemented private schema/read subset
+
+- `house_bed/sleeper.rs` carries raw persisted rows, the four exact freed causes,
+  native appearance::Sex variant, nonzero lease/revision and `StoredBedKey`. Its identity uses the
+  existing native `HouseId` (WorldId + revision-free house content key) and native
+  `LogicalCell`, never a generated bed UUID or a Channel-local house identity.
+  A stored coordinate is explicitly not proof of a valid active-map head pair.
+- `durability/bed_sleeper.rs` provides private schema SQL: native property/Character
+  FKs, Character-to-World binding, one Character row including freed rows, one
+  open sleeper per native BedKey, nonzero u64 lease, closed variant/free causes,
+  paired/timestamp-ordered free fields, immutable sleep identity and a one-way
+  occupied→freed transition. Freed rows cannot be overwritten/reopened.
+- Private `AFTER UPDATE OF owner_character_id` fallback on the actual native
+  ownership table frees only open rows with `owner_change` at the database clock,
+  after taking the house revision row lock. Same-owner revisions do not wake;
+  already-freed rows retain their first time/cause. The native ownership guard
+  and writer source/permissions are unchanged. This DDL is not installed.
+- Insert/free/delete trigger the house occupancy revision in the same transaction;
+  rejected writes and rollback retain the prior revision/state. Revision overflow
+  fails the whole mutation. This is storage bookkeeping, not marker provenance.
+- Actual single-statement raw read includes the house revision. The caller-owned
+  transaction variant takes `FOR UPDATE OF s`, pins an existing row and neither
+  starts/commits an independent transaction nor frees/deletes/awards anything.
+  Missing revision, bad lease/identity/variant/time/free pairing fail closed.
+- `sleeper_tests.rs` exercises the exact owned source and actual native public
+  types/SQLx/Tokio, native migrations and isolated PostgreSQL 17.6 fixtures. Native
+  root/property fixture insertion is migration-owner setup, not an admission,
+  acquisition or current-grant witness. Admin SQL tests private row lifecycle;
+  no executable production insert/wake/settlement writer is offered.
+
+`slept_at` and `freed_at` use **Unix milliseconds**, matching the actual native
+`character_build.rs` `committed_at = floor(epoch * 1000)` representation. The
+owner-change fallback uses database `clock_timestamp()` in those same units.
+The OFFLINE owner must own typed elapsed-second conversion/settlement arithmetic;
+this component introduces none. A real PG regression with native millisecond
+`slept_at` exposed the old seconds fallback (6 PASS / 1 FAIL), now corrected.
+Earlier six-test GREEN and native checks are explicitly the superseded old-unit
+variant, not evidence for this final source.
+
+No schema is installed in production; no grants, numbered migration, shared
+registration, runtime effects, food consumption or vitals/skill truth are added.
+All family acceptance checkboxes remain open.
+
+### cross_domain_findings / precise integration packet
+
+1. Native `HouseId` is already public and World-global. Native qualified house
+   placement knows House content identities and logical cells, but no active-map
+   bed pair/head normalizer is exposed here. BED-CONTENT-1 supplies authoring
+   `ReferenceItemBed` facts; these alone do not prove an active pair. USE, choice,
+   reservation, insert, view and bed-removed checks must share the real current
+   bundle's reciprocal same-house head/foot resolver. Raw stored coordinates
+   cannot substitute for that qualification.
+2. `game_house_ownership` / `house_access_for_character` supply native ownership
+   and ACL reads, but the current property row lacks BED0's OWNED /
+   MOVE_OUT_PENDING / content-fence model, and this lease has no accepted guild-
+   derived revision grant carrier. The writer must take the actual property
+   `FOR SHARE` plus granting guild/membership locks, revalidate current revisions
+   and current session/lease/scope/Premium/block/reach conditions. A caller's
+   boolean or this raw row is not current authority. Owner-wake/bed-removed remain
+   house-runtime-only; access revocation is not a wake cause.
+3. `character_build::BuildCause` and migration 0030 admit training,
+   vocation_choice and promotion, not logout/offline_settlement markers or
+   offline activation storage. Reuse the existing build state/formula/receipt
+   owner; do not create a separate bed training or vitals backend. The current
+   `FreshAdmissionStore::release` owns terminal release, final position and its
+   lifecycle receipt, with no sleeper/build-marker transaction hook. OFFLINE-1 /
+   STATUE shared activation and real house logout/admission hooks are required.
+4. Logout bundle: exact first-receipt replay before mutations; actual marker
+   timestamp/lease and activation, and the native Character sex at insert; cleanup of the Character's older sleeper row;
+   qualified new head insert. Bed unique conflict must commit the marker without
+   sleeper or activation, not leave training enabled. Canonical multi-house
+   revision locking must include the old row's house when cleanup moves between
+   houses. Triggers preserve revision atomicity but cannot manufacture the
+   required marker/property/grant provenance or lock order.
+5. Owner/disposition bundle: real house runtime or ownership transaction acquires
+   its property/house-revision locks, then frees only open rows at the database
+   clock with the exact accepted cause. A second wake is a no-op preserving its
+   first time/cause. The private fallback supplies only actual owner-column changes;
+   ACL revocation does not wake. **Mandatory CP ordering:** a disposition or other
+   specific-cause free must run BEFORE the native ownership UPDATE in the same
+   transaction. Otherwise the generic AFTER fallback would record `owner_change`,
+   and the one-way guard correctly refuses rewriting that first cause. There is
+   no native operation-cause seam here and no invented context flag. Production
+   installation remains blocked until the actual property/disposition writer
+   guarantees this order (or owns an accepted explicit native cause seam).
+6. Admission bundle: actual offline-settlement transaction reads/locks the row;
+   only matching previous lease plus that lease's latest logout build receipt
+   count. It deletes any row, including stale/freed, with revision advancement
+   and first-receipt replay. `sleep_s=min(d,freed_duration_s when freed, otherwise d)`, cap
+   21 days; training still runs over OFFLINE0's d after owner wake. No plain
+   caller-supplied latest-marker flag or standalone delete is accepted as this
+   integration. Apply that accepted seconds-duration rule through the OFFLINE
+   owner's conversion from native Unix millisecond timestamps; this raw component
+   does not guess settlement conversion/rounding. BED-REGEN remains separate until
+   DUR-02 durable vitals: no food
+   consumed and no regeneration coefficients promoted from PARITY_PENDING.
+7. CP slot must install schema + permissions/marker provenance guards + actual
+   native writer/hooks inseparably, then revalidate then-current main and test
+   fence/revision changes, marker conflicts, ambiguous commit/replay, disposition,
+   stale previous lease, head/foot equivalence and settlement/value conservation.
+   No registry, wire, shared module or content/pin edits are prepared in this lease.
+
+### Evidence
+
+Commands, original logs, initial/final source hashes, native snapshot registration
+manifest and scope/self-review are in
+`/workspace/oteryn-prep/bed-1-evidence/index.md`. This is private lifecycle/read
+qualification only, not live sleep, wake, offline training or settlement delivery.
