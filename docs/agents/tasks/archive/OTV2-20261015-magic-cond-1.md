@@ -22,6 +22,7 @@ owned_paths:
   - apps/game-server/src/ability/condition_tests.rs
   - apps/game-server/src/creature_condition_content.rs
   - apps/game-server/src/creature_condition_content_gate_tests.rs
+  - apps/game-server/src/foundation/runtime_actor_periodic.rs
   - apps/game-server/src/gameplay_transport/actor_spell.rs
   - apps/game-server/src/gameplay_transport/attack.rs
   - apps/game-server/src/gameplay_transport/attack_gate_tests.rs
