@@ -23,6 +23,8 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_EQUIP0_EQUIPMENT_EFFECTS_DECISION_2026-10-01.md
   - docs/architecture/reviews/OTERYN_GAME_CHARM4_INCOMING_EFFECT_ORDER_DECISION_2026-10-03.md
   - docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
+  - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -36,7 +38,7 @@ external_repositories: []
 
 ## Architecture and source of truth
 
-- PROVEN: the acceptance decision names the accepted document and records the owner-accepted scope amendment as rule text: §3.5 (the `muted`, `pacified`, `powerless` and `agony` keys, policies and gates; `exhaust` and `infight` as projections) and `COND0-RL-01` raised from 16 to 32. The acceptance also amends these rules outside §3.5, each named here: CONDITIONS-0 §3.2 (an Agony tick skips mitigation and charms, every other §3.2 rule kept), §3.4 (the overload and instance-limit wording and counts), §4.1 (creature base speed is its content `speed`, per CREATURE-MOVE-1-PACKET-1 §1.2), §5 (the §3.5 keys are valid for no dispel selector), §7 (the §3.5 icons routed to COND-WIRE-2) and §8 (`COND0-RL-03` counts damage and regeneration ticks); CHARM-4 §4 (an Agony tick runs only the commit step); EQUIP-0 §3 (the `SUPPRESS` row: `agony` is not a valid key); the cast precedence keeps the CHAT-0 §6 chat-mute pre-gate first; RUNE-USE-0 §6.1 PREPARE runs the §3.5 gates between resolving the rune and the `resolve_cast` checks. Every other rule is unchanged.
+- PROVEN: the acceptance decision names the accepted document and records the owner-accepted scope amendment as rule text: §3.5 (the `muted`, `pacified`, `powerless` and `agony` keys, policies and gates; `exhaust` and `infight` as projections) and `COND0-RL-01` raised from 16 to 32. The acceptance also amends these rules outside §3.5, each named here: CONDITIONS-0 §3.2 (an Agony tick skips mitigation and charms, every other §3.2 rule kept), §3.4 (the overload and instance-limit wording and counts), §4.1 (creature base speed is its content `speed`, per CREATURE-MOVE-1-PACKET-1 §1.2), §5 (the §3.5 keys are valid for no dispel selector), §7 (the §3.5 icons routed to COND-WIRE-2) and §8 (`COND0-RL-03` counts damage and regeneration ticks); CHARM-4 §4 (an Agony tick runs only the commit step); EQUIP-0 §3 (the `SUPPRESS` row: `agony` is not a valid key); the cast precedence keeps the CHAT-0 §6 chat-mute pre-gate first; RUNE-USE-0 §6.1 PREPARE runs the §3.5 gates between resolving the rune and the `resolve_cast` checks; SPELL-D1 `resolve_cast` runs the §3.5 gates before its first check; ATTACK-0 §3 refuses a `pacified` set-target intent first and §4 clears the held target when `pacified` is applied. Every other rule is unchanged.
 
 ## High-risk authority/recovery qualification
 
@@ -45,7 +47,7 @@ external_repositories: []
 ## Acceptance criteria
 
 - [x] The acceptance decision records the owner, date and basis.
-- [x] Rule text changes are exactly the ones the Architecture record lists: §3.5 and COND0-RL-01, plus the named amendments to CONDITIONS-0 §3.2, §3.4, §4.1, §5, §7 and §8, CHARM-4 §4, the EQUIP-0 `SUPPRESS` row and the CHAT-0 chat-mute precedence, the RUNE-USE-0 §6.1 PREPARE gate order; none other. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree; `agony` is excluded from `SUPPRESS` in both documents (it cannot be cured, blocked or resisted), and §4.1 takes creature base speed from content with no draw (CREATURE-MOVE-1-PACKET-1 §1.2).
+- [x] Rule text changes are exactly the ones the Architecture record lists: §3.5 and COND0-RL-01, plus the named amendments to CONDITIONS-0 §3.2, §3.4, §4.1, §5, §7 and §8, CHARM-4 §4, the EQUIP-0 `SUPPRESS` row and the CHAT-0 chat-mute precedence, the RUNE-USE-0 §6.1 PREPARE gate order; the SPELL-D1 `resolve_cast` gate order; the ATTACK-0 §3 `pacified` admission gate and §4 target clear; none other. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree; `agony` is excluded from `SUPPRESS` in both documents (it cannot be cured, blocked or resisted), and §4.1 takes creature base speed from content with no draw (CREATURE-MOVE-1-PACKET-1 §1.2).
 - [x] Every child the brief defines (COND-CONTENT-2, COND-WIRE-2 and COND-CLIENT-2 included) is in the mechanics plan's MAGIC-COND-1 graph with its class and prerequisites.
 
 ## Excluded scope
