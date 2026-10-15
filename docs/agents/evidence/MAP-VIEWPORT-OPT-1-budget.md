@@ -79,6 +79,8 @@ oversubscription (8 threads on 4 vCPU), as in #1873. Delta stage split at 4 thre
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
 - `cargo test --locked -p oteryn-game-server --lib option_b_budget`: pass
+- `cargo test --locked -p oteryn-game-server --quiet`: pass (9,642 passed, 37 ignored; `-j 1`, the default parallelism ran out of memory while compiling)
+- `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . <out>`: pass (toolchain 1.94.0; 1.95.0 is not installed here)
 - `cargo test --release --locked -p oteryn-game-server --lib map_viewport_real -- --ignored --nocapture`: ok (37 s)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
