@@ -23,6 +23,9 @@
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
+use super::character_build::{
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, CommittedBuildChange,
+};
 use super::character_last_position::{FinalLastPosition, LastPositionKey, upsert_last_position};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ProgressionInitializationRequest,
@@ -115,6 +118,17 @@ pub struct CommittedCharacterDeath {
 pub enum CharacterDeathOutcome {
     Committed(CommittedCharacterDeath),
     AlreadyCommitted(CommittedCharacterDeath),
+}
+
+/// An owner-prepared checkpoint, not proof of current authority or that all live
+/// training has been drained. The caller retains it until settlement and supplies
+/// its original formula digest. The normal build/death writers independently
+/// assert current DB fences; receipt history never replaces those checks.
+pub struct DeathTrainingFlush<'a> {
+    pub fence: CurrentCharacterGameplayFence,
+    pub request: &'a BuildChangeRequest,
+    pub formula: &'a dyn BuildFormula,
+    pub formula_digest: [u8; 32],
 }
 
 /// A pending respawn (DEATH-0 §3.4): the one a read found, or the one a consumption deleted.
@@ -706,12 +720,99 @@ impl DurabilityRoot {
             .reconcile_character_death(authority, occurrence)
             .await?
             .map(|death| death.original_character_revision);
+        self.settle_player_death_in_slot(&mut slot, authority, node, fence, request, original)
+            .await
+    }
+
+    /// A13 §4.6: settle an owner-prepared training checkpoint in its own build
+    /// transaction before constructing a new death binding. One existing revision
+    /// slot covers both transactions; an exact retained death replay skips training.
+    ///
+    /// This callable seam does not capture/drain the actor's live deltas, refresh
+    /// its current session, or implement death build loss/receipt columns. Runtime
+    /// adoption requires those owners and the inseparable migration/writer bundle.
+    /// `None` must mean the owner has no pending checkpoint, not permission to drop
+    /// pending progress. A failed/stale/unknown flush prevents the death; the owner
+    /// retains its deltas and retries using the existing training-save rules.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing death inputs plus the owner-prepared checkpoint"
+    )]
+    pub async fn settle_player_death_with_training<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        training: Option<DeathTrainingFlush<'_>>,
+    ) -> Result<CommittedCharacterDeath> {
+        validate_request(&fence, &request)?;
+        let mut slot = sequencer.acquire(fence.character_id).await;
+        let original = self
+            .reconcile_character_death(authority, request.occurrence)
+            .await?
+            .map(|death| death.original_character_revision);
+        if original.is_none()
+            && let Some(training) = training
+        {
+            validate_death_training_input(fence, &training)?;
+            settle_death_training_flush(
+                fence.character_id,
+                training.fence.expected_character_revision,
+                training.request,
+                async |original| {
+                    slot.commit_build(
+                        self,
+                        authority,
+                        node,
+                        training.fence,
+                        training.request.clone(),
+                        training.formula,
+                        original,
+                    )
+                    .await
+                },
+                async || {
+                    self.reconcile_character_build(authority, training.request.occurrence)
+                        .await
+                },
+            )
+            .await?;
+        }
+        // Only the revision cursor is selected here. The supplied identity/fence
+        // fields remain intent; the death writer resolves current DB authority.
+        let fence = if original.is_none() {
+            CurrentCharacterGameplayFence {
+                expected_character_revision: slot_cursor(&mut slot, self, authority).await?,
+                ..fence
+            }
+        } else {
+            fence
+        };
+        self.settle_player_death_in_slot(&mut slot, authority, node, fence, request, original)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the shared slot and existing death writer inputs"
+    )]
+    async fn settle_player_death_in_slot<const N: usize>(
+        &self,
+        slot: &mut RevisionSlot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        original: Option<CharacterRevision>,
+    ) -> Result<CommittedCharacterDeath> {
         let outcome = match slot
             .commit_death(self, authority, node, fence, request.clone(), original)
             .await
         {
             Err(CharacterProgressionError::MissingProgressionState) if original.is_none() => {
-                let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
+                let expected_character_revision = slot_cursor(slot, self, authority).await?;
                 self.initialize_character_progression(
                     authority,
                     node,
@@ -733,7 +834,7 @@ impl DurabilityRoot {
             // An earlier death's respawn was never consumed (its admission's consumption
             // failed), yet this actor is alive and placed: that respawn has happened.
             Err(CharacterProgressionError::RespawnPending) if original.is_none() => {
-                let expected_character_revision = slot_cursor(&mut slot, self, authority).await?;
+                let expected_character_revision = slot_cursor(slot, self, authority).await?;
                 self.consume_pending_respawn(
                     authority,
                     node,
@@ -781,6 +882,88 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+fn validate_death_training_input(
+    death_fence: CurrentCharacterGameplayFence,
+    training: &DeathTrainingFlush<'_>,
+) -> Result<()> {
+    if (CurrentCharacterGameplayFence {
+        expected_character_revision: death_fence.expected_character_revision,
+        ..training.fence
+    }) != death_fence
+    {
+        return Err(CharacterProgressionError::AuthorityRejected);
+    }
+    if training.request.cause != BuildCause::Training
+        || training.request.pruned_stance.is_some()
+        || training.formula_digest != training.formula.digest()
+    {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    Ok(())
+}
+
+/// Checks historical binding only, never current session authority. The real
+/// writer must still compare its complete command binding (including formula).
+fn validate_death_training_receipt(
+    character: CharacterId,
+    expected: CharacterRevision,
+    request: &BuildChangeRequest,
+    receipt: &CommittedBuildChange,
+) -> Result<()> {
+    if receipt.character_id != character
+        || receipt.original_character_revision != expected
+        || receipt.occurrence != request.occurrence
+        || receipt.cause != BuildCause::Training
+        || receipt.before != request.before
+        || receipt.after != request.after
+        || receipt.pruned_stance != request.pruned_stance
+        || receipt.original_character_revision.get().checked_add(1)
+            != Some(receipt.committed_character_revision.get())
+    {
+        return Err(CharacterProgressionError::ConflictingOccurrence);
+    }
+    Ok(())
+}
+
+/// Actual ordering used above. Callbacks are the existing sequenced writer and
+/// receipt reader; deterministic tests cover control flow only, not DB fencing.
+async fn settle_death_training_flush<W, R>(
+    character: CharacterId,
+    expected: CharacterRevision,
+    request: &BuildChangeRequest,
+    mut write: W,
+    mut reconcile: R,
+) -> Result<CommittedBuildChange>
+where
+    W: AsyncFnMut(Option<CharacterRevision>) -> Result<BuildCommitOutcome>,
+    R: AsyncFnMut() -> Result<Option<CommittedBuildChange>>,
+{
+    let retained = reconcile().await?;
+    if let Some(receipt) = &retained {
+        validate_death_training_receipt(character, expected, request, receipt)?;
+    }
+    // Preserve the prepared binding even for a new checkpoint: the slot must
+    // not silently rebase stale training onto its current cursor.
+    let outcome = match write(Some(expected)).await {
+        Ok(outcome) => outcome,
+        Err(error @ CharacterProgressionError::Unavailable(_)) => {
+            let Some(receipt) = reconcile().await? else {
+                return Err(error);
+            };
+            validate_death_training_receipt(character, expected, request, &receipt)?;
+            // Reading history alone cannot approve the flush: exact replay through
+            // the writer compares the original revision/formula command binding
+            // and advances the slot's cursor before the death is allowed.
+            write(Some(receipt.original_character_revision)).await?
+        }
+        Err(error) => return Err(error),
+    };
+    let (BuildCommitOutcome::Committed(receipt) | BuildCommitOutcome::AlreadyCommitted(receipt)) =
+        outcome;
+    validate_death_training_receipt(character, expected, request, &receipt)?;
+    Ok(receipt)
 }
 
 async fn slot_cursor(
@@ -1148,5 +1331,347 @@ mod tests {
             validate_request(&unleased, &request()),
             Err(CharacterProgressionError::InvalidInput)
         ));
+    }
+}
+
+// Deterministic policy/control-flow tests. No callback below represents a DB fence.
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod death_training_flush_tests {
+    use super::*;
+    use crate::durability::character_build::{BuildOccurrence, DurableBuildState};
+    use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+    use std::cell::RefCell;
+    use std::collections::VecDeque;
+
+    fn id(seed: u8) -> [u8; 16] {
+        let mut id = [seed; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    }
+    fn revision(value: u64) -> CharacterRevision {
+        CharacterRevision::new(value).expect("revision")
+    }
+    fn fence() -> CurrentCharacterGameplayFence {
+        CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(1)).expect("character"),
+            game_session_id: GameSessionId::decode(&id(2)).expect("session"),
+            connection_generation: ConnectionGeneration::new(1).expect("connection"),
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(3)).expect("world"),
+                ChannelId::decode(&id(4)).expect("channel"),
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
+            expected_character_revision: revision(2),
+        }
+    }
+    fn request() -> BuildChangeRequest {
+        BuildChangeRequest {
+            occurrence: BuildOccurrence::from_bytes(id(5)).expect("occurrence"),
+            cause: BuildCause::Training,
+            before: DurableBuildState::default(),
+            after: DurableBuildState::new("none", (0, 7), [(10, 0); 7]).expect("after"),
+            pruned_stance: None,
+        }
+    }
+    fn receipt() -> CommittedBuildChange {
+        let request = request();
+        CommittedBuildChange {
+            occurrence: request.occurrence,
+            character_id: fence().character_id,
+            original_character_revision: revision(2),
+            committed_character_revision: revision(3),
+            cause: request.cause,
+            before: request.before,
+            after: request.after,
+            pruned_stance: None,
+        }
+    }
+    struct Formula;
+    impl BuildFormula for Formula {
+        fn required(&self, _: &str, _: usize, _: u16) -> Option<u64> {
+            Some(100)
+        }
+        fn digest(&self) -> [u8; 32] {
+            [7; 32]
+        }
+        fn content_revision(&self) -> &str {
+            "content-1"
+        }
+    }
+    fn ready<T>(future: impl std::future::Future<Output = T>) -> T {
+        let mut future = std::pin::pin!(future);
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        let result = match future.as_mut().poll(&mut context) {
+            std::task::Poll::Ready(value) => Some(value),
+            std::task::Poll::Pending => None,
+        };
+        result.expect("deterministic callbacks must be immediately ready")
+    }
+    fn unknown() -> CharacterProgressionError {
+        CharacterProgressionError::Unavailable(DurabilityError::InvalidStoredState)
+    }
+    async fn run(
+        writes: Vec<Result<BuildCommitOutcome>>,
+        reads: Vec<Result<Option<CommittedBuildChange>>>,
+    ) -> (Result<CommittedBuildChange>, Vec<String>) {
+        let events = RefCell::new(Vec::new());
+        let mut writes = VecDeque::from(writes);
+        let mut reads = VecDeque::from(reads);
+        let result = settle_death_training_flush(
+            fence().character_id,
+            revision(2),
+            &request(),
+            async |original| {
+                events.borrow_mut().push(format!(
+                    "write:{}",
+                    original.expect("prepared revision").get()
+                ));
+                writes.pop_front().expect("unexpected write")
+            },
+            async || {
+                events.borrow_mut().push("reconcile".into());
+                reads.pop_front().expect("unexpected reconcile")
+            },
+        )
+        .await;
+        (result, events.into_inner())
+    }
+    #[test]
+    fn checkpoint_identity_changes_are_refused_independently() {
+        let base = fence();
+        let request = request();
+        let mut mutations = Vec::new();
+        let mut f = base;
+        f.character_id = CharacterId::from_bytes(id(9)).expect("character");
+        mutations.push(f);
+        let mut f = base;
+        f.game_session_id = GameSessionId::decode(&id(9)).expect("session");
+        mutations.push(f);
+        let mut f = base;
+        f.connection_generation = ConnectionGeneration::new(2).expect("connection");
+        mutations.push(f);
+        let mut f = base;
+        f.character_lease_generation = 2;
+        mutations.push(f);
+        let mut f = base;
+        f.runtime_scope = RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(9)).expect("world"),
+            ChannelId::decode(&id(4)).expect("channel"),
+        );
+        mutations.push(f);
+        let mut f = base;
+        f.scope_ownership_generation = ScopeOwnershipGeneration::new(2).expect("scope");
+        mutations.push(f);
+        for changed in mutations {
+            assert!(matches!(
+                validate_death_training_input(
+                    base,
+                    &DeathTrainingFlush {
+                        fence: changed,
+                        request: &request,
+                        formula: &Formula,
+                        formula_digest: [7; 32]
+                    }
+                ),
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+        }
+        let mut old_revision = base;
+        old_revision.expected_character_revision = revision(1);
+        validate_death_training_input(
+            base,
+            &DeathTrainingFlush {
+                fence: old_revision,
+                request: &request,
+                formula: &Formula,
+                formula_digest: [7; 32],
+            },
+        )
+        .expect("revision is checked by the sequenced writer, not identity matching");
+    }
+    #[test]
+    fn non_training_prune_and_formula_substitution_are_rejected() {
+        for index in 0..3 {
+            let mut request = request();
+            let mut digest = [7; 32];
+            match index {
+                0 => request.cause = BuildCause::Promotion,
+                1 => request.pruned_stance = Some("stance".into()),
+                _ => digest = [8; 32],
+            }
+            assert!(matches!(
+                validate_death_training_input(
+                    fence(),
+                    &DeathTrainingFlush {
+                        fence: fence(),
+                        request: &request,
+                        formula: &Formula,
+                        formula_digest: digest
+                    }
+                ),
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+        }
+    }
+    #[test]
+    fn historical_receipt_mutations_do_not_match_the_intended_checkpoint() {
+        let original = receipt();
+        let mut mutations = Vec::new();
+        let mut r = original.clone();
+        r.character_id = CharacterId::from_bytes(id(9)).expect("character");
+        mutations.push(r);
+        let mut r = original.clone();
+        r.occurrence = BuildOccurrence::from_bytes(id(9)).expect("occurrence");
+        mutations.push(r);
+        let mut r = original.clone();
+        r.cause = BuildCause::Promotion;
+        mutations.push(r);
+        let mut r = original.clone();
+        r.before = r.after.clone();
+        mutations.push(r);
+        let mut r = original.clone();
+        r.after = DurableBuildState::default();
+        mutations.push(r);
+        let mut r = original.clone();
+        r.pruned_stance = Some("stance".into());
+        mutations.push(r);
+        let mut r = original.clone();
+        r.original_character_revision = revision(1);
+        r.committed_character_revision = revision(2);
+        mutations.push(r);
+        let mut r = original.clone();
+        r.committed_character_revision = revision(4);
+        mutations.push(r);
+        for changed in mutations {
+            assert!(matches!(
+                validate_death_training_receipt(
+                    fence().character_id,
+                    revision(2),
+                    &request(),
+                    &changed
+                ),
+                Err(CharacterProgressionError::ConflictingOccurrence)
+            ));
+        }
+        validate_death_training_receipt(fence().character_id, revision(2), &request(), &original)
+            .expect("matching history only");
+    }
+    #[test]
+    fn fresh_flush_reconciles_then_commits_at_prepared_revision() {
+        ready(async {
+            let (result, events) = run(
+                vec![Ok(BuildCommitOutcome::Committed(receipt()))],
+                vec![Ok(None)],
+            )
+            .await;
+            assert_eq!(
+                result.expect("committed").committed_character_revision,
+                revision(3)
+            );
+            assert_eq!(events, ["reconcile", "write:2"]);
+        });
+    }
+    #[test]
+    fn retained_flush_is_binding_replayed_once_not_newly_checkpointed() {
+        ready(async {
+            let (result, events) = run(
+                vec![Ok(BuildCommitOutcome::AlreadyCommitted(receipt()))],
+                vec![Ok(Some(receipt()))],
+            )
+            .await;
+            result.expect("replayed");
+            assert_eq!(events, ["reconcile", "write:2"]);
+        });
+    }
+    #[test]
+    fn ambiguous_commit_requires_reconciliation_then_exact_writer_replay() {
+        ready(async {
+            let (result, events) = run(
+                vec![
+                    Err(unknown()),
+                    Ok(BuildCommitOutcome::AlreadyCommitted(receipt())),
+                ],
+                vec![Ok(None), Ok(Some(receipt()))],
+            )
+            .await;
+            result.expect("resolved");
+            assert_eq!(events, ["reconcile", "write:2", "reconcile", "write:2"]);
+        });
+    }
+    #[test]
+    fn unresolved_or_failed_reconcile_never_retries_the_write() {
+        ready(async {
+            for read in [Ok(None), Err(unknown())] {
+                let (result, events) = run(vec![Err(unknown())], vec![Ok(None), read]).await;
+                assert!(result.is_err());
+                assert_eq!(events, ["reconcile", "write:2", "reconcile"]);
+            }
+        });
+    }
+    #[test]
+    fn stale_fence_and_definitive_failures_stop_without_rebase() {
+        ready(async {
+            for error in [
+                CharacterProgressionError::CharacterRevisionMismatch,
+                CharacterProgressionError::AuthorityRejected,
+                CharacterProgressionError::BuildStateMismatch,
+                CharacterProgressionError::ConflictingOccurrence,
+            ] {
+                let (result, events) = run(vec![Err(error)], vec![Ok(None)]).await;
+                assert!(result.is_err());
+                assert_eq!(events, ["reconcile", "write:2"]);
+            }
+        });
+    }
+    #[test]
+    fn mismatched_history_is_not_permission_to_commit_or_replay() {
+        ready(async {
+            let mut bad = receipt();
+            bad.original_character_revision = revision(1);
+            bad.committed_character_revision = revision(2);
+            let (result, events) = run(vec![], vec![Ok(Some(bad))]).await;
+            assert!(result.is_err());
+            assert_eq!(events, ["reconcile"]);
+        });
+    }
+    #[test]
+    fn reconciled_history_still_cannot_override_writer_binding_conflict() {
+        ready(async {
+            let (result, events) = run(
+                vec![
+                    Err(unknown()),
+                    Err(CharacterProgressionError::ConflictingOccurrence),
+                ],
+                vec![Ok(None), Ok(Some(receipt()))],
+            )
+            .await;
+            assert!(matches!(
+                result,
+                Err(CharacterProgressionError::ConflictingOccurrence)
+            ));
+            assert_eq!(events, ["reconcile", "write:2", "reconcile", "write:2"]);
+        });
+    }
+    #[test]
+    fn failed_initial_reconcile_never_attempts_the_write() {
+        ready(async {
+            let (result, events) = run(vec![], vec![Err(unknown())]).await;
+            assert!(result.is_err());
+            assert_eq!(events, ["reconcile"]);
+        });
+    }
+    #[test]
+    fn successful_writer_with_wrong_committed_revision_is_rejected() {
+        ready(async {
+            let mut bad = receipt();
+            bad.committed_character_revision = revision(4);
+            let (result, events) =
+                run(vec![Ok(BuildCommitOutcome::Committed(bad))], vec![Ok(None)]).await;
+            assert!(result.is_err());
+            assert_eq!(events, ["reconcile", "write:2"]);
+        });
     }
 }

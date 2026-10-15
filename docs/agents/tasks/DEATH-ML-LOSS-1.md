@@ -31,7 +31,7 @@ depends_on:
   - "CHAR-BUILD-1: MERGED"
   - "DEATH-1: MERGED #1278"
   - "LOOP-PROGRESS-1: BLOCKING: chain #3 not merged"
-  - "A13 ACCEPTED: BLOCKING: CANDIDATE"
+  - "A13 ACCEPTED: ACCEPT-BATCH-2026-10-15 #2209 integrated (control-plane verified)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -52,9 +52,9 @@ Training/build progress is flushed before a death and the death receipt carries 
 | CHAR-BUILD-1 | MERGED |
 | DEATH-1 | MERGED #1278 |
 | LOOP-PROGRESS-1 | BLOCKING: chain #3 not merged |
-| A13 ACCEPTED | BLOCKING: CANDIDATE |
+| A13 ACCEPTED | ACCEPTED: ACCEPT-BATCH-2026-10-15 §1, #2209 main `e2da9805d296a27b06b32335bf67394509d4910b` (control-plane verified) |
 
-**BLOCKING:** LOOP-PROGRESS-1; A13 ACCEPTED. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+**BLOCKING for full integration:** LOOP-PROGRESS-1. A13 acceptance is effective; owned choreography preparation is allocated. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
 
 ## Owned paths (builder edits freely)
 
@@ -80,7 +80,7 @@ migration+writer+durability.
 ## Acceptance criteria
 
 - [ ] Death after training loses the Reference share; receipt carries the build fields; reconcile after restart.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against the allocated base before code; exact findings below.
 
 ## Validation
 
@@ -107,6 +107,114 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 last_progress: skeleton created by CP architect
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: LOOP-PROGRESS-1; A13 ACCEPTED
-next_action: CP rechecks BLOCKING rows
+blocker: LOOP-PROGRESS-1; runtime capture/drain and loss writer integration
+next_action: CP reviews local choreography; owning integration packet below
 ```
+
+
+## Local choreography preparation (2026-10-15, draft #2193)
+
+- Exclusive allocation: `skeleton/death-ml-loss-1` at
+  `b0e2210fb1ff2017a3116e616aecbb28303cd566`; actual writes are this record
+  and `durability/character_death.rs` only. Deterministic tests live beside the
+  private implementation in the owned source, avoiding a public API solely for tests.
+  No domain, shared build/sequencer, wiring, migration, registry or content edits.
+- Effective A13 §4.6: pending training uses `commit_character_build` in an earlier
+  transaction; ambiguous flush reconciles before death takes its revision/binding;
+  death has exactly one death receipt and no build receipt in its transaction.
+  This preparation implements ordering, not the full loss/production training gate.
+- Existing native seams reused: `RevisionSlot::commit_build`,
+  `DurabilityRoot::reconcile_character_build`, the existing Character revision
+  sequencer and death writer. The old `settle_player_death` delegates its unchanged
+  settlement/fallback body to a shared in-slot method. A new callable
+  `settle_player_death_with_training` holds that same slot across flush and death.
+- A retained death receipt skips training and follows the existing exact replay
+  binding. A new death validates the owner-prepared checkpoint's character/session,
+  connection/lease/scope generation and formula digest. The prepared build revision
+  is preserved even if the slot cursor has moved: stale checkpoints fail, never
+  silently rebase. Receipt identity, intended before/after/cause/occurrence/prune,
+  original revision and exactly-one successor revision are checked as history.
+- Unknown build outcomes reconcile by occurrence and must then exact-replay through
+  the real writer to compare the complete formula/revision command binding and
+  advance the slot cursor. Unresolved, stale, conflicting or failed flushes stop
+  before death. The death fence's revision is selected only afterward; its other
+  fields remain supplied intent, with independently current DB fences enforced by
+  the existing writers. No receipt or equality helper is current authority proof.
+
+### Exact integration findings (REPORT_ONLY)
+
+1. **Do not duplicate schema.** Migration
+   `0030_character_build_state.sql` already has all 33 nullable death-build columns,
+   all-or-none, eight-family direction/bounds checks, build-chain/row guards and
+   revision integrity support. The skeleton's assumption that the columns still
+   need adding is stale. Reuse and verify those actual guards; any additional
+   OFFLINE-0 stamina/pool/offline-skill fields require their owner's integrated
+   schema, not invented columns here. Existing migrations remain immutable.
+2. **Loss and durable codec remain unimplemented.** The death calculation still
+   passes `skill_progression: ()` and `magic_progression: ()`; generic progression
+   copies them unchanged. `CommittedCharacterDeath`, receipt SELECT/decode and
+   INSERT/binding still carry no build-loss payload. Domain/death provides XP/item
+   loss, not a qualified all-family cumulative build-loss calculation. No loss
+   share, formula or authority was invented in this slice.
+3. **Inseparable writer bundle still needed.** With the owning loss calculation,
+   load the latest durable build under the death root lock, write before/after
+   into the one death receipt, update the existing build row (never insert at
+   death), preserve vocation, and use the death occurrence/revision in the same
+   transaction. Extend decode/reconcile and use a new binding version for non-NULL
+   fields while retaining exact v1 bytes/replay for old/NULL receipts. No build
+   receipt is allowed in that transaction. Verify against the actual 0030 guards
+   and PostgreSQL 17.6 restart/replay/rollback qualification at integration.
+4. **Runtime owner must capture/drain, not supply a bool as authority.**
+   `gameplay_transport/mod.rs::commit_death` still invokes the old settlement path.
+   `training_save.rs::save_spell_training` and
+   `spell/mana_training.rs::RetainedTrainingCheckpoint` own pending checkpoint,
+   formula digest, receipt application and successor deltas. Adapt those actual
+   structures, independently refresh session/actor/lease/scope, force/drain all
+   pending mana/tries (and accepted OFFLINE-0 state when available), and retain
+   unknown deltas through retries. The new seam accepts one prepared checkpoint;
+   `None` is only the caller's no-pending claim and does not qualify a drained actor.
+   It does not admit a supplied checkpoint as independently current authority.
+5. **Lifecycle/revision edge cases need actual owner integration.** A build flush
+   requires initialized progression and refuses an earlier unconsumed respawn.
+   Existing death settlement initializes/consumes those only when committing death;
+   the producer must settle these prerequisites before preparing a training flush.
+   A stale checkpoint stops and returns to existing training retry/reprepare rules.
+   LOOP-PROGRESS must integrate force-save/death ordering without acquiring the
+   same sequencer slot twice or allowing new live deltas between drain and death.
+   This slice does not wire a runtime consumer or enable production training.
+6. **Acceptance scope:** A13 and OFFLINE-0 are accepted through #2209. The readonly
+   SKILLS-0 brief still has a CANDIDATE header; this change reuses the already
+   present eight-family native build types and migration without asserting a new
+   skill-loss amendment acceptance or changing any numerical rule. The control
+   plane must resolve the effective skill-loss authority in its integration packet.
+
+### Validation and evidence limits
+
+- Whole registered native source: `cargo check --locked -p oteryn-game-server
+  --lib --quiet` (no bin link); all Rust compilation uses the shared lock/target,
+  jobs=2 and incremental=0. A pre-existing vendored Tokio missing-docs warning is
+  recorded separately from package validation.
+- Twelve deterministic source tests cover prepared identity/provenance mutations,
+  stale revisions, exact retained replay, ambiguous commit/reconcile/replay,
+  unresolved/error paths, binding conflict and committed-revision mismatch.
+  Their actual helper/test sections are extracted with line/hash manifests and
+  compiled against real native API types; no DB/authority implementations are stubbed.
+- A focused negative control disables only prepared-revision matching in an evidence
+  copy. That mutant fails; unchanged production helpers pass. It proves that the
+  stale-binding regression detects that missing check, not PostgreSQL/authority.
+- These tests do not execute the real death SQL transaction, qualify current session
+  evidence, prove restart durability, or prove runtime death replay skips live
+  capture. Those boundaries await actual PostgreSQL/runtime integration.
+- Durable commands, raw logs, original harness-setup failure, source hashes and final
+  exact counts are under `/workspace/oteryn-prep/death-ml-loss-1-evidence/`.
+  The initial harness compile used an unavailable Tokio test macro; tests were
+  corrected to ordinary immediately-ready future polling before final validation.
+  No commits, pushes, external review, ready/merge or queue action were performed.
+
+- CP freshness note: protected main advanced to `3ef900c1` (LOGOUT-WIRE #2127 and
+  U-CC9 documentation) during preparation; the allocated draft is not merged or
+  rebased. Revalidate force-save/death/terminal-release ordering and all shared
+  consumers against then-current protected main at the slot. In particular, the
+  owner must retire/apply the retained checkpoint without later replaying live
+  deltas on top of death-lowered state; this one-checkpoint seam does not perform
+  that actor-state lifecycle operation.
