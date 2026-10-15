@@ -106,4 +106,131 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Never mark the PR ready, never enable auto-merge, never post `@codex review`; CP does that.
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
+
+## Local private component design (before source)
+
+Allocated draft #2177, base `3b3e9a94160bd6df7c48f091ddf0b072d6ebd243`.
+The controlling BOSS_RAID0 §4/12/14/17 is ACCEPTED on main
+`ac9f172836f00226b68088aa04db95ccf1ab994e`; historical CANDIDATE and aggregate
+integration dependencies above do not revoke separately authorized owned-path preparation.
+Only `raid/mod.rs`, `raid/store.rs`, `raid/tests.rs`, `raid/postgres_tests.rs` and this
+card are allocated. Content, shared registration, production migrations/grants and wiring stay CP.
+
+Source trace: HOUSE_OWN0 §9 and BOSS_RAID0 §12 require the real recovery fence and
+admission-relation locks for World jobs, without a Character session fence. Actual
+`durability/character_authority::assert_recovery_fence` and
+`durability/db::lock_admission_relations` are durability-private. Their visibility is preserved.
+The native assignment writer is Channel/House-scoped, not a WorldReset or raid-content producer.
+`world_clock.rs` supplies Tibian light/time, not a durable current WorldReset epoch. Existing
+carrier `SpawnSourceId(u16)` is content-spawn identity, not the accepted raid occurrence
+`(firing_id,wave,entry,index)`. No available source establishes admitted raid content or the
+assigned-and-admitting channel set at fire time. These are concrete mandatory integration seams.
+
+Prepare a coherent **data-only** component:
+
+- A pure immutable transition proposal over one `(WorldId, raid ProductionKey)` schedule,
+  its most recent firing and exact target-channel/run rows. Native WorldId, ChannelId,
+  ScopeOwnershipGeneration, ProductionKey and simulation-determinism are reused. Inputs are
+  proposed facts; they are never sealed/current authority or permission to act.
+- Random checks use the accepted 60-second interval and one native deterministic RNG draw
+  bound to World, raid key and check ordinal. Due checks advance the ordinal even when blocked;
+  next check is from the recorded now, never a downtime catch-up loop. Fixed calendar/reset
+  resolution remains with its real owner; the core receives an explicit proposed absolute slot
+  and retains its once-only high-water mark, without inventing calendar/reset rules.
+- At most one RUNNING firing **per raid**, as accepted §4.2 (the skeleton's broader one-per-World
+  checkbox is not implemented as a new restriction). Persistent firings block another firing
+  in the same epoch even after DONE. Target channels are frozen; late channels cannot join.
+  Claims are metadata: same-generation retry never creates another run; a newer generation
+  marks an older claimed run LOST and never re-runs it. No actor or announcement action is emitted.
+- Close requires terminal rows for all nonempty targets or the accepted deadline; missing rows
+  become LOST at the deadline. Reset cancels a RUNNING firing. Claimed/DONE metadata never proves
+  physical spawn, announcement delivery or actor removal.
+- A private three-table design retains schedule state, immutable firing identity/targets and
+  per-target run state. A named transaction advisory lock serializes one key; complete expected
+  snapshots and revision form CAS, exact after-state retry is replay, stale/different snapshots
+  compare-fail. Historical firings remain retained; the core reads only the latest firing needed
+  for guards. Private helpers do not commit or expose a production authority entry.
+
+The schema is installed only in an isolated PostgreSQL 17.6 test database. Its private payload
+encoding and constraints are implementation storage, not a public protocol/content schema.
+Qualification covers actual SQL CAS/reload/rollback/concurrent losing writer and pure transitions;
+it does not qualify native recovery/admission fences, live content/reset/channel truth or runtime.
+Future CP must wrap the core in the actual semantic transaction/deadline, take recovery and
+admission locks before occurrence/World rows, independently resolve those current facts, and
+integrate actual actor/announcement occurrence deduplication. Failed/uncertain metadata CAS can
+never authorize action; claim/commit reconciliation must inspect exact retained identity first.
+
+### Prepared private result and remaining CP work
+
+The four allocated files now contain the pure transition aggregate, private SQL core and tests.
+The schedule uses a private revision (not CharacterRevision), preserves check/firing ordinals
+across reset, preserves durable min-gap through restart, and retains retired rows. Fixed slots
+older than the current 60-second check interval are missed rather than caught up; converting
+weekday/day-of-month/reset offsets into the proposed absolute slot remains unimplemented until
+the actual calendar/current-reset owner supplies it. Native deterministic RNG is bound to the
+framed `(WorldId, raid key, check ordinal)`; no second generator or clock is introduced.
+
+Private physical design: the three accepted table names use `(WorldId, raid key)` keys;
+firings add the ordinal and globally unique UUIDv7 bytes; runs add the targeted ChannelId.
+Schedule/firing/run payloads are strict, bounded private JSON encodings in BYTEA, validated on
+decode against native identities/generations, relational revision/firing identity, exact frozen
+targets and cross-row invariants. These are not public content/protocol or authority envelopes.
+The schedule payload carries the accepted last-fired/next-check/check/firing counters plus
+explicit reset/bundle/timing/retirement/fixed-slot guards. The firing payload retains fired time,
+epoch, bundle, close deadline, state and immutable targets. Target membership is separate from
+run-row presence, so absent rows cannot falsely finish a firing. Historical firing/run rows
+remain retained when a new firing is created; this core loads only the latest firing and its
+targeted runs, not unbounded history. Exact payload encoding, constraints, immutable-column
+protection, production schema/grants and migration installation need the CP slot.
+
+The private CAS takes the per-key named transaction advisory lock, compares the **whole** expected
+snapshot and writes schedule/firing/run changes in the caller's transaction. It never commits.
+Exact after-state retry is `Replayed`; an obsolete/different snapshot is `CompareFailed`, including
+after later transitions. No outcome is a realization, announcement, current owner or commit token.
+There is no exported production writer or guessed authority callback.
+
+Qualification on the final exact source: **14 tests PASS,0failed/ignored** (13 pure and one actual
+PostgreSQL17.6 test with its own uninstalled private schema). The PG body covers transactional
+rollback, exact replay, distinct concurrent proposal loser, fresh-connection reload, old snapshot
+refusal, World isolation, retained history and single-invariant stored revision/target/firing-ID/
+zero-generation corruption. Native WorldId/ChannelId/ScopeOwnershipGeneration/ProductionKey and
+the actual determinism crate are used unchanged through a small source-bound harness; no authority
+types or validators are replicated. A controlled outside-tree mutant that omits the expected-
+snapshot comparison fails the concurrent-loser assertion; unchanged original then passes all14
+tests and Clippy metadata. The fixture drops its exact database even on an assertion panic.
+Initial14/0 test evidence and two initial Clippy style diagnostics are retained separately; those
+diagnostics were corrected before final qualification. Full native unit/server/E2E is not claimed.
+
+Root review identified a real numeric-order defect in the initial loader: selecting
+`ordinal::text` and then unqualified `ORDER BY ordinal` sorted the output as text, so9 could
+outrank10. Accepted and fixed: a new real-PG regression closes/creates/reloads firings through
+ordinals10 and11. It fails on the original exact source at numeric MAX10 (13pure PASS,1PG FAIL),
+then passes with the single query repair `ORDER BY game_world_raid_firings.ordinal DESC`.
+The initial14-pass evidence was insufficient coverage and is explicitly superseded. Actual
+RED sources/logs and repaired GREEN hashes are retained; the sibling sweep found this as the
+only ORDER BY site in the owned component. This is distinct from the controlled CAS mutant.
+
+Mandatory concrete CP seams before runtime activation:
+
+- A native semantic transaction/deadline wrapper must call the actual sealed recovery check
+  and admission-relation locks before occurrence/World keys. Current helper visibility stays
+  unchanged here. Candidate enumeration must be bounded to the accepted100 rows/pass and keys
+  locked in the accepted deterministic order. There is no new World lease/grant in this component.
+- Resolve actual current WorldReset epoch, active/admitted raid definition/bundle, recorded time
+  and fixed calendar slot independently. Validate all admitted waves/creatures/anchors and accepted
+  200-creature/32-wave/16-announcement bounds through their real content/encounter owners. Neither
+  a raw epoch/digest/Timing value nor a successful data CAS supplies this authority.
+- Resolve target channels from current assigned-and-admitting scopes under admission locks at
+  firing commit; do not copy a saved set into an alleged current fact. For claims, use actual
+  scope-assignment high-water/history, current incarnation possession and current owner generation
+  (the real assignment/history/prove_current_incarnation seams), not the proposed generation alone.
+- Install actual raid actor sources `(firing_id,wave,entry,index)` and announcement occurrences
+  under the live owner. Run-row claim does not prove installation or delivery. Same-generation
+  retry must reconcile exact occurrences without repeating them; new-generation LOST never
+  re-runs them. Ambiguous commit must reconcile metadata and live-owner occurrence state before
+  acting. Completion proposals need actual owner terminal facts; reset actor removal remains the
+  real overlay/reset owner's operation. CAS metadata cannot authorize any of these actions.
+- Shared module/writer registration, physical migration/grants/immutability guards, accepted row
+  registration, content population/regeneration/pins, CHAT/BOSS-WIRE and encounter/runtime binding
+  remain CP-only. No original acceptance checkbox is closed by this private preparation.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
