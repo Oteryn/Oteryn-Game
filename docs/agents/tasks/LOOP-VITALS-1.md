@@ -4,12 +4,12 @@
 task_id: LOOP-VITALS-1
 title: "LOOP-VITALS-1: regeneration accumulator, food time, soul, stamina (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-vitals-1
 issue: 1622
-pr: null
+pr: 2196
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-VITALS-1 (rows 30, 32, 33); wave 2"
 class: "hard (Character state)"
@@ -21,9 +21,9 @@ created_at: 2026-10-15
 updated_at: 2026-10-15
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/spell/food_regeneration.rs
-  - apps/game-server/src/durability/character_vitals*.rs (new)
-  - apps/game-server/tests/loop_vitals_*.rs (new)
+  - apps/game-server/src/durability/character_vitals_stamina.rs (new)
+  - apps/game-server/tests/loop_vitals_stamina.rs (new)
+  - docs/agents/tasks/LOOP-VITALS-1.md (own packet/notes)
 slot_only_paths:
   - migration number
   - mod.rs (`tick_vitals` composition)
@@ -33,7 +33,7 @@ depends_on:
   - "ITEM-USE-1c: MERGED #2082"
   - "CHAR-VITALS-1: MERGED #2045"
   - "LOOP-PROGRESS-1: BLOCKING: not merged (chain #3)"
-  - "OFFLINE0 (STAMINA-1): BLOCKING: CANDIDATE"
+  - "OFFLINE0 accepted on main e2da9805 via ACCEPT-BATCH; OFFLINE-1 integration remains pending"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -54,15 +54,15 @@ Durable regeneration accumulator, food-time ingress, soul regen and soul orb, st
 | ITEM-USE-1c | MERGED #2082 |
 | CHAR-VITALS-1 | MERGED #2045 |
 | LOOP-PROGRESS-1 | BLOCKING: not merged (chain #3) |
-| OFFLINE0 (STAMINA-1) | BLOCKING: CANDIDATE |
+| OFFLINE0 (STAMINA-1) | ACCEPTED on main `e2da9805` via ACCEPT-BATCH; OFFLINE-1 integration pending |
 
-**BLOCKING:** LOOP-PROGRESS-1; OFFLINE0 (STAMINA-1). The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+**BLOCKING for runtime delivery:** LOOP-PROGRESS-1; OFFLINE-1 current marker/lease and build integration. Root has allocated the pure accepted arithmetic subset only. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/spell/food_regeneration.rs`
-- apps/game-server/src/durability/character_vitals*.rs (new)
-- apps/game-server/tests/loop_vitals_*.rs (new)
+- apps/game-server/src/durability/character_vitals_stamina.rs (new)
+- apps/game-server/tests/loop_vitals_stamina.rs (new)
+- docs/agents/tasks/LOOP-VITALS-1.md (own packet/notes)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -84,7 +84,7 @@ migration+writer+durability.
 ## Acceptance criteria
 
 - [ ] Regen survives restart; food time caps per Reference.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
 
@@ -108,9 +108,101 @@ DUR-02; CHAR-VITALS-0; Reference regen tables. Plan: `docs/architecture/reviews/
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: pure stamina settlement arithmetic prepared; source-bound tests 8/0 and Clippy pass
+status: authoring
 branch: skeleton/loop-vitals-1
-blocker: LOOP-PROGRESS-1; OFFLINE0 (STAMINA-1)
-next_action: CP rechecks BLOCKING rows
+blocker: OFFLINE-1 current marker/lease and build integration; LOOP-PROGRESS-1; other full-task vitals work
+next_action: root reviews local packet; CP qualifies and wires the owning settlement transaction
 ```
+
+## Bounded authoring packet (2026-10-15, draft #2196)
+
+Root allocated only the three exact paths above in `loop-vitals-1-allocation.json`.
+Exclusive authoring checkout `/workspace/oteryn-prep/loop-vitals-1`, branch
+`skeleton/loop-vitals-1`, unchanged initial HEAD
+`bad34047869564dc00e23ddc75a3cdc20c377892`. No worker commit, push, lifecycle,
+remote mutation or shared wiring edit is authorized.
+
+### Accepted source and residue, before code
+
+Read protected main `e2da9805d296a27b06b32335bf67394509d4910b` and its
+ACCEPT-BATCH §1 item 5: OFFLINE-0 is accepted, superseding this skeleton's old
+candidate gate. The exact arithmetic is OFFLINE-0 §3 (`stamina_minutes` 0..2520)
+and §5 (offline duration capped 21 days; subtract 600 seconds; nothing below 180
+remaining seconds; 180 seconds per minute up to 2340 and 360 thereafter).
+Threshold wording applies to the post-delay duration, so the first possible
+below-2340 gain is at total 780 seconds, and at/above 2340 at 960 seconds.
+Crossing consumes the full 180-second periods below 2340 before 360-second
+periods above it; no remainder is rounded up.
+
+Main has no stamina arithmetic/runtime implementation (only a content rejection
+fixture mentions stamina). Existing `spell/food_regeneration.rs` already owns
+fed-tick regeneration and vocation rates. CHAR-VITALS-1 already persists HP/mana
+in the last-position projection under CHAR-VITALS-0; neither is duplicated here.
+CHAR-VITALS-0 does not accept durable food/regeneration accumulator storage.
+
+### Approved implementation scope
+
+A private arithmetic function validates the supplied stamina number and computes
+one proposed stamina number from raw unsigned elapsed seconds, capped before
+subtraction/division. It reads no clock, record, identity, database, actor or
+account. The input is deliberately not a current-authority witness; output is
+not a settlement receipt, write permission or proof that elapsed time qualifies.
+Tests cover the delay/period boundaries, crossing 39 hours, 42-hour cap, invalid
+stamina, maximum integer durations and an independent period-by-period oracle.
+
+### cross_domain_findings / pending integration
+
+The future OFFLINE-1 owner must independently qualify the latest build-carrying
+logout marker of the immediately preceding lease, use database marker commit and
+lease-acquisition times, clamp negative elapsed time to zero, and supply zero
+after crash/skipped/old markers or first login. Same-GameSession reconnect settles
+nothing. A single fenced/replayed marker transaction must apply this arithmetic
+with current Character/session/lease/scope authority and the accepted build
+revision/guard order before playability. None is reconstructed from these raw
+numbers. World and Channel remain distinct.
+
+OFFLINE-1, LOOP-PROGRESS-1, live hunting-clock consumption/PREY reads, checkpoint
+flushes, training/pool settlement, migrations/guards, food ingress/accumulator
+persistence, soul regeneration/orb, protocol and runtime composition remain
+outside this preparation. No existing runtime or durable authority is activated.
+The full-task restart acceptance criterion stays open. Root alone may publish
+the reviewed local packet to the existing draft; CP owns eventual integration.
+
+Durable source-bound harness/config/hashes/logs are preserved outside the
+repository at `/workspace/oteryn-prep/loop-vitals-1-evidence/`.
+
+### Actual local validation and limits
+
+The tiny `loop-vitals-stamina-source-harness` Cargo package has no dependencies,
+lib or bin. Its sole test target is the exact new root integration-test file,
+which includes the exact arithmetic source by its real relative path. There is
+no copied source, extracted facade, alternate implementation, stub authority or
+server dependency. The root test imports no external/private library symbols;
+normal Cargo test discovery is enabled in the server manifest. Future production
+module registration remains untouched. This validates the real leaf sources,
+not the original server package's complete build or runtime.
+
+Actual isolated tests: **8 passed, 0 failed**. Harness all-target Clippy passed
+with `--locked --offline --all-targets --quiet -- -D warnings` and the workspace
+Rust/Clippy deny list. All Rust commands use Rust 1.94.0, the shared lock/target,
+two jobs and `CARGO_INCREMENTAL=0`; no implicit server bin is linked. The exact
+pre-test source/config hashes are preserved and verified unchanged after checks.
+A period-by-period oracle independently consumes 180/360-second intervals rather
+than repeating the closed formula. Table tests include first gains, boundary
+neighbors, 39-hour crossing, exact 42-hour saturation, invalid state, cap/cap+1
+and maximum integer durations. All valid starting values are checked for bounds
+and monotonicity over increasing durations. Full recovery occurs before 21 days,
+so cap-1/cap/cap+1 already saturate; the code explicitly caps raw duration before
+arithmetic and maximum-integer tests verify safe bounded results.
+
+Direct rustfmt checks of both owned Rust files and `cargo fmt --all --check`
+passed. Governance validated 22 policy documents and 9 lanes; **124/124**
+governance unit tests passed. Exact commands, final owned-source/unchanged-root
+hashes and a reviewable
+local patch are in `/workspace/oteryn-prep/loop-vitals-1-evidence/`. Full-server
+checks, PostgreSQL, durable restart/replay and live gameplay E2E are not claimed.
+No authority-consuming mutation exists in this subset: stale/mismatched leases,
+marker provenance, reconnect/recovery and concurrent marker replay must be tested
+at the future owning boundary; arithmetic fixtures cannot qualify them. No full
+task completion, freeze, architect acceptance or publication is claimed.
