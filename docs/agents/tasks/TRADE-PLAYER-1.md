@@ -259,3 +259,133 @@ Rust SHA-256:
 - Domain: `2a7bc36e34503c924501f2da1b98729b0aa8898eed591176f4c896c9526fabbe`.
 - Lifecycle: `d01a6b6400c82bf6cb420951c6a260837871c41d35fe5ce8f7b30a3669364780`.
 - Tests: `8332e2e8d8cf2d8ffcd35c3ac12693ced7365059824d78cbdd15e0dc7cd6eaa9`.
+
+## Native runtime owner successor (2026-10-15; bounded #2132 preparation)
+
+This successor starts at published `bd20009b7eb05bc384f7f6e15ba4a4fc6d43b244`.
+The exact current allocation is the two original domain/transport sources, the
+transport test source and this record. The earlier leaf result above remains
+historical evidence. Original acceptance boxes and the actual swap/wire/integration
+requirements remain open.
+
+### Implemented native owner and current observation boundary
+
+`TradeOwner` is an owner-local, capacity-bounded book over the original leaf
+lifecycle. Each operation borrows the genuine current Channel runtime; an open
+trade does not retain an exclusive borrow that would block movement/combat. The
+per-actor index prevents a second open trade inside this book. Installation of
+exactly one book in the live Channel owner, and routing all issued/committed
+physical invalidations into that book, remain CP composition work. Construction
+alone does not prove process-wide uniqueness.
+
+At start/counter-offer/every accept the owner checks actual native owner continuity,
+player control and bound Character lease, exact actors and Channel/generation,
+actual native interest queries in both directions (including the 256-result
+cutoff), same-floor Chebyshev range at most two and the native qualified map/LOS
+path. Missing or unknown dynamic map facts refuse. No passed visible/current/LOS
+boolean or callback grants admission.
+
+The same allocated transport file proposes one private `durability::player_trade`
+mount so it can reuse the genuine private Root/equipment/assignment readers.
+Outside-tree qualification only adds `domain::player_trade` and that one
+`#[path = "../gameplay_transport/player_trade.rs"]` durability mount. Candidate
+shared roots remain unchanged. CP must install that one context rather than also
+register a duplicate gameplay module or weaken private native visibility.
+
+The read-only Root operation uses actual recovery and session/connection/Character
+lease/scope/admission/current Node possession and independently active DB Content
+checks through `assert_current_equipment_in_transaction`. Both Character roots are
+locked in CharacterId order before inventory reads. Under the native assignment
+SHARE lock, the existing `load_assignment` owner reads the actual Assigned scope,
+generation, holder/incarnation, source revision and decision identity. The opaque
+runtime binding is expected DATA: its comparison receives only independently read
+current row facts. No decision string is manufactured from the binding to certify
+itself. The separate native row guards couple source/generation updates and forbid
+isolated rollback/reuse; tests do not disable those guards to invent current state.
+
+Actual native backpack/entry readers and item/timed rows supply current direct
+membership, definition, quantity, lifecycle, key, state revision and original
+placement TransactionId for both direct destination-backpack inventories and offered leaves.
+A main backpack, foreign/non-direct/ground/equipped/corpse item or item with
+contents refuses. Actual activated native item records supply pickupability and
+the direct-trade flag; accepted `tradeable: UNKNOWN` remains allowed. Source 2854's
+known Container pattern/capacity and source 3031's actual stack facts supply the
+native test MINT/TRANSFER inputs; no policy is invented to convert unknown data.
+
+Retained before-values detect intervening changes but authorize no later swap.
+The original immutable first accepted CommandRef, exact second trigger, 120-second
+idle boundary, pre-transfer cancellation and same-session TRANSFERRING reconnect/
+unknown retention remain. A second valid accept computes only two new direct-entry
+addresses before removal, with no merge/freed-entry credit. `ReservationIntent`
+is DATA: no physical reservation, trade occurrence, item move, ledger or event is
+written, and no owner API accepts a supplied terminal enum as proof to release the
+book. A real swap writer and receipt reader must close that boundary.
+
+### Qualification and authority matrix
+
+The outside-tree native production context compiled the actual new owner/Root
+reader with the repository's configured Clippy denials: exit0. Rust unused-code
+warnings remain visible; no blanket `-D warnings` clean result is claimed. The
+selected normal cfg(test) native context linted and compiled all 19 exact own test
+bodies (16 leaf/native-runtime,3 PG), then an actual native driver ran them:
+18 passed,1 failed,0 ignored,0 filtered,676.76s. All3 bodies reached PostgreSQL17.6
+(`170006`); the complete owner path and current-authority matrix passed.
+
+The sole failure was a test-fixture registration mismatch: its genuine native
+Revoke writer was opened as `trade-revoke` on a Root already bound by the unchanged
+native Harness to `item-transfer-writer`. Native `RuntimeScopeAssignmentWriter::open`
+correctly returned typed `Unsupported`. The repair changes only that one literal
+to the already-bound registration. Between the two native qualification snapshots,
+both complete production files, the shared native fixture/predicates, all other
+2,281 materialized inputs and the other 18 exact test bodies remain byte-identical.
+This record is appended after execution; its documentation delta changes no
+compiled Rust. With all 61 captured extern/proc-macro hashes still unchanged, the final 19-body selected native context again passed Clippy and
+native compilation; the corrected original PG body then passed alone on170006:
+1 passed,0 failed,0 ignored,0 filtered,47.43s. Its original genuine Revoke-commit and
+retained-book refusal assertions remain. Qualification is explicitly the composite
+of18 unchanged prior passes plus1 fresh repaired native PG pass, **not a fresh
+19-case run**. The original18/1 failure and both source generations are retained.
+
+Rustfmt passes for the three owned Rust files. Full-workspace fmt fails only at unchanged base
+`apps/game-server/src/durability/item_fee_burn.rs:627/668` (SHA256
+`b9aff053159d43b990ec5833cfee728cb1df8c9aa3c560f784c00d6109d511da`);
+Git/base/clone/snapshot equality and the actual failing log are retained. No
+unowned formatting or lint allowances were changed. Initial missing sparse Cargo/
+fixture inputs were setup failures, not behavioral RED. Exact ownHEAD blob/SHA/
+consumer manifests preserve their materialization. Cargo's deliberate native-root
+capture exit101/sentinel86 is graph capture, not a test pass. Original whole-native
+unit lint exceeded this host's8GiB budget in another lane and is not claimed;
+protected exact-head CI must supply it. There is no owned standalone PG wrapper
+in this allocation.
+
+Native tests independently vary named session/Character/lease/scope, actual control
+loss, owner retirement, foreign map, range2/3, floor, actual blocking ray and actual
+visibility cutoff. Item state/placedTx/timed/member mismatches include explicit
+DATA equality controls. The actual PG bodies seed a complete second Character and
+its session/guard rows as independent privileged fixture DATA before genuine Root
+reconciliation, then use real Node/assignment/recovery/Content activation and
+MINT/TRANSFER. They do not prove two-client admission/controller installation.
+Expected fences and book bindings remain fixed while current session generation,
+lease, scope, eligibility, actual Node/Content or native Revoke changes; foreign
+carrier Node/incarnation/source provenance is tested against unchanged valid DB
+facts. Isolated illegal current source/decision mutations are not claimed as
+legal independent authority operators. All native predicates stay enabled.
+
+Both validation dispatchers require canonical admin configuration. The original
+run records all 3 PostgreSQL17.6 (`170006`) markers and the corrected-body run
+records its single 170006 marker; optional fixture early returns cannot qualify.  Native custody operations provide positive controls, a genuine quantity merge invalidates an earlier accept, and footprint comparisons verify that Trade reads/owner transitions add no durable writes.
+
+### Remaining complete-mechanic gates
+
+- CP single-book registration, live tick/clock and command routing; exact native
+  item-handle resolution; every physical consumer's invalidation/reservation path.
+- TRADE-WIRE capability/IDs/trade-id mapping and replay/rate/transport integration.
+- BAGS-TRADE-1 full-tree bindings/destination traversal remain outside this leaf
+  component; live physical consumers must route every relevant change.
+- Real two-Character trade occurrence, ordered item/source/destination locks,
+  current first/second accept fences, cross-command physical reservations, atomic
+  no-merge swap/audit/receipts and unknown-outcome/restart reconciliation.
+- Qualified production privileges/schema/cause/event/resource rows, migrations and
+  integration prerequisites, protected exact-head CI, independent frozen-candidate
+  review and CP acceptance. This packet is a bounded native read/runtime component,
+  not complete player trade or permission to activate/mark ready/merge.

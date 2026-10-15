@@ -20,6 +20,8 @@ pub(crate) struct Trader {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LeafOffer {
     pub state: OneItemStateV1,
+    pub state_revision: u64,
+    pub placed_transaction_id: [u8; 16],
     pub timed: Option<StoredTimedState>,
     pub position: ContainerEntryPosition,
 }
@@ -44,6 +46,17 @@ impl LeafOffer {
                     })
             })
     }
+}
+
+/// Current before-data for every direct backpack member, including the backpack itself.
+/// The read owner obtains each field from native rows; it grants no future custody.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BackpackItemVersion {
+    pub item: [u8; 16],
+    pub state_revision: u64,
+    pub placed_transaction_id: [u8; 16],
+    pub key_number: u32,
+    pub timed: Option<StoredTimedState>,
 }
 
 /// Unknown direct-trade permission is explicitly allowed; marketable is not a substitute.
