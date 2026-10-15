@@ -32,13 +32,10 @@ must not be claimed as complete.
 
 ## Completion continuation — 2026-10-13
 
-Copy consumes the real composer via ordered upstream egui Copy events; hidden,
-read-only, modal and unrelated focus cannot claim it. Linux 210/188/5, strict
-Clippy and formatting pass. These are early authoring counts; later exact
-Windowsfabf441a proof is retained in the batch record/UI-FIDELITY, not inherited.
-Exact-version BSL exceptions
-with provenance fix the clipboard CI cause; local cargo-deny passes all checks.
-Full remote CI is not yet proven. REA 6.4.0/Ghidra are available with scoped
+Copy/composer focus and exact-version BSL clipboard CI repairs have historical
+Linux210/188/5, Clippy/fmt/cargo-deny evidence in UI-FIDELITY.md. Later native
+qualifications do not inherit it; full remote CI is not yet proven.
+REA 6.4.0/Ghidra are available with scoped
 configuration; ELF/pwntools is unavailable, not an analysis success. Staging
 world/channel exist; gameplay TLS 1.3/ALPN, hostname and supplied CA verify;
 no account operation or admission is performed. Main
@@ -197,3 +194,9 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
 
 Presence, cardinality, saved intent, generated mockups and static reachability do
 not establish 1:1 behavior. Continue in module-sized batches with shared validation.
+
+## Oracle QA checkpoint — 2026-10-15
+
+Portal sign-in and QA character creation pass; native sign-in/admission fail.
+Next: sanitized OAuth/owner-character stage diagnostics. Evidence/recovery:
+../../evidence/OTV2-20261015-client-oracle-login.md.
