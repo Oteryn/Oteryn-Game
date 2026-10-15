@@ -412,7 +412,7 @@ struct Site {
 /// declaration is followed from `mod.rs`, with its `#[path]` when it has one, wherever that file
 /// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
 /// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
-#[allow(clippy::expect_used)]
+#[allow(clippy::expect_used, clippy::panic)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
     let root = dir.canonicalize().expect("gameplay_transport directory");
@@ -461,9 +461,22 @@ fn module_reads() -> BTreeSet<(String, Site)> {
             }
         }
         .replace('\\', "/");
+        if let Some(site) = scan.sites.iter().find(|site| in_macro_rules(site)) {
+            panic!(
+                "{name}: `{}` is named inside a `macro_rules!` definition, where one inventoried \
+                 site would stand for every invocation; write the read at its call site",
+                site.field
+            );
+        }
         reads.extend(scan.sites.into_iter().map(|site| (name.clone(), site)));
     }
     reads
+}
+
+/// Whether a mention lies inside a `macro_rules!` definition: its expansion sites cannot be told
+/// apart, so each invocation would add or move a gate without changing the inventory.
+fn in_macro_rules(site: &Site) -> bool {
+    site.site.split('/').any(|segment| segment == "macro_rules")
 }
 
 /// The seam room mentions of one source file, parsed with `syn`, and the production modules it
@@ -1041,7 +1054,12 @@ impl<'ast> Visit<'ast> for Scan {
 
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
-        self.macro_tokens(buffer.begin());
+        if mac.path.is_ident("macro_rules") {
+            // A definition's mentions are marked so that `module_reads` refuses them.
+            self.within("macro_rules", |scan| scan.macro_tokens(buffer.begin()));
+        } else {
+            self.macro_tokens(buffer.begin());
+        }
     }
 }
 
@@ -1729,8 +1747,22 @@ fn test_code_inside_a_macro_body_is_left_out() {
     );
     assert_eq!(
         rules.sites,
-        [site("<item>", "qualified_room", "item/macro_tokens", 1)]
+        [site(
+            "<item>",
+            "qualified_room",
+            "item/macro_rules/macro_tokens",
+            1
+        )]
     );
+    // A field named in a definition is refused, as an invocation never names it.
+    assert!(rules.sites.iter().all(in_macro_rules));
+    let hidden = scan(
+        "macro_rules! room { ($o:expr) => { $o.combat_room } } \
+         fn drain(&self) { room!(self); }",
+    );
+    assert!(hidden.sites.iter().any(in_macro_rules));
+    let invoked = scan("fn drain(&self) { gate!(self.combat_room); }");
+    assert!(!invoked.sites.iter().any(in_macro_rules));
     let items = scan(
         "items! { #[cfg(test)] fn probe(o: &O) { o.combat_room; } \
          fn production(o: &O) { o.qualified_room; } }",
