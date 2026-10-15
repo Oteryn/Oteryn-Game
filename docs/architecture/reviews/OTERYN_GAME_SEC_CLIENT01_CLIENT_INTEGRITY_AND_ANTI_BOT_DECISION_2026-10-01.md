@@ -1,7 +1,7 @@
 # SEC-CLIENT-01 Client integrity and anti-bot layers
 
 - Decision: `SECCLIENT01-LAYERED-CLIENT-INTEGRITY-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (security,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (security,
   privacy, protocol) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the `SEC-CLIENT-01` gate of `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`
