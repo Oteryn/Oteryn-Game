@@ -9,6 +9,9 @@ mod fresh_fixture;
 #[path = "kill_reward_postgres_e2e_tests.rs"]
 mod kill_reward_e2e;
 
+#[path = "logout_postgres_tests.rs"]
+mod logout_e2e;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
