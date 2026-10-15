@@ -126,6 +126,10 @@ pub struct PlatformConfig {
     /// projection publisher does not run. Endpoint, peer name and trust roots
     /// are those above.
     pub account_characters: Option<AccountCharactersConfig>,
+    /// `OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1` §3, §14. Absent (the default): the
+    /// character command consumer does not run. Endpoint, peer name and trust roots are
+    /// those above.
+    pub character_commands: Option<CharacterCommandsConfig>,
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -149,6 +153,16 @@ pub struct AccountCharactersConfig {
     /// Persisted high-water fence F, outside the Character store and its
     /// backups.
     pub epoch_fence_file: PathBuf,
+}
+
+/// The Character Authority host's own character-command identity (never the evidence,
+/// runtime-status or projection one).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CharacterCommandsConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -491,6 +505,45 @@ impl NodeConfig {
                 return reject("platform.account_characters.epoch_fence_file");
             }
         }
+        if let Some(commands) = &platform.character_commands {
+            let status = platform.runtime_status.as_ref();
+            let projection = platform.account_characters.as_ref();
+            for (key, path) in [
+                (
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                ),
+                (
+                    "platform.character_commands.client_key_file",
+                    &commands.client_key_file,
+                ),
+            ] {
+                if !absolute(path)
+                    || path == &platform.client_certificate_file
+                    || path == &platform.client_key_file
+                    || status.is_some_and(|status| {
+                        path == &status.client_certificate_file || path == &status.client_key_file
+                    })
+                    || projection.is_some_and(|projection| {
+                        path == &projection.client_certificate_file
+                            || path == &projection.client_key_file
+                    })
+                {
+                    return reject(key);
+                }
+            }
+            // The Character Authority's identity; the projection may share it.
+            let authority = commands.source_authority.as_str();
+            if !token(authority, 128, b"/")
+                || authority == platform.source_authority
+                || authority == readiness.source_authority
+                || authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+                || authority == crate::native_admission_source::character_commands::PURPOSE
+                || authority == crate::native_admission_source::account_characters::PURPOSE
+            {
+                return reject("platform.character_commands.source_authority");
+            }
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -805,6 +858,82 @@ start_x = 100
 start_y = 200
 start_floor = -7
 "#;
+
+    const COMMANDS: &str = r#"
+[platform.character_commands]
+client_certificate_file = "/etc/oteryn/node/commands.crt"
+client_key_file = "/etc/oteryn/node/commands.key"
+source_authority = "oteryn:character-authority:primary"
+
+[launch]"#;
+
+    #[test]
+    fn character_commands_section_is_optional_off_by_default_and_separate() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
+        assert!(config.platform.character_commands.is_none());
+        let all = NODE
+            .replace("\n[launch]", STATUS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", COMMANDS);
+        let commands = NodeConfig::parse(all.as_bytes())
+            .expect("commands")
+            .platform
+            .character_commands
+            .expect("section");
+        // The projection and the command consumer are one Character Authority.
+        assert_eq!(
+            commands.source_authority,
+            "oteryn:character-authority:primary"
+        );
+        assert!(NodeConfig::parse(NODE.replace("\n[launch]", COMMANDS).as_bytes()).is_ok());
+        let certificate = "platform.character_commands.client_certificate_file";
+        let key = "platform.character_commands.client_key_file";
+        let authority = "platform.character_commands.source_authority";
+        for (from, to, field) in [
+            ("commands.crt", "platform-client.crt", certificate),
+            ("commands.crt", "runtime-status.crt", certificate),
+            ("commands.crt", "projection.crt", certificate),
+            ("commands.key", "platform-client.key", key),
+            ("commands.key", "projection.key", key),
+            (
+                "\"/etc/oteryn/node/commands.key\"",
+                "\"etc/commands.key\"",
+                key,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "urn:oteryn:platform:game-auth\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "OTERYN_GAME_CHARACTER_COMMANDS\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "OTERYN_PLATFORM_CHARACTER_AUTHORITY\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "bad authority\"\n\n[launch]",
+                authority,
+            ),
+        ] {
+            let changed = all.replacen(from, to, 1);
+            assert_ne!(changed, all, "{from}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(field);
+            assert_eq!(error.key, field);
+        }
+        // Endpoint, peer name and trust roots are reused, never configured here.
+        let endpoint = all.replace(
+            "client_key_file = \"/etc/oteryn/node/commands.key\"",
+            "client_key_file = \"/etc/oteryn/node/commands.key\"\nendpoint = \"127.0.0.1:1\"",
+        );
+        assert_ne!(endpoint, all);
+        assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
+    }
 
     #[test]
     fn world_bundle_is_optional_and_checked() {

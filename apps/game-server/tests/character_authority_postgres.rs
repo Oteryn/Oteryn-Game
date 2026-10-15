@@ -3112,6 +3112,270 @@ fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitu
     })
 }
 
+/// CHAR-CMD-CONSUMER-1: a Platform `CreateCharacter` intent (contract §4.2).
+fn create_intent(
+    operation: u8,
+    account: u8,
+    world: u8,
+    revision: u64,
+    name: &str,
+    (issued, expires): (i64, i64),
+) -> String {
+    format!(
+        r#"{{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+        uuid(id(operation)),
+        uuid(id(account)),
+        uuid(id(world)),
+    )
+}
+
+#[test]
+fn character_commands_create_reject_and_republish_exactly() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "commands").await?;
+            let result = character_commands_flow(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn character_commands_flow(database: &Database) -> TestResult {
+    use native_admission_source::character_commands::{CREATE_COMMAND, Decision, Input};
+    const SOURCE: &str = "oteryn:character-authority:primary";
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = fence_parent().join(format!("oteryn-character-commands-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let node = register(&root, 1, None).await?;
+    initialize_s2(&root, &node).await?;
+    assign_world(&pool, &root, &node, 90, 95).await?;
+    configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?;
+    let now = now_secs()?;
+    let live = (now - 1, now + 120);
+    let decide = async |operation: u8, input: Input<'_>| {
+        root.decide_character_command(
+            &authority,
+            &node,
+            SOURCE,
+            CREATE_COMMAND,
+            &uuid(id(operation)),
+            input,
+        )
+        .await
+    };
+    let code = |decision: &Decision| match decision {
+        Decision::Publish { result_code, .. } => result_code.clone(),
+        other => format!("{other:?}"),
+    };
+
+    // An operator bootstrap and a command never share an operation identity.
+    allow(&root, &node, 31).await?;
+    root.bootstrap_character(&authority, &node, &intent(21, 31, 1)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let held = create_intent(21, 31, 90, 1, "Hero Zz", live);
+    assert_eq!(
+        decide(21, Input::Intent(held.as_bytes())).await,
+        Decision::Conflict
+    );
+
+    // A committed create: root, receipt, audit event and projection change together.
+    allow(&root, &node, 41).await?;
+    let raw = create_intent(61, 41, 90, 5, "Hero Ca", live);
+    let committed = decide(61, Input::Intent(raw.as_bytes())).await;
+    assert_eq!(code(&committed), "CHAR_CMD_OK");
+    let Decision::Publish { receipt, .. } = &committed else {
+        return Err("no committed receipt".into());
+    };
+    let receipt = String::from_utf8(receipt.clone())?;
+    assert!(
+        receipt.contains(r#""name":"Hero Ca","character_revision":"1","projection_epoch":"1","#),
+        "{receipt}"
+    );
+    // A retry republishes the stored bytes; another intent under the identity conflicts.
+    assert_eq!(decide(61, Input::Intent(raw.as_bytes())).await, committed);
+    let changed = create_intent(61, 41, 90, 5, "Hero Cb", live);
+    assert_eq!(
+        decide(61, Input::Intent(changed.as_bytes())).await,
+        Decision::Conflict
+    );
+    // A conflict writes nothing, not even the other account's portfolio guard.
+    let guards = "SELECT count(*) FROM game_character_account_guards";
+    let before = count(&pool, guards).await?;
+    let moved = create_intent(61, 47, 90, 5, "Hero Ca", live);
+    assert_eq!(
+        decide(61, Input::Intent(moved.as_bytes())).await,
+        Decision::Conflict
+    );
+    assert_eq!(count(&pool, guards).await?, before);
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, &intent(61, 41, 9)?)
+            .await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+    for (table, expected) in [
+        ("SELECT count(*) FROM game_character_roots", 2),
+        ("SELECT count(*) FROM game_character_audit_outbox", 2),
+        ("SELECT count(*) FROM game_character_creation_receipts", 2),
+        ("SELECT count(*) FROM game_character_command_receipts", 1),
+    ] {
+        assert_eq!(count(&pool, table).await?, expected, "{table}");
+    }
+
+    // Deterministic rejections are stored and republished byte for byte.
+    observe_account(&root, &node, 42, false, now).await?;
+    for (operation, raw, expected) in [
+        (
+            62,
+            create_intent(62, 41, 90, 5, "Hero Cc", live),
+            "CHAR_CMD_OPERATION_CONFLICT",
+        ),
+        (
+            63,
+            create_intent(63, 41, 90, 6, "Hero Ca", live),
+            "CHAR_CMD_NAME_UNAVAILABLE",
+        ),
+        (
+            64,
+            create_intent(64, 41, 77, 7, "Hero Cd", live),
+            "CHAR_CMD_WORLD_NOT_ACCEPTED",
+        ),
+        (
+            65,
+            create_intent(65, 41, 90, 8, "Hero Ce", (now - 400, now - 100)),
+            "CHAR_CMD_INTENT_EXPIRED",
+        ),
+        (
+            66,
+            create_intent(66, 42, 90, 9, "Hero Cf", live),
+            "CHAR_CMD_ACCOUNT_NOT_ELIGIBLE",
+        ),
+        (
+            67,
+            create_intent(67, 41, 90, 10, "H", live),
+            "CHAR_CMD_NAME_INVALID",
+        ),
+        (
+            68,
+            create_intent(68, 41, 90, 11, "Hero Cg", (now + 60, now + 120)),
+            "CHAR_CMD_INTENT_INVALID",
+        ),
+        (
+            69,
+            create_intent(61, 41, 90, 12, "Hero Ch", live),
+            "CHAR_CMD_INTENT_INVALID",
+        ),
+    ] {
+        let first = decide(operation, Input::Intent(raw.as_bytes())).await;
+        assert_eq!(code(&first), expected, "{operation}");
+        assert_eq!(
+            decide(operation, Input::Intent(raw.as_bytes())).await,
+            first
+        );
+    }
+    assert_eq!(
+        code(&decide(70, Input::ReadConflict).await),
+        "CHAR_CMD_OPERATION_CONFLICT"
+    );
+    assert_eq!(
+        code(&decide(71, Input::Unsupported).await),
+        "CHAR_CMD_UNSUPPORTED"
+    );
+    let oversized = decide(74, Input::Oversized).await;
+    assert_eq!(code(&oversized), "CHAR_CMD_INTENT_INVALID");
+    assert_eq!(decide(74, Input::Oversized).await, oversized);
+    // A lower revision than one already decided is still decided.
+    let lower = create_intent(72, 41, 90, 2, "Hero Ci", live);
+    assert_eq!(
+        code(&decide(72, Input::Intent(lower.as_bytes())).await),
+        "CHAR_CMD_OK"
+    );
+
+    // Missing account evidence is transient: nothing is stored.
+    let unknown = create_intent(73, 43, 90, 13, "Hero Cj", live);
+    assert_eq!(
+        decide(73, Input::Intent(unknown.as_bytes())).await,
+        Decision::Transient
+    );
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_command_receipts"
+        )
+        .await?,
+        13
+    );
+
+    // The 65th listed Character of an account is refused.
+    allow(&root, &node, 44).await?;
+    for seed in 0..64u8 {
+        let raw = create_intent(
+            100 + seed,
+            44,
+            90,
+            100 + u64::from(seed),
+            &name_for(100 + seed),
+            live,
+        );
+        let decision = decide(100 + seed, Input::Intent(raw.as_bytes())).await;
+        assert_eq!(code(&decision), "CHAR_CMD_OK", "{seed}");
+    }
+    let over = create_intent(200, 44, 90, 200, "Hero Over", live);
+    assert_eq!(
+        code(&decide(200, Input::Intent(over.as_bytes())).await),
+        "CHAR_CMD_ACCOUNT_CHARACTER_LIMIT"
+    );
+
+    // Command-created roots satisfy the authority integrity check and read back.
+    drop(authority);
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let character: String = sqlx::query_scalar(
+        "SELECT character_id::text FROM game_character_command_receipts WHERE outcome = 1 ORDER BY decided_at, operation_id LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+    let bytes: Vec<u8> = (0..16)
+        .map(|i| u8::from_str_radix(&character.replace('-', "")[i * 2..i * 2 + 2], 16))
+        .collect::<Result<_, _>>()?;
+    let record = root
+        .read_current_character(
+            &authority,
+            CharacterId::from_bytes(bytes.try_into().map_err(|_| "id")?)
+                .map_err(|e| format!("{e:?}"))?,
+        )
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(record.account_id.as_bytes(), &id(41));
+    Ok(())
+}
+
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
