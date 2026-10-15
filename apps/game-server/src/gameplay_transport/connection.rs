@@ -37,6 +37,7 @@ use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView, ViewItem,
 };
+pub(crate) use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
@@ -97,6 +98,9 @@ use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
     ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_for,
+};
+use oteryn_protocol_oteryn::logout::{
+    COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_intent, encode_logout_result,
 };
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT, DELTA_TYPE_NPC_CONVERSATION_V1,
@@ -279,6 +283,9 @@ pub(crate) enum ControlLossResult {
     /// could not be recorded (resumed history unproven or refused); the session is
     /// released instead of staying ACTIVE on a dead transport.
     ResumedHistory,
+    /// LOGOUT-WIRE-1 (§1.6): the current row is TERMINAL. A release committed but its
+    /// acknowledgement was lost; the lifecycle reconciles the session (`reconcile_terminal`).
+    Terminal,
 }
 
 /// Outcome of the FND-04B §6 grace-expiry release of a recorded control loss.
@@ -802,6 +809,21 @@ pub(crate) trait FreshAdmissionAuthority {
         async { GraceExpiryResult::NotApplicable }
     }
 
+    /// LOGOUT-WIRE-1 (§1.6): retire the Channel actor of a session whose current row is
+    /// TERMINAL. `Unknown` when the row cannot be read; the lifecycle runs it again.
+    fn reconcile_terminal(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
+    }
+
+    /// LOGOUT-WIRE-1 (§1.6): one `LOGOUT_INTENT` of the admitted session. Authorities that end
+    /// no session refuse it as `BUSY`, with no effect.
+    fn logout(&self, _admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
+        async { LogoutReply::Result(LogoutResult::Busy) }
+    }
+
     /// Once the original grace deadline of the recorded loss passes without resumed
     /// control, terminally release the session and remove its Channel actor (FND-04B §6).
     fn expire_control_loss(
@@ -933,6 +955,9 @@ pub(crate) enum ConnectionEnd {
     /// Admitted, then the authenticated liveness cadence proved playable control lost
     /// (`DISCONNECT-PROTECTION-V1` §1). No durable session state is changed here.
     AdmittedThenControlLost(AdmittedSession),
+    /// LOGOUT-WIRE-1 (§1.6): admitted, then logged out. The terminal release committed before
+    /// `ACCEPTED` was written, so no control loss follows.
+    AdmittedThenLoggedOut(AdmittedSession),
     /// The transport failed before admission.
     TransportFailed,
 }
@@ -1797,12 +1822,14 @@ where
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
-    let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
+    // Each held frame carries whether it arrived behind a buffered step (SPEED-1) rather than
+    // behind a running logout (LOGOUT-RL-01).
+    let mut held: std::collections::VecDeque<(Vec<u8>, bool)> = std::collections::VecDeque::new();
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
-            /// A frame read while a step waited in the buffer.
-            Held(Vec<u8>),
+            /// A frame read while a step waited in the buffer, or while a logout ran.
+            Held(Vec<u8>, bool),
             StepDue,
             Probe,
             Serene,
@@ -1820,8 +1847,8 @@ where
         } else {
             None
         };
-        let next = if let Some(frame) = held_frame {
-            Next::Held(frame)
+        let next = if let Some((frame, behind_step)) = held_frame {
+            Next::Held(frame, behind_step)
         } else {
             let due = buffered.as_ref().map(|step| step.due);
             let reading = held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
@@ -1908,7 +1935,7 @@ where
                 Some(step) => (step.frame, false),
                 None => continue,
             },
-            Next::Held(frame) => (frame, true),
+            Next::Held(frame, behind_step) => (frame, behind_step),
             Next::Serene => {
                 let changed = authority.tick_vitals(actor, admitted.game_session_id).await;
                 let current = authority
@@ -2127,7 +2154,7 @@ where
                         && envelope.message_type() == MessageType::LivenessAck
                 );
                 if !ack {
-                    held.push_back(frame);
+                    held.push_back((frame, true));
                     continue;
                 }
                 match decode_wire_envelope(&frame)
@@ -2247,8 +2274,14 @@ where
             /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
             /// 7 and 8 payloads.
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
+            /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
+            Logout(LogoutResult),
             Unregistered,
         }
+        // LOGOUT-RL-01: a second logout read before the first one's result.
+        let mut second_logout = false;
+        // A read that failed while a logout ran: the peer is gone once the result is written.
+        let mut lost_while_logging_out = false;
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
         // like an unregistered one, before any decode or authority call.
         // OPS-SAVE-2: the permit is held while the command runs, not while its result is
@@ -2650,6 +2683,46 @@ where
                 ),
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_LOGOUT_INTENT {
+            // LOGOUT-WIRE-1 (§1.6): a non-empty intent is REJECTED with an empty payload before
+            // any authority call. While the logout runs, frames are read and held, in order, for
+            // after its result (LOGOUT-RL-01): a second logout among them is a protocol error.
+            if decode_logout_intent(command.payload).is_err() {
+                Dispatch::Unregistered
+            } else {
+                let mut logout = std::pin::pin!(authority.logout(admitted));
+                let reply = loop {
+                    let reading = !lost_while_logging_out
+                        && held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+                    let mut read = std::pin::pin!(frames.next(stream));
+                    let next = std::future::poll_fn(|context| {
+                        if let std::task::Poll::Ready(reply) = logout.as_mut().poll(context) {
+                            return std::task::Poll::Ready(Ok(reply));
+                        }
+                        if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context)
+                        {
+                            return std::task::Poll::Ready(Err(read));
+                        }
+                        std::task::Poll::Pending
+                    })
+                    .await;
+                    match next {
+                        Ok(reply) => break reply,
+                        Err(Ok(frame)) => {
+                            second_logout |= is_logout_command(&frame, generation);
+                            held.push_back((frame, false));
+                        }
+                        Err(Err(_)) => lost_while_logging_out = true,
+                    }
+                };
+                match reply {
+                    LogoutReply::Result(result) => Dispatch::Logout(result),
+                    // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
+                    LogoutReply::Unknown => {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
                 decode_account_achievements_query(command.payload),
@@ -2781,6 +2854,19 @@ where
                 },
                 encode_attack_intent_result(*disposition),
             ),
+            Dispatch::Logout(result) => {
+                let Ok(payload) = encode_logout_result(*result) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (
+                    if result.is_rejected() {
+                        CommandStatus::Rejected
+                    } else {
+                        CommandStatus::Accepted
+                    },
+                    payload,
+                )
+            }
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
@@ -2807,8 +2893,33 @@ where
         let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
+        if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
+            // §1.6: the release committed before this result. No command is read any more and
+            // the transport closes cleanly; a failed write is no control loss either.
+            if write_frame(stream, &result).await.is_ok() {
+                let _ = tokio::time::timeout(
+                    policy.interval,
+                    tokio::io::AsyncWriteExt::shutdown(stream),
+                )
+                .await;
+            }
+            return ConnectionEnd::AdmittedThenLoggedOut(admitted);
+        }
         if write_frame(stream, &result).await.is_err() {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        if matches!(dispatch, Dispatch::Logout(_)) {
+            if second_logout {
+                return close_admitted(
+                    stream,
+                    admitted,
+                    FoundationProtocolError::TooManyOutstandingCommands,
+                )
+                .await;
+            }
+            if lost_while_logging_out {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
         }
         match dispatch {
             Dispatch::Step(outcome, _) => {
@@ -3202,6 +3313,7 @@ where
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
             | Dispatch::Achievements(_)
+            | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
         }
     }
@@ -3424,6 +3536,16 @@ fn npc_conversation_delta(
     )
     .ok()?;
     Some((delta_sequence, frame, to))
+}
+
+/// LOGOUT-RL-01: whether `frame` is a `LOGOUT_INTENT` of this connection generation.
+fn is_logout_command(frame: &[u8], generation: u64) -> bool {
+    decode_wire_envelope(frame).is_ok_and(|envelope| {
+        envelope.message_type() == MessageType::ClientCommand
+            && envelope
+                .client_command(generation)
+                .is_ok_and(|command| command.command_type == COMMAND_TYPE_LOGOUT_INTENT)
+    })
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
