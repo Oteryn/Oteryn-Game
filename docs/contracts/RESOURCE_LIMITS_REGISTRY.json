@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-13T00:00:00+00:00",
+  "updated_at": "2026-10-14T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -7901,7 +7901,8 @@
       ],
       "consumers": [
         "apps/game-server/src/native_admission_source/account_characters.rs",
-        "apps/game-server/src/durability/account_characters_projection.rs"
+        "apps/game-server/src/durability/account_characters_projection.rs",
+        "apps/game-server/src/durability/character_command.rs"
       ],
       "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
     },
@@ -7968,6 +7969,220 @@
         "apps/game-server/src/native_admission_source/account_characters.rs"
       ],
       "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+    },
+    {
+      "id": "CHARCMD-PAGE-ENTRIES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Pending entries per ListPendingCharacterCommandsV1 response",
+      "unit": "entries",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The page is decoded from a body already bounded by CHARCMD-LIST-RESPONSE-BYTES; a 33rd entry refuses the whole page.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a page of 33 entries is refused as malformed"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-LIST-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded ListPendingCharacterCommandsV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields and length-checked before the exchange opens a connection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the worst-case list request with a cursor encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-READ-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded ReadCharacterCommandIntentV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields (at most 496 bytes) and length-checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the worst-case read request encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INTENT-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Stored command intent bytes returned by ReadCharacterCommandIntentV1",
+      "unit": "bytes",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The response body is read with a 4096-byte cap; a longer intent is refused before decoding and the decision stores CHAR_CMD_INTENT_INVALID.",
+      "client_visible": false,
+      "boundary_tests": [
+        "an intent above 4096 bytes is classified invalid before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs",
+        "apps/game-server/src/durability/character_command.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-RECEIPT-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Encoded PublishCharacterCommandReceiptV1 request body (stored receipt)",
+      "unit": "bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Receipts are built from bounded fields; the worst-case committed create is below 1024 bytes and the store column is checked at 1..1024.",
+      "client_visible": false,
+      "boundary_tests": [
+        "worst-case committed and rejected receipts fit 1024 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs",
+        "apps/game-server/src/durability/character_command.rs",
+        "apps/game-server/migrations/0087_character_commands.sql"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-LIST-RESPONSE-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "ListPendingCharacterCommandsV1 response body",
+      "unit": "bytes",
+      "hard_maximum": 8192,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Read with an 8192-byte cap before decoding; a full page of 32 maximal entries is 5602 bytes.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a response above 8192 bytes is refused before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-RECEIPT-RESPONSE-BYTES",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "PublishCharacterCommandReceiptV1 response body",
+      "unit": "bytes",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Read with a 256-byte cap before decoding.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a receipt response above 256 bytes is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Concurrent Platform exchanges per character-command consumer",
+      "unit": "exchanges",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The consumer performs list, read and publish sequentially; no queue beyond the one exchange is retained.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the consumer performs one exchange per step and never overlaps two"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-INTENT-TTL",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Lifetime of a command intent (expires_at_source - issued_at_source)",
+      "unit": "seconds",
+      "hard_maximum": 300,
+      "configurable_range": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A wider window is classified CHAR_CMD_INTENT_INVALID; an intent at or past expiry is rejected CHAR_CMD_EXPIRED, which bounds every transient retry.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a 301 s window is invalid",
+        "expires equal to issued is invalid"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_command.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+    },
+    {
+      "id": "CHARCMD-KNOWN-KEYS",
+      "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+      "resource": "Pending operations the consumer remembers between polls",
+      "unit": "entries",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A fixed-capacity map of settled and retrying keys; the oldest settled key is evicted first and an evicted key is only re-decided, which republishes its stored receipt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the known-key map never exceeds 512 entries"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/character_commands.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
     },
     {
       "id": "CHARPOS0-RL-01",
@@ -10748,8 +10963,8 @@
       "allocation_impact": "Runtime-only counter: a due search over the window's budget waits for a later window, keeping its place (oldest-waiting request first, then actor id); a search never fails because of the budget.",
       "client_visible": false,
       "boundary_tests": [
-        "max=64: apps/game-server/src/combat/attack/chase.rs the_channel_admits_sixty_four_searches_per_owner_window (64 searches admitted in one window)",
-        "max+1=65: the same test refuses the 65th search in that window and admits it from the next; searches_that_waited_longer_keep_their_places_in_the_window covers the order"
+        "max=64: apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs the_drain_serves_sixty_four_searches_a_window_and_the_sixty_fifth_in_the_next (65 chases wait from one window; the next window's drain serves the 64 lowest actor ids)",
+        "max+1=65: the same test keeps the 65th waiting in that window and serves it in the next; apps/game-server/src/combat/attack/chase.rs the_channel_drains_each_owner_window_once and the_drain_serves_the_oldest_waiting_window_first_then_actor_id cover the drain and its order"
       ],
       "consumers": [
         "apps/game-server/src/combat/attack/chase.rs CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS and ChaseSearchBudget",
@@ -10871,6 +11086,162 @@
         "CHASE-1 player chase (gameplay_transport::attack chase_step_refused)"
       ],
       "notes": "RANGED-0 \u00a78 CHASE-1: the Movement owner alone judges passability from committed facts (a blocking item has no in-memory projection), so the search avoids a cell it just refused as Blocked for 2,000 ms. Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
+      "id": "SPELLPRES0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "presentation events in one session's WORLD_PRESENTATION batch (state domain 19, capability 23 PRESENTATION_V1) of one sync unit",
+      "unit": "events per session per sync unit",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Events beyond 1,024 are dropped, never queued: the server keeps the observer's own events, then the nearest by the D87 order, ties broken by decision ordinal and then emission ordinal (select_presentation_batch), so the kept set never depends on insertion order. The encoder refuses a 1,025th event as a server fault and the decoder refuses it LimitExceeded before decoding it. Non-durable; dropping events changes no outcome.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (1,024 worst-case events encode and decode)",
+        "max+1=1025: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (a 1,025th event is refused LimitExceeded in both directions)",
+        "overflow order: crates/protocol-oteryn/src/presentation_tests.rs overflow_keeps_own_then_nearest_then_ordinals"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_EVENTS",
+        "crates/protocol-oteryn/src/presentation.rs select_presentation_batch"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. B3 batch measurement (typical and p99 bytes for a crowded hunt, server time per sync unit) is recorded on #162 before activation. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "bytes of one encoded presentation event, its batch tag and length included",
+      "unit": "bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Every event kind is bounded by construction: the worst case, a value_text with a target, an attacker, two 10-byte values and both ordinals at their uint32 maximum, is 126 bytes. The decoder refuses a longer entry LimitExceeded before decoding it; the encoder refuses one as a server fault.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: crates/protocol-oteryn/src/presentation_tests.rs events_round_trip_and_the_largest_event_is_within_its_bound (the worst-case value_text is 126 bytes)",
+        "max+1=129: crates/protocol-oteryn/src/presentation_tests.rs malformed_events_fail_closed (a 129-byte entry is refused LimitExceeded)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_EVENT_BYTES"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "bytes of one WORLD_PRESENTATION batch (delta type 1)",
+      "unit": "bytes",
+      "hard_maximum": 131136,
+      "configurable_range": {
+        "minimum": 131136,
+        "maximum": 131136
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "1,024 events of at most 128 bytes are 131,072 bytes, within the 131,136-byte bound and FND-02's 262,144-byte delta bound. The decoder refuses a longer payload on length before reading any field.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=131136: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (1,024 worst-case events fit)",
+        "max+1=131137: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (131,137 bytes are refused LimitExceeded)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_BATCH_BYTES"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Mirrors max_payload_bytes of the domain 19 delta type. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "entries in one ACTOR_COOLDOWNS snapshot or delta (state domain 20)",
+      "unit": "entries",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one entry per {kind, id}; a repeated key fails closed. The codec ceiling is the FND-02 repeated-field limit; the producer bound is SPELL-RL-04 (spells in one content-generation spell book) plus 16 group slots, set when composition measures SPELL-RL-04. The decoder refuses a 4,097th entry LimitExceeded before storing it.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4096: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (4,096 distinct entries encode and decode)",
+        "max+1=4097: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (a 4,097th entry is refused LimitExceeded in both directions)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/presentation.rs MAX_COOLDOWN_ENTRIES"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a710 and \u00a713 (SPELL-RL-04 + 16). SPELL-RL-04 is still unregistered (SPELL-D6 leaves it to composition), so the effective value is configured within this range by SPELL-PRESENT-1 and never above 4,096. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "bytes of one ACTOR_COOLDOWNS entry, its tag and length included",
+      "unit": "bytes",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "An entry is at most 16 bytes: the kind, an id up to 2^28 - 1 (a spell index; a group ordinal is at most 16) and expires_at_ms below 2^42. server_now_ms, rtt_ms and rtt_estimated are per message (at most 15 bytes), outside the entry bound; a payload is at most 65,552 bytes. The decoder refuses a longer entry LimitExceeded.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (the largest entry is 16 bytes)",
+        "max+1=17: crates/protocol-oteryn/src/presentation_tests.rs malformed_cooldowns_fail_closed (a 17-byte entry is refused LimitExceeded)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/presentation.rs MAX_COOLDOWN_ENTRY_BYTES and MAX_ACTOR_COOLDOWNS_BYTES"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a710 and \u00a713. Mirrors max_payload_bytes of the domain 20 types (16 + 4,096 x 16). Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "spell words range: players on the caster's floor within the CHAT-0 say range receive spell_words",
+      "unit": "tiles from the caster (8 on x, 6 on y)",
+      "hard_maximum": 8,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "No allocation: the spell_words event goes only to players on the caster's floor within \u00b18 x \u00b16 tiles, using the VIS-2 interest index, whether or not they hold CHAT_V1. Players farther away receive nothing.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=8 x 6: a player 8 tiles east and 6 tiles south of the caster on its floor receives spell_words (SPELL-PRESENT-1 emission test)",
+        "max+1: a player 9 tiles east, or 7 tiles south, or on another floor receives none (SPELL-PRESENT-1 emission test)"
+      ],
+      "consumers": [
+        "SPELL-PRESENT-1 spell words emission (not yet composed)"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a76 and \u00a713 (CHAT-0 say range). The row carries the x extent; the y extent is 6. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "SPELLPRES0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+      "resource": "undelivered WORLD_PRESENTATION batches in one session's egress",
+      "unit": "batches per session",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "With two batches undelivered, the next batch is dropped whole and consumes no revision; presentation never fills the egress queue and never trips FND-02 \u00a716 slow-client handling. While a snapshot of any domain is in flight for the session, its events are dropped, not retained behind the barrier.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a session with one undelivered batch is sent the next (emitting connection test, SPELL-PRESENT-1 or COMBAT-PRESENT-1)",
+        "max+1=3: with two undelivered the third is dropped whole, no revision is consumed and no resync follows (same test)"
+      ],
+      "consumers": [
+        "SPELL-PRESENT-1 or COMBAT-PRESENT-1 presentation egress (not yet composed)"
+      ],
+      "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
     }
   ]
 }

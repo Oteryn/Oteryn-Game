@@ -100,27 +100,23 @@ impl ChaseState {
         self.waiting_since
     }
 
-    /// The step the chase takes from `at` towards `target` at `now_us`. A route is followed while
-    /// the attacker holds the position it expects; it is searched again when none is held or its
-    /// target moved, at most once per [`CHASE_SEARCH_INTERVAL_MICROS`] and only when `admit`
-    /// grants a search from the Channel's window budget; a due search it refuses keeps waiting
-    /// from the time it first became due. Until a search runs, a route whose
-    /// target moved is still followed (CREATURE-AI-0 §5.3: the previous path while valid).
-    pub(crate) fn decide(
+    /// The chase check of `at` towards `target` at `now_us`, before the Channel's search drain:
+    /// `None` holds (another floor or in reach); otherwise whether a search is due. A route is
+    /// followed while the attacker holds the position it expects; it is searched again when none
+    /// is held or its target moved, at most once per [`CHASE_SEARCH_INTERVAL_MICROS`]. A due
+    /// search waits for the Channel's drain from the time it first became due. Until a search
+    /// runs, a route whose target moved is still followed (CREATURE-AI-0 §5.3: the previous path
+    /// while valid).
+    pub(crate) fn prepare(
         &mut self,
         now_us: u64,
         at: MovementLocalPosition,
         target: MovementLocalPosition,
-        admit: impl FnOnce() -> bool,
-        mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
-    ) -> ChaseDecision {
+    ) -> Option<bool> {
         self.refused.retain(|&(_, expires_us)| now_us < expires_us);
         if at.floor != target.floor || chebyshev(at, target) <= 1 {
-            self.route.clear();
-            self.expected_at = None;
-            self.goal = None;
-            self.waiting_since = None;
-            return ChaseDecision::Hold;
+            self.hold();
+            return None;
         }
         if self.expected_at != Some(at) {
             self.route.clear();
@@ -132,40 +128,87 @@ impl ChaseState {
         if due {
             self.waiting_since.get_or_insert(now_us);
         }
-        if due && admit() {
-            self.waiting_since = None;
-            let refused = &self.refused;
-            let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
-                if refused.iter().any(|&(blocked, _)| blocked == cell) {
-                    None
-                } else {
-                    tile_cost(cell)
-                }
-            });
-            match route {
-                Some(route) if !route.is_empty() => {
-                    self.route = route.into();
-                    self.goal = Some(target);
-                    self.next_search_us = now_us.saturating_add(CHASE_SEARCH_INTERVAL_MICROS);
-                }
-                _ => {
-                    self.route.clear();
-                    self.goal = None;
-                    self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
-                }
+        Some(due)
+    }
+
+    /// The Channel's drain runs this chase's search from `at` towards `target` at `now_us`
+    /// (`RANGED0-RL-03`); `false` when none ran (another floor or in reach). The route it adopts
+    /// starts at `at`.
+    pub(crate) fn search(
+        &mut self,
+        now_us: u64,
+        at: MovementLocalPosition,
+        target: MovementLocalPosition,
+        mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+    ) -> bool {
+        if at.floor != target.floor || chebyshev(at, target) <= 1 {
+            self.hold();
+            return false;
+        }
+        self.waiting_since = None;
+        self.refused.retain(|&(_, expires_us)| now_us < expires_us);
+        let refused = &self.refused;
+        let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
+            if refused.iter().any(|&(blocked, _)| blocked == cell) {
+                None
+            } else {
+                tile_cost(cell)
             }
+        });
+        match route {
+            Some(route) if !route.is_empty() => {
+                self.route = route.into();
+                self.expected_at = Some(at);
+                self.goal = Some(target);
+                self.next_search_us = now_us.saturating_add(CHASE_SEARCH_INTERVAL_MICROS);
+            }
+            _ => {
+                self.route.clear();
+                self.expected_at = None;
+                self.goal = None;
+                self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
+            }
+        }
+        true
+    }
+
+    /// The cell the route's next step enters, if a route is held.
+    pub(crate) fn next_cell(&self) -> Option<MovementLocalPosition> {
+        let (at, step) = (self.expected_at?, self.route.front()?);
+        Some(stepped(at, *step))
+    }
+
+    /// The step the chase takes now from `at`: the route's next step, if any.
+    pub(crate) fn next_step(&mut self, at: MovementLocalPosition) -> ChaseDecision {
+        if self.expected_at != Some(at) {
+            self.route.clear();
         }
         let Some(step) = self.route.pop_front() else {
             self.expected_at = None;
             return ChaseDecision::Hold;
         };
-        let (dx, dy) = delta(step);
-        self.expected_at = Some(MovementLocalPosition {
-            x: at.x.saturating_add(dx),
-            y: at.y.saturating_add(dy),
-            floor: at.floor,
-        });
+        self.expected_at = Some(stepped(at, step));
         ChaseDecision::Step(step)
+    }
+
+    /// One chase check with its own search: [`Self::prepare`], a due search when `admit` grants
+    /// it, then [`Self::next_step`].
+    #[cfg(test)]
+    pub(crate) fn decide(
+        &mut self,
+        now_us: u64,
+        at: MovementLocalPosition,
+        target: MovementLocalPosition,
+        admit: impl FnOnce() -> bool,
+        tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+    ) -> ChaseDecision {
+        let Some(due) = self.prepare(now_us, at, target) else {
+            return ChaseDecision::Hold;
+        };
+        if due && admit() {
+            self.search(now_us, at, target, tile_cost);
+        }
+        self.next_step(at)
     }
 
     /// The step just taken was refused for any reason but a blocked cell (a transient refusal):
@@ -197,32 +240,51 @@ impl ChaseState {
     }
 }
 
-/// `RANGED0-RL-03`: the Channel's player chase searches in the current owner window.
+fn stepped(at: MovementLocalPosition, step: CardinalStep) -> MovementLocalPosition {
+    let (dx, dy) = delta(step);
+    MovementLocalPosition {
+        x: at.x.saturating_add(dx),
+        y: at.y.saturating_add(dy),
+        floor: at.floor,
+    }
+}
+
+/// `RANGED0-RL-03`: the owner window whose player chase searches the Channel last drained.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct ChaseSearchBudget {
-    window: u64,
-    used: u32,
+    drained: Option<u64>,
 }
 
 impl ChaseSearchBudget {
-    /// Whether one more search fits the owner window of `now_us` when `ahead` searches that
-    /// waited longer (or as long, with a lower actor id) still wait for it; if so it is counted.
-    /// The waiting ones keep their places, so every request is served within a bounded number of
-    /// windows.
-    pub(crate) fn admit(&mut self, now_us: u64, ahead: usize) -> bool {
-        // A caller's earlier window never reopens a counted one.
+    /// Whether the owner window of `now_us` is still to be drained; if so it counts as drained.
+    /// A caller's earlier window never reopens a drained one.
+    pub(crate) fn open(&mut self, now_us: u64) -> bool {
         let window = now_us / CHASE_WINDOW_MICROS;
-        if window > self.window {
-            self.window = window;
-            self.used = 0;
-        }
-        let ahead = u32::try_from(ahead).unwrap_or(u32::MAX);
-        if self.used.saturating_add(ahead) >= CHASE_SEARCHES_PER_WINDOW {
+        if self.drained.is_some_and(|drained| window <= drained) {
             return false;
         }
-        self.used += 1;
+        self.drained = Some(window);
         true
     }
+}
+
+/// `RANGED0-RL-03`: the order the drain of the owner window of `now_us` serves the waiting
+/// searches in, each given as when it began waiting and its actor key: only those that waited
+/// from an earlier window, so every search due in one window is known before any is served;
+/// the oldest-waiting window first, then actor id. The drain serves at most
+/// [`CHASE_SEARCHES_PER_WINDOW`] of them; the rest keep their places for the next window.
+pub(crate) fn chase_search_order<K: Ord>(
+    now_us: u64,
+    waiting: impl IntoIterator<Item = (u64, K)>,
+) -> Vec<K> {
+    let window = now_us / CHASE_WINDOW_MICROS;
+    let mut order: Vec<_> = waiting
+        .into_iter()
+        .map(|(since_us, key)| (since_us / CHASE_WINDOW_MICROS, key))
+        .filter(|(since, _)| *since < window)
+        .collect();
+    order.sort();
+    order.into_iter().map(|(_, key)| key).collect()
 }
 
 #[cfg(test)]
@@ -551,33 +613,27 @@ mod tests {
     }
 
     #[test]
-    fn the_channel_admits_sixty_four_searches_per_owner_window() {
+    fn the_channel_drains_each_owner_window_once() {
         let mut budget = ChaseSearchBudget::default();
-        for _ in 0..CHASE_SEARCHES_PER_WINDOW {
-            assert!(budget.admit(10_000, 0));
-        }
-        assert!(!budget.admit(49_999, 0));
-        assert!(budget.admit(50_000, 0), "a new window starts its own count");
-        for _ in 1..CHASE_SEARCHES_PER_WINDOW {
-            assert!(budget.admit(50_000, 0));
-        }
+        assert!(budget.open(10_000));
+        assert!(!budget.open(49_999));
+        assert!(budget.open(50_000), "a new window is drained once more");
         assert!(
-            !budget.admit(49_999, 0),
-            "a late caller's earlier window never reopens the count"
+            !budget.open(49_999),
+            "a late caller's earlier window never reopens a drained one"
         );
     }
 
     #[test]
-    fn searches_that_waited_longer_keep_their_places_in_the_window() {
-        let mut budget = ChaseSearchBudget::default();
-        let places = usize::try_from(CHASE_SEARCHES_PER_WINDOW).unwrap();
-        for _ in 0..places - 2 {
-            assert!(budget.admit(0, 0));
-        }
-        // Two searches that waited longer still wait: the newer one leaves both places to them.
-        assert!(!budget.admit(0, 2));
-        assert!(budget.admit(0, 1), "the second-oldest takes one place");
-        assert!(budget.admit(0, 0), "the oldest takes the last place");
-        assert!(!budget.admit(0, 0));
+    fn the_drain_serves_the_oldest_waiting_window_first_then_actor_id() {
+        let order = chase_search_order(
+            100_000,
+            [(60_000, 1), (10_000, 3), (40_000, 2), (100_000, 0)],
+        );
+        assert_eq!(
+            order,
+            [2, 3, 1],
+            "a search registered in the drained window waits for the next"
+        );
     }
 }
