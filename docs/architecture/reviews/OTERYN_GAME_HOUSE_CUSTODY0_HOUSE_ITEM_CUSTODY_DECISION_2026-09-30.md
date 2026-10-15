@@ -1,7 +1,7 @@
 # HOUSE-CUSTODY-0 House item custody
 
 - Decision: `HOUSE-CUSTODY0-HOUSE-ITEM-CUSTODY-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence)
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) through the control plane (D551, owner answer 1a), recorded by the acceptance PR (`ACCEPT-SOCIAL-MAP-0`, `OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md`); status line reconciled 2026-10-15 (ACCEPT-BATCH-2026-10-15); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence)
   and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the house contract named by D196 (ADR-0021 house tiles, owner answer a) and the owner's direct
