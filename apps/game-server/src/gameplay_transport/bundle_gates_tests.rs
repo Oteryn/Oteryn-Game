@@ -103,7 +103,7 @@ const INVENTORY: &[Read] = &[
         "native combat cast",
         "native combat cast",
         "native_combat_cast.rs",
-        "ComposedFreshAdmission::cast_native_combat_inner",
+        "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "self.combat_room",
         "let_else/field/read",
         1,
@@ -113,7 +113,7 @@ const INVENTORY: &[Read] = &[
         "native combat cast commit",
         "native combat cast",
         "native_combat_cast.rs",
-        "ComposedFreshAdmission::cast_native_combat_inner",
+        "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "owner.combat_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
@@ -161,7 +161,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast: locate message",
         "`locate_message` parameter cast",
         "parameter_cast.rs",
-        "ComposedFreshAdmission::cast_parameters_inner",
+        "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "self.combat_room",
         "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
         2,
@@ -174,7 +174,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast commit: locate message",
         "`locate_message` parameter cast",
         "parameter_cast.rs",
-        "ComposedFreshAdmission::cast_parameters_inner",
+        "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.combat_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         4,
@@ -188,7 +188,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast: house access, vertical move",
         "`house_access` and `vertical_move` parameter casts",
         "parameter_cast.rs",
-        "ComposedFreshAdmission::cast_parameters_inner",
+        "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "self.qualified_room",
         "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
         1,
@@ -200,7 +200,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast commit: house access, vertical move",
         "`house_access` and `vertical_move` parameter casts",
         "parameter_cast.rs",
-        "ComposedFreshAdmission::cast_parameters_inner",
+        "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.qualified_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         3,
@@ -213,7 +213,7 @@ const INVENTORY: &[Read] = &[
         "world item cast",
         "world item casts",
         "world_item_cast.rs",
-        "ComposedFreshAdmission::cast_world_items_inner",
+        "super::super::ComposedFreshAdmission::cast_world_items_inner",
         "self.qualified_room",
         "if(self qualified_room is_none)/method_call:is_none/field/read",
         1,
@@ -225,7 +225,7 @@ const INVENTORY: &[Read] = &[
         "world item cast commit",
         "world item casts",
         "world_item_cast.rs",
-        "ComposedFreshAdmission::cast_world_items_inner",
+        "super::super::ComposedFreshAdmission::cast_world_items_inner",
         "owner.qualified_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
@@ -593,10 +593,25 @@ fn pat_name(pat: &syn::Pat) -> Option<String> {
     }
 }
 
-/// An impl's self type by its last path segment, without generic arguments or references.
+/// A path's segments as written, without generic arguments: `a::Owner` stays apart from `b::Owner`.
+fn full_path(path: &syn::Path) -> String {
+    let segments: Vec<String> = path
+        .segments
+        .iter()
+        .map(|segment| segment.ident.to_string())
+        .collect();
+    let leading = if path.leading_colon.is_some() {
+        "::"
+    } else {
+        ""
+    };
+    format!("{leading}{}", segments.join("::"))
+}
+
+/// An impl's self type by its full path, without generic arguments or references.
 fn type_name(ty: &syn::Type) -> String {
     match ty {
-        syn::Type::Path(path) => path_name(&path.path),
+        syn::Type::Path(path) => full_path(&path.path),
         syn::Type::Reference(reference) => type_name(&reference.elem),
         syn::Type::Paren(paren) => type_name(&paren.elem),
         syn::Type::Group(group) => type_name(&group.elem),
@@ -814,7 +829,7 @@ impl<'ast> Visit<'ast> for Scan {
     fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
         let ty = type_name(&item.self_ty);
         let owner = match &item.trait_ {
-            Some((_, trait_path, _)) => format!("<{ty} as {}>", path_name(trait_path)),
+            Some((_, trait_path, _)) => format!("<{ty} as {}>", full_path(trait_path)),
             None => ty,
         };
         self.owners.push(owner);
@@ -1103,26 +1118,58 @@ fn cfg_needs_test(meta: &syn::Meta) -> bool {
 
 /// The cursor past the tokens a leading attribute governs: through the first `;` or `,` or
 /// braced group at this level, or to the end. A `,` bounds one entry of a comma-delimited macro;
-/// stopping early there only keeps test tokens in the count, never drops production ones.
-fn skip_governed(mut cursor: syn::buffer::Cursor<'_>) -> syn::buffer::Cursor<'_> {
+/// stopping early there only keeps test tokens in the count, never drops production ones. Commas
+/// inside generic arguments (`call::<A, B>`, `<T as Trait<A, B>>::f`) do not bound the entry; if
+/// those angle brackets never balance, the plain first `,` bounds it instead.
+fn skip_governed(cursor: syn::buffer::Cursor<'_>) -> syn::buffer::Cursor<'_> {
+    skip_entry(cursor, true).unwrap_or_else(|| skip_entry(cursor, false).unwrap_or(cursor))
+}
+
+/// [`skip_governed`]'s walk, optionally keeping commas inside generic arguments. A `<` opens
+/// generic arguments inside others, at the start, or after a punctuation other than `<` or a
+/// closing `>`, where it cannot be a comparison or shift; `>` closes one unless it ends `->`.
+/// `None` when an opened `<` is still open at the end.
+fn skip_entry(
+    mut cursor: syn::buffer::Cursor<'_>,
+    angles: bool,
+) -> Option<syn::buffer::Cursor<'_>> {
+    let mut depth = 0_usize;
+    // The previous token when it was punctuation: its character and whether it closed a `<`.
+    let mut previous: Option<(char, bool)> = None;
+    let mut started = false;
     while !cursor.eof() {
         if let Some((punct, next)) = cursor.punct() {
             cursor = next;
-            if matches!(punct.as_char(), ';' | ',') {
-                break;
+            let ch = punct.as_char();
+            let mut closed = false;
+            if angles && ch == '<' {
+                let opens =
+                    depth > 0 || !started || matches!(previous, Some((p, false)) if p != '<');
+                if opens {
+                    depth += 1;
+                }
+            } else if angles && ch == '>' && depth > 0 && !matches!(previous, Some(('-', _))) {
+                depth -= 1;
+                closed = true;
+            } else if depth == 0 && matches!(ch, ';' | ',') {
+                return Some(cursor);
             }
+            previous = Some((ch, closed));
         } else if let Some((_, delimiter, _, next)) = cursor.any_group() {
             cursor = next;
-            if format!("{delimiter:?}") == "Brace" {
-                break;
+            previous = None;
+            if depth == 0 && format!("{delimiter:?}") == "Brace" {
+                return Some(cursor);
             }
         } else if let Some((_, next)) = cursor.token_tree() {
             cursor = next;
+            previous = None;
         } else {
             break;
         }
+        started = true;
     }
-    cursor
+    (depth == 0).then_some(cursor)
 }
 
 #[allow(clippy::expect_used)]
@@ -1311,6 +1358,12 @@ impl<'ast> Visit<'ast> for Production<'ast> {
     fn visit_arm(&mut self, arm: &'ast syn::Arm) {
         if !test_only(&arm.attrs) {
             visit::visit_arm(self, arm);
+        }
+    }
+
+    fn visit_variant(&mut self, variant: &'ast syn::Variant) {
+        if !test_only(&variant.attrs) {
+            visit::visit_variant(self, variant);
         }
     }
 
@@ -1593,6 +1646,17 @@ fn a_method_is_named_with_its_impl() {
     assert_eq!(moved.sites[0].function, "Trade::drain");
     let traited = scan("impl<'a> Seam for Owner<'a> { fn room(&self) { self.combat_room; } }");
     assert_eq!(traited.sites[0].function, "<Owner as Seam>::room");
+    let pathed = scan(
+        "impl a::Owner { fn room(&self) { self.combat_room; } } \
+         impl b::Owner { fn room(&self) {} } \
+         impl x::Seam for b::Owner { fn hook(&self) { self.combat_room; } }",
+    );
+    let functions: Vec<&str> = pathed
+        .sites
+        .iter()
+        .map(|site| site.function.as_str())
+        .collect();
+    assert_eq!(functions, ["a::Owner::room", "<b::Owner as x::Seam>::hook"]);
 }
 
 #[test]
@@ -1722,7 +1786,8 @@ fn only_the_production_seam_owners_initializer_counts() {
         "fn serve() { let owners = GameplaySeamOwners { qualified_room: Some(&qualified_room) }; } \
          fn helper() { let _ = GameplaySeamOwners { \
              qualified_room: bundle.is_none().then_some(&qualified_room) }; } \
-         #[cfg(test)] fn probe() { let _ = GameplaySeamOwners { qualified_room: None }; }",
+         #[cfg(test)] fn probe() { let _ = GameplaySeamOwners { qualified_room: None }; } \
+         enum Probe { #[cfg(test)] Exposed = { let _ = GameplaySeamOwners { qualified_room: None }; 0 } }",
     )
     .expect("source parses");
     let verdicts: Vec<bool> = production(&file)
@@ -1789,4 +1854,25 @@ fn a_test_only_macro_entry_ends_at_its_comma() {
     );
     let fields: Vec<&str> = scan.sites.iter().map(|site| site.field.as_str()).collect();
     assert_eq!(fields, ["qualified_room"]);
+}
+
+#[test]
+fn a_test_only_macro_entry_keeps_its_generic_arguments() {
+    let generic = scan(
+        "fn route(o: &O) { routes! { \
+             #[cfg(test)] probe => call::<A, B>(o.combat_room), \
+             #[cfg(test)] cast => <T as Tr<A, B>>::f(o.combat_room), \
+             #[cfg(test)] ret => run::<fn(A) -> B, C>(o.combat_room), \
+             live => o.qualified_room, } }",
+    );
+    let fields: Vec<&str> = generic
+        .sites
+        .iter()
+        .map(|site| site.field.as_str())
+        .collect();
+    assert_eq!(fields, ["qualified_room"]);
+    let compared = scan(
+        "fn route(o: &O) { routes! { #[cfg(test)] probe => a < b, live => o.qualified_room, } }",
+    );
+    assert_eq!(compared.sites.len(), 1);
 }
