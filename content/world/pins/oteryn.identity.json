@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "item-sem-use-2-consumables-20261013-r1",
-  "content_lock_digest": "aecd3e4c85b1765dfe2e80de0f955b593c9318302bbd2780d1c34a9e9b22034a",
+  "content_revision": "npc-content-2-presence-20261015-r1",
+  "content_lock_digest": "233f2a19d71135e5f8b4fdac8024c1d0569b5f696b98ca669b98bab0c615bd6c",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:item-sem-use-2-consumables-20261013-r1/04ee0406501f41ec02943bd0bfe93ca7c7e3187a6e011805f1487d209dacfb22"
+  "provenance_summary": "lock:npc-content-2-presence-20261015-r1/3aea9ba1a7f5ea028b41383c2634c94715d9feb7d923c306d6b247fa4b2d0ec2"
 }

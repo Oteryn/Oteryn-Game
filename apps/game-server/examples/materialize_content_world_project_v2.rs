@@ -626,6 +626,72 @@ fn admit_consumables_on_cheese_admitted(
     Ok(true)
 }
 
+// NPC-CONTENT-2 stages NPC movement facts and admitted voices on exactly the consumables-admitted
+// package (tree digest of ITEM-SEM-USE-2); the packet mints its own revision (DUR-04).
+#[path = "npc_materializer/presence.rs"]
+mod npc_presence;
+const NPC_PRESENCE: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20261015-npc-content-2-presence.json");
+const NPC_PRESENCE_SHA256: &str =
+    "951c421c39b969dbd348d037e5b5436b1e45cd26e74ccad81f666bd5c8d69c29";
+const CONSUMABLES_ADMITTED_PREDECESSOR: &str =
+    "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
+
+fn admit_npc_presence_on_consumables_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CONSUMABLES_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let npcs = npc_presence::apply(&mut draft, NPC_PRESENCE, NPC_PRESENCE_SHA256)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!("npc_presence={npcs} tree_sha256={tree_sha256} predecessor_mode=true");
+    Ok(true)
+}
+
+fn admit_npc_presence_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_npc_presence_on_consumables_admitted(stage_parent, stage_name, output)? {
+        return Err("consumables-admitted stage is not the NPC presence predecessor".into());
+    }
+    Ok(())
+}
+
+fn admit_consumables_then_presence(
+    cheese_stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let output_name = output
+        .file_name()
+        .ok_or("output basename missing")?
+        .to_string_lossy()
+        .into_owned();
+    let consumables_stage = output.with_file_name(format!(".{output_name}-consumables-stage"));
+    let chained = admit_consumables_from_stage(cheese_stage, &consumables_stage)
+        .and_then(|()| admit_npc_presence_from_stage(&consumables_stage, output));
+    if consumables_stage.exists() {
+        fs::remove_dir_all(&consumables_stage)?;
+    }
+    chained
+}
+
 fn admit_cheese_from_stage(stage: &Path, output: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let stage_parent = stage.parent().ok_or("stage parent missing")?;
     let stage_name = stage.file_name().ok_or("stage basename missing")?;
@@ -654,7 +720,7 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
-    if admit_consumables_on_cheese_admitted(parent, name, output)? {
+    if admit_npc_presence_on_consumables_admitted(parent, name, output)? {
         return Ok(());
     }
     // The pinned predecessor predates the admissions: stage each package beside the output and
@@ -664,16 +730,22 @@ fn materialize_from_predecessor(
         .ok_or("output basename missing")?
         .to_string_lossy()
         .into_owned();
+    let consumables_stage = output.with_file_name(format!(".{output_name}-consumables-stage"));
+    if admit_consumables_on_cheese_admitted(parent, name, &consumables_stage)? {
+        let chained = admit_npc_presence_from_stage(&consumables_stage, output);
+        fs::remove_dir_all(&consumables_stage)?;
+        return chained;
+    }
     let cheese_stage = output.with_file_name(format!(".{output_name}-cheese-stage"));
     if admit_cheese_on_corpse_admitted(parent, name, &cheese_stage)? {
-        let chained = admit_consumables_from_stage(&cheese_stage, output);
+        let chained = admit_consumables_then_presence(&cheese_stage, output);
         fs::remove_dir_all(&cheese_stage)?;
         return chained;
     }
     let corpse_stage = output.with_file_name(format!(".{output_name}-corpse-stage"));
     if admit_corpse_on_reconciled(parent, name, &corpse_stage)? {
         let chained = admit_cheese_from_stage(&corpse_stage, &cheese_stage)
-            .and_then(|()| admit_consumables_from_stage(&cheese_stage, output));
+            .and_then(|()| admit_consumables_then_presence(&cheese_stage, output));
         fs::remove_dir_all(&corpse_stage)?;
         if cheese_stage.exists() {
             fs::remove_dir_all(&cheese_stage)?;

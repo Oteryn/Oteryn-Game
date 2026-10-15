@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        430,
-        "aecd3e4c85b1765dfe2e80de0f955b593c9318302bbd2780d1c34a9e9b22034a",
+        418,
+        "233f2a19d71135e5f8b4fdac8024c1d0569b5f696b98ca669b98bab0c615bd6c",
     ),
     (
         "definitions/declarations.json",
-        27275107,
-        "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
+        27597392,
+        "c8523ca9c2c3f342cfbd3b2cc52a8f2c5652ddd77a53d37a01329611b3127d6e",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1961,
-        "2641cdb6f36125392985cf0f0a4f622dd248aa212ba321c9e6543c07c4579550",
+        1957,
+        "9c5b15a532d6d2294387075af2e9fb80f2c44d6650f773bbf11d93e1dfb4a0b7",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        412,
-        "eb23b3236d6aa3ab247a991347ed3e047473ca912f5b74aad6053d0d3f391dbc",
+        408,
+        "c07d0f96ecfd078e4c9a033a83c48ba66e3d7f5be616c2a1e9cbbf3ae6751bd3",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
+const TREE_SHA256: &str = "d7abdc3958d2bf73f39539ab659952693bc1c836ee4c5e05de2dbeded82c1659";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -385,7 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "item-sem-use-2-consumables-20261013-r1"
+        "npc-content-2-presence-20261015-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project

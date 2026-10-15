@@ -23,14 +23,14 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     let catalogue =
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
-    // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
+    // Revision and source tree digest measured on the NPC-presence repository source (NPC-CONTENT-2).
     assert_eq!(
         catalogue.project_revision(),
-        "item-sem-use-2-consumables-20261013-r1"
+        "npc-content-2-presence-20261015-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3"
+        "d7abdc3958d2bf73f39539ab659952693bc1c836ee4c5e05de2dbeded82c1659"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);
@@ -62,6 +62,54 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
         );
         assert!(fields.iter().any(|f|matches!(&f.value,ProjectV2CandidateValue::Text(v) if v.contains("APPROXIMATE_WIKI_VISUAL_INVISIBLE_MAPPING"))));
     }
+}
+#[test]
+fn npc_presence_facts_and_voices_are_staged_on_npc_definitions() {
+    // NPC-CONTENT-2 (NPC-BEHAVIOUR0 §5, §6): movement facts on every sourced NPC; voices only
+    // where the bound sources agree, each line within CHAT0-RL-01 and free of placeholders.
+    let project = captured();
+    let (mut moving, mut voiced, mut lines) = (0, 0, 0);
+    for declaration in &project.v2().expect("v2").declarations {
+        let ProjectV2Declaration::Npc { fields, .. } = declaration else {
+            continue;
+        };
+        let value = |path: &str| {
+            fields
+                .iter()
+                .find(|f| f.field_path == format!("oteryn:source.npc.{path}"))
+                .map(|f| &f.value)
+        };
+        if let Some(speed) = value("base_speed") {
+            moving += 1;
+            assert_eq!(speed, &ProjectV2CandidateValue::Integer(55));
+            assert_eq!(
+                value("floor_change"),
+                Some(&ProjectV2CandidateValue::Boolean(false))
+            );
+        }
+        let Some(ProjectV2CandidateValue::Text(text)) = value("voice_lines") else {
+            assert!(
+                value("voice_interval_ms").is_none() && value("voice_chance_percent").is_none()
+            );
+            continue;
+        };
+        voiced += 1;
+        assert!(
+            matches!(value("voice_interval_ms"), Some(ProjectV2CandidateValue::Integer(i)) if *i > 0)
+        );
+        assert!(
+            matches!(value("voice_chance_percent"), Some(ProjectV2CandidateValue::Integer(c)) if (1..=100).contains(c))
+        );
+        let parsed: Vec<serde_json::Value> = serde_json::from_str(text).expect("voice lines");
+        for line in parsed {
+            let said = line["text"].as_str().expect("line text");
+            assert!(!said.is_empty() && said.chars().count() <= 255 && said.len() <= 1020);
+            assert!(!said.contains('|'), "unresolved placeholder: {said}");
+            assert!(line["yell"].is_boolean());
+            lines += 1;
+        }
+    }
+    assert_eq!((moving, voiced, lines), (1122, 282, 626));
 }
 #[test]
 fn dangling_dialogue_is_rejected_by_the_existing_import_admission() {
