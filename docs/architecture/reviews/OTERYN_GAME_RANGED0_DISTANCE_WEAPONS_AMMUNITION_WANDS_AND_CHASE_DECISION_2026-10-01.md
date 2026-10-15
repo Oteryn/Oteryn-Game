@@ -1,7 +1,7 @@
 # RANGED-0 Distance weapons, ammunition, wands and chase
 
 - Decision: `RANGED0-DISTANCE-WEAPONS-AMMUNITION-WANDS-AND-CHASE-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (combat,
   persistence, movement and protocol) and protected integration. Amended 2026-10-14 after the
   four-lane review of 2026-10-14 (all four lanes failed; every blocker is closed in §14 and the
   sections it names); the amended head needs the four lanes again. Round 2 (2026-10-14) closes the second-round
