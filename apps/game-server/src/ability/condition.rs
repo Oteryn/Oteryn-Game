@@ -78,6 +78,17 @@ pub(crate) enum ConditionGate {
     Powerless,
 }
 
+impl ConditionGate {
+    /// The content condition type that names the family.
+    pub(crate) const fn key(self) -> &'static str {
+        match self {
+            Self::Muted => "muted",
+            Self::Pacified => "pacified",
+            Self::Powerless => "powerless",
+        }
+    }
+}
+
 /// At most one instance exists per conflict key. Source spell subids extend the
 /// candidate key vocabulary; the per-actor instance cap is `COND0-RL-01`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -303,19 +314,11 @@ pub(crate) enum ConditionValues {
         duration_ms: u32,
     },
     /// §3.5: a gate family; a new application refreshes the duration.
-    #[allow(
-        dead_code,
-        reason = "content mapping constructs it in the MAGIC-COND-1 wiring slice"
-    )]
     Gate {
         gate: ConditionGate,
         duration_ms: u32,
     },
     /// §3.5: damage over time of an undefined element, shaped like `DamageOverTime`.
-    #[allow(
-        dead_code,
-        reason = "content mapping constructs it in the MAGIC-COND-1 wiring slice"
-    )]
     Agony {
         total_min: u32,
         total_max: u32,
@@ -324,6 +327,19 @@ pub(crate) enum ConditionValues {
         /// `false`: the first tick is dealt at once on application.
         delayed: bool,
     },
+}
+
+impl ConditionValues {
+    /// §3.5: the gate family named by its content condition type; any other name is `None`.
+    pub(crate) fn gate(key: &str, duration_ms: u32) -> Option<Self> {
+        let gate = match key {
+            "muted" => ConditionGate::Muted,
+            "pacified" => ConditionGate::Pacified,
+            "powerless" => ConditionGate::Powerless,
+            _ => return None,
+        };
+        Some(Self::Gate { gate, duration_ms })
+    }
 }
 
 /// An item appearance retains the exact activated Item identity and generation.
@@ -782,6 +798,9 @@ pub(crate) enum TickKind {
         amount: u32,
         refused: bool,
     },
+    /// One §3.5 `agony` occurrence: undefined element, not absorbed by the mana shield;
+    /// `refused` in a protection zone, where it is still used up.
+    Agony { amount: u32, refused: bool },
     /// A regeneration tick (FOOD-REGEN-1, Recovery); `suppressed` regenerates nothing.
     Regeneration { key: ConflictKey, suppressed: bool },
     SpellRegeneration {
@@ -1435,14 +1454,9 @@ impl<S: Clone> ConditionStore<S> {
                     if !damage
                         && matches!(
                             instance.definition.condition_type(),
-                            ConditionType::DamageOverTime(_)
+                            ConditionType::DamageOverTime(_) | ConditionType::Agony
                         )
                     {
-                        return None;
-                    }
-                    // §3.5 `agony` deals damage of an undefined element, which no `TickKind`
-                    // carries yet: its schedule stays due and nothing is dealt or dropped.
-                    if matches!(instance.definition.values, ConditionValues::Agony { .. }) {
                         return None;
                     }
                     let scheduled = instance
@@ -1553,6 +1567,25 @@ impl<S: Clone> ConditionStore<S> {
                         refused: facts.in_protection_zone,
                     }
                 }
+                ConditionValues::Agony {
+                    per_tick,
+                    interval_ms,
+                    ..
+                } => {
+                    if instance.immediate_due == Some(due) {
+                        instance.immediate_due = None;
+                    } else {
+                        instance.next_tick_at =
+                            due.checked_add(u64::from(interval_ms) * MICROS_PER_MS);
+                    }
+                    // No element, so no field keeps it: every occurrence is used up.
+                    let amount = per_tick.min(instance.remaining_total);
+                    instance.remaining_total -= amount;
+                    TickKind::Agony {
+                        amount,
+                        refused: facts.in_protection_zone,
+                    }
+                }
                 ConditionValues::FoodRegeneration { interval_ms, .. }
                 | ConditionValues::Recovery { interval_ms, .. } => {
                     let key = instance.definition.condition_type().conflict_key();
@@ -1645,10 +1678,6 @@ impl<S: Clone> ConditionStore<S> {
 
 /// §3.5 gates. Once the action is identified they run before every other cast and attack
 /// admission check (protection zone included), before cost and cooldown; a refusal spends nothing.
-#[allow(
-    dead_code,
-    reason = "the action admissions call them in the MAGIC-COND-1 wiring slice"
-)]
 impl<S: Clone> ConditionStore<S> {
     /// §3.5: the same current-time view for a gate family.
     pub(crate) fn has_gate(&self, gate: ConditionGate, now: u64) -> bool {

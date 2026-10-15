@@ -3121,6 +3121,29 @@ impl ChannelSpellStates {
                 TickKind::Regeneration {
                     suppressed: false, ..
                 } => return None,
+                // CONDITIONS-0 §3.5: the creature provenance of `Damage`; the mana shield never
+                // absorbs agony. A refused occurrence was used up in the protection zone.
+                TickKind::Agony { amount, refused } => {
+                    if !refused {
+                        if tick.provenance.source_kind != ConditionSourceKind::Creature
+                            || !tick
+                                .provenance
+                                .source
+                                .as_deref()
+                                .is_some_and(|s| s.starts_with("creature:"))
+                        {
+                            return None;
+                        }
+                        let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
+                            &next,
+                            amount,
+                            now.get(),
+                        )
+                        .ok()?;
+                        damage = damage.checked_add(hit.applied)?;
+                        next = successor;
+                    }
+                }
             }
         }
         let changed = next != *before;

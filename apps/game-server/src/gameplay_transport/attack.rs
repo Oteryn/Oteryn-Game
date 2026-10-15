@@ -174,6 +174,19 @@ impl ChannelAttackStates {
     }
 }
 
+/// CONDITIONS-0 §3.5: the actor's runtime condition slot holds a current `pacified`. An
+/// actor without a slot holds no condition there.
+fn pacified_slot(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: SemanticTimeMicros,
+) -> bool {
+    runtime
+        .actor_conditions(actor, Some(session))
+        .is_ok_and(|store| store.attack_target_gate(now.get()).is_err())
+}
+
 /// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
 fn refusal_disposition(refusal: TargetRefusal) -> AttackIntentDisposition {
     match refusal {
@@ -361,6 +374,10 @@ impl ChannelAttackStates {
             entry.clear_target();
             return AttackIntentDisposition::Ok;
         };
+        // CONDITIONS-0 §3.5: `pacified` refuses setting a target before every other check.
+        if pacified_slot(runtime, actor, session, now) {
+            return AttackIntentDisposition::Rejected;
+        }
         let Some(room) = room else {
             return AttackIntentDisposition::Rejected;
         };
@@ -652,6 +669,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
+            // CONDITIONS-0 §3.5: applying `pacified` clears a running target.
+            if player
+                .owned_conditions()
+                .attack_target_gate(now.get())
+                .is_err()
+                || pacified_slot(&runtime, entry.actor, entry.session, now)
+            {
+                entry.clear_target();
+                continue;
+            }
             // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
             // batch, its swing defers to a later turn; the held target and swing clock stay.
             if runtime.assert_actor_spell_unreserved(entry.actor).is_err() {
@@ -811,6 +838,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "../foundation/channel_owner_auto_attack_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "attack_gate_tests.rs"]
+mod gate_tests;
 
 /// SPELL-TARGET-1: a held target inside the spell range but outside the reference window is
 /// out of sight (`TargetIllegal` in ordinary combat).

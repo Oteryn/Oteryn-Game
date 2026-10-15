@@ -14,7 +14,7 @@ pub(crate) fn has_periodic_damage(state: &PlayerSpellState) -> bool {
     state.conditions.instances().iter().any(|instance| {
         matches!(
             instance.definition().condition_type(),
-            ConditionType::DamageOverTime(_)
+            ConditionType::DamageOverTime(_) | ConditionType::Agony
         )
     })
 }
@@ -545,6 +545,26 @@ fn tick_inner(
                     super::food_regeneration::credit_fed_second(&mut staged);
                 }
             }
+            // §3.5: a refused agony occurrence is used up in the protection zone.
+            TickKind::Agony { refused: true, .. } => {}
+            TickKind::Agony {
+                amount,
+                refused: false,
+            } => {
+                // These cycles record no death and have no PvP legality owner: only a
+                // non-lethal hit of creature provenance is dealt here. Any other occurrence
+                // goes to the combat owner, which deals it or leaves the pass unchanged.
+                let creature = tick.provenance.source_kind == ConditionSourceKind::Creature
+                    && tick
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|source| source.starts_with("creature:"));
+                match creature.then(|| stage_agony_hit(&staged, amount, now)) {
+                    Some(Ok((successor, _))) if successor.health > 0 => staged = successor,
+                    _ => combat.push(tick),
+                }
+            }
             TickKind::Damage { .. } | TickKind::Regeneration { .. } => combat.push(tick),
         }
     }
@@ -607,10 +627,6 @@ pub(crate) fn stage_creature_hit(
 
 /// CONDITIONS-0 §3.5: an `agony` tick is damage of an undefined element, which the mana
 /// shield never absorbs (§3.3); every other stage is that of [`stage_creature_hit`].
-#[allow(
-    dead_code,
-    reason = "the agony tick consumer calls it in the MAGIC-COND-1 wiring slice"
-)]
 pub(crate) fn stage_agony_hit(
     state: &PlayerSpellState,
     magnitude: u32,

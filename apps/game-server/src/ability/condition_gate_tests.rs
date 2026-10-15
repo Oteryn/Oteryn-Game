@@ -344,13 +344,91 @@ fn agony_is_never_selected_by_cleanse_or_dispel_and_immunity_does_not_refuse_it(
     assert!(store.instances().is_empty());
 }
 
+fn agony_kinds(ticks: &[ConditionTick<u32>]) -> Vec<TickKind> {
+    ticks.iter().map(|tick| tick.kind).collect()
+}
+
+const AGONY_10: TickKind = TickKind::Agony {
+    amount: 10,
+    refused: false,
+};
+
 #[test]
-fn agony_ticks_stay_due_until_an_undefined_element_tick_kind_exists() {
+fn agony_ticks_at_once_then_every_interval_until_its_total_is_spent() {
     let mut store = ConditionStore::new();
-    apply_at(&mut store, &agony(100, 100, false), 1, 0).unwrap();
-    assert!(store.take_due(10_000 * MS, TickFacts::default()).is_empty());
+    apply_at(&mut store, &agony(30, 30, false), 1, 0).unwrap();
+    assert_eq!(
+        agony_kinds(&store.take_due(0, TickFacts::default())),
+        [AGONY_10]
+    );
+    assert!(
+        store
+            .take_due(2_000 * MS - 1, TickFacts::default())
+            .is_empty()
+    );
+    assert_eq!(
+        agony_kinds(&store.take_due(2_000 * MS, TickFacts::default())),
+        [AGONY_10]
+    );
+    assert_eq!(store.get(ConflictKey::Agony).unwrap().remaining_total(), 10);
+    assert_eq!(
+        agony_kinds(&store.take_due(4_000 * MS, TickFacts::default())),
+        [AGONY_10]
+    );
+    assert!(store.get(ConflictKey::Agony).is_none());
+}
+
+#[test]
+fn delayed_agony_waits_one_interval() {
+    let mut store = ConditionStore::new();
+    apply_at(&mut store, &agony(20, 20, true), 1, 0).unwrap();
+    assert!(
+        store
+            .take_due(2_000 * MS - 1, TickFacts::default())
+            .is_empty()
+    );
+    assert_eq!(
+        agony_kinds(&store.take_due(2_000 * MS, TickFacts::default())),
+        [AGONY_10]
+    );
+}
+
+#[test]
+fn agony_is_refused_but_used_up_in_a_protection_zone_and_no_field_keeps_it() {
+    let mut store = ConditionStore::new();
+    apply_at(&mut store, &agony(30, 30, false), 1, 0).unwrap();
+    let pz = TickFacts {
+        in_protection_zone: true,
+        standing_on_field: None,
+    };
+    assert_eq!(
+        agony_kinds(&store.take_due(0, pz)),
+        [TickKind::Agony {
+            amount: 10,
+            refused: true,
+        }]
+    );
+    assert_eq!(store.get(ConflictKey::Agony).unwrap().remaining_total(), 20);
+    // An element field keeps only its own damage over time; agony has no element.
+    let field = TickFacts {
+        in_protection_zone: false,
+        standing_on_field: Some(DotElement::Fire),
+    };
+    assert_eq!(agony_kinds(&store.take_due(2_000 * MS, field)), [AGONY_10]);
+    assert_eq!(store.get(ConflictKey::Agony).unwrap().remaining_total(), 10);
+}
+
+#[test]
+fn a_regeneration_pass_never_takes_an_agony_tick() {
+    let mut store = ConditionStore::new();
+    apply_at(&mut store, &agony(30, 30, false), 1, 0).unwrap();
+    assert!(
+        store
+            .take_due_non_damage(10_000 * MS, TickFacts::default())
+            .is_empty()
+    );
     let kept = store.get(ConflictKey::Agony).unwrap();
-    assert_eq!(kept.remaining_total(), 100);
+    assert_eq!(kept.remaining_total(), 30);
     assert_eq!(kept.immediate_due, Some(0));
 }
 
