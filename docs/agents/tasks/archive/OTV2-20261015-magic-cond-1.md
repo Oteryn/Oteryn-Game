@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/magic-cond-1
 plan_issue: 2051
-pr: null # the coordinator writes the positive PR number once the PR is open
+pr: 2122
 head_sha: "exact frozen head in the report to the control plane"
 final_head_sha: "exact frozen head in the report to the control plane"
 owner: claude-code worker for the MAGIC-COND-1 coordinator
@@ -128,7 +128,7 @@ external_repositories: []
 last_progress: slices A and B and the final conformance pass complete
 status: completed
 branch: claude/magic-cond-1
-pr: null
+pr: 2122
 blocker: null
 next_action: the coordinator opens the PR, writes its number above, freezes and requests the exact-head review
 ```
