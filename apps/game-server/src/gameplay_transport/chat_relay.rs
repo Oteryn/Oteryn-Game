@@ -381,11 +381,13 @@ impl ChatRelay {
             .await?;
             window.lease_stored(until);
         }
-        *self.clock.lock().map_err(|_| Lost)? = Some((now, read_at));
-        // Not ready until the window admits what this node stamps now: after a start or a
-        // reconnect a send would otherwise return OK and be dropped here as `BeforeStart`.
+        // Sends are stamped with the window's clock, and the relay is not ready until the window
+        // admits what it stamps: after a start, a reconnect or a database clock stepped back a
+        // send would otherwise return OK and be dropped here.
+        let clock = window.admitting_clock(now);
+        *self.clock.lock().map_err(|_| Lost)? = Some((clock.unwrap_or(now), read_at));
         self.ready.store(
-            usage <= QUEUE_USAGE_MAX && window.admits_from(now),
+            usage <= QUEUE_USAGE_MAX && clock.is_some(),
             Ordering::Release,
         );
         Ok(())

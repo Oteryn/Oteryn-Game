@@ -756,10 +756,10 @@ fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_
     assert_eq!(window.floor, startup_floor(back));
     let floor = window.floor;
     // Until the reading reaches the new floor nothing this node stamps would be admitted.
-    assert!(!window.admits_from(back));
-    assert!(!window.admits_from(floor - 1));
+    assert_eq!(window.admitting_clock(back), None);
+    assert_eq!(window.admitting_clock(floor - 1), None);
     renew(&mut window, floor);
-    assert!(window.admits_from(floor));
+    assert_eq!(window.admitting_clock(floor), Some(floor));
     // A copy of the missed line republished after the reconnect is not delivered, nor is the line
     // admitted before the drop; a line sent past the new floor is.
     for (text, at) in [
@@ -786,4 +786,28 @@ fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_
     assert_eq!(window.floor, floor);
     window.reconnected(back);
     assert_eq!(window.floor, floor);
+}
+
+#[test]
+fn after_the_database_clock_steps_back_the_window_admits_what_its_clock_stamps() {
+    let ring = ring(&[(1, 0)]);
+    let (mut window, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let running = NOW + 10_000_000;
+    renew(&mut window, running);
+    assert_eq!(window.admitting_clock(running), Some(running));
+    // A small step back: the clock stays at the newest reading and a line stamped with it is
+    // admitted.
+    let stepped = running - 1_000_000;
+    let clock = window.admitting_clock(stepped).expect("still covered");
+    assert_eq!(clock, running);
+    let line = room_line(1, clock);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(window.receive(&ring, CHANNEL, &text, stepped), Ok(line));
+    // A step back past the freshness window: a line stamped with the raw reading would be
+    // dropped, so the relay is not ready rather than accepting it.
+    let far = NOW - 2 * FRESHNESS_MICROS;
+    assert_eq!(window.admitting_clock(far), None);
+    let raw = room_line(2, far);
+    let raw_text = seal_with_nonce(&ring, CHANNEL, &raw, NONCE).expect("seal");
+    assert!(window.receive(&ring, CHANNEL, &raw_text, far).is_err());
 }

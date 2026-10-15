@@ -804,6 +804,7 @@ fn rooms_need_level_20_or_premium_except_help_and_private_needs_level_3() {
         assert!(!gate(19, false).allows_room(room), "{room:?}");
         assert!(gate(20, false).allows_room(room), "{room:?}");
         assert!(gate(2, true).allows_room(room), "{room:?}");
+        assert!(gate(1, true).allows_room(room), "{room:?}");
     }
     assert!(gate(1, false).allows_room(ChatRoom::Help));
     assert!(!gate(2, false).allows_private());

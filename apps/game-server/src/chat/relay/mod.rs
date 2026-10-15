@@ -541,11 +541,16 @@ impl ReplayWindow {
         self.high_water = self.floor.max(self.high_water);
     }
 
-    /// Whether a line stamped at database time `now_micros` or later would be admitted: the
-    /// reading has reached the floor and a stored lease covers it. The listener reports the relay
-    /// ready only then, so a send is never accepted while its own node would drop it.
-    pub(crate) fn admits_from(&self, now_micros: u64) -> bool {
-        now_micros >= self.floor && self.leased_until.is_some_and(|until| until >= now_micros)
+    /// The window's clock at database reading `now_micros` (never behind a reading seen) when a
+    /// line stamped with it would be admitted: the reading has reached the floor and a stored
+    /// lease covers the clock; otherwise `None`. The listener stamps sends with this clock and
+    /// reports the relay ready only while it is `Some`, so a send is never accepted while its own
+    /// node would drop it, also after the database clock steps back.
+    pub(crate) fn admitting_clock(&mut self, now_micros: u64) -> Option<u64> {
+        let clock = self.observe(now_micros);
+        let admits =
+            now_micros >= self.floor && self.leased_until.is_some_and(|until| until >= clock);
+        admits.then_some(clock)
     }
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.

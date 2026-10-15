@@ -65,9 +65,9 @@ impl YellGate {
     }
 
     /// Whether the speaker may write to `room`: Help is open to all, the other rooms need level 20
-    /// or `premium_current`, as a yell does.
+    /// or `premium_current`. The level-1 ban is the yell's own and does not apply here.
     pub(crate) fn allows_room(self, room: ChatRoom) -> bool {
-        room == ChatRoom::Help || self.allows()
+        room == ChatRoom::Help || self.level >= YELL_FREE_LEVEL || self.premium_current
     }
 
     /// Whether the speaker may send a private message: level 3.
