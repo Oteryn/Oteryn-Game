@@ -197,6 +197,7 @@ not establish 1:1 behavior. Continue in module-sized batches with shared validat
 
 ## Oracle QA checkpoint — 2026-10-15
 
-Portal sign-in and QA character creation pass; native sign-in/admission fail.
-Next: sanitized OAuth/owner-character stage diagnostics. Evidence/recovery:
+39ae passes native OAuth/Gateway/TLS; rejects unsolicited map domain2.
+Next: owning server MAP producer repair; QA identity/E2E remains unproven.
+Evidence/recovery:
 ../../evidence/OTV2-20261015-client-oracle-login.md.

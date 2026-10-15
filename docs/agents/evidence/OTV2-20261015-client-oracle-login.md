@@ -84,3 +84,71 @@ ranking, their native producer/ingestion wiring and real HTTP acceptance; do not
 reconnect an obsolete database, fabricate zero rows or mask failure with200.
 This platform source/deployment repair is not a client-branch code change.
 Native OAuth failure still needs separate sanitized stage diagnostics.
+
+## Native diagnostic head39ae — actual domain2 refusal / 2026-10-15 UTC
+
+PROVEN: published39ae109bd05db41e652c7bae619e1821fba06597 changes only
+secret-free login-stage diagnostics, not wire acceptance. Linux231/218/5,
+strict Clippy/fmt and governance124 pass; the mixed-map/domain2 refusal
+regression passes. Windows230/225/5, strict Clippy/fmt and release pass.
+Official pinned GitHub source archive SHA256
+4ed0624e366facbffccf6a98fe13b121b38fc0c6fa5d67e83bff4e3613adf016;
+library blob a7e084017226d692883b028fe9383ea2db4f4b99 and both Cargo checksums
+were independently compared with the published source before compilation.
+Executable SHA256
+4cc8adcdf35e129393bfe2f709a248a9057d8378d0ee64e047a1ac7702ed0bb2.
+
+The newly built normal GUI (no --auto-login), PID37552, actual visible
+HWND6228802, logs TWO sequences:
+TokenExchange OK -> OwnerCharacters OK -> NativeTicket OK -> Gateway OK ->
+gameplay TLS+ALPN verified -> admission unselected domain=2 -> unavailable.
+This proves the deeper native failure boundary for39ae; it supersedes the
+earlier stage uncertainty, not by inferring success from a callback screenshot.
+Game/world admission still FAILS. The new build reproduces the refusal;
+the assertion that an old installed client alone explains it is not established.
+
+UNKNOWN: actor/account/character identity for these two live sequences.
+This turn did not automate a consent button; UIA/own-child request capture
+attempts found no request, and login/cancel coordinate intent does not prove
+the intervening UI state. Do not attribute the native attempts to the previously
+created QA character or claim operator-completed QA E2E. Stop further injected
+input while another actor may be using the window.
+
+PROVEN: Session::admit rejects domain2 when WORLD_MAP_VIEW_V1 (cap18) is
+selected; legacy2 is allowed when map18 is not selected. Existing regression
+enforces this. Fresh Oracle runtime image label declares source
+77af046ce14c81df6ed6cab03ae693a68acff32c. At that exact source,
+apps/game-server/src/gameplay_transport/connection.rs unconditionally appends
+STATE_DOMAIN_WORLD_OBJECT_OVERLAY (2) to the join snapshot, alongside its
+selected-map17 path. DERIVED: the producer violates the MAP cutover/domain
+selection contract, consistent with the actual39ae rejection. Do not disable
+the client guard or silently drop unsolicited state to make login appear fixed.
+
+Owning server/map lane: repair selected-map versus legacy join/resume/delta
+emission, test cap18 selection produces17 and excludes2 (legacy fallback stays
+valid), qualify the exact server candidate, and route any deployment through
+the existing authorized deployment owner. Then repeat native login with a
+known QA identity and verify actual world admission. No server code/config,
+deployment, registration or trust mutation was performed here.
+
+Private PC proof: parent fixture oteryn-oracle-login-20261015,
+child diagnostic-39ae109b/native-attempt-report.json, SHA256
+614a1decaa7f075d62e57ce8f5a82d8ba1ea3133a8b0e076b1a92331b9f02af8.
+All5 PNGs decode1125x775;3 were visually inspected. Latest failure PNG SHA256
+e47e099088aecae2682febf89d55332be46e8a40f7918c6143071876e6eb42cc.
+Original195 executable hash remains874620ef...30ce75; no old install was replaced.
+Native launch initially selected winit's zero-sized event target; strict
+PID/executable/class/dimension checks rebound only the observed real window.
+Failed source/observer attempts remain evidence, not accepted tests: partial
+Git checkout lacked source objects, two exact predecessor blobs were hydrated,
+the own stalled fetch was stopped without closing user clients, and official
+archive preparation's mistyped literal hash was rejected before the correct
+independent checksum verifier ran. An unused incomplete follower was never run.
+
+Recovery bundle /workspace/oteryn-client-publication-39ae109b.bundle SHA256
+5e99ace4096f7d41543789e2f2d416451c6439a44ae01dc2fb86e802ab0f3942
+requires1954627d. Driver archive
+/workspace/oteryn-oracle-39ae109b-diagnostic-tools.tar.gz SHA256
+85b51262571faca1362a9a68dab0a8ae08b89796411235aaf17240ec7767de75.
+Exact39ae CI currently proves only the protected-base audit, not Merge
+gate/game-gate, readiness or whole-client completion. PR1942 remains AUTHORING.
