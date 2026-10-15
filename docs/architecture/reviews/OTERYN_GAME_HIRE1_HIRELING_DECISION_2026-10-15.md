@@ -51,6 +51,7 @@ Guests (other players in the house) may use the Apprentice and the Trader. Owner
 
 - Every created lamp is a MINT with a `HirelingDelivery` cause bound to the delivery id (single mint per delivery id); every lamp use or removal is a retirement or a mint with a `HirelingPlacement` cause. Conservation holds: a hireling is one row plus at most one lamp item.
 - Hireling rows are character-scoped persistent state. They are not part of the house item custody family, but the H4 return runs in the house loss transaction under the HOUSE-OWN-0 lock order; the lock-order rule of that decision is amended in HIRE-1's own packet, not here.
+- **Session fence.** Every player-command write of H3 (place, remove, lamp mint and retire, and the name, sex and dress changes of H6 and H7) is fenced on the acting character's current session generation (AGENTS.md L16): the write carries the generation it was admitted under and is rejected with a typed stale-session refusal when it no longer matches, before any item or row changes. A stale session can neither place nor remove a hireling nor consume a lamp. Store deliveries (H1) are not player commands and are fenced by the delivery id instead.
 - No hireling state advances `CharacterRevision` except the lamp in the inbox (an item).
 
 ## 4. Delivery contract (blocked)

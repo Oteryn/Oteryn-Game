@@ -11,7 +11,7 @@
 ## 1. Scope
 
 Item conversions the player triggers: "use X with Y" and a small set of NPC exchanges. Tibia parity, nothing more:
-- **Use-with conversions** (crafting combos): one item or stack used on another, or on a map object, becomes one or more items. Reference example: water on flour gives dough, dough on an oven gives bread (`docs/reference/tibia-manual/controls.md`, "Use with", "crafting combos exist").
+- **Use-with conversions** (crafting combos): one item or stack used on another, or on a map object, becomes one or more items. Reference example: water on flour gives dough (USED water, count 1, CONSUME; TARGET flour, count 1, TRANSFORM_TO dough; the table lists both operands, so the target flour is never consumed implicitly), dough on an oven gives bread (`docs/reference/tibia-manual/controls.md`, "Use with", "crafting combos exist").
 - **Fishing:** fishing rod plus worms on a water tile that holds fish. Each successful attempt consumes one worm. The catch chance scales with the Fishing skill. Not every water tile has fish, and a tile does not yield again right after a catch (`docs/reference/tibia-manual/characters.md` §Fishing; `world.md` water rules).
 - **Digging:** shovel or pick used on a diggable ground item, which turns it into its opened form (a tile transformation with a timed return), as the upstream tools do (`data/scripts/actions/tools/shovel.lua`, `pick.lua` in the Canary reference).
 - **Cooking:** food conversions (raw to cooked) by use-with a heat source; hireling cooking is a service of HIRE-1, not of this brief.
@@ -33,7 +33,7 @@ Facts the brief relies on:
 
 ## 3. Rules
 
-**C1. The conversion table is content.** One table in `content/` (family `item_conversion`, source-provenance per row), compiled into the bundle. A row: `input_item`, `target` (item id, tile kind or none), `consumes` (count of input), `outputs` (item id and count list, or a weighted list), `skill` (none or Fishing), `chance_curve` (fishing only), `tool` (rod, shovel, pick, none), `capacity_check`, `result_message`. Code holds no recipe. A row absent from the table is not a conversion.
+**C1. The conversion table is content.** One table in `content/` (family `item_conversion`, source-provenance per row), compiled into the bundle. A row: `input_item`, `target` (item id, tile kind or none), `operands` (one entry for each item the conversion touches, the used item and the target: `role` = USED or TARGET, `item_id`, `count`, and `effect` = CONSUME, TRANSFORM_TO (an item id, for a target that stays in place as another item) or KEEP (a tool such as a rod or shovel); a conversion with no TARGET operand targets a tile kind), `outputs` (item id and count list, or a weighted list), `skill` (none or Fishing), `chance_curve` (fishing only), `tool` (rod, shovel, pick, none), `capacity_check`, `result_message`. Code holds no recipe. A row absent from the table is not a conversion.
 
 **C2. Deterministic RNG.** The only random conversion is a weighted output or the fishing catch roll. It draws from a new registered RNG purpose `ConversionRngPurpose` (variants `FishingCatch`, `WeightedOutput`), seeded from the world seed, the character id, the item uid and the per-character conversion counter, following the ATTACK-0 §4 RNG-purpose pattern. Same inputs, same result. No wall-clock or global RNG. A replayed or retried intent returns the original result (idempotent on the intent id), so a retry cannot reroll.
 

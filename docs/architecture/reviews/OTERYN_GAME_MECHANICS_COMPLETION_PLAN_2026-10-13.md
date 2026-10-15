@@ -93,12 +93,12 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | ITEM-LOOK-1 | 75 | look/examine message | none | impl | no | yes |
 | BANK-RET-0 | 39 | **MERGED (#1748).** bank retention profile (BANK-0 §2.3); releases BANK-1 | none (control plane routes; privacy review) | decision | no | maybe |
 | ECON-RET-0 | 122, 113 | **MERGED (#1748).** guild and market event retention profiles (GUILD-RET-0, MARKET-RET-0); releases GUILD-1 and MARKET-1 | none (control plane routes; privacy review) | decision | no | maybe |
-| NPC-ECON-1 | 39, 81 | bank (the promotion purchase is not here: it is the PREM-5 NPC promotion, paid in coins via GOLD-FEE-1b) | #2040 (merged), BANK-FEE-0, BANK-RET-0 (merged, #1748) (BANK-1 waits on it); external prerequisites of the brief children: MAP-BUNDLE-1, MAP-CUTOVER-1b, GOLD-FEE-1b, DEATH-1 | hard (value) | yes | maybe |
+| NPC-ECON-1 | 39 | bank (mechanics row 81, the promotion purchase, is not here: it belongs to PREM-2b+PREM-5, the PREM-5 NPC promotion paid in coins via GOLD-FEE-1b) | #2040 (merged), BANK-FEE-0, BANK-RET-0 (merged, #1748) (BANK-1 waits on it); external prerequisites of the brief children: MAP-BUNDLE-1, MAP-CUTOVER-1b, GOLD-FEE-1b, DEATH-1 | hard (value) | yes | maybe |
 | TRADE-PLAYER-1 | 82 | player-to-player trade | ITEM-LOOP-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1 (merged), MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
 | MAIL-1 | 88 | mail and parcels | ITEM-LOOP-1 (ITEM-STORAGE-1 as a whole is not an entry gate: the parcel children name DEPOT-1 through BAGS-DEPOT-1 themselves, and MAIL-TEXT-1 and MAIL-CONTENT-1 run before WRITE-1); external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1 (merged), MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
 | MARKET-1 | 122 | market | ITEM-LOOP-1, NPC-ECON-1 (ITEM-STORAGE-1 as a whole is not an entry gate: MARKET-CONTENT-1 runs before STASH-CONTENT-1), ECON-RET-0 (merged, #1748; MARKET-RET-0), PREMIUM-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1 (merged), MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
-| CRAFT-1 | 89, 91 | crafting, fishing, digging, cooking; brief `OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` (CANDIDATE) | #2039 (merged), ITEM-LOOP-1 | hard (item conversions) | yes | no |
-| HIRE-1 | 90 | hirelings: a Store-delivered, house-bound NPC product; goes ahead, not deferred (owner 2026-10-15); brief `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE); delivery waits for the Platform Store contract (Platform #1625) | HOUSE-1a, NPC-ECON-1, PREMIUM-1 | impl | yes | no |
+| CRAFT-1 | 89, 91 | crafting, fishing, digging, cooking; brief `OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` (CANDIDATE; children in Appendix 7, CRAFT-1 graph) | #2039 (merged), ITEM-LOOP-1 | hard (item conversions; child graph, App. 7) | yes | no |
+| HIRE-1 | 90 | hirelings (children in Appendix 7, HIRE-1 graph): a Store-delivered, house-bound NPC product; goes ahead, not deferred (owner 2026-10-15); brief `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE); delivery waits for the Platform Store contract (Platform #1625) | HOUSE-1a, NPC-ECON-1, PREMIUM-1 | hard (persistence, economy; child graph, App. 7) | yes | no |
 | QUEST-RT-1 | 86, 87 | quest runtime on the bundle, chest rewards, cap 16 offer | QUEST-LOWER-1, ITEM-LOOP-1, MAP-PICKUP-1 (chest and ground pickup), QUEST-XP-ADMISSION-1 (pays quest XP); external prerequisites of the brief children: MAP-LOAD-1, MAP-WIRE-2, NPC-TALK-1, GOLD-FEE-2, MAP-BUNDLE-1, NPC-CONTENT-1 | hard (rewards are mints) | maybe | yes |
 
 ### Epic 3. Magic and conditions
@@ -614,6 +614,23 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (TRAVEL0) is al
 | NPC-VOICE-1 | NPC_BEHAVIOUR0 | impl |  | CHAT-1; CHAT-1b-2b; NPC-ACTOR-1 |
 | NPC-CONTENT-2 | NPC_BEHAVIOUR0 | content |  | NPC-CONTENT-1 |
 
+### CRAFT-1, HIRE-1
+
+Acceptance gate: no child in this graph is allocated until its owning decision (CRAFT1, HIRE1; both CANDIDATE, 2026-10-15) is ACCEPTED.
+
+| Child | Brief | Class | Reg | Depends on (from the brief) |
+|---|---|---|---|---|
+| CRAFT-CONTENT-1 | CRAFT1 | content: the `item_conversion` family, schema, generator and CI check |  | this decision |
+| CRAFT-RT-1 | CRAFT1 | hard, determinism and persistence review: conversion engine, `ConversionRngPurpose` | yes | CRAFT-CONTENT-1; ITEM-LOOP-1 |
+| CRAFT-FISH-1 | CRAFT1 | impl: fishing with the SKILLS-0 hook |  | CRAFT-RT-1 |
+| CRAFT-DIG-1 | CRAFT1 | impl: digging on the MAP-OVERLAY volatile layer |  | CRAFT-RT-1; MAP-OVERLAY-1 |
+| CRAFT-NPC-1 | CRAFT1 | impl: NPC exchanges on the NPC-TRADE-1 writer |  | CRAFT-RT-1; NPC-TRADE-1 (writer merged, #2040) |
+| HIRE-DATA-1 | HIRE1 | hard, persistence review: hireling rows, lamp mint and retire, house-loss return, session fence |  | HOUSE-1a |
+| HIRE-NPC-1 | HIRE1 | impl: hireling NPC entity and Apprentice content |  | HIRE-DATA-1; NPC-TALK-1 |
+| HIRE-JOBS-1 | HIRE1 | hard, economy review: Banker, Trader, Steward, Cook | yes | HIRE-NPC-1; NPC-ECON-1; STASH-1 |
+| HIRE-WIRE-1 | HIRE1 | hard, protocol review: hireling outfit window, dress, name and sex change | yes | HIRE-DATA-1 |
+| HIRE-STORE-1 | HIRE1 | hard, security and economy review: Store delivery consumer; waits for the Platform Store contract (Platform #1625) | yes | HIRE-DATA-1; PREMIUM-1; Platform Store contract |
+
 ### MONSTER-META-1, EVENTS-RAID-1, EVENTS-WORLD-1, ARENA-1
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (BOSS_RAID0, MONSTER_D15) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
@@ -808,7 +825,7 @@ These briefs define children that rows above depend on (several are CANDIDATE an
 | VIS-2 | VIS (RL11) | **MERGED (#1392).** The new `WORLD_SPATIAL` schema revision, the `WORLD_SPATIAL_ENTITIES` capability, codec, c | yes | VIS-1 (merged); protocol lane |
 | PREM-1 | PREMIUM_ACTIVATION | **MERGED (#1391 and #1678 (1a, 1b)).** Premium entitlement consumer fence and surface policies (§4.1), and the snapshot client of |  | `PROD-ENTITLEMENTS-01` consumer contract; FND-04 admission; PREMIUM-DELIVERY-0 (#1369) |
 | PREM-P | PREMIUM_ACTIVATION, PREMIUM_DELIVERY0 (Oteryn-Platform) | Platform producer: Premium entitlement with operator or test grants, no payment, and the s |  | Platform producer contract; PREMIUM-DELIVERY-0; Platform's own acceptance of PREMIUM_DELIVERY0 §3-§5 |
-| PREM-2b+PREM-5 | PREMIUM_ACTIVATION | One allocation (PREMIUM_ACTIVATION0 §2, §3 packet them together, released after NPC-TALK-1): (PREM-2b) promotion state, effective promotion at login, soul maxima, death input (§4.2, §4.3), also the Wheel's promotion read (WHEEL0 §6.2); (PREM-5) the promotion and Premium blessing NPC services. PREM-2a's pure rules are merged (`domain/premium.rs`). Hold released (owner/architect ruling 2026-10-15, ACCEPT-BATCH-2026-10-15): the promotion source is the PREM-5 NPC promotion, 20 000 gp, level 20 or higher, Premium (PREMIUM_ACTIVATION §4.2, D70), paid in coins via GOLD-FEE-1b |  | PREM-WIRE-1; NPC-TALK-1; GOLD-FEE-1b; progression readiness; spell P3b-2 vitals |
+| PREM-2b+PREM-5 | PREMIUM_ACTIVATION (carries mechanics row 81, promotion) | One allocation (PREMIUM_ACTIVATION0 §2, §3 packet them together, released after NPC-TALK-1): (PREM-2b) promotion state, effective promotion at login, soul maxima, death input (§4.2, §4.3), also the Wheel's promotion read (WHEEL0 §6.2); (PREM-5) the promotion and Premium blessing NPC services. PREM-2a's pure rules are merged (`domain/premium.rs`). Hold released (owner/architect ruling 2026-10-15, ACCEPT-BATCH-2026-10-15): the promotion source is the PREM-5 NPC promotion, 20 000 gp, level 20 or higher, Premium (PREMIUM_ACTIVATION §4.2, D70), paid in coins via GOLD-FEE-1b |  | PREM-WIRE-1; NPC-TALK-1; GOLD-FEE-1b; progression readiness; spell P3b-2 vitals |
 | PREM-3 | PREMIUM_ACTIVATION | Premium-area flags, entry refusal, login relocation (§4.5) |  | PREM-1; content pipeline |
 | PREM-4 | PREMIUM_ACTIVATION | Premium spell cast check (§4.6): superseded, it is PREM-WIRE-1 (PREMIUM_ACTIVATION0 §2.1); no separate batch |  | PREM-WIRE-1 |
 | PREM-1b | PREMIUM_DELIVERY0 | **MERGED (#1678).** Oteryn-Game |  | Game-side acceptance of this decision; PREM-1a |
