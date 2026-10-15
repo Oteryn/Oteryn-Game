@@ -32,6 +32,7 @@ owned_paths:
   - tools/content-migration/import_spell_families.py
   - tools/content-migration/test_monster_seven_spell_overlay.py
   - .github/workflows/content-tree-migration.yml
+  - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md
   - docs/agents/tasks/active/PRESENT-CONTENT-1.md
   - docs/agents/tasks/archive/PRESENT-CONTENT-1.md
 public_contracts: []
@@ -65,8 +66,10 @@ and checked without them:
 - Race is an overlay beside the other bindings, not a field in the Creature shards: the shards are
   regenerated from the World declarations and a round-trip check rejects hand edits (precedent:
   `spell-native-profiles.json`).
-- The 15.30 sound files and the sound-id check against them are not in this PR: the files are not in
-  the repository or the container (BLOCKER sent to the control plane).
+- The 15.30 sound files and the sound-id check against them are not in this PR: the files are in
+  neither the repository nor the container. On the control plane's ruling (option b) they are
+  PRESENT-CONTENT-1b, `BLOCKED_OWNER_INPUT` in the mechanics completion plan; the control plane asks
+  the owner for the `sounds/` folder.
 
 ## Validation
 
