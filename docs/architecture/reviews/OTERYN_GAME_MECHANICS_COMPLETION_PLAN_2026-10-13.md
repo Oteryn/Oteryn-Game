@@ -842,7 +842,7 @@ Acceptance gate: none of these has a brief or decision yet; the control plane ro
 | FLOOR-FACTS-BUNDLE-1 | OTV2-20261010-map-floor-1 | hard (map): floor-change facts and their collision fact in a versioned bundle field so the digest authenticates them (ADR-0021 D189) |  | MAP-BUNDLE-1 (merged) |
 | LOOT-ITEM-PROFILES-1 | OTV2-20261007-d3-8-cheese | content: item profiles for cave-rat loot `i3492` and `i3598` (control-plane decision) |  | KILL-REWARD-COMP-1 (merged) |
 | CONSUMABLE-CONDITIONS-1 | OTV2-20261004-item-sem-use-2 | content lane: the consumables reported not lowered (52 rows: FOOD, potions, conditions) |  | ITEM-SEM-USE; CONDITIONS-0 |
-| SCOPE-HANDOFF-2 | OTV2-20261004-scope-handoff-1 | hard (persistence): cross-node house entry, the any-node fallback |  | SCOPE-HANDOFF-1 (merged); HOUSE-RUNTIME-1a |
+| SCOPE-HANDOFF-2 | OTV2-20261004-scope-handoff-1 | hard (persistence): cross-node house entry, the any-node fallback; brief `OTERYN_GAME_SCOPE_HANDOFF2_DECISION_2026-10-15.md` (CANDIDATE) |  | SCOPE-HANDOFF-1 (merged); HOUSE-RUNTIME-1a |
 | SEC-TRUST-1 | OTV2-20261003-p2-followups-batch7 | hard (security): non-restored freshness state and an embedded trust snapshot |  | SEC-REL-1 |
 
 ### Children found by the umbrella audit (packets and decisions; the acceptance gate applies to CANDIDATE ones)
