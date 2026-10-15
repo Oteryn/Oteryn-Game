@@ -394,10 +394,10 @@ mod native_entry {
         let client = NativeLoginClient::new(&platform, &gateway, &config.oauth_client_id)
             .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
         let token = authorize_token(&client, config, cancellation.clone()).await?;
-        let characters = client
-            .account_characters(&token, cancellation)
-            .await
-            .map_err(login_rejected)?;
+        let characters = login_result(
+            LoginStage::OwnerCharacters,
+            client.account_characters(&token, cancellation).await,
+        )?;
         Ok(SignedInAccount {
             worlds: directory.worlds,
             characters,
@@ -436,11 +436,13 @@ mod native_entry {
             .ok_or(GameplayEntryError::InvalidConfiguration)?;
         let root = load_root_certificate(&config.dev_root)
             .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-        let ticket = account
-            .client
-            .issue_native_ticket(account.token, cancellation.clone())
-            .await
-            .map_err(login_rejected)?;
+        let ticket = login_result(
+            LoginStage::NativeTicket,
+            account
+                .client
+                .issue_native_ticket(account.token, cancellation.clone())
+                .await,
+        )?;
         connect_ticket(
             &account.client,
             &selected_config,
@@ -641,6 +643,34 @@ mod native_entry {
         rejected(error.public_class())
     }
 
+    #[derive(Debug, Clone, Copy)]
+    enum LoginStage {
+        TokenExchange,
+        OwnerCharacters,
+        NativeTicket,
+        Gateway,
+    }
+
+    // Only closed, data-free error enums are formatted. Never format a response body,
+    // URL, callback, token, ticket, grant or even a successful result's payload.
+    fn login_diagnostic(stage: LoginStage, error: Option<NativeLoginError>) -> String {
+        match error {
+            Some(error) => format!("Oteryn diagnostic: login stage={stage:?} error={error:?}"),
+            None => format!("Oteryn diagnostic: login stage={stage:?} result=ok"),
+        }
+    }
+
+    fn login_result<T>(
+        stage: LoginStage,
+        result: Result<T, NativeLoginError>,
+    ) -> Result<T, GameplayEntryError> {
+        eprintln!(
+            "{}",
+            login_diagnostic(stage, result.as_ref().err().copied())
+        );
+        result.map_err(login_rejected)
+    }
+
     const fn admission_class(class: AdmissionPublicClass) -> PublicClass {
         match class {
             AdmissionPublicClass::RetryLogin => PublicClass::RetryLogin,
@@ -708,10 +738,12 @@ mod native_entry {
             character_id: &config.character_id,
             client_build: &config.client_build,
         };
-        let mut grant = client
-            .gateway_login(ticket, &login, cancellation.clone())
-            .await
-            .map_err(login_rejected)?;
+        let mut grant = login_result(
+            LoginStage::Gateway,
+            client
+                .gateway_login(ticket, &login, cancellation.clone())
+                .await,
+        )?;
 
         // 5-6. Connect and admit, retrying only the N8 RETRYABLE rows.
         let mut grant_retries = 0;
@@ -806,15 +838,17 @@ mod native_entry {
             .await_code(&flow, cancellation.clone())
             .await
             .map_err(retry_login)?;
-        let token = client
-            .exchange_code(
-                code.expose().expose(),
-                pkce.verifier().expose(),
-                &redirect_uri,
-                cancellation.clone(),
-            )
-            .await
-            .map_err(login_rejected)?;
+        let token = login_result(
+            LoginStage::TokenExchange,
+            client
+                .exchange_code(
+                    code.expose().expose(),
+                    pkce.verifier().expose(),
+                    &redirect_uri,
+                    cancellation.clone(),
+                )
+                .await,
+        )?;
         Ok(token)
     }
 
@@ -824,10 +858,10 @@ mod native_entry {
         cancellation: CancellationToken,
     ) -> Result<NativeTicket, GameplayEntryError> {
         let token = authorize_token(client, config, cancellation.clone()).await?;
-        client
-            .issue_native_ticket(token, cancellation)
-            .await
-            .map_err(login_rejected)
+        login_result(
+            LoginStage::NativeTicket,
+            client.issue_native_ticket(token, cancellation).await,
+        )
     }
 
     /// One connect and admission. `Err(Some(code))` is an admission refusal; `Err(None)` is any
@@ -842,6 +876,7 @@ mod native_entry {
         let stream = connect_any(&addresses, &grant.endpoint.tls_server_name, root)
             .await
             .ok_or(None)?;
+        eprintln!("Oteryn diagnostic: gameplay TLS and ALPN verified");
         Session::admit(
             stream,
             Admission {
@@ -865,6 +900,10 @@ mod native_entry {
                     "Oteryn diagnostic: admission transport error kind={:?}",
                     error.kind()
                 );
+                None
+            }
+            SessionError::UnselectedDomain { domain_id } => {
+                eprintln!("Oteryn diagnostic: admission unselected domain={domain_id}");
                 None
             }
             _ => {
@@ -912,6 +951,7 @@ mod native_entry {
         use super::*;
         use crate::ClientBootstrap;
         use oteryn_client_runtime::ClientRuntime;
+        use oteryn_platform_client::PlatformClientError;
         use rustls::pki_types::PrivatePkcs8KeyDer;
         use std::io::{Read as _, Write as _};
         use std::sync::Mutex;
@@ -921,6 +961,38 @@ mod native_entry {
         use tokio_rustls::TlsAcceptor;
 
         type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+        #[test]
+        fn login_diagnostics_preserve_failure_classes_and_never_require_payload_debug() {
+            // Successful payloads deliberately implement no Debug/Display. The diagnostic
+            // interface cannot inspect a token, grant, character list or other success value.
+            struct PrivatePayload;
+            assert!(login_result(LoginStage::TokenExchange, Ok(PrivatePayload)).is_ok());
+            assert_eq!(
+                login_diagnostic(LoginStage::OwnerCharacters, None),
+                "Oteryn diagnostic: login stage=OwnerCharacters result=ok"
+            );
+            for error in [
+                NativeLoginError::Platform(PlatformClientError::InvalidPayload),
+                NativeLoginError::Platform(PlatformClientError::HttpStatus(503)),
+                NativeLoginError::TokenRefused,
+                NativeLoginError::TicketSpent,
+            ] {
+                assert_eq!(
+                    login_result::<PrivatePayload>(LoginStage::OwnerCharacters, Err(error)).err(),
+                    Some(login_rejected(error))
+                );
+            }
+            assert_eq!(
+                login_diagnostic(
+                    LoginStage::OwnerCharacters,
+                    Some(NativeLoginError::Platform(
+                        PlatformClientError::InvalidPayload
+                    ))
+                ),
+                "Oteryn diagnostic: login stage=OwnerCharacters error=Platform(InvalidPayload)"
+            );
+        }
 
         const WORLD_REF: &str = "w-alpha";
         const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
