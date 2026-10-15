@@ -117,3 +117,17 @@ Preconditions checked:
 - The gate is not waived: where a brief names a prerequisite (FORGE-1a, PROF-1, PROF-WIRE-1, CHAR-REV-SEQ-1, GOLD-FEE-2, WHEEL-GEM-0A ordering), the prerequisite still binds the child packets. Each child still needs its own #162 allocation.
 
 Every brief above has its Status line set to ACCEPTED and cites this section. Plan edits: the Appendix 7 status paragraph, the PROG-ADV-1 gate line and the PROF-ORB-BURN-1 and GEM-1 dependency cells of `OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`.
+
+## 7. HIRE-1 decision (added 2026-10-15)
+
+Owner `blakinio` answered with "akceptuje hire i craft" (2026-10-15, control-plane chat, owner accepted via control plane); this section records the HIRE-1 half. The acceptance takes effect only when the PR that adds this section passes exact-head validation, independent review and CI on its frozen head and is integrated through the protected merge path. It adds no rule text and changes no code, wire, migration or content, except the plan edits below. The brief is revision 2 (owner direction of 2026-10-15). Path is under `docs/architecture/reviews/`.
+
+| Brief | File |
+|---|---|
+| HIRE1 | `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` |
+
+Preconditions checked:
+- The brief's own gates still bind its child packets (HIRE-1: Platform Store contract #1625 for delivery, HOUSE-1b, NPC-ECON-1; CRAFT-1: ITEM-LOOP-1, D3-4, SKILLS-0, TIMED-ITEM-0B). Each child still needs its own #162 allocation.
+- The `HIRE1-RL-01` to `-04` resource rows are registered by HIRE-DATA-1 before implementation (brief §5), not at acceptance, so this PR adds none.
+
+The brief has its Status line set to ACCEPTED and cites this section. Plan edits: the HIRE-1 row of section 4, the Appendix 7 status paragraph and the HIRE-1 graph gate line of `OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`. Task record: the acceptance row of `docs/agents/tasks/HIRE-1.md`.
