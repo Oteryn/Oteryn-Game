@@ -55,8 +55,10 @@ pub const MAX_PRESENTATION_EVENT_BYTES: usize = 128;
 pub const MAX_PRESENTATION_BATCH_BYTES: usize = 131_136;
 /// The highest 15.30 client effect, missile or sound id.
 pub const MAX_CLIENT_ID: u32 = 65_535;
-/// The highest SPELL-D1 spell index the events and cooldowns carry.
-pub const MAX_SPELL_INDEX: u32 = 65_535;
+/// The highest SPELL-D1 spell index a cooldown entry carries: a 4-byte id keeps the entry, with its
+/// kind and a 6-byte `expires_at_ms`, at `SPELLPRES0-RL-05` (16 bytes). `spell_words` takes any
+/// nonzero `uint32`.
+pub const MAX_COOLDOWN_SPELL_INDEX: u32 = (1 << 28) - 1;
 /// The highest floor a position carries.
 pub const MAX_FLOOR: i16 = 15;
 
@@ -213,7 +215,7 @@ pub enum ActorCooldownKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ActorCooldown {
     pub kind: ActorCooldownKind,
-    /// The SPELL-D1 index (1..=65,535) or the S9 group ordinal (1..=16).
+    /// The SPELL-D1 index (1..=2^28 - 1) or the S9 group ordinal (1..=16).
     pub id: u32,
     pub expires_at_ms: u64,
 }
@@ -304,7 +306,7 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
         } => {
             check_actor(caster)?;
             check_position(position)?;
-            check_range(*spell, MAX_SPELL_INDEX)
+            check_range(*spell, u32::MAX)
         }
         PresentationEventKind::ValueText {
             position,
@@ -699,7 +701,7 @@ fn check_cooldowns(cooldowns: &ActorCooldowns) -> WireResult<()> {
     let mut keys = BTreeSet::new();
     for entry in &cooldowns.entries {
         let maximum = match entry.kind {
-            ActorCooldownKind::Spell => MAX_SPELL_INDEX,
+            ActorCooldownKind::Spell => MAX_COOLDOWN_SPELL_INDEX,
             ActorCooldownKind::Group => MAX_COOLDOWN_GROUP,
         };
         check_range(entry.id, maximum)?;

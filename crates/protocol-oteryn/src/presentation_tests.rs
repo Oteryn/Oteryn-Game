@@ -91,7 +91,7 @@ fn every_kind() -> Vec<PresentationEvent> {
             PresentationEventKind::SpellWords {
                 caster: actor(9, 1),
                 position: tile(100, 200, 7),
-                spell: MAX_SPELL_INDEX,
+                spell: u32::MAX,
             },
         ),
         event(
@@ -283,7 +283,7 @@ fn malformed_events_fail_closed() {
             PresentationEventKind::SpellWords {
                 caster: actor(1, 1),
                 position: tile(0, 0, 0),
-                spell: MAX_SPELL_INDEX + 1,
+                spell: 0,
             },
         ),
         event(
@@ -530,16 +530,16 @@ fn cooldowns_round_trip_within_their_bounds() {
     assert_eq!(bytes, [0x18, 0x01]);
     assert_eq!(decode_actor_cooldowns(&bytes).expect("decode"), instant);
 
-    // The largest entry is 15 bytes; a full message of 4,096 such entries fits its bound.
+    // The largest entry is 16 bytes; a full message of 4,096 such entries fits its bound.
     let mut largest = Vec::new();
     push_message_field(
         &mut largest,
         4,
         &[
-            0x08, 0x02, 0x10, 0xff, 0xff, 0x03, 0x18, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+            0x08, 0x02, 0x10, 0xff, 0xff, 0xff, 0x7f, 0x18, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
         ],
     );
-    assert_eq!(largest.len(), 15);
+    assert_eq!(largest.len(), 16);
     let full = ActorCooldowns {
         server_now_ms: MAX_CLOCK_MS,
         rtt_ms: Some(u32::MAX),
@@ -548,7 +548,11 @@ fn cooldowns_round_trip_within_their_bounds() {
                 if id <= MAX_COOLDOWN_GROUP {
                     cooldown(ActorCooldownKind::Group, id, MAX_CLOCK_MS)
                 } else {
-                    cooldown(ActorCooldownKind::Spell, MAX_SPELL_INDEX - id, MAX_CLOCK_MS)
+                    cooldown(
+                        ActorCooldownKind::Spell,
+                        MAX_COOLDOWN_SPELL_INDEX - id,
+                        MAX_CLOCK_MS,
+                    )
                 }
             })
             .collect(),
@@ -561,8 +565,11 @@ fn cooldowns_round_trip_within_their_bounds() {
 
     // A 4,097th entry is refused in both directions.
     let mut over = full.clone();
-    over.entries
-        .push(cooldown(ActorCooldownKind::Spell, MAX_SPELL_INDEX, 1));
+    over.entries.push(cooldown(
+        ActorCooldownKind::Spell,
+        MAX_COOLDOWN_SPELL_INDEX,
+        1,
+    ));
     assert_eq!(
         encode_actor_cooldowns(&over),
         Err(PresentationWireError::LimitExceeded)
@@ -607,7 +614,7 @@ fn malformed_cooldowns_fail_closed() {
         (
             with(vec![cooldown(
                 ActorCooldownKind::Spell,
-                MAX_SPELL_INDEX + 1,
+                MAX_COOLDOWN_SPELL_INDEX + 1,
                 5,
             )]),
             Err(MALFORMED),

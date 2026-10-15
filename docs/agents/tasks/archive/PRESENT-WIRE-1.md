@@ -76,4 +76,7 @@ Wire only: no emitter, no runtime, nothing offered.
 - Codex on c71f58c, two P2s fixed in the final authoring commit: the emission ordinal takes the
   full `uint32` range (the decision bounds only event and batch bytes; the worst event is 126
   bytes), and the `ACTOR_COOLDOWNS` entry bound counts every byte of an overlong field 4 key.
+- Codex on ec6f77a3, one P2 fixed: the SPELL-D1 index is no longer capped at 65,535. `spell_words`
+  takes any nonzero `uint32`; a cooldown spell id is at most 2^28 - 1, the largest that keeps an
+  entry within `SPELLPRES0-RL-05` (16 bytes).
 - Capability renumbered from 20 to 23 on the control plane's lease (6e2744b3).
