@@ -438,18 +438,21 @@ struct Site {
 /// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
 /// What the keys cannot resolve fails closed instead of passing: two functions of one file with
 /// one name, a file loaded by two module declarations, a production `include!`, a seam field
-/// inside a `macro_rules!` definition, and a macro defined outside the scanned modules.
+/// inside a `macro_rules!` definition, a macro defined outside the scanned modules, and another
+/// macro answering to an allowlisted or scanned macro's name.
 #[allow(clippy::expect_used, clippy::panic)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
     let root = dir.canonicalize().expect("gameplay_transport directory");
     let mut pending = vec![(dir.join("mod.rs"), true)];
     let mut seen = BTreeSet::new();
+    let mut scanned = BTreeSet::new();
     let mut reads = BTreeSet::new();
     let mut invoked = BTreeSet::new();
     let mut defined = BTreeSet::new();
     while let Some((path, mod_rs)) = pending.pop() {
         let path = path.canonicalize().expect("module source");
+        scanned.insert(path.clone());
         // A file loaded by two module declarations is compiled twice, once per module, while one
         // scan would stand for both: removing either declaration would leave the inventory as is.
         assert!(
@@ -535,7 +538,123 @@ fn module_reads() -> BTreeSet<(String, Site)> {
          define it in a scanned module or write the read at its call site",
         unknown.join(", ")
     );
+    // The names above are trusted by name alone, so no other macro may answer to one: an
+    // allowlisted or scanned name defined elsewhere (`crate::format!`, a textually scoped
+    // `macro_rules!` of a parent module) or imported under it (`use crate::m as format`).
+    let names: BTreeSet<String> = UPSTREAM_MACROS
+        .iter()
+        .map(|name| (*name).to_owned())
+        .chain(defined)
+        .collect();
+    let shadows = macro_shadows(&names, &scanned);
+    assert!(
+        shadows.is_empty(),
+        "{}: another macro answers to a name the inventory trusts, and its expansion may read a \
+         seam field; rename it",
+        shadows.join(", ")
+    );
     reads
+}
+
+/// Every `macro_rules!` definition outside the scanned files, `#[proc_macro]` function or `as`
+/// rename that gives one of `names` to a macro, in the game server and the workspace crates it
+/// depends on by path. Upstream crates are trusted, as the allowlist is.
+#[allow(clippy::expect_used)]
+fn macro_shadows(names: &BTreeSet<String>, scanned: &BTreeSet<PathBuf>) -> Vec<String> {
+    let mut crates = vec![Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()];
+    let mut seen = BTreeSet::new();
+    let mut shadows = Vec::new();
+    while let Some(dir) = crates.pop() {
+        let dir = dir.canonicalize().expect("crate directory");
+        if !seen.insert(dir.clone()) {
+            continue;
+        }
+        let manifest = std::fs::read_to_string(dir.join("Cargo.toml")).expect("crate manifest");
+        let manifest: toml::Table = manifest.parse().expect("crate manifest parses");
+        if let Some(toml::Value::Table(dependencies)) = manifest.get("dependencies") {
+            crates.extend(dependencies.values().filter_map(|dependency| {
+                let path = dependency.get("path")?.as_str()?;
+                Some(dir.join(path))
+            }));
+        }
+        let mut sources = vec![dir.join("src")];
+        while let Some(path) = sources.pop() {
+            if path.is_dir() {
+                let entries = std::fs::read_dir(&path).expect("source directory");
+                sources.extend(entries.map(|entry| entry.expect("source entry").path()));
+                continue;
+            }
+            if path.extension().is_none_or(|extension| extension != "rs") {
+                continue;
+            }
+            let path = path.canonicalize().expect("source file");
+            let source = std::fs::read_to_string(&path).expect("source text");
+            let tokens = syn::buffer::TokenBuffer::new2(source.parse().expect("source lexes"));
+            let mut found = Vec::new();
+            shadowing(tokens.begin(), names, &mut found);
+            for (kind, name) in found {
+                // A scanned module's own macros are scanned at their definition; it may still not
+                // redefine an upstream one.
+                if kind == "macro_rules"
+                    && scanned.contains(&path)
+                    && !UPSTREAM_MACROS.contains(&name.as_str())
+                {
+                    continue;
+                }
+                shadows.push(format!("{}: {kind} `{name}`", path.display()));
+            }
+        }
+    }
+    shadows
+}
+
+/// The `macro_rules! name`, `#[proc_macro] fn name` and `as name` of a token stream, at any depth,
+/// whose name is one of `names`.
+fn shadowing(
+    mut cursor: syn::buffer::Cursor<'_>,
+    names: &BTreeSet<String>,
+    found: &mut Vec<(&'static str, String)>,
+) {
+    let mut proc_macro = false;
+    while !cursor.eof() {
+        if let Some((ident, next)) = cursor.ident() {
+            let named = |cursor: syn::buffer::Cursor<'_>| {
+                cursor
+                    .ident()
+                    .map(|(name, _)| name.to_string())
+                    .filter(|name| names.contains(name))
+            };
+            let kind = if ident == "macro_rules" {
+                next.punct()
+                    .filter(|(punct, _)| punct.as_char() == '!')
+                    .and_then(|(_, after)| named(after))
+                    .map(|name| ("macro_rules", name))
+            } else if ident == "as" {
+                named(next).map(|name| ("as", name))
+            } else if ident == "fn" && std::mem::take(&mut proc_macro) {
+                named(next).map(|name| ("proc_macro", name))
+            } else {
+                None
+            };
+            found.extend(kind);
+            cursor = next;
+        } else if let Some((punct, next)) = cursor.punct() {
+            if punct.as_char() == '#'
+                && let Some((inner, _, _, _)) = next.any_group()
+                && inner.token_stream().to_string() == "proc_macro"
+            {
+                proc_macro = true;
+            }
+            cursor = next;
+        } else if let Some((inner, _, _, next)) = cursor.any_group() {
+            shadowing(inner, names, found);
+            cursor = next;
+        } else if let Some((_, next)) = cursor.token_tree() {
+            cursor = next;
+        } else {
+            break;
+        }
+    }
 }
 
 /// The standard-library and upstream-crate macros the modules invoke: their definitions cannot
@@ -593,6 +712,8 @@ struct Scan {
     owners: Vec<String>,
     /// Each production `include!` invocation: its file is loaded without being scanned.
     includes: usize,
+    /// Where the macro whose body is about to be walked takes a format string.
+    format: Option<Format>,
     /// The name of every production macro invocation, and of every `macro_rules!` definition.
     invoked: Vec<String>,
     defined: Vec<String>,
@@ -613,6 +734,31 @@ struct Module {
     name: String,
     /// Its `#[path = "..."]`.
     path: Option<String>,
+}
+
+/// Where a macro takes a format string whose `{name}` captures read bindings.
+#[derive(Clone, Copy)]
+enum Format {
+    /// Its argument at this position, when that argument is a string literal.
+    Argument(usize),
+    /// Any string literal in its body: a macro of the scanned modules may hand any of them to
+    /// `format!`.
+    Every,
+}
+
+/// Where the macro named `name` takes a format string: the standard formatting macros at their
+/// format argument, the other upstream macros nowhere, and every other macro anywhere.
+fn format_of(name: &str) -> Option<Format> {
+    match name {
+        "format" | "format_args" | "print" | "println" | "eprint" | "eprintln" | "panic"
+        | "unreachable" | "todo" | "unimplemented" => Some(Format::Argument(0)),
+        "write" | "writeln" | "assert" | "debug_assert" => Some(Format::Argument(1)),
+        "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne" => {
+            Some(Format::Argument(2))
+        }
+        _ if UPSTREAM_MACROS.contains(&name) => None,
+        _ => Some(Format::Every),
+    }
 }
 
 impl Scan {
@@ -640,7 +786,7 @@ impl Scan {
         });
     }
 
-    /// A string literal's `{name}` captures (`format!("{combat_room:?}")` reads the binding
+    /// A format string's `{name}` captures (`format!("{combat_room:?}")` reads the binding
     /// `combat_room`); `{{` is an escaped brace.
     fn format_captures(&mut self, text: &str) {
         let mut rest = text;
@@ -862,29 +1008,15 @@ fn type_name(ty: &syn::Type) -> String {
     }
 }
 
-/// Whether a cfg predicate is false whenever `test` is: `test` itself, an `all(..)` with such a
-/// term, or a non-empty `any(..)` of only such terms. `not(..)` and every other key may hold.
+/// Whether a cfg predicate is false whenever `test` is.
 fn needs_test(predicate: &syn::Meta) -> bool {
-    match predicate {
-        syn::Meta::Path(path) => path.is_ident("test"),
-        syn::Meta::List(list) => {
-            let terms = list
-                .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
-                .unwrap_or_default();
-            if list.path.is_ident("all") {
-                terms.iter().any(needs_test)
-            } else if list.path.is_ident("any") {
-                !terms.is_empty() && terms.iter().all(needs_test)
-            } else {
-                false
-            }
-        }
-        syn::Meta::NameValue(_) => false,
-    }
+    holds_without_test(predicate) == Some(false)
 }
 
-/// Whether a cfg predicate holds in a production build, where `test` is false: `Some` when the
-/// predicate depends on `test` alone, `None` when it names another key (a feature, a target).
+/// Whether a cfg predicate holds in a production build, where `test` is false, evaluated in
+/// three-valued logic: `None` stands for a key other than `test` (a feature, a target), whose value
+/// is not known here. `not` flips a known value, `all` is false with one false term and `any` true
+/// with one true term, so `not(not(test))` and `all(test, feature = "x")` are both `Some(false)`.
 fn holds_without_test(predicate: &syn::Meta) -> Option<bool> {
     match predicate {
         syn::Meta::Path(path) if path.is_ident("test") => Some(false),
@@ -892,19 +1024,24 @@ fn holds_without_test(predicate: &syn::Meta) -> Option<bool> {
             let terms = list
                 .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
                 .ok()?;
-            let terms = terms
-                .iter()
-                .map(holds_without_test)
-                .collect::<Option<Vec<_>>>()?;
+            let terms: Vec<Option<bool>> = terms.iter().map(holds_without_test).collect();
             if list.path.is_ident("not") {
                 match terms.as_slice() {
-                    [term] => Some(!term),
+                    [term] => term.map(|term| !term),
                     _ => None,
                 }
             } else if list.path.is_ident("all") {
-                Some(terms.iter().all(|term| *term))
+                if terms.contains(&Some(false)) {
+                    Some(false)
+                } else {
+                    terms.iter().all(Option::is_some).then_some(true)
+                }
             } else if list.path.is_ident("any") {
-                Some(terms.iter().any(|term| *term))
+                if terms.contains(&Some(true)) {
+                    Some(true)
+                } else {
+                    terms.iter().all(Option::is_some).then_some(false)
+                }
             } else {
                 None
             }
@@ -1286,16 +1423,13 @@ impl<'ast> Visit<'ast> for Scan {
         visit::visit_item_macro(self, item);
     }
 
-    fn visit_lit_str(&mut self, lit: &'ast syn::LitStr) {
-        self.format_captures(&lit.value());
-    }
-
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
         if let Some(segment) = mac.path.segments.last()
             && segment.ident != "macro_rules"
         {
             self.invoked.push(segment.ident.to_string());
+            self.format = format_of(&segment.ident.to_string());
         }
         if mac
             .path
@@ -1320,10 +1454,26 @@ impl Scan {
     /// out. A body that is none of these (a `macro_rules!` matcher, a transcriber with `$x`) is
     /// walked token by token: each group is tried the same way, a `#[cfg(test)]` attribute drops
     /// the tokens it governs (up to its `;`, `,` or braced body), and every other seam field name counts.
+    /// A format string's captures count where its macro takes one ([`format_of`]).
     fn macro_tokens(&mut self, cursor: syn::buffer::Cursor<'_>) {
         let tokens = cursor.token_stream();
         let exprs = Punctuated::<syn::Expr, Token![,]>::parse_terminated;
-        if let Ok(exprs) = exprs.parse2(tokens.clone()) {
+        let parsed = exprs.parse2(tokens.clone());
+        match (self.format.take(), &parsed) {
+            (Some(Format::Argument(index)), Ok(exprs)) => {
+                if let Some(syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(lit),
+                    ..
+                })) = exprs.iter().nth(index)
+                {
+                    self.format_captures(&lit.value());
+                }
+            }
+            // A format string the arguments do not show, or a body that may forward any literal.
+            (Some(_), _) => self.literal_captures(cursor),
+            (None, _) => {}
+        }
+        if let Ok(exprs) = parsed {
             self.within("macro", |scan| {
                 exprs.iter().for_each(|expr| scan.visit_expr(expr));
             });
@@ -1335,6 +1485,8 @@ impl Scan {
             self.within("macro", |scan| scan.visit_file(&file));
         } else {
             let mut cursor = cursor;
+            // The format string position of the macro invoked just before the next group.
+            let mut pending = None;
             while !cursor.eof() {
                 if let Some((punct, next)) = cursor.punct()
                     && punct.as_char() == '#'
@@ -1358,27 +1510,50 @@ impl Scan {
                             if let Some((defined, _)) = after.ident() {
                                 self.defined.push(defined.to_string());
                             }
+                            pending = None;
                         } else {
                             self.invoked.push(ident.to_string());
+                            pending = format_of(&ident.to_string());
                         }
                         if ident == "include" {
                             self.includes += 1;
                         }
+                        cursor = after;
+                    } else {
+                        pending = None;
+                        cursor = next;
                     }
-                    cursor = next;
-                } else if let Some((literal, next)) = cursor.literal() {
-                    if let Ok(lit) = syn::parse_str::<syn::LitStr>(&literal.to_string()) {
-                        self.format_captures(&lit.value());
-                    }
-                    cursor = next;
                 } else if let Some((inner, _, _, next)) = cursor.any_group() {
+                    self.format = pending.take();
                     self.macro_tokens(inner);
                     cursor = next;
                 } else if let Some((_, next)) = cursor.token_tree() {
+                    pending = None;
                     cursor = next;
                 } else {
                     break;
                 }
+            }
+        }
+    }
+}
+
+impl Scan {
+    /// The `{name}` captures of every string literal in a macro body, at any depth.
+    fn literal_captures(&mut self, mut cursor: syn::buffer::Cursor<'_>) {
+        while !cursor.eof() {
+            if let Some((literal, next)) = cursor.literal() {
+                if let Ok(lit) = syn::parse_str::<syn::LitStr>(&literal.to_string()) {
+                    self.format_captures(&lit.value());
+                }
+                cursor = next;
+            } else if let Some((inner, _, _, next)) = cursor.any_group() {
+                self.literal_captures(inner);
+                cursor = next;
+            } else if let Some((_, next)) = cursor.token_tree() {
+                cursor = next;
+            } else {
+                break;
             }
         }
     }
@@ -2054,14 +2229,19 @@ fn every_test_only_cfg_predicate_is_left_out() {
          #[cfg(any(test, test))] struct B { combat_room: u8 } \
          #[cfg(all(test, feature = \"x\"))] struct C { combat_room: u8 } \
          #[cfg(not(test))] struct D { combat_room: u8 } \
-         #[cfg(any(test, feature = \"x\"))] struct E { combat_room: u8 }",
+         #[cfg(any(test, feature = \"x\"))] struct E { combat_room: u8 } \
+         #[cfg(not(not(test)))] struct F { combat_room: u8 } \
+         #[cfg(not(any(not(test), feature = \"x\")))] struct G { combat_room: u8 } \
+         #[cfg(not(all(test, unix)))] struct H { combat_room: u8 }",
     );
-    // `not(test)` and `any(test, ..)` with a non-test term may hold outside tests.
+    // `not(test)`, `any(test, ..)` with a non-test term and `not(all(test, ..))` may hold outside
+    // tests; nested negations are evaluated, not taken as production.
     assert_eq!(
         scan.sites,
         [
             site("<item>", "combat_room", "struct/declaration", 1),
             site("<item>", "combat_room", "struct#2/declaration", 2),
+            site("<item>", "combat_room", "struct#3/declaration", 3),
         ]
     );
 }
@@ -2093,15 +2273,44 @@ fn a_shorthand_initializer_also_reads_its_binding() {
 fn a_format_capture_is_a_read() {
     let scan = scan(
         "fn log(combat_room: Room) { eprintln!(\"{combat_room:?} {{combat_room}}\"); \
-         m! { \"{qualified_room}\" } }",
+         m! { \"{qualified_room}\" } let label = \"{combat_room}\"; \
+         json!({ \"room\": \"{combat_room}\" }); assert_eq!(a, \"{combat_room}\", \"x\"); \
+         write!(f, \"{qualified_room}\"); }",
     );
+    // Only a formatting macro's format string, or any literal of a macro that may forward one,
+    // captures; a plain or upstream literal does not.
     let captured: Vec<&str> = scan
         .sites
         .iter()
         .filter(|site| site.site.ends_with("/capture"))
         .map(|site| site.field.as_str())
         .collect();
-    assert_eq!(captured, ["combat_room", "qualified_room"]);
+    assert_eq!(
+        captured,
+        ["combat_room", "qualified_room", "qualified_room"]
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn every_macro_answering_to_a_trusted_name_is_found() {
+    let source = "macro_rules! format { () => {} } use crate::m as json; \
+                  #[proc_macro] pub fn vec(input: T) -> T { input } \
+                  macro_rules! other { () => {} } fn f(x: u16) -> u8 { x as u8 } \
+                  mod inner { pub use super::local as write; }";
+    let tokens = syn::buffer::TokenBuffer::new2(source.parse().expect("fixture lexes"));
+    let names: BTreeSet<String> = UPSTREAM_MACROS.iter().map(|n| (*n).to_owned()).collect();
+    let mut found = Vec::new();
+    shadowing(tokens.begin(), &names, &mut found);
+    assert_eq!(
+        found,
+        [
+            ("macro_rules", "format".to_owned()),
+            ("as", "json".to_owned()),
+            ("proc_macro", "vec".to_owned()),
+            ("as", "write".to_owned()),
+        ]
+    );
 }
 
 #[test]
