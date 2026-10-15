@@ -4,7 +4,7 @@
 task_id: ITEM-FORGE-1
 title: "ITEM-FORGE-1: exaltation forge"
 mode: IMPLEMENT
-status: skeleton
+status: authoring
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -42,7 +42,7 @@ FORGE-CONTENT-1, FORGE-1b (hard), FORGE-WIRE-1 (Reg), FORGE-CREATURE-1 (combat),
 | SPELL-D3 | MERGED |
 | PREMIUM-1 | MERGED (#2110) |
 | MARKET-1 (MARKET-TIER-1) | BLOCKING |
-| acceptance of IMBUE_FORGE0 (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of IMBUE_FORGE0 | ACCEPTED by ACCEPT_BATCH §1 (owner item 5) (#2209); historical brief header does not override the acceptance |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -123,3 +123,74 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local preparation — 2026-10-15 (draft #2146)
+
+Base `333b3c8497c0a9523232e3d9b0a13eda33c31f09`; current allocation is the
+exclusive six-path lease beside the checkout. The wider historical owned list
+above does not grant registration, transport, protocol, migration or publication
+writes in this preparation. No merge/rebase or production wiring is performed.
+
+### Accepted and executable subset
+
+ACCEPT_BATCH §1 (owner item 5) accepts IMBUE-FORGE-0; the owning §8 states:
+“`game_item_tiers`: one row per item instance with `tier` 1-10. No row is tier 0.
+The row belongs to the ItemInstance and every TRANSFER keeps it”. It also says a
+tier change is `STATE_MUTATION` / `PRESERVE_INSTANCE`. This draft prepares only:
+
+- `domain/forge.rs`: the 0..10 tier value, without classification or eligibility.
+- `durability/forge.rs`: private schema SQL with actual ItemInstance FK, tier
+  bounds, uniqueness and immutable row identity, plus a raw single-statement
+  reader. Existing item/no tier row returns zero; unknown/malformed item identity
+  and corrupt stored tier fail closed. No schema installation or writer runs in
+  production. The SQL is preparation for the future inseparable migration/writer
+  bundle, not a numbered migration or a production-ready permissions design.
+- `tests/forge_postgres.rs`: exact-source path loading while modules remain
+  unregistered; actual native UUID validation, native migrations and PostgreSQL
+  17.6. Fixture insertion is explicitly migration-owner setup, not a qualified
+  MINT or proof of current gameplay authority.
+
+`StoredItemTier` is raw persisted data, not current authority, ownership,
+compatibility or forge permission. A reader acquires no gameplay fence/root lock.
+The future writer must resolve those facts independently and re-read under its
+actual locks/fences. SQL primary/FK/range/identity constraints do not enforce
+Content classification/max tier, non-stackability, imbuement restrictions or
+value conservation. No raw tier may authorize fusion, transfer or effects.
+
+### cross_domain_findings / CP-slot integration packet
+
+1. FORGE-1a already owns the dust balance/ledger; no duplicate dust asset is
+   introduced. Its admitted native causes are creature-kill gain and proficiency
+   spend, not Forge. Conversion/limit-raise ledger kinds do not admit Forge causes
+   or supply a shared arithmetic writer.
+2. Native fee causes/structural sequencing admit CharmUnassign only; item-operation
+   audit has no Forge cause. Forge fee/audit/asset shapes, DUR-03 guards, typed
+   terminal/replay outcomes and the actual shared commit boundary must land with
+   the migration and writer. No invented receipt/request codec/digest or fallback
+   fee cause is provided here.
+3. `rulesets/items/exaltation-forge/index.json` is `READY_UNPOPULATED`.
+   Authoring classification/max-tier imports and `ProjectV2ItemForgeProfile` are
+   not an admitted executable recipe/effect provider. Native ItemDefinitionFacts
+   does not currently expose forge eligibility. Content revision/ruleset/profile
+   binding, recipe costs/chances/material definitions, class caps and tier effects
+   need their owning current-content seams. Canary numbers remain
+   `PARITY_PENDING`; none are promoted into executable policy in this draft.
+4. Current ItemInstance lifecycle/ownership/location, Content compatibility,
+   classification, non-stackability, imbuements and live session-generation
+   authority must be qualified by the eventual real writer. Raw input arguments
+   and the persisted tier row cannot manufacture that authority. This preparation
+   does not perform a gameplay TRANSFER, economic mutation or concurrency/replay
+   operation; those acceptance criteria remain open.
+5. At CP slot revalidate against then-current main and the actual ITEM-LOOP,
+   ITEM-MOVE and MARKET dependencies. Install schema, grants/roles, Forge writer,
+   audit/cause shapes and native registrations only in the accepted inseparable
+   bundle; add current-fence, revision-change, ambiguous commit, replay,
+   concurrency, transfer preservation and conservation integration tests there.
+
+### Validation evidence
+
+Durable commands, original logs, source hashes and honest qualification limits:
+`/workspace/oteryn-prep/item-forge-1-evidence/index.md`. This is bounded private
+schema/read preparation; family acceptance checkboxes above remain intentionally
+open. No runtime forge, fee/dust mutation, effects, content generation or pins are
+implemented or enabled.
