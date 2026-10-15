@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering as SeqOrdering};
 
 use oteryn_protocol_oteryn::chat::{ChatIntent, ChatLine, ChatRoom};
 use oteryn_simulation_determinism::SemanticTimeMicros;
-use sqlx::{Connection as _, PgConnection};
+use sqlx::{Connection as _, Executor as _, PgConnection};
 
 use super::*;
 use crate::durability::MigrationExecutor;
@@ -191,8 +191,9 @@ where
         .block_on(Box::pin(future))
 }
 
-/// A migrated database and the URL the relay connects with. `quiet` connects as the test admin,
-/// which may pin `log_parameter_max_length`; otherwise as a role that may not.
+/// A migrated database and the URL the relay connects with, as a least-privilege member of
+/// `oteryn_game_runtime` with no privilege on any parameter. `quiet` provisions both bind-parameter
+/// logging settings at 0 for that role in this database, as an operator would.
 async fn relay_database(
     test_name: &str,
     quiet: bool,
@@ -203,19 +204,49 @@ async fn relay_database(
         .await?
         .apply_embedded_ledger()
         .await?;
-    if quiet {
-        return Ok((database, url));
-    }
     let role = format!("{}_relay", database.database_name);
     let mut admin = PgConnection::connect(&database.admin_url).await?;
-    admin
-        .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-            "CREATE ROLE {role} LOGIN PASSWORD 'relay' NOSUPERUSER"
-        ))))
-        .await?;
+    for statement in [
+        format!(
+            "CREATE ROLE {role} LOGIN PASSWORD 'relay' NOSUPERUSER IN ROLE oteryn_game_runtime"
+        ),
+        format!(
+            "GRANT CONNECT ON DATABASE {} TO {role}",
+            database.database_name
+        ),
+    ] {
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(statement)))
+            .await?;
+    }
+    if quiet {
+        provision_logging(&database, 0, 0).await?;
+    }
     let host = url.split_once('@').ok_or("invalid database URL")?.1;
     let url = format!("postgresql://{role}:relay@{host}");
     Ok((database, url))
+}
+
+/// Sets both bind-parameter logging settings for the relay role in `database`, as the test admin.
+/// They apply to sessions that start afterwards.
+async fn provision_logging(
+    database: &IsolatedDatabase,
+    max_length: u32,
+    on_error: u32,
+) -> TestResult {
+    let mut admin = PgConnection::connect(&database.admin_url).await?;
+    let name = &database.database_name;
+    for (setting, value) in [
+        ("log_parameter_max_length", max_length),
+        ("log_parameter_max_length_on_error", on_error),
+    ] {
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "ALTER ROLE {name}_relay IN DATABASE {name} SET {setting} = {value}"
+            ))))
+            .await?;
+    }
+    Ok(())
 }
 
 /// A node: its relay installed in its chat runtime, with one admitted session.
@@ -434,18 +465,18 @@ fn a_send_on_a_session_that_may_log_bind_parameters_sends_nothing() -> TestResul
         let channel = channel_name(&uuid_text(&WORLD)).expect("channel");
         let mut listener = PgListener::connect(&url).await?;
         listener.listen(&channel).await?;
+        for (max_length, on_error, payload) in [(64, 0, "logged"), (0, 64, "logged on error")] {
+            provision_logging(&database, max_length, on_error).await?;
+            let mut sender = PgConnection::connect(&url).await?;
+            assert!(!notify_quietly(&mut sender, &channel, payload).await?);
+            assert_eq!(
+                sent_or_unavailable::<()>(Ok(notify_quietly(&mut sender, &channel, payload).await)),
+                Err(ChatDisposition::ChatUnavailable),
+                "no row means CHAT_UNAVAILABLE"
+            );
+        }
+        provision_logging(&database, 0, 0).await?;
         let mut sender = PgConnection::connect(&url).await?;
-        sender
-            .execute("SET log_parameter_max_length = 64; SET log_parameter_max_length_on_error = 0")
-            .await?;
-        assert!(!notify_quietly(&mut sender, &channel, "logged").await?);
-        sender
-            .execute("SET log_parameter_max_length = 0; SET log_parameter_max_length_on_error = 64")
-            .await?;
-        assert!(!notify_quietly(&mut sender, &channel, "logged on error").await?);
-        sender
-            .execute("SET log_parameter_max_length_on_error = 0")
-            .await?;
         assert!(notify_quietly(&mut sender, &channel, "quiet").await?);
         let received = tokio::time::timeout(Duration::from_secs(5), listener.recv()).await??;
         assert_eq!(
