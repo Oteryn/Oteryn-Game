@@ -1387,16 +1387,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
-        logout: Option<AuthenticatedTransportRefV1>,
+        logout: Option<(AuthenticatedTransportRefV1, u64)>,
     ) -> actor_spell::FamiliarLogoutSave {
         // LOGOUT-WIRE-1 (#2127 Codex P1 4278730847): an ACTIVE session's own logout ends the
         // actor too; the familiar is saved on the exact transport before the terminal release.
-        if let Some(transport) = logout {
+        if let Some((transport, attempt)) = logout {
             return self
                 .save_familiar_logout(
                     actor,
                     session,
-                    actor_spell::FamiliarActorEnd::Logout(transport),
+                    actor_spell::FamiliarActorEnd::Logout(transport, attempt),
                 )
                 .await;
         }
@@ -2476,9 +2476,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FenceStep::Wait => return ReleaseAttempt::Retry,
             FenceStep::Refused(_) => return ReleaseAttempt::Done(GraceExpiryResult::Unknown),
         }
-        let logout = match release {
-            TerminalRelease::Logout(transport) => Some(transport),
-            TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_) => None,
+        // A logout's fence is its own minted transition id: one per attempt.
+        let logout = match (release, hold.token) {
+            (TerminalRelease::Logout(transport), TransitionFence::Transition(attempt)) => {
+                Some((transport, attempt))
+            }
+            (TerminalRelease::Logout(_), TransitionFence::GraceExpiry(_)) => {
+                return ReleaseAttempt::Done(GraceExpiryResult::Unknown);
+            }
+            (TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_), _) => None,
         };
         if self
             .save_familiar_at_actor_end(actor, session, logout)
@@ -4314,6 +4320,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok((session, now)) = store.current_session_at(game_session_id).await else {
             return ControlLossResult::Unknown;
         };
+        // A logout whose commit became visible during the spell reconciliation is the same
+        // lost-acknowledgement release.
+        if session.session_state() == GameSessionState::Terminal {
+            return ControlLossResult::Terminal;
+        }
         // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
         // already reconnectable session is not this connection's to lose.
         if session.session_state() != GameSessionState::Active

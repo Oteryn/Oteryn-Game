@@ -87,21 +87,27 @@ pub(crate) struct PreparedFamiliarLogout {
 }
 /// The genuine actor end a familiar save belongs to: the expired grace of the exact control-loss
 /// epoch, or LOGOUT-WIRE-1's own logout of an ACTIVE session on its exact current transport.
+/// A logout is keyed by its release's transition id too: an attempt answered `BUSY` after its
+/// save committed leaves the session running, and the next attempt saves under its own
+/// occurrence (#2127 Codex P2 4279467193).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::gameplay_transport) enum FamiliarActorEnd {
     GraceExpiry(u64),
-    Logout(crate::foundation::AuthenticatedTransportRefV1),
+    Logout(crate::foundation::AuthenticatedTransportRefV1, u64),
 }
 impl FamiliarActorEnd {
-    fn occurrence(self, actor: ExactActorRef, session: GameSessionId) -> [u8; 16] {
+    pub(in crate::gameplay_transport) fn occurrence(
+        self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> [u8; 16] {
         match self {
             Self::GraceExpiry(epoch) => nonce(b"oteryn:familiar-logout:v1", actor, session, epoch),
-            Self::Logout(transport) => nonce_bytes(
-                b"oteryn:familiar-logout-intent:v1",
-                actor,
-                session,
-                &transport.to_bytes(),
-            ),
+            Self::Logout(transport, attempt) => {
+                let mut key = transport.to_bytes().to_vec();
+                key.extend_from_slice(&attempt.to_be_bytes());
+                nonce_bytes(b"oteryn:familiar-logout-intent:v1", actor, session, &key)
+            }
         }
     }
 }
@@ -118,7 +124,7 @@ pub(in crate::gameplay_transport) fn familiar_end_proven(
         FamiliarActorEnd::GraceExpiry(epoch) => {
             state != GameSessionState::Terminal && loss_epoch == Some(epoch)
         }
-        FamiliarActorEnd::Logout(current) => {
+        FamiliarActorEnd::Logout(current, _) => {
             state == GameSessionState::Active && transport == Some(current)
         }
     }
@@ -291,7 +297,7 @@ fn logout_owner(
                     v.control_loss.is_some_and(|mark| mark.epoch == epoch)
                 }
                 // A logging-out actor is still controlled: no control-loss mark.
-                FamiliarActorEnd::Logout(_) => v.control_loss.is_none(),
+                FamiliarActorEnd::Logout(..) => v.control_loss.is_none(),
             })
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -474,13 +480,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return FamiliarLogoutSave::FencedOut;
         }
         // A logout save whose outcome was unknown is superseded once the actor ends another
-        // way (a grace expiry, or a logout on a resumed transport): it is never resent, and the
+        // way (a grace expiry, or a later logout attempt): it is never resent, and the
         // expected Character revision in both fences lets at most one of them commit.
         states.pending_familiar_logouts.retain(|v| {
             v.actor != actor
                 || v.session != session
                 || v.end == end
-                || !matches!(v.end, FamiliarActorEnd::Logout(_))
+                || !matches!(v.end, FamiliarActorEnd::Logout(..))
         });
         let prepared = if let Some(retained) = states
             .pending_familiar_logouts

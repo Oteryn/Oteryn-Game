@@ -23,7 +23,7 @@ fn a_familiar_actor_end_save_is_proven_only_for_its_own_end() -> Result<(), Stri
 
     let ours = AuthenticatedTransportRefV1::decode(&[1; 16]).map_err(|e| format!("{e:?}"))?;
     let other = AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(|e| format!("{e:?}"))?;
-    let logout = FamiliarActorEnd::Logout(ours);
+    let logout = FamiliarActorEnd::Logout(ours, 1);
     let active = GameSessionState::Active;
     assert!(familiar_end_proven(logout, active, None, Some(ours)));
     assert!(!familiar_end_proven(logout, active, None, Some(other)));
@@ -54,5 +54,38 @@ fn a_familiar_actor_end_save_is_proven_only_for_its_own_end() -> Result<(), Stri
         Some(3),
         None
     ));
+    Ok(())
+}
+
+/// #2127 Codex P2 4279467193: each logout attempt saves the familiar under its own occurrence,
+/// so a retry after a `BUSY` whose save committed is no conflicting replay.
+#[test]
+fn each_logout_attempt_has_its_own_familiar_occurrence() -> Result<(), String> {
+    use super::actor_spell::FamiliarActorEnd;
+    use crate::foundation::{
+        AuthenticatedTransportRefV1, ChannelId, ExactActorRef, GameSessionId, WorldId,
+    };
+
+    let uuid_v7 = |tag: u8| {
+        let mut bytes = [tag; 16];
+        bytes[6] = 0x70 | (tag & 0x0f);
+        bytes[8] = 0x80 | (tag & 0x3f);
+        bytes
+    };
+    let actor = ExactActorRef::transport_fixture(
+        WorldId::decode(&uuid_v7(0x33)).map_err(|e| format!("{e:?}"))?,
+        ChannelId::decode(&uuid_v7(0x44)).map_err(|e| format!("{e:?}"))?,
+    );
+    let session = GameSessionId::decode(&uuid_v7(0x55)).map_err(|e| format!("{e:?}"))?;
+    let ours = AuthenticatedTransportRefV1::decode(&[1; 16]).map_err(|e| format!("{e:?}"))?;
+    let first = FamiliarActorEnd::Logout(ours, 1).occurrence(actor, session);
+    assert_eq!(
+        first,
+        FamiliarActorEnd::Logout(ours, 1).occurrence(actor, session)
+    );
+    assert_ne!(
+        first,
+        FamiliarActorEnd::Logout(ours, 2).occurrence(actor, session)
+    );
     Ok(())
 }
