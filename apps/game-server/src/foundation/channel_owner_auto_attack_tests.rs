@@ -1371,6 +1371,13 @@ fn an_ended_connection_and_a_mode_change_leave_the_chase_search_ordering() {
             .attack
             .chase_search_waiting(owner.player, owner.session)
     );
+    // RANGED0-RL-08: reselecting the held target is no target change and keeps the chase.
+    assert_eq!(owner.target(T0, Some(rat), 2), AttackIntentDisposition::Ok);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
     owner
         .attack
         .chase_yield_to_client(owner.player, owner.session, at(T0 + 1));

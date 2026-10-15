@@ -600,6 +600,7 @@ impl ChannelAttackStates {
         let Some(facts) = target_facts(runtime, room, actor, session, creature, now) else {
             return AttackIntentDisposition::Rejected;
         };
+        let previous = entry.state.target();
         match entry
             .state
             .set_target(creature, CommandRef::new(session, command), &facts)
@@ -607,7 +608,11 @@ impl ChannelAttackStates {
             Ok(()) => {
                 entry.target_ref = Some(target_ref);
                 entry.next_ordinal = 0;
-                entry.chase.reset();
+                // RANGED0-RL-08: only a target change clears the route and the refused cells;
+                // reselecting the held target keeps them for their TTL.
+                if previous != Some(creature) {
+                    entry.chase.reset();
+                }
                 AttackIntentDisposition::Ok
             }
             Err(refusal) => refusal_disposition(refusal),
