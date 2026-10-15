@@ -30,6 +30,8 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/logout_tests.rs
   - apps/game-server/src/gameplay_transport/logout_postgres_tests.rs
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
+  - apps/game-server/src/gameplay_transport/familiar_cast.rs
+  - apps/game-server/src/gameplay_transport/actor_spell.rs
   - apps/client/src/combat_input.rs
   - apps/client/src/input.rs
   - apps/client/src/play.rs
@@ -61,6 +63,9 @@ The session exposes `logout()`. The client binds Ctrl+L and Ctrl+Q to logout and
   - Capability 19 is already `WORLD_LIGHT_V1`.
   - 20 is leased to `CONNECTION_TRACE_V1`.
   - This PR uses the next free numbers, 21 and 23, and reported the conflict to the control plane.
+- **Familiar save at logout (#2127 Codex P1 4278730847):** the actor-end familiar save was proven only after a grace expiry. A live familiar was left open by a logout, and the next session zeroed it as a crash. The save is now keyed by `FamiliarActorEnd`:
+  - `GraceExpiry(epoch)` is unchanged: same proof, same occurrence.
+  - `Logout(transport)` is proven by an ACTIVE, unlost row on the exact current transport and a runtime actor with no control-loss mark. It has its own occurrence domain `oteryn:familiar-logout-intent:v1`.
 - **Compile-forced edit outside owned paths:** `tools/dev-client/src/lib.rs` gains a `DevClientError::Logout` arm.
 - **Out of scope:**
   - Protection zones (PZ).

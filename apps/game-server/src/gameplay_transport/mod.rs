@@ -1387,7 +1387,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        logout: Option<AuthenticatedTransportRefV1>,
     ) -> actor_spell::FamiliarLogoutSave {
+        // LOGOUT-WIRE-1 (#2127 Codex P1 4278730847): an ACTIVE session's own logout ends the
+        // actor too; the familiar is saved on the exact transport before the terminal release.
+        if let Some(transport) = logout {
+            return self
+                .save_familiar_logout(
+                    actor,
+                    session,
+                    actor_spell::FamiliarActorEnd::Logout(transport),
+                )
+                .await;
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let Ok((current, now)) = store.current_session_at(session).await else {
             return actor_spell::FamiliarLogoutSave::Unknown;
@@ -1404,7 +1416,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(epoch) = current.current_control_loss_epoch() else {
             return actor_spell::FamiliarLogoutSave::Unknown;
         };
-        self.save_familiar_logout(actor, session, epoch).await
+        self.save_familiar_logout(
+            actor,
+            session,
+            actor_spell::FamiliarActorEnd::GraceExpiry(epoch.get()),
+        )
+        .await
     }
 
     /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
@@ -2110,7 +2127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
             }
-            if self.save_familiar_at_actor_end(actor, session).await
+            if self.save_familiar_at_actor_end(actor, session, None).await
                 == actor_spell::FamiliarLogoutSave::Unknown
                 || self.save_spell_training(actor, session, true).await
                     == actor_spell::TrainingSave::Unknown
@@ -2456,7 +2473,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FenceStep::Wait => return ReleaseAttempt::Retry,
             FenceStep::Refused(_) => return ReleaseAttempt::Done(GraceExpiryResult::Unknown),
         }
-        if self.save_familiar_at_actor_end(actor, session).await
+        let logout = match release {
+            TerminalRelease::Logout(transport) => Some(transport),
+            TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_) => None,
+        };
+        if self
+            .save_familiar_at_actor_end(actor, session, logout)
+            .await
             == actor_spell::FamiliarLogoutSave::Unknown
         {
             return ReleaseAttempt::Retry;

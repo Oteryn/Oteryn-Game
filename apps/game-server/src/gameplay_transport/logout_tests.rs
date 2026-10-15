@@ -13,3 +13,44 @@ fn the_in_fight_retry_rounds_up_to_whole_milliseconds_within_1_to_60000() {
     // A deadline that already ran out between the read and the reply still says 1.
     assert_eq!(in_fight_retry_after_ms(1_000_000, 1_000_000), 1);
 }
+
+/// #2127 Codex P1 4278730847: a logout's familiar save is proven only by an ACTIVE, unlost row on
+/// the exact current transport; a grace-expiry save keeps its exact-epoch proof.
+#[test]
+fn a_familiar_actor_end_save_is_proven_only_for_its_own_end() -> Result<(), String> {
+    use super::actor_spell::{FamiliarActorEnd, familiar_end_proven};
+    use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};
+
+    let ours = AuthenticatedTransportRefV1::decode(&[1; 16]).map_err(|e| format!("{e:?}"))?;
+    let other = AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(|e| format!("{e:?}"))?;
+    let logout = FamiliarActorEnd::Logout(ours);
+    let active = GameSessionState::Active;
+    assert!(familiar_end_proven(logout, active, None, Some(ours)));
+    assert!(!familiar_end_proven(logout, active, None, Some(other)));
+    assert!(!familiar_end_proven(logout, active, None, None));
+    assert!(!familiar_end_proven(logout, active, Some(1), Some(ours)));
+    assert!(!familiar_end_proven(
+        logout,
+        GameSessionState::Reconnectable,
+        None,
+        Some(ours)
+    ));
+    assert!(!familiar_end_proven(
+        logout,
+        GameSessionState::Terminal,
+        None,
+        Some(ours)
+    ));
+
+    let grace = FamiliarActorEnd::GraceExpiry(3);
+    let lost = GameSessionState::Reconnectable;
+    assert!(familiar_end_proven(grace, lost, Some(3), None));
+    assert!(!familiar_end_proven(grace, lost, Some(4), None));
+    assert!(!familiar_end_proven(
+        grace,
+        GameSessionState::Terminal,
+        Some(3),
+        None
+    ));
+    Ok(())
+}
