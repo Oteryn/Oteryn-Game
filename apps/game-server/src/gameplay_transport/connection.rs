@@ -2873,6 +2873,12 @@ where
             if decode_logout_intent(command.payload).is_err() {
                 Dispatch::Unregistered
             } else {
+                // A paced step can already have held the frames that follow this logout; a
+                // second logout among them was read before this result too (#2127 Codex P2
+                // 4279788741).
+                second_logout = held
+                    .iter()
+                    .any(|(frame, _)| is_logout_command(frame, generation));
                 let mut logout = std::pin::pin!(authority.logout(admitted));
                 let reply = loop {
                     let reading = !lost_while_logging_out

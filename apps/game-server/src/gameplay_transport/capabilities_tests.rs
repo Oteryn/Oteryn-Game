@@ -1693,6 +1693,8 @@ mod logout_wire {
         delay: Duration,
         logouts: Cell<u32>,
         steps: Cell<u32>,
+        /// SPEED-1: the pace each step records; zero leaves steps unpaced.
+        pace: Duration,
     }
 
     impl LogoutAuthority {
@@ -1702,6 +1704,7 @@ mod logout_wire {
                 delay: Duration::ZERO,
                 logouts: Cell::new(0),
                 steps: Cell::new(0),
+                pace: Duration::ZERO,
             }
         }
     }
@@ -1738,6 +1741,16 @@ mod logout_wire {
                 disposition: StepDisposition::Blocked,
                 moved_to: None,
             }
+        }
+
+        async fn paced_step(
+            &self,
+            actor: ExactActorRef,
+            _session: GameSessionId,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<Duration>) {
+            let pace = (!self.pace.is_zero()).then_some(self.pace);
+            (self.step(actor, direction).await, pace)
         }
 
         async fn logout(&self, _admitted: AdmittedSession) -> LogoutReply {
@@ -2055,6 +2068,48 @@ mod logout_wire {
             assert_eq!(
                 logout_result(&results, 1)?,
                 (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            // Both logouts are read and held while step 2 waits for its pace, so the first one
+            // starts with the second already held (#2127 Codex P2 4279788741).
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.pace = Duration::from_millis(30);
+            let frames = [
+                command(1, 1, &step()),
+                command(2, 1, &step()),
+                command(3, 23, &encode_logout_intent()),
+                command(4, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert_eq!(authority.steps.get(), 2);
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(
+                results.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [1, 2, 3]
+            );
+            assert_eq!(
+                logout_result(&results, 3)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
             );
             let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
             assert_eq!(last.message_type(), MessageType::ProtocolError);
