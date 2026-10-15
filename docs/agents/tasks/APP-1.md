@@ -103,3 +103,96 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local preparation — 2026-10-15 (not an acceptance or runtime-ready claim)
+
+Owning `CHARACTER_APPEARANCE` is now ACCEPTED through merged #2209, read at protected
+`e2da9805d296a27b06b32335bf67394509d4910b`; its §4.2 delegates physical schema to this child.
+The earlier CANDIDATE row is historical. The separate account-progress/#707 decision §4.3 and
+§4.6 governs earned facts. Missing production tables are **slot work**, not a missing owner
+schema decision. This preparation leaves the migration/writer/test bundle incomplete.
+
+Implemented only private read shapes and PostgreSQL readers: a per-Character selected appearance
+and the account's earned unlock facts with immutable first provenance. Decoding uses native
+`domain::{AccountId, CharacterId, CharacterRevision}` and `AppearanceSelection<String>`; malformed
+widths/ranges/revisions fail closed. Unknown keys and historical content provenance are retained.
+Native `domain::appearance::{validate_selection, displayed_look}` is reused unchanged. No
+production mutation, current-authority proof, new entitlement, fallback write or Store grant is
+implemented. Reads must be called within an independently authorized admission/read transaction;
+returning these historical records grants no gameplay authority.
+
+### Private physical schema packet (implementing-child design; CP slot required)
+
+Names below are private Game storage, not Platform/Store or protocol contracts. The owned PG test
+installs **only three read/schema fixture tables** in a throwaway database; it is not a migration
+or a production schema compatibility/role qualification.
+
+| Relation | Keys and columns / final constraints |
+|---|---|
+| `game_character_appearance` | `character_id UUID PRIMARY KEY`, `outfit_key TEXT`, `colours INTEGER[4]` (one dimension, lower bound 1, exactly four non-null unsigned-16 values), `addons SMALLINT` (0..255), `mount_key TEXT NULL`, `content_revision TEXT` (1..128 UTF-8 bytes), `committed_character_revision NUMERIC(20,0)` (native nonzero u64), final `last_appearance_occurrence_id UUID`. Final projection references the Character root and its exact immutable last receipt; no key/palette interpretation occurs on load. |
+| `game_character_appearance_receipts` (**not created by the fixture**) | UUIDv7 `appearance_occurrence_id PRIMARY KEY`; complete versioned command binding; Character identity; original and committed CharacterRevision (exact +1, independently unique per Character); complete optional before/after selections and their provenance; the existing progression-chain columns (level/experience before/after, profile/ruleset/content/simulation/evidence/declaration/policy/reward revisions), unchanged for a cosmetic transition; committed time. Before/after cannot be identical. Immutable UPDATE/DELETE/TRUNCATE protection. Current full gameplay fence is checked independently before first insertion; a replay only returns historical disposition and must never reactivate an actor. |
+| `game_account_appearance_unlock_receipts` | `grant_occurrence_id UUID PRIMARY KEY`; `account_id UUID`, `unlock_key TEXT`, `content_revision TEXT` (1..128 bytes), `granting_character_id UUID`, `source_kind TEXT` (nonempty), `source_event_id BYTEA` (nonempty opaque owning-event identity). Unique `(source_kind, source_event_id, unlock_key)` prevents rebinding a granting event; unique `(grant_occurrence_id, account_id, unlock_key)` supports the fact FK. The production consumer must compare a replay's full binding (account/Character/key/revision/source), not treat `ON CONFLICT` alone as replay authorization. All rows immutable; retain first and subsequent duplicate grant provenance. |
+| `game_account_appearance_unlocks` | Primary key `(account_id, unlock_key)` with `grant_occurrence_id UUID`; composite FK to exactly that receipt/account/key. `ON CONFLICT(account_id,unlock_key) DO NOTHING` preserves the **first** fact and provenance. Immutable UPDATE/DELETE/TRUNCATE protection. No cascade or FK to the granting Character: Character deletion must not revoke account facts. Final account identity is derived from the event's locked Character root, never supplied as grant authority. |
+
+All non-optional fields are NOT NULL. Outfit/mount/unlock keys stay opaque content keys; no
+invented key concatenation, addon-key derivation, collation for gameplay, SQL points rule or
+provenance-equality compatibility rule is introduced. Active definitions decide key mapping and
+provenance compatibility. Each addon is authorized separately through the existing domain trait.
+No World/Channel equivalence or account-wide selected look is introduced. Final permissions are
+least privilege, REVOKE PUBLIC, immutable grants/facts and receipt reads/inserts only; the
+existing runtime role and event owner must be qualified in the slot, not granted here.
+
+### Concrete remaining native integration seams
+
+1. Final migration and event writer must extend
+   `migrations/0073_character_progression_guard_wheel_union.sql`'s latest
+   `game_character_progression_consistency_guard()` family union, plus
+   `durability/character_authority.rs::verify_character_integrity` (the receipt union and
+   appearance-specific projection/receipt replay verification). The root revision guard in
+   `0022_character_name.sql` only enforces exact +1; it is the deferred chain guard, not that
+   root guard, that currently lacks an appearance receipt family. Preserve every existing arm.
+   No knowingly uncommittable writer or substitute receipt is drafted here.
+2. First selection writes must use the actual `begin_semantic_transaction` / semantic deadline,
+   `assert_recovery_fence`, `lock_admission_relations`, and
+   `character_progression::assert_gameplay_fence` (including current node incarnation,
+   session/connection/lease/scope generations, guards, locked root/revision and independent
+   interpretation). Lock occurrence before the root as in the existing stance writer; compare
+   exact replay binding before returning historical disposition. Lock progression state, verify
+   context/root and expected prior selection, then atomically advance root/progression +1 and
+   insert receipt/update selection. Concurrent losing transitions receive typed revision/state
+   rejection; do not retry a conflicting occurrence with new facts. Pending respawn handling and
+   semantic commit must match native Character writers. No completion is consumed as authority.
+3. Earned unlock insertion must be **inside the actual quest/NPC granting event transaction**.
+   Existing `account_achievement::FencedGrantingCharacter` is transaction-stamped with private
+   Character/transaction fields; its only production constructor is
+   `reward_claim_mint::admit` via `RewardClaimFenceChecked`. It exposes no cosmetic grant consumer
+   accessor. Its owner must provide the exact shared transaction-bound consumer seam (including
+   independently derived account, current event identity and earned source) before APP-1 can
+   insert facts. A request source label or retained committed quest receipt is insufficient.
+   No public token constructor, new grant authority or separate account-grant revision is added.
+4. APP-2/current content must supply a real `AppearanceContent` implementation, addon unlock-key
+   mapping and compatible-provenance resolver. Character creation/sex still needs its owning
+   input; only the accepted native default test Character may use a content-declared default.
+   Temporary spell `gameplay_transport/appearance_atomic.rs` is not the durable selection commit
+   owner. Store remains unavailable until gap §32; it never becomes an earned AccountUnlock.
+5. Module registration, migration numbering, production DDL/permissions, audit/event family
+   registration, runtime admission/command publication and protocol wiring remain CP slot work.
+   Native independent exact-head review is required before the eventual persistence integration.
+
+### Qualification and limits
+
+The owned standalone test wrapper loads the actual new source and uses the existing native
+server rlib for all domain IDs, revisions and the unmodified appearance validator. No duplicate
+native types or validator are compiled. An isolated PostgreSQL **17.6** database qualifies
+private projection reads, per-Character/per-account isolation, reconnection/reload, write-once
+first provenance, source-event collision, UPDATE/DELETE/TRUNCATE refusal, and SQL shape bounds.
+Fixture-only earned mapping/compatibility is explicit; revision equality there is not a product
+policy. No production granting authority, runtime session, real relog, complete fenced writer,
+Character deletion flow, role/grant compatibility, complete event chain or E2E is qualified.
+The acceptance checkboxes above intentionally remain unchecked. In particular “stale fence writes
+nothing” awaits an actual writer and independent missing/stale/mismatched/expired/replayed
+boundary cases; it cannot be claimed from this read-only subset.
+
+Evidence, exact commands, checks and source hashes are retained outside the repository in
+`/workspace/oteryn-prep/app-1-evidence/` (index, validation, scope and source manifest). No worker
+commit/push/ready/merge/review trigger, shared source edit, production DDL or content change.
