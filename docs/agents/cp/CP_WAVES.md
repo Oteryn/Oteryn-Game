@@ -1,4 +1,4 @@
-# CP — wave'y mechanik (stan 2026-10-15 ~07:40Z)
+# CP — wave'y mechanik (stan 2026-10-15 ~08:00Z)
 
 Źródło kolejności: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §5.
 Wave = kolejność zależności, nie harmonogram: batch startuje, gdy jego zależności są zmergowane.
@@ -34,9 +34,9 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 |---|---|---|---|---|
 | 1 | LOGOUT-WIRE-1 | #2127 | W2f 01Y3ihfi | CI; merge main po #2126 |
 | 1 | LOOP-WORLD-1 marker flip | (nowy/istniejący) | W2c2 01VFYCsQ | start; amendmenty GAME-ITEM-01 §4 / DUR-03 §39.1 zaakceptowane |
-| 2 | CHAT-2B | #2128 | W2h 013fCsCy | następny w kolejce; P1 (atomowy check+notify), runda 2/2, auto-merge OFF |
+| 2 | CHAT-2B | #2128 | W2h 013fCsCy | runda 3 (wyjątek ownera): bez SET/0088, warunkowy pg_notify; nowy P1 → zamknięcie |
 | 2 | NPC-CONTENT-2 | #2129 | W3b 01VUmRdS | CI quest-authoring czerwone |
-| 2 | PRESENT-CONTENT-1 | #2130 | W2g 01Ex9Xhz | Codex done |
+| 2 | PRESENT-CONTENT-1 | #2130 | W2g 01Ex9Xhz | przed #2128; pin z main, CI w toku |
 | 2 | RANGED-CONTENT-1 PR1 | #2096 | W3c 01P6FZqT | konflikt z main, przejęty |
 | 3 | MAP-VIEWPORT-OPT-1 | (nowy) | W3a2 0181Dg1m | opcja B (20% rdzenia, liczymy tylko graczy w ruchu; rewalidacja botami → MAP-VIEWPORT-BUDGET-REVAL) |
 
@@ -50,7 +50,7 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 4. PLATFORM-BACKUP-OFFNAS-1: kopia off-NAS i drill restore Platformy (ADR-0046 §7).
 5. ADR-0004-XREF-1 (light, Game): odesłanie ADR-0004 §2 → Platform ADR-0046 §4 (osobne instancje).
 
-**Wave 2 (reszta):** PREM-2b+PREM-5, OPS-SAVE-2, BUNDLE-GATES-2 (follow-up), LOOP-DAMAGE-1, LOOP-RANGED-1 (PR2 RANGED-CONTENT-1), LOOP-VITALS-1, NPC-ECON-1 (+NPC-CMD-1b, NPC-TRADE-WIRE-1), QUEST-RT-1, MAGIC-SUMMON-1, LOOP-MONSTER-1, CREATURE-MOVE-1 (residue), PARTY-1, WEATHER-1; potem PVP-1b, PVP-RT-1, PVP-DEATH-1.
+**Wave 2 (reszta):** PREM-2b+PREM-5, BUNDLE-GATES-2 (follow-up), LOOP-DAMAGE-1, LOOP-RANGED-1 (PR2 RANGED-CONTENT-1), LOOP-VITALS-1, NPC-ECON-1 (+NPC-CMD-1b, NPC-TRADE-WIRE-1), QUEST-RT-1, MAGIC-SUMMON-1, LOOP-MONSTER-1, CREATURE-MOVE-1 (residue), PARTY-1, WEATHER-1; potem PVP-1b, PVP-RT-1, PVP-DEATH-1.
 
 **Wave 3:** ADMIT-CAP-2, MAP-VIEWPORT-LIMIT-1 (po OPT-1), LOOP-MAP-1 (po #1942), ITEM-TIMED-1, ITEM-STORAGE-1, NPC-WORLD-1, LOOP-GROUND-1, CRAFT-1, PROG-ADV-1, MONSTER-META-1, HOUSE-RUNTIME-1a/1b/1c, MAP-OVERLAY-1c, MAP-CUTOVER-1c, PARTY-XP-1.
 
@@ -64,6 +64,18 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 - CP oznacza ready w slocie; 1 runda Codex. CP + architekt mają ostatnie słowo (poprawność i kod).
 - Pakiety nierozdzielne: wire, migracja, content+piny, mint/burn+ledger, pakiety „+”.
 - Osobno na main: przyspieszyć/zawęzić `quest-authoring-schema.yml` (limit 30 min).
+
+## Drafty-szkielety (73, gałęzie `skeleton/*`)
+- Fale 1–2: #2182–#2205 (22), m.in. ITEM-LOOK-1 #2182, CREATURE-MOVE-1 #2184, BOOT-RAT-POLICY-1 #2185, łańcuch #2190→#2191→#2192→#2193.
+- Fala 3: #2150–#2172 (15). Fala 4: #2132–#2176 (17). Fala 5: #2135–#2186 (19).
+- OPS-SAVE-2 już zmergowane (#2083), bez draftu.
+- Blokery decyzyjne: zbiorczy przegląd architekta w toku (briefy CANDIDATE, GUILD0/PARTY_PVP0, CRAFT/HIRE/SOCIAL-LATE/TUTORIAL, LOOP-GROUND, PREM-2b, WEATHER vs SEC, Store S-1..S-9).
+
+## Granica — PR i sesje
+- ADR-0004-XREF-1: Game #2138 (auto-merge).
+- STORE-DELIVERY-CONTRACT-1: Platform #1625 (draft, decyzje S-1..S-9).
+- WB1 01DL1P4y: PLATFORM-RESTORE-RECONCILE-P1, potem ENTITLEMENT-RECONCILE-1.
+- WB2 01WVuUUS: PLATFORM-BACKUP-OFFNAS-1 (cel i RPO: decyzja ownera).
 
 ## Follow-upy
 - BUNDLE-GATES-2: P2 z #2115 (round 18, `mentions` liczy tokeny zamiast wywołań).
