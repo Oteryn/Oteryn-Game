@@ -1,0 +1,61 @@
+name: Oracle Operations
+run-name: Oracle ${{ inputs.action }} ${{ inputs.source_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Observe readiness or deploy exact current protected main
+        type: choice
+        required: true
+        default: status
+        options: [status, deploy]
+      source_sha:
+        description: Full protected-main commit, required for deployment
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oracle-operations
+  cancel-in-progress: false
+
+jobs:
+  operate:
+    if: github.ref == 'refs/heads/main'
+    runs-on:
+      group: game-runners
+      labels: [oteryn-game, oteryn-oracle, ARM64]
+    environment: preproduction
+    timeout-minutes: 120
+    env:
+      EXPECTED_RUNNER_NAME: oteryn-oracle-game
+      ACTUAL_RUNNER_NAME: ${{ runner.name }}
+      OPERATION: ${{ inputs.action }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: Validate target and bounded operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          test "$(uname -m)" = aarch64
+          test "$(id -u)" = 1001
+          test ! -S /var/run/docker.sock
+          if command -v docker >/dev/null 2>&1 && timeout 5 docker info >/dev/null 2>&1; then
+            echo 'Runner unexpectedly controls a Docker daemon.' >&2
+            exit 1
+          fi
+          case "$OPERATION" in
+            status) test -z "$SOURCE_SHA"; command=status ;;
+            deploy) [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; command="deploy $SOURCE_SHA $GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT" ;;
+            *) exit 1 ;;
+          esac
+          # The key is constrained on the host to one component and two actions.
+          # No token, runtime credential, arbitrary path or shell reaches the host.
+          ssh -F /dev/null -i /home/runner/.ssh/oracle-deploy \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=/home/runner/.ssh/known_hosts \
+            -o ConnectTimeout=10 root@oteryn-deploy-host "$command"
