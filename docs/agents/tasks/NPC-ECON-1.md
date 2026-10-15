@@ -48,7 +48,8 @@ external_repositories: []
 Current authoring disposition (2026-10-15): **owned native/content/pin core
 qualified; shared protocol/resource/protected-PG tail unapplied**. The original
 YAML/plan/dependency snapshot below is preserved as history; see the integrated
-implementation-slot section for the actual #2197 scope, evidence and open gates.
+implementation-slot section and the published-candidate CI successor below for
+the actual #2197 scope, evidence and open gates.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -432,9 +433,93 @@ capability number, hidden authority source, promotion writer, deployment or read
 merge action was added here. BANK-specific retry admission beyond the existing
 bounded native owner remains an explicit architect review point, not a new policy.
 
-Final owned-packet checks: governance and all 124 agent tests passed after exact
+Prior owned-packet checks (published C344e, before external CI): governance and all 124 agent tests passed after exact
 HEAD materialization of five missing lifecycle-registry handoff inputs; the first
 E8001 failure is retained, without changing that registry. All 60 dirty paths are
 allocated, whitespace checks pass and the four common-held files are byte-identical
 to the base. No code/pin mutation follows the owned-packet freeze; a shared-tail
 successor requires a new CP-authorized generation and exact qualification.
+
+
+### Published-candidate CI successor (slot 2)
+
+The prior owned packet was published as draft candidate
+`344e43b7452f447a56ebfb04a0e752739b27cdbd`. Its real Rust all-target CI
+failed with four E0432/E0433 errors: `interaction_workflow` path-includes the
+pure interaction module, and the added Bank child required domain/durability
+roots absent from that harness. Earlier native/selected-target green results
+did not qualify this consumer. The data-freshness lane also found three stale
+Quest binding evidence outputs after the admitted Paulie data update. Neither
+failure is hidden by the earlier local qualification or this retained history.
+
+The successor changes only the existing Bank registration and two imports: the
+same physical `interaction/bank_npc.rs` is now a private child of its actual
+`gameplay_transport` consumer. The pure interaction module no longer imports
+Bank custody dependencies. There is one production Bank policy module. All Bank
+function bodies, native writers/fences/receipts/SQL, serialized requests, library
+visibility and original workflow test bodies remain byte-identical to the prior
+candidate. No fake native module, callback authority, public API, test gate or
+lint suppression was added. The nine-case standalone Bank policy fixture still
+includes its same source independently.
+
+The unchanged real Quest assembler produced ten outputs (nine packets plus the
+index); only three differ, and only seven digest leaves (4+1+2). The exact
+NPC/Dialogue-link packet, supplementary recipe index and root packet index were
+copied from that checked proposal. Predicate/hold/admission/summary/semantic
+fields and all seven other outputs are unchanged. The subsequent full 953-test
+diagnostic found one additional talk-NPC witness stale only in two NPC input
+SHA leaves; its original unchanged producer supplied that fourth measured
+packet. Root copied only those two digest updates, with all other parsed
+semantic/summary/matching/hold/admission fields identical. The diagnostic
+1 failure/31 errors/8 skips is retained, never relabelled green; missing baseline
+fixtures were restored from exact C before the final unchanged full run.
+There is no source/content
+regeneration or Quest rule change hidden in these evidence updates.
+
+Current evidence: `/workspace/oteryn-prep/npc-econ-1-slot-2-evidence/`. Fresh
+original native unit Clippy and normal cfg(test) native rlib passed; all 33
+unchanged selected native bodies and eight unchanged real PG17.6 cases passed.
+The complete original `interaction_workflow` target passed strict original
+Clippy and all 15 tests (14 target bodies plus one inlined module test), with
+its original test file unchanged. The original PG wrapper metadata also passed.
+Exact source/extern hashes and test-body/dispatch maps are retained. The real binding `--check` and all 11 binding unit tests passed without changing
+their producers, assertions or registered targets. The final original Quest
+runner completed its first 30 commands, then exited 1 after discovery ran 987
+tests with one error and eight skips: an exact-C island shard was absent.
+That failed orchestrator result is retained. Only the missing 56,788-byte
+tracked shard was restored; its affected original class passed 8/0. Independent
+consumer/source closure proved this restored Area input affects none of the
+30 earlier commands. The exact complete original discovery vector was then
+resumed, with no producer/assertion/source/test-selection change. Thus all 31
+original vectors are qualified by explicit source-bound resumption; this does
+not claim that the earlier whole orchestrator returned zero.
+Missing tracked baseline check inputs were restored from exact candidate C,
+with per-file consumer/SHA proof; earlier missing-input failures remain logged.
+
+The first native setup attempt stopped before Cargo/tests because a retained
+PowerShell script used checkout CRLF bytes while the literal Gitblob used LF.
+Only the outside validation snapshot was rematerialized from exact C after
+breaking the historical hardlink; prior evidence and candidate bytes were not
+rewritten. This is a setup failure, not a behavioral RED or passing result.
+The actual published CI errors supply the compile RED for this repair. A later
+native archive attempt exhausted disk space before any core/PG case ran; its
+ENOSPC failure remains recorded. After verified completed-artifact archival, the
+same source and captured extern hashes were checked and that exact native stage
+resumed successfully, retaining the earlier strict Clippy result.
+
+All eight successor paths are outside the World compiler input set. All 1,448
+qualified compiler-input Gitblobs and all four pins remain exactly the prior
+qualified C; available physical inputs were checked too. No unchanged Bundle
+rebuild is claimed or required. The shared protocol/resource/Cargo/protected-PG
+tail remains unapplied under its CP/House release gate. This remains an owned
+draft packet; fresh exact-C CI, independent architect review, protected-main
+composition and CP acceptance remain mandatory before ready/queue. Final
+governance, 124 agent tests, whitespace and exact-eight-path checks pass.
+
+The source-bound composite qualifies all 31 original vectors;
+the resumed complete original unit discovery ran 995 tests with 0 failures, 0 errors
+and 8 recorded skips. These skips remain explicit. Completed slot-2 native
+libraries and drivers were losslessly archived only after all native/workflow/PG
+qualification, with raw/gzip/decompressed hashes, no-active-consumer checks and
+exact restore commands in `completed-custom-artifact-archive.json`. Sources,
+logs, bridges, captured externs and shared dependencies remain retained.

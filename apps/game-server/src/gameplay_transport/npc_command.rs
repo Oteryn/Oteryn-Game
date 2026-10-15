@@ -22,6 +22,7 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+use super::bank_npc::{BankConfirmation, BankDialogueContext, BankNpcOperation};
 use super::chat_intent::ChatRuntime;
 use super::npc_talk::{TalkNpc, asks_to_trade, talk};
 use crate::chat::{ChatPosition, ChatText};
@@ -29,7 +30,6 @@ use crate::content::item_ref::{ITEM_FAMILY, ItemDefinitionIndex};
 use crate::content::{ProjectV2ServiceOffer, ProjectV2ServiceOfferDirection};
 use crate::durability::bank::BankCoinFacts;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
-use crate::interaction::bank_npc::{BankConfirmation, BankDialogueContext, BankNpcOperation};
 
 /// `NPC0-RL-04`: the window of the per-session talk limit.
 const RATE_WINDOW_MICROS: u64 = 1_000_000;
@@ -599,9 +599,9 @@ pub(super) async fn npc_bank_talk(
     command: super::connection::UseCommand,
     intent: NpcTalkIntent,
 ) -> NpcTalkOutcome {
+    use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
-    use crate::interaction::bank_npc::{self, BankNpcIntent};
     let session = command.game_session_id;
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
     let unknown = || NpcTalkOutcome {

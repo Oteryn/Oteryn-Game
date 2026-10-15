@@ -5,7 +5,6 @@
 
 #![forbid(unsafe_code)]
 
-pub(crate) mod bank_npc;
 mod dispatch;
 mod identity;
 mod lifecycle;

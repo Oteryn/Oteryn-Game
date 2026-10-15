@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[path = "../interaction/bank_npc.rs"]
+mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
