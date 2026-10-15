@@ -123,3 +123,86 @@ branch: skeleton/party-1
 blocker: CHAT-2; PARTY_PVP0
 next_action: CP rechecks BLOCKING rows
 ```
+
+## Local-only residue inspection (2026-10-15)
+
+Inspected the exclusive `skeleton/party-1` checkout at
+`9b35c6659d0b89b77bab0fc851d20fe82553ba7c` for existing draft #2201. This is
+AUTHORING-only preparation under the lead-supplied META 3.1.0 policy
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`; it does not complete PARTY-1, freeze a
+candidate, change the historical status above, or allocate integration. The available
+GPT-6.1 high worker substitutes for the unavailable hard-worker model.
+
+### Accepted sources
+
+Read PARTY-PVP-0 §3 and §4.1, its §13 limits, and SOCIAL-MAP §1.1, §1.12 and §2.1
+before deciding whether semantic code was needed. Fresh read-only GitHub metadata
+confirmed #1771 merged at `554960245f662321abe7855edc15c6397eb587ac` and #1773
+merged at `48edf99b6b702dcf9d421f6c1930580df4e2cfd6`; both are ancestors of the
+allocated head. #1771 accepts PARTY-PVP-0 despite its unchanged CANDIDATE heading.
+SOCIAL-MAP §2.1 names `depends_on: [CHAT-2]` and candidate bases `[CHAT-0, ATTACK-0]`;
+this inspection does not reclassify those bases or depend on new #2207 acceptance.
+CHAT-2 remains a full-runtime/slot integration condition. The accepted packet has no
+wire in PARTY-1 and no channel-loop, admission or session wiring (§1.1, §1.12).
+
+### Existing implementation and no-duplicate disposition
+
+The bounded allocation allowed only new `party/policy.rs`, `party/policy_tests.rs`
+and this record, with an explicit evidence-only exception when useful requested rules
+already exist. Inspection found these predicates already implemented in the existing
+World writer, rather than an empty party skeleton:
+
+| Requested semantics | Existing source at the allocated head |
+|---|---|
+| Visible invite target, target consent, leader requirement and 10/20/50 limits | `apps/game-server/src/durability/world_party.rs:251` invite branch; target-root lock before consent/cap reads |
+| Valid unexpired invitation, one-party membership and 50-member bound | `world_party.rs:311` accept branch; it deletes only the accepted invitation |
+| Decline, leader revoke, transfer to a member, combat-qualified leave | `world_party.rs:330` through the leave branch at line 354 |
+| Leader-only party lifetime and last-member deletion | `world_party.rs:383` and `remove_member_with_succession` at line 391 |
+| Online-first, lowest-invitation-sequence successor | `world_party.rs:402`: independently queried session state 1/2, then `m.seq` |
+| Expired invitation cleanup, one party and at most 100 rows per pass | `world_party.rs:427` |
+| Read-only actor snapshot cache, explicitly no authority grants | `apps/game-server/src/foundation/runtime_actor_party.rs:1` |
+
+The existing writer is registered in `durability/mod.rs:81`; the actor cache is
+re-exported through `foundation/mod.rs:1535`. These are private source ports; source
+presence does not prove production admission or runtime completeness. They are not
+modified here. A detached
+copy of their invitation, membership or succession rules would create another unused
+policy implementation without making the existing writer consume it. Therefore no
+`party/policy.rs` or `party/policy_tests.rs` was created. This satisfies the allocation's
+no-duplicate exception; it does not certify the whole existing writer or claim PARTY-1
+acceptance. Observed source is implementation evidence, not an authority source.
+
+`world_party_tests.rs` already declares **13** PostgreSQL tests, mounted by
+`apps/game-server/src/lib.rs:145`. They include current-fence refusal, expired
+invitation refusal, 50/51 members, 20/21 invitee invitations, 50/51 party invitations,
+World binding, consent, expiry cleanup and absence-driven hidden presence. These tests
+were inspected, not executed or counted as passes in this preparation.
+
+Source SHA-256 evidence:
+
+| Input | SHA-256 |
+|---|---|
+| `apps/game-server/src/durability/world_party.rs` | `7ff6285716deb6bb7af5404695eb10ecc39cfabcdf4890457036e067328914d3` |
+| `apps/game-server/src/durability/world_party_tests.rs` | `70812f10a1731852d0d040e5a3fe38bc7e5cac3afbd04610d102eb41925b3740` |
+| `apps/game-server/src/foundation/runtime_actor_party.rs` | `0185148f0df3b11c578a220ca92164141c6a674495e8958c17a2673390ae4a1a` |
+
+### Validation and remaining boundaries
+
+Only this task record changed. Governance validation and **124/124** agent tests passed;
+`cargo fmt --all --check` passed under the shared Rust lock. Whole-diff self-review,
+whitespace, three recorded source hashes, the 13 inspected test declarations and the
+task-record-only owned-path check passed. No Rust source changed, so no new Rust harness
+or large server recompilation was needed. No fresh Rust/PostgreSQL runtime validation
+is claimed.
+
+The existing writer keeps the current session/lease/node fence and database transaction
+checks, target-root/party locking, occurrence binding and atomic writes. A cached
+`PartySnapshot`, online-presence flag or retained record must not be substituted for
+independently current facts. The existing offline-presence pass explicitly does not
+authorize membership removal (`world_party.rs:604`); full cleanup still requires the
+accepted legal-absence and combat-lock obligations. Atomics, fence/lock validation,
+CHAT-2 integration, PartyView freshness, recovery and independent hard, persistence,
+security and privacy review remain with the full implementation and CP/architect
+integration. No shared owner, DB/schema assumption, wire, PvP, party spell or XP
+implementation was added. No commit, push, external comment, PR state change, merge,
+registry, migration, regeneration, pin or wiring edit was performed.
