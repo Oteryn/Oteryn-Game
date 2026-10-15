@@ -343,6 +343,10 @@ fn commands_and_domains_follow_the_selection() {
     assert!(!selection(&[16]).command_selected(11));
     assert!(!selection(&[16]).command_selected(12));
     assert!(!selection(&[16]).domain_selected(10));
+    // MAP-WIRE-1 §3: one object domain per World. Capability 18 supersedes core domain 2.
+    assert!(!selection(&[4, 6, 18]).domain_selected(2));
+    assert!(selection(&[4, 6, 18]).domain_selected(17));
+    assert!(selection(&[4, 6]).domain_selected(2));
 }
 
 // The production connection path: `admit_frame` and `serve_admitted` with an injected offered
