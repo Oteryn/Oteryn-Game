@@ -1,12 +1,32 @@
-// HOUSE-RUNTIME-1a local preparation harness. These production modules are
-// intentionally unregistered until the CP slot; no production writer is installed.
-pub use oteryn_game_server::durability::{house_scope_handoff, item_mint_audit};
-pub use oteryn_game_server::{domain, foundation};
+#![allow(clippy::expect_used)]
+// Focused HOUSE-RUNTIME-1a PostgreSQL 17.6 target. Canonical CI compiles these
+// same bodies through character_authority_postgres; Cargo test=false avoids duplicates.
+extern crate oteryn_game_server as production_server;
+extern crate self as oteryn_game_server;
 
-#[path = "../src/durability/house_interior.rs"]
-mod house_interior;
-#[path = "../src/durability/house_interior_audit.rs"]
-mod house_interior_audit;
+pub use production_server::admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_recovery_fence.rs"]
+pub mod character_recovery_fence;
+pub use production_server::domain;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/durability/mod.rs"]
+mod durability;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/foundation/mod.rs"]
+pub mod foundation;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/native_admission_source/mod.rs"]
+pub mod native_admission_source;
+
+// Standalone target for local focused runs; the protected PostgreSQL lane also
+// includes these exact cases through character_authority_postgres.
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
+
 #[path = "support/house_interior_postgres_cases.rs"]
 mod house_interior_postgres_cases;
 #[path = "support/house_test_fixture.rs"]

@@ -4,7 +4,7 @@
 task_id: HOUSE-RUNTIME-1a
 title: "HOUSE-RUNTIME-1a: house interior shapes and item placement"
 mode: IMPLEMENT
-status: local_preparation_pending_qualification
+status: slot_implementation_pending_exact_head_qualification
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -242,3 +242,120 @@ join a protected aggregate in the CP slot, wrapper/Cargo/aggregate registration
 must prevent actual double compilation of test-bearing sources. No Cargo or shared
 module wiring was changed. This does not qualify the future shape writer, registered
 event, session/scope mutation fences or full package; all acceptance boxes remain pending.
+
+## CP implementation slot — 2026-10-15
+
+This section supersedes the earlier preparation-only scope statements for this
+slot; the historical evidence above is retained unchanged. CP #162 comment
+6196051193 allocated #2163 and migration **0089** (0088 belongs to #2208).
+The exclusive integration base is `c04ab3fbfad8b7cdbb6310342c06b3fadf6a4f0d`,
+combining the published preparation with main `b62a5595b6be426dd4c9cc016c9b3883e9193c9d`.
+The exact 15-path lease also includes the shared audit/proto/registries, module and
+aggregate registration, Cargo wrapper registration, and the six-line crate-private
+Node proof secret accessor. No content, pins, connection, capability, client, other
+migration or unrelated authority owner is changed. The worker makes no commit,
+push, ready, queue or merge action; the owner requires the existing PR to stay draft.
+All acceptance boxes remain pending exact-head CI and independent architect review.
+
+### Integrated writer and database closure
+
+- `freeze_house_item`, `commit_house_item` and `reconcile_house_item` reuse the native
+  Root/recovery/semantic transaction and type-2 activation owners. One immutable
+  session/command reservation owns the TransactionId, EventId, DB Unix-millisecond
+  timestamp, exact intent and durable three-unit retry/reconciliation budget.
+- Historical committed receipts are read before current access/session checks or
+  new work. The permanent receipt retains IDs/time/hash; its audit payload is optional
+  after outbox retention. EventId-only LEFT JOIN distinguishes absence from a present
+  mismatched Tx/hash/envelope, which fails closed. Missing payload never becomes a
+  missing receipt, another transaction or renewed authority.
+- A closed `prepare` phase runs the same independently resolved authoritative SQL
+  checks as `apply`, then returns before durable DML. A refused preflight rolls back
+  its transient reservation. A successful preflight is retained intent, never a grant;
+  apply rechecks every current fact after its durable work charge.
+- The three runtime-EXECUTE SECURITY DEFINER shapes read actual named House session,
+  Character/account/World/live root, connection generation, Character lease, House
+  assignment/generation and the native node possession predicate. The accessor only
+  borrows opaque secret bytes for a bound SQL parameter; no new predicate, token,
+  constructor, serialization or secret logging is added. Historical handoff lineage
+  and old Channel admission guards are not substituted for current House authority.
+- Locks retain native recovery/admission and cause serialization, current session/
+  assignment, Character root, House access/count, then sorted ItemInstance rows.
+  Access cardinality must be exactly one; role, content fence, ACL/guild revisions,
+  actual House tile membership, source/provenance and capacity are checked in the
+  physical commit. OWNER/SUBOWNER/GUEST own placement and guest own-only take remain
+  the accepted role rules. No CharacterRevision or quantity/definition is changed.
+- Private owner-produced same-xid shape evidence closes actual custody, retained
+  reclaim provenance, one receipt and one audit event. All seven latest native guard
+  bodies are retained verbatim after additive House clauses: instance guard **0075**,
+  transfer consistency **0076**, item/container/placement union **0083**, equipment
+  slot/state **0045**. The source-binding manifest records every original suffix.
+- B3 slot removal replaces only that table's old immutable trigger with an exact
+  kind-2/shape-5/slot-9/item/actor/World/old-placement/current-xid proof check and
+  deferred complete receipt/event/destination proof. UPDATE and unproved DELETE
+  retain `23514`; generic immutable consumers and runtime DELETE privileges are
+  unchanged. Regular equipment removal advances the real equipment revision once,
+  using the same House event, without a fabricated equipment receipt.
+
+### Audit, limits and real registration
+
+The additive `house_transfer` oneof uses **candidate tag 11**, the next-free value
+prepared for CP/architect review, not a claim of an independently reserved number.
+Existing operation fields/tags and schema/retention tuples are unchanged. The closed
+codec binds destination placement Tx to the envelope Tx while allowing a historical
+take source Tx, preserves reclaim identity and WorldId, and excludes ChannelId.
+Canonical decoding rejects duplicate/unknown fields and malformed endpoints.
+The maximal admitted House tile-move fixture measures **5,543-byte payload and
+5,913-byte envelope**, including a 128-byte build ID, below unchanged 7,936/9,216 caps.
+RESOURCE_LIMITS records these consumers and accepted **HOUSEOWN0-RL-14 = 2,000**.
+The native modules and authority aggregate are registered; the standalone wrapper's
+Cargo `test = false` prevents default duplicate execution of its shared cases.
+No inactive `cfg(any())` substitute or production type replica is used.
+
+### Source-bound qualification and limits
+
+Outside-tree native validation compiles unchanged real Root/native authority sources
+and dependencies, with literal test-module mounts and a recorded dispatch bridge;
+selected test bodies are unchanged. Original untransformed native-unit Clippy with
+`-D warnings` passed. A normal native `cfg(test)` rlib and tiny test driver avoid the
+known global unit-harness ELF memory failure; this is not a whole-package runtime
+or full global-unit run. The borrowed item-transfer fixture mount reproduces its
+actual outer target's existing `expect_used` allowance; support bytes and global
+lint denies remain unchanged.
+
+`attempt-5/pg-tests.log`: **21 passed, 0 failed, 0 ignored, 0 filtered**, 15.17 seconds:
+10 owned pure cases, 9 actual PostgreSQL **17.6 / 170006** cases and 2 unchanged native
+legacy golden/retention-tuple controls. Actual cases include concurrent two-Root
+commit/replay; restart and durable retry cap; provenance substitution; current fence,
+ACL/closing/tile changes; privileged SQL wrong/stale node possession; duplicate access;
+B3/equipment sources; production-stub no-trace preflight; role rules; and capacity.
+Audit-retention probes follow a genuine commit, restore all guards before operational
+replay and independently corrupt/remove only test audit DATA. They are not a real
+90-day pruning-clock or end-to-end collector qualification.
+
+Capacity uses independently seeded **inactive occupancy DATA** with real FK/provenance
+and placement ledgers, restored guards, and a genuine active actor/native mint/transfer/
+House commit for **1,999 → 2,000**, then StorageFull with unchanged source/event/reservation.
+The foreign reclaim subject is inert fixture DATA, never current actor/session/node/
+access authority. These tests do not claim 100-Character load, runtime dispatch or
+production admission. Positive property/access/tile facts are explicitly §10 fixture
+DATA; production `game_house_access` remains the **0074 no-row stub**, and the new
+`game_house_access_tile` returns **false** until its accepted owning property source.
+HOUSE-VIEW owns the future content-revision trigger; 1b/1c, entry/exit admission lift,
+House/client wire and real property/guild authority are not implemented here.
+
+Earlier failures are retained accurately: missing tracked include/handoff inputs and
+validation mounts are setup failures; owned compile errors were repaired. Attempt 3
+actually ran **11/8** (seven BYTEA fixture binding errors and a 513-byte maximum fixture,
+corrected without weakening validation). Attempt 4 actually ran **20/1**: the genuine
+native B3 immutable-trigger defect, now repaired and qualified by attempt 5. The peer
+source findings for the latest guard union, destination Tx binding, grant cardinality,
+preflight no-trace and retention identity have explicit repaired dispositions. No
+superseded run is presented as qualification of changed bytes.
+
+Durable final evidence is under
+`/workspace/oteryn-prep/house-runtime-1a-slot-1-evidence/`: native commands/results,
+source and bridge manifests, retained RED outputs and lossless artifact archives,
+registry delta, exact native guard bindings, final scope/patch and source hashes.
+Production/registered-target metadata, formatting, architecture and governance checks
+are recorded separately there. Exact-head protected CI, full compiled source-graph
+check and independent architect/CP qualification remain required before readiness.
