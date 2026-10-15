@@ -40,6 +40,8 @@ mod qualification;
 #[cfg(test)]
 mod quest_catalogue_boot_tests;
 mod resume;
+mod seam_rooms;
+pub(crate) use seam_rooms::SeamRooms;
 mod source_item_cycle;
 mod spell_access_facts;
 mod spell_character_facts;
@@ -398,11 +400,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) spells: &'a crate::spell::SpellBook,
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
-    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
-    /// BUNDLE-COMBAT-ENABLE-1: the room player auto-attack and native combat casts read. The
-    /// qualified room itself, or for a bundle World its bundle view
-    /// (`QualifiedNativeEntryRoom::bundle_view`), whose identities match the bundle pin.
-    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// BUNDLE-GATES-1: the qualified entry room and the combat room (BUNDLE-COMBAT-ENABLE-1),
+    /// read only through their gates.
+    pub(crate) rooms: SeamRooms<'a>,
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
@@ -517,8 +517,7 @@ pub async fn serve_gameplay(
         spells: owners.spells,
         active_generation: owners.active_generation,
         premium_coordinator: owners.premium_coordinator,
-        qualified_room: owners.qualified_room,
-        combat_room: owners.combat_room,
+        rooms: owners.rooms,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
@@ -701,9 +700,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) spells: &'a crate::spell::SpellBook,
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
-    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
-    /// See [`GameplaySeamOwners::combat_room`].
-    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// See [`GameplaySeamOwners::rooms`].
+    pub(crate) rooms: SeamRooms<'a>,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
@@ -3108,7 +3106,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
     async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {
         if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
             || self.bundle_map().is_some()
         {
@@ -3168,7 +3167,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
@@ -3307,7 +3307,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: world_object::WorldObjectTarget,
     ) -> UseOutcome {
         if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             return UseOutcome::rejected();
@@ -3638,7 +3639,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.attack.lock().await.set_target(
             &runtime,
-            self.combat_room,
+            self.rooms.gate_attack_target(),
             actor,
             game_session_id,
             now,

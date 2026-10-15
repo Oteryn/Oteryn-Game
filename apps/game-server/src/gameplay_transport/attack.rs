@@ -1146,7 +1146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(super::StepOutcome, Option<Duration>)> {
         use super::FreshAdmissionAuthority as _;
-        let room = self.combat_room?;
+        let room = self.rooms.gate_chase_step()?;
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
@@ -1158,7 +1158,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The same closed doors a player step reads (`paced_step`).
             let (none, bundle_doors, legacy);
             let blocking: &dyn crate::map::floor::CellBlocker = if self
-                .qualified_room
+                .rooms
+                .gate_source_world()
                 .is_some_and(|room| room.source_world().is_some())
             {
                 none = std::collections::BTreeSet::<LogicalCell>::new();
@@ -1311,7 +1312,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
-        let Some(room) = self.combat_room else {
+        let Some(room) = self.rooms.gate_auto_attack() else {
             return;
         };
         let Some(content) = self

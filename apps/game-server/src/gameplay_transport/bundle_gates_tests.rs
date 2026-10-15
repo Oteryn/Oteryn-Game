@@ -1,76 +1,44 @@
-//! BUNDLE-GATES-1: the inventory of every `qualified_room` gate of the gameplay seam.
+//! BUNDLE-GATES-1: the inventory of every gate of the gameplay seam's rooms.
 //!
-//! `node/serve.rs` hands the seam `qualified_room: None` on a bundle World and `combat_room`, the
-//! entry room's bundle view (BUNDLE-COMBAT-ENABLE-1, #2025). A seam read of `combat_room` is a
-//! gate open on a bundle World; a read of `qualified_room` is a gate closed there. Every read in
-//! this module's sources is listed below: an open gate names the merged PR that opened it, a closed
-//! gate names the plan batch that opens it. The sources are parsed with `syn`, and every mention of
-//! either field in production code is counted, whatever its receiver (`x.combat_room`,
-//! `(*self).combat_room`) or form (a declaration, initializer or destructuring pattern), at its own
-//! site: its syntax path (naming each enclosing call, method and macro) and its position in its
-//! function. One that is added, removed, moved or
-//! switched without an update of this table fails `every_seam_room_read_is_inventoried`.
+//! The seam's two rooms are the private fields of `SeamRooms` (`seam_rooms.rs`), so the compiler
+//! holds every other module to its gate-named accessors: a room is read only by calling one. An
+//! accessor returning `combat` is a gate open on a bundle World; one returning `qualified` is
+//! closed there, since `node/serve.rs` hands a bundle World no qualified room. Each gate below
+//! names the merged PR that opened it or the plan batch that opens it, and every call of its
+//! accessor in the crate's sources. An accessor added, removed or switched, a call added, removed
+//! or moved to another file, or `seam_rooms.rs` given any other item, form or attribute fails a
+//! test of this module.
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use syn::Token;
-use syn::parse::Parser;
-use syn::punctuated::Punctuated;
+use syn::ext::IdentExt as _;
 use syn::visit::{self, Visit};
 
 const PLAN: &str = "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md";
 
 enum Gate {
-    /// Open on a bundle World: reads `combat_room`, opened by a merged PR.
+    /// Open on a bundle World: reads `combat`, opened by a merged PR.
     Open { batch: &'static str, pr: u32 },
-    /// Closed on a bundle World: reads `qualified_room`; each owner is a plan batch.
+    /// Closed on a bundle World: reads `qualified`; each owner is a plan batch.
     Closed { owners: &'static [&'static str] },
-    /// Reads `qualified_room` only to select the fixture source World's path; a bundle World is
-    /// served by its own bundle branch at the same site, so nothing is closed there.
+    /// Reads `qualified` only to select the fixture source World's path; a bundle World is served
+    /// by its own bundle branch at the same site, so nothing is closed there.
     SourceWorldBranch,
-    /// Moves the two fields from `GameplaySeamOwners` into the composed owner.
-    Plumbing,
-    /// Declares or sets the field without reading it: a struct field or an initializer.
-    Declaration,
 }
 
-struct Read {
+struct Entry {
     gate: &'static str,
-    /// The gate's phrase in the BUNDLE-GATES-1 plan row; empty for plumbing.
+    /// The gate's phrase in the BUNDLE-GATES-1 plan row.
     plan: &'static str,
-    file: &'static str,
-    /// The function that reads the field; `<item>` outside any function.
-    function: &'static str,
-    field: &'static str,
-    /// The read's syntax path (`Site::site`).
-    site: &'static str,
-    /// The read's position among its function's seam room mentions (`Site::ordinal`).
-    ordinal: usize,
+    /// The `SeamRooms` accessor.
+    accessor: &'static str,
+    /// The parameter key of a keyed accessor's arm (`_` for its default arm); empty otherwise.
+    key: &'static str,
     state: Gate,
-}
-
-#[allow(clippy::too_many_arguments)]
-const fn read(
-    gate: &'static str,
-    plan: &'static str,
-    file: &'static str,
-    function: &'static str,
-    field: &'static str,
-    site: &'static str,
-    ordinal: usize,
-    state: Gate,
-) -> Read {
-    Read {
-        gate,
-        plan,
-        file,
-        function,
-        field,
-        site,
-        ordinal,
-        state,
-    }
+    /// Every call of the accessor: its file under `src/` and its number of calls there. A keyed
+    /// accessor's calls are recorded on its first entry.
+    calls: &'static [(&'static str, usize)],
 }
 
 const COMBAT_ENABLE: Gate = Gate::Open {
@@ -78,1565 +46,152 @@ const COMBAT_ENABLE: Gate = Gate::Open {
     pr: 2025,
 };
 
-const INVENTORY: &[Read] = &[
-    read(
-        "attack target",
-        "player attack target",
-        "mod.rs",
-        "<ComposedFreshAdmission as FreshAdmissionAuthority>::attack_target",
-        "self.combat_room",
-        "method_call:set_target#7/field#3/read",
-        1,
-        COMBAT_ENABLE,
-    ),
-    read(
-        "auto-attack drain",
-        "auto-attack drain",
-        "attack.rs",
-        "ComposedFreshAdmission::drain_auto_attacks",
-        "self.combat_room",
-        "let_else#3/field/read",
-        1,
-        COMBAT_ENABLE,
-    ),
-    read(
-        "native combat cast",
-        "native combat cast",
-        "native_combat_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_native_combat_inner",
-        "self.combat_room",
-        "let_else#17/field/read",
-        1,
-        COMBAT_ENABLE,
-    ),
-    read(
-        "native combat cast commit",
-        "native combat cast",
-        "native_combat_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_native_combat_inner",
-        "owner.combat_room",
-        "let#39/await/method_call:run_with_context/closure#3/call:pin/async#2/let#5/try/method_call:ok_or/field/read",
-        2,
-        COMBAT_ENABLE,
-    ),
-    read(
-        "ordinary combat timer continuation",
-        "timer continuation",
-        "spell_timer_callbacks.rs",
-        "ComposedFreshAdmission::drain_native_ai_timers",
-        "owner.combat_room",
-        "if(Some saved unresolved)#19/then#2/try#8/method_call:map_err/await/method_call:run_with_context/closure#3/block/call:pin/async#2/let#6/try/method_call:ok_or/field/read",
-        1,
-        COMBAT_ENABLE,
-    ),
-    read(
-        "chase step",
-        "chase step",
-        "attack.rs",
-        "ComposedFreshAdmission::chase_step_now",
-        "self.combat_room",
-        "let#5/try/field/read",
-        1,
-        Gate::Open {
+const INVENTORY: &[Entry] = &[
+    Entry {
+        gate: "attack target",
+        plan: "player attack target",
+        accessor: "gate_attack_target",
+        key: "",
+        state: COMBAT_ENABLE,
+        calls: &[("gameplay_transport/mod.rs", 1)],
+    },
+    Entry {
+        gate: "auto-attack drain",
+        plan: "auto-attack drain",
+        accessor: "gate_auto_attack",
+        key: "",
+        state: COMBAT_ENABLE,
+        calls: &[("gameplay_transport/attack.rs", 1)],
+    },
+    Entry {
+        gate: "native combat cast and its commit",
+        plan: "native combat cast",
+        accessor: "gate_native_combat_cast",
+        key: "",
+        state: COMBAT_ENABLE,
+        calls: &[("gameplay_transport/native_combat_cast.rs", 2)],
+    },
+    Entry {
+        gate: "ordinary combat timer continuation",
+        plan: "timer continuation",
+        accessor: "gate_combat_timer_continuation",
+        key: "",
+        state: COMBAT_ENABLE,
+        calls: &[("gameplay_transport/spell_timer_callbacks.rs", 1)],
+    },
+    Entry {
+        gate: "chase step",
+        plan: "chase step",
+        accessor: "gate_chase_step",
+        key: "",
+        state: Gate::Open {
             batch: "LOOP-COMBAT-MODES-1",
             pr: 2113,
         },
-    ),
-    read(
-        "monster AI",
-        "monster AI",
-        "monster_ai_cycle.rs",
-        "ComposedFreshAdmission::drain_monster_melee",
-        "self.combat_room",
-        "let_else#6/field/read",
-        1,
-        Gate::Open {
+        calls: &[("gameplay_transport/attack.rs", 1)],
+    },
+    Entry {
+        gate: "monster AI",
+        plan: "monster AI",
+        accessor: "gate_monster_ai",
+        key: "",
+        state: Gate::Open {
             batch: "LOOP-MONSTER-1",
             pr: 2036,
         },
-    ),
-    read(
-        "periodic player damage",
-        "periodic player damage",
-        "spell_periodic.rs",
-        "ComposedFreshAdmission::tick_spell_periodic",
-        "self.combat_room",
-        "let#9/try/field/read",
-        1,
-        Gate::Open {
+        calls: &[("gameplay_transport/monster_ai_cycle.rs", 1)],
+    },
+    Entry {
+        gate: "periodic player damage",
+        plan: "periodic player damage",
+        accessor: "gate_periodic_damage",
+        key: "",
+        state: Gate::Open {
             batch: "MAGIC-COND-1",
             pr: 2086,
         },
-    ),
-    // `parameter_room`: `locate_message` reads the combat room, every other key the qualified room
-    // (checked by `parameter_room_opens_only_the_locate_message`).
-    read(
-        "parameter cast: locate message",
-        "`locate_message` parameter cast",
-        "parameter_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_parameters_inner",
-        "self.combat_room",
-        "if(parameter_room key self qualified_room self combat_room is_none)#13/method_call:is_none/call:parameter_room/field#4/read",
-        2,
-        Gate::Open {
+        calls: &[("gameplay_transport/spell_periodic.rs", 1)],
+    },
+    Entry {
+        gate: "parameter cast and its commit: locate message",
+        plan: "`locate_message` parameter cast",
+        accessor: "gate_parameter_cast",
+        key: "locate_message",
+        state: Gate::Open {
             batch: "MAGIC-CAST-1",
             pr: 2112,
         },
-    ),
-    read(
-        "parameter cast commit: locate message",
-        "`locate_message` parameter cast",
-        "parameter_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_parameters_inner",
-        "owner.combat_room",
-        "let#33/await/method_call:run_with_context/closure#3/call:pin/async#2/let#6/try/method_call:ok_or/call:parameter_room/field#4/read",
-        4,
-        Gate::Open {
-            batch: "MAGIC-CAST-1",
-            pr: 2112,
-        },
-    ),
+        // The cast and its commit, and the three of `bundle_world_opens_locate_message_only`.
+        calls: &[("gameplay_transport/parameter_cast.rs", 5)],
+    },
     // `house_access` and `vertical_move`: SPELL-RT-WORLD-1 of the MAGIC-SUMMON-1 graph.
-    read(
-        "parameter cast: house access, vertical move",
-        "`house_access` and `vertical_move` parameter casts",
-        "parameter_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_parameters_inner",
-        "self.qualified_room",
-        "if(parameter_room key self qualified_room self combat_room is_none)#13/method_call:is_none/call:parameter_room/field#3/read",
-        1,
-        Gate::Closed {
+    Entry {
+        gate: "parameter cast and its commit: house access, vertical move",
+        plan: "`house_access` and `vertical_move` parameter casts",
+        accessor: "gate_parameter_cast",
+        key: "_",
+        state: Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
         },
-    ),
-    read(
-        "parameter cast commit: house access, vertical move",
-        "`house_access` and `vertical_move` parameter casts",
-        "parameter_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_parameters_inner",
-        "owner.qualified_room",
-        "let#33/await/method_call:run_with_context/closure#3/call:pin/async#2/let#6/try/method_call:ok_or/call:parameter_room/field#3/read",
-        3,
-        Gate::Closed {
-            owners: &["MAGIC-SUMMON-1"],
-        },
-    ),
+        calls: &[],
+    },
     // `random_item_grant`: SPELL-RT-WORLD-1 (MAGIC-SUMMON-1 graph); `conjure`: MAGIC-ITEMS-1.
-    read(
-        "world item cast",
-        "world item casts",
-        "world_item_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_world_items_inner",
-        "self.qualified_room",
-        "if(self qualified_room is_none)#12/method_call:is_none/field/read",
-        1,
-        Gate::Closed {
+    Entry {
+        gate: "world item cast and its commit",
+        plan: "world item casts",
+        accessor: "gate_world_item_cast",
+        key: "",
+        state: Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
         },
-    ),
-    read(
-        "world item cast commit",
-        "world item casts",
-        "world_item_cast.rs",
-        "super::super::ComposedFreshAdmission::cast_world_items_inner",
-        "owner.qualified_room",
-        "let#32/await/method_call:run_with_context/closure#3/call:pin/async#2/let#5/try/method_call:ok_or/field/read",
-        2,
-        Gate::Closed {
-            owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
-        },
-    ),
+        calls: &[("gameplay_transport/world_item_cast.rs", 2)],
+    },
     // Field ingress is the WORLDINT-ADMIT-1 child of LOOP-WORLD-1 (plan row MAGIC-SUMMON-1).
-    read(
-        "field step ingress",
-        "field step ingress",
-        "field_step_ingress.rs",
-        "ComposedFreshAdmission::step_with_field_ingress",
-        "self.qualified_room",
-        "let_else#7/field/read",
-        1,
-        Gate::Closed {
+    Entry {
+        gate: "field step ingress and its commit",
+        plan: "field step ingress",
+        accessor: "gate_field_step_ingress",
+        key: "",
+        state: Gate::Closed {
             owners: &["LOOP-WORLD-1"],
         },
-    ),
-    read(
-        "field step ingress commit",
-        "field step ingress",
-        "field_step_ingress.rs",
-        "ComposedFreshAdmission::step_with_field_ingress",
-        "owner.qualified_room",
-        "let#14/await/method_call:run_with_context/closure#3/call:pin/async#2/let#7/try/method_call:ok_or/field/read",
-        2,
-        Gate::Closed {
-            owners: &["LOOP-WORLD-1"],
-        },
-    ),
+        calls: &[("gameplay_transport/field_step_ingress.rs", 2)],
+    },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
-    read(
-        "source map initialization",
-        "source map initialization",
-        "source_item_cycle.rs",
-        "ComposedFreshAdmission::ensure_source_map_initialized",
-        "self.qualified_room",
-        "let_else/method_call:filter/field/read",
-        1,
-        Gate::Closed {
+    Entry {
+        gate: "source map initialization",
+        plan: "source map initialization",
+        accessor: "gate_source_map_initialization",
+        key: "",
+        state: Gate::Closed {
             owners: &["MAP-CUTOVER-1c"],
         },
-    ),
+        calls: &[("gameplay_transport/source_item_cycle.rs", 1)],
+    },
     // The door overlay, step blocking, `use_object` and the chase step's door blocking serve a
     // bundle World from `bundle_map`.
-    read(
-        "source World door overlay",
-        "door overlay, step blocking, USE",
-        "mod.rs",
-        "<ComposedFreshAdmission as FreshAdmissionAuthority>::observe_world_object_overlay",
-        "self.qualified_room",
-        "if(self qualified_room is_some_and room room source_world is_some self bundle_map is_some)#3/binary/method_call:is_some_and/field/read",
-        1,
-        Gate::SourceWorldBranch,
-    ),
-    read(
-        "source World step blocking",
-        "door overlay, step blocking, USE",
-        "mod.rs",
-        "<ComposedFreshAdmission as FreshAdmissionAuthority>::paced_step",
-        "self.qualified_room",
-        "let#21/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
-        1,
-        Gate::SourceWorldBranch,
-    ),
-    read(
-        "source World use",
-        "door overlay, step blocking, USE",
-        "mod.rs",
-        "<ComposedFreshAdmission as FreshAdmissionAuthority>::use_object",
-        "self.qualified_room",
-        "if(self qualified_room is_some_and room room source_world is_some)#12/method_call:is_some_and/field/read",
-        1,
-        Gate::SourceWorldBranch,
-    ),
-    read(
-        "source World chase step blocking",
-        "chase step blocking",
-        "attack.rs",
-        "ComposedFreshAdmission::chase_step_now",
-        "self.qualified_room",
-        "let#6/block/let#5/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
-        2,
-        Gate::SourceWorldBranch,
-    ),
-    read(
-        "seam owners",
-        "",
-        "mod.rs",
-        "serve_gameplay",
-        "owners.qualified_room",
-        "let#6/struct/field_value#14/field/read",
-        2,
-        Gate::Plumbing,
-    ),
-    read(
-        "seam owners",
-        "",
-        "mod.rs",
-        "serve_gameplay",
-        "owners.combat_room",
-        "let#6/struct/field_value#15/field/read",
-        4,
-        Gate::Plumbing,
-    ),
-    // The two fields of `GameplaySeamOwners` and of the composed owner, and the owner initializer.
-    read(
-        "seam field declarations",
-        "",
-        "mod.rs",
-        "<item>",
-        "qualified_room",
-        "struct#47/declaration",
-        1,
-        Gate::Declaration,
-    ),
-    read(
-        "seam field declarations",
-        "",
-        "mod.rs",
-        "<item>",
-        "qualified_room",
-        "struct#61/declaration",
-        3,
-        Gate::Declaration,
-    ),
-    read(
-        "seam owner initializer",
-        "",
-        "mod.rs",
-        "serve_gameplay",
-        "qualified_room",
-        "let#6/struct/initializer",
-        1,
-        Gate::Declaration,
-    ),
-    read(
-        "seam field declarations",
-        "",
-        "mod.rs",
-        "<item>",
-        "combat_room",
-        "struct#47/declaration",
-        2,
-        Gate::Declaration,
-    ),
-    read(
-        "seam field declarations",
-        "",
-        "mod.rs",
-        "<item>",
-        "combat_room",
-        "struct#61/declaration",
-        4,
-        Gate::Declaration,
-    ),
-    read(
-        "seam owner initializer",
-        "",
-        "mod.rs",
-        "serve_gameplay",
-        "combat_room",
-        "let#6/struct/initializer",
-        3,
-        Gate::Declaration,
-    ),
+    Entry {
+        gate: "source World door overlay, step blocking, USE, chase step blocking",
+        plan: "door overlay, step blocking, USE",
+        accessor: "gate_source_world",
+        key: "",
+        state: Gate::SourceWorldBranch,
+        calls: &[
+            ("gameplay_transport/attack.rs", 1),
+            ("gameplay_transport/mod.rs", 3),
+        ],
+    },
 ];
-
-const FIELDS: &[&str] = &["qualified_room", "combat_room"];
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// One seam room mention of production code (`Scan`).
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct Site {
-    /// The enclosing function, a method named with its impl (`Type::f`, `<Type as Trait>::f`) or
-    /// trait (`Trait::f`); `<item>` outside any function.
-    function: String,
-    /// `<receiver>.<field>` for a field access (`<expr>` when the receiver is not a plain name),
-    /// the bare `<field>` for any other form.
-    field: String,
-    /// The syntax path from the function body (or file) to the mention: the kind of each
-    /// statement, expression and item it sits in.
-    site: String,
-    /// The mention's position among the function's mentions, in source order, from 1.
-    ordinal: usize,
-}
-
-/// Every seam room mention of the module tree's production code, keyed by file. The sources are
-/// the files the compiler loads for `gameplay_transport` outside tests: each production `mod`
-/// declaration is followed from `mod.rs`, with its `#[path]` when it has one, wherever that file
-/// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
-/// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
-/// What the keys cannot resolve fails closed instead of passing: two functions of one file with
-/// one name, a file loaded by two module declarations, a production `include!`, a seam field
-/// inside a `macro_rules!` definition, a macro defined outside the scanned modules, and another
-/// macro answering to an allowlisted or scanned macro's name.
-#[allow(clippy::expect_used, clippy::panic)]
-fn module_reads() -> BTreeSet<(String, Site)> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
-    let root = dir.canonicalize().expect("gameplay_transport directory");
-    let mut pending = vec![(dir.join("mod.rs"), true)];
-    let mut seen = BTreeSet::new();
-    let mut scanned = BTreeSet::new();
-    let mut reads = BTreeSet::new();
-    let mut invoked = BTreeSet::new();
-    let mut defined = BTreeSet::new();
-    while let Some((path, mod_rs)) = pending.pop() {
-        let path = path.canonicalize().expect("module source");
-        scanned.insert(path.clone());
-        // A file loaded by two module declarations is compiled twice, once per module, while one
-        // scan would stand for both: removing either declaration would leave the inventory as is.
-        assert!(
-            seen.insert(path.clone()),
-            "{}: loaded by two module declarations; give each module its own source file",
-            path.display()
-        );
-        let source = std::fs::read_to_string(&path).expect("source text");
-        let scan = scan(&source);
-        let parent = path.parent().expect("source directory");
-        // A `mod.rs` or `#[path]` file holds its children beside it; `a.rs` holds them in `a/`.
-        let children = if mod_rs {
-            parent.to_path_buf()
-        } else {
-            parent.join(path.file_stem().expect("source stem"))
-        };
-        for module in &scan.modules {
-            let base = module
-                .inline
-                .iter()
-                .fold(children.clone(), |base, name| base.join(name));
-            let next = match &module.path {
-                Some(file) if module.inline.is_empty() => (parent.join(file), true),
-                Some(file) => (base.join(file), true),
-                None => {
-                    let file = base.join(format!("{}.rs", module.name));
-                    if file.exists() {
-                        (file, false)
-                    } else {
-                        (base.join(&module.name).join("mod.rs"), true)
-                    }
-                }
-            };
-            pending.push(next);
-        }
-        let name = match path.strip_prefix(&root) {
-            Ok(name) => name.to_str().expect("source name").to_owned(),
-            Err(_) => {
-                let src = root.parent().expect("src directory");
-                let name = path.strip_prefix(src).expect("source under src");
-                format!("../{}", name.to_str().expect("source name"))
-            }
-        }
-        .replace('\\', "/");
-        if let Some(function) = ambiguous(&scan.declared) {
-            panic!(
-                "{name}: two functions are both named `{function}`, so a read moved between them \
-                 keeps its site; give them distinct names or impls the inventory can tell apart"
-            );
-        }
-        assert!(
-            scan.includes == 0,
-            "{name}: `include!` loads Rust source the inventory does not scan; declare it as a \
-             module instead"
-        );
-        if let Some(site) = scan.sites.iter().find(|site| in_macro_rules(site)) {
-            panic!(
-                "{name}: `{}` is named inside a `macro_rules!` definition, where one inventoried \
-                 site would stand for every invocation; write the read at its call site",
-                site.field
-            );
-        }
-        invoked.extend(
-            scan.invoked
-                .into_iter()
-                .map(|macro_name| (macro_name, name.clone())),
-        );
-        defined.extend(scan.defined);
-        reads.extend(scan.sites.into_iter().map(|site| (name.clone(), site)));
-    }
-    // A macro defined outside the scanned modules can name a seam field in its expansion while its
-    // invocation shows none, so only upstream macros and the modules' own are let through.
-    let unknown: Vec<String> = invoked
-        .iter()
-        .filter(|(macro_name, _)| {
-            !UPSTREAM_MACROS.contains(&macro_name.as_str()) && !defined.contains(macro_name)
-        })
-        .map(|(macro_name, file)| format!("{file}: `{macro_name}!`"))
-        .collect();
-    assert!(
-        unknown.is_empty(),
-        "{}: a macro defined outside the scanned modules may read a seam field in its expansion; \
-         define it in a scanned module or write the read at its call site",
-        unknown.join(", ")
-    );
-    // The names above are trusted by name alone, so no other macro may answer to one: an
-    // allowlisted or scanned name defined elsewhere (`crate::format!`, a textually scoped
-    // `macro_rules!` of a parent module) or imported under it (`use crate::m as format`).
-    let names: BTreeSet<String> = UPSTREAM_MACROS
-        .iter()
-        .map(|name| (*name).to_owned())
-        .chain(defined)
-        .collect();
-    let shadows = macro_shadows(&names, &scanned);
-    assert!(
-        shadows.is_empty(),
-        "{}: another macro answers to a name the inventory trusts, and its expansion may read a \
-         seam field; rename it",
-        shadows.join(", ")
-    );
-    reads
-}
-
-/// Every `macro_rules!` definition outside the scanned files, `#[proc_macro]` function or `as`
-/// rename that gives one of `names` to a macro, in the game server and the workspace crates it
-/// depends on by path. Upstream crates are trusted, as the allowlist is.
 #[allow(clippy::expect_used)]
-fn macro_shadows(names: &BTreeSet<String>, scanned: &BTreeSet<PathBuf>) -> Vec<String> {
-    let mut crates = vec![Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()];
-    let mut seen = BTreeSet::new();
-    let mut shadows = Vec::new();
-    while let Some(dir) = crates.pop() {
-        let dir = dir.canonicalize().expect("crate directory");
-        if !seen.insert(dir.clone()) {
-            continue;
-        }
-        let manifest = std::fs::read_to_string(dir.join("Cargo.toml")).expect("crate manifest");
-        let manifest: toml::Table = manifest.parse().expect("crate manifest parses");
-        if let Some(toml::Value::Table(dependencies)) = manifest.get("dependencies") {
-            crates.extend(dependencies.values().filter_map(|dependency| {
-                let path = dependency.get("path")?.as_str()?;
-                Some(dir.join(path))
-            }));
-        }
-        let mut sources = vec![dir.join("src")];
-        while let Some(path) = sources.pop() {
-            if path.is_dir() {
-                let entries = std::fs::read_dir(&path).expect("source directory");
-                sources.extend(entries.map(|entry| entry.expect("source entry").path()));
-                continue;
-            }
-            if path.extension().is_none_or(|extension| extension != "rs") {
-                continue;
-            }
-            let path = path.canonicalize().expect("source file");
-            let source = std::fs::read_to_string(&path).expect("source text");
-            let tokens = syn::buffer::TokenBuffer::new2(source.parse().expect("source lexes"));
-            let mut found = Vec::new();
-            shadowing(tokens.begin(), names, &mut found);
-            for (kind, name) in found {
-                // A scanned module's own macros are scanned at their definition; it may still not
-                // redefine an upstream one.
-                if kind == "macro_rules"
-                    && scanned.contains(&path)
-                    && !UPSTREAM_MACROS.contains(&name.as_str())
-                {
-                    continue;
-                }
-                shadows.push(format!("{}: {kind} `{name}`", path.display()));
-            }
-        }
-    }
-    shadows
-}
-
-/// The `macro_rules! name`, `#[proc_macro] fn name` and `as name` of a token stream, at any depth,
-/// whose name is one of `names`.
-fn shadowing(
-    mut cursor: syn::buffer::Cursor<'_>,
-    names: &BTreeSet<String>,
-    found: &mut Vec<(&'static str, String)>,
-) {
-    let mut proc_macro = false;
-    while !cursor.eof() {
-        if let Some((ident, next)) = cursor.ident() {
-            let named = |cursor: syn::buffer::Cursor<'_>| {
-                cursor
-                    .ident()
-                    .map(|(name, _)| name.to_string())
-                    .filter(|name| names.contains(name))
-            };
-            let kind = if ident == "macro_rules" {
-                next.punct()
-                    .filter(|(punct, _)| punct.as_char() == '!')
-                    .and_then(|(_, after)| named(after))
-                    .map(|name| ("macro_rules", name))
-            } else if ident == "as" {
-                named(next).map(|name| ("as", name))
-            } else if ident == "fn" && std::mem::take(&mut proc_macro) {
-                named(next).map(|name| ("proc_macro", name))
-            } else {
-                None
-            };
-            found.extend(kind);
-            cursor = next;
-        } else if let Some((punct, next)) = cursor.punct() {
-            if punct.as_char() == '#'
-                && let Some((inner, _, _, _)) = next.any_group()
-                && inner.token_stream().to_string() == "proc_macro"
-            {
-                proc_macro = true;
-            }
-            cursor = next;
-        } else if let Some((inner, _, _, next)) = cursor.any_group() {
-            shadowing(inner, names, found);
-            cursor = next;
-        } else if let Some((_, next)) = cursor.token_tree() {
-            cursor = next;
-        } else {
-            break;
-        }
-    }
-}
-
-/// The standard-library and upstream-crate macros the modules invoke: their definitions cannot
-/// name a field of this crate, so their expansions read nothing the invocation does not show.
-const UPSTREAM_MACROS: &[&str] = &[
-    "assert",
-    "assert_eq",
-    "debug_assert",
-    "eprintln",
-    "format",
-    "include_bytes",
-    "include_str",
-    "json",
-    "matches",
-    "pin",
-    "unreachable",
-    "vec",
-    "write",
-];
-
-/// The first function name given twice, if any.
-fn ambiguous(declared: &[String]) -> Option<&String> {
-    let mut seen = BTreeSet::new();
-    declared.iter().find(|name| !seen.insert(name.as_str()))
-}
-
-/// Whether a mention lies inside a `macro_rules!` definition: its expansion sites cannot be told
-/// apart, so each invocation would add or move a gate without changing the inventory.
-fn in_macro_rules(site: &Site) -> bool {
-    site.site.split('/').any(|segment| segment == "macro_rules")
-}
-
-/// The seam room mentions of one source file, parsed with `syn`, and the production modules it
-/// declares out of line (`mod x;`), each with its `#[path]` when it has one.
-#[allow(clippy::expect_used)]
-fn scan(source: &str) -> Scan {
-    let file = syn::parse_file(source).expect("gameplay_transport source parses");
-    // The file itself counts its items, so a mention moved between two items of one kind at file
-    // scope changes its site.
-    let mut scan = Scan {
-        siblings: vec![0],
-        ..Scan::default()
-    };
-    scan.visit_file(&file);
-    scan
-}
-
-#[derive(Default)]
-struct Scan {
-    sites: Vec<Site>,
-    modules: Vec<Module>,
-    inline: Vec<String>,
-    functions: Vec<String>,
-    /// The type or trait of each enclosing `impl` or `trait`, innermost last.
-    owners: Vec<String>,
-    /// Each production `include!` invocation: its file is loaded without being scanned.
-    includes: usize,
-    /// Where the macro whose body is about to be walked takes a format string.
-    format: Option<Format>,
-    /// The name of every production macro invocation, and of every `macro_rules!` definition.
-    invoked: Vec<String>,
-    defined: Vec<String>,
-    /// The name of every production function, in source order. A name given to two functions is
-    /// ambiguous: a read moved between them would leave its site unchanged.
-    declared: Vec<String>,
-    path: Vec<String>,
-    /// For each node of `path`, and for the function body under it, how many of its children
-    /// have been entered so far.
-    siblings: Vec<usize>,
-}
-
-/// A production `mod x;` declaration.
-#[derive(Debug, PartialEq, Eq)]
-struct Module {
-    /// The inline `mod m { ... }` blocks it sits in, outermost first.
-    inline: Vec<String>,
-    name: String,
-    /// Its `#[path = "..."]`.
-    path: Option<String>,
-}
-
-/// Where a macro takes a format string whose `{name}` captures read bindings.
-#[derive(Clone, Copy)]
-enum Format {
-    /// Its argument at this position, when that argument is a string literal.
-    Argument(usize),
-    /// Any string literal in its body: a macro of the scanned modules may hand any of them to
-    /// `format!`.
-    Every,
-}
-
-/// Where the macro named `name` takes a format string: the standard formatting macros at their
-/// format argument, the other upstream macros nowhere, and every other macro anywhere.
-fn format_of(name: &str) -> Option<Format> {
-    match name {
-        "format" | "format_args" | "print" | "println" | "eprint" | "eprintln" | "panic"
-        | "unreachable" | "todo" | "unimplemented" => Some(Format::Argument(0)),
-        "write" | "writeln" | "assert" | "debug_assert" => Some(Format::Argument(1)),
-        "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne" => {
-            Some(Format::Argument(2))
-        }
-        _ if UPSTREAM_MACROS.contains(&name) => None,
-        _ => Some(Format::Every),
-    }
-}
-
-impl Scan {
-    fn function(&self) -> String {
-        self.functions
-            .last()
-            .cloned()
-            .unwrap_or_else(|| "<item>".to_owned())
-    }
-
-    fn record(&mut self, field: String, last: &'static str) {
-        let function = self.function();
-        let ordinal = 1 + self
-            .sites
-            .iter()
-            .filter(|site| site.function == function)
-            .count();
-        let mut site = self.path.clone();
-        site.push(last.to_owned());
-        self.sites.push(Site {
-            function,
-            field,
-            site: site.join("/"),
-            ordinal,
-        });
-    }
-
-    /// A format string's `{name}` captures (`format!("{combat_room:?}")` reads the binding
-    /// `combat_room`); `{{` is an escaped brace.
-    fn format_captures(&mut self, text: &str) {
-        let mut rest = text;
-        while let Some(start) = rest.find('{') {
-            rest = &rest[start + 1..];
-            if let Some(escaped) = rest.strip_prefix('{') {
-                rest = escaped;
-                continue;
-            }
-            let end = rest
-                .find(|c: char| !(c.is_alphanumeric() || c == '_'))
-                .unwrap_or(rest.len());
-            if let Some(field) = FIELDS.iter().find(|field| &rest[..end] == **field) {
-                self.record((*field).to_owned(), "capture");
-            }
-        }
-    }
-
-    fn seam(ident: &syn::Ident) -> Option<String> {
-        FIELDS
-            .iter()
-            .find(|field| ident == *field)
-            .map(|field| (*field).to_owned())
-    }
-
-    /// Enters one syntax node. Every node after the first child of its parent is numbered by its
-    /// position (`let#3`; a call's first argument is `field#2`, after its callee), so a read moved to
-    /// another statement, branch, argument or operand changes its site.
-    fn within(&mut self, kind: impl Into<String>, visit: impl FnOnce(&mut Self)) {
-        let kind = kind.into();
-        let position = self.siblings.last_mut().map_or(1, |entered| {
-            *entered += 1;
-            *entered
-        });
-        self.path.push(if position == 1 {
-            kind
-        } else {
-            format!("{kind}#{position}")
-        });
-        self.siblings.push(0);
-        visit(self);
-        self.siblings.pop();
-        self.path.pop();
-    }
-
-    fn function_body(&mut self, name: &syn::Ident, visit: impl FnOnce(&mut Self)) {
-        let path = std::mem::take(&mut self.path);
-        let siblings = std::mem::replace(&mut self.siblings, vec![0]);
-        // A method is named with its impl's type and trait (or its trait), so the same method name
-        // in two impls of one file is two functions.
-        // A function in an inline `mod m { ... }` is named with its module path, so the same name
-        // in two inline modules of one file is two functions.
-        let mut name = match self.owners.last() {
-            Some(owner) => format!("{owner}::{name}"),
-            None => name.to_string(),
-        };
-        if !self.inline.is_empty() {
-            name = format!("{}::{name}", self.inline.join("::"));
-        }
-        // A function declared inside another is named with it.
-        if let Some(outer) = self.functions.last() {
-            name = format!("{outer}::{name}");
-        }
-        self.declared.push(name.clone());
-        self.functions.push(name);
-        visit(self);
-        self.functions.pop();
-        self.siblings = siblings;
-        self.path = path;
-    }
-}
-
-/// Whether the attributes hold a `#[cfg(...)]` that is false whenever `test` is.
-fn test_only(attrs: &[syn::Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.path().is_ident("cfg")
-            && attr
-                .parse_args::<syn::Meta>()
-                .is_ok_and(|predicate| needs_test(&predicate))
-    })
-}
-
-/// A path's last segment name, without generic arguments: `B` for `a::B<'_>`.
-fn path_name(path: &syn::Path) -> String {
-    path.segments
-        .last()
-        .map_or_else(String::new, |segment| segment.ident.to_string())
-}
-
-/// A pattern's name: its path's last segment (`Some`, `Locate`), its binding, `_`, or the names of
-/// an or-pattern's cases joined by `|`; `None` for a literal, range, tuple or slice.
-fn pat_name(pat: &syn::Pat) -> Option<String> {
-    match pat {
-        syn::Pat::Ident(pat) => Some(pat.ident.to_string()),
-        syn::Pat::Path(pat) => Some(path_name(&pat.path)),
-        syn::Pat::TupleStruct(pat) => Some(path_name(&pat.path)),
-        syn::Pat::Struct(pat) => Some(path_name(&pat.path)),
-        syn::Pat::Wild(_) => Some("_".to_owned()),
-        syn::Pat::Reference(pat) => pat_name(&pat.pat),
-        syn::Pat::Paren(pat) => pat_name(&pat.pat),
-        syn::Pat::Or(pat) => pat
-            .cases
-            .iter()
-            .map(pat_name)
-            .collect::<Option<Vec<_>>>()
-            .map(|names| names.join("|")),
-        _ => None,
-    }
-}
-
-/// A path as written, with its generic type and const arguments: `a::Owner` stays apart from
-/// `b::Owner`, and `Owner<u8>` from `Owner<u16>`. Lifetimes are left out, as they never tell two
-/// impls apart.
-fn full_path(path: &syn::Path) -> String {
-    let segments: Vec<String> = path
-        .segments
-        .iter()
-        .map(|segment| match &segment.arguments {
-            syn::PathArguments::AngleBracketed(arguments) => {
-                let arguments: Vec<String> = arguments
-                    .args
-                    .iter()
-                    .filter_map(|argument| match argument {
-                        syn::GenericArgument::Lifetime(_) => None,
-                        syn::GenericArgument::Type(ty) => Some(type_name(ty)),
-                        syn::GenericArgument::Const(expr) => Some(const_name(expr)),
-                        syn::GenericArgument::AssocType(assoc) => {
-                            Some(format!("{}={}", assoc.ident, type_name(&assoc.ty)))
-                        }
-                        syn::GenericArgument::AssocConst(assoc) => {
-                            Some(format!("{}={}", assoc.ident, const_name(&assoc.value)))
-                        }
-                        _ => Some("<argument>".to_owned()),
-                    })
-                    .collect();
-                if arguments.is_empty() {
-                    segment.ident.to_string()
-                } else {
-                    format!("{}<{}>", segment.ident, arguments.join(","))
-                }
-            }
-            syn::PathArguments::Parenthesized(arguments) => {
-                let inputs: Vec<String> = arguments.inputs.iter().map(type_name).collect();
-                match &arguments.output {
-                    syn::ReturnType::Default => format!("{}({})", segment.ident, inputs.join(",")),
-                    syn::ReturnType::Type(_, output) => format!(
-                        "{}({})->{}",
-                        segment.ident,
-                        inputs.join(","),
-                        type_name(output)
-                    ),
-                }
-            }
-            syn::PathArguments::None => segment.ident.to_string(),
-        })
-        .collect();
-    let leading = if path.leading_colon.is_some() {
-        "::"
-    } else {
-        ""
-    };
-    format!("{leading}{}", segments.join("::"))
-}
-
-/// A const generic argument: an integer, boolean or character literal as written, any other
-/// expression by its identifiers.
-fn const_name(expr: &syn::Expr) -> String {
-    match expr {
-        syn::Expr::Lit(lit) => match &lit.lit {
-            syn::Lit::Int(int) => int.base10_digits().to_owned(),
-            syn::Lit::Bool(boolean) => boolean.value.to_string(),
-            syn::Lit::Char(ch) => format!("{:?}", ch.value()),
-            _ => "<literal>".to_owned(),
-        },
-        syn::Expr::Block(block) => match block.block.stmts.as_slice() {
-            [syn::Stmt::Expr(inner, None)] => const_name(inner),
-            _ => format!("{{{}}}", fingerprint(|idents| idents.visit_expr(expr))),
-        },
-        _ => format!("{{{}}}", fingerprint(|idents| idents.visit_expr(expr))),
-    }
-}
-
-/// An impl's self type as written, with its full path and generic arguments, references and
-/// pointers, so two impls of one file name two types unless the compiler would merge them.
-fn type_name(ty: &syn::Type) -> String {
-    match ty {
-        syn::Type::Path(path) => match &path.qself {
-            Some(qself) => format!("<{}>::{}", type_name(&qself.ty), full_path(&path.path)),
-            None => full_path(&path.path),
-        },
-        syn::Type::Reference(reference) => {
-            let mutability = if reference.mutability.is_some() {
-                "mut "
-            } else {
-                ""
-            };
-            format!("&{mutability}{}", type_name(&reference.elem))
-        }
-        syn::Type::Ptr(pointer) => {
-            let mutability = if pointer.mutability.is_some() {
-                "mut"
-            } else {
-                "const"
-            };
-            format!("*{mutability} {}", type_name(&pointer.elem))
-        }
-        syn::Type::Slice(slice) => format!("[{}]", type_name(&slice.elem)),
-        syn::Type::Array(array) => {
-            format!("[{};{}]", type_name(&array.elem), const_name(&array.len))
-        }
-        syn::Type::Tuple(tuple) => {
-            let elements: Vec<String> = tuple.elems.iter().map(type_name).collect();
-            format!("({})", elements.join(","))
-        }
-        syn::Type::Paren(paren) => type_name(&paren.elem),
-        syn::Type::Group(group) => type_name(&group.elem),
-        syn::Type::Never(_) => "!".to_owned(),
-        _ => format!("<type {}>", fingerprint(|idents| idents.visit_type(ty))),
-    }
-}
-
-/// Whether a cfg predicate is false whenever `test` is.
-fn needs_test(predicate: &syn::Meta) -> bool {
-    holds_without_test(predicate) == Some(false)
-}
-
-/// Whether a cfg predicate holds in a production build, where `test` is false, evaluated in
-/// three-valued logic: `None` stands for a key other than `test` (a feature, a target), whose value
-/// is not known here. `not` flips a known value, `all` is false with one false term and `any` true
-/// with one true term, so `not(not(test))` and `all(test, feature = "x")` are both `Some(false)`.
-fn holds_without_test(predicate: &syn::Meta) -> Option<bool> {
-    match predicate {
-        syn::Meta::Path(path) if path.is_ident("test") => Some(false),
-        syn::Meta::List(list) => {
-            let terms = list
-                .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
-                .ok()?;
-            let terms: Vec<Option<bool>> = terms.iter().map(holds_without_test).collect();
-            if list.path.is_ident("not") {
-                match terms.as_slice() {
-                    [term] => term.map(|term| !term),
-                    _ => None,
-                }
-            } else if list.path.is_ident("all") {
-                if terms.contains(&Some(false)) {
-                    Some(false)
-                } else {
-                    terms.iter().all(Option::is_some).then_some(true)
-                }
-            } else if list.path.is_ident("any") {
-                if terms.contains(&Some(true)) {
-                    Some(true)
-                } else {
-                    terms.iter().all(Option::is_some).then_some(false)
-                }
-            } else {
-                None
-            }
-        }
-        _ => None,
-    }
-}
-
-/// The `path = "..."` value of an attribute's meta, if it is one.
-fn path_value(meta: &syn::Meta) -> Option<String> {
-    match meta {
-        syn::Meta::NameValue(value) if value.path.is_ident("path") => match &value.value {
-            syn::Expr::Lit(syn::ExprLit {
-                lit: syn::Lit::Str(path),
-                ..
-            }) => Some(path.value()),
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
-/// The path a production build loads a module declaration from: its `#[path = "..."]`, or the
-/// `path` of a `#[cfg_attr(predicate, path = "...")]` whose predicate holds outside tests. A
-/// `cfg_attr` path whose predicate names another key cannot be decided here and fails the guard.
-#[allow(clippy::panic)]
-fn module_path(attrs: &[syn::Attribute]) -> Option<String> {
-    attrs.iter().find_map(|attr| {
-        if !attr.path().is_ident("cfg_attr") {
-            return path_value(&attr.meta);
-        }
-        let metas = attr
-            .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
-            .ok()?;
-        let mut metas = metas.iter();
-        let predicate = metas.next()?;
-        let path = metas.find_map(path_value)?;
-        match holds_without_test(predicate) {
-            Some(true) => Some(path),
-            Some(false) => None,
-            None => panic!("cfg_attr path {path:?} depends on a key other than test"),
-        }
-    })
-}
-
-fn item_attrs(item: &syn::Item) -> &[syn::Attribute] {
-    use syn::Item;
-    match item {
-        Item::Const(item) => &item.attrs,
-        Item::Enum(item) => &item.attrs,
-        Item::ExternCrate(item) => &item.attrs,
-        Item::Fn(item) => &item.attrs,
-        Item::ForeignMod(item) => &item.attrs,
-        Item::Impl(item) => &item.attrs,
-        Item::Macro(item) => &item.attrs,
-        Item::Mod(item) => &item.attrs,
-        Item::Static(item) => &item.attrs,
-        Item::Struct(item) => &item.attrs,
-        Item::Trait(item) => &item.attrs,
-        Item::TraitAlias(item) => &item.attrs,
-        Item::Type(item) => &item.attrs,
-        Item::Union(item) => &item.attrs,
-        Item::Use(item) => &item.attrs,
-        _ => &[],
-    }
-}
-
-fn impl_item_attrs(item: &syn::ImplItem) -> &[syn::Attribute] {
-    match item {
-        syn::ImplItem::Const(item) => &item.attrs,
-        syn::ImplItem::Fn(item) => &item.attrs,
-        syn::ImplItem::Type(item) => &item.attrs,
-        syn::ImplItem::Macro(item) => &item.attrs,
-        _ => &[],
-    }
-}
-
-fn trait_item_attrs(item: &syn::TraitItem) -> &[syn::Attribute] {
-    match item {
-        syn::TraitItem::Const(item) => &item.attrs,
-        syn::TraitItem::Fn(item) => &item.attrs,
-        syn::TraitItem::Type(item) => &item.attrs,
-        syn::TraitItem::Macro(item) => &item.attrs,
-        _ => &[],
-    }
-}
-
-/// An expression's kind and attributes.
-fn expr_kind(expr: &syn::Expr) -> (&'static str, &[syn::Attribute]) {
-    use syn::Expr;
-    match expr {
-        Expr::Array(expr) => ("array", &expr.attrs),
-        Expr::Assign(expr) => ("assign", &expr.attrs),
-        Expr::Async(expr) => ("async", &expr.attrs),
-        Expr::Await(expr) => ("await", &expr.attrs),
-        Expr::Binary(expr) => ("binary", &expr.attrs),
-        Expr::Block(expr) => ("block", &expr.attrs),
-        Expr::Break(expr) => ("break", &expr.attrs),
-        Expr::Call(expr) => ("call", &expr.attrs),
-        Expr::Cast(expr) => ("cast", &expr.attrs),
-        Expr::Closure(expr) => ("closure", &expr.attrs),
-        Expr::Const(expr) => ("const", &expr.attrs),
-        Expr::Continue(expr) => ("continue", &expr.attrs),
-        Expr::Field(expr) => ("field", &expr.attrs),
-        Expr::ForLoop(expr) => ("for", &expr.attrs),
-        Expr::Group(expr) => ("group", &expr.attrs),
-        Expr::If(expr) => ("if", &expr.attrs),
-        Expr::Index(expr) => ("index", &expr.attrs),
-        Expr::Infer(expr) => ("infer", &expr.attrs),
-        Expr::Let(expr) => ("let", &expr.attrs),
-        Expr::Lit(expr) => ("lit", &expr.attrs),
-        Expr::Loop(expr) => ("loop", &expr.attrs),
-        Expr::Macro(expr) => ("macro", &expr.attrs),
-        Expr::Match(expr) => ("match", &expr.attrs),
-        Expr::MethodCall(expr) => ("method_call", &expr.attrs),
-        Expr::Paren(expr) => ("paren", &expr.attrs),
-        Expr::Path(expr) => ("path", &expr.attrs),
-        Expr::Range(expr) => ("range", &expr.attrs),
-        Expr::Reference(expr) => ("reference", &expr.attrs),
-        Expr::Repeat(expr) => ("repeat", &expr.attrs),
-        Expr::Return(expr) => ("return", &expr.attrs),
-        Expr::Struct(expr) => ("struct", &expr.attrs),
-        Expr::Try(expr) => ("try", &expr.attrs),
-        Expr::TryBlock(expr) => ("try_block", &expr.attrs),
-        Expr::Tuple(expr) => ("tuple", &expr.attrs),
-        Expr::Unary(expr) => ("unary", &expr.attrs),
-        Expr::Unsafe(expr) => ("unsafe", &expr.attrs),
-        Expr::While(expr) => ("while", &expr.attrs),
-        Expr::Yield(expr) => ("yield", &expr.attrs),
-        _ => ("expr", &[]),
-    }
-}
-
-impl<'ast> Visit<'ast> for Scan {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        let attrs = item_attrs(item);
-        if test_only(attrs) {
-            return;
-        }
-        if let syn::Item::Mod(module) = item {
-            let name = module.ident.to_string();
-            if module.content.is_none() {
-                self.modules.push(Module {
-                    inline: self.inline.clone(),
-                    name,
-                    path: module_path(attrs),
-                });
-                return;
-            }
-            self.inline.push(name);
-            self.within("mod", |scan| visit::visit_item(scan, item));
-            self.inline.pop();
-            return;
-        }
-        let kind = match item {
-            syn::Item::Struct(_) => "struct",
-            syn::Item::Impl(_) => "impl",
-            syn::Item::Const(_) => "const",
-            syn::Item::Static(_) => "static",
-            _ => "item",
-        };
-        self.within(kind, |scan| visit::visit_item(scan, item));
-    }
-
-    fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
-        let ty = type_name(&item.self_ty);
-        let owner = match &item.trait_ {
-            Some((_, trait_path, _)) => format!("<{ty} as {}>", full_path(trait_path)),
-            None => ty,
-        };
-        self.owners.push(owner);
-        visit::visit_item_impl(self, item);
-        self.owners.pop();
-    }
-
-    fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
-        self.owners.push(item.ident.to_string());
-        visit::visit_item_trait(self, item);
-        self.owners.pop();
-    }
-
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        if !test_only(impl_item_attrs(item)) {
-            visit::visit_impl_item(self, item);
-        }
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        if !test_only(trait_item_attrs(item)) {
-            visit::visit_trait_item(self, item);
-        }
-    }
-
-    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        self.function_body(&item.sig.ident, |scan| visit::visit_item_fn(scan, item));
-    }
-
-    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
-        self.function_body(&item.sig.ident, |scan| {
-            visit::visit_impl_item_fn(scan, item);
-        });
-    }
-
-    fn visit_trait_item_fn(&mut self, item: &'ast syn::TraitItemFn) {
-        self.function_body(&item.sig.ident, |scan| {
-            visit::visit_trait_item_fn(scan, item);
-        });
-    }
-
-    fn visit_local(&mut self, local: &'ast syn::Local) {
-        if test_only(&local.attrs) {
-            return;
-        }
-        let diverges = local
-            .init
-            .as_ref()
-            .is_some_and(|init| init.diverge.is_some());
-        let kind = if diverges { "let_else" } else { "let" };
-        self.within(kind, |scan| visit::visit_local(scan, local));
-    }
-
-    fn visit_expr(&mut self, expr: &'ast syn::Expr) {
-        let (kind, attrs) = expr_kind(expr);
-        if !test_only(attrs) {
-            // A call names its callee, so a read moved into another operation is another site.
-            let callee = match expr {
-                syn::Expr::Call(call) => match &*call.func {
-                    syn::Expr::Path(path) => path.path.segments.last().map(|s| s.ident.to_string()),
-                    _ => None,
-                },
-                syn::Expr::MethodCall(call) => Some(call.method.to_string()),
-                syn::Expr::Macro(mac) => mac.mac.path.segments.last().map(|s| s.ident.to_string()),
-                _ => None,
-            };
-            // A control-flow node names the condition (or iterated pattern and source) it tests, so
-            // a read moved to a sibling `if`, `while` or `for` is another site.
-            let condition = match expr {
-                syn::Expr::If(expr) => Some(fingerprint(|idents| idents.visit_expr(&expr.cond))),
-                syn::Expr::While(expr) => Some(fingerprint(|idents| idents.visit_expr(&expr.cond))),
-                syn::Expr::ForLoop(expr) => Some(fingerprint(|idents| {
-                    idents.visit_pat(&expr.pat);
-                    idents.visit_expr(&expr.expr);
-                })),
-                _ => None,
-            };
-            let kind = match (callee, condition) {
-                (Some(callee), _) => format!("{kind}:{callee}"),
-                (None, Some(condition)) => format!("{kind}({condition})"),
-                (None, None) => kind.to_owned(),
-            };
-            self.within(kind, |scan| visit::visit_expr(scan, expr));
-        }
-    }
-
-    fn visit_stmt(&mut self, stmt: &'ast syn::Stmt) {
-        // A macro statement names its macro, as a macro expression does.
-        if let syn::Stmt::Macro(mac) = stmt {
-            if !test_only(&mac.attrs) {
-                let name = mac.mac.path.segments.last().map(|s| s.ident.to_string());
-                let kind = name.map_or_else(|| "macro".to_owned(), |name| format!("macro:{name}"));
-                self.within(kind, |scan| visit::visit_stmt_macro(scan, mac));
-            }
-            return;
-        }
-        visit::visit_stmt(self, stmt);
-    }
-
-    fn visit_expr_field(&mut self, expr: &'ast syn::ExprField) {
-        if let syn::Member::Named(member) = &expr.member
-            && let Some(field) = Self::seam(member)
-        {
-            let receiver = match &*expr.base {
-                syn::Expr::Path(path) => path.path.get_ident().map(ToString::to_string),
-                _ => None,
-            };
-            let receiver = receiver.unwrap_or_else(|| "<expr>".to_owned());
-            self.record(format!("{receiver}.{field}"), "read");
-        }
-        visit::visit_expr_field(self, expr);
-    }
-
-    fn visit_expr_path(&mut self, expr: &'ast syn::ExprPath) {
-        if let Some(field) = expr.path.get_ident().and_then(Self::seam) {
-            self.record(field, "name");
-        }
-        visit::visit_expr_path(self, expr);
-    }
-
-    fn visit_pat_ident(&mut self, pat: &'ast syn::PatIdent) {
-        if let Some(field) = Self::seam(&pat.ident) {
-            self.record(field, "binding");
-        }
-        visit::visit_pat_ident(self, pat);
-    }
-
-    fn visit_variant(&mut self, variant: &'ast syn::Variant) {
-        if !test_only(&variant.attrs) {
-            visit::visit_variant(self, variant);
-        }
-    }
-
-    fn visit_field(&mut self, field: &'ast syn::Field) {
-        if test_only(&field.attrs) {
-            return;
-        }
-        if let Some(name) = field.ident.as_ref().and_then(Self::seam) {
-            self.record(name, "declaration");
-        }
-        visit::visit_field(self, field);
-    }
-
-    fn visit_field_value(&mut self, value: &'ast syn::FieldValue) {
-        if test_only(&value.attrs) {
-            return;
-        }
-        if let syn::Member::Named(member) = &value.member
-            && let Some(field) = Self::seam(member)
-        {
-            // `S { field }` also reads the binding `field`: its value is visited below as a read.
-            self.record(field, "initializer");
-        }
-        self.within("field_value", |scan| visit::visit_field_value(scan, value));
-    }
-
-    fn visit_field_pat(&mut self, pat: &'ast syn::FieldPat) {
-        if test_only(&pat.attrs) {
-            return;
-        }
-        if let syn::Member::Named(member) = &pat.member
-            && let Some(field) = Self::seam(member)
-        {
-            self.record(field, "pattern");
-            if pat.colon_token.is_none() {
-                return;
-            }
-        }
-        visit::visit_field_pat(self, pat);
-    }
-
-    fn visit_expr_if(&mut self, expr: &'ast syn::ExprIf) {
-        // The condition sits in the `if` itself; its two branches are told apart.
-        for attr in &expr.attrs {
-            self.visit_attribute(attr);
-        }
-        self.visit_expr(&expr.cond);
-        self.within("then", |scan| scan.visit_block(&expr.then_branch));
-        if let Some((_, other)) = &expr.else_branch {
-            self.within("else", |scan| scan.visit_expr(other));
-        }
-    }
-
-    fn visit_expr_match(&mut self, expr: &'ast syn::ExprMatch) {
-        // Each production arm is keyed by its position and its pattern's name, so a read moved to
-        // another branch of the same match is another site.
-        for attr in &expr.attrs {
-            self.visit_attribute(attr);
-        }
-        self.visit_expr(&expr.expr);
-        let arms = expr.arms.iter().filter(|arm| !test_only(&arm.attrs));
-        for (index, arm) in arms.enumerate() {
-            let kind = match pat_name(&arm.pat) {
-                Some(name) => format!("arm#{}:{name}", index + 1),
-                None => format!("arm#{}", index + 1),
-            };
-            self.within(kind, |scan| visit::visit_arm(scan, arm));
-        }
-    }
-
-    fn visit_arm(&mut self, arm: &'ast syn::Arm) {
-        if !test_only(&arm.attrs) {
-            visit::visit_arm(self, arm);
-        }
-    }
-
-    fn visit_item_macro(&mut self, item: &'ast syn::ItemMacro) {
-        if let Some(ident) = &item.ident {
-            self.defined.push(ident.to_string());
-        }
-        visit::visit_item_macro(self, item);
-    }
-
-    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
-        let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
-        if let Some(segment) = mac.path.segments.last()
-            && segment.ident != "macro_rules"
-        {
-            self.invoked.push(segment.ident.to_string());
-            self.format = format_of(&segment.ident.to_string());
-        }
-        if mac
-            .path
-            .segments
-            .last()
-            .is_some_and(|segment| segment.ident == "include")
-        {
-            self.includes += 1;
-        }
-        if mac.path.is_ident("macro_rules") {
-            // A definition's mentions are marked so that `module_reads` refuses them.
-            self.within("macro_rules", |scan| scan.macro_tokens(buffer.begin()));
-        } else {
-            self.macro_tokens(buffer.begin());
-        }
-    }
-}
-
-impl Scan {
-    /// A macro body, or a delimited group inside one, is parsed as the comma-separated expressions
-    /// most macros take, else as statements, else as items, and visited with its test code left
-    /// out. A body that is none of these (a `macro_rules!` matcher, a transcriber with `$x`) is
-    /// walked token by token: each group is tried the same way, a `#[cfg(test)]` attribute drops
-    /// the tokens it governs (up to its `;`, `,` or braced body), and every other seam field name counts.
-    /// A format string's captures count where its macro takes one ([`format_of`]).
-    fn macro_tokens(&mut self, cursor: syn::buffer::Cursor<'_>) {
-        let tokens = cursor.token_stream();
-        let exprs = Punctuated::<syn::Expr, Token![,]>::parse_terminated;
-        let parsed = exprs.parse2(tokens.clone());
-        match (self.format.take(), &parsed) {
-            (Some(Format::Argument(index)), Ok(exprs)) => {
-                if let Some(syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Str(lit),
-                    ..
-                })) = exprs.iter().nth(index)
-                {
-                    self.format_captures(&lit.value());
-                }
-            }
-            // A format string the arguments do not show, or a body that may forward any literal.
-            (Some(_), _) => self.literal_captures(cursor),
-            (None, _) => {}
-        }
-        if let Ok(exprs) = parsed {
-            self.within("macro", |scan| {
-                exprs.iter().for_each(|expr| scan.visit_expr(expr));
-            });
-        } else if let Ok(stmts) = syn::Block::parse_within.parse2(tokens.clone()) {
-            self.within("macro", |scan| {
-                stmts.iter().for_each(|stmt| scan.visit_stmt(stmt));
-            });
-        } else if let Ok(file) = syn::parse2::<syn::File>(tokens) {
-            self.within("macro", |scan| scan.visit_file(&file));
-        } else {
-            let mut cursor = cursor;
-            // The format string position of the macro invoked just before the next group.
-            let mut pending = None;
-            while !cursor.eof() {
-                if let Some((punct, next)) = cursor.punct()
-                    && punct.as_char() == '#'
-                    && let Some((inner, _, _, after)) = next.any_group()
-                    && syn::parse2::<syn::Meta>(inner.token_stream())
-                        .is_ok_and(|meta| meta.path().is_ident("cfg") && cfg_needs_test(&meta))
-                {
-                    cursor = skip_governed(after);
-                } else if let Some((ident, next)) = cursor.ident() {
-                    if let Some(field) = Self::seam(&ident) {
-                        self.record(field, "macro_tokens");
-                    }
-                    // `name!` (not `name != x`, nor a keyword as in `if !x`) invokes a macro;
-                    // `macro_rules! name` defines one.
-                    if let Some((punct, after)) = next.punct()
-                        && punct.as_char() == '!'
-                        && syn::parse_str::<syn::Ident>(&ident.to_string()).is_ok()
-                        && after.punct().is_none_or(|(next, _)| next.as_char() != '=')
-                    {
-                        if ident == "macro_rules" {
-                            if let Some((defined, _)) = after.ident() {
-                                self.defined.push(defined.to_string());
-                            }
-                            pending = None;
-                        } else {
-                            self.invoked.push(ident.to_string());
-                            pending = format_of(&ident.to_string());
-                        }
-                        if ident == "include" {
-                            self.includes += 1;
-                        }
-                        cursor = after;
-                    } else {
-                        pending = None;
-                        cursor = next;
-                    }
-                } else if let Some((inner, _, _, next)) = cursor.any_group() {
-                    self.format = pending.take();
-                    self.macro_tokens(inner);
-                    cursor = next;
-                } else if let Some((_, next)) = cursor.token_tree() {
-                    pending = None;
-                    cursor = next;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-}
-
-impl Scan {
-    /// The `{name}` captures of every string literal in a macro body, at any depth.
-    fn literal_captures(&mut self, mut cursor: syn::buffer::Cursor<'_>) {
-        while !cursor.eof() {
-            if let Some((literal, next)) = cursor.literal() {
-                if let Ok(lit) = syn::parse_str::<syn::LitStr>(&literal.to_string()) {
-                    self.format_captures(&lit.value());
-                }
-                cursor = next;
-            } else if let Some((inner, _, _, next)) = cursor.any_group() {
-                self.literal_captures(inner);
-                cursor = next;
-            } else if let Some((_, next)) = cursor.token_tree() {
-                cursor = next;
-            } else {
-                break;
-            }
-        }
-    }
-}
-
-/// The identifiers of a syntax node, in source order, joined by spaces.
-fn fingerprint(visit: impl FnOnce(&mut Idents)) -> String {
-    let mut idents = Idents::default();
-    visit(&mut idents);
-    idents.0.join(" ")
-}
-
-#[derive(Default)]
-struct Idents(Vec<String>);
-
-impl<'ast> Visit<'ast> for Idents {
-    fn visit_ident(&mut self, ident: &'ast syn::Ident) {
-        self.0.push(ident.to_string());
-    }
-}
-
-/// Whether a `cfg(...)` meta's predicate is test-only.
-fn cfg_needs_test(meta: &syn::Meta) -> bool {
-    match meta {
-        syn::Meta::List(list) => list.parse_args::<syn::Meta>().is_ok_and(|p| needs_test(&p)),
-        _ => false,
-    }
-}
-
-/// The cursor past the tokens a leading attribute governs: through the first `;` or `,` or
-/// braced group at this level, or to the end. A `,` bounds one entry of a comma-delimited macro;
-/// stopping early there only keeps test tokens in the count, never drops production ones. Commas
-/// inside generic arguments (`call::<A, B>`, `<T as Trait<A, B>>::f`) do not bound the entry; if
-/// those angle brackets never balance, the plain first `,` bounds it instead.
-fn skip_governed(cursor: syn::buffer::Cursor<'_>) -> syn::buffer::Cursor<'_> {
-    skip_entry(cursor, true).unwrap_or_else(|| skip_entry(cursor, false).unwrap_or(cursor))
-}
-
-/// [`skip_governed`]'s walk, optionally keeping commas inside generic arguments. A `<` opens
-/// generic arguments inside others, at the start, or after a punctuation other than `<` or a
-/// closing `>`, where it cannot be a comparison or shift; `>` closes one unless it ends `->`.
-/// `None` when an opened `<` is still open at the end.
-fn skip_entry(
-    mut cursor: syn::buffer::Cursor<'_>,
-    angles: bool,
-) -> Option<syn::buffer::Cursor<'_>> {
-    let mut depth = 0_usize;
-    // The previous token when it was punctuation: its character and whether it closed a `<`.
-    let mut previous: Option<(char, bool)> = None;
-    let mut started = false;
-    while !cursor.eof() {
-        if let Some((punct, next)) = cursor.punct() {
-            cursor = next;
-            let ch = punct.as_char();
-            let mut closed = false;
-            if angles && ch == '<' {
-                let opens =
-                    depth > 0 || !started || matches!(previous, Some((p, false)) if p != '<');
-                if opens {
-                    depth += 1;
-                }
-            } else if angles && ch == '>' && depth > 0 && !matches!(previous, Some(('-', _))) {
-                depth -= 1;
-                closed = true;
-            } else if depth == 0 && matches!(ch, ';' | ',') {
-                return Some(cursor);
-            }
-            previous = Some((ch, closed));
-        } else if let Some((_, delimiter, _, next)) = cursor.any_group() {
-            cursor = next;
-            previous = None;
-            if depth == 0 && format!("{delimiter:?}") == "Brace" {
-                return Some(cursor);
-            }
-        } else if let Some((_, next)) = cursor.token_tree() {
-            cursor = next;
-            previous = None;
-        } else {
-            break;
-        }
-        started = true;
-    }
-    (depth == 0).then_some(cursor)
+fn parse_source(relative: &str) -> syn::File {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
+    let source = std::fs::read_to_string(&path).expect("production source");
+    syn::parse_file(&source).expect("production source parses")
 }
 
 #[allow(clippy::expect_used)]
@@ -1644,55 +199,320 @@ fn plan() -> String {
     std::fs::read_to_string(repository_root().join(PLAN)).expect("completion plan")
 }
 
-#[test]
-fn every_seam_room_read_is_inventoried() {
-    let expected: BTreeSet<(String, Site)> = INVENTORY
+/// The room an accessor's arm returns.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Room {
+    Qualified,
+    Combat,
+}
+
+/// `self.qualified` or `self.combat`.
+fn field_room(expr: &syn::Expr) -> Option<Room> {
+    let syn::Expr::Field(field) = expr else {
+        return None;
+    };
+    let syn::Member::Named(name) = &field.member else {
+        return None;
+    };
+    let receiver = matches!(&*field.base, syn::Expr::Path(path) if path.path.is_ident("self"));
+    match name.to_string().as_str() {
+        "qualified" if receiver && field.attrs.is_empty() => Some(Room::Qualified),
+        "combat" if receiver && field.attrs.is_empty() => Some(Room::Combat),
+        _ => None,
+    }
+}
+
+/// An accessor's arms, each key with the room it returns: `[("", room)]` for a body that is one
+/// field read, or the literal keys and a closing `_` of a `match key { … }` of field reads.
+fn accessor_arms(function: &syn::ImplItemFn) -> Option<Vec<(String, Room)>> {
+    let [syn::Stmt::Expr(body, None)] = function.block.stmts.as_slice() else {
+        return None;
+    };
+    if let Some(room) = field_room(body) {
+        return Some(vec![(String::new(), room)]);
+    }
+    let syn::Expr::Match(choice) = body else {
+        return None;
+    };
+    let keyed = matches!(&*choice.expr, syn::Expr::Path(path) if path.path.is_ident("key"));
+    let (default, keys) = choice.arms.split_last()?;
+    if !keyed || !choice.attrs.is_empty() || !matches!(default.pat, syn::Pat::Wild(_)) {
+        return None;
+    }
+    let mut arms = Vec::new();
+    for arm in keys {
+        let syn::Pat::Lit(syn::ExprLit {
+            lit: syn::Lit::Str(key),
+            attrs,
+        }) = &arm.pat
+        else {
+            return None;
+        };
+        if !attrs.is_empty() || !arm.attrs.is_empty() || arm.guard.is_some() {
+            return None;
+        }
+        arms.push((key.value(), field_room(&arm.body)?));
+    }
+    if !default.attrs.is_empty() || default.guard.is_some() {
+        return None;
+    }
+    arms.push(("_".to_owned(), field_room(&default.body)?));
+    Some(arms)
+}
+
+/// `Self { qualified, combat }`.
+fn sets_both_rooms(function: &syn::ImplItemFn) -> bool {
+    let [syn::Stmt::Expr(syn::Expr::Struct(init), None)] = function.block.stmts.as_slice() else {
+        return false;
+    };
+    let fields: Vec<String> = init
+        .fields
         .iter()
-        .map(|read| {
-            let site = Site {
-                function: read.function.to_owned(),
-                field: read.field.to_owned(),
-                site: read.site.to_owned(),
-                ordinal: read.ordinal,
-            };
-            (read.file.to_owned(), site)
+        .filter(|field| field.colon_token.is_none() && field.attrs.is_empty())
+        .filter_map(|field| match &field.member {
+            syn::Member::Named(name) => Some(name.to_string()),
+            syn::Member::Unnamed(_) => None,
         })
         .collect();
-    assert_eq!(
-        module_reads(),
-        expected,
-        "a `qualified_room` or `combat_room` read of the seam changed: record it in INVENTORY \
-         at its site (an opened gate names its batch and merged PR, a closed gate its owning batch)"
+    init.path.is_ident("Self") && init.rest.is_none() && fields == ["qualified", "combat"]
+}
+
+/// Every macro invocation and every attribute other than a doc comment or the struct's
+/// `#[derive(Clone, Copy)]`, at any depth.
+#[derive(Default)]
+struct Foreign(Vec<String>);
+
+impl<'ast> Visit<'ast> for Foreign {
+    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
+        self.0.push(format!("macro `{}`", path_name(&mac.path)));
+        visit::visit_macro(self, mac);
+    }
+
+    fn visit_attribute(&mut self, attr: &'ast syn::Attribute) {
+        if attr.path().is_ident("doc") || derives_clone_copy(attr) {
+            return;
+        }
+        self.0
+            .push(format!("attribute `{}`", path_name(attr.path())));
+    }
+}
+
+fn derives_clone_copy(attr: &syn::Attribute) -> bool {
+    let mut derived = Vec::new();
+    attr.path().is_ident("derive")
+        && attr
+            .parse_nested_meta(|meta| {
+                derived.push(path_name(&meta.path));
+                Ok(())
+            })
+            .is_ok()
+        && derived == ["Clone", "Copy"]
+}
+
+fn path_name(path: &syn::Path) -> String {
+    path.segments
+        .iter()
+        .map(|segment| segment.ident.to_string())
+        .collect::<Vec<_>>()
+        .join("::")
+}
+
+/// The arms of every `SeamRooms` accessor, by accessor, after holding `seam_rooms.rs` to its two
+/// private fields, their constructor and accessors of the forms `accessor_arms` reads.
+#[allow(clippy::expect_used, clippy::panic)]
+fn accessors() -> BTreeMap<String, Vec<(String, Room)>> {
+    let file = parse_source("src/gameplay_transport/seam_rooms.rs");
+    let mut foreign = Foreign::default();
+    foreign.visit_file(&file);
+    assert!(
+        foreign.0.is_empty(),
+        "seam_rooms.rs gained {:?}: its expansion could read a room outside the inventory",
+        foreign.0
     );
+    let mut accessors = BTreeMap::new();
+    let mut structs = 0;
+    for item in &file.items {
+        match item {
+            syn::Item::Use(_) => {}
+            syn::Item::Struct(item) => {
+                structs += 1;
+                let syn::Fields::Named(fields) = &item.fields else {
+                    panic!("`SeamRooms` has no named fields");
+                };
+                let fields: Vec<(String, bool)> = fields
+                    .named
+                    .iter()
+                    .map(|field| {
+                        let name = field.ident.as_ref().map(ToString::to_string);
+                        let private = matches!(field.vis, syn::Visibility::Inherited);
+                        (name.unwrap_or_default(), private)
+                    })
+                    .collect();
+                assert!(
+                    item.ident == "SeamRooms"
+                        && fields == [("qualified".to_owned(), true), ("combat".to_owned(), true)],
+                    "seam_rooms.rs no longer declares `SeamRooms` with exactly the two private \
+                     fields `qualified` and `combat`: {fields:?}"
+                );
+            }
+            syn::Item::Impl(block)
+                if block.trait_.is_none()
+                    && block.unsafety.is_none()
+                    && matches!(&*block.self_ty, syn::Type::Path(ty)
+                        if ty.qself.is_none() && path_name(&ty.path) == "SeamRooms") =>
+            {
+                for item in &block.items {
+                    let syn::ImplItem::Fn(function) = item else {
+                        panic!("the `SeamRooms` impl holds an item other than a function");
+                    };
+                    let name = function.sig.ident.to_string();
+                    if name == "new" {
+                        assert!(
+                            sets_both_rooms(function),
+                            "`SeamRooms::new` does more than `Self {{ qualified, combat }}`"
+                        );
+                        continue;
+                    }
+                    let arms = accessor_arms(function).unwrap_or_else(|| {
+                        panic!(
+                            "`SeamRooms::{name}` is neither one room read nor a `match key` of \
+                             room reads: record its gate as one of those forms"
+                        )
+                    });
+                    assert!(
+                        accessors.insert(name.clone(), arms).is_none(),
+                        "`SeamRooms::{name}` is declared twice"
+                    );
+                }
+            }
+            _ => panic!("seam_rooms.rs holds an item other than its uses, struct and impl"),
+        }
+    }
+    assert_eq!(structs, 1, "seam_rooms.rs declares one struct");
+    accessors
 }
 
 #[test]
-fn each_gate_reads_the_room_its_state_says() {
-    for read in INVENTORY {
-        // The field read, in any form: `x.combat_room`, a bare `combat_room` pattern or binding.
-        let combat = read.field.rsplit('.').next() == Some("combat_room");
-        match read.state {
+fn every_room_accessor_is_inventoried() {
+    let mut expected: BTreeMap<String, Vec<(String, Room)>> = BTreeMap::new();
+    for entry in INVENTORY {
+        let room = match entry.state {
+            Gate::Open { .. } => Room::Combat,
+            Gate::Closed { .. } | Gate::SourceWorldBranch => Room::Qualified,
+        };
+        expected
+            .entry(entry.accessor.to_owned())
+            .or_default()
+            .push((entry.key.to_owned(), room));
+    }
+    assert_eq!(
+        accessors(),
+        expected,
+        "a `SeamRooms` accessor changed: record its gate in INVENTORY (an opened gate names its \
+         batch and merged PR, a closed gate its owning batch)"
+    );
+}
+
+/// The number of `name` identifier tokens of a token stream, at any depth: a call, a path to the
+/// accessor or any other mention.
+fn mentions(mut cursor: syn::buffer::Cursor<'_>, name: &str) -> usize {
+    let mut count = 0;
+    while !cursor.eof() {
+        if let Some((inner, _, _, next)) = cursor.any_group() {
+            count += mentions(inner, name);
+            cursor = next;
+        } else if let Some((ident, next)) = cursor.ident() {
+            count += usize::from(ident.unraw() == name);
+            cursor = next;
+        } else if let Some((_, next)) = cursor.token_tree() {
+            cursor = next;
+        } else {
+            break;
+        }
+    }
+    count
+}
+
+/// Every mention of each of `names` in the crate's sources, by name and file under `src/`,
+/// leaving out `seam_rooms.rs` and this module's inventory.
+#[allow(clippy::expect_used)]
+fn mentions_of(names: &[&str]) -> BTreeMap<(String, String), usize> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut calls = BTreeMap::new();
+    let mut sources = vec![root.clone()];
+    while let Some(path) = sources.pop() {
+        if path.is_dir() {
+            let entries = std::fs::read_dir(&path).expect("source directory");
+            sources.extend(entries.map(|entry| entry.expect("source entry").path()));
+            continue;
+        }
+        if path.extension().is_none_or(|extension| extension != "rs") {
+            continue;
+        }
+        let relative = path
+            .strip_prefix(&root)
+            .expect("source under src")
+            .to_string_lossy()
+            .replace('\\', "/");
+        if matches!(
+            relative.as_str(),
+            "gameplay_transport/seam_rooms.rs" | "gameplay_transport/bundle_gates_tests.rs"
+        ) {
+            continue;
+        }
+        let source = std::fs::read_to_string(&path).expect("source text");
+        let tokens = syn::buffer::TokenBuffer::new2(source.parse().expect("source lexes"));
+        for name in names {
+            let count = mentions(tokens.begin(), name);
+            if count > 0 {
+                calls.insert(((*name).to_owned(), relative.clone()), count);
+            }
+        }
+    }
+    calls
+}
+
+#[test]
+fn every_gate_call_is_inventoried() {
+    let expected: BTreeMap<(String, String), usize> = INVENTORY
+        .iter()
+        .flat_map(|entry| {
+            entry
+                .calls
+                .iter()
+                .map(|(file, count)| ((entry.accessor.to_owned(), (*file).to_owned()), *count))
+        })
+        .collect();
+    let names: Vec<&str> = INVENTORY.iter().map(|entry| entry.accessor).collect();
+    assert_eq!(
+        mentions_of(&names),
+        expected,
+        "a call of a `SeamRooms` accessor was added, removed or moved: record it in INVENTORY"
+    );
+    for entry in INVENTORY.iter().filter(|entry| entry.key.is_empty()) {
+        assert!(
+            !entry.calls.is_empty(),
+            "gate `{}` is never called",
+            entry.gate
+        );
+    }
+}
+
+#[test]
+fn every_gate_names_its_opener_or_owner() {
+    for entry in INVENTORY {
+        match entry.state {
             Gate::Open { batch, pr } => {
-                assert!(combat, "open gate `{}` must read combat_room", read.gate);
-                assert!(!batch.is_empty() && pr > 0, "open gate `{}`", read.gate);
+                assert!(!batch.is_empty() && pr > 0, "open gate `{}`", entry.gate);
             }
             Gate::Closed { owners } => {
-                assert!(!combat, "closed gate `{}` reads combat_room", read.gate);
                 assert!(
                     !owners.is_empty(),
                     "closed gate `{}` has no owner",
-                    read.gate
+                    entry.gate
                 );
             }
-            Gate::SourceWorldBranch => assert!(!combat, "`{}`", read.gate),
-            Gate::Plumbing => assert!(read.field.starts_with("owners."), "`{}`", read.gate),
-            // A declaration or initializer only: a destructuring pattern or binding is a read.
-            Gate::Declaration => assert!(
-                !read.field.contains('.')
-                    && (read.site.ends_with("/declaration") || read.site.ends_with("/initializer")),
-                "`{}`",
-                read.gate
-            ),
+            Gate::SourceWorldBranch => {}
         }
     }
 }
@@ -1711,19 +531,19 @@ fn every_gate_is_recorded_in_the_plan_row() {
         .split([';', '|'])
         .flat_map(|part| part.split(". "))
         .collect();
-    let clause = |read: &Read, names: &[String]| {
+    let clause = |entry: &Entry, names: &[String]| {
         clauses.iter().any(|clause| {
-            clause.contains(read.plan) && names.iter().all(|name| clause.contains(name.as_str()))
+            clause.contains(entry.plan) && names.iter().all(|name| clause.contains(name.as_str()))
         })
     };
-    for read in INVENTORY {
-        match read.state {
+    for entry in INVENTORY {
+        match entry.state {
             Gate::Open { batch, pr } => {
                 assert!(
-                    clause(read, &[batch.to_owned(), format!("#{pr}")]),
+                    clause(entry, &[batch.to_owned(), format!("#{pr}")]),
                     "the plan row has no clause recording that {batch} #{pr} opened `{}` ({})",
-                    read.gate,
-                    read.plan
+                    entry.gate,
+                    entry.plan
                 );
             }
             Gate::Closed { owners } => {
@@ -1732,125 +552,34 @@ fn every_gate_is_recorded_in_the_plan_row() {
                         plan.lines()
                             .any(|line| line.starts_with(&format!("| {owner} |"))),
                         "closed gate `{}` names `{owner}`, which is not a plan batch",
-                        read.gate
+                        entry.gate
                     );
                 }
                 let names: Vec<String> = owners.iter().map(|owner| (*owner).to_owned()).collect();
                 assert!(
-                    clause(read, &names),
+                    clause(entry, &names),
                     "the plan row has no clause naming {owners:?} for `{}` ({})",
-                    read.gate,
-                    read.plan
+                    entry.gate,
+                    entry.plan
                 );
             }
             Gate::SourceWorldBranch => assert!(
                 clause(
-                    read,
+                    entry,
                     &["are not gates".to_owned(), "`bundle_map`".to_owned()]
                 ),
                 "the plan row has no clause recording that the source-World branch `{}` is not a \
                  gate because a bundle World is served by `bundle_map` ({})",
-                read.gate,
-                read.plan
+                entry.gate,
+                entry.plan
             ),
-            Gate::Plumbing | Gate::Declaration => {}
         }
     }
-}
-
-/// The production code of one source file: its struct literals and free functions, with every
-/// `#[cfg(test)]` item, statement, expression, field and arm left out.
-#[derive(Default)]
-struct Production<'ast> {
-    structs: Vec<&'ast syn::ExprStruct>,
-    functions: Vec<&'ast syn::ItemFn>,
-}
-
-#[allow(clippy::expect_used)]
-fn parse_source(relative: &str) -> syn::File {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
-    let source = std::fs::read_to_string(&path).expect("production source");
-    syn::parse_file(&source).expect("production source parses")
-}
-
-fn production(file: &syn::File) -> Production<'_> {
-    let mut production = Production::default();
-    production.visit_file(file);
-    production
-}
-
-impl<'ast> Visit<'ast> for Production<'ast> {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        if !test_only(item_attrs(item)) {
-            visit::visit_item(self, item);
-        }
-    }
-
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        if !test_only(impl_item_attrs(item)) {
-            visit::visit_impl_item(self, item);
-        }
-    }
-
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        if !test_only(trait_item_attrs(item)) {
-            visit::visit_trait_item(self, item);
-        }
-    }
-
-    fn visit_local(&mut self, local: &'ast syn::Local) {
-        if !test_only(&local.attrs) {
-            visit::visit_local(self, local);
-        }
-    }
-
-    fn visit_stmt_macro(&mut self, mac: &'ast syn::StmtMacro) {
-        if !test_only(&mac.attrs) {
-            visit::visit_stmt_macro(self, mac);
-        }
-    }
-
-    fn visit_expr(&mut self, expr: &'ast syn::Expr) {
-        if !test_only(expr_kind(expr).1) {
-            visit::visit_expr(self, expr);
-        }
-    }
-
-    fn visit_field_value(&mut self, value: &'ast syn::FieldValue) {
-        if !test_only(&value.attrs) {
-            visit::visit_field_value(self, value);
-        }
-    }
-
-    fn visit_arm(&mut self, arm: &'ast syn::Arm) {
-        if !test_only(&arm.attrs) {
-            visit::visit_arm(self, arm);
-        }
-    }
-
-    fn visit_variant(&mut self, variant: &'ast syn::Variant) {
-        if !test_only(&variant.attrs) {
-            visit::visit_variant(self, variant);
-        }
-    }
-
-    fn visit_expr_struct(&mut self, expr: &'ast syn::ExprStruct) {
-        self.structs.push(expr);
-        visit::visit_expr_struct(self, expr);
-    }
-
-    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        self.functions.push(item);
-        visit::visit_item_fn(self, item);
-    }
-}
-
-fn is_name(expr: &syn::Expr, name: &str) -> bool {
-    matches!(expr, syn::Expr::Path(path) if path.path.is_ident(name))
 }
 
 /// `bundle.is_none().then_some(&qualified_room)`.
 fn withholds_from_a_bundle(expr: &syn::Expr) -> bool {
+    let is_name = |expr: &syn::Expr, name: &str| matches!(expr, syn::Expr::Path(path) if path.path.is_ident(name));
     let syn::Expr::MethodCall(then_some) = expr else {
         return false;
     };
@@ -1869,676 +598,51 @@ fn withholds_from_a_bundle(expr: &syn::Expr) -> bool {
         )
 }
 
+/// Every `SeamRooms::new(…)` call of a source file, at any depth.
+#[derive(Default)]
+struct Constructions<'ast>(Vec<&'ast syn::ExprCall>);
+
+impl<'ast> Visit<'ast> for Constructions<'ast> {
+    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+        if let syn::Expr::Path(path) = &*call.func
+            && path_name(&path.path).ends_with("SeamRooms::new")
+        {
+            self.0.push(call);
+        }
+        visit::visit_expr_call(self, call);
+    }
+}
+
+/// Every mention of `SeamRooms` outside `seam_rooms.rs`: the seam's declarations of its two
+/// owners in `mod.rs`, its one production construction in `serve.rs`, and test fixtures.
+const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
+    ("gameplay_transport/mod.rs", 3),
+    ("gameplay_transport/monk_save_postgres_tests.rs", 1),
+    ("gameplay_transport/parameter_cast.rs", 3),
+    ("gameplay_transport/qualification.rs", 1),
+    ("node/serve.rs", 1),
+];
+
 #[test]
 fn a_bundle_world_seam_has_no_qualified_room() {
+    let expected: BTreeMap<(String, String), usize> = CONSTRUCTIONS
+        .iter()
+        .map(|(file, count)| (("SeamRooms".to_owned(), (*file).to_owned()), *count))
+        .collect();
+    assert_eq!(
+        mentions_of(&["SeamRooms"]),
+        expected,
+        "`SeamRooms` is named in another place: a new construction could hand a bundle World its \
+         qualified room"
+    );
     let serve = parse_source("src/node/serve.rs");
-    let owners: Vec<&syn::ExprStruct> = production(&serve)
-        .structs
-        .into_iter()
-        .filter(|init| path_name(&init.path) == "GameplaySeamOwners")
-        .collect();
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&serve);
     assert!(
-        !owners.is_empty(),
-        "serve.rs no longer builds `GameplaySeamOwners` in production code"
+        matches!(constructions.0.as_slice(), [call]
+            if call.args.first().is_some_and(withholds_from_a_bundle)),
+        "serve.rs no longer builds `SeamRooms::new(bundle.is_none().then_some(&qualified_room), \
+         …)`: every closed gate would open at once without its owner"
     );
-    for init in owners {
-        let room = init.fields.iter().find(
-            |field| matches!(&field.member, syn::Member::Named(name) if name == "qualified_room"),
-        );
-        assert!(
-            room.is_some_and(|field| withholds_from_a_bundle(&field.expr)),
-            "a `GameplaySeamOwners` initializer in serve.rs no longer sets `qualified_room: \
-             bundle.is_none().then_some(&qualified_room)`: every closed gate would open at once \
-             without its owner"
-        );
-    }
-}
-
-/// `match key { "locate_message" => combat, _ => qualified }`, and nothing else.
-fn opens_only_the_locate_message(function: &syn::ItemFn) -> bool {
-    let [syn::Stmt::Expr(syn::Expr::Match(choice), None)] = function.block.stmts.as_slice() else {
-        return false;
-    };
-    let [locate, other] = choice.arms.as_slice() else {
-        return false;
-    };
-    let locate_key = matches!(
-        &locate.pat,
-        syn::Pat::Lit(syn::ExprLit { lit: syn::Lit::Str(key), .. }) if key.value() == "locate_message"
-    );
-    is_name(&choice.expr, "key")
-        && locate_key
-        && locate.guard.is_none()
-        && is_name(&locate.body, "combat")
-        && matches!(other.pat, syn::Pat::Wild(_))
-        && other.guard.is_none()
-        && is_name(&other.body, "qualified")
-}
-
-#[test]
-fn parameter_room_opens_only_the_locate_message() {
-    let source = parse_source("src/gameplay_transport/parameter_cast.rs");
-    let rooms: Vec<&syn::ItemFn> = production(&source)
-        .functions
-        .into_iter()
-        .filter(|function| function.sig.ident == "parameter_room")
-        .collect();
-    assert!(
-        matches!(rooms.as_slice(), [room] if opens_only_the_locate_message(room)),
-        "`parameter_room` changed which parameter keys read the combat room: record the opened \
-         keys in INVENTORY"
-    );
-}
-
-fn site(function: &str, field: &str, site: &str, ordinal: usize) -> Site {
-    Site {
-        function: function.to_owned(),
-        field: field.to_owned(),
-        site: site.to_owned(),
-        ordinal,
-    }
-}
-
-#[test]
-fn every_test_only_item_is_left_out_at_any_depth() {
-    let scan = scan(
-        r#"
-        struct Owner<'a> {
-            combat_room: Option<&'a Room>,
-            #[cfg(test)]
-            qualified_room: Option<&'a Room>,
-        }
-        #[cfg(test)]
-        struct Fixture { qualified_room: u8 }
-        enum Probe {
-            Live,
-            #[cfg(test)]
-            Fixture { qualified_room: u8 },
-        }
-        #[cfg(test)]
-        const ROOM: Owner<'static> = Owner { combat_room: None };
-        #[cfg(test)]
-        static PROBE: fn(&Owner) -> bool = |owner| owner.combat_room.is_some();
-        #[cfg(test)]
-        impl Owner<'_> {
-            fn test_read(&self) { let _ = self.combat_room; }
-        }
-        #[cfg(test)]
-        mod inline { fn read(owner: &super::Owner) { owner.qualified_room; } }
-        #[cfg(test)]
-        mod out_of_line;
-        #[cfg(test)]
-        #[path = "elsewhere_checks.rs"]
-        mod elsewhere;
-        #[path = "../shared/live.rs"]
-        mod live;
-        mod nested {
-            impl super::Owner<'_> {
-                #[cfg(test)]
-                fn nested_test(&self) { self.combat_room; }
-                #[cfg(test)]
-                const NESTED: u8 = 0;
-            }
-        }
-        impl Owner<'_> {
-            fn production(&self) {
-                #[cfg(test)]
-                let _probe = self.qualified_room;
-                #[cfg(test)]
-                probe(self.qualified_room);
-                match 0 {
-                    #[cfg(test)]
-                    1 => drop(self.qualified_room),
-                    _ => {}
-                }
-                let room = self.combat_room;
-            }
-        }
-        "#,
-    );
-    assert_eq!(
-        scan.sites,
-        [
-            site("<item>", "combat_room", "struct/declaration", 1),
-            site(
-                "Owner::production",
-                "self.combat_room",
-                "let#2/field/read",
-                1
-            ),
-        ]
-    );
-    // Only the production module is followed, wherever its `#[path]` points.
-    assert_eq!(
-        scan.modules,
-        [Module {
-            inline: Vec::new(),
-            name: "live".to_owned(),
-            path: Some("../shared/live.rs".to_owned()),
-        }]
-    );
-}
-
-#[test]
-fn each_read_in_a_function_is_its_own_site() {
-    let gate = scan(
-        "impl Owner { fn cast(&self) { \
-             let Some(_room) = self.combat_room else { return }; \
-             commit(self.combat_room); \
-         } }",
-    );
-    assert_eq!(
-        gate.sites,
-        [
-            site("Owner::cast", "self.combat_room", "let_else/field/read", 1),
-            site(
-                "Owner::cast",
-                "self.combat_room",
-                "call:commit#2/field#2/read",
-                2
-            ),
-        ]
-    );
-    // The preflight gate removed and another read of the same form added later in the function:
-    // the same function, form and count, but not the same sites.
-    let moved = scan(
-        "impl Owner { fn cast(&self) { \
-             commit(self.combat_room); \
-             let _later = self.combat_room; \
-         } }",
-    );
-    assert_eq!(moved.sites.len(), gate.sites.len());
-    assert_ne!(moved.sites, gate.sites);
-    // Two reads spelled alike in one function are told apart by their position.
-    let twice = scan(
-        "fn drain(owner: &Owner) { use_room(owner.combat_room); use_room(owner.combat_room); }",
-    );
-    assert_eq!(
-        twice.sites,
-        [
-            site(
-                "drain",
-                "owner.combat_room",
-                "call:use_room/field#2/read",
-                1
-            ),
-            site(
-                "drain",
-                "owner.combat_room",
-                "call:use_room#2/field#2/read",
-                2
-            ),
-        ]
-    );
-    // The same read moved into another operation is another site.
-    let validated = scan("fn attack(&self) { validate_attack(self.combat_room); }");
-    let traded = scan("fn attack(&self) { commit_trade(self.combat_room); }");
-    assert_ne!(validated.sites, traded.sites);
-    let method = scan("fn attack(&self) { self.combat_room.ok_or(Missing)?; }");
-    assert_eq!(
-        method.sites,
-        [site(
-            "attack",
-            "self.combat_room",
-            "try/method_call:ok_or/field/read",
-            1
-        )]
-    );
-}
-
-#[test]
-fn every_production_module_is_followed_through_its_path() {
-    let sources: BTreeSet<String> = module_reads().into_iter().map(|(file, _)| file).collect();
-    // `item_view.rs` loads `interaction/corpse_open.rs` by `#[path]`; it is in the scan whether or
-    // not it reads a room, so check the module list rather than the reads.
-    let item_view = scan(
-        &std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport/item_view.rs"),
-        )
-        .unwrap_or_default(),
-    );
-    assert!(
-        item_view
-            .modules
-            .iter()
-            .any(|module| module.name == "corpse_open"
-                && module.path.as_deref() == Some("../interaction/corpse_open.rs"))
-    );
-    // A test module declared by `#[path]` is never followed.
-    assert!(
-        !item_view
-            .modules
-            .iter()
-            .any(|module| module.name == "tests")
-    );
-    assert!(sources.iter().all(|file| !file.ends_with("_tests.rs")));
-}
-
-#[test]
-fn a_method_is_named_with_its_impl() {
-    let first = scan(
-        "impl Attack { fn drain(&self) { let Some(_r) = self.combat_room else { return }; } } \
-         impl Trade { fn drain(&self) {} }",
-    );
-    let moved = scan(
-        "impl Attack { fn drain(&self) {} } \
-         impl Trade { fn drain(&self) { let Some(_r) = self.combat_room else { return }; } }",
-    );
-    assert_eq!(first.sites[0].function, "Attack::drain");
-    assert_eq!(moved.sites[0].function, "Trade::drain");
-    let traited = scan("impl<'a> Seam for Owner<'a> { fn room(&self) { self.combat_room; } }");
-    assert_eq!(traited.sites[0].function, "<Owner as Seam>::room");
-    let pathed = scan(
-        "impl a::Owner { fn room(&self) { self.combat_room; } } \
-         impl b::Owner { fn room(&self) {} } \
-         impl x::Seam for b::Owner { fn hook(&self) { self.combat_room; } }",
-    );
-    let functions: Vec<&str> = pathed
-        .sites
-        .iter()
-        .map(|site| site.function.as_str())
-        .collect();
-    assert_eq!(functions, ["a::Owner::room", "<b::Owner as x::Seam>::hook"]);
-    let specialized = scan(
-        "impl Owner<u8> { fn room(&self) { self.combat_room; } } \
-         impl Owner<u16> { fn room(&self) {} } \
-         impl From<[u8; 4]> for &Owner<'_, (A, B)> { fn from(o: [u8; 4]) { o.qualified_room; } }",
-    );
-    let functions: Vec<&str> = specialized
-        .sites
-        .iter()
-        .map(|site| site.function.as_str())
-        .collect();
-    assert_eq!(
-        functions,
-        ["Owner<u8>::room", "<&Owner<(A,B)> as From<[u8;4]>>::from"]
-    );
-}
-
-#[test]
-fn two_functions_with_one_name_are_refused() {
-    let distinct = scan(
-        "impl Owner<u8> { fn room(&self) {} } impl Owner<u16> { fn room(&self) {} } \
-         fn outer() { fn helper() {} } fn other() { fn helper() {} } \
-         #[cfg(test)] fn outer() {}",
-    );
-    assert_eq!(ambiguous(&distinct.declared), None);
-    // A self type the identity cannot render still fails closed when it names two functions alike.
-    let collided = scan(
-        "impl Owner<{ N + 1 }> { fn room(&self) {} } impl Owner<{ N + 2 }> { fn room(&self) {} }",
-    );
-    assert_eq!(
-        ambiguous(&collided.declared).map(String::as_str),
-        Some("Owner<{N}>::room")
-    );
-    // Two production configurations of one function would collapse into one identity, so a gate
-    // dropped from one of them would go unseen: the name is refused.
-    let configured = scan(
-        "#[cfg(unix)] fn gate(owner: &Owner) { use_room(owner.combat_room); } \
-         #[cfg(windows)] fn gate(owner: &Owner) { use_room(owner.combat_room); }",
-    );
-    assert_eq!(
-        ambiguous(&configured.declared).map(String::as_str),
-        Some("gate")
-    );
-}
-
-#[test]
-fn a_read_moved_to_another_sibling_changes_its_site() {
-    let first =
-        scan("fn cast(&self) { if armed { consume(self.combat_room); } disarm(); if armed {} }");
-    let second =
-        scan("fn cast(&self) { if armed {} disarm(); if armed { consume(self.combat_room); } }");
-    assert_eq!(
-        first.sites[0].site,
-        "if(armed)/then#2/call:consume/field#2/read"
-    );
-    assert_eq!(
-        second.sites[0].site,
-        "if(armed)#3/then#2/call:consume/field#2/read"
-    );
-    // Statements alike in form are numbered too, so a read cannot cross a statement unseen.
-    let early = scan("fn cast(&self) { let a = self.combat_room; let b = c?; let d = e; }");
-    let late = scan("fn cast(&self) { let a = b; let c = d?; let e = self.combat_room; }");
-    assert_ne!(early.sites, late.sites);
-    // Arguments and operands are numbered by position (the callee is the first child of a call),
-    // so a read moved to another argument or operand of one operation changes its site.
-    let first = scan("fn cast(&self) { route(self.combat_room, fallback); }");
-    let second = scan("fn cast(&self) { route(fallback, self.combat_room); }");
-    assert_eq!(first.sites[0].site, "call:route/field#2/read");
-    assert_eq!(second.sites[0].site, "call:route/field#3/read");
-    let left = scan("fn cast(&self) { let _ = self.combat_room.is_some() && armed; }");
-    let right = scan("fn cast(&self) { let _ = armed && self.combat_room.is_some(); }");
-    assert_ne!(left.sites, right.sites);
-}
-
-#[test]
-fn every_include_is_counted_outside_test_code() {
-    let included = scan(
-        "fn a() { include!(\"gate.rs\"); } include!(\"items.rs\"); \
-         fn b() { routes! { live => include!(\"route.rs\") => x, } } \
-         #[cfg(test)] fn probe() { include!(\"probe.rs\"); }",
-    );
-    assert_eq!(included.includes, 3);
-}
-
-#[test]
-fn every_test_only_cfg_predicate_is_left_out() {
-    let scan = scan(
-        "#[cfg(all(test))] struct A { combat_room: u8 } \
-         #[cfg(any(test, test))] struct B { combat_room: u8 } \
-         #[cfg(all(test, feature = \"x\"))] struct C { combat_room: u8 } \
-         #[cfg(not(test))] struct D { combat_room: u8 } \
-         #[cfg(any(test, feature = \"x\"))] struct E { combat_room: u8 } \
-         #[cfg(not(not(test)))] struct F { combat_room: u8 } \
-         #[cfg(not(any(not(test), feature = \"x\")))] struct G { combat_room: u8 } \
-         #[cfg(not(all(test, unix)))] struct H { combat_room: u8 }",
-    );
-    // `not(test)`, `any(test, ..)` with a non-test term and `not(all(test, ..))` may hold outside
-    // tests; nested negations are evaluated, not taken as production.
-    assert_eq!(
-        scan.sites,
-        [
-            site("<item>", "combat_room", "struct/declaration", 1),
-            site("<item>", "combat_room", "struct#2/declaration", 2),
-            site("<item>", "combat_room", "struct#3/declaration", 3),
-        ]
-    );
-}
-
-#[test]
-fn a_mention_moved_between_file_scope_items_changes_its_site() {
-    let first = scan("struct A { qualified_room: u8 } struct B { other: u8 }");
-    let second = scan("struct A { other: u8 } struct B { qualified_room: u8 }");
-    assert_eq!(first.sites[0].site, "struct/declaration");
-    assert_eq!(second.sites[0].site, "struct#2/declaration");
-}
-
-#[test]
-fn a_shorthand_initializer_also_reads_its_binding() {
-    let scan = scan("fn build(qualified_room: Room) -> Owner { Owner { qualified_room } }");
-    let shorthand: Vec<&str> = scan
-        .sites
-        .iter()
-        .filter(|site| site.site.contains("struct"))
-        .map(|site| site.site.as_str())
-        .collect();
-    // The initializer is a declaration; its value is a read the inventory must give a gate.
-    assert_eq!(shorthand.len(), 2);
-    assert!(shorthand[0].ends_with("/initializer"));
-    assert!(shorthand[1].ends_with("/name"));
-}
-
-#[test]
-fn a_format_capture_is_a_read() {
-    let scan = scan(
-        "fn log(combat_room: Room) { eprintln!(\"{combat_room:?} {{combat_room}}\"); \
-         m! { \"{qualified_room}\" } let label = \"{combat_room}\"; \
-         json!({ \"room\": \"{combat_room}\" }); assert_eq!(a, \"{combat_room}\", \"x\"); \
-         write!(f, \"{qualified_room}\"); }",
-    );
-    // Only a formatting macro's format string, or any literal of a macro that may forward one,
-    // captures; a plain or upstream literal does not.
-    let captured: Vec<&str> = scan
-        .sites
-        .iter()
-        .filter(|site| site.site.ends_with("/capture"))
-        .map(|site| site.field.as_str())
-        .collect();
-    assert_eq!(
-        captured,
-        ["combat_room", "qualified_room", "qualified_room"]
-    );
-}
-
-#[test]
-#[allow(clippy::expect_used)]
-fn every_macro_answering_to_a_trusted_name_is_found() {
-    let source = "macro_rules! format { () => {} } use crate::m as json; \
-                  #[proc_macro] pub fn vec(input: T) -> T { input } \
-                  macro_rules! other { () => {} } fn f(x: u16) -> u8 { x as u8 } \
-                  mod inner { pub use super::local as write; }";
-    let tokens = syn::buffer::TokenBuffer::new2(source.parse().expect("fixture lexes"));
-    let names: BTreeSet<String> = UPSTREAM_MACROS.iter().map(|n| (*n).to_owned()).collect();
-    let mut found = Vec::new();
-    shadowing(tokens.begin(), &names, &mut found);
-    assert_eq!(
-        found,
-        [
-            ("macro_rules", "format".to_owned()),
-            ("as", "json".to_owned()),
-            ("proc_macro", "vec".to_owned()),
-            ("as", "write".to_owned()),
-        ]
-    );
-}
-
-#[test]
-fn every_macro_invoked_or_defined_is_named() {
-    let scan = scan(
-        "macro_rules! local { () => {} } \
-         fn route(owner: &Owner) { gate!(owner); crate::outer::room!(owner); local!(); \
-         wrap! { inner!(x) if !armed { y } } }",
-    );
-    assert_eq!(scan.defined, ["local"]);
-    assert_eq!(scan.invoked, ["gate", "room", "local", "wrap", "inner"]);
-}
-
-#[test]
-fn a_destructured_combat_room_is_a_read_of_an_open_gate() {
-    let scan = scan("fn drain(owner: &Owner) { let Owner { combat_room, .. } = owner; }");
-    let read = &scan.sites[0];
-    assert_eq!(read.field, "combat_room");
-    assert_eq!(read.site, "let/pattern");
-    // `each_gate_reads_the_room_its_state_says` takes it as a combat_room read, and not as a
-    // declaration.
-    assert_eq!(read.field.rsplit('.').next(), Some("combat_room"));
-    assert!(!(read.site.ends_with("/declaration") || read.site.ends_with("/initializer")));
-}
-
-#[test]
-fn a_read_moved_to_another_arm_is_another_site() {
-    let attack = scan(
-        "fn route(&self, m: Msg) { match m { Msg::Attack => use_room(self.combat_room), \
-         Msg::Trade => {} } }",
-    );
-    let trade = scan(
-        "fn route(&self, m: Msg) { match m { Msg::Attack => {} \
-         Msg::Trade => use_room(self.combat_room) } }",
-    );
-    assert_eq!(
-        attack.sites,
-        [site(
-            "route",
-            "self.combat_room",
-            "match/arm#1:Attack#2/call:use_room/field#2/read",
-            1
-        )]
-    );
-    assert_eq!(
-        trade.sites,
-        [site(
-            "route",
-            "self.combat_room",
-            "match/arm#2:Trade#3/call:use_room/field#2/read",
-            1
-        )]
-    );
-}
-
-#[test]
-fn test_code_inside_a_macro_body_is_left_out() {
-    let rules = scan(
-        "macro_rules! gate { ($x:expr) => { \
-         #[cfg(test)] fn probe(o: &O) { o.combat_room; } \
-         $x.qualified_room } }",
-    );
-    assert_eq!(
-        rules.sites,
-        [site(
-            "<item>",
-            "qualified_room",
-            "item/macro_rules/macro_tokens",
-            1
-        )]
-    );
-    // A field named in a definition is refused, as an invocation never names it.
-    assert!(rules.sites.iter().all(in_macro_rules));
-    let hidden = scan(
-        "macro_rules! room { ($o:expr) => { $o.combat_room } } \
-         fn drain(&self) { room!(self); }",
-    );
-    assert!(hidden.sites.iter().any(in_macro_rules));
-    let invoked = scan("fn drain(&self) { gate!(self.combat_room); }");
-    assert!(!invoked.sites.iter().any(in_macro_rules));
-    let items = scan(
-        "items! { #[cfg(test)] fn probe(o: &O) { o.combat_room; } \
-         fn production(o: &O) { o.qualified_room; } }",
-    );
-    assert_eq!(
-        items.sites,
-        [site("production", "o.qualified_room", "field/read", 1)]
-    );
-}
-
-#[test]
-fn a_cfg_attr_path_is_the_one_production_loads() {
-    let scan = scan(
-        "#[cfg_attr(not(test), path = \"prod.rs\")] mod room; \
-         #[cfg_attr(test, path = \"probe.rs\")] mod other;",
-    );
-    assert_eq!(
-        scan.modules,
-        [
-            Module {
-                inline: vec![],
-                name: "room".to_owned(),
-                path: Some("prod.rs".to_owned()),
-            },
-            Module {
-                inline: vec![],
-                name: "other".to_owned(),
-                path: None,
-            },
-        ]
-    );
-}
-
-#[test]
-fn a_function_is_named_with_its_inline_module() {
-    let scan = scan(
-        "mod a { fn drain(o: &O) { o.combat_room; } } \
-         mod b { fn drain(o: &O) { o.qualified_room; } }",
-    );
-    assert_eq!(
-        scan.sites,
-        [
-            site("a::drain", "o.combat_room", "field/read", 1),
-            site("b::drain", "o.qualified_room", "field/read", 1),
-        ]
-    );
-}
-
-#[test]
-#[allow(clippy::expect_used)]
-fn only_the_production_seam_owners_initializer_counts() {
-    let file = syn::parse_file(
-        "fn serve() { let owners = GameplaySeamOwners { qualified_room: Some(&qualified_room) }; } \
-         fn helper() { let _ = GameplaySeamOwners { \
-             qualified_room: bundle.is_none().then_some(&qualified_room) }; } \
-         #[cfg(test)] fn probe() { let _ = GameplaySeamOwners { qualified_room: None }; } \
-         enum Probe { #[cfg(test)] Exposed = { let _ = GameplaySeamOwners { qualified_room: None }; 0 } }",
-    )
-    .expect("source parses");
-    let verdicts: Vec<bool> = production(&file)
-        .structs
-        .into_iter()
-        .filter_map(|init| init.fields.first())
-        .map(|field| withholds_from_a_bundle(&field.expr))
-        .collect();
-    // The exposing initializer fails even beside a withholding helper; the test-only one is not seen.
-    assert_eq!(verdicts, [false, true]);
-}
-
-#[test]
-#[allow(clippy::expect_used)]
-fn parameter_room_is_judged_by_its_own_match() {
-    let judge = |source: &str| {
-        let file = syn::parse_file(source).expect("source parses");
-        production(&file)
-            .functions
-            .first()
-            .is_some_and(|function| opens_only_the_locate_message(function))
-    };
-    assert!(judge(
-        "fn parameter_room() { match key { \"locate_message\" => combat, _ => qualified, } }"
-    ));
-    assert!(!judge(
-        "fn parameter_room() { match key { \"locate_message\" | \"house_access\" => combat, \
-         _ => qualified, } }"
-    ));
-    assert!(!judge(
-        "fn parameter_room() { let _ = match key { \"locate_message\" => combat, \
-         _ => qualified, }; combat }"
-    ));
-}
-
-#[test]
-fn a_read_moved_to_a_sibling_branch_is_another_site() {
-    let first =
-        scan("fn tick(&self) { if armed { consume(self.combat_room); } if idle { stop(); } }");
-    let second =
-        scan("fn tick(&self) { if armed { stop(); } if idle { consume(self.combat_room); } }");
-    let otherwise =
-        scan("fn tick(&self) { if armed { stop(); } else { consume(self.combat_room); } }");
-    let looped = scan("fn tick(&self) { while armed { consume(self.combat_room); } }");
-    let sites = |scan: &Scan| {
-        scan.sites
-            .iter()
-            .map(|site| site.site.clone())
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(
-        sites(&first),
-        ["if(armed)/then#2/call:consume/field#2/read"]
-    );
-    assert_eq!(
-        sites(&second),
-        ["if(idle)#2/then#2/call:consume/field#2/read"]
-    );
-    assert_eq!(
-        sites(&otherwise),
-        ["if(armed)/else#3/block/call:consume/field#2/read"]
-    );
-    assert_eq!(sites(&looped), ["while(armed)/call:consume#2/field#2/read"]);
-}
-
-#[test]
-fn a_test_only_macro_entry_ends_at_its_comma() {
-    let scan = scan(
-        "fn route(o: &O) { routes! { #[cfg(test)] probe => o.combat_room, live => o.qualified_room, } }",
-    );
-    let fields: Vec<&str> = scan.sites.iter().map(|site| site.field.as_str()).collect();
-    assert_eq!(fields, ["qualified_room"]);
-}
-
-#[test]
-fn a_test_only_macro_entry_keeps_its_generic_arguments() {
-    let generic = scan(
-        "fn route(o: &O) { routes! { \
-             #[cfg(test)] probe => call::<A, B>(o.combat_room), \
-             #[cfg(test)] cast => <T as Tr<A, B>>::f(o.combat_room), \
-             #[cfg(test)] ret => run::<fn(A) -> B, C>(o.combat_room), \
-             live => o.qualified_room, } }",
-    );
-    let fields: Vec<&str> = generic
-        .sites
-        .iter()
-        .map(|site| site.field.as_str())
-        .collect();
-    assert_eq!(fields, ["qualified_room"]);
-    let compared = scan(
-        "fn route(o: &O) { routes! { #[cfg(test)] probe => a < b, live => o.qualified_room, } }",
-    );
-    assert_eq!(compared.sites.len(), 1);
 }

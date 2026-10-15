@@ -346,9 +346,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             );
         }
-        // COND-1c: a bundle World has no fixture `qualified_room`; its periodic player damage
+        // COND-1c: a bundle World has no fixture qualified room; its periodic player damage
         // reads the same bundle view as combat (BUNDLE-COMBAT-ENABLE-1).
-        let room = self.combat_room?;
+        let room = self.rooms.gate_periodic_damage()?;
         let source = self.active_generation?.native_gameplay()?;
         let position = runtime.borrow_movement_position().read(actor).ok()?;
         let target =
