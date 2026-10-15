@@ -4,12 +4,12 @@
 task_id: OTV2-20261015-npc-content-2
 title: NPC-CONTENT-2 movement facts and admitted voices on NPC definitions
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-content-2
 issue: 1622
-pr: null
+pr: 2129
 base_sha: 601db9a7
 head_sha: null
 owner: claude-code-worker (CP session_01XYC239givrMonrYoBwwECV)
@@ -39,6 +39,8 @@ owned_paths:
   - deploy/synology-game/npc-data.pin.json
   - deploy/synology-game/preprod-topology.toml   # world pin digest and revision only
   - .github/workflows/content-tree-migration.yml   # runs the new unit test only
+  - tools/content-schema/quest-authoring/samples/binding_packets/{index.json,npc/quest-npc-dialogue-links.json,recipes/supplementary-index.json}   # regenerated NPC input digests only
+  - tools/content-schema/quest-authoring/samples/server-completion/{talk-npc,explore-area}-candidates.json   # regenerated input digests only
   - docs/agents/tasks/{active,archive}/OTV2-20261015-npc-content-2.md
 public_contracts: []
 external_repositories: []
@@ -85,3 +87,16 @@ external_repositories: []
   --test content_world_cw2_b1_import`: pass
 - `cargo fmt --all -- --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `python tools/agents/validate_governance.py`, `git diff --check`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `tools/content-schema/quest-authoring/run_checks.py`: pass, except `quest_donor_source_authoring.py --check`,
+  whose local drift is only the gzip header of Python 3.13 (CI runs 3.12; decompressed content identical)
+
+## Review
+
+- CI on `004d240`: `quest-authoring` failed on stale NPC input digests in the Quest binding
+  packets and the talk-NPC and explore-area candidates; regenerated with their generators.
+
+## PR and closeout
+
+- changed-file review: within owned paths
+- merge commit/result: squash merge of #2129
