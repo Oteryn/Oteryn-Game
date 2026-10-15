@@ -150,10 +150,14 @@ docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
   'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key' >/dev/null
 chmod 600 "$WP5_PKI/db.key"
+# Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
+# and is shut down after init, so a socket probe can pass before the real server is up.
+pg_ready=0
 for _ in $(seq 1 60); do
-  docker exec "$PG_CONTAINER" pg_isready -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && break
+  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
   sleep 1
 done
+[[ $pg_ready == 1 ]] || fail "postgres_ready"
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 170006 ]] || fail "postgres_version"

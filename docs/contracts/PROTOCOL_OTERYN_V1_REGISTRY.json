@@ -224,6 +224,17 @@
       "offer_gate": "Offered by LOGOUT-WIRE-1 in every offered set (production, Item view and bundle World). With it selected, command type 23 is answered with one LogoutResultV1: IN_FIGHT with retry_after_ms while the actor's in-fight deadline runs (ATTACK0-RL-03), BUSY while a durable spell commit or an own kill settlement is pending or when the terminal release failed retryably before it committed, and ACCEPTED only after the terminal release (session_state = 3 with the final position write) has committed, after which the transport closes cleanly. At most one logout is outstanding per GameSession (LOGOUT-RL-01); a second one before the first result is a protocol error. Without it selected, command type 23 is refused as an unregistered command."
     },
     {
+      "id": 22,
+      "name": "RUNE_USE_V1",
+      "owner_decision": "RUNE-USE-0 §4 (docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md, accepted #2107, §6.1 amended by #2106); number leased by the #1622 control plane (20 is CONNECTION_TRACE_V1 and 21 is leased to LOGOUT-WIRE-1) and registered by RUNE-WIRE-1",
+      "owner": "current ChannelRuntime (USE dispatch of a rune; rune casting, RUNE-CAST-1)",
+      "requires": [15],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "RUNE-CAST-1: the server does not offer this capability before rune casting ships. It extends command type 2 with the UseWithV1 position arm (field 5, a SpellTargetPositionV1 in the SPELL-D7 frame, at most 16 bytes, valid only for a rune) and with dispositions 18 TARGET_ILLEGAL and 19 PROTECTION_ZONE, and owns no command type or domain; the intent stays at most 529 bytes (RUNEUSE0-RL-04) and the result at most 4. A pacified or powerless rune refusal is REQUIREMENT_NOT_MET on the wire (§6.1). Without it selected, a rune is NOTHING_TO_USE, the position arm is REJECTED and dispositions 18 and 19 are never sent. Until RUNE-CAST-1 a selected session's position arm is REJECTED."
+    },
+    {
       "id": 23,
       "name": "PRESENTATION_V1",
       "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",

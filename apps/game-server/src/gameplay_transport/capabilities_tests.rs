@@ -1084,18 +1084,21 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
             target: UseTarget::Item(ItemHandle::MIN),
             use_with: creature,
             use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: None,
             use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition_with = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: creature,
             use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let frames = [
@@ -1145,6 +1148,7 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
             target: UseTarget::Item(backpack),
             use_with: creature,
             use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let item_use = selection(&[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1]);
@@ -1199,6 +1203,119 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
                     ),
                 ],
                 "{disposition:?}"
+            );
+        }
+        Ok(())
+    })
+}
+
+// RUNE-WIRE-1 (RUNE-USE-0 §4): capability 22 RUNE_USE_V1 is registered, not offered before
+// RUNE-CAST-1, and requires 15; the USE position arm is REJECTED with or without it.
+
+/// An injected offered set: 4, 15 requiring 4 and 22 requiring 15.
+const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ITEM_USE_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
+    OfferedCapability {
+        id: oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
+        requires: &[CAPABILITY_ITEM_USE_V1],
+    },
+];
+
+#[test]
+fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
+{
+    use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_RUNE_USE_V1)
+        .ok_or("capability 22")?;
+    assert_eq!(entry["offered"], false);
+    assert_eq!(ids(&entry["requires"])?, [CAPABILITY_ITEM_USE_V1]);
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_RUNE_USE_V1)
+    );
+    // CAP-NEG-1: 22 without 15 (or 15 without 4) is never selected.
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(RUNE_USE_OFFERED, supported)
+            .expect("bounded")
+            .as_slice()
+            .to_vec()
+    };
+    assert_eq!(select(&[22]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 22]), [4]);
+    assert_eq!(select(&[15, 22]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 15, 22]), [4, 15, 22]);
+    // It owns no command type or domain.
+    let selected = selection(&[22]);
+    assert!(!selected.command_selected(COMMAND_TYPE_ITEM_MOVE_INTENT));
+    assert!(!selected.domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY));
+    Ok(())
+}
+
+#[test]
+fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
+-> Result<(), Box<dyn Error>> {
+    use super::super::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+        encode_use_result,
+    };
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
+    use oteryn_protocol_oteryn::decode_command_result;
+    use oteryn_protocol_oteryn::item_view::ItemHandle;
+    use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(RUNE_USE_OFFERED));
+        let at_position = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(ItemHandle::MIN),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: Some(SpellTargetPosition {
+                x: 100,
+                y: -100,
+                floor: 7,
+            }),
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let frames = [command(1, COMMAND_TYPE_USE_INTENT, &at_position)];
+        let rejected = encode_use_result(UseDisposition::Rejected).unwrap_or_default();
+        // Without 22 the arm is undecodable; under 22 it fails closed until RUNE-CAST-1.
+        for selected in [
+            &[][..],
+            &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+            &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1],
+            &[
+                CAPABILITY_ITEM_VIEW_MOVE_V1,
+                CAPABILITY_ITEM_USE_V1,
+                CAPABILITY_RUNE_USE_V1,
+            ],
+        ] {
+            let continuity = SessionContinuity {
+                selected_capabilities: selection(selected),
+                ..SessionContinuity::FRESH
+            };
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            let mut results = Vec::new();
+            for frame in &written {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload())?;
+                    results.push((result.command_id, result.status, result.payload.to_vec()));
+                }
+            }
+            assert_eq!(
+                results,
+                [(1, CommandStatus::Rejected, rejected.clone())],
+                "{selected:?}"
             );
         }
         Ok(())
