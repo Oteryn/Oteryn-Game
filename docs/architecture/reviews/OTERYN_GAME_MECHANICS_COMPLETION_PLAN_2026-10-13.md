@@ -353,11 +353,12 @@ SPELL-RT-FIELDBUFF-1 is not part of the MAGIC-CAST-1 completion set: its prerequ
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
-| PRESENT-CONTENT-1 | SPELL_PRESENT0 | content |  | this decision |
+| PRESENT-CONTENT-1 | SPELL_PRESENT0 | content. The 15.30 sound files and the sound-id check are PRESENT-CONTENT-1b |  | this decision |
+| PRESENT-CONTENT-1b | SPELL_PRESENT0 | content. **BLOCKED_OWNER_INPUT:** the 15.30 sound files (the client `sounds/` folder) are in neither the repository nor the asset manifest; commit them under `content/assets/files/` with manifest entries and check every bound sound id against them |  | PRESENT-CONTENT-1; owner input |
 | PRESENT-WIRE-1 | SPELL_PRESENT0 | impl, protocol review | yes | this decision; VIS-2 |
-| SPELL-PRESENT-1 | SPELL_PRESENT0 | spell lane, combat review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition |
-| COMBAT-PRESENT-1 | SPELL_PRESENT0 | combat lane, combat and determinism review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1b; COND-1 for ticks |
-| PRESENT-CLIENT-1 | SPELL_PRESENT0 | client lane (client owner) |  | PRESENT-WIRE-1; PRESENT-CONTENT-1 for sound |
+| SPELL-PRESENT-1 | SPELL_PRESENT0 | spell lane, combat review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; SPELL-D4 composition; PRESENT-CONTENT-1b before any sound id is emitted |
+| COMBAT-PRESENT-1 | SPELL_PRESENT0 | combat lane, combat and determinism review |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; ATTACK-1b; COND-1 for ticks; PRESENT-CONTENT-1b before any sound id is emitted |
+| PRESENT-CLIENT-1 | SPELL_PRESENT0 | client lane (client owner) |  | PRESENT-WIRE-1; PRESENT-CONTENT-1; PRESENT-CONTENT-1b for sound |
 | SPELL-RT-SCHED-1 | SPELL_NPC_MAP0 §3 | spell lane, combat and determinism review. Key `delayed_strike` (D.1.5): the spell scheduler, delayed and repeated strikes, cancellation (no scheduler exists on main; this child is the scheduler, never a second runtime) |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 for ticks |
 | SPELL-RT-FIELDBUFF-1 | SPELL_NPC_MAP0 §2, §3 | spell lane. Key `owned_field_buff` (Divine Empowerment, B.1) |  | SPELL-RT-SCHED-1; WORLDINT-ADMIT-1 (the LOOP-WORLD-1 field-ingress child) |
 | SPELL-RT-MONK-1 | SPELL_NPC_MAP0 §2, §3, §5 | spell lane, combat review. Key `monk_focus` and the `harmony_role` field (A.2, S26), the 3 callbacks once (never per spell), the 6 Monk formulas with source types and rounding |  | SPELL_NPC_MAP0 decision; S7 reader; ATTACK-1b; COND-1 |
