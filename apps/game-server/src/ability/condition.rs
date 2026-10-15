@@ -1682,10 +1682,12 @@ impl<S: Clone> ConditionStore<S> {
         before - self.instances.len()
     }
 
-    /// §6.1 death: every instance ends.
+    /// §6.1 death: every instance ends, and so does the pacified application a later target
+    /// would otherwise be measured against.
     pub(crate) fn clear_on_death(&mut self) {
         self.instances.clear();
         self.cleanse_immunities.clear();
+        self.pacified_applied_at = None;
     }
 }
 

@@ -456,8 +456,11 @@ fn gates_are_not_negative_and_end_only_by_timeout_or_death() {
     assert!(store.instances().is_empty());
 
     let mut dying = gated(&GATES, 1_000);
+    assert!(dying.pacified_applied_since(0));
     dying.clear_on_death();
     assert!(dying.instances().is_empty());
+    // A target set after the death in the same tick is not measured against that pacified.
+    assert!(!dying.pacified_applied_since(0));
 }
 
 #[test]
