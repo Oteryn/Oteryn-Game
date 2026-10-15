@@ -3,7 +3,8 @@
 //! The caller supplies committed, already eligible rows (including the category's live-root,
 //! vocation and account-representative rules). Values come from their existing source: a scalar
 //! or a lexicographic (level, progress) tuple, never a score computed here. These borrowed facts
-//! grant no gameplay authority. Snapshot jobs, source reads and wire queries are not implemented.
+//! grant no gameplay authority. The separate snapshot owner reads committed sources;
+//! scheduling and authenticated wire integration remain CP responsibilities.
 
 use std::collections::BTreeSet;
 

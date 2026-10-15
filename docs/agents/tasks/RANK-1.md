@@ -185,3 +185,137 @@ rows grant no session, World, Channel or gameplay authority.
   mutation exists here, so current-session/replay-fence qualification is not
   applicable to this callable subset. Those checks remain required at future
   snapshot/wire consumer boundaries.
+
+## Owned snapshot preparation, generation 2 (authoring checkpoint; 2026-10-15)
+
+The prior pure packet was published to existing draft #2168 at
+`b9fb7d9cd135bc3f91c36fa26c5a0c342c660bc6`. The new exact six-path allocation
+prepares the actual HS-1 snapshot storage component without merging main or
+changing shared registrations, migration numbers, registries, grants or pins.
+HIGHSCORES0 acceptance is effective through ACCEPT-BATCH #2209, row 5; the
+historical candidate/entry-gate table is not current acceptance evidence.
+
+Authored `durability/highscore_snapshot.rs` reuses the published ranking kernel
+and native `DurableBuildState` validation. It selects the complete committed
+World cut from actual `0009` XP, `0030` build and `0022` root names. No-build
+means native vocation `none`, excluded; a non-none eligible build missing its
+required XP source fails rather than silently shrinking a snapshot. Categories
+1–9 preserve scalar XP and complete magic/skill `(level, progress)` values.
+All six vocation lists retain global ranks and each applies its own 1,000 cap.
+No runtime state, speculative exclusion workflow, new score formula, Account
+achievement source or Charm source is supplied.
+
+The existing native Root issues the actual semantic pass. Its ordinary
+transaction opener performs a SELECT before returning, so the owned projection
+opener uses SQLx `begin_with` to establish REPEATABLE READ first, retaining the
+same actual remaining transaction/statement/lock timeouts and native commit
+deadline. No larger pass budget or separate raw administrative connection is
+introduced in the product code. Projection publication is not a Character
+write or gameplay permission and consumes no caller-supplied authority boolean.
+
+One private publication-head row per World/category serializes replacement under
+RR. A stale concurrent publisher returns typed retry/unavailable and never
+retries automatically. One World source cut publishes all nine categories in
+one physical transaction. Bounded per-category JSON bulk inserts avoid per-row
+network roundtrips. New heads and current/previous retention pruning commit
+together; failure preserves the old generation. Private candidate constraints
+and triggers prevent retained-header removal, row changes, late append or
+direct row deletion. A prior snapshot's rows prune by header cascade only.
+
+The actual reader starts RR, resolves a token only within its exact
+World/category and retained current/previous set, then reads at most 50 rows
+with stable positions and an own row only when in that capped selected list.
+Page 0 and invalid base filters refuse; pages beyond the list are empty. A
+retired or foreign token returns the local `SnapshotExpired` preparation error.
+These private result types/filter storage codes allocate no public wire values.
+The future authenticated handler must independently supply the session's World
+and Character; these query arguments and snapshots confer no authority.
+
+### Historical authoring qualification state and remaining gates
+
+Seven genuine PostgreSQL case bodies are authored for native source tuples/no
+source writes, pinned pages/three generations, global-rank/filter beyond 1,000,
+atomic failure and immutability, actual repeatable-read/source and stale
+publisher behavior, World/category/token isolation and two real Root publishers.
+The inherited 11 ranking cases remain unchanged. **No new test execution is
+claimed at this authoring stage.** Heavy Rust qualification is held by the lead's
+storage budget; evidence will record actual failures, execution counts and final
+source bindings before a candidate is frozen.
+
+The fixture uses real installed migrations and one genuine current-fenced native
+build writer to establish its source template. Larger datasets are explicitly
+administrative committed source DATA in the actual owning tables with native
+SQL guards enabled; they do not claim gameplay initialization/admission for
+synthetic Characters. `SNAPSHOT_SCHEMA_PROPOSAL` is uninstalled. The native Root
+supplies a connection/deadline, not a grant to operate the snapshot job. The CP
+must bind the dedicated projection role and source SELECT/projection DML/runtime
+SELECT-only permissions. Production credential/grant qualification is pending.
+
+Shared module/Cargo/canonical-PG registration, migration number/install/grants,
+the 30-minute and planned-reset job, categories 10/11 and unsupported later
+categories, actual HS-WIRE-1/session admission, capability/registry/profile,
+exports and analyser emission remain open. The standalone target is explicitly
+inactive until CP registration; an inactive zero-test target is not a runtime
+pass. Validation will use exact outside-tree native registration/body bridges,
+not source edits to shared files or substitutes for native types/Root APIs.
+
+### Generation 2 executed qualification and frozen boundary
+
+The authoring execution hold above is superseded by actual attempt 6. The exact
+native bodies passed **18 tests: 11 inherited ranking and 7 genuine PostgreSQL
+17.6 tests, 0 failed, 0 ignored, 0 filtered**, in 17.35 seconds. Each PostgreSQL
+case emitted its actual `server_version_num=170006`. The 1,002-eligible-character
+fixture published nine categories and six lists in 801 ms under the unchanged
+two-second Root pass; this fixture measurement is not full-World throughput
+qualification. Source hashes before and after execution are identical.
+
+Original production strict metadata/Clippy and the enabled original standalone
+private-Root consumer strict `--test` Clippy passed. The selected native
+`cfg(test)` body-context Clippy, real native rlib codegen and tiny test driver
+also passed. The original standalone target was checked with only its inactive
+gate removed and the literal native module registered outside the draft. The
+execution bridge changes only selected test attributes/parent dispatch
+visibility; the genuine Root, SQL guards, fixtures and owned test bodies remain
+unchanged. Baseline Rust unused-helper warnings in the normal `cfg(test)` rlib
+are visible; configured Clippy denials remain enforced. No whole-server global
+unit harness or full-workspace runtime pass is claimed.
+
+The executed cases cover real committed native source tuples without source
+writes, complete values/ties/Unicode order, capped filters with global rank
+1,002, stable 50-row pages across publication and current/previous expiry,
+atomic rollback and exact immutable-membership trigger errors, an actual RR
+source cut/stale publisher conflict, World/category/token isolation, and two
+independent genuine Root connections publishing coherently or returning typed
+retry. They do not qualify production role credentials or imply a projection
+is current session/World authority. Concurrent calls use separately connected
+Roots; the explicit stale RR transaction separately qualifies a deterministic
+PostgreSQL snapshot conflict rather than relying on scheduler timing.
+
+Evidence is retained at
+`/workspace/oteryn-prep/rank-1-snapshot-native-2-evidence`: attempt-6 commands,
+source/extern/locator bindings, raw logs, resource counters and artifact hashes.
+Earlier sparse-input failures are setup failures; Cargo capture exit 101 is the
+intentional pre-link capture stop. Attempt 3 found a needless-borrow lint, fixed
+without policy changes. Attempt 5 refused actual dependency-byte drift; attempt
+6 captured and qualified a fresh coherent Cargo graph rather than substituting
+externs or linking stale metadata. No intentional missing-file failure is
+presented as behavioral regression evidence. All Rust commands used the shared
+flock, two-job limit, zero debug/incremental setting and actual Root budget.
+
+Whole-diff self-review preserves one native ranking implementation, complete
+World source cut, all-nine atomic publication, bounded bulk writes, immutable
+retained snapshots, same-cut reader pages and typed conflict failure without
+automatic retry. Source tables and CharacterRevision remain untouched. The
+private schema, production grants/job role, 30-minute/reset scheduling,
+categories 10/11, shared registration, migration installation, authenticated
+wire integration and the original family acceptance checklist remain OPEN.
+Independent exact-head review, repository CI and the CP integration/ready/queue
+slot remain required. This packet neither completes the full mechanic nor
+authorizes ready, merge, shared-file integration or publication by the worker.
+
+Final governance validation passed (22 policy documents, 9 lanes), and all
+124 governance unit tests passed. Owned-file formatting and diff/scope checks
+passed. Only five of the six leased paths change; the inherited ranking test
+source is byte-identical to the base and actual execution manifest. Completed
+private native rlib/driver evidence is retained losslessly as gzip with raw and
+stream SHA-256 plus exact restore arguments; shared dependencies are untouched.
