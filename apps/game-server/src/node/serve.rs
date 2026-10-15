@@ -895,18 +895,37 @@ struct CommandDecider<'a, 'r, 'c> {
 
 impl Decider for CommandDecider<'_, '_, '_> {
     async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
+        let mut held = None;
         if let Input::Intent(raw) = input
             && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
         {
             // A failed refresh leaves the evidence stale; the decision then
             // reads it as unknown and stays transient until the intent expires.
+            // The reason is logged as fixed tokens only (no account or bytes).
             let account = uuid_text(&intent.account_id);
-            let _ = self
+            let started = std::time::Instant::now();
+            match self
                 .evidence
-                .refresh_account(self.root, self.proof, &account)
-                .await;
+                .refresh_account_held(self.root, self.proof, &account)
+                .await
+            {
+                Ok(evidence) => {
+                    event(&format!(
+                        "event=character_commands operation=refresh command={command} result=accepted elapsed_ms={}",
+                        started.elapsed().as_millis()
+                    ));
+                    held = Some(evidence);
+                }
+                Err(unavailable) => event(&format!(
+                    "event=character_commands operation=refresh command={command} result=unavailable {unavailable} elapsed_ms={}",
+                    started.elapsed().as_millis()
+                )),
+            }
         }
-        self.root
+        // The decision is the next pass after the acceptance; the accepted
+        // slot is cleared only once it has read the evidence.
+        let decision = self
+            .root
             .decide_character_command(
                 self.authority,
                 self.proof,
@@ -915,7 +934,11 @@ impl Decider for CommandDecider<'_, '_, '_> {
                 operation_id,
                 input,
             )
-            .await
+            .await;
+        if let Some(evidence) = held {
+            let _ = evidence.release().await;
+        }
+        decision
     }
 }
 
