@@ -1492,6 +1492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if placed {
                     self.last_positions
                         .respawned(session, respawned.record.cell);
+                    // NPC-TALK-2: a respawned customer away from its NPC ends its conversation.
+                    self.chat
+                        .close_out_of_range(&*self.runtime.lock().await, session);
                 }
                 placed
             }
@@ -2899,13 +2902,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn npc_follow(
         &self,
-        actor: ExactActorRef,
+        _actor: ExactActorRef,
         session: GameSessionId,
         shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> Option<npc_command::NpcUpdate> {
         let runtime = self.runtime.lock().await;
         self.npc_conversations
-            .follow(&self.chat, &runtime, actor, session, shown)
+            .follow(&self.chat, &runtime, session, shown)
     }
 
     async fn npc_talk(
@@ -3208,13 +3211,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
         };
         match outcome {
-            Ok((snapshot, duration)) => (
-                StepOutcome {
-                    disposition: StepDisposition::Moved,
-                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                },
-                Some(duration),
-            ),
+            Ok((snapshot, duration)) => {
+                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
+                self.chat.close_out_of_range(&runtime, session);
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Moved,
+                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                    },
+                    Some(duration),
+                )
+            }
             Err(
                 MovementError::Blocked
                 | MovementError::Cell(
@@ -3229,6 +3236,45 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<Duration>)> {
+        self.chase_step_now(actor, session).await
+    }
+
+    async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.chase_yield_to_client(actor, session).await;
+    }
+
+    async fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.chase_search_waiting_now(actor, session).await
+    }
+
+    async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.actor_step_deadline_now(actor).await
+    }
+
+    async fn begin_actor_step(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+    ) -> Option<tokio::time::Instant> {
+        self.begin_actor_step_now(actor, holder).await
+    }
+
+    async fn record_actor_step_deadline(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+        due: Option<tokio::time::Instant>,
+    ) {
+        self.record_actor_step_deadline_now(actor, holder, due)
+            .await;
     }
 
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.

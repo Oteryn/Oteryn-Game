@@ -35,6 +35,9 @@ use oteryn_protocol_oteryn::npc_service::{
     CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT,
     STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW,
 };
+use oteryn_protocol_oteryn::presentation::{
+    CAPABILITY_PRESENTATION_V1, STATE_DOMAIN_ACTOR_COOLDOWNS, STATE_DOMAIN_WORLD_PRESENTATION,
+};
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
@@ -227,6 +230,14 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
     (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
+    (
+        CAPABILITY_PRESENTATION_V1,
+        &[],
+        &[
+            STATE_DOMAIN_WORLD_PRESENTATION,
+            STATE_DOMAIN_ACTOR_COOLDOWNS,
+        ],
+    ),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

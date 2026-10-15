@@ -1242,6 +1242,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 installation.training.install_into(&mut installation.paid);
                 installation.player.install_rebind_training(installation.paid);
                 let _=install_owner_batch(&mut runtime,&mut states,installation.physical,Some(installation.player),checked);
+                // NPC-TALK-2: a caster the spell relocated out of talk range ends its conversation.
+                owner.chat.close_out_of_range(&runtime,session);
             }
             Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition, vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:Some(private_result)})
         })).await;
