@@ -10713,6 +10713,121 @@
       "notes": "WORLD-INTERACTION-0 \u00a710.1 and \u00a712; the owner decision of 2026-10-14 keeps 529 bytes unchanged. Same bound as ITEMUSE0-RL-03 and max_payload_bytes of command type 2. Registered by WORLDINT-WIRE-1."
     },
     {
+      "id": "RANGED0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+      "resource": "player chase searches per owner window per Channel",
+      "unit": "searches per 50 ms window",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Runtime-only counter: a due search over the window's budget waits for a later window, keeping its place (oldest-waiting request first, then actor id); a search never fails because of the budget.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: apps/game-server/src/combat/attack/chase.rs the_channel_admits_sixty_four_searches_per_owner_window (64 searches admitted in one window)",
+        "max+1=65: the same test refuses the 65th search in that window and admits it from the next; searches_that_waited_longer_keep_their_places_in_the_window covers the order"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/attack/chase.rs CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS and ChaseSearchBudget",
+        "CHASE-1 player chase (gameplay_transport::attack chase_decision)"
+      ],
+      "notes": "RANGED-0 \u00a78 CHASE-1: inside CREATURE-AI-0's RL-09 50 ms owner window. Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
+      "id": "RANGED0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+      "resource": "path-search expansions per chase search",
+      "unit": "expansions",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Runtime-only and bounded before retention: the 1,025th expansion fails the search, which starts the RANGED0-RL-07 wait.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: apps/game-server/src/movement/path_search.rs a_corridor_route_needing_the_full_work_bound_is_found_and_one_more_fails (a route needing 1,024 expansions is found)",
+        "max+1=1025: the same test fails a route needing 1,025 expansions"
+      ],
+      "consumers": [
+        "apps/game-server/src/movement/path_search.rs PATH_SEARCH_WORK (shared with AI01-PATH-SEARCH-WORK)",
+        "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+      ],
+      "notes": "RANGED-0 \u00a78: the same bound as AI01-PATH-SEARCH-WORK (CREATURE-MOVE-1 \u00a75.3); the shared search takes one cap. Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
+      "id": "RANGED0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+      "resource": "chase search radius around the chaser (Chebyshev)",
+      "unit": "tiles",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 12,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Runtime-only: tiles beyond 12 from the chaser are never read; a target with no goal within the radius fails the search and starts the RANGED0-RL-07 wait. Not a route-length cap (AI01-ROUTE-STEPS stays 128).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=12: apps/game-server/src/combat/attack/chase.rs a_chase_searches_within_twelve_tiles_and_a_target_beyond_fails_the_search (a goal 12 tiles away is routed)",
+        "max+1=13: the same test fails a target whose goal lies 13 tiles away, and a wall spanning the 12-tile radius leaves no route"
+      ],
+      "consumers": [
+        "apps/game-server/src/movement/path_search.rs CHASE_SEARCH_DISTANCE",
+        "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+      ],
+      "notes": "RANGED-0 \u00a78 CHASE-1. Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
+      "id": "RANGED0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+      "resource": "chase searches per chasing player",
+      "unit": "searches per 1,000 ms",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Runtime-only: a second search inside the 1,000 ms waits (the held route is followed meanwhile); the cooldown survives a target or mode change and a client step.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: apps/game-server/src/combat/attack/chase.rs a_second_search_waits_the_full_second (one search at 0 ms, the next at 1,000 ms)",
+        "max+1=2: the same test refuses a second search at 999,999 us; a_reset_keeps_the_per_player_search_cooldown covers a target or mode change"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/attack/chase.rs CHASE_SEARCH_INTERVAL_MICROS",
+        "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+      ],
+      "notes": "RANGED-0 \u00a78 CHASE-1. Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
+      "id": "RANGED0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+      "resource": "chase backoff after a failed search",
+      "unit": "milliseconds",
+      "hard_maximum": 2000,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Runtime-only: after a failed search the player holds position, keeping target and mode, and the next search waits 2,000 ms.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2000: apps/game-server/src/combat/attack/chase.rs a_failed_search_waits_two_seconds_and_a_refused_step_drops_the_route (the search at 2,000 ms runs)",
+        "max+1: the same test holds at 1,999,999 us, inside the wait"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/attack/chase.rs CHASE_FAILED_SEARCH_WAIT_MICROS",
+        "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+      ],
+      "notes": "RANGED-0 \u00a78 CHASE-1 (Canary's failed-path wait). Registered by LOOP-COMBAT-MODES-1."
+    },
+    {
       "id": "RANGED0-RL-08",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
       "resource": "chase refused-cell memory per chasing player (cells the Movement owner refused a chase step into as Blocked)",

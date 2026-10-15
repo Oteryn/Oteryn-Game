@@ -598,8 +598,9 @@ impl ChannelAttackStates {
 
 impl ChannelAttackStates {
     /// CHASE-1 (RANGED-0 §8): the step the chase of `actor` takes now, if any. Chase runs only
-    /// with `chase=CHASE`, a held target that is alive, visible and on the attacker's floor, and
-    /// no re-entry protection on the attacker; otherwise its route is dropped. `path_tile` says
+    /// with `chase=CHASE`, a held target that is alive, visible and on the attacker's floor,
+    /// neither side in a protection zone, and no re-entry protection on the attacker; otherwise
+    /// its route is dropped. `path_tile` says
     /// whether a cell is a path tile; a creature on it costs [`CREATURE_COST`] more.
     pub(crate) fn chase_decision(
         &mut self,
@@ -629,12 +630,16 @@ impl ChannelAttackStates {
             .map(|(from, to)| (from.position(), to.position()));
         let facts = target_facts(runtime, room, actor, session, target, now);
         // The target stays held here, so only its route goes (RANGED-0 §8, `RANGED0-RL-08`).
+        // Like the swing (ATTACK-0 §4), chase waits while either side is in a protection zone:
+        // it never walks the player out of one.
         let (Some((from, to)), Some(facts)) = (positions, facts) else {
             entry.chase.hold();
             return None;
         };
         if !(facts.present_and_visible && facts.alive && facts.same_floor)
             || facts.attacker_reentry_protected
+            || facts.attacker_in_protection_zone
+            || facts.target_in_protection_zone
         {
             entry.chase.hold();
             return None;

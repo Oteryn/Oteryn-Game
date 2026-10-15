@@ -395,6 +395,36 @@ mod tests {
     }
 
     #[test]
+    fn a_corridor_route_needing_the_full_work_bound_is_found_and_one_more_fails() {
+        // `RANGED0-RL-04` / `AI01-PATH-SEARCH-WORK`: in a one-tile corridor every tile before
+        // the goal is expanded once, so a target `k` tiles away costs `k - 1` expansions.
+        let corridor = |cell: MovementLocalPosition| (cell.y == 0).then_some(0);
+        let unbounded = |work| SearchBounds {
+            work,
+            route_steps: usize::MAX,
+            distance: i32::MAX,
+        };
+        let far = |expansions: usize| at(i32::try_from(expansions + 1).unwrap(), 0);
+        let route = search(
+            at(0, 0),
+            far(PATH_SEARCH_WORK),
+            unbounded(PATH_SEARCH_WORK),
+            corridor,
+        );
+        assert_eq!(route.map(|steps| steps.len()), Some(PATH_SEARCH_WORK));
+        assert_eq!(
+            search(
+                at(0, 0),
+                far(PATH_SEARCH_WORK + 1),
+                unbounded(PATH_SEARCH_WORK),
+                corridor,
+            ),
+            None,
+            "the 1,025th expansion fails the search"
+        );
+    }
+
+    #[test]
     fn an_unreachable_goal_fails_within_the_work_bound() {
         let mut calls = 0_usize;
         let unreachable = |cell: MovementLocalPosition| {

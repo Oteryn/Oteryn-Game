@@ -278,6 +278,37 @@ mod tests {
     }
 
     #[test]
+    fn a_second_search_waits_the_full_second() {
+        // `RANGED0-RL-06`: the player stays put, so the route is dropped and needs a search.
+        let mut chase = ChaseState::default();
+        let searches = std::cell::Cell::new(0);
+        let admit = || {
+            searches.set(searches.get() + 1);
+            true
+        };
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), admit, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        assert_eq!(
+            chase.decide(999_999, at(0, 0), at(4, 0), admit, open),
+            ChaseDecision::Hold
+        );
+        assert_eq!(searches.get(), 1, "no second search inside the second");
+        assert_eq!(
+            chase.decide(
+                CHASE_SEARCH_INTERVAL_MICROS,
+                at(0, 0),
+                at(4, 0),
+                admit,
+                open
+            ),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        assert_eq!(searches.get(), 2);
+    }
+
+    #[test]
     fn a_failed_search_waits_two_seconds_and_a_refused_step_drops_the_route() {
         let mut chase = ChaseState::default();
         let none = |_: MovementLocalPosition| None;
