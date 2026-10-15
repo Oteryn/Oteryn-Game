@@ -500,7 +500,7 @@ impl PlayerSpellState {
             vocation: self.facts.vocation,
             level: self.facts.level,
             magic_level: self.facts.magic_level,
-            premium: self.premium_current,
+            premium: super::CasterPremium::from_current(self.premium_current),
             mana: self.mana,
             max_mana: self.facts.max_mana,
             soul: self.soul,
@@ -1674,7 +1674,7 @@ pub(crate) fn prepare_named_player_failure_owner_cast_with_caster(
     if (spell.learning_required && !caster.learned.contains(&spell.key))
         || (!spell.learning_required && !spell.vocations.contains(&caster.vocation))
         || (spell.needs_weapon && !caster.melee_weapon)
-        || (spell.premium && !caster.premium)
+        || !caster.premium.admits(spell)
         || (spell.needs_shield && caster.shield_defense.is_none())
     {
         return Err(SpellCastDisposition::Rejected);

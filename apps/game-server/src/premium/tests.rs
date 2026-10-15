@@ -320,6 +320,15 @@ fn only_proven_active_evidence_inside_its_interval_is_current() {
     use PremiumClass::*;
     let active = view(EntitlementState::Active, true);
     assert_eq!(classify(Some(&active), at(T0 + 1)), CurrentAuthority);
+    // A clock wholly before the authority's issue time was set back: not current.
+    assert_eq!(
+        classify(Some(&active), at(T0 - MAX_CLOCK_SKEW_US - 1)),
+        AuthorityUnavailable
+    );
+    assert_eq!(
+        classify(Some(&active), at(T0 - MAX_CLOCK_SKEW_US)),
+        CurrentAuthority
+    );
     // From `refresh_after` the evidence is stale and denies (PREM-P §3, §8.2); a lapsed lease
     // is EXPIRED (§8.3); the conservative bound included in both.
     let refresh = T0 + HOUR * 2 / 3;

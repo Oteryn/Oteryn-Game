@@ -9,11 +9,17 @@
 //! ITEM-MOVE-WIRE-0 §4.1 (D212) adds field 10, the item handle of a corpse or ground item. It is
 //! encoded and required only for a session that selected capability 4 `ITEM_VIEW_MOVE_V1` (the
 //! `_with_item_handles` codecs); every other session receives the entry unchanged, without it.
+//!
+//! WORLD-INTERACTION-0 §10.2 (CLOCK-1) adds fields 11-12, the VIS-2 `light` of a player or
+//! creature. Only a session that selected capability 19 `WORLD_LIGHT_V1` gets them, through the
+//! `_with_fields` codecs. They are carried beside the entries as [`EntityLights`], so an entry
+//! built without them is unchanged.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU64;
 
 use crate::item_view::{CAPABILITY_ITEM_VIEW_MOVE_V1, ItemHandle};
+use crate::world_clock::CAPABILITY_WORLD_LIGHT_V1;
 
 use crate::world_spatial::{
     ActorPosition, CONTENT_GENERATION_BYTES, StepDirection, WorldSpatialError,
@@ -35,6 +41,45 @@ pub const MAX_ENTITY_ENTRY_BYTES: usize = 128;
 pub const MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES: usize = 33_792;
 pub const ENTITY_IDENTITY_BYTES: usize = 16;
 const MAX_HEALTH_PERCENT: u8 = 100;
+/// `WORLDINT0-RL-20`: bytes of the `light` fields 11-12 of one entry (two tagged 2-byte varints).
+pub const MAX_ENTITY_LIGHT_BYTES: usize = 6;
+
+/// VIS-2 `light` (WORLD-INTERACTION-0 §11.4): the light a player or creature gives off. A level of
+/// 0 is no light.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct EntityLight {
+    pub level: u8,
+    pub color: u8,
+}
+
+/// The light of each lit player or creature in one payload, keyed by identity. Under capability
+/// 19 an actor with no entry here gives off no light. A key that names no lit entry of the
+/// payload, or a level of 0, fails closed on encode.
+pub type EntityLights = BTreeMap<[u8; ENTITY_IDENTITY_BYTES], EntityLight>;
+
+/// The optional entry fields a session's negotiation selected: field 10 under capability 4 and
+/// fields 11-12 under capability 19.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct EntityFields {
+    pub item_handles: bool,
+    pub light: bool,
+}
+
+impl EntityFields {
+    pub fn selected(selected_capabilities: &[u32]) -> Self {
+        Self {
+            item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
+            light: selected_capabilities.contains(&CAPABILITY_WORLD_LIGHT_V1),
+        }
+    }
+
+    const fn handles(item_handles: bool) -> Self {
+        Self {
+            item_handles,
+            light: false,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntityKind {
@@ -102,6 +147,11 @@ fn actor_kind(kind: EntityKind) -> bool {
     )
 }
 
+/// Only players and creatures carry `light` (§10.2); NPCs and objects never do.
+pub fn lit_kind(kind: EntityKind) -> bool {
+    matches!(kind, EntityKind::Player | EntityKind::Creature)
+}
+
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
         EntityDetail::Actor { health_percent, .. }
@@ -139,10 +189,12 @@ fn encode_ref(entity: &EntityRef) -> Vec<u8> {
 }
 
 /// With `item_handles` an object must carry its handle, which is encoded as field 10; without it
-/// the handle is left out and the entry is the unchanged D85 entry.
+/// the handle is left out and the entry is the unchanged D85 entry. With `light`, a lit player or
+/// creature carries fields 11-12; `light` is `None` for an unlit one.
 fn encode_entity(
     entity: &WorldSpatialEntity,
-    item_handles: bool,
+    fields: EntityFields,
+    light: Option<EntityLight>,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_entity(entity)?;
     let mut output = Vec::with_capacity(96);
@@ -173,6 +225,14 @@ fn encode_entity(
                     push_varint(&mut output, u64::from(value));
                 }
             }
+            if let Some(light) = light {
+                for (field, value) in [(11, light.level), (12, light.color)] {
+                    if value != 0 {
+                        push_tag(&mut output, field, 0);
+                        push_varint(&mut output, u64::from(value));
+                    }
+                }
+            }
         }
         EntityDetail::Object {
             item_definition_ref,
@@ -183,7 +243,7 @@ fn encode_entity(
             push_varint(&mut output, u64::from(item_definition_ref));
             push_tag(&mut output, 9, 0);
             push_varint(&mut output, u64::from(quantity));
-            if item_handles {
+            if fields.item_handles {
                 let handle = item_handle.ok_or(WorldSpatialError::Malformed)?;
                 push_tag(&mut output, 10, 0);
                 push_varint(&mut output, handle.get());
@@ -231,11 +291,12 @@ fn decode_ref(input: &[u8]) -> Result<EntityRef, WorldSpatialError> {
 }
 
 /// Field 10 is accepted only with `item_handles`, and then required on objects and refused on
-/// actors.
+/// actors. Fields 11-12 are accepted only with `light` and only on players and creatures; the
+/// level is 1..=255 and the color needs a level. The light is `None` for an unlit entry.
 fn decode_entity(
     input: &[u8],
-    item_handles: bool,
-) -> Result<WorldSpatialEntity, WorldSpatialError> {
+    fields: EntityFields,
+) -> Result<(WorldSpatialEntity, Option<EntityLight>), WorldSpatialError> {
     if input.len() > MAX_ENTITY_ENTRY_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
     }
@@ -243,6 +304,7 @@ fn decode_entity(
     let (mut kind, mut identity, mut generation, mut position) = (None, None, None, None);
     let (mut direction, mut appearance, mut health) = (None, None, None);
     let (mut item, mut quantity, mut handle) = (None, None, None);
+    let (mut light_level, mut light_color) = (None, None);
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => once(&mut kind, varint_u32(input, &mut cursor)?)?,
@@ -260,7 +322,9 @@ fn decode_entity(
             0x38 => once(&mut health, varint_u32(input, &mut cursor)?)?,
             0x40 => once(&mut item, varint_u32(input, &mut cursor)?)?,
             0x48 => once(&mut quantity, varint_u32(input, &mut cursor)?)?,
-            0x50 if item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
+            0x50 if fields.item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
+            0x58 if fields.light => once(&mut light_level, varint_u32(input, &mut cursor)?)?,
+            0x60 if fields.light => once(&mut light_color, varint_u32(input, &mut cursor)?)?,
             _ => return Err(WorldSpatialError::Malformed),
         }
     }
@@ -270,6 +334,17 @@ fn decode_entity(
         Some(3) => EntityKind::Corpse,
         Some(4) => EntityKind::GroundItem,
         Some(5) => EntityKind::Npc,
+        _ => return Err(WorldSpatialError::Malformed),
+    };
+    let light = match (light_level, light_color) {
+        (None, None) => None,
+        (Some(level), color) if lit_kind(kind) => Some(EntityLight {
+            level: u8::try_from(level)
+                .ok()
+                .filter(|level| *level != 0)
+                .ok_or(WorldSpatialError::Malformed)?,
+            color: u8::try_from(color.unwrap_or(0)).map_err(|_| WorldSpatialError::Malformed)?,
+        }),
         _ => return Err(WorldSpatialError::Malformed),
     };
     let detail = if actor_kind(kind) {
@@ -295,7 +370,7 @@ fn decode_entity(
         }
         let item_handle = match handle {
             Some(handle) => Some(NonZeroU64::new(handle).ok_or(WorldSpatialError::Malformed)?),
-            None if item_handles => return Err(WorldSpatialError::Malformed),
+            None if fields.item_handles => return Err(WorldSpatialError::Malformed),
             None => None,
         };
         EntityDetail::Object {
@@ -314,7 +389,30 @@ fn decode_entity(
         detail,
     };
     validate_entity(&entity)?;
-    Ok(entity)
+    Ok((entity, light))
+}
+
+/// Encode-side check of a payload's lights: none without `light`, and otherwise each one lit
+/// (level 1..=255) and naming a player or creature entry of the payload.
+fn validate_lights<'a>(
+    entities: impl Iterator<Item = &'a WorldSpatialEntity>,
+    fields: EntityFields,
+    lights: &EntityLights,
+) -> Result<(), WorldSpatialError> {
+    if lights.is_empty() {
+        return Ok(());
+    }
+    if !fields.light || lights.values().any(|light| light.level == 0) {
+        return Err(WorldSpatialError::Malformed);
+    }
+    let named = entities
+        .filter(|entity| lit_kind(entity.kind) && lights.contains_key(&entity.entity.identity))
+        .count();
+    if named == lights.len() {
+        Ok(())
+    } else {
+        Err(WorldSpatialError::Malformed)
+    }
 }
 
 fn push_message(output: &mut Vec<u8>, field: u64, body: &[u8]) {
@@ -400,21 +498,33 @@ pub fn validate_delta(delta: &WorldSpatialEntitiesDelta) -> Result<(), WorldSpat
 pub fn encode_world_spatial_entities_snapshot(
     snapshot: &WorldSpatialEntitiesSnapshot,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    encode_snapshot(snapshot, false)
+    encode_snapshot(snapshot, EntityFields::handles(false), &EntityLights::new())
 }
 
 /// The snapshot for a session that selected capability 4: every object carries its item handle.
 pub fn encode_world_spatial_entities_snapshot_with_item_handles(
     snapshot: &WorldSpatialEntitiesSnapshot,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    encode_snapshot(snapshot, true)
+    encode_snapshot(snapshot, EntityFields::handles(true), &EntityLights::new())
+}
+
+/// The snapshot with the optional fields a session selected: item handles under capability 4 and
+/// the `lights` of its players and creatures under capability 19.
+pub fn encode_world_spatial_entities_snapshot_with_fields(
+    snapshot: &WorldSpatialEntitiesSnapshot,
+    fields: EntityFields,
+    lights: &EntityLights,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_snapshot(snapshot, fields, lights)
 }
 
 fn encode_snapshot(
     snapshot: &WorldSpatialEntitiesSnapshot,
-    item_handles: bool,
+    fields: EntityFields,
+    lights: &EntityLights,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_snapshot(snapshot)?;
+    validate_lights(snapshot.entities.iter(), fields, lights)?;
     let mut output = Vec::new();
     push_header(
         &mut output,
@@ -423,7 +533,8 @@ fn encode_snapshot(
     );
     push_message(&mut output, 3, &snapshot.own_identity);
     for entity in &snapshot.entities {
-        push_message(&mut output, 4, &encode_entity(entity, item_handles)?);
+        let light = lights.get(&entity.entity.identity).copied();
+        push_message(&mut output, 4, &encode_entity(entity, fields, light)?);
     }
     Ok(output)
 }
@@ -431,21 +542,33 @@ fn encode_snapshot(
 pub fn encode_world_spatial_entities_delta(
     delta: &WorldSpatialEntitiesDelta,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    encode_delta(delta, false)
+    encode_delta(delta, EntityFields::handles(false), &EntityLights::new())
 }
 
 /// The delta for a session that selected capability 4: every object carries its item handle.
 pub fn encode_world_spatial_entities_delta_with_item_handles(
     delta: &WorldSpatialEntitiesDelta,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    encode_delta(delta, true)
+    encode_delta(delta, EntityFields::handles(true), &EntityLights::new())
+}
+
+/// The delta with the optional fields a session selected, as for the snapshot. `lights` covers the
+/// entered and updated entries.
+pub fn encode_world_spatial_entities_delta_with_fields(
+    delta: &WorldSpatialEntitiesDelta,
+    fields: EntityFields,
+    lights: &EntityLights,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_delta(delta, fields, lights)
 }
 
 fn encode_delta(
     delta: &WorldSpatialEntitiesDelta,
-    item_handles: bool,
+    fields: EntityFields,
+    lights: &EntityLights,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_delta(delta)?;
+    validate_lights(delta.enter.iter().chain(&delta.update), fields, lights)?;
     let mut output = Vec::new();
     push_header(
         &mut output,
@@ -454,7 +577,8 @@ fn encode_delta(
     );
     for (field, list) in [(3, &delta.enter), (4, &delta.update)] {
         for entity in list {
-            push_message(&mut output, field, &encode_entity(entity, item_handles)?);
+            let light = lights.get(&entity.entity.identity).copied();
+            push_message(&mut output, field, &encode_entity(entity, fields, light)?);
         }
     }
     for reference in &delta.leave {
@@ -493,24 +617,32 @@ fn decode_header_field(
 pub fn decode_world_spatial_entities_snapshot(
     payload: &[u8],
 ) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
-    decode_snapshot(payload, false)
+    decode_snapshot(payload, EntityFields::handles(false)).map(|(snapshot, _)| snapshot)
 }
 
 pub fn decode_world_spatial_entities_snapshot_with_item_handles(
     payload: &[u8],
 ) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
-    decode_snapshot(payload, true)
+    decode_snapshot(payload, EntityFields::handles(true)).map(|(snapshot, _)| snapshot)
+}
+
+/// Decodes a snapshot with the optional fields a session selected, and the lights it carries.
+pub fn decode_world_spatial_entities_snapshot_with_fields(
+    payload: &[u8],
+    fields: EntityFields,
+) -> Result<(WorldSpatialEntitiesSnapshot, EntityLights), WorldSpatialError> {
+    decode_snapshot(payload, fields)
 }
 
 fn decode_snapshot(
     payload: &[u8],
-    item_handles: bool,
-) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
+    fields: EntityFields,
+) -> Result<(WorldSpatialEntitiesSnapshot, EntityLights), WorldSpatialError> {
     if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header, mut own) = (0, (None, None), None);
-    let mut entities = Vec::new();
+    let (mut entities, mut lights) = (Vec::new(), EntityLights::new());
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
@@ -522,10 +654,11 @@ fn decode_snapshot(
                 if entities.len() == MAX_SNAPSHOT_ENTITIES {
                     return Err(WorldSpatialError::LimitExceeded);
                 }
-                entities.push(decode_entity(
-                    read_bytes(payload, &mut cursor)?,
-                    item_handles,
-                )?);
+                let (entity, light) = decode_entity(read_bytes(payload, &mut cursor)?, fields)?;
+                if let Some(light) = light {
+                    lights.insert(entity.entity.identity, light);
+                }
+                entities.push(entity);
             }
             _ => return Err(WorldSpatialError::Malformed),
         }
@@ -537,31 +670,39 @@ fn decode_snapshot(
         entities,
     };
     validate_snapshot(&snapshot)?;
-    Ok(snapshot)
+    Ok((snapshot, lights))
 }
 
 pub fn decode_world_spatial_entities_delta(
     payload: &[u8],
 ) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
-    decode_delta(payload, false)
+    decode_delta(payload, EntityFields::handles(false)).map(|(delta, _)| delta)
 }
 
 pub fn decode_world_spatial_entities_delta_with_item_handles(
     payload: &[u8],
 ) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
-    decode_delta(payload, true)
+    decode_delta(payload, EntityFields::handles(true)).map(|(delta, _)| delta)
+}
+
+/// Decodes a delta with the optional fields a session selected, and the lights it carries.
+pub fn decode_world_spatial_entities_delta_with_fields(
+    payload: &[u8],
+    fields: EntityFields,
+) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
+    decode_delta(payload, fields)
 }
 
 fn decode_delta(
     payload: &[u8],
-    item_handles: bool,
-) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
+    fields: EntityFields,
+) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
     if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header) = (0, (None, None));
     let (mut enter, mut update, mut leave) = (Vec::new(), Vec::new(), Vec::new());
-    let mut entries = 0_usize;
+    let (mut entries, mut lights) = (0_usize, EntityLights::new());
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
@@ -575,10 +716,18 @@ fn decode_delta(
             return Err(WorldSpatialError::LimitExceeded);
         }
         let body = read_bytes(payload, &mut cursor)?;
-        match key {
-            0x1a => enter.push(decode_entity(body, item_handles)?),
-            0x22 => update.push(decode_entity(body, item_handles)?),
-            _ => leave.push(decode_ref(body)?),
+        if key == 0x2a {
+            leave.push(decode_ref(body)?);
+            continue;
+        }
+        let (entity, light) = decode_entity(body, fields)?;
+        if let Some(light) = light {
+            lights.insert(entity.entity.identity, light);
+        }
+        if key == 0x1a {
+            enter.push(entity);
+        } else {
+            update.push(entity);
         }
     }
     let delta = WorldSpatialEntitiesDelta {
@@ -589,7 +738,7 @@ fn decode_delta(
         leave,
     };
     validate_delta(&delta)?;
-    Ok(delta)
+    Ok((delta, lights))
 }
 
 /// What a client decoded from a domain-1 snapshot, by the revision its negotiation selected.
@@ -608,24 +757,32 @@ pub enum WorldSpatialDeltaView {
 
 /// Client decode of a domain-1 snapshot. Type 2 is accepted only when the session selected
 /// capability 6; otherwise it is an unnegotiated type and fails closed. Its objects carry item
-/// handles exactly when the session also selected capability 4.
+/// handles exactly when the session also selected capability 4. Its players and creatures may
+/// carry `light` only when it selected capability 19; this view drops the lights
+/// ([`decode_world_spatial_snapshot_view_lit`] keeps them).
 pub fn decode_world_spatial_snapshot_view(
     selected_capabilities: &[u32],
     snapshot_type: u32,
     payload: &[u8],
 ) -> Result<WorldSpatialSnapshotView, WorldSpatialError> {
+    decode_world_spatial_snapshot_view_lit(selected_capabilities, snapshot_type, payload)
+        .map(|(view, _)| view)
+}
+
+/// [`decode_world_spatial_snapshot_view`] with the lights of the type 2 entries (none for type 1).
+pub fn decode_world_spatial_snapshot_view_lit(
+    selected_capabilities: &[u32],
+    snapshot_type: u32,
+    payload: &[u8],
+) -> Result<(WorldSpatialSnapshotView, EntityLights), WorldSpatialError> {
     match snapshot_type {
-        crate::world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1 => {
-            decode_world_spatial(payload).map(WorldSpatialSnapshotView::OwnActor)
-        }
+        crate::world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1 => decode_world_spatial(payload)
+            .map(|own| (WorldSpatialSnapshotView::OwnActor(own), EntityLights::new())),
         SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2
             if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) =>
         {
-            decode_snapshot(
-                payload,
-                selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
-            )
-            .map(WorldSpatialSnapshotView::Entities)
+            decode_snapshot(payload, EntityFields::selected(selected_capabilities))
+                .map(|(snapshot, lights)| (WorldSpatialSnapshotView::Entities(snapshot), lights))
         }
         _ => Err(WorldSpatialError::Malformed),
     }
@@ -637,18 +794,24 @@ pub fn decode_world_spatial_delta_view(
     delta_type: u32,
     payload: &[u8],
 ) -> Result<WorldSpatialDeltaView, WorldSpatialError> {
+    decode_world_spatial_delta_view_lit(selected_capabilities, delta_type, payload)
+        .map(|(view, _)| view)
+}
+
+/// [`decode_world_spatial_delta_view`] with the lights of the entered and updated entries.
+pub fn decode_world_spatial_delta_view_lit(
+    selected_capabilities: &[u32],
+    delta_type: u32,
+    payload: &[u8],
+) -> Result<(WorldSpatialDeltaView, EntityLights), WorldSpatialError> {
     match delta_type {
-        crate::world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1 => {
-            decode_world_spatial(payload).map(WorldSpatialDeltaView::OwnActor)
-        }
+        crate::world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1 => decode_world_spatial(payload)
+            .map(|own| (WorldSpatialDeltaView::OwnActor(own), EntityLights::new())),
         DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2
             if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) =>
         {
-            decode_delta(
-                payload,
-                selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
-            )
-            .map(WorldSpatialDeltaView::Entities)
+            decode_delta(payload, EntityFields::selected(selected_capabilities))
+                .map(|(delta, lights)| (WorldSpatialDeltaView::Entities(delta), lights))
         }
         _ => Err(WorldSpatialError::Malformed),
     }
@@ -662,6 +825,21 @@ mod tests {
         DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1, encode_world_spatial,
     };
     use serde_json::Value;
+
+    /// The entry codecs without `light`, as the D85 and capability 4 tests use them.
+    fn encode_entity(
+        entity: &WorldSpatialEntity,
+        item_handles: bool,
+    ) -> Result<Vec<u8>, WorldSpatialError> {
+        super::encode_entity(entity, EntityFields::handles(item_handles), None)
+    }
+
+    fn decode_entity(
+        input: &[u8],
+        item_handles: bool,
+    ) -> Result<WorldSpatialEntity, WorldSpatialError> {
+        super::decode_entity(input, EntityFields::handles(item_handles)).map(|(entity, _)| entity)
+    }
 
     const PROTOCOL_REGISTRY: &str =
         include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
@@ -840,6 +1018,39 @@ mod tests {
         assert_eq!(
             decode_world_spatial_entities_snapshot(&raw),
             Err(WorldSpatialError::LimitExceeded)
+        );
+    }
+
+    #[test]
+    fn a_full_snapshot_with_every_entry_lit_at_maximum_stays_within_the_bounds() {
+        // WORLDINT0-RL-20: the 6 light bytes keep each entry within 128 B and the payload within
+        // the decision 4.4 bound.
+        let fields = EntityFields {
+            item_handles: true,
+            light: true,
+        };
+        let mut entities = vec![own()];
+        entities.extend((1..256).map(|n| actor(EntityKind::Creature, n)));
+        let full = snapshot(entities);
+        let max = EntityLight {
+            level: 255,
+            color: 255,
+        };
+        let lights: EntityLights = full
+            .entities
+            .iter()
+            .map(|entity| (entity.entity.identity, max))
+            .collect();
+        let entry = super::encode_entity(&full.entities[1], fields, Some(max)).expect("entry");
+        let plain = super::encode_entity(&full.entities[1], fields, None).expect("entry");
+        assert_eq!(entry.len() - plain.len(), MAX_ENTITY_LIGHT_BYTES);
+        assert!(entry.len() <= MAX_ENTITY_ENTRY_BYTES);
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(&full, fields, &lights)
+            .expect("256 lit entities");
+        assert!(bytes.len() <= MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES);
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_fields(&bytes, fields),
+            Ok((full, lights))
         );
     }
 
@@ -1229,5 +1440,179 @@ mod tests {
         assert_eq!(limit("MOVE-RL-11"), Some(MAX_SNAPSHOT_ENTITIES as u64));
         assert_eq!(limit("MOVE-RL-08"), Some(MAX_DELTA_ENTRIES as u64));
         assert_eq!(limit("MOVE-RL-10"), Some(MAX_SNAPSHOT_ENTITIES as u64));
+    }
+
+    const LIT: EntityFields = EntityFields {
+        item_handles: false,
+        light: true,
+    };
+    const BRIGHTEST: EntityLight = EntityLight {
+        level: u8::MAX,
+        color: u8::MAX,
+    };
+
+    fn lit(entities: &[&WorldSpatialEntity], light: EntityLight) -> EntityLights {
+        entities
+            .iter()
+            .map(|entity| (entity.entity.identity, light))
+            .collect()
+    }
+
+    #[test]
+    fn light_is_carried_only_under_capability_19_on_players_and_creatures() {
+        let creature = actor(EntityKind::Creature, 1);
+        let mixed = snapshot(vec![
+            own(),
+            creature,
+            actor(EntityKind::Npc, 2),
+            object(EntityKind::Corpse, 3),
+            actor(EntityKind::Creature, 4),
+        ]);
+        let lights = lit(&[&mixed.entities[0], &creature], BRIGHTEST);
+        let bytes =
+            encode_world_spatial_entities_snapshot_with_fields(&mixed, LIT, &lights).expect("lit");
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_fields(&bytes, LIT),
+            Ok((mixed.clone(), lights.clone()))
+        );
+        // The largest lit entry adds at most WORLDINT0-RL-20 bytes and stays within 128 B.
+        let plain = encode_entity(&creature, false).expect("plain");
+        let entry = super::encode_entity(&creature, LIT, Some(BRIGHTEST)).expect("entry");
+        assert_eq!(entry.len() - plain.len(), MAX_ENTITY_LIGHT_BYTES);
+        assert!(entry.len() <= MAX_ENTITY_ENTRY_BYTES, "{}", entry.len());
+        // Without capability 19 the same payload fails closed, and the plain entry is unchanged.
+        assert!(decode_world_spatial_entities_snapshot(&bytes).is_err());
+        assert!(
+            decode_world_spatial_entities_snapshot_with_fields(&bytes, EntityFields::default())
+                .is_err()
+        );
+        assert!(
+            encode_world_spatial_entities_snapshot_with_fields(
+                &mixed,
+                EntityFields::default(),
+                &lights
+            )
+            .is_err()
+        );
+        let unlit =
+            encode_world_spatial_entities_snapshot_with_fields(&mixed, LIT, &EntityLights::new())
+                .expect("unlit");
+        assert_eq!(
+            unlit,
+            encode_world_spatial_entities_snapshot(&mixed).expect("v2")
+        );
+        // A color of 0 is omitted; the level alone round-trips.
+        let dim = lit(&[&creature], EntityLight { level: 3, color: 0 });
+        let bytes =
+            encode_world_spatial_entities_snapshot_with_fields(&mixed, LIT, &dim).expect("dim");
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_fields(&bytes, LIT),
+            Ok((mixed.clone(), dim))
+        );
+        // The encoder refuses a light on an NPC, an object, an absent entity or with level 0.
+        for bad in [
+            lit(&[&mixed.entities[2]], BRIGHTEST),
+            lit(&[&mixed.entities[3]], BRIGHTEST),
+            lit(&[&actor(EntityKind::Creature, 9)], BRIGHTEST),
+            lit(&[&creature], EntityLight { level: 0, color: 1 }),
+        ] {
+            assert_eq!(
+                encode_world_spatial_entities_snapshot_with_fields(&mixed, LIT, &bad),
+                Err(WorldSpatialError::Malformed),
+                "{bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn light_fields_fail_closed_when_zero_over_255_repeated_colorless_or_misplaced() {
+        let creature = encode_entity(&actor(EntityKind::Creature, 1), false).expect("creature");
+        let npc = encode_entity(&actor(EntityKind::Npc, 2), false).expect("npc");
+        let item = encode_entity(&object(EntityKind::GroundItem, 3), false).expect("item");
+        for bad in [
+            [&creature[..], &[0x58, 0x00]].concat(),       // level 0
+            [&creature[..], &[0x58, 0x80, 0x02]].concat(), // level 256
+            [&creature[..], &[0x58, 0x01, 0x60, 0x80, 0x02]].concat(), // color 256
+            [&creature[..], &[0x58, 0x01, 0x58, 0x01]].concat(), // repeated level
+            [&creature[..], &[0x60, 0x01]].concat(),       // color without a level
+            [&npc[..], &[0x58, 0x01]].concat(),            // light on an NPC
+            [&item[..], &[0x58, 0x01]].concat(),           // light on an object
+        ] {
+            assert_eq!(
+                super::decode_entity(&bad, LIT),
+                Err(WorldSpatialError::Malformed),
+                "{bad:?}"
+            );
+        }
+        let lit_entry = [&creature[..], &[0x58, 0x01, 0x60, 0xd7, 0x01]].concat();
+        assert_eq!(
+            super::decode_entity(&lit_entry, LIT).map(|(_, light)| light),
+            Ok(Some(EntityLight {
+                level: 1,
+                color: 215
+            }))
+        );
+        assert_eq!(
+            decode_entity(&lit_entry, false),
+            Err(WorldSpatialError::Malformed)
+        );
+        assert_eq!(
+            super::decode_entity(&creature, LIT).map(|(_, l)| l),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_19() {
+        let mut change = delta(1, 1, 1);
+        change.enter[0] = actor(EntityKind::Creature, 1);
+        change.update[0] = actor(EntityKind::Player, 2);
+        let lights = lit(&[&change.enter[0], &change.update[0]], BRIGHTEST);
+        let both = EntityFields {
+            item_handles: true,
+            light: true,
+        };
+        let bytes =
+            encode_world_spatial_entities_delta_with_fields(&change, both, &lights).expect("delta");
+        assert_eq!(
+            decode_world_spatial_entities_delta_with_fields(&bytes, both),
+            Ok((change.clone(), lights.clone()))
+        );
+        assert!(decode_world_spatial_entities_delta_with_item_handles(&bytes).is_err());
+        let left = lit(&[&actor(EntityKind::Creature, 3)], BRIGHTEST);
+        assert!(encode_world_spatial_entities_delta_with_fields(&change, both, &left).is_err());
+
+        let with = [
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_LIGHT_V1,
+        ];
+        assert_eq!(
+            decode_world_spatial_delta_view_lit(&with, 2, &bytes),
+            Ok((WorldSpatialDeltaView::Entities(change.clone()), lights))
+        );
+        assert_eq!(
+            decode_world_spatial_delta_view(&with, 2, &bytes),
+            Ok(WorldSpatialDeltaView::Entities(change))
+        );
+        assert!(decode_world_spatial_delta_view(&with[..2], 2, &bytes).is_err());
+
+        let one = snapshot(vec![own()]);
+        let own_light = lit(&[&one.entities[0]], BRIGHTEST);
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(&one, LIT, &own_light)
+            .expect("snapshot");
+        let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES, CAPABILITY_WORLD_LIGHT_V1];
+        assert_eq!(
+            decode_world_spatial_snapshot_view_lit(&selected, 2, &bytes),
+            Ok((WorldSpatialSnapshotView::Entities(one), own_light))
+        );
+        assert!(decode_world_spatial_snapshot_view(&selected[..1], 2, &bytes).is_err());
+        assert_eq!(
+            EntityFields::selected(&with),
+            EntityFields {
+                item_handles: true,
+                light: true
+            }
+        );
     }
 }

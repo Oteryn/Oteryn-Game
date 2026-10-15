@@ -6,6 +6,7 @@ members = [
     "crates/simulation-determinism",
     "crates/diagnostics",
     "crates/error-codes",
+    "crates/ntp-clock",
     "crates/client-runtime",
     "crates/platform-contracts",
     "crates/platform-client",

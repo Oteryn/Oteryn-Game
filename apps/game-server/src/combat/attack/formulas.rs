@@ -83,13 +83,6 @@ fn player_melee_bounds(constants: &AttackConstants, attack: Expression) -> Formu
 }
 
 /// Player melee weapon damage, the weapon's attack in `attack_value`.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
 pub(crate) fn player_melee_formula(constants: &AttackConstants) -> Formula {
     player_melee_bounds(constants, var(Input::AttackValue))
 }
@@ -103,13 +96,6 @@ pub(crate) fn player_fist_formula(constants: &AttackConstants) -> Formula {
 /// Creature melee damage `[0, ceil(skill * (attack * 0.05) + attack * 0.5)]`
 /// (`getMaxMeleeDamage`, `weapons.cpp:88-91`) over the creature's `attack_skill` and
 /// `attack_value`.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
 pub(crate) fn creature_melee_formula(constants: &AttackConstants) -> Formula {
     let melee = constants.creature_melee;
     let skill_term = binary(
@@ -141,7 +127,7 @@ pub(crate) fn creature_melee_formula(constants: &AttackConstants) -> Formula {
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) enum DefenceSource {
@@ -157,7 +143,7 @@ pub(crate) enum DefenceSource {
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn defence_mode_factor(
@@ -180,7 +166,7 @@ pub(crate) fn defence_mode_factor(
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn defence_formula(
@@ -230,7 +216,7 @@ pub(crate) fn defence_formula(
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn zero_skill_defence_bounds(
@@ -243,13 +229,6 @@ pub(crate) fn zero_skill_defence_bounds(
 
 /// Armor reduction draw range (`creature.cpp:976-982`): `[armor / 2, armor - (armor % 2 + 1)]`
 /// above the flat threshold, exactly 1 from 1 up to it, nothing at 0.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
 pub(crate) fn armor_reduction_bounds(constants: &AttackConstants, armor: u32) -> (u32, u32) {
     if armor > constants.armor.flat_reduction_max_armor {
         (armor / 2, armor - (armor % 2 + 1))

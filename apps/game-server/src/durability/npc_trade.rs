@@ -887,6 +887,7 @@ fn trade_message(
         } else {
             ITEM_LIFECYCLE_LIVE
         },
+        key_number: 0,
     };
     let cause = &request.cause;
     OneItemNpcTradeV1 {

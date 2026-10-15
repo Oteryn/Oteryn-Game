@@ -69,7 +69,7 @@ pub(crate) async fn drain_due_items_in_transaction(
       LEFT JOIN game_item_ground_locations g USING(item_instance_id)
       LEFT JOIN game_item_container_entries e USING(item_instance_id)
       LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id AND bag.character_id=e.character_id
-      LEFT JOIN game_character_equipment_slots eq USING(item_instance_id)
+      LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
       LEFT JOIN game_character_equipment_state es ON es.character_id=eq.character_id
       LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id)
       LEFT JOIN game_durability_reconnect_sessions sess ON sess.game_session_id=cg.holder_game_session_id
@@ -218,7 +218,7 @@ pub(crate) async fn drain_due_field_chains_in_transaction(
       LEFT JOIN game_item_ground_locations g USING(item_instance_id)
       LEFT JOIN game_item_container_entries e USING(item_instance_id)
       LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id AND bag.character_id=e.character_id
-      LEFT JOIN game_character_equipment_slots eq USING(item_instance_id)
+      LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
       LEFT JOIN game_character_equipment_state es ON es.character_id=eq.character_id
       LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id)
       LEFT JOIN game_durability_reconnect_sessions sess ON sess.game_session_id=cg.holder_game_session_id
@@ -394,4 +394,30 @@ async fn schedule_field_chain_rows_in_transaction(
     // A final permanent transformed definition is allowed only when its
     // qualified source has no further decay; the authoring owner records it.
     Ok(())
+}
+
+#[cfg(test)]
+mod join_ambiguity_tests {
+    /// After `LEFT JOIN game_item_container_slots bag ON ...` the left side carries two
+    /// `item_instance_id` columns, so a later `USING(item_instance_id)` fails in PostgreSQL
+    /// with "common column name appears more than once in left table".
+    #[test]
+    fn no_using_item_instance_id_after_the_bag_on_join() {
+        let source = include_str!("spell_item_temporal.rs");
+        let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let needle = "game_item_container_slots bag ON";
+        let mut rest = production;
+        let mut joins = 0;
+        while let Some(at) = rest.find(needle) {
+            joins += 1;
+            let tail = &rest[at..];
+            let end = tail.find("WHERE").unwrap_or(tail.len());
+            assert!(
+                !tail[..end].contains("USING(item_instance_id)"),
+                "USING(item_instance_id) after the bag ON-join is ambiguous in PostgreSQL"
+            );
+            rest = &tail[needle.len()..];
+        }
+        assert_eq!(joins, 2, "both temporal sweep queries are covered");
+    }
 }

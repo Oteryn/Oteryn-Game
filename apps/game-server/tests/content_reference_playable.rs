@@ -1824,6 +1824,7 @@ fn reward_placement(
         }],
         achievement: None,
         quest_transition: None,
+        key_number: None,
     })
 }
 
