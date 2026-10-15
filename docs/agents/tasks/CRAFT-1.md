@@ -35,7 +35,7 @@ Single row; children allocated after the architect writes the CRAFT brief.
 |---|---|
 | #2039 (ITEM-USE-1a+1b), ITEM-USE-1c | MERGED (#2039, #2082) |
 | ITEM-LOOP-1 (family entry gate) | BLOCKING (Wave 1, not merged) |
-| acceptance of the CRAFT1 brief (`OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md`) | ACCEPTED by the owner 2026-10-15 ("akceptuje hire i craft"), recorded in ACCEPT-BATCH-2026-10-15 §8; effective when this PR is integrated. The DUR-03 / RESOURCE_LIMITS admission rows named by its C3a and C8 are not added here (see §8) |
+| acceptance of the CRAFT1 brief (`OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md`) | ACCEPTED by the owner 2026-10-15 ("akceptuje hire i craft"), recorded in ACCEPT-BATCH-2026-10-15 §8; effective when this PR is integrated. The DUR-03 §39.3 pointer and the RESOURCE_LIMITS admission rows named by its C3a and C8 are added by this PR (see §8), so the CRAFT-RT-1 and CRAFT-NPC-1 admission precondition is met on its integration |
 
 Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
