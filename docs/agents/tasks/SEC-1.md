@@ -3,19 +3,19 @@
 ```yaml
 task_id: SEC-1
 title: "SEC-1: server-side client integrity and anti-bot checks (skeleton)"
-mode: IMPLEMENT
-status: waiting
+mode: REPORT_ONLY
+status: prerequisite_design_prepared
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/sec-1
 issue: 1622
-pr: null
+pr: 2188
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 SEC-1 (row 135); App. 7 SEC-1; wave 1"
 class: "hard (child graph SEC-REL-1, SEC-CHAL-1, SEC-TELEM-1, SEC-DETECT-1, SEC-CHAL-2)"
 migration: no
 registry: yes
-owner: unassigned (builder)
+owner: boot_rat_policy_1 (local report-only allocation)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-15
@@ -125,3 +125,221 @@ branch: skeleton/sec-1
 blocker: ITEM-LOOK-1 (registry order); ADMIT-CAP-1 (for SEC-CHAL-1/2); SEC_CLIENT01 ACCEPTED; PROD-COMPAT-01 release train, ANL-01, ANL-03, DATA-PRIVACY-01 disclosure
 next_action: CP rechecks BLOCKING rows
 ```
+
+## SEC-REL prerequisite/design packet — 2026-10-15
+
+This is **REPORT_ONLY**, on `skeleton/sec-1`, exact authoring source
+`65e256f7b49ff1249a38fcc2409f1d8e883d36a1`, existing draft #2188.
+The current allocation owns **only this card**, overriding the historical broad source
+allocation above. No security implementation, trust pin, schema, registry entry, capability,
+challenge, telemetry, publication or production authority is created here.
+
+### 1. Owning requirements and residue
+
+**Accepted:** `SEC_CLIENT01` is ACCEPTED on supplied acceptance main
+`ac9f172836f00226b68088aa04db95ccf1ab994e` through ACCEPT-BATCH-2026-10-15.
+Its §3 is byte-identical to this branch's historical CANDIDATE copy. That old status and
+this card's original blocking table are historical residue, not a remaining rejection
+of SEC_CLIENT01. Acceptance does not allocate implementation of every child.
+
+`OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` §4 is unchanged on that main;
+its header says rulings/packets are accepted on merge while named amendments remain
+pending their owning packets. Its ruling 9 already chooses **detached Ed25519 over
+canonical bytes**, the offline signing role and a separate root release attestation.
+RELEASE-MANIFEST-3 is explicitly SEC-REL-1's manifest half, **one owner**, not a second
+competing trust format. Canonical serialization itself has not been specified or
+implemented by those words. Recommendations below are proposals requiring that owner
+and independent security review; none silently becomes an accepted protocol.
+
+| Accepted source | Binding consequence |
+| --- | --- |
+| SEC §3 | Offline release key signs native build manifest: build id/platform, every executable/library hash, corpus reference. Offline trust root is a separate key, signs trust records/checkpoints, never manifests. Root public key is pinned in the Game node build. |
+| SEC §3 ordering/floor | uint64 revision advances exactly one; previous_revision equals current. Ordinary application rejects revision <= max(database highest-applied revision, embedded node floor). Trust log is append-only outside the restored Game DB. |
+| SEC §3 freshness | Checkpoint root signature; age <=24h; future skew <=5min; revision >= highest checkpoint seen since start and embedded floor; issued_at >= embedded checkpoint time. Fetch at start/every1h; publish at every record/at least every6h. |
+| SEC §3 failure | Store starts UNVERIFIED; only equal applied/checkpoint revision with still-valid freshness can be VERIFIED. Missing/gapped/regressed/unsigned/stale sources and a backward wall-clock step >5min against monotonic time invalidate it. After that step, recovery requires an accepted checkpoint fetched after the step. No challenges or outcomes while UNVERIFIED. |
+| SEC §3 emergency | Revoke release key out of train; manifests signed only by revoked keys stop being accepted. Root compromise requires a Game-node release with a new pinned root and raised embedded floor. Compatibility admission stays PROD-COMPAT's decision. |
+| SEC §4.0/§4.1 | Evidence proves release-byte possession only, never running-code integrity or gameplay/sanction authority. At most8 admitted corpora,64MiB each; at most8 retiring corpora, oldest eviction; restart drops retiring corpora. Missing/revoked/evicted corpus means no challenge/outcome and a non-personal OPS-1 pipeline event. |
+| Alpha ops §4 ruling9 | Updater additionally needs root attestation {channel,version,package_sha256,package_size,manifest_sha256,trust_revision}. Root binds the exact package, so a revoked release key cannot invent an installable package behind a replayed checkpoint. Offline keys never enter CI. |
+
+SEC §3 explicitly accepts a bounded restore/restart replay window: an attacker controlling
+the log view may replay an otherwise acceptable old checkpoint, and clock rollback across
+restart is bounded only by the embedded checkpoint/build age plus24h. Repeated restore/
+restart can extend exposure until SEC-TRUST-1. This packet does not claim to eliminate
+that accepted residual or add an unaccepted witness service.
+
+### 2. Exact native interfaces: available facts, not replacement trust
+
+| Source at authoring SHA | Available interface / boundary |
+| --- | --- |
+| apps/client/src/lib.rs:28–119 | RELEASE_ID, CLIENT_BUILD, is_valid_release_id/is_contract_release_id: current native identity is `<version>+<channel>.<route>.g<sha12>`, reported with `oteryn-client/`; channels dev/preproduction/stable, routes ci/rel/local, release id <=50 bytes. No ordering or signature/admission proof follows. |
+| crates/protocol-oteryn/src/lib.rs:348,522,595 | ClientBootstrapView/ClientResumeView carry declared client_build_id; encode_client_bootstrap bounds it to128 bytes/nonempty. Foundation protocol.rs re-exports this wire seam. A string is not an admitted-build observation. Accepted-main whole-file difference is LOGOUT registration only; this bootstrap code is unchanged. |
+| apps/client/src/bin/oteryn-launcher.rs | parse_pointer/active_client validate the installed directory name and launch exactly current.txt's executable. They do not verify a signed SEC manifest, checkpoint or key revocation. |
+| apps/client/installer/ci-installer.ps1; installer/sign.ps1 | Real Inno unsigned install qualification, package/hash inventory and SHA256SUMS; signing hook explicitly signs nothing/exits0 today. These are useful build outputs, not authenticated release publication. |
+| .github/workflows/merge-group-gate.yml:705–785 | Exact composed SHA derives dev.ci release identity; Windows job builds/tests and uploads an explicitly unsigned installer artifact. It does not publish a SEC trust log or a production signing train. |
+| apps/game-server/src/foundation/fnd04_verifier.rs:95,469,2154,2489 | Actual admission-grant Ed25519 verification and Fresh/Recovery trust contexts have Platform grant purposes, current-source provenance and their own revocation/fences. Private canonical-base64url/bounded-JSON helpers are not a release-manifest serializer. Do not reuse these trust contexts, issuer keys or signed grants as SEC trust. qualification.rs::sign_grant is a fixture, not a release signer. |
+| crates/ntp-clock/src/lib.rs:16–23 | read_synchronized returns raw synchronized kernel UTC microseconds plus error bound, or None; Linux only. It supplies a time fact, not SEC checkpoint freshness/rollback state. |
+| apps/game-server/src/world_clock.rs:32; premium/clock.rs:25 | World clock clamps a once-anchored wall clock to monotonic elapsed time, hiding later wall-clock steps. Premium adds its own uncertainty/high-water rules. Neither implements SEC's5min backward-step latch and post-step-fetch recovery. Do not transplant their gameplay clock semantics. |
+| crates/error-codes/src/build_source.rs; build.rs | Exact OTERYN_BUILD_SHA can produce diagnostic sha12; local/unknown fallback is explicitly possible. This proves no release signature, artifact bytes, official build membership or current compatibility policy. |
+| node/config.rs; Game boot/admission lineage | Existing config/TLS roots, registered native-source descriptors, World/Channel ownership and Character session-generation fences remain separate. They do not pin the SEC offline root, sign the client release train or attest release-log freshness. No Game boot roster/checkpoint is substituted. |
+
+Git-tree inspection, not sparse-file inference, finds no `crates/release-manifest`,
+`tools/oteryn-release-sign`, client update.rs/trust_floor.rs or client-release.yml at this
+source. No native SEC trust-record/checkpoint store or authoritative bounded admitted-build
+reader was found in the inspected runtime. Node config has no client_build_floor; current
+bootstrap codecs alone do not implement VERSION-FLOOR-1. Primitive ed25519-dalek2.2.0 and
+SHA-256 availability is not implementation of SEC-REL.
+
+**Concrete release-train reconciliation gate:** CLIENT-INSTALLER-0 remains labelled
+CANDIDATE while its implemented identity/Inno/MQ slices and owner D854 are documented.
+Its §5 proposes Platform hosting/pointer sequence and authorized lower-version rollback;
+alpha-ops §4 rulings5/8 propose alpha/GitHub Releases, Velopack and higher-version rollback,
+and ruling11 says Platform does not gate builds. Installer §2/§5 instead names Platform/
+Gateway compatibility authority. Keep the actual native release id as an opaque exact
+identity; CP must reconcile these owning contracts and rollout authority explicitly.
+Do not silently replace the native installer, impose SemVer ordering on release ids,
+activate an unsigned ci artifact, or assume a future Platform API/schema.
+
+### 3. Canonical bytes: concrete PROPOSAL, not implemented contract
+
+**Decision required from RELEASE-MANIFEST-3/SEC-REL owner:**
+
+| Alternative | Tradeoff / recommendation |
+| --- | --- |
+| RFC8785 JCS, closed typed JSON, uint64 values encoded as canonical decimal strings | Recommended proposal: inspectable operator artifacts and existing JSON ecosystem; string representation preserves all uint64 values without JSON/JavaScript number truncation. Needs explicit schema acceptance and a qualified upstream JCS implementation; serde_json::to_vec or BTreeMap order alone is not JCS. |
+| RFC8949 core deterministic CBOR, typed uint64 and byte strings | Valid alternative with natural full-width integers and compact signatures; adds a binary contract/tooling and must freeze deterministic encoding/tag policy. Do not mix both encodings under one format version. |
+
+For the recommended option, the proposed signed file is exactly UTF-8 JCS of a closed
+object `{kind,format_version,signer_key_id,payload}`; **no BOM, trailing newline or bytes**.
+`kind` distinguishes manifest/trust-record/checkpoint/release-attestation and is inside
+the signature. These names/version are proposed artifact-domain bytes, not allocated wire
+or registry IDs. Fixed format1 uses detached Ed25519 over the entire exact file, raw64-byte
+signature in a separate artifact; no negotiated algorithm/fallback. Root/release key
+selection never comes from an untrusted supplied public key. A wrong role/purpose fails
+before the result is usable. Do not serialize-and-resign downloaded noncanonical input.
+Parse with duplicate/unknown-field rejection and require re-encoding to equal input bytes.
+
+Proposed values/normalization: uint64 is `"0"` or `[1-9][0-9]*`, range-checked with checked
+successor; no signs/exponents/floats/leading zeros. Hashes/public keys use fixed lowercase
+hex (SHA-256:64 chars; Ed25519 public key:64 chars). Key id is proposed SHA-256(raw32-byte
+public key), checked against that key; aliases/duplicate keys reject. Identity/platform/
+channel/path syntax must be frozen by the owning release contract; no silent Unicode,
+case, slash or filesystem normalization. File paths are relative inventory identifiers,
+not fetch destinations; reject traversal, absolute/drive/UNC paths and case-insensitive
+Windows collisions. Keys and files sort by their specified byte identities; arrays used
+as sets are unique/canonical. Unknown algorithms/versions and oversized inputs fail closed.
+Manifest/key/log entry-count and byte limits are **not fixed by SEC**; the owner must size
+and register them before a decoder allocates. No guessed limits are promoted here.
+
+| Proposed canonical payload | Existing required fields and owner decisions still needed |
+| --- | --- |
+| Manifest | Required build_id/platform, executable/library `{path,sha256}` inventory, corpus reference; alpha-ops adds channel/version, full-package SHA-256/size, asset-manifest SHA-256. Propose inventory sizes, full40-char Game commit and corpus digest/size as additional bindings. Build id must equal the final executable's actual CLIENT_BUILD; sha12 is not artifact authentication. Inventory the launcher and all distributed executables/libraries, not just packages.json's possibly empty presentation-assets list. Exact inventory scope for generated installer/uninstaller bytes needs release-owner qualification. |
+| Trust record | Required revision/previous_revision/active_keys/revoked_keys. Propose active keys as full `{key_id,public_key}` set and revoked keys as cumulative id tombstones: unique, disjoint, no previously revoked key reactivated, root key never a release key. Full-set versus delta and tombstone representation must be accepted, not inferred from braces in §3. |
+| Checkpoint | Required revision/issued_at. Propose issued_at as canonical nonnegative Unix-seconds decimal string, checked conversion to clock microseconds. No invented head digest or alternate sequence is added to the accepted record fields. Root log publisher must reject different bytes at an existing revision; revision alone is not a proof against root equivocation. |
+| Release attestation | Required alpha-ops fields exactly: channel/version/package_sha256/package_size/manifest_sha256/trust_revision. Propose manifest_sha256 = SHA-256(exact canonical manifest file, excluding detached signature). Validate exact package/manifest binding, and trust_revision <= applied trust head; later trust-only records do not make an attested release uninstallable. This root object is additional to release-key verification, never a root-signed manifest. |
+
+No sample private/public root, signature, genesis revision or hardcoded build roster is
+created. Every byte choice above needs golden cross-language vectors and the owning
+security review before implementation; it is not an accepted invented signed envelope.
+
+### 4. Publication, Game trust and corpus integration sequence
+
+1. **One owner:** CP allocates SEC-REL/RELEASE-MANIFEST-3 together for shared bytes/verification
+   and local signing CLI; client update/release packets consume that format. Owner holds
+   distinct offline release and root keys. OS provider keys, Platform admission keys and TLS
+   roots remain separate. The same human can hold both offline roles; the key material cannot
+   acquire another role through a kid or configuration flag. Never place offline keys in CI. The root-key holder must also supply the accepted
+   <=6h unchanged-head checkpoints; the publication operator serves those already signed
+   bytes. No online-root service or CI signing workaround is implied by that cadence.
+2. **Finalize actual artifacts:** exact protected checkout builds the client/launcher/libraries
+   and actual per-build corpus. Any authorized OS signing happens before final package hashes.
+   Hash the complete final package and exhaustive file inventory; bind corpus/index to those
+   exact build bytes. A content/presentation packages.json or copied Reference binary is not
+   a SEC corpus producer. Corpus regions/index extraction and checked offsets/lengths need
+   their own admitted format/coverage; no guessed challenge selector or region table here.
+3. **Local signing / immutable publication:** release signer signs manifest; root signs changed
+   trust record, checkpoint and root release attestation with the bindings above. Publish
+   trust log+checkpoint, then package/corpus objects, then manifest/signature+attestation, then
+   feed pointer, then authorized compatibility floor/set raise (alpha-ops ruling12). A reader
+   seeing a partial release refuses that release evidence and retries, never trusts a dangling
+   reference. Append-only log/checkpoint storage must survive Game DB restore; ordinary GitHub
+   artifact upload or an unsigned SHA256SUMS is not that authenticated head.
+4. **Node bootstrap:** pinned root, embedded floor and embedded checkpoint come from the Game
+   node release, independently of runtime config/DB/download. Start UNVERIFIED. Re-read the
+   authenticated log/checkpoint, validate their role/bytes/age/floor, apply consecutive records
+   under the Game trust owner's serialized transaction and persist highest-applied revision
+   with the corresponding key state. No CharacterRevision or session authority is advanced.
+5. **Floor bootstrap GAP:** SEC §3 does not specify the Game node's complete trusted key state
+   at its embedded floor; client alpha-ops ruling9 does specify a client snapshot, which is
+   not automatically a node contract. A restored DB below the embedded floor cannot be repaired
+   by treating an ordinary record at that floor as a fresh advance. Recommend an explicitly
+   allocated SEC-TRUST-1 embedded node snapshot/seed contract; alternatively remain UNVERIFIED
+   until an independently qualified state restore. Neither is implemented here. Genesis,
+   root-lineage transition and uint64 exhaustion need that owner; never default to revision0
+   or bypass the <=floor rejection. External non-restored freshness high-water belongs to
+   SEC-TRUST-1, not a new pretend DB anchor or self-issued current-verified boolean.
+6. **Current usability:** persist data/floor, not a reusable VERIFIED grant. At every challenge
+   issue/outcome boundary, the future owner checks current applied==accepted-checkpoint
+   revision, unexpired24h freshness, root/key revocations, corpus availability and clock latch.
+   Poll at start/every1h but expire evidence at its exact boundary between polls too. Checked
+   arithmetic must handle timestamp overflow/future facts. Raw realtime plus monotonic
+   elapsed observations detect a backward discrepancy >5min; neither clamped World time nor
+   Premium's unrelated5s policy substitutes. After the step, only a qualifying fetch that
+   actually occurs after its local latch epoch may clear it; cached/pre-step prepared data
+   cannot. Re-fetching otherwise admissible signed data is not a claim of an extra witness
+   or stronger freshness than SEC's accepted replay bound.
+7. **Compatibility/corpus source GAP:** obtain the current PROD-COMPAT-authorized exact build
+   set/transport profile and its generation/owner provenance. No such native input exists
+   here. A client declaration, signature-valid manifest, Platform admission grant, all SemVers
+   >=a floor, or installed directory list cannot synthesize the bounded admitted set. The
+   contract must distinguish new-session admission from retiring already-admitted sessions;
+   authentication alone never selects gameplay rights or makes a build official. Recheck at
+   actual fresh/reconnect/recovery boundaries under their native fences; no new callbacks,
+   wire IDs or current-authority wrappers are introduced by this report.
+8. **Resources/revocation:** verify local corpus bytes/index against accepted manifest digest
+   before use, <=64MiB per build; <=8 admitted builds and <=8 retiring corpora. Keep retiring
+   bytes through last session+terminal challenge unless oldest-evicted; restart drops them.
+   Revoked-key-only manifests, absent bytes and eviction suppress challenges/outcomes and
+   produce SEC OPS-1 events (node/build/revision only, no actor). SEC does not reject gameplay
+   admission on this trust failure; compatibility owner decides admission independently.
+
+### 5. Proposed qualification matrix — NOT EXECUTED
+
+Each negative varies the named invariant against an otherwise valid independently produced
+control. Production consumers must distinguish matching immutable prepared data from
+freshly resolved current trust/build/session sources; no record-derived happy-path helper
+may stand in for the negative current-authority cases.
+
+| Boundary / operator | Required future result and evidence owner |
+| --- | --- |
+| Canonical bytes: BOM/newline/reordered keys/duplicate/unknown field, noncanonical integer/hex, wrong version/kind | Reject; golden UTF-8 byte/signature vectors agree in signing tool, Game and updater. RELEASE-MANIFEST-3. |
+| Cryptography: each field bit-flipped, wrong root, unknown/revoked release key, release key signs trust/checkpoint, root signs manifest, reused key across roles | Reject, no role confusion or trust change. Real fixed key fixtures only; no current_verified bool. |
+| Binding: same version different full release id/channel/route/commit/platform, substituted manifest/package/asset/corpus, omitted executable/library, path/case collision | Reject the affected release; exact real artifact inventory and package byte fixture. No inferred admitted roster. |
+| Root attestation: revoked-key forged higher-version package, old attestation replay with substituted package, wrong channel/version/size/manifest or trust_revision >head | No activation; attested real release still installs after later unrelated trust record. Release/updater owners. |
+| Revision/floor: duplicate r, r<=max(DB,embedded), wrong previous, gap/out-of-order, maxuint64 successor, concurrent different r+1 | Refuse ordinary advance; serialize one winner and preserve exact key state/floor. Real store transaction/reload, not only pure comparisons. |
+| Revocation: tombstone removed, active/revoked overlap, reactivation, revocation between prepared check and use | Reject/stop evidence under the current head; no prepared artifact reacquires trust. Follow accepted final tombstone contract. |
+| Checkpoint: unsigned/bad signature, lower revision, below embedded, issued_at before embedded; valid old prefix without checkpoint | UNVERIFIED; no challenge/outcome. Exact signed controls and full log retrieval boundary. |
+| Time: exactly24h vs24h+1 unit, exactly5min future/backward vs+1 unit, overflow, unavailable clock | Accepted numeric boundaries only; fail closed when unusable. A wall/monotonic disagreement must be observable, not clamped away. |
+| Post-step provenance: cached prior checkpoint vsactual fetch after latch; expiry between hourly polls | Only the accepted post-step fetch can restore current usability; expiration stops issue/outcomes immediately. |
+| Restart/restore: process restart, DB restored before revocation, DB head behind checkpoint, DB below embedded floor, missing log records | Start/remain UNVERIFIED; replay only through qualified seed+ordered records; explicitly demonstrate accepted residual replay and SEC-TRUST-1's still-missing stronger anchor. |
+| Root replacement: old root/checkpoint/DB key state against new pinned build/floor | Reject old lineage; no config-selected replacement root; qualify restart/bootstrap separately. |
+| Build ownership/currentness: stale/unknown compatibility generation, fabricated declared id, prepared set after operator raise, fresh/reconnect/recovery | Existing compatibility refusal at owning points; no trust evidence grants admission or bypasses session-generation fences. VERSION-FLOOR/admitted-set owner. |
+| Corpus:8/9 admitted,64MiB/max+1,8/9 retiring, wrong bytes/index, unknown build, last-session/challenge lifecycle, oldest eviction/restart | Enforce accepted resource/lifetime policy; missing evidence has only OPS-1 pipeline effect, never session security observation. SEC-REL/SEC-CHAL owners. |
+| Publication/crash: record published butcheckpoint absent, missing package/manifest/sig, DB crash before/after floor+key-state commit, client floor fsync/rename interruption | No partial activation/trust grant or floor rollback; durable reload and fault-injection tests. Distinguish Game DB floor from client trust-floor file. |
+| Trust/checkpoint replay over repeated restore/restart | Demonstrate baseline bounded-residual limits honestly; a pure signature or clamped clock test cannot claim non-restored freshness. SEC-TRUST-1 remains explicit. |
+
+### 6. CP handoff and validation
+
+Next concrete packet is SEC-REL/RELEASE-MANIFEST-3 after CP resolves: (a) canonical schema/
+byte/integer/key-id rules and bounds, (b) authoritative release train/admitted-build set
+and installer versus alpha-ops conflicts, (c) Game floor seed/root-lineage bootstrap and
+which SEC-TRUST-1 guarantees are allocated, (d) exact final artifact/corpus inventory.
+Then implement shared verifier/signing tool, native Game store/fetch and real artifact
+qualification together with independently reviewed security boundaries. Release workflow,
+pins, migration numbering, current sources and production wiring need their own explicit
+CP slot/owner authority; this card grants none. SEC-CHAL/TELEM are not started as a workaround.
+
+Only governance and owned-document checks are appropriate to this packet. No Rust/Cargo,
+crypto verification, trust-store, release publication, checkpoint freshness, restore,
+challenge or telemetry test has been executed. The matrix above is future acceptance
+work, not evidence of runtime completeness. Actual read commands/source hashes and final
+governance output are retained under `/workspace/oteryn-prep/sec-1-evidence/`.
