@@ -4,12 +4,12 @@
 task_id: OTV2-20261015-oracle-runner-context-fix
 title: Make the Oracle workflow runner context executable
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/fix-oracle-game-runner-context-20261015
 issue: 2217
-pr: null
+pr: 2222
 base_sha: fc03ef48f9e0604bba0c1e9b484e3ffa0be50a46
 head_sha: null
 final_head_sha: null
@@ -59,3 +59,11 @@ suites from Platform1644 are retained. No native gameplay acceptance is claimed.
 - python tools/agents/validate_governance.py: pass
 - python -m unittest discover -s tools/agents/tests: pass (124 tests)
 - Exact candidate CI and advisory review: pending freeze.
+
+## Closeout
+
+Source delivery: #2222. This final authoring commit archives the bounded
+parser repair; exact frozen-head CI and advisory review remain required for its
+integration. Resolve merge commit/result from the protected PR readback. Physical
+rollout stays open under #2217; no production or native entry completion is claimed.
+Source branch disposition: auto-delete after protected integration.
