@@ -531,13 +531,21 @@ impl ReplayWindow {
 
     /// The same window after its listener re-established `LISTEN` at database time
     /// `db_now_micros`: lines sent while it was down are lost (CHAT-0 §5), so the floor and the
-    /// clock move past that reading as at a start, raised to the highest reading seen. The
+    /// clock move past that reading as at a start. The floor follows the reading itself, never the
+    /// window's clock, so quick reconnects do not compound it, and it never moves back. The
     /// de-duplication set and the stored lease are kept: a line admitted before the drop is still
     /// refused, and the lease still bounds what the window acts on.
     pub(crate) fn reconnected(&mut self, db_now_micros: u64) {
-        let now = self.observe(db_now_micros);
-        self.floor = startup_floor(now).max(self.floor);
+        self.observe(db_now_micros);
+        self.floor = startup_floor(db_now_micros).max(self.floor);
         self.high_water = self.floor.max(self.high_water);
+    }
+
+    /// Whether a line stamped at database time `now_micros` or later would be admitted: the
+    /// reading has reached the floor and a stored lease covers it. The listener reports the relay
+    /// ready only then, so a send is never accepted while its own node would drop it.
+    pub(crate) fn admits_from(&self, now_micros: u64) -> bool {
+        now_micros >= self.floor && self.leased_until.is_some_and(|until| until >= now_micros)
     }
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.

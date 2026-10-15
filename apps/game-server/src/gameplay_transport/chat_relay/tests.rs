@@ -344,15 +344,24 @@ fn a_listening_relay_stores_its_world_lease() -> TestResult {
         let chat = node(&url, session_of(0x71), "Aela", character(0x31));
         let shutdown = CancellationToken::new();
         let check = async {
-            assert!(wait_for(10, || relay_of(&chat).is_ready()).await);
             let mut connection = PgConnection::connect(&url).await.expect("connect");
-            let leased: i64 = sqlx::query_scalar(
-                "SELECT leased_until_micros FROM game_chat_relay_leases \
-                 WHERE world_id = '01900a5d-ac96-7ab2-80e7-0123456789ab'",
-            )
-            .fetch_one(&mut connection)
-            .await
-            .expect("lease row");
+            let mut leased = None;
+            for _ in 0..100 {
+                leased = sqlx::query_scalar(
+                    "SELECT leased_until_micros FROM game_chat_relay_leases \
+                     WHERE world_id = '01900a5d-ac96-7ab2-80e7-0123456789ab'",
+                )
+                .fetch_optional(&mut connection)
+                .await
+                .expect("lease query");
+                if leased.is_some() {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+            let leased: i64 = leased.expect("lease row");
+            // A fresh start is not ready before its floor, past the stored reading.
+            assert!(!relay_of(&chat).is_ready());
             let now: i64 = sqlx::query_scalar(
                 "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint",
             )

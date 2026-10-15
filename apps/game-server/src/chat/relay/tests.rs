@@ -755,7 +755,11 @@ fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_
     window.reconnected(back);
     assert_eq!(window.floor, startup_floor(back));
     let floor = window.floor;
+    // Until the reading reaches the new floor nothing this node stamps would be admitted.
+    assert!(!window.admits_from(back));
+    assert!(!window.admits_from(floor - 1));
     renew(&mut window, floor);
+    assert!(window.admits_from(floor));
     // A copy of the missed line republished after the reconnect is not delivered, nor is the line
     // admitted before the drop; a line sent past the new floor is.
     for (text, at) in [
@@ -776,7 +780,10 @@ fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_
         window.receive(&ring, CHANNEL, &fresh_text, floor),
         Ok(fresh)
     );
-    // A reconnect reading behind the clock still moves the floor past the newest reading seen.
+    // A reconnect reading behind the floor never moves it back, and quick reconnects follow the
+    // reading, not the raised clock, so they do not compound.
     window.reconnected(NOW);
-    assert!(window.floor > floor);
+    assert_eq!(window.floor, floor);
+    window.reconnected(back);
+    assert_eq!(window.floor, floor);
 }

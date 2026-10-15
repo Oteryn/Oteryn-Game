@@ -336,7 +336,8 @@ impl ChatRelay {
     }
 
     /// The listener's clock reading, its lease and the notification queue usage. The first tick
-    /// after a `reconnect` moves the window's floor past the reading first.
+    /// after a `reconnect` moves the window's floor past the reading first; the relay is ready
+    /// only once the reading reaches that floor.
     async fn tick(
         &self,
         listener: &mut PgListener,
@@ -381,8 +382,12 @@ impl ChatRelay {
             window.lease_stored(until);
         }
         *self.clock.lock().map_err(|_| Lost)? = Some((now, read_at));
-        self.ready
-            .store(usage <= QUEUE_USAGE_MAX, Ordering::Release);
+        // Not ready until the window admits what this node stamps now: after a start or a
+        // reconnect a send would otherwise return OK and be dropped here as `BeforeStart`.
+        self.ready.store(
+            usage <= QUEUE_USAGE_MAX && window.admits_from(now),
+            Ordering::Release,
+        );
         Ok(())
     }
 
