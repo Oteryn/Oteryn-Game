@@ -32,7 +32,7 @@ external_repositories: []
 
 ## Outcome
 
-- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 32. The CONDITIONS-0 facts record the merged COND-1 slices and the merged SPEED-1 scope (paced player steps), with live creature step pacing left to the GAME-AI-01 amendment; its brief narrows COND-1 to the §3.5 residual and adds COND-CONTENT-2 and COND-WIRE-2, and the MAGIC-COND-1 graph of the mechanics plan lists both children. No code, wire, content or pin change.
+- CONDITIONS-0 is recorded as ACCEPTED by the owner (blakinio, 2026-10-14, owner accepted via control plane). A new acceptance decision records it, following ACCEPT-CHAR-POSITION-0. §3.5 adds the muted, pacified, powerless and agony family rules and raises COND0-RL-01 to 32. The CONDITIONS-0 facts record the merged COND-1 slices and the merged SPEED-1 scope (paced player steps), with live creature step pacing left to the GAME-AI-01 amendment; its brief narrows COND-1 to the §3.5 residual and adds COND-CONTENT-2, COND-WIRE-2 and COND-CLIENT-2, and the MAGIC-COND-1 graph of the mechanics plan lists both children. No code, wire, content or pin change.
 
 ## Architecture and source of truth
 
@@ -46,7 +46,7 @@ external_repositories: []
 
 - [x] The acceptance decision records the owner, date and basis.
 - [x] Rule text changes are exactly the ones the Architecture record lists: §3.5 and COND0-RL-01, plus the named amendments to CONDITIONS-0 §3.2, §3.4, §4.1, §5, §7 and §8, CHARM-4 §4, the EQUIP-0 `SUPPRESS` row and the CHAT-0 chat-mute precedence, the RUNE-USE-0 §6.1 PREPARE gate order; none other. §3.5 names the accepted EQUIP-0 §4 `SUPPRESS` removal among the ways its keys end, so the two accepted rules agree; `agony` is excluded from `SUPPRESS` in both documents (it cannot be cured, blocked or resisted), and §4.1 takes creature base speed from content with no draw (CREATURE-MOVE-1-PACKET-1 §1.2).
-- [x] Every child the brief defines (COND-CONTENT-2 and COND-WIRE-2 included) is in the mechanics plan's MAGIC-COND-1 graph with its class and prerequisites.
+- [x] Every child the brief defines (COND-CONTENT-2, COND-WIRE-2 and COND-CLIENT-2 included) is in the mechanics plan's MAGIC-COND-1 graph with its class and prerequisites.
 
 ## Excluded scope
 

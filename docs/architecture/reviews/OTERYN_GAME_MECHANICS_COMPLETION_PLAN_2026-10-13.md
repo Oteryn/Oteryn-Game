@@ -343,6 +343,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 | COND-CONTENT-1 | CONDITIONS0 | **MERGED (#1400).** content |  | this decision |
 | COND-CONTENT-2 | CONDITIONS0 | content |  | this decision; COND-CONTENT-1 (merged) |
 | COND-WIRE-2 | CONDITIONS0 | impl, protocol review | yes | COND-1 (§3.5 residual); COND-WIRE-1; PRESENT-WIRE-1 |
+| COND-CLIENT-2 | CONDITIONS0 | client lane (client owner) |  | COND-WIRE-2; PRESENT-CLIENT-1 |
 
 ### MAGIC-CAST-1
 
