@@ -45,6 +45,11 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+Current authoring disposition (2026-10-15): **owned native/content/pin core
+qualified; shared protocol/resource/protected-PG tail unapplied**. The original
+YAML/plan/dependency snapshot below is preserved as history; see the integrated
+implementation-slot section for the actual #2197 scope, evidence and open gates.
+
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
@@ -127,7 +132,7 @@ blocker: BANK-FEE-0 / BANK_FEE0 ACCEPTED; NPC0 ACCEPTED
 next_action: CP rechecks BLOCKING rows
 ```
 
-## Bounded BANK-NPC-1 preparation (2026-10-15)
+## Historical detached BANK-NPC-1 preparation (2026-10-15; superseded by the integration slot below)
 
 Existing draft #2197, exclusive `skeleton/npc-econ-1`, unchanged authoring base
 `59f6d8e4b4fcc0ba6f6d92c5f1113fa8e0c996f4`. The allocation is restricted to the
@@ -245,3 +250,191 @@ assignment, current fencing, ledger execution/replay and whole-outcome reply
 binding remain integration work. Independent exact-head security/persistence
 review and CP/architect/slot acceptance remain required; no bank service is enabled
 by this unregistered module. The full-task acceptance checkbox remains open.
+
+
+## Integrated implementation slot, 2026-10-15
+
+**Publication scope: NATIVE/CONTENT/PIN CORE QUALIFIED. Shared protocol field 14,
+resource value-line 1 and protected PG aggregate/Cargo registration remain
+UNAPPLIED. This owned draft packet is not full mechanic or merge readiness.**
+
+The skeleton metadata/dependency table and detached preparation above are historical.
+Accepted NPC0/BANK_FEE0 (#2209) and CP implementation slot 6196051193 supersede their
+old candidate/slot holds for the exact root allocation. This authoring base is
+`73e023070e90036045e8842840f414ae1105c5ef` (main b62 integrated by CP into the existing
+draft #2197). Promotion purchase is excluded by ACCEPT_BATCH §3 and remains
+PREM-2b/PREM-5. Existing registered command 8 already reaches `commit_npc_trade`;
+this change preserves that route and writer. The full-task acceptance checkbox,
+exact-head CI, independent architect review and CP activation/queue decision remain open.
+
+### Native gameplay and value path
+
+- Command 7 now reaches the registered Bank owner through the actual current NPC,
+  typed service, admitted Dialogue, actor range, conversation and native session
+  fence. Preview reads actual Account/World balance, eligible native coin custody
+  and same-World live recipient identity. Transfer checks sender funds before
+  prompting and keeps recipient-limit feedback reason-free. Native Bank owns
+  Junior, balance, inventory and recipient policy; no request boolean supplies it.
+- One volatile confirmation binds actual engagement, NPC generation, catalogue,
+  session/fence and node incarnation; reconnect, reengagement, cancellation,
+  reversal and the exclusive 30-second deadline invalidate it. `deposit all`
+  freezes the resolved exact amount. At acceptance the NPC owner rechecks its
+  actual current facts while the native Bank owner fences and retains the exact
+  original CommandRef, semantic request, transaction/event/output IDs and source
+  provenance. No raw talk text is persisted.
+- The retained row is Bank-owned pending work, not evidence that physical SQL was
+  sent, a client SENT marker, a new generic queue or current authority. Crash
+  between enqueue and money execution leaves the original pending work. Resume
+  drains only that original command under an independently reconciled current
+  same-GameSession Root/fence; original-command and native Bank occurrence locks
+  serialize it. Exact committed Bank receipt lookup precedes current fresh-write
+  checks. A held/unknown attempt stays unknown; only locked receipt/absence after
+  the old transaction resolves permits classification. Frozen outer identities
+  remain unchanged; native internal ledger IDs may rematerialize only after
+  authoritative noncommit. There is one bounded semantic pass, no retry loop and
+  no invented BANK max-three refusal (RL08 presently belongs to MINT/TRANSFER).
+- Original pending work is classified before replacement talk/NPC/command type.
+  A closed OPS input gate disconnects/holds without sequencing a false refusal
+  over it. Historical replies preserve the actual current conversation state;
+  deposit/withdraw custody changes refresh inventory through the existing domain 9.
+- NPC BUY reuses native coins-first fee planning and the existing trade transaction:
+  all eligible coins plus the bank remainder, V2 only, one real FEE_DEBIT and one
+  trade event. Junior/V1 behavior, native current fences and writer replay remain
+  intact. The Bank debit cause is a closed typed GoldFee/NpcTrade source, not an
+  arbitrary SQL cause; the two shared fee helpers changed visibility only.
+  Audit validates positive item custody units divisible by purchase quantity
+  (NPC0 §3.4/§5.3/§5.4); the current catalogue/native writer owns exact offer
+  count. Quantity and unit price remain per purchase, never normalized per item.
+  The measured Bank shape fits the existing BUY 23 participants/66 work
+  and 27,094 payload/27,408 envelope bounds (actual 22/64 and 25,959/26,273).
+- Migration 0090 stores the immutable resolved continuation plus same-transaction
+  completion proof, and extends the native Bank entry cause with an exact NPC
+  trade foreign key. It preserves the complete latest base 0072 Bank and 0082
+  trade guard bodies except the explicitly closed new cause/value arms. Native
+  0071 operation/entry immutability and no-TRUNCATE guards retain terminal Bank
+  receipts; ordinary audit-outbox expiry does not delete those records. No
+  operation/ledger retention writer is introduced. All native
+  value, receipt, outbox, location and deferred guards stay active. Qualification
+  uses real MINT → TRANSFER → DEPOSIT funding, never initial bank balances or
+  disabled guards. Final CP composition must preserve any later main guard arms.
+
+### One real admitted Bank NPC and matching World artifact
+
+Only Paulie is added. Banker profession alone, Alia's payment helper and unexecuted
+Lua module names are not Bank provenance. The native admission packet pins the
+actual registered financial callback in Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`data-otservbr-global/npc/paulie.lua`, SHA-256
+`ca77d5451037ecbd704ed80a99684dbd42756ab5fd5d4ae9e5273367f7986aa1`.
+Its family identity is reference evidence; accepted BANK0 owns behavior. No quest
+bonus, legacy capacity/Junior rule or Lua execution is imported. Original Oteryn
+Bank greeting/topic text is explicitly separate from that source proof and uses
+the existing typed Dialogue consumer. Unsupported topics remain unanswered; an
+admitted Dialogue never falls back to a generated reply. Existing NPC facts,
+farewell/voices, all other 1,281 NPCs and Trade324/Travel56 remain preserved.
+
+The real native materializer and owning Python producer generated the exact
+leased outputs, with one Bank service (381 total), 1,282 NPCs and 836 Dialogues.
+All 16 actual catalogue files, including three preserved HEAD service indexes,
+produce native digest `42ab7d0884bb801f53d2e824c6ddc1d6504bfcc81957638e6c616719377153e8`;
+project digest is `18162da6522d436998ae773b21c6f47ab731c65d7df7790fb8ebae2ab782de40`.
+The invalid sparse 13-file/23acc proposal is retained as superseded evidence.
+The native loader/model admits Paulie's actual Bank Dialogue and no generated
+reply. Actual full World compile/equivalence and native visit/model qualification
+produce a 25,089,875-byte artifact, digest
+`cbae6fc22e3509feb5c93de8ee0cc77a795851ae871725a035409febcf298204`,
+with 21 realized NPCs including Paulie; the four existing held placements remain
+held. The exact root-leased NPC/World/identity/topology pin batch preserves
+`production=false`, entry `(32369,32238,-7)` and every unrelated topology field.
+Standard native `pin-check` then passed its double-build determinism, equivalence,
+identity/input digest and actual entry-cell checks. Its artifact bytes equal the
+independently visited/model-qualified artifact. An isolated evidence Git index
+matches all 1,448 actual input files (1,447 fingerprinted); the branch index never
+changed. No bundle was deployed or World activated.
+
+### Actual local validation and review evidence
+
+Evidence: `/workspace/oteryn-prep/npc-econ-1-slot-1-evidence/`.
+The retained raw logs distinguish the initial source/setup failures from final
+results: type errors, SQL constraint preflight, missing exact source inputs,
+incorrect test expectation (31/1), native rejection of hardlinked validation
+inputs, a tiny driver dependency-search failure and the attempted bundle-test
+constructor compile error (attempt12 E0599, no runtime tests ran). None is a passing result or
+a behavioral RED claim. Old artifacts have verified lossless gzip/SHA restore
+manifests; no shared target/dependency/anchor was removed.
+
+- Actual registered production check-lib/fmt passed in the initial integrated
+  generation. Final untransformed native unit Clippy metadata and genuine normal
+  `cfg(test)` rlib compiled; all 33 selected original native bodies passed in
+  the final bundle-count repair (attempt 13), including original native BUY/SELL
+  validate→plan→message→codec cases at quantity2/count5→10 units and
+  quantity20/count5→100 units under both tuples, explicit moved-unit assertions,
+  nondivisible custody-only negatives, duplicate raw field 14, max+1 value-line
+  shape and exact measured max sizes. Earlier attempt6 32/0 omitted that producer
+  composition and did not prove bundled-trade correctness.
+- All five original repository tests and all four original NPC catalogue tests
+  passed in the actual complete single-link candidate tree, with original target
+  Clippy metadata (attempt 7). Native public catalogue/model checks passed on that
+  tree and on the matching actual full World artifact (attempt 9).
+- All eight unchanged genuine native PostgreSQL cases passed on PostgreSQL 17.6
+  (`server_version_num=170006`) against the final bundle-compatible audit core
+  (attempt 13; the same eight source bodies also passed in attempt7 followup).
+  They cover actual current-fence substitutions, immutable original binding,
+  restart/reload/replay, deferred rollback, two independently maintained Roots,
+  native BUY coin+bank conservation/V1 refusal/V2 admission, current preview,
+  held occurrence timeout/unchanged footprint/awaited rollback/fresh Root recovery,
+  and actual inflight commit followed by receipt replay. They do not inject a
+  physical COMMIT-acknowledgement loss. Tests retain the genuine private Root and
+  fixture bodies, native guards and actual source types; only exact own test
+  attributes/visibility and validation-only dispatch paths are bridged. Original
+  standalone wrapper metadata also passed. Fixture/admin-role semantics are not
+  production runtime-role or live-account deployment qualification.
+- Native policy9/0, source predicate5/0 and existing Python schema27/0 passed.
+  The full staged tree validator and original regression script passed, including
+  one positive and nine closed Bank negatives; the actual copied candidate tree
+  validator also passed. Native standard full pin-check passed (77.86 seconds),
+  deploy NPC pin tests17/0 with no skips, and topology tests passed; their real
+  runner-access probe explicitly remains unexercised (requires root/sudo).
+  Successful runs retain matching source, native extern, compiler binary and
+  private/branch index hashes at their captured qualification boundaries. All
+  1,448 compiler inputs and the qualified private index still match at closure.
+  The branch index later changed nonsemantic metadata; every one of its 18,839
+  stage-0 path/mode/blob entries remains exactly HEAD, with no staged changes.
+  Its binary SHA changed from `1df2f40a…` (attempt11) to `44a47175…` at
+  closure; `final-branch-index-semantic-proof.json` retains both complete SHAs
+  and the semantic proof, without restoring the index to fabricate byte equality. No full server/global unit ELF or live client/server
+  E2E is claimed.
+
+Independent source lanes found and verified repairs for original-command bypass,
+missing inventory refresh, replay reopening chat, missing early sender-funds
+refusal, closed OPS-gate sequencing, generated Dialogue fallback, sparse pin
+hashing and overly broad old Service-field expectations. Final review then
+identified a regression in the initial audit repair: purchase quantity was wrongly
+equated with item units although admitted stackable offers carry quantity×count.
+That equality was replaced with the integral positive bundle-shape check and
+qualified through the real producer/codec on BUY and SELL. The earlier claim
+that MINT100/purchasequantity1 was inherently invalid is superseded: count100
+can explain it. The present MINT1 control is also valid and keeps the same encoded
+width; exact catalogue count is not reconstructed from a payload lacking count.
+The bounded runtime, content and protocol/Bundle peer reports retain exact hashes
+and their qualification limits; none substitutes for architect/CP acceptance.
+
+### Remaining inseparable integration gates
+
+The native NPC trade nested bank field, measured registry value-line update and
+canonical protected PostgreSQL aggregate registration are exact evidence proposals
+only while the House owner retains those shared paths. The standalone target is
+Cargo-discoverable; it must not silently stand in for the canonical PG CI lane.
+The same eight source bodies are prepared for that aggregate, with no skipped-PG
+claim. CP must release and compose the actual shared protocol/resource/Cargo/
+aggregate changes and latest main, preserve every newer native guard arm, qualify
+that final exact candidate and keep the PR draft as instructed. No new wire/event/
+capability number, hidden authority source, promotion writer, deployment or ready/
+merge action was added here. BANK-specific retry admission beyond the existing
+bounded native owner remains an explicit architect review point, not a new policy.
+
+Final owned-packet checks: governance and all 124 agent tests passed after exact
+HEAD materialization of five missing lifecycle-registry handoff inputs; the first
+E8001 failure is retained, without changing that registry. All 60 dirty paths are
+allocated, whitespace checks pass and the four common-held files are byte-identical
+to the base. No code/pin mutation follows the owned-packet freeze; a shared-tail
+successor requires a new CP-authorized generation and exact qualification.

@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        400,
-        "f2b2770bbfaf559fbfd7691cdb14022db8725b0bf3c76ed0838d5e3af743660f",
+        382,
+        "5929e141675ee186310fd9916c52a15934f02332d4ff083566bb15008e00c54d",
     ),
     (
         "definitions/declarations.json",
-        27275107,
-        "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
+        27_276_260,
+        "eb75b8dd9b67e8bafc77b5f53c7b0300781130e23066771a0d3328f9fac8dd51",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1951,
-        "0694f68488bdaea5fbf15ee2546015ac13c5a4d450b05299d52612cf74ab6505",
+        1945,
+        "3d0bc34001fe5966ba13585700b602a190d5af986c69fa7c964ece75bb1cea55",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        402,
-        "0bee05d0d7bdef3adb50a60591e9d5764de939524f61645b64b799b8b9961dac",
+        396,
+        "30c0f61b312b61209e7ba59720ba143e30612bb1aacf77b44c077c1c9f9b4858",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "71e96ccf1c6b327df60e12abc6faa972f32ff9ff99260b86fcb8a7513a535685";
+const TREE_SHA256: &str = "18162da6522d436998ae773b21c6f47ab731c65d7df7790fb8ebae2ab782de40";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -152,7 +152,7 @@ const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
-const NPC_DECLARATIONS: usize = 2498;
+const NPC_DECLARATIONS: usize = 2499;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -383,7 +383,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "ranged-content-1-20261013-r1");
+    assert_eq!(project.project_revision(), "npc-bank-1-20261015-r1");
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()
@@ -684,6 +684,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
     }
     assert_eq!(expected_provisional_dialogues.len(), 133);
+    let bank_packet_bytes = include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
+    );
+    assert_eq!(
+        world_project_sha256(bank_packet_bytes),
+        "fa6edea043748245172dfd2cc70efb859d60d15a6ffe03bc78524cec42fb91ee"
+    );
+    let bank_packet: serde_json::Value =
+        serde_json::from_slice(bank_packet_bytes).expect("closed source-qualified Bank packet");
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(
+                declaration,
+                ProjectV2Declaration::Service { bank: true, .. }
+            ))
+            .count(),
+        1
+    );
 
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
@@ -730,12 +749,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 }
             }
             ProjectV2Declaration::Service {
-                recipes, fields, ..
+                bank,
+                recipes,
+                fields,
+                ..
             } => {
-                recipes.is_empty()
-                    && fields
-                        .iter()
-                        .all(|field| field.field_path.starts_with("oteryn:source.npc."))
+                if *bank {
+                    // This one authored Bank row pins its exact callback provenance and fields.
+                    serde_json::to_value(declaration).ok().as_ref() == bank_packet.get("service")
+                } else {
+                    recipes.is_empty()
+                        && fields
+                            .iter()
+                            .all(|field| field.field_path.starts_with("oteryn:source.npc."))
+                }
             }
             ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
             ProjectV2Declaration::Document {

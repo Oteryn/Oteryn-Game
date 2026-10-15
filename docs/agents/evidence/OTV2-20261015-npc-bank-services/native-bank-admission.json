@@ -1,0 +1,128 @@
+{
+  "schema": "OTERYN_NATIVE_BANK_ADMISSION/v1",
+  "from_project_revision": "ranged-content-1-20261013-r1",
+  "project_revision": "npc-bank-1-20261015-r1",
+  "scope": [
+    "oteryn:npc.paulie"
+  ],
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data-otservbr-global/npc/paulie.lua",
+    "sha256": "ca77d5451037ecbd704ed80a99684dbd42756ab5fd5d4ae9e5273367f7986aa1",
+    "edge": "onSay -> NpcHandler.onSay -> registered CALLBACK_MESSAGE_DEFAULT -> focused balance/deposit/withdraw callback",
+    "registered_callback_lines": [
+      346,
+      353
+    ],
+    "semantic_owner": "accepted BANK0; source family membership only",
+    "excluded": [
+      "quest bonus",
+      "legacy capacity/weight",
+      "legacy junior/account rules",
+      "raw Lua/text redistribution"
+    ]
+  },
+  "before_npc": {
+    "kind": "NPC",
+    "identity": {
+      "key": "oteryn:npc.paulie",
+      "revision": "definition-r1"
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "oteryn:presentation.npc.paulie",
+      "revision": "definition-r1"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "oteryn:behavior.npc.paulie",
+      "revision": "definition-r1"
+    },
+    "dialogue": {
+      "family": "Dialogue",
+      "key": "oteryn:dialogue.npc.paulie",
+      "revision": "definition-r1"
+    },
+    "services": [],
+    "fields": [
+      {
+        "field_path": "oteryn:source.npc.profession",
+        "value": {
+          "type": "Text",
+          "value": "banker"
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.quest_bindings",
+        "value": {
+          "type": "Text",
+          "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/197\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.speech_bubble",
+        "value": {
+          "type": "Text",
+          "value": "banker"
+        }
+      }
+    ]
+  },
+  "before_dialogue": {
+    "kind": "Dialogue",
+    "identity": {
+      "key": "oteryn:dialogue.npc.paulie",
+      "revision": "definition-r1"
+    },
+    "farewell": [
+      "Have a nice day."
+    ],
+    "walkaway": [
+      "Have a nice day."
+    ],
+    "voices": {
+      "interval_ms": 15000,
+      "chance_ppm": 500000,
+      "entries": [
+        {
+          "text": "Don't forget to deposit your money here in the Global Bank before you head out for adventure.",
+          "mode": "Say"
+        }
+      ]
+    },
+    "fields": []
+  },
+  "service": {
+    "kind": "Service",
+    "identity": {
+      "key": "oteryn:service.bank.paulie",
+      "revision": "definition-r1"
+    },
+    "bank": true,
+    "fields": [
+      {
+        "field_path": "oteryn:source.bank.registered_callback",
+        "value": {
+          "type": "Text",
+          "value": "{\"edge\":\"onSay -> NpcHandler.onSay -> registered CALLBACK_MESSAGE_DEFAULT -> focused balance/deposit/withdraw callback\",\"excluded\":[\"quest bonus\",\"legacy capacity/weight\",\"legacy junior/account rules\",\"raw Lua/text redistribution\"],\"path\":\"data-otservbr-global/npc/paulie.lua\",\"registered_callback_lines\":[346,353],\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"semantic_owner\":\"accepted BANK0; source family membership only\",\"sha256\":\"ca77d5451037ecbd704ed80a99684dbd42756ab5fd5d4ae9e5273367f7986aa1\"}"
+        }
+      }
+    ]
+  },
+  "original_oteryn_authored_dialogue": {
+    "greet": [
+      "Welcome to the bank. I can help with your account balance, deposits, withdrawals and transfers."
+    ],
+    "bank_keyword": {
+      "key": "bank",
+      "triggers": [
+        "bank"
+      ],
+      "reply": [
+        "You can ask for your balance, deposit gold, withdraw gold or transfer gold to another character."
+      ],
+      "only_focus": true
+    }
+  }
+}

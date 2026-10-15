@@ -74,6 +74,10 @@
       "index": "content/interactions/reward_claims/index.json",
       "records": 336
     },
+    "Service.Bank": {
+      "index": "content/services/bank/index.json",
+      "records": 1
+    },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
       "records": 324
@@ -662,6 +666,12 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
+      "path": "content/services/bank/bank-00000-00000.json"
+    },
+    {
+      "path": "content/services/bank/index.json"
+    },
+    {
       "path": "content/services/trade/index.json"
     },
     {
@@ -847,7 +857,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f40c98ad017c92e74c23109bcc8b949f132c5239bec6accffa4201db4a79cc5a"
+          "sha256": "bce58866a846f9bde23906c5b9f2b85f8d39c50823947ccb63cfa6963608fcf0"
         },
         {
           "creates_canonical_identities": false,

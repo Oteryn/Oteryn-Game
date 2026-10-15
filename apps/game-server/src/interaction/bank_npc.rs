@@ -90,6 +90,17 @@ pub(crate) enum BankNpcOperation {
 }
 
 impl BankNpcOperation {
+    pub(crate) fn prompt(&self) -> String {
+        match self {
+            Self::Deposit(amount) => format!("Do you want to deposit {amount} gold?"),
+            Self::Withdraw(amount) => format!("Do you want to withdraw {amount} gold?"),
+            Self::Transfer { amount, name, .. } => format!(
+                "Do you want to transfer {amount} gold to {}?",
+                name.as_str()
+            ),
+        }
+    }
+
     fn valid_amount(&self) -> bool {
         let (amount, cap) = match self {
             Self::Deposit(amount) => (amount, BANK_DEPOSIT_MAX),
@@ -204,5 +215,15 @@ impl BankConfirmation {
             && !text.chars().any(char::is_control)
             && text.trim_matches(' ').eq_ignore_ascii_case("yes"))
         .then_some(self.operation)
+    }
+}
+
+/// Privacy-safe refusals before a transfer prompt; no unresolved recipient identity is made up.
+pub(crate) fn refusal_reply(result: BankResult) -> &'static str {
+    match result {
+        BankResult::UnknownRecipient => "This player does not exist.",
+        BankResult::SameAccount => "This character already shares your bank balance.",
+        BankResult::JuniorAccount => "You can use the bank once you have left the island.",
+        _ => "You cannot transfer money to this account.",
     }
 }

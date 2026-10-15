@@ -3005,6 +3005,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if !self.chat.knows(session) {
             self.chat_open(session).await;
         }
+        self.npc_conversations.cancel_bank(session);
         self.chat.set_npc_service(session);
     }
 
@@ -3019,22 +3020,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .follow(&self.chat, &runtime, session, shown)
     }
 
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        npc_command::resume_bank_talk(self, actor, command).await
+    }
+
     async fn npc_talk(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk_in(
-            &self.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-            self.owner_now(),
-            item_ref_admission::pinned_index(&runtime, self.active_generation),
-        )
+        npc_command::npc_bank_talk(self, actor, command, intent).await
     }
 
     async fn npc_trade(

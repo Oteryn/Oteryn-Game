@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-//! Tests of the detached source; the evidence harness supplies verbatim native type excerpts.
+//! Exact adapter source exercised against the genuine native server dependency graph.
 pub use oteryn_game_server::{domain, durability};
 
 #[path = "../src/interaction/bank_npc.rs"]
@@ -295,4 +295,41 @@ fn native_requests_must_match_the_confirmed_kind_amount_and_recipient_binding() 
         recipient_name_key: "someoneelse".into(),
         ..transfer
     }));
+}
+
+#[test]
+fn prompts_bind_exact_resolved_amount_and_privacy_safe_recipient() {
+    let transfer = BankNpcOperation::Transfer {
+        amount: 123,
+        recipient: context().character,
+        name: CharacterName::parse("Al Dric").expect("native name"),
+    };
+    assert_eq!(
+        transfer.prompt(),
+        "Do you want to transfer 123 gold to Al Dric?"
+    );
+    assert_eq!(
+        BankNpcOperation::Deposit(15).prompt(),
+        "Do you want to deposit 15 gold?"
+    );
+    assert_eq!(
+        BankNpcOperation::Withdraw(16).prompt(),
+        "Do you want to withdraw 16 gold?"
+    );
+    assert_eq!(
+        refusal_reply(BankResult::UnknownRecipient),
+        "This player does not exist."
+    );
+    assert_eq!(
+        refusal_reply(BankResult::SameAccount),
+        "This character already shares your bank balance."
+    );
+    assert_eq!(
+        refusal_reply(BankResult::JuniorAccount),
+        "You can use the bank once you have left the island."
+    );
+    assert_eq!(
+        refusal_reply(BankResult::RecipientCannotReceiveTransfers),
+        "You cannot transfer money to this account."
+    );
 }
