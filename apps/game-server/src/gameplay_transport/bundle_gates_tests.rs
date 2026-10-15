@@ -11,7 +11,7 @@
 //! function. One that is added, removed, moved or
 //! switched without an update of this table fails `every_seam_room_read_is_inventoried`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use syn::Token;
@@ -85,7 +85,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::attack_target",
         "self.combat_room",
-        "method_call:set_target/field/read",
+        "method_call:set_target#7/field#3/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -95,7 +95,7 @@ const INVENTORY: &[Read] = &[
         "attack.rs",
         "ComposedFreshAdmission::drain_auto_attacks",
         "self.combat_room",
-        "let_else/field/read",
+        "let_else#3/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -105,7 +105,7 @@ const INVENTORY: &[Read] = &[
         "native_combat_cast.rs",
         "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "self.combat_room",
-        "let_else#4/field/read",
+        "let_else#17/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -115,7 +115,7 @@ const INVENTORY: &[Read] = &[
         "native_combat_cast.rs",
         "super::super::ComposedFreshAdmission::cast_native_combat_inner",
         "owner.combat_room",
-        "let#15/await/method_call:run_with_context/closure/call:pin/async/let#5/try/method_call:ok_or/field/read",
+        "let#39/await/method_call:run_with_context/closure#3/call:pin/async#2/let#5/try/method_call:ok_or/field/read",
         2,
         COMBAT_ENABLE,
     ),
@@ -125,7 +125,7 @@ const INVENTORY: &[Read] = &[
         "spell_timer_callbacks.rs",
         "ComposedFreshAdmission::drain_native_ai_timers",
         "owner.combat_room",
-        "if(Some saved unresolved)/then/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let#4/try/method_call:ok_or/field/read",
+        "if(Some saved unresolved)#19/then#2/try#8/method_call:map_err/await/method_call:run_with_context/closure#3/block/call:pin/async#2/let#6/try/method_call:ok_or/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -135,7 +135,7 @@ const INVENTORY: &[Read] = &[
         "attack.rs",
         "ComposedFreshAdmission::chase_step_now",
         "self.combat_room",
-        "let/try/field/read",
+        "let#5/try/field/read",
         1,
         Gate::Open {
             batch: "LOOP-COMBAT-MODES-1",
@@ -148,7 +148,7 @@ const INVENTORY: &[Read] = &[
         "monster_ai_cycle.rs",
         "ComposedFreshAdmission::drain_monster_melee",
         "self.combat_room",
-        "let_else/field/read",
+        "let_else#6/field/read",
         1,
         Gate::Open {
             batch: "LOOP-MONSTER-1",
@@ -161,7 +161,7 @@ const INVENTORY: &[Read] = &[
         "spell_periodic.rs",
         "ComposedFreshAdmission::tick_spell_periodic",
         "self.combat_room",
-        "let#6/try/field/read",
+        "let#9/try/field/read",
         1,
         Gate::Open {
             batch: "MAGIC-COND-1",
@@ -176,7 +176,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "self.combat_room",
-        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field#2/read",
+        "if(parameter_room key self qualified_room self combat_room is_none)#13/method_call:is_none/call:parameter_room/field#4/read",
         2,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -189,7 +189,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.combat_room",
-        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/call:parameter_room/field#2/read",
+        "let#33/await/method_call:run_with_context/closure#3/call:pin/async#2/let#6/try/method_call:ok_or/call:parameter_room/field#4/read",
         4,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -203,7 +203,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "self.qualified_room",
-        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
+        "if(parameter_room key self qualified_room self combat_room is_none)#13/method_call:is_none/call:parameter_room/field#3/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -215,7 +215,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "super::super::ComposedFreshAdmission::cast_parameters_inner",
         "owner.qualified_room",
-        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/call:parameter_room/field/read",
+        "let#33/await/method_call:run_with_context/closure#3/call:pin/async#2/let#6/try/method_call:ok_or/call:parameter_room/field#3/read",
         3,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -228,7 +228,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "super::super::ComposedFreshAdmission::cast_world_items_inner",
         "self.qualified_room",
-        "if(self qualified_room is_none)/method_call:is_none/field/read",
+        "if(self qualified_room is_none)#12/method_call:is_none/field/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -240,7 +240,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "super::super::ComposedFreshAdmission::cast_world_items_inner",
         "owner.qualified_room",
-        "let#13/await/method_call:run_with_context/closure/call:pin/async/let#5/try/method_call:ok_or/field/read",
+        "let#32/await/method_call:run_with_context/closure#3/call:pin/async#2/let#5/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -253,7 +253,7 @@ const INVENTORY: &[Read] = &[
         "field_step_ingress.rs",
         "ComposedFreshAdmission::step_with_field_ingress",
         "self.qualified_room",
-        "let_else#2/field/read",
+        "let_else#7/field/read",
         1,
         Gate::Closed {
             owners: &["LOOP-WORLD-1"],
@@ -265,7 +265,7 @@ const INVENTORY: &[Read] = &[
         "field_step_ingress.rs",
         "ComposedFreshAdmission::step_with_field_ingress",
         "owner.qualified_room",
-        "let#4/await/method_call:run_with_context/closure/call:pin/async/let#6/try/method_call:ok_or/field/read",
+        "let#14/await/method_call:run_with_context/closure#3/call:pin/async#2/let#7/try/method_call:ok_or/field/read",
         2,
         Gate::Closed {
             owners: &["LOOP-WORLD-1"],
@@ -292,7 +292,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::observe_world_object_overlay",
         "self.qualified_room",
-        "if(self qualified_room is_some_and room room source_world is_some self bundle_map is_some)/binary/method_call:is_some_and/field/read",
+        "if(self qualified_room is_some_and room room source_world is_some self bundle_map is_some)#3/binary/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -302,7 +302,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::paced_step",
         "self.qualified_room",
-        "let#7/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
+        "let#21/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -312,7 +312,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::use_object",
         "self.qualified_room",
-        "if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
+        "if(self qualified_room is_some_and room room source_world is_some)#12/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -322,7 +322,7 @@ const INVENTORY: &[Read] = &[
         "attack.rs",
         "ComposedFreshAdmission::chase_step_now",
         "self.qualified_room",
-        "let#2/block/let#4/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
+        "let#6/block/let#5/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
         2,
         Gate::SourceWorldBranch,
     ),
@@ -332,7 +332,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "owners.qualified_room",
-        "let#3/struct/field_value#14/field/read",
+        "let#6/struct/field_value#14/field/read",
         2,
         Gate::Plumbing,
     ),
@@ -342,7 +342,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "owners.combat_room",
-        "let#3/struct/field_value#15/field/read",
+        "let#6/struct/field_value#15/field/read",
         4,
         Gate::Plumbing,
     ),
@@ -373,7 +373,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "qualified_room",
-        "let#3/struct/initializer",
+        "let#6/struct/initializer",
         1,
         Gate::Declaration,
     ),
@@ -403,7 +403,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "serve_gameplay",
         "combat_room",
-        "let#3/struct/initializer",
+        "let#6/struct/initializer",
         3,
         Gate::Declaration,
     ),
@@ -437,7 +437,8 @@ struct Site {
 /// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
 /// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
 /// What the keys cannot resolve fails closed instead of passing: two functions of one file with
-/// one name, a production `include!`, and a seam field inside a `macro_rules!` definition.
+/// one name, a file loaded by two module declarations, a production `include!`, and a seam field
+/// inside a `macro_rules!` definition.
 #[allow(clippy::expect_used, clippy::panic)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
@@ -447,9 +448,13 @@ fn module_reads() -> BTreeSet<(String, Site)> {
     let mut reads = BTreeSet::new();
     while let Some((path, mod_rs)) = pending.pop() {
         let path = path.canonicalize().expect("module source");
-        if !seen.insert(path.clone()) {
-            continue;
-        }
+        // A file loaded by two module declarations is compiled twice, once per module, while one
+        // scan would stand for both: removing either declaration would leave the inventory as is.
+        assert!(
+            seen.insert(path.clone()),
+            "{}: loaded by two module declarations; give each module its own source file",
+            path.display()
+        );
         let source = std::fs::read_to_string(&path).expect("source text");
         let scan = scan(&source);
         let parent = path.parent().expect("source directory");
@@ -546,9 +551,9 @@ struct Scan {
     /// ambiguous: a read moved between them would leave its site unchanged.
     declared: Vec<String>,
     path: Vec<String>,
-    /// For each node of `path`, and for the function body under it, how often each component has
-    /// been entered among its children so far.
-    siblings: Vec<BTreeMap<String, usize>>,
+    /// For each node of `path`, and for the function body under it, how many of its children
+    /// have been entered so far.
+    siblings: Vec<usize>,
 }
 
 /// A production `mod x;` declaration.
@@ -593,22 +598,21 @@ impl Scan {
             .map(|field| (*field).to_owned())
     }
 
-    /// Enters one syntax node. A node that repeats an earlier sibling's component (two `if armed`
-    /// in one block, two `let` statements) is numbered by its position among them, so a read
-    /// moved from one to the other changes its site.
+    /// Enters one syntax node. Every node after the first child of its parent is numbered by its
+    /// position (`let#3`; a call's first argument is `field#2`, after its callee), so a read moved to
+    /// another statement, branch, argument or operand changes its site.
     fn within(&mut self, kind: impl Into<String>, visit: impl FnOnce(&mut Self)) {
         let kind = kind.into();
-        let seen = self.siblings.last_mut().map_or(1, |siblings| {
-            let seen = siblings.entry(kind.clone()).or_insert(0);
-            *seen += 1;
-            *seen
+        let position = self.siblings.last_mut().map_or(1, |entered| {
+            *entered += 1;
+            *entered
         });
-        self.path.push(if seen == 1 {
+        self.path.push(if position == 1 {
             kind
         } else {
-            format!("{kind}#{seen}")
+            format!("{kind}#{position}")
         });
-        self.siblings.push(BTreeMap::new());
+        self.siblings.push(0);
         visit(self);
         self.siblings.pop();
         self.path.pop();
@@ -616,7 +620,7 @@ impl Scan {
 
     fn function_body(&mut self, name: &syn::Ident, visit: impl FnOnce(&mut Self)) {
         let path = std::mem::take(&mut self.path);
-        let siblings = std::mem::replace(&mut self.siblings, vec![BTreeMap::new()]);
+        let siblings = std::mem::replace(&mut self.siblings, vec![0]);
         // A method is named with its impl's type and trait (or its trait), so the same method name
         // in two impls of one file is two functions.
         // A function in an inline `mod m { ... }` is named with its module path, so the same name
@@ -1724,7 +1728,12 @@ fn every_test_only_item_is_left_out_at_any_depth() {
         scan.sites,
         [
             site("<item>", "combat_room", "struct/declaration", 1),
-            site("Owner::production", "self.combat_room", "let/field/read", 1),
+            site(
+                "Owner::production",
+                "self.combat_room",
+                "let#2/field/read",
+                1
+            ),
         ]
     );
     // Only the production module is followed, wherever its `#[path]` points.
@@ -1753,7 +1762,7 @@ fn each_read_in_a_function_is_its_own_site() {
             site(
                 "Owner::cast",
                 "self.combat_room",
-                "call:commit/field/read",
+                "call:commit#2/field#2/read",
                 2
             ),
         ]
@@ -1775,11 +1784,16 @@ fn each_read_in_a_function_is_its_own_site() {
     assert_eq!(
         twice.sites,
         [
-            site("drain", "owner.combat_room", "call:use_room/field/read", 1),
             site(
                 "drain",
                 "owner.combat_room",
-                "call:use_room#2/field/read",
+                "call:use_room/field#2/read",
+                1
+            ),
+            site(
+                "drain",
+                "owner.combat_room",
+                "call:use_room#2/field#2/read",
                 2
             ),
         ]
@@ -1898,23 +1912,32 @@ fn two_functions_with_one_name_are_refused() {
 }
 
 #[test]
-fn a_read_moved_between_alike_siblings_changes_its_site() {
+fn a_read_moved_to_another_sibling_changes_its_site() {
     let first =
         scan("fn cast(&self) { if armed { consume(self.combat_room); } disarm(); if armed {} }");
     let second =
         scan("fn cast(&self) { if armed {} disarm(); if armed { consume(self.combat_room); } }");
     assert_eq!(
         first.sites[0].site,
-        "if(armed)/then/call:consume/field/read"
+        "if(armed)/then#2/call:consume/field#2/read"
     );
     assert_eq!(
         second.sites[0].site,
-        "if(armed)#2/then/call:consume/field/read"
+        "if(armed)#3/then#2/call:consume/field#2/read"
     );
     // Statements alike in form are numbered too, so a read cannot cross a statement unseen.
     let early = scan("fn cast(&self) { let a = self.combat_room; let b = c?; let d = e; }");
     let late = scan("fn cast(&self) { let a = b; let c = d?; let e = self.combat_room; }");
     assert_ne!(early.sites, late.sites);
+    // Arguments and operands are numbered by position (the callee is the first child of a call),
+    // so a read moved to another argument or operand of one operation changes its site.
+    let first = scan("fn cast(&self) { route(self.combat_room, fallback); }");
+    let second = scan("fn cast(&self) { route(fallback, self.combat_room); }");
+    assert_eq!(first.sites[0].site, "call:route/field#2/read");
+    assert_eq!(second.sites[0].site, "call:route/field#3/read");
+    let left = scan("fn cast(&self) { let _ = self.combat_room.is_some() && armed; }");
+    let right = scan("fn cast(&self) { let _ = armed && self.combat_room.is_some(); }");
+    assert_ne!(left.sites, right.sites);
 }
 
 #[test]
@@ -1973,7 +1996,7 @@ fn a_read_moved_to_another_arm_is_another_site() {
         [site(
             "route",
             "self.combat_room",
-            "match/arm#1:Attack/call:use_room/field/read",
+            "match/arm#1:Attack#2/call:use_room/field#2/read",
             1
         )]
     );
@@ -1982,7 +2005,7 @@ fn a_read_moved_to_another_arm_is_another_site() {
         [site(
             "route",
             "self.combat_room",
-            "match/arm#2:Trade/call:use_room/field/read",
+            "match/arm#2:Trade#3/call:use_room/field#2/read",
             1
         )]
     );
@@ -2120,13 +2143,19 @@ fn a_read_moved_to_a_sibling_branch_is_another_site() {
             .map(|site| site.site.clone())
             .collect::<Vec<_>>()
     };
-    assert_eq!(sites(&first), ["if(armed)/then/call:consume/field/read"]);
-    assert_eq!(sites(&second), ["if(idle)/then/call:consume/field/read"]);
+    assert_eq!(
+        sites(&first),
+        ["if(armed)/then#2/call:consume/field#2/read"]
+    );
+    assert_eq!(
+        sites(&second),
+        ["if(idle)#2/then#2/call:consume/field#2/read"]
+    );
     assert_eq!(
         sites(&otherwise),
-        ["if(armed)/else/block/call:consume/field/read"]
+        ["if(armed)/else#3/block/call:consume/field#2/read"]
     );
-    assert_eq!(sites(&looped), ["while(armed)/call:consume/field/read"]);
+    assert_eq!(sites(&looped), ["while(armed)/call:consume#2/field#2/read"]);
 }
 
 #[test]
