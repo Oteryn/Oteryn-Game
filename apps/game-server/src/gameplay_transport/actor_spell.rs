@@ -3444,6 +3444,43 @@ mod owned_source_tick_tests {
         assert_eq!(states.player_death(&runtime, actor, session), retained);
     }
     #[test]
+    fn actual_lethal_creature_agony_routes_to_the_death_owner() {
+        let (mut runtime, mut states, actor, session) = ready(0xbb);
+        let Some(agony) = ConditionDefinition::new(
+            "test.source.agony",
+            1,
+            ConditionValues::Agony {
+                total_min: 100_000,
+                total_max: 100_000,
+                per_tick: 100_000,
+                interval_ms: 1_000,
+                delayed: true,
+            },
+        ) else {
+            panic!("agony fixture")
+        };
+        install(&mut states, &runtime, actor, session, &[agony]);
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
+        let result = states.tick_current_creature_field_damage(
+            &mut runtime,
+            actor,
+            session,
+            now,
+            TickFacts::default(),
+            None,
+        );
+        assert!(matches!(
+            result,
+            Some(Some((_, ActorVitals { health: 0, .. })))
+        ));
+        assert!(states.player_death(&runtime, actor, session).is_some());
+        assert!(
+            states
+                .get(&runtime, actor, session)
+                .is_some_and(|s| s.owned_conditions().instances().is_empty())
+        );
+    }
+    #[test]
     fn actual_malformed_creature_field_origin_refuses_without_hp_or_cursor_write() {
         let (mut runtime, mut states, actor, session) = ready(0xba);
         let before = states.get(&runtime, actor, session).cloned();

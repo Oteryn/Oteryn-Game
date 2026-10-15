@@ -29,6 +29,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs
+  - apps/game-server/src/gameplay_transport/spell_periodic.rs
   - apps/game-server/src/spell/actor_conditions.rs
   - apps/game-server/src/spell/actor_conditions_agony_tests.rs
   - apps/game-server/src/spell/cast.rs
@@ -77,7 +78,7 @@ external_repositories: []
 ## Excluded scope and residuals
 
 - A creature condition tick (`agony` like the existing creature damage ticks) does not extend the victim's in-fight window or record attacker attribution; routing every creature condition tick through that bookkeeping is a follow-up for all DoT families.
-- A lethal agony tick and one of non-creature provenance go to the combat owner; routing them through `spell_periodic` is deferred.
+- A lethal creature agony tick goes through `spell_periodic` to the death-capable source owner, like a creature damage tick; one of non-creature provenance stays with the PvP combat owner, as non-creature damage does.
 - No `agony` or `muted` content row exists: there is no reference evidence for one (COND-CONTENT-2 authors from reference evidence only).
 - The SPELL-PRESENT-0 `MUTED` detail, the typed refusal reasons for `pacified` and `powerless` and the icons of all four families belong to COND-WIRE-2; a rune refusal keeps `REJECTED` until RUNE-CAST-1 builds the RUNE-USE-0 PREPARE with its `REQUIREMENT_NOT_MET` mapping.
 
