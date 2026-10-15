@@ -161,8 +161,20 @@ fn the_result_carries_the_new_dispositions_and_the_sealed_gate_message_within_fo
         &[0x10, 1][..],
         &[0x08, 13, 0x10, 1, 0x10, 1][..],
         &[0x08, 18][..],
+        &[0x08, 19][..],
+        &[0x08, 20][..],
     ] {
         assert!(decode_push_result(payload).is_err(), "{payload:?}");
+    }
+    // RUNE-WIRE-1: the USE-only dispositions 18 and 19 are never a push result.
+    for disposition in [
+        UseDisposition::TargetIllegal,
+        UseDisposition::ProtectionZone,
+    ] {
+        assert_eq!(
+            encode_push_result(disposition, None),
+            Err(WorldObjectError::Malformed)
+        );
     }
     assert_eq!(
         decode_push_result(&[0x08, 13, 0x10, 1, 0x10]),
@@ -180,6 +192,7 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
         use_with_map_item: Some(MapUseTarget::Item(
             ItemHandle::new(u64::MAX).expect("handle"),
         )),
+        use_with_position: None,
     };
     let bytes = encode_item_use_intent(&intent).expect("encode");
     assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
@@ -198,6 +211,7 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
             generation: 1,
         }),
         use_with_map_item: None,
+        use_with_position: None,
     };
     let creature_bytes = encode_item_use_intent(&creature).expect("encode");
     assert_eq!(
@@ -260,6 +274,7 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
                 generation: 1
             }),
             use_with_map_item: Some(MapUseTarget::Item(handle)),
+            use_with_position: None,
         })
         .is_err()
     );
@@ -277,6 +292,7 @@ fn key_on(target: UseTarget, object: MapUseTarget) -> UseIntent {
         target,
         use_with: None,
         use_with_map_item: Some(object),
+        use_with_position: None,
     }
 }
 
@@ -332,6 +348,7 @@ fn use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes() {
                 generation: 1,
             }),
             use_with_map_item: Some(door(40, 1)),
+            use_with_position: None,
         }),
         Err(WorldObjectError::Malformed)
     );

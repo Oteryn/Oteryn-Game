@@ -236,7 +236,8 @@ fn decode_sint32(value: u64) -> Result<i32, ActorSpellError> {
     Ok(((zigzag >> 1) as i32) ^ -((zigzag & 1) as i32))
 }
 
-fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
+/// Also the RUNE-USE-0 §4 `position` arm of USE field 4 (`world_object.rs`), in the same frame.
+pub(crate) fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
     let mut output = Vec::with_capacity(16);
     push_sint32(&mut output, 1, position.x);
     push_sint32(&mut output, 2, position.y);
@@ -244,7 +245,7 @@ fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
     output
 }
 
-fn decode_position(input: &[u8]) -> Result<SpellTargetPosition, ActorSpellError> {
+pub(crate) fn decode_position(input: &[u8]) -> Result<SpellTargetPosition, ActorSpellError> {
     let mut cursor = 0;
     let (mut x, mut y, mut floor) = (None, None, None);
     while cursor < input.len() {

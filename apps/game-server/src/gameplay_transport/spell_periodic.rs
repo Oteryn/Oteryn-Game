@@ -130,14 +130,18 @@ impl ChannelSpellStates {
             None,
         )
         .ok()??;
-        if !preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
-                && t.provenance.source_kind == ConditionSourceKind::Creature
-        }) {
+        // CONDITIONS-0 §3.5: an agony hit the cycle could not deal (lethal) is a creature hit
+        // for this death-capable owner as well.
+        let hit = |kind: TickKind| matches!(kind, TickKind::Damage { .. } | TickKind::Agony { .. });
+        if !preview
+            .combat_ticks
+            .iter()
+            .any(|t| hit(t.kind) && t.provenance.source_kind == ConditionSourceKind::Creature)
+        {
             return None;
         }
         if preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
+            hit(t.kind)
                 && (t.provenance.source_kind != ConditionSourceKind::Creature
                     || !t
                         .provenance
@@ -346,9 +350,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             );
         }
-        // COND-1c: a bundle World has no fixture `qualified_room`; its periodic player damage
+        // COND-1c: a bundle World has no fixture qualified room; its periodic player damage
         // reads the same bundle view as combat (BUNDLE-COMBAT-ENABLE-1).
-        let room = self.combat_room?;
+        let room = self.rooms.gate_periodic_damage()?;
         let source = self.active_generation?.native_gameplay()?;
         let position = runtime.borrow_movement_position().read(actor).ok()?;
         let target =

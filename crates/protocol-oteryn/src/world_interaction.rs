@@ -122,18 +122,26 @@ pub fn decode_push_intent(payload: &[u8]) -> WireResult<PushIntent> {
     })
 }
 
-/// `PushResultV1`: the disposition and, with `SEALED` only, the gate message id (1 to 127).
+/// `PushResultV1`: the disposition and, with `SEALED` only, the gate message id (1 to 127). The
+/// RUNE-USE-0 §4 dispositions 18 and 19 belong to `USE_INTENT` only and fail closed here.
 pub fn encode_push_result(
     disposition: UseDisposition,
     gate_message_id: Option<u8>,
 ) -> Result<Vec<u8>, WorldObjectError> {
+    if disposition.needs_rune_use() {
+        return Err(WorldObjectError::Malformed);
+    }
     encode_use_result_with_gate(disposition, gate_message_id)
 }
 
 pub fn decode_push_result(
     payload: &[u8],
 ) -> Result<(UseDisposition, Option<u8>), WorldObjectError> {
-    decode_use_result_with_gate(payload)
+    let (disposition, gate_message_id) = decode_use_result_with_gate(payload)?;
+    if disposition.needs_rune_use() {
+        return Err(WorldObjectError::Malformed);
+    }
+    Ok((disposition, gate_message_id))
 }
 
 #[cfg(test)]
