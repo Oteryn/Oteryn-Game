@@ -758,10 +758,10 @@ fn report(threads: usize, results: &Results) {
     let pace = walking_steps_per_second();
     println!(
         "Option B (§1.5, provisional): {:.0}% of {PLAYERS} players walking at {pace:.2} steps/s: {:.3} cores \
-         (budget {CORE_SHARE:.3}); fits up to {:.0}% walking.",
+         (budget {CORE_SHARE:.3}); break-even {:.2} steps/s per player over all {PLAYERS}.",
         100.0 * MOVING_SHARE,
         option_b_cores(cpu_per_update),
-        100.0 * CORE_SHARE / option_b_cores(cpu_per_update) * MOVING_SHARE,
+        CORE_SHARE * 1e9 / (PLAYERS * cpu_per_update),
     );
     println!(
         "CPU per update (thread CPU time, scheduling excluded): {:.1} us over {updates} updates ({:.2} s). \
