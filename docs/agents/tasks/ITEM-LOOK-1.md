@@ -4,12 +4,12 @@
 task_id: ITEM-LOOK-1
 title: "ITEM-LOOK-1: look/examine message (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/item-look-1
 issue: 1622
-pr: null
+pr: 2182
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 ITEM-LOOK-1 (row 75); wave 1"
 class: "impl"
@@ -95,7 +95,7 @@ wire+registry+capability+handler+tests. Registry order (plan §5): ITEM-LOOK-1, 
 - [ ] LOOK command on a visible item/creature returns text built only from admitted content facts.
 - [ ] Unknown/unadmitted target -> typed refusal, no leak of hidden facts.
 - [ ] Rate limit row registered and enforced (max vs max+1).
-- [ ] No brief exists: builder records a short packet in this file before code; architect review at queue turn.
+- [x] No brief exists: builder records a short packet in this file before code; architect review at queue turn.
 - [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
@@ -120,9 +120,157 @@ Reference look text format (Tibia 'You see ...'), item description promotion mod
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: local P2 retirement refusal repaired and regression verified RED then GREEN; integration pending
+status: authoring
 branch: skeleton/item-look-1
-blocker: null
-next_action: builder confirms residue against main and starts owned paths
+blocker: accepted LOOK semantics and CP integration slot are pending
+next_action: lead verifies and archives local repair; accepted semantics and CP slot precede integration/publication
 ```
+
+## Local preparation packet (proposed, 2026-10-15)
+
+This is a bounded authoring proposal for existing draft #2182, not an accepted
+architecture brief or a publication candidate. Local starting head:
+`5541de017c603244d6ed190955c5655c2f4866a9`; branch `skeleton/item-look-1`.
+The allocated checkout has no `origin/main` tracking ref; residue is confirmed
+against the supplied starting source, not against an independently refreshed main.
+The owned look modules are absent. Existing `SessionItemView::resolve` and
+`item_ref_admission::pinned_index` provide the handle and pinned-definition seams;
+`NativeGameplayState::item_policy` supplies qualified presentation facts.
+
+Proposed safe subset, recorded before implementation:
+
+- Reuse the existing strict `ItemTargetV1` handle codec for item LOOK requests.
+  Do not assign a capability, command, domain or rate-limit number.
+- Prepare an unregistered candidate response codec: exactly one field, either
+  UTF-8 server-authored text (field 1) or an empty unavailable marker (field 2).
+  Unknown, stale, hidden and unadmitted items share that refusal without text.
+  These field meanings require architect acceptance before registration.
+  Preserve the existing command-result envelope byte ceiling; no limit is raised.
+- Prepare a read-only formatter using only known admitted name/description and a
+  nonzero authoritative count. Proposed wording is `You see NAME.`, `Count: N.`
+  and the known description on separate lines. Unknown/conflicting name refuses;
+  unknown/conflicting description is omitted. Do not infer articles, plurals,
+  weight units or readable instance text.
+- Prepare a transport helper for an owner-observed item, checking the session's
+  live handle, exact observed key, current World/activation/Channel generation pin, compact
+  definition reference and exact production family/key/revision before reading
+  presentation. The eventual caller must re-observe under the owner lock and
+  refresh visibility; this helper is not a current-world observer or a handler.
+- Test malformed/duplicate/oversized wire input and isolated negative identity,
+  pin, admission and unknown-content cases without changing registration files.
+
+### cross_domain_findings
+
+1. No accepted LOOK brief/schema/IDs/rate row is supplied. Proposed field meanings,
+   wording and the generic no-leak refusal need architect review. CP owns leasing,
+   rate max/max+1 qualification, capability negotiation and command integration.
+2. `ReferenceItemPresentation` has name/description, no article. Physical weight
+   exists but examine units/grammar are not established here. Readability flags do
+   not establish readable instance text. These acceptance parts remain incomplete.
+3. Creature targeting and current item observation for inventory/container/ground
+   require owner integration beyond the allocated paths. A live handle alone does
+   not establish fresh visibility after movement. Do not activate the helper until
+   the caller binds the view and observation to the current actor/session/Channel,
+   supplies a current owner observation and closes that race.
+4. All modules remain unregistered. Ordinary package tests cannot establish their
+   coverage; isolated source harness results must be reported separately. Runtime,
+   IDs, registries, rate limits, activation and independent review await CP's slot.
+
+Local policy: no commit, push, external write, review request, regeneration,
+pinning, migration or registry/wiring edits. Preserve local diff for lead review.
+
+### Local validation boundary
+
+The isolated harness is `/tmp/oteryn-item-look-1-harness`. It mirrors this checkout
+with symlinks except two copied registration files:
+`crates/protocol-oteryn/src/lib.rs` appends `pub mod item_look;` and
+`apps/game-server/src/gameplay_transport/mod.rs` appends
+`#[allow(dead_code)] mod item_look;`. Only the isolated copies are registered;
+checkout originals remain untouched. The source files themselves are shared with
+this owned checkout. `/tmp/oteryn-item-look-1-harness/item-look-harness.json` records
+SHA-256 for all five proposed Rust files and both original registration files.
+The harness never formats, regenerates, publishes or changes those originals.
+
+The helper's negative cases vary only the observed key, compact definition ref,
+family/key/revision, World, activation sequence, artifact pin, missing generation,
+missing owner observation, absent qualified profile or dropped session handle.
+Formatter tests separately cover unknown/conflicting name/description and the
+existing UTF-8 byte ceilings. These are read-only boundaries: durable mutation,
+replay/concurrent durable writes and PostgreSQL qualification are not applicable
+to this inactive subset. Fresh visibility and session authority at command dispatch
+remain unvalidated integration obligations, not claims of these helper tests.
+
+Round 1 local results (before P2 repair; not candidate qualification):
+
+- `cargo fmt --all --check`: pass on the allocated checkout. Direct `rustfmt
+  --edition 2024 --check` of all five otherwise unregistered Rust files: pass.
+- Governance validator: pass (22 required policy documents, 9 lanes).
+  Governance unittest suite: 124 passed, 0 failed.
+- Isolated registered-source codec tests: 4 passed, 0 failed, 242 filtered out.
+  Full protocol-package tests in that overlay: 246 passed, 0 failed.
+- Isolated registered-source server tests: 3 passed, 0 failed, 3179 filtered out.
+  The formatter and all owner-observed binding negatives run in these three tests;
+  this does not establish a current owner observer, client path or real E2E.
+- First server harness compile found a test fixture using nonexistent
+  `SessionItemView::default`; corrected to the existing `resume` constructor.
+  Initial failure preserved at
+  `/tmp/oteryn-item-look-server-harness-initial-failure.log`.
+- Clippy for both affected packages/all targets in the isolated overlay: pass
+  (`--locked --quiet -- -D warnings`). The existing vendored Tokio missing-docs
+  dependency warning remains outside this allocation; neither source nor lints
+  were altered for it.
+- Per lead's inactive-preparation scope, no broad full-server test suite or E2E
+  was run. Actual runtime integration and independent exact-head qualification
+  remain future slot obligations.
+- Whole local diff self-review and owned-path/unchanged-registration checks: pass.
+  Head remains the supplied initial SHA; all work is uncommitted and unpublished.
+
+Harness manifest SHA-256:
+`2f599d2851c2318cca5da2cecffe9446327f9fad9813ab552c60d5172560d311`.
+The manifest contains exact source/registration hashes and focused commands. Local
+logs are `/tmp/oteryn-item-look-*.log`; the review patch (including untracked owned
+Rust files without staging) is `/tmp/oteryn-item-look-1-local.diff`.
+
+### Local review repair round 2 (2026-10-15)
+
+Accepted P2 from `/workspace/oteryn-prep/reviews/item-look-1.md`: a retired
+runtime preserves its content pin, so content/handle checks alone can still return
+text after `retire_owner_cycle`. The new regression starts with a working
+owner/runtime and the existing admitted target fixture, then changes only that
+runtime's retirement. The same generation/view/handle/observation and unchanged
+content pin must yield `Unavailable`.
+
+This repair adds a local known-retired refusal through `owner_fence`; it does not
+establish current DB/session authority or fresh visibility. The caller obligations
+and all architecture/slot dependencies above remain open. Round 1 is preserved by
+the lead at `/workspace/oteryn-prep/history/item-look-1/round-1`.
+
+P2 disposition: **fixed locally**. The helper now refuses before target handling
+when `runtime.owner_fence().is_err()`. This is a known-retired/local-scope denial,
+not a grant or proof of current DB/session authority or fresh visibility.
+
+Round 2 validation:
+
+- Actual focused RED: 2 passed, 1 failed. The retirement-only regression observed
+  `Text` where `Unavailable` was required; this was an assertion failure, not a
+  build failure. The same regression test was left unchanged for GREEN.
+- Actual focused GREEN: 3 passed, 0 failed, 3179 filtered out. Only the production
+  helper changed between the RED and GREEN source manifests.
+- Relevant game-server library clippy (`--locked --lib --quiet -- -D warnings`):
+  pass. Checkout `cargo fmt --all --check` and direct rustfmt check of both changed,
+  otherwise-unregistered Rust files: pass.
+- Governance validator: pass; governance unittest suite: 124 passed, 0 failed.
+- Protocol code and test SHA-256 values are unchanged from round 1, as is the
+  protocol registration-root copy. The previous 246/0 protocol-package result is
+  retained against those exact hashes; it was not rerun for this server-only fix.
+- Original registration roots still equal HEAD; overlay registration roots retain
+  their prior hashes. The overlay still resolves the proposed sources directly to
+  this allocated checkout. No production registration or activation was added.
+
+Durable evidence is preserved at
+`/workspace/oteryn-prep/item-look-1-evidence/`: both rounds' manifests/source
+hashes, exact RED/GREEN and final-check logs, explicit registration-root copies,
+small source/patch artifacts and restoration instructions. It contains no target,
+ELF, dependency tree or recursive overlay/symlink copy. The temporary paths above
+are conveniences; they are not the sole copy of the repair evidence.
