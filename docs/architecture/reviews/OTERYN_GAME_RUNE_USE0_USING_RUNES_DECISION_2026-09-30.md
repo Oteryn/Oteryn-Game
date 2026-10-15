@@ -178,6 +178,12 @@ committed as cast. The rune cast has three steps.
    magnitudes (the RNG draw bound to the occurrence, derived from the CommandRef).
 5. Place the holds of §7 and reserve S under DUR-03 §7.1. Send the burn.
 
+**Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** Between steps 1 and 2 the CONDITIONS-0 §3.5
+condition gates run: once the rune and its spell are resolved, a `pacified` or `powerless` actor's
+aggressive rune cast is refused with that condition's refusal before any step 2 or step 3 check
+(cooldowns, level, magic level, vocation, premium, mana, soul, target), in the §3.5 gate order. RUNE-CAST-1
+builds PREPARE in this order.
+
 A refusal in steps 1-3 is answered at once. Nothing is held or burnt.
 
 ### 6.2 Commit
