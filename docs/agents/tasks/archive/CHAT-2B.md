@@ -4,13 +4,13 @@
 task_id: CHAT-2B
 title: "CHAT-2B: World chat relay over LISTEN/NOTIFY, rooms and private messages (CHAT-0 sections 5 and 7)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/chat-2
 issue: 2074
 governing_issue: 1622
-pr: null
+pr: 2128
 base_sha: ed2b1180
 head_sha: null
 final_head_sha: null
@@ -32,7 +32,6 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
-  - docs/agents/tasks/active/CHAT-2B.md
   - docs/agents/tasks/archive/CHAT-2B.md
 public_contracts: []
 external_repositories: []
@@ -103,10 +102,15 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test -p oteryn-game-server`, against local PostgreSQL 17 with
-  `OTERYN_TEST_POSTGRES_ADMIN_URL`: pending
-- `python3 tools/agents/validate_governance.py`: pending
-- `python3 -m unittest discover -s tools/agents/tests`: pending
+- `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass, 145 passed, including the two-node relay exchange,
+  the lease row and the not-ready-when-logging tests
+- `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
+  33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
+  exact-head CI qualifies the whole package
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
 
 ## Self-review
 
@@ -120,3 +124,4 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 ## PR and closeout
 
 - Refs #2074 (CHAT-2C follows).
+- merge commit/result: squash merge of #2128
