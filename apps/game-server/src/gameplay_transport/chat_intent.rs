@@ -51,6 +51,8 @@ struct ChatSession {
     /// The session's CharacterId, the key of the private lines it receives; `None` receives none.
     character: Option<[u8; 16]>,
     limiter: ChatLimiter,
+    /// The Character's level, read at admission, for a speaker without cast facts.
+    level: u32,
     /// The rooms the session has open, and the set its client was last told.
     rooms: ChatRoomSet,
     rooms_shown: ChatRoomSet,
@@ -102,6 +104,7 @@ impl ChatRuntime {
                 name: name.to_owned(),
                 character,
                 limiter: ChatLimiter::new(now),
+                level: 1,
                 rooms: ChatRoomSet::default(),
                 rooms_shown: ChatRoomSet::default(),
                 egress: ChatEgress::new(),
@@ -210,6 +213,24 @@ impl ChatRuntime {
     /// What the NPCs of the Channel say, once installed.
     pub(crate) fn npc_talk(&self) -> Option<&NpcTalkBook> {
         self.npc_talk.get().map(AsRef::as_ref)
+    }
+
+    /// Records the level `session`'s Character had at admission.
+    fn admit_level(&self, session: GameSessionId, level: u32) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.level = level;
+        }
+    }
+
+    /// The level `session`'s Character had at admission; 1 for an unknown session.
+    fn level(&self, session: GameSessionId) -> u32 {
+        self.sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).map(|entry| entry.level))
+            .unwrap_or(1)
     }
 
     pub(crate) fn knows(&self, session: GameSessionId) -> bool {
@@ -613,18 +634,18 @@ pub(crate) fn chat_in_premium_channel(
         identity: actor.placement_identity(),
         generation,
     };
-    // An actor without cast facts is level 1: it can talk but not yell.
-    let gate = YellGate {
-        level: states
-            .get(runtime, actor, session)
-            .map_or(1, |state| state.character_facts().level),
-        premium_current: premium.premium_current(),
-    };
     let Ok(mut sessions) = chat.sessions.lock() else {
         return result(ChatDisposition::ChatUnavailable);
     };
     let Some(speaking) = sessions.get_mut(&session) else {
         return result(ChatDisposition::ChatUnavailable);
+    };
+    // An actor without cast facts has the level read at its chat admission.
+    let gate = YellGate {
+        level: states
+            .get(runtime, actor, session)
+            .map_or(speaking.level, |state| state.character_facts().level),
+        premium_current: premium.premium_current(),
     };
     if let Err(why) = speaking.limiter.admit_local(mode, gate, now) {
         return refusal(why);
@@ -780,9 +801,9 @@ fn npc_answer(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// The speaker name and CharacterId of `session`'s Character from the durable root, read
-    /// once per session.
-    async fn chat_speaker_name(&self, session: GameSessionId) -> Option<(String, [u8; 16])> {
+    /// The speaker name, CharacterId and level of `session`'s Character from the durable root,
+    /// read once per session. A Character without a readable progression row is level 1.
+    async fn chat_speaker_name(&self, session: GameSessionId) -> Option<(String, [u8; 16], u32)> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (current, _) = store.current_session_at(session).await.ok()?;
         let character = *current.commit().character_id().as_bytes();
@@ -792,7 +813,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_character_chat_name(self.character, character_id)
             .await
             .ok()??;
-        Some((name.as_str().to_owned(), character))
+        let level = self
+            .root
+            .read_character_progression(self.character, character_id)
+            .await
+            .ok()
+            .flatten()
+            .map_or(1, |progression| progression.level);
+        Some((name.as_str().to_owned(), character, level))
     }
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).
@@ -803,9 +831,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.chat_speaker_name(session).await
         };
         // Without a readable name the session is not admitted: it neither speaks nor hears.
-        if let Some((name, character)) = name {
+        if let Some((name, character, level)) = name {
             self.chat
                 .admit_as(session, &name, Some(character), self.owner_now());
+            self.chat.admit_level(session, level);
         } else if self.chat.knows(session) {
             self.chat.refresh(session);
         }
@@ -871,7 +900,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(relay) = self.chat.relay() else {
             return result(ChatDisposition::ChatUnavailable);
         };
-        // An actor without cast facts is level 1 and has no vocation.
+        // An actor without cast facts has no vocation; its level is the one read at admission.
         let facts = {
             let runtime = self.runtime.lock().await;
             let states = self.spell_states.lock().await;
@@ -879,7 +908,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get(&runtime, actor, session)
                 .map(|state| state.character_facts().level)
         };
-        let level = facts.unwrap_or(1);
+        let level = facts.unwrap_or_else(|| self.chat.level(session));
         let free = YellGate {
             level,
             premium_current: false,
@@ -1094,6 +1123,14 @@ mod tests {
             result(ChatDisposition::LevelTooLow)
         );
         assert!(chat.drain(second.1).is_empty());
+        // A speaker without cast facts yells at the level read at its admission.
+        chat.admit_level(first.1, 20);
+        assert_eq!(chat.level(first.1), 20);
+        assert_eq!(
+            speak(&chat, &runtime, first, &yell, BASE),
+            result(ChatDisposition::Ok)
+        );
+        assert_eq!(chat.drain(second.1).len(), 1);
     }
 
     #[test]

@@ -103,7 +103,7 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 3 repair: `-- chat` against PostgreSQL 17, 99 passed), 145 passed, including the two-node relay exchange,
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 4 repair: `--lib -- chat npc` against PostgreSQL 17, 169 passed), 145 passed, including the two-node relay exchange,
   the lease row and the not-ready-when-logging tests
 - `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
   33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
@@ -134,6 +134,9 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   (`ReplayWindow::admitting_clock`). (P2): `allows_room` inherited the yell-only level-1 ban, so a
   Premium level-1 character was refused the World, English and Advertising rooms. Fixed: rooms
   check level 20 or `premium_current` directly.
+- round 4 (P2): a Character without a vocation has no cast facts, so chat read it as level 1 and
+  refused private lines and rooms its level allows. Fixed: chat admission reads the Character's
+  progression level once, and room, private and yell gates use it when there are no cast facts.
 
 ## PR and closeout
 
