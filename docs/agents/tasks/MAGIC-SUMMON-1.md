@@ -125,3 +125,190 @@ branch: skeleton/magic-summon-1
 blocker: CREATURE_AI0 ACCEPTED (summon children); FAMILIARS0 ACCEPTED; CREATURE-MOVE-1 residue (SUMMON-1); HOUSE-1b (`house_access`)
 next_action: CP rechecks BLOCKING rows
 ```
+
+## Bounded caller and contract qualification — 2026-10-15
+
+This appended packet is `REPORT_ONLY_RESIDUE_CALLER_PACKET` for existing draft #2199,
+source `21488c73b1c184010b44fc9419748557b88de01a`. Its exclusive allocation owns this
+card only. The skeleton metadata, historical dependency table and checkboxes above are
+preserved as history, not asserted current delivery state. No runtime, content, migration,
+wire, registration or activation changes accompany this packet. This is a concrete
+implementation handoff for CP and architect review, not their approval.
+
+### Accepted constraints and source admission
+
+Protected-main object `bda15eba7a84f65fcb963a86e8b2bf18d69c800a` contains ACCEPTED
+FAMILIARS0 and CREATUREAI0 under `ACCEPT-BATCH-2026-10-15`; the allocation's earlier
+acceptance object is `ac9f172836f00226b68088aa04db95ccf1ab994e`. The historical
+CANDIDATE holds above therefore do not describe those decisions now. Their accepted
+rules still require separate child allocation, exact-head review and protected integration.
+World and Channel remain distinct; a prepared source plan, saved receipt or matching
+content digest does not prove current session, lease, scope or physical actor authority.
+
+FAMILIARS0 §§3–7 supplies the five vocation familiars, 900 s initial remaining lifetime,
+1800 s cooldown, ordered admission checks, two-summon aggregate cap, remaining-time
+persistence and clean-end/crash rules. The 10,000 HP source value remains
+`PARITY_PENDING`. CREATUREAI0 §8 supplies ordinary summon acquisition, placement,
+role, ownership, attribution and removal rules. Do not replace either contract with an
+upstream helper's semantics merely because the helper is pinned.
+
+The existing native loader is an actual admission seam, not a global source-data lookup:
+`content/native_gameplay.rs:588` validates versioned manifest pins, and `:970` compiles
+catalogue plus explicit source selection into the spell book. Optional familiar config is
+qualified under the outer artifact digest. `tools/content-schema/native-gameplay/README.md`
+records the explicit `OTERYN_NATIVE_GAMEPLAY_MANIFEST` opt-in, independent staging/scope
+issuance and baseline fallback. The checked-in example manifest is `/v1`, four pins and
+no familiar-config section; the full producer can construct a richer explicitly supplied
+artifact. Neither example files nor a successful local builder prove a deployment selected
+that artifact. This report reads no live environment or control-plane issuance.
+
+### Actual owner/caller trace and reusable implementation
+
+| Family | Existing real source and boundary | Residue to integrate; do not duplicate |
+|---|---|---|
+| Monster summon | `monster_summon.rs` qualifies parent/child references, loader digest, current role/counts, bounded proposal replay and actual fixed-slot admission. Parent tile then qualified eight-neighbour placement uses native scheduling/RNG. `monster_combat_lane.rs:1473` calls `prepare_with_summons`, then `:1503` executes against the current fence, work stamp and map reader; new children enter its registration path. `:1852` retires native summons. | The live transport's first playable melee path, `gameplay_transport/monster_ai_cycle.rs:123`, clears attacks/defenses before admission; `ai/behaviour_profile.rs:100` also clears summons. The existing rich lane is registered source, but the repository search finds its owner type references confined to that module. Do not infer that its proposal resolution is the current transport consumer. Join the prepared LOOP-MONSTER boundary to the real actor owner under a CP allocation; do not enable summons in today's projection alone. |
+| Player Summon/Convince/Animate Dead | `spell/companion_lifecycle.rs` prepares real source acquisitions; `PreparedCompanionSpawn`/assignment in `foundation/runtime_actor_companion.rs` bind the physical owner/session, current census and placement. Convince keeps the existing actor; named/corpse acquisition uses the existing qualified payment path. | Reuse these plans and existing caster/item transaction. Current content's summonable/convinceable flags, exact target/corpse custody, shared cap and actual destination admission must all survive reservation through commit. A new calculator or independent summon store would bypass the existing boundary. |
+| Familiar cast/login | `gameplay_transport/mod.rs:4202` calls `cast_native_familiar`; `:4783` calls `initialize_familiar_login` after first entry only when active native content carries config. `familiar_cast_dispatch.rs` dispatches actual source-family casts and retained original intents; `familiar_cast.rs` has the real durable/physical commit path. `FamiliarSourceAdapter` at `:1264` combines the qualified config with independent current Premium and administrative projections. | Existing dispatch is not missing wholesale. Qualify accepted lifecycle semantics and content before activating this family; retain current fence, source revision, cost, physical reservation and unknown-COMMIT reconciliation. |
+| Familiar current access | `spell_premium_coordinator.rs:743` refreshes the registered owner, applies the current transition and falls back to unavailable when refresh/application fails. `:762` resolves the current account binding and coordinator view. | The nearby old dispatch comment mentioning an unavailable producer is not evidence of no implementation: this real registered coordinator exists. A node without the coordinator or current binding still refuses. No request-derived Premium/God flag or new authority callback is appropriate. |
+| Familiar death/end | `familiar_cast_dispatch.rs:77` reads actual health-zero owned slots, obtains Combat lethal receipts and performs qualified lifecycle cleanup. `gameplay_transport/mod.rs:1340` reads the genuine FreshAdmission session/grace deadline/control-loss epoch before `save_familiar_logout`; callers at `:2070` and `:2355` gate terminal actor release. | Extend these owners for accepted return-close/crash state rather than replacing them. A death-only not-applicable commercial projection is sealed cleanup evidence, never cast eligibility. A replayed historical receipt must not reacquire a physical companion. |
+| World-item/field creation | `gameplay_transport/mod.rs:4210` calls `cast_world_items`; `world_item_cast.rs` retains the original normalized grant through uncertain COMMIT. `native_world_item_cast.rs` and `ordinary_field_items.rs` use current source Item definitions, actual tile/owner/custody and the original caster-cost transaction. | Reuse the current item writer and binding. Numeric source IDs alone cannot admit a definition. Do not create a detached field map, second payment receipt or new audit cause. |
+| Field ingress/conditions | `field_step_ingress.rs:295` inspects the actual STEP destination and rechecks current actor/session/map/content in the same owner boundary. `ability/field_condition.rs` decodes qualified field recipes; `durability/spell_field_policy.rs` carries typed current World policy. Standing reads pause existing DOT only; they do not install/refresh entry conditions. | Preserve entry/standing distinction, creator lease/current World policy and unknown-metadata refusal. No caller-supplied PvP boolean or fabricated no-field authority. Share existing ConditionStore/damage calculation. |
+
+The checked-in gate inventory is authoritative code evidence of bounded activation:
+`bundle_gates_tests.rs:127` keeps house-access/vertical-move parameter casts closed;
+`:140` keeps world-item casts closed; `:151` keeps field ingress closed under LOOP-WORLD;
+`:162` keeps source-map initialization closed under MAP-CUTOVER. Those real call sites
+must be qualified with their own content/current-owner producers. Presence of a call site
+is not proof its gate is open; a closed gate is not absence of the underlying implementation.
+
+### Resolved duration question and concrete lifecycle mismatch
+
+No 900 s duration defect is established. The current config pins Canary
+`99902524e052f37574194466c2949c576e4ab269`, source config SHA256
+`099939f439c755171c18d8dadd23d82f50bd3ebd219099248e847481fd84cd15`
+and VIP implementation SHA256
+`be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232`.
+Its `familiar_minutes = 30` is a source setting name: all nine catalogue familiar profiles
+at `spell-p2-r20` multiply by `seconds_multiplier = 30`; `native_companions.rs:389`
+therefore produces 900 s, and the source cooldown multiplier 2 produces 1800 s with the
+pinned rate 1.0 and VIP disabled. Changing that config to 15 would introduce a defect.
+The source `summon_limit = 1` likewise refuses the ordinary non-God cast with any summon;
+it does not impose a one-summon aggregate runtime cap.
+
+**Actionable cross-domain finding: accepted clean-save and crash semantics have no
+complete mapping in the current familiar state representation.**
+`durability/character_familiar.rs:36` stores absolute `saved_expiry_unix`,
+`last_logout_unix`, a lifecycle epoch and identity/look metadata; its cooldown snapshots
+already store remaining microseconds. It does not represent the accepted familiar
+remaining duration, `open`, writing lifecycle session/runtime owner and durable
+`clean_end_game_session_id`. Migration 0033 defines the original eight-key JSON state;
+0041 permits the ninth cooldown key, not the accepted lifecycle discriminator.
+`companion_lifecycle.rs:1056` passes expiry/logout to the source plan; `:1094` copies
+`StoreExpiry`; `:2350` saves logout Unix time and remaining cooldowns.
+
+The actual selected Canary profiles for source IDs 194–197 use
+`login.lifetime_basis = current_unix_time`; the unique Monk 282 profile does too. The
+four explicitly retained Crystal alternatives use `last_logout_unix_time` instead.
+`executable-spell-source-selection.json` selects the Canary identities, not those
+alternatives. `native_companions.rs:403` executes that distinction. For example, a
+clean save at Unix 1100 with expiry 1900 followed by login at 2000 yields zero from the
+selected source plan, while accepted offline freeze retains 800 s. Selecting the
+Crystal alternative alone would still not implement durable clean-end closure or
+process-replacement crash classification; source selection is not the repair.
+
+This is a source-to-accepted-contract finding with a concrete reachable dispatch chain,
+not a claim that a currently deployed familiar already loses time. Runtime activation,
+complete familiar content and current owner qualification are not proven by this packet.
+The existing writer is genuinely recovery- and gameplay-fenced: at
+`character_familiar.rs:488` it locks admission/occurrence, returns an exactly bound
+historical receipt before new-mutation checks, and permits a new mutation only after
+independent current gameplay/node checks and Character revision/CAS. Preserve that
+historical-versus-current distinction. Generic fencing and a lifecycle counter do not
+supply the missing clean-end discriminator or its return-admission ordering.
+
+### Concrete proposed integration sequence for CP/architect
+
+1. **FAMILIAR-CONTENT:** retain exact Canary/Crystal provenance and selected identities;
+   record the accepted Oteryn lifecycle override explicitly rather than silently rewriting
+   source evidence. Admit five linked Creature/Presentation/spell definitions, including
+   the accepted eligibility flags and HP parity marker. Qualify the outer artifact and
+   all referenced attack/defense policies; no placeholder familiar or automatic fallback.
+2. **FAMILIAR persistence + caller, inseparable:** extend the existing row/writer with
+   FAMILIARS0 §5's remaining durations, revision, full gameplay fence identity, runtime
+   scope owner/generation, open and durable clean-end session. Allocate the migration
+   at the CP slot; architect must decide conversion of legacy absolute-expiry rows,
+   because expiry/logout alone cannot reconstruct crash versus clean end. Do not invent
+   a current owner or silently return a legacy row as clean. Preserve immutable exact
+   receipt binding, Character revision ordering and replay reconciliation.
+3. **Admission/return:** before costs, resolve current level/vocation/Premium/support
+   cooldown, actual lever-boss room membership, complete owned-summon census, stored
+   pending return and durable familiar cooldown in accepted order. Cast and return
+   acquire the same physical owner slots and row atomically through the existing
+   transaction/reservation path, opening the lifecycle only on committed acquisition.
+   A blocked tile retains stored time; a lever-room refusal ends the familiar as specified.
+   Unknown room/placement/source facts refuse; no guessed `is_boss_room` authority.
+4. **Clean end/recovery:** close return admission before waiting for an in-flight return;
+   CAS the last clean-end write and durable closing GameSession before authority release.
+   Reopen only after proving no commit, not after a lost reply. On login/replacement,
+   independently read current session/owner, then distinguish same-session reconnect,
+   changed owner/session crash and durable terminal close exactly as §5 specifies.
+   Missing row loads without insertion. Crash never shortens the saved cooldown.
+5. **Current actor/lifecycle:** reuse owner timers and actual companion slots. Lifetime
+   consumes online non-swimming time; cooldown consumes all online time; both freeze
+   offline. Integrate actual swimming, owner-speed, lever-room arrival, travel,
+   owner death, familiar lethal receipt, Channel transfer and WorldReset hooks.
+   WorldReset closes and saves remaining time; familiar death/owner death/expiry end it;
+   ordinary removals must not invoke familiar death. No synthetic lifecycle command from
+   client or timer IDs is authority.
+6. **Ordinary/monster movement:** adopt the existing profile schedule/catalog/owner path
+   within the actual Channel actor owner, with its current target/path/census/fence and
+   bounded replay. Ordinary summons use accepted follow/target/removal and ever-summon
+   no-value lethal rules; familiars use their separate >15-tile/any-floor return and
+   travel rules. Parent lethal death and parent retirement remain distinct operations.
+   Share destination admission and the existing physical actor generation checks.
+7. **Field/house/wire slots:** open only the specifically qualified gate and update its
+   existing inventory. HOUSE owns current house-access membership; World policy owns
+   field policy and creator lease. SUMMON-WIRE bundles existing observer NONE/OWN/OTHER
+   relation semantics with the actual client consumer and registry owner; no new event
+   or capability number is assigned by this packet. Existing familiar cooldown/warning
+   messages are reused as the accepted contract directs.
+
+### CREATURE-MOVE prepared boundary, not a merged dependency
+
+The preserved `deliverables/creature-move-1/RESULT.json` describes a local prepared
+subset at retained base `b2bf32341faf70c73b3bd264529e66b11bb4eab7` (#2184):
+existing cardinal A* extended for exact spawn-cell walkback (50-tile bound, 1024
+expansions, 128 steps), plus near-target cadence/duration helpers in the existing speed
+module. Its two source hashes are bound in this packet's external manifest. Its previous
+98 PASS/one ignored and focused 15 PASS are historical export evidence, not tests run
+here and not acceptance. The handoff still needs real goal/content/actor-bound path
+adoption, current destination admission, per-creature counter, invalidation/research,
+step deadline ownership and shared chase budget/player ordering. No accepted relocation
+API is inferred from those prepared files. Join that owner seam once allocated; do not
+add another pathfinder or grant map authority through a caller-supplied admission callback.
+
+### Required qualification when the allocated integration exists
+
+| Boundary | Positive, edge and one-invariant negative qualification |
+|---|---|
+| Admission/payment | All five real content profiles; 0/1/2 owned summons; pending return with no actor; exactly enough mana/support/familiar cooldown boundary; wrong vocation/Premium, lever room, unknown room, stale content and full tile. Every refusal leaves costs, row, slots and cooldown unchanged. |
+| Clean-end family | Execute every FAMILIARS0 §5.1/§5.2 case, including F-I1–F-I11, both direct and reconciled paths where specified. Real PostgreSQL concurrency/reload must cover close versus return, timer versus save, old owner versus takeover, lost COMMIT response and same-session replacement after close. Do not substitute matching request-derived authority. |
+| Time/session | 900/1800 s arithmetic; 60/10 s warnings once; online/swimming/offline transitions, long offline interval, same GameSession raised connection generation, fresh sessions both generation 1, changed scope owner generation, missing row and overflow. Recovery never lowers cooldown or resurrects an open crashed lifecycle. |
+| Physical/replay | Exact bound original cast/return replay once; changed command binding conflicts; occupied/removed target after prepare, stale actor/session/item/lease/content, uncertain commit then current successor validation, reservation rollback. Historical AlreadyCommitted must not independently spawn or consume again. |
+| Ordinary/monster summons | Parent tile and eight-neighbour blocked boundaries; due/chance/cap/current-target-path checks using real schedule; master is itself a summon; per-entry/total limits; parent retirement versus lethal death; no descendant re-summon; ever-summon lethal event with no corpse/loot/XP/credits; damage/loot/PvP/party attribution through existing owners. |
+| Movement/removal | Current floor/door/PZ/teleport/house restrictions; stale path after map/content change; >30 tiles/two-floor ordinary removal versus >15/any-floor familiar return; same-session reconnect retention; owner death/logout/Channel transfer/travel/WorldReset with distinct familiar outcomes. |
+| Fields/client | Qualified versus unknown field metadata, STEP entry once versus repeated standing reads, safe/PvP World policy and expired creator lease, item cost/field rollback, source map gate, house denial, reconnect snapshot/change/removal and observer relation without new invented wire IDs. |
+
+### Evidence and scope
+
+External durable evidence: `/workspace/oteryn-prep/magic-summon-1-evidence/`.
+`qualify_sources.py` reproduces 43 exact Git-source hashes (40 candidate sources and
+three protected-main decisions), extracts nine familiar catalogue profiles/four explicit
+selection records, and binds four retained movement export files. The extraction reads
+existing inputs only; it does not regenerate content or qualify a deployment.
+The final validation log records governance validator, 124 governance unit tests,
+whitespace, exact owned-path scope and final card binding. No Rust/Cargo, PostgreSQL,
+runtime, client E2E or performance tests were run for this documentation-only packet.
+The whole appended diff was reviewed against the source trace; no code or shared files
+changed. CP scope allocation and independent architecture/persistence/combat/content/
+protocol reviews remain required before the proposed integrations can be accepted.
