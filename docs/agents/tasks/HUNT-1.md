@@ -4,7 +4,7 @@
 task_id: HUNT-1
 title: "HUNT-1: prey and hunting tasks"
 mode: IMPLEMENT
-status: skeleton
+status: local_preparation_pending_qualification
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -39,7 +39,8 @@ PREY-CONTENT-1, PREY-1 (hard), PREY-FEE-1, PREY-EFFECT-1 (combat), TASKBOARD-1 (
 | GOLD-FEE-1b | MERGED |
 | ATTACK-0 / SPELL-TARGET-1 | ATTACK-0 ACCEPTED; SPELL-TARGET-1: verify |
 | ITEM-USE-1c (TASKBOARD-DELIVERY-1) | BLOCKING (Wave 0 residue) |
-| acceptance of PREY0 (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of PREY0 | Effective acceptance #2209 on main e2da9805 |
+| PREY-CONTENT-1 (direct PREY-1 dependency) | BLOCKING: ruleset directory is READY_UNPOPULATED; admitted grade/list/preyable tables absent |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -120,3 +121,129 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded PREY-1 preparation (2026-10-15, draft #2149)
+
+Branch `skeleton/hunt-1`, source `509d99e32cf4be4ff6cc2ea4f8f4d85221f4c05d`.
+The lead allocated five paths, but this batch needs only `domain/prey.rs`,
+`durability/prey_tests.rs` and this record. No durability writer or PostgreSQL
+test is added: the full state writer needs shared sequencer, receipt/event,
+consistency-guard and migration integration at the CP slot. This preparation
+does not create a knowingly uncommittable parallel writer or schema.
+
+### Accepted basis and direct content gate
+
+The lead established effective ACCEPT-BATCH #2209 at main
+`e2da9805d296a27b06b32335bf67394509d4910b`. PREY0 §§4–6 and §12 govern this
+slice. Its historical CANDIDATE marker on the skeleton does not override the
+integrated acceptance. Native Premium policy requires current authority at use;
+PREM-1 is delivered, so PREY0's historical pre-delivery slot-2 opening is not used.
+The helper takes the actual native `PremiumGate`, with no boolean override or
+`NotActivated` branch. Future production calls must remain inside the existing
+`with_premium_gate` seam, using the admitted controller's Account, trusted time
+and current producer/fence classification; synthetic gate inputs are not evidence
+that a live account holds Premium.
+
+PREY-CONTENT-1 is a direct PREY-1 dependency, independent of the skeleton's
+LOOP-MONSTER-1 family-entry gate. Both allocated HEAD and accepted main contain
+only `rulesets/progression/prey/index.json`, marked `READY_UNPOPULATED`. Creature
+`prey`/`exclusive_prey` source flags do not constitute the admitted pool, level
+bands or grade table. Those tables, the 27-Creature generation gate, deterministic
+RNG purpose/binding and activation remain unimplemented. No inferred pool, grade,
+fee, random draw or random-unit conversion is introduced. Fixed 1/5 wildcard costs
+and cap 52 below are explicit accepted §5.2/§12 values.
+
+### Prepared nonrandom rules
+
+- Validate the explicit slot 1–3 before every other command check. A valid current
+  build must have a vocation other than `none`. Slot 1 needs no Premium; slot 2
+  needs the current native Premium gate or its own permanent Account+World fact;
+  slot 3 always needs its separate permanent fact. No Store fact is minted.
+- An Account+World snapshot cannot lend balances or permanent facts to a different
+  Account or World. An initialized slot projection must bind the exact Character
+  and requested slot. An absent slot remains `SLOT_LOCKED`; commands never perform
+  first-list initialization. Existing state is not cleared when access is locked.
+- `set_option` checks at least 1 held wildcard for Auto Reroll, 5 for Lock, and none
+  for clearing the option. It returns a before/after option plan with unchanged
+  balances, never a debit or reservation. No extra ACTIVE-only restriction is
+  invented; the owner must supply an initialized, already validated slot.
+- A separate arithmetic-only debit helper has closed accepted spend kinds, costs
+  1 or 5, exact checked subtraction and a validated 0–52 balance. It includes native
+  acting Character, Account and World bindings. It does not authorize a command,
+  draw or expiry, implement insufficient-funds expiry fallback, grant resources,
+  create ledger entries or claim durable idempotency. No arbitrary amount, credit,
+  Store delivery, paid fee or test-grant API exists.
+
+Native `AccountId`, `CharacterId`, `WorldId`, `DurableBuildState` and `PremiumGate`
+are reused. No parallel identity, Premium classification, content framework or
+durable schema is created. The narrow slot/Account projections are caller data,
+not authority tokens. Matching IDs do not establish current ownership, liveness,
+generation, entitlement provenance, compatible active content or transaction time.
+
+### Required integration (REPORT_ONLY)
+
+The future owner must load and validate current live Character→Account+World
+binding, current build and initialized content-compatible slot under the owning
+transaction locks. It must read the native current Premium gate at use, preserve
+closed behavior for lapsed/unavailable/conflicting status, and read permanent
+facts only from admitted Account+World storage. Known missing balance rows mean
+zero; an unknown/failed read must not be replaced with a zero snapshot. Account
+facts are shared across that Account's Characters on that World and never copied
+as Character balances. World and Channel remain distinct.
+
+All real writes still need the Character sequencer and exact receipt kind/guard,
+the command's explicit slot/cause/occurrence binding, current session/recovery
+fences and exactly one CharacterRevision advance. PREY0 §10 lock order remains:
+occurrence; Character root/revision; prey/task rows; Account wildcard/unlock rows;
+then item/bank rows where applicable. Recompute debit and option requirements on
+the locked current snapshot. A prior option check reserves no balance against a
+second Character. Actual debit must atomically compose one SPEND ledger entry,
+wildcard event/outbox row and Character receipt; replay/conflict behavior comes
+from that writer, not these pure plans.
+
+Before draws, initialization, selection, active bonuses, hunting checkpoints or
+expiry can run, PREY-CONTENT-1 must provide admitted tables and the owner must
+integrate existing RNG, clock and server-originated fences. PostgreSQL atomicity,
+two-Character shared-balance serialization, replay, restart/checkpoint recovery,
+Premium expiry/renewal, active-generation changes and outbox/retention tests remain
+future slot work. Wire/registry/migration/shared wiring remain unmodified.
+Independent exact-head review and CP/architect acceptance are still required;
+neither PREY-1 nor HUNT-1 is complete.
+
+### Focused validation and self-review
+
+- Source-bound direct `rustc --test`, importing the actual native server library:
+  **11 passed, 0 failed, 0 ignored**. The external three-line harness path-loads
+  only the owned module; it copies no native types, Premium logic or source excerpt.
+  Its cfg-test inclusion loads the actual owned `prey_tests.rs` once.
+- Cases cover slot/error priority, vocation eligibility, native current/closed
+  Premium gates, distinct slot entitlements, Account/World/Character/slot binding,
+  absent initialization, exact option holds with no debit, locked-row preservation,
+  all four closed spend costs, zero floor, 52/53/u32-max boundaries and a second
+  Character's changed shared balance. Fixtures are synthetic pure inputs, not
+  production authority, Store claims or executed concurrency/expiry tests.
+- Strict `clippy-driver --test --emit=metadata` with repository deny lints,
+  owned-file `rustfmt --check`, `cargo fmt --all --check`, governance validation
+  (22 documents, 9 lanes), **124 governance tests** and `git diff --check` passed.
+  Rust commands used the shared flock/target, two jobs and `CARGO_INCREMENTAL=0`.
+  No Cargo build, implicit server-bin link or missing-file RED ceremony was run.
+- Retained real-library hash before/after is
+  `75fc517e5ad7d15462174567fc868ab14d22ea34e24605843e40040b05c0f6f5`.
+  Used native type/behavior sources are byte-identical between this allocation,
+  accepted main and that library build's baseline
+  `aaeffba3e6982ba721afa147b82fd8242731ddff`. This is focused native-type
+  qualification, not a full package, live Premium, PostgreSQL, ledger/outbox,
+  RNG/content or restart qualification.
+- Actual commands/logs, harness, test ELF, source hashes and local patch are
+  retained in `/workspace/oteryn-prep/hunt-1-evidence/`; `provenance.json` binds
+  the exact sources, library and results. No native binary/cache was deleted.
+- Whole-diff review confirms only the three necessary allocated paths, no staged
+  content/commit, no old Premium bypass, no arbitrary resource credit or amount,
+  no silent balance clamp, and no shared registration, migration, content/pin,
+  registry or runtime-write change. Matching facts remain separate from current
+  authority; all actual writer/fence/admitted-content gates above remain open.
+
+Final Rust SHA-256:
+
+- `domain/prey.rs`: `7723fc7778db7e8eb31c5133674deb0b3989b4dac826dcb5808b93a5977c7b34`.
+- `durability/prey_tests.rs`: `342d6c45214b216887bca9bdff68610257a50cdd8ea578ac78789f529c2ea9a4`.
