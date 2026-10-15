@@ -27,12 +27,16 @@ pub struct GuildAuditProposal {
 impl GuildAuditProposal {
     pub fn checked_bytes(&self) -> Option<Vec<u8>> {
         if self.version != 1
-            || !(1..=5).contains(&self.action)
-            || self.previous_revision == 0
+            || !(1..=6).contains(&self.action)
+            || (self.action != 6 && self.previous_revision == 0)
+            || (self.action == 6
+                && (self.previous_revision != 0
+                    || self.revision != 1
+                    || self.removed_invitations != 0))
             || self.previous_revision.checked_add(1) != Some(self.revision)
             || self.occurred_at_unix_ms <= 0
             || self.removed_invitations > 50
-            || (matches!(self.action, 3 | 4) && self.actor != self.target)
+            || (matches!(self.action, 3 | 4 | 6) && self.actor != self.target)
         {
             return None;
         }
@@ -52,6 +56,7 @@ impl GuildAuditProposal {
             3 => {
                 self.rank_before.is_none() && self.rank_after.is_some_and(|r| (3..=20).contains(&r))
             }
+            6 => self.rank_before.is_none() && self.rank_after == Some(1),
             4 | 5 => {
                 self.rank_before.is_some_and(|r| (2..=20).contains(&r)) && self.rank_after.is_none()
             }

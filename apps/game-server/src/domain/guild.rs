@@ -10,6 +10,9 @@ pub use super::character_name::{
     CharacterName as GuildName, InvalidCharacterName as InvalidGuildName,
 };
 
+pub const FORMATION_LIFETIME_MS: i64 = 3 * 24 * 60 * 60 * 1_000;
+pub const DEFAULT_RANKS: [(u8, &str); 3] = [(1, "Leader"), (2, "Vice Leader"), (3, "Member")];
+
 pub const MIN_RANKS: u8 = 3;
 pub const MAX_RANKS: u8 = 20;
 pub const REQUIRED_VICES: usize = 4;

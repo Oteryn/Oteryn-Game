@@ -303,3 +303,117 @@ disband/Bank/Hall closure and retirement integration are outside this five-comma
 The disabled tracked wrapper is compile-checked only, never counted as a zero-test pass.
 The worker does not commit or push; root may publish this coherent successor to the existing
 draft. CP retains ready/merge/queue control and independent exact-candidate review.
+
+## Native Found successor, 2026-10-15 (AUTHORING, not qualified)
+
+This allocated successor starts from published draft67f4ed257fed3e0e760b7e078a57c24f9855d206.
+It extends the existing native five-command owner within the same six-path lease. Prior source,
+qualification generations and reviews remain historical evidence; this section makes no new
+build or runtime pass claim. Heavy Rust qualification is held behind the lead's resource queue.
+
+The actual `commit_guild_found` entry accepts the genuine native `SpellPremiumCoordinator`.
+A native recovery/session preflight checks retained occurrence/request receipts first, then
+resolves the Account selector from the current session. The actual gate chooses Premium once;
+the final write rechecks recovery, current node/session/lease/scope and actor root, and requires
+the native Account to match that selector. No caller Premium bool/status, borrowed read result,
+persisted receipt or offline membership row establishes current authority. Before delivery,
+Found uses the gate-provided physical transaction under its shared latch lock, writes through a
+savepoint and explicitly awaits rollback on any late error before returning to the outer gate.
+It never opens a second Root holder there. After delivery, the callback performs the ordinary
+bounded native write pass. Every final transaction rechecks the immutable receipt under locks.
+
+Found reuses the native BANK junior predicate and `0022` name grammar/key. Accepted GUILD0
+specifies no numerical player-level minimum and no fee; this successor writes neither money,
+items, build progress nor CharacterRevision. It requires no current membership and no Account
+leadership anywhere, a free live Guild name in this World, then atomically creates FORMING
+revision1 with a database-transaction-time deadline+3days, the exact Leader/Vice Leader/Member
+ranks, founder rank1, its Account leadership row and one private receipt/event proposal. Closed
+Found action/name/row guards and deferred postconditions constrain that complete initial state.
+Other operations retain their existing action, receipt and immutable generated-name/base-field
+guards. This is an uninstalled schema proposal, not an installed production migration/grant.
+
+The newly authored original cases include real native Premium consumer ingest and coordinator
+classification, a registered controlled clock fixture (not a production trusted-clock claim),
+wrong-Account evidence and pull failure; pre-delivery real advisory-latch interleaving; a late
+native member guard refusal after partial creation with zero-trace rollback and exact fresh
+retry; deferred event COMMIT failure and fresh-Root retry/replay; stale native fences/wrong Root
+and node; namespace/membership/global leadership cases; name, single-Account and occurrence
+two-Root races. At least one Guild created by actual Found drives all five existing operations.
+A second single-field late rank-name substitution nominates cause-specific server-log
+attribution to the native Found-default-ranks guard, separately from generic rank2 rollback.
+No guard execution is inferred from a sanitized Unavailable result alone.
+The new nine bodies plus the prior twenty nominate10 pure and19 PostgreSQL cases; none has
+been executed on this successor yet. PostgreSQL optional-environment early-return must never
+count as actual qualification; the eventual dispatcher must require the real canonical fixture.
+
+The Account guard has a single current presence Character/session per Account. Tests do not
+fabricate simultaneous current Characters of one Account across Worlds: a valid offline leader
+of that same Account on another World proves global ACCOUNT_HAS_POSITION, while same-current-
+actor two-Root formation races prove only one owner/position is created. Native EXCLUSIVE
+admission locking also limits race claims to complete native outcomes, not isolated row locks.
+The event-failure case is a proven database refusal, not a claimed physical COMMIT-unknown
+injection; fixed request/receipt replay still follows the native Root's actual outcome contract.
+
+The owned, disabled PostgreSQL wrapper now loads literal original native root modules and their
+unchanged module attributes, so its Root and private Premium coordinator share the genuine full
+native context. No public authority facade, helper visibility widening or copied Premium owner
+is introduced. Its exact declarations/path provenance are recorded outside the repository in
+`guild-1-found-native-3-evidence/wrapper-native-root-declarations.json`. Production module/Cargo/
+canonical-test registrations remain untouched, and enabling this wrapper has not yet qualified
+it. Existing native fixture expectation context is retained; no new blanket warning exemption
+is added. Resource-bound original selected-body qualification and repository CI limits will be
+reported from actual outcomes.
+
+Formation activation/four-vices, daily Premium/vice/deadline jobs, rank/leader changes, disband,
+Bank/Hall/retirement closure, normative event/retention admission, production installation and
+privileges, runtime Guild routing/admitted Account selection, and shared module/Cargo/protocol/
+canonical-PG wiring remain CP work. No new product eligibility, fee, clock authority or numeric
+registry lease is assumed. The worker does not commit or push; root alone may publish the
+coherent successor to the existing draft after independent exact-source review. CP alone owns
+ready/merge/queue actions.
+
+## Native Found successor qualification, 2026-10-15 (owned component only)
+
+The Found successor now has source-bound native execution evidence in
+`guild-1-found-native-3-evidence/attempt-4`: **10 pure and 19 PostgreSQL bodies passed**,
+zero failed/ignored/filtered, PostgreSQL `170006`, PG duration 90.25s. These are the
+original seven domain and 22 owner bodies, with only recorded outside-tree test
+attribute/visibility/forwarding transforms; the drivers require configured canonical PG
+before each PG body. All five Rust hashes and actual dependency hashes stayed unchanged.
+The old five-command bodies remain compatible, and a genuinely Found-created Guild runs
+all five commands. Native admission's EXCLUSIVE relation locks serialize complete passes;
+two-Root results do not claim isolated row-lock stress.
+
+Fresh enabled native-wrapper and selected-original-body configured Clippy, native normal
+cfg(test) rlib and both drivers passed. Production configured Clippy passed in attempt 2
+and was reused only after complete production-input and fresh extern byte proof. Its seven
+unused private Found-chain Rust warnings remain visible: **warning-free production and
+repository all-target CI are not qualified**. Attempt 1's actual strict failure (seven
+unused diagnostics plus the subsequently repaired complex tuple) remains preserved.
+Attempts 2/3 retain actual wrapper module-path and owned test error-type compile failures;
+no runtime RED is invented from them. No suppressions, fake caller or helper visibility
+changes were added. The owned wrapper loads the two native non-mod.rs trees through
+ordinary declarations under `../src`, retaining native child resolution and crate aliases.
+Its tracked `cfg(any())` remains pending CP registration; disabled metadata is not a test pass.
+
+The actual late-savepoint case proves zero retained footprint after each injected failure,
+then a fresh commit of the same original request and terminal receipt-first replay. Bounded
+server evidence identifies `game_guild_command_mutation` line 65 at 23:22:44.422 UTC,
+PID 9974, the native rank INSERT and `Found must create its three bound default ranks`.
+The otherwise-valid `Deputy` substitution therefore reaches the intended Found guard.
+SQLSTATE `23514` is bound to that source branch; the server log does not print a raw state.
+The member-rank substitution also reaches its immediate founder guard. Deferred event
+failure is proven abort plus genuine fresh-Root retry, not physical COMMIT-unknown injection.
+
+Premium cases use the real coordinator/consumer and registered fixture clock, not production
+clock deployment. NotActivated holds the actual shared latch and same physical transaction;
+explicit savepoint rollback prevents late errors from leaking creation. The native BANK
+junior predicate currently reads its accepted NoStarterIsland fact until a real starter
+source exists; no numeric level, fee, or caller-supplied eligibility fact was introduced.
+
+The component remains private, UNINSTALLED preparation. Numbered migration, production
+privileges/definers, normative event/retention admission, module/Cargo/canonical-PG and runtime
+wiring, formation activation/deadline/Premium jobs, rank/leader changes, disband, Bank/Hall,
+retirement and exact-head repository CI remain open. This does not close the full mechanic
+or claim production/merge readiness. Root alone may publish the frozen existing draft;
+CP retains ready/merge/queue authority. Independent exact-candidate review follows freeze.

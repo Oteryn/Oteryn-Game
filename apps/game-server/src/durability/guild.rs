@@ -1,6 +1,7 @@
 //! Native GUILD0 membership/invitation owner preparation, UNREGISTERED and UNINSTALLED.
 //!
-//! No formation, Premium, disband, Guild Bank/Hall, wire or runtime installation is implied.
+//! Found uses the genuine native Premium gate; activation/jobs, disband, Guild Bank/Hall, wire
+//! and runtime installation remain outside this private component.
 //! The private schema and event-data proposal require CP admission. Native recovery/session/
 //! node guards remain the actual current-authority source; retained operations are outcomes.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -15,12 +16,14 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::domain::guild::{
-    GUILD_INVITATIONS_MAX, GuildId, GuildRank, GuildState, INVITATION_LIFETIME_MS, MEMBERS_MAX,
-    TARGET_INVITATIONS_MAX,
+    DEFAULT_RANKS, FORMATION_LIFETIME_MS, GUILD_INVITATIONS_MAX, GuildId, GuildName, GuildRank,
+    GuildState, INVITATION_LIFETIME_MS, MEMBERS_MAX, TARGET_INVITATIONS_MAX,
 };
+use crate::domain::premium::PremiumStatus;
 use crate::foundation::CommandRef;
+use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use sha2::{Digest, Sha256};
-use sqlx::{Postgres, Row, Transaction};
+use sqlx::{Acquire, Postgres, Row, Transaction};
 
 type Result<T> = std::result::Result<T, GuildError>;
 
@@ -55,6 +58,8 @@ pub enum GuildCommand {
     Accept,
     Leave,
     Exclude(CharacterId),
+    /// Only commit_guild_found may execute this creation action.
+    Found,
 }
 impl GuildCommand {
     fn code(self) -> i16 {
@@ -64,12 +69,13 @@ impl GuildCommand {
             Self::Accept => 3,
             Self::Leave => 4,
             Self::Exclude(_) => 5,
+            Self::Found => 6,
         }
     }
     fn target(self, actor: CharacterId) -> CharacterId {
         match self {
             Self::Invite(c) | Self::Revoke(c) | Self::Exclude(c) => c,
-            Self::Accept | Self::Leave => actor,
+            Self::Accept | Self::Leave | Self::Found => actor,
         }
     }
 }
@@ -90,6 +96,27 @@ pub struct GuildRequest {
     pub operation: GuildCommand,
 }
 
+/// Game-issued identity and a name already checked by the native 0022 grammar. Neither these
+/// immutable request bytes nor a persisted operation establish Premium or current authority.
+#[derive(Debug, Clone)]
+pub struct GuildFoundRequest {
+    pub identity: GuildOperationIdentity,
+    pub command: CommandRef,
+    pub guild_id: GuildId,
+    pub name: GuildName,
+}
+
+impl GuildFoundRequest {
+    fn operation(&self) -> GuildRequest {
+        GuildRequest {
+            identity: self.identity.clone(),
+            command: self.command,
+            guild_id: self.guild_id,
+            operation: GuildCommand::Found,
+        }
+    }
+}
+
 /// Policy outcomes under actual locked facts. No caller revision is required for these five
 /// operations: GUILD0 §12 reserves expected-revision preconditions for edits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,6 +129,10 @@ pub enum GuildResult {
     InvitationLimit,
     GuildDisbanding,
     GuildDeadlinePassed,
+    NameTaken,
+    AccountHasPosition,
+    NotPremium,
+    Junior,
 }
 impl GuildResult {
     fn code(self) -> i16 {
@@ -114,6 +145,10 @@ impl GuildResult {
             Self::InvitationLimit => 5,
             Self::GuildDisbanding => 6,
             Self::GuildDeadlinePassed => 7,
+            Self::NameTaken => 8,
+            Self::AccountHasPosition => 9,
+            Self::NotPremium => 10,
+            Self::Junior => 11,
         }
     }
     fn from_code(code: i16) -> Option<Self> {
@@ -126,6 +161,10 @@ impl GuildResult {
             5 => Self::InvitationLimit,
             6 => Self::GuildDisbanding,
             7 => Self::GuildDeadlinePassed,
+            8 => Self::NameTaken,
+            9 => Self::AccountHasPosition,
+            10 => Self::NotPremium,
+            11 => Self::Junior,
             _ => return None,
         })
     }
@@ -182,6 +221,134 @@ fn binding(fence: &CurrentCharacterItemFence, request: &GuildRequest) -> Result<
 }
 
 impl DurabilityRoot {
+    /// Actual Found entry. The Account selector is read under the native session fence, never
+    /// accepted from the caller. A terminal receipt is read before asking the Premium owner.
+    /// NotActivated writes in the gate's physical transaction; it never takes a second holder.
+    pub(crate) async fn commit_guild_found(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: GuildFoundRequest,
+        premium: &SpellPremiumCoordinator,
+    ) -> Result<GuildOutcome> {
+        let common = request.operation();
+        let mut digest = Sha256::new();
+        digest.update(b"oteryn:guild-found-proposal:v1");
+        digest.update(binding(&fence, &common)?);
+        digest.update(request.name.as_str().as_bytes());
+        let binding = digest.finalize().to_vec();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let pre_recovery = recovery.clone();
+        let pre_node = node.clone();
+        let pre_request = common.clone();
+        let pre_binding = binding.clone();
+        let preflight = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &pre_recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let result = async {
+                        lock_operation(&mut tx, &pre_request).await?;
+                        if let Some(outcome) = replay(&mut tx, &pre_request, &pre_binding).await? {
+                            return Ok(FoundPreflight::Replayed(outcome));
+                        }
+                        let account = assert_session_fence(&mut tx, &fence, &pre_node)
+                            .await?
+                            .map_err(|_| GuildError::NotCurrent)?;
+                        Ok(FoundPreflight::Fresh(uuid_text(&account)?))
+                    }
+                    .await;
+                    match result {
+                        Ok(result) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(result))
+                        }
+                        Err(GuildError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await??;
+        let account = match preflight {
+            FoundPreflight::Replayed(outcome) => return Ok(outcome),
+            FoundPreflight::Fresh(account) => account,
+        };
+        let root = self.clone();
+        let write = FoundWrite {
+            node: node.clone(),
+            fence,
+            common,
+            name: request.name,
+            binding,
+            account,
+        };
+        premium
+            .with_premium_gate(account, move |status, tx| {
+                Box::pin(async move {
+                    match tx {
+                        Some(tx) => {
+                            if !matches!(&status, PremiumStatus::NotActivated(_)) {
+                                return Err(invalid());
+                            }
+                            // The gate commits whatever the callback returns. The savepoint contains
+                            // every Guild write, so a late rejection cannot leak partial creation.
+                            let mut savepoint = tx.begin().await?;
+                            let result = async {
+                                assert_recovery_fence(&mut savepoint, &recovery).await?;
+                                lock_admission_relations(&mut savepoint).await?;
+                                write.execute(&mut savepoint, &status).await
+                            }
+                            .await;
+                            match result {
+                                Ok(outcome) => {
+                                    savepoint.commit().await?;
+                                    Ok(outcome)
+                                }
+                                Err(error) => {
+                                    savepoint.rollback().await?;
+                                    Err(error)
+                                }
+                            }
+                        }
+                        None => {
+                            // Only the real gate chooses these delivered statuses. Never let a
+                            // borrowed pre-delivery witness escape into a second transaction.
+                            let status: PremiumStatus<'static> = match status {
+                                PremiumStatus::Current => PremiumStatus::Current,
+                                PremiumStatus::NotCurrent => PremiumStatus::NotCurrent,
+                                PremiumStatus::NotActivated(_) => return Err(invalid()),
+                            };
+                            root.try_issue_semantic_pass()?
+                                .run(move |holder, deadline| {
+                                    Box::pin(async move {
+                                        let mut tx =
+                                            begin_semantic_transaction(holder, deadline).await?;
+                                        assert_recovery_fence(&mut tx, &recovery).await?;
+                                        lock_admission_relations(&mut tx).await?;
+                                        let result = write.execute(&mut tx, &status).await;
+                                        match result {
+                                            Ok(outcome) => {
+                                                commit_semantic_transaction(tx, deadline).await?;
+                                                Ok(Ok(outcome))
+                                            }
+                                            Err(GuildError::Unavailable(error)) => Err(error),
+                                            Err(error) => Ok(Err(error)),
+                                        }
+                                    })
+                                })
+                                .await?
+                        }
+                    }
+                })
+            })
+            .await?
+    }
+
     /// One bounded native pass; success/refusal receipt and a successful mutation's one candidate
     /// event commit together. A historical receipt is replayed first, never current authority.
     pub async fn commit_guild_membership(
@@ -191,6 +358,9 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: GuildRequest,
     ) -> Result<GuildOutcome> {
+        if request.operation == GuildCommand::Found {
+            return Err(GuildError::InvalidInput);
+        }
         let binding = binding(&fence, &request)?;
         let recovery = authority
             .record_for(self)
@@ -214,6 +384,182 @@ impl DurabilityRoot {
             }
         })).await?
     }
+}
+
+enum FoundPreflight {
+    Replayed(GuildOutcome),
+    Fresh([u8; 16]),
+}
+
+struct FoundWrite {
+    node: NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    common: GuildRequest,
+    name: GuildName,
+    binding: Vec<u8>,
+    account: [u8; 16],
+}
+
+impl FoundWrite {
+    async fn execute(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        premium: &PremiumStatus<'_>,
+    ) -> Result<GuildOutcome> {
+        lock_operation(tx, &self.common).await?;
+        if let Some(outcome) = replay(tx, &self.common, &self.binding).await? {
+            return Ok(outcome);
+        }
+        let account = assert_session_fence(tx, &self.fence, &self.node)
+            .await?
+            .map_err(|_| GuildError::NotCurrent)?;
+        if uuid_text(&account)? != self.account {
+            return Err(GuildError::NotCurrent);
+        }
+        let actor = self.fence.character_id;
+        let root = sqlx::query("SELECT account_id::text,world_id::text,lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(actor.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        let Some(root) = root else {
+            return Err(GuildError::NotCurrent);
+        };
+        if root.try_get::<i16, _>("lifecycle")? != 1
+            || uuid_text(&root.try_get::<String, _>("account_id")?)? != self.account
+            || uuid_text(&root.try_get::<String, _>("world_id")?)?
+                != *self.fence.runtime_scope.world_id().as_bytes()
+        {
+            return Err(GuildError::NotCurrent);
+        }
+        // Guild namespace reservation is at the Guild class, after the actor root. The native
+        // unique index is still the final invariant; no Character-name reservation is taken.
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guild-name:' || encode($1,'hex') || ':' || $2,0))")
+            .bind(self.fence.runtime_scope.world_id().as_bytes().as_slice()).bind(self.name.comparison_key()).execute(&mut **tx).await?;
+        let existing: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid)",
+        )
+        .bind(self.common.guild_id.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if existing {
+            return Err(GuildError::ConflictingOccurrence);
+        }
+        let name_taken:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guilds WHERE world_id=encode($1,'hex')::uuid AND name_key=$2 AND state<>4)")
+            .bind(self.fence.runtime_scope.world_id().as_bytes().as_slice()).bind(self.name.comparison_key()).fetch_one(&mut **tx).await?;
+        let member:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid)")
+            .bind(actor.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        // Lock an existing native Account guard to serialize the absent global leadership row.
+        // This is not a new Account authority or a Guild-local substitute for that source.
+        let guard:Option<i32>=sqlx::query_scalar("SELECT 1 FROM game_character_account_guards WHERE account_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(self.account.as_slice()).fetch_optional(&mut **tx).await?;
+        if guard.is_none() {
+            return Err(GuildError::NotCurrent);
+        }
+        let position:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_account_guild_leadership WHERE account_id=encode($1,'hex')::uuid)")
+            .bind(self.account.as_slice()).fetch_one(&mut **tx).await?;
+        let result = if member {
+            GuildResult::AlreadyInGuild
+        } else if super::bank::fee_payer_is_junior(actor) {
+            GuildResult::Junior
+        } else if position {
+            GuildResult::AccountHasPosition
+        } else if name_taken {
+            GuildResult::NameTaken
+        } else if matches!(premium, PremiumStatus::NotCurrent) {
+            GuildResult::NotPremium
+        } else {
+            GuildResult::Ok
+        };
+        if result != GuildResult::Ok {
+            return store_operation(
+                tx,
+                &self.fence,
+                &self.common,
+                &self.binding,
+                result,
+                OperationPayload {
+                    revisions: (None, None),
+                    audit: None,
+                    found_name: Some(self.name.as_str()),
+                },
+            )
+            .await;
+        }
+        let now: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM transaction_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&mut **tx)
+        .await?;
+        let audit = GuildAuditProposal {
+            version: 1,
+            occurrence: self.common.identity.occurrence,
+            transaction_id: self.common.identity.transaction_id,
+            event_id: self.common.identity.event_id,
+            guild_id: *self.common.guild_id.as_bytes(),
+            world_id: *self.fence.runtime_scope.world_id().as_bytes(),
+            actor: *actor.as_bytes(),
+            target: *actor.as_bytes(),
+            action: 6,
+            previous_revision: 0,
+            revision: 1,
+            rank_before: None,
+            rank_after: Some(1),
+            removed_invitations: 0,
+            occurred_at_unix_ms: self.common.identity.occurred_at_unix_ms,
+        }
+        .checked_bytes()
+        .ok_or_else(invalid)?;
+        let outcome = store_operation(
+            tx,
+            &self.fence,
+            &self.common,
+            &self.binding,
+            GuildResult::Ok,
+            OperationPayload {
+                revisions: (Some(0), Some(1)),
+                audit: Some(&audit),
+                found_name: Some(self.name.as_str()),
+            },
+        )
+        .await?;
+        sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,1,$4,1,$5)")
+            .bind(self.common.guild_id.as_bytes().as_slice()).bind(self.fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(self.name.as_str()).bind(now.checked_add(FORMATION_LIFETIME_MS).ok_or_else(invalid)?).bind(now).execute(&mut **tx).await?;
+        for (level, name) in DEFAULT_RANKS {
+            sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)")
+                .bind(self.common.guild_id.as_bytes().as_slice()).bind(i16::from(level)).bind(name).execute(&mut **tx).await?;
+        }
+        sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,'',$3)")
+            .bind(actor.as_bytes().as_slice()).bind(self.common.guild_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
+        sqlx::query("INSERT INTO game_account_guild_leadership(account_id,guild_id,character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(self.account.as_slice()).bind(self.common.guild_id.as_bytes().as_slice()).bind(actor.as_bytes().as_slice()).execute(&mut **tx).await?;
+        Ok(outcome)
+    }
+}
+
+async fn lock_operation(tx: &mut Transaction<'_, Postgres>, request: &GuildRequest) -> Result<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guild-command:' || encode($1,'hex') || ':' || $2,0))")
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut **tx).await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guild-operation:' || encode($1,'hex'),0))")
+        .bind(request.identity.occurrence.as_slice()).execute(&mut **tx).await?;
+    Ok(())
+}
+
+async fn replay(
+    tx: &mut Transaction<'_, Postgres>,
+    request: &GuildRequest,
+    binding: &[u8],
+) -> Result<Option<GuildOutcome>> {
+    if let Some(row)=sqlx::query("SELECT request_binding,result,previous_revision::text,revision::text,transaction_id::text,event_id::text FROM game_guild_operations WHERE occurrence=encode($1,'hex')::uuid")
+        .bind(request.identity.occurrence.as_slice()).fetch_optional(&mut **tx).await? {
+        if row.try_get::<Vec<u8>,_>("request_binding")? != binding { return Err(GuildError::ConflictingOccurrence); }
+        return Ok(Some(GuildOutcome::Replayed(receipt(&row)?)));
+    }
+    let used:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_operations WHERE (game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric) OR transaction_id=encode($3,'hex')::uuid OR requested_event_id=encode($4,'hex')::uuid)")
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+        .bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice()).fetch_one(&mut **tx).await?;
+    if used {
+        return Err(GuildError::ConflictingOccurrence);
+    }
+    Ok(None)
 }
 
 #[derive(Clone)]
@@ -459,6 +805,7 @@ async fn execute(
                 GuildResult::Ok
             }
         }
+        GuildCommand::Found => return Err(GuildError::InvalidInput),
         GuildCommand::Leave => match member_in_guild(&acting, &request.guild_id) {
             Some(m) if m.rank > 1 => {
                 rank_before = Some(m.rank);
@@ -577,6 +924,7 @@ async fn execute(
             }
         }
         GuildCommand::Revoke(_) => {}
+        GuildCommand::Found => return Err(GuildError::InvalidInput),
     }
     if request.operation == GuildCommand::Accept {
         remove_invitations(tx, target, &removes).await?;
@@ -616,14 +964,47 @@ async fn store(
     revisions: (Option<u64>, Option<u64>),
     audit: Option<&[u8]>,
 ) -> Result<GuildOutcome> {
-    let (previous, revision) = revisions;
+    store_operation(
+        tx,
+        fence,
+        request,
+        binding,
+        result,
+        OperationPayload {
+            revisions,
+            audit,
+            found_name: None,
+        },
+    )
+    .await
+}
+
+struct OperationPayload<'a> {
+    revisions: (Option<u64>, Option<u64>),
+    audit: Option<&'a [u8]>,
+    found_name: Option<&'a str>,
+}
+
+async fn store_operation(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    request: &GuildRequest,
+    binding: &[u8],
+    result: GuildResult,
+    payload: OperationPayload<'_>,
+) -> Result<GuildOutcome> {
+    let OperationPayload {
+        revisions: (previous, revision),
+        audit,
+        found_name,
+    } = payload;
     let event = audit.map(|_| request.identity.event_id);
-    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16))")
+    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17)")
         .bind(request.identity.occurrence.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice())
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.guild_id.as_bytes().as_slice())
         .bind(request.operation.target(fence.character_id).as_bytes().as_slice()).bind(request.operation.code()).bind(binding).bind(result.code())
-        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit)
+        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name)
         .execute(&mut **tx).await?;
     if let Some(audit) = audit {
         sqlx::query("INSERT INTO game_guild_event_outbox(event_id,occurrence,guild_id,occurred_at,payload,payload_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,sha256($5))")
@@ -658,7 +1039,9 @@ fn receipt(row: &sqlx::postgres::PgRow) -> Result<GuildReceipt> {
 }
 
 /// Complete owner table shape for this private qualification. NOT a numbered migration,
-/// production grant, formation writer or promise that sibling GuildBank/Hall proposals exist.
+/// production grant or promise that sibling GuildBank/Hall proposals exist. Found now creates
+/// its initial Guild under the closed native command guards; old five-command fixture seeds
+/// remain historical setup only.
 /// The fixture seeds a valid initial Guild snapshot BEFORE installing GUARDS; it never disables
 /// native Character/admission guards. Production must install tables+guards atomically and use
 /// its separately admitted formation/bootstrap owner instead of that privileged fixture seed.
@@ -697,25 +1080,26 @@ CREATE TABLE game_guild_operations(
  game_session_id UUID NOT NULL CHECK(game_character_is_uuid_v7(game_session_id)),
  command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
  actor UUID NOT NULL REFERENCES game_character_roots,world_id UUID NOT NULL,guild_id UUID NOT NULL,
- target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 5),
- request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 7),
+ target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 6),
+ request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 11),
  previous_revision NUMERIC(20,0),revision NUMERIC(20,0),event_id UUID UNIQUE,audit_sha256 BYTEA,
+ found_name TEXT CHECK((action=6 AND found_name IS NOT NULL AND game_character_is_name(found_name)) OR (action<>6 AND found_name IS NULL)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
  UNIQUE(game_session_id,command_id),UNIQUE(created_xact_id),
  CHECK(CASE WHEN result=0 THEN previous_revision IS NOT NULL AND revision IS NOT NULL
  AND event_id IS NOT NULL AND audit_sha256 IS NOT NULL
- AND previous_revision>=1 AND revision=previous_revision+1 AND event_id=requested_event_id AND octet_length(audit_sha256)=32
+ AND ((action=6 AND previous_revision=0 AND revision=1) OR (action<>6 AND previous_revision>=1 AND revision=previous_revision+1)) AND event_id=requested_event_id AND octet_length(audit_sha256)=32
  ELSE previous_revision IS NOT DISTINCT FROM revision AND event_id IS NULL AND audit_sha256 IS NULL END));
 CREATE TABLE game_guild_event_outbox(
  event_id UUID PRIMARY KEY,occurrence UUID NOT NULL UNIQUE REFERENCES game_guild_operations,
- guild_id UUID NOT NULL REFERENCES game_guilds,occurred_at BIGINT NOT NULL CHECK(occurred_at>0),
+ guild_id UUID NOT NULL REFERENCES game_guilds DEFERRABLE INITIALLY DEFERRED,occurred_at BIGINT NOT NULL CHECK(occurred_at>0),
  payload BYTEA NOT NULL CHECK(octet_length(payload) BETWEEN 1 AND 4096),
  payload_sha256 BYTEA NOT NULL CHECK(payload_sha256=sha256(payload)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id());
 "#;
 
 /// Private integrity guards for the five commands; no runtime/grant/SECURITY DEFINER shortcut.
-/// Other accepted Guild writers (formation/rank/disband), normative event publication and
+/// Other accepted Guild writers (rank/activation/jobs/disband), normative event publication and
 /// GUILD_ACTIVITY_RETENTION_V1 expiry require CP composition before production installation.
 /// In particular this component cannot enter DISBANDED or assert external Bank/Hall closure.
 pub const GUILD_GUARDS_PROPOSAL: &str = r#"
@@ -737,6 +1121,15 @@ BEGIN
  SELECT * INTO o FROM game_guild_operations WHERE created_xact_id=pg_current_xact_id() AND result=0;
  IF NOT FOUND THEN RAISE EXCEPTION 'Guild mutation requires its same-transaction operation' USING ERRCODE='23514';END IF;
  IF TG_TABLE_NAME='game_guilds' THEN
+  IF TG_OP='INSERT' THEN
+   n=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint;
+   IF o.action<>6 OR NEW.guild_id<>o.guild_id OR NEW.world_id<>o.world_id OR NEW.name<>o.found_name
+      OR NEW.state<>1 OR NEW.revision<>1 OR o.previous_revision<>0 OR o.revision<>1
+      OR NEW.created_at<>n OR NEW.formation_deadline<>n+259200000
+      OR NEW.vice_deficit_since IS NOT NULL OR NEW.premium_deficit_since IS NOT NULL OR NEW.motd<>'' THEN
+    RAISE EXCEPTION 'Found must create exactly its bound initial Guild' USING ERRCODE='23514';END IF;
+   RETURN NEW;
+  END IF;
   -- Stored generated columns are NULL in NEW until AFTER BEFORE triggers. Its immutable
   -- source name stays in the comparison; the generated expression and unique index stay active.
   IF TG_OP<>'UPDATE' OR OLD.guild_id<>o.guild_id OR OLD.state NOT IN(1,2)
@@ -750,6 +1143,12 @@ BEGIN
  ELSIF TG_TABLE_NAME='game_guild_members' THEN
   IF TG_OP='INSERT' THEN
    SELECT world_id INTO w FROM game_character_roots WHERE character_id=NEW.character_id AND lifecycle=1;
+   IF o.action=6 THEN
+    IF NEW.character_id<>o.actor OR NEW.guild_id<>o.guild_id OR NEW.rank_level<>1 OR NEW.title<>''
+       OR NEW.joined_at<>floor(extract(epoch FROM transaction_timestamp())*1000)::bigint OR w IS DISTINCT FROM o.world_id THEN
+     RAISE EXCEPTION 'Found must create its actual same-world founder' USING ERRCODE='23514';END IF;
+    RETURN NEW;
+   END IF;
    IF o.action<>3 OR NEW.character_id<>o.actor OR NEW.guild_id<>o.guild_id
       OR NEW.rank_level<>(SELECT max(level) FROM game_guild_ranks WHERE guild_id=o.guild_id)
       OR NEW.rank_level<3 OR w IS DISTINCT FROM o.world_id
@@ -778,13 +1177,20 @@ BEGIN
       OR (o.action=2 AND OLD.guild_id=o.guild_id AND r<=2)
       OR (o.action=3 AND o.actor=o.target)) THEN RETURN OLD;
   END IF;
+ ELSIF TG_TABLE_NAME='game_guild_ranks' AND TG_OP='INSERT' THEN
+  IF o.action<>6 OR NEW.guild_id<>o.guild_id OR NEW.name IS DISTINCT FROM (CASE NEW.level WHEN 1 THEN 'Leader' WHEN 2 THEN 'Vice Leader' WHEN 3 THEN 'Member' END) THEN
+   RAISE EXCEPTION 'Found must create its three bound default ranks' USING ERRCODE='23514';END IF;
+  RETURN NEW;
+ ELSIF TG_TABLE_NAME='game_account_guild_leadership' AND TG_OP='INSERT' THEN
+  IF o.action=6 AND NEW.guild_id=o.guild_id AND NEW.character_id=o.actor
+     AND NEW.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.actor) THEN RETURN NEW;END IF;
  ELSIF TG_TABLE_NAME='game_account_guild_leadership' AND TG_OP='DELETE' THEN
   IF o.action IN(4,5) AND OLD.guild_id=o.guild_id AND OLD.character_id=o.target
      AND OLD.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.target) THEN RETURN OLD;END IF;
  END IF;
  RAISE EXCEPTION 'this Guild operation does not own that row transition' USING ERRCODE='23514';
 END $$;
-CREATE TRIGGER game_guild_row_mutation BEFORE UPDATE OR DELETE ON game_guilds FOR EACH ROW EXECUTE FUNCTION game_guild_command_mutation();
+CREATE TRIGGER game_guild_row_mutation BEFORE INSERT OR UPDATE OR DELETE ON game_guilds FOR EACH ROW EXECUTE FUNCTION game_guild_command_mutation();
 CREATE TRIGGER game_guild_member_mutation BEFORE INSERT OR UPDATE OR DELETE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION game_guild_command_mutation();
 CREATE TRIGGER game_guild_invitation_mutation BEFORE INSERT OR UPDATE OR DELETE ON game_guild_invitations FOR EACH ROW EXECUTE FUNCTION game_guild_command_mutation();
 CREATE TRIGGER game_guild_leadership_mutation BEFORE INSERT OR UPDATE OR DELETE ON game_account_guild_leadership FOR EACH ROW EXECUTE FUNCTION game_guild_command_mutation();
@@ -827,7 +1233,18 @@ BEGIN
      OR (NEW.action=1 AND NOT EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.target AND inviter=NEW.actor))
      OR (NEW.action=2 AND EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.target))
      OR (NEW.action=3 AND (NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level>=3) OR EXISTS(SELECT 1 FROM game_guild_invitations WHERE character_id=NEW.actor)))
-     OR (NEW.action IN(4,5) AND EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=NEW.target)) THEN
+     OR (NEW.action IN(4,5) AND EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=NEW.target))
+     OR (NEW.action=6 AND (
+       NEW.actor<>NEW.target OR NEW.previous_revision<>0 OR NEW.revision<>1
+       OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND name=NEW.found_name AND state=1 AND vice_deficit_since IS NULL AND premium_deficit_since IS NULL AND motd='')
+       OR (SELECT count(*) FROM game_guild_members WHERE guild_id=NEW.guild_id)<>1
+       OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level=1 AND title='')
+       OR (SELECT count(*) FROM game_guild_ranks WHERE guild_id=NEW.guild_id)<>3
+       OR NOT EXISTS(SELECT 1 FROM game_guild_ranks WHERE guild_id=NEW.guild_id AND level=1 AND name='Leader')
+       OR NOT EXISTS(SELECT 1 FROM game_guild_ranks WHERE guild_id=NEW.guild_id AND level=2 AND name='Vice Leader')
+       OR NOT EXISTS(SELECT 1 FROM game_guild_ranks WHERE guild_id=NEW.guild_id AND level=3 AND name='Member')
+       OR EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id)
+       OR NOT EXISTS(SELECT 1 FROM game_account_guild_leadership l JOIN game_character_roots c ON c.character_id=l.character_id WHERE l.guild_id=NEW.guild_id AND l.character_id=NEW.actor AND l.account_id=c.account_id))) THEN
    RAISE EXCEPTION 'Guild operation must commit its transition and one exact event' USING ERRCODE='23514';END IF;
  ELSIF EXISTS(SELECT 1 FROM game_guild_event_outbox WHERE occurrence=NEW.occurrence) THEN
   RAISE EXCEPTION 'refusal must not manufacture a Guild mutation event' USING ERRCODE='23514';
