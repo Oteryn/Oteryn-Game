@@ -1433,6 +1433,7 @@ fn creature_policies(
         records.push(CompiledCreaturePolicy {
             preferred_distance,
             reward_boss: Some(details.system_eligibility.reward_boss),
+            defense: Some(details.defense),
             armor: value.armor,
             mitigation: value
                 .mitigation

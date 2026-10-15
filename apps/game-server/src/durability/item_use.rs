@@ -556,6 +556,7 @@ async fn write(
                 definition: Some(definition_message(definition)),
                 quantity,
                 lifecycle,
+                key_number: 0,
             }
         };
     let entry = |ordinal: u64| OneItemContainerEntryV1 {

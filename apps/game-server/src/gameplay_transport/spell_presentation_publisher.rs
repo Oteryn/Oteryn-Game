@@ -14,7 +14,9 @@ use crate::durability::{
     spell_item_transaction::{SpellItemError, SpellItemScopeAuthority},
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
-use crate::movement::interest::{InterestIndex, VisibilityPosition, VisibilitySettings};
+use crate::movement::interest::{
+    InterestIndex, VisibilityPosition, VisibilitySettings, tibia_floor,
+};
 use oteryn_protocol_oteryn::{spell_presentation_candidate as wire, world_spatial::ActorPosition};
 use sqlx::{Postgres, Transaction};
 use std::collections::VecDeque;
@@ -160,6 +162,22 @@ fn pos(p: MovementLocalPosition) -> ActorPosition {
         floor: p.floor,
     }
 }
+/// D87's floor distance and projected plane distance, on Tibia floors so a native floor ranks
+/// like its Tibia floor (see [`VisibilityPosition`]).
+fn plane_distance(
+    observer: MovementLocalPosition,
+    event: MovementLocalPosition,
+) -> Result<(i64, i64), Error> {
+    let floor = |p: MovementLocalPosition| {
+        tibia_floor(p.floor)
+            .map(i64::from)
+            .ok_or(Error::UnknownFrame)
+    };
+    let floor_offset = floor(observer)? - floor(event)?;
+    let dx = (i64::from(event.x) - floor_offset - i64::from(observer.x)).abs();
+    let dy = (i64::from(event.y) - floor_offset - i64::from(observer.y)).abs();
+    Ok((floor_offset.abs(), dx.max(dy)))
+}
 fn selected_events(
     turn: &CandidatePresentationTurn,
     observer: &Observer,
@@ -212,20 +230,12 @@ fn selected_events(
         };
         // D87's projected plane distance, then actual owner decision/emission order. Tile events
         // have no entity identity, so no invented identity or container iteration tie-break is used.
-        let df = (i64::from(observer.position.floor) - i64::from(event.event.position.floor)).abs();
-        let floor_offset =
-            i64::from(observer.position.floor) - i64::from(event.event.position.floor);
-        let dx =
-            (i64::from(event.event.position.x) - floor_offset - i64::from(observer.position.x))
-                .abs();
-        let dy =
-            (i64::from(event.event.position.y) - floor_offset - i64::from(observer.position.y))
-                .abs();
+        let (df, plane) = plane_distance(observer.position, event.event.position)?;
         selected.push((
             (
                 !own,
                 df,
-                dx.max(dy),
+                plane,
                 event.decision_ordinal,
                 event.emission_ordinal,
             ),

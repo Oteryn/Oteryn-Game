@@ -6,7 +6,9 @@
 //! committed by the physical owner under the swing identity `(character, lease generation,
 //! session, lineage, swing ordinal)`: the lineage is the `CommandRef` of the `ATTACK_TARGET`
 //! command that set the target and the ordinal counts the swings of that lineage from 0.
-//! Player targets (PvP), distance weapons and creature defence/armor are out of scope.
+//! ATTACK-2: the swing uses the held melee weapon's attack (fists otherwise), and the creature
+//! meets it with its block budget, its source defence and its armor (§4, §5).
+//! Player targets (PvP) and distance weapons are out of scope.
 //!
 //! CHASE-1 (RANGED-0 §8): with `chase=CHASE` and a held target the owner steps the player towards
 //! the nearest tile next to it, one Movement-owner step at a time on the player's own pacing
@@ -38,11 +40,15 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision,
+    AttackConstants, AttackState, BlockBudget, CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision,
     ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    player_fist_formula,
+    armor_reduction_bounds, player_fist_formula, player_melee_formula,
 };
-use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
+use crate::content::native_gameplay::NativeGameplayState;
+use crate::content::{
+    LogicalCell, QualifiedNativeEntryRoom, ReferenceItemField, ReferenceWeaponType,
+};
+use crate::durability::character_equipment::EquippedItem;
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -146,6 +152,72 @@ impl CombatContinuity {
     }
 }
 
+/// How often the attacker's own connection re-reads its swing weapon while it holds a target.
+pub(crate) const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
+
+/// The weapon a swing is drawn with (ATTACK-0 §4): fists, or a melee weapon's attack value. A
+/// distance weapon, a throwing weapon, a wand or a rod is no weapon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SwingWeapon {
+    Fists,
+    Melee { attack: u32 },
+}
+
+/// The swing weapon read from the equipment owner under `content_digest` at `read_at`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct WeaponFacts {
+    weapon: SwingWeapon,
+    content_digest: [u8; 32],
+    read_at: SemanticTimeMicros,
+}
+
+/// The swing weapon of `items` (`player.cpp:405-464` `getWeapon`): the first hand, left (6) then
+/// right (5), that holds a weapon other than a shield, ammunition or a spellbook. A club, sword,
+/// axe or fist weapon swings with its attack; any other weapon, or none, swings with fists.
+/// `None` (fail closed) when a hand item's policy is unknown or its weapon facts are not Known.
+pub(crate) fn swing_weapon(
+    content: &NativeGameplayState,
+    items: &[EquippedItem],
+) -> Option<SwingWeapon> {
+    for slot in [6_u8, 5] {
+        let Some(item) = items.iter().find(|item| item.slot == slot) else {
+            continue;
+        };
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        let weapon = match &policy.record().semantics.weapon {
+            ReferenceItemField::NotApplicable => continue,
+            ReferenceItemField::Known(weapon) => weapon,
+            ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
+        };
+        let ReferenceItemField::Known(kind) = weapon.weapon_type else {
+            return None;
+        };
+        match kind {
+            ReferenceWeaponType::Shield
+            | ReferenceWeaponType::Ammunition
+            | ReferenceWeaponType::Spellbook => continue,
+            ReferenceWeaponType::Distance | ReferenceWeaponType::Wand => {
+                return Some(SwingWeapon::Fists);
+            }
+            ReferenceWeaponType::Club
+            | ReferenceWeaponType::Sword
+            | ReferenceWeaponType::Axe
+            | ReferenceWeaponType::Fist => {
+                let ReferenceItemField::Known(attack) = weapon.attack else {
+                    return None;
+                };
+                return Some(SwingWeapon::Melee {
+                    attack: u32::try_from(attack.0).ok()?,
+                });
+            }
+        }
+    }
+    Some(SwingWeapon::Fists)
+}
+
 /// The attack state of one player actor in one session.
 #[derive(Debug, Clone)]
 struct ActorAttack {
@@ -159,6 +231,10 @@ struct ActorAttack {
     next_ordinal: u16,
     /// CHASE-1: the chase route towards the held target (runtime-only).
     chase: ChaseState,
+    /// The last swing weapon read; a swing waits while it is missing or stale.
+    weapon: Option<WeaponFacts>,
+    /// Bumped by every equipment move, so a read that raced one is not stored.
+    weapon_epoch: u64,
 }
 
 impl ActorAttack {
@@ -187,6 +263,9 @@ enum StepClock {
 #[derive(Debug, Default)]
 pub(crate) struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its
+    /// first hit.
+    blocks: Vec<(ExactActorRef, BlockBudget)>,
     /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 §1.3).
     kills: super::kill_reward::KillSettlementQueue,
     /// CHASE-1: the Channel's player chase searches in the current owner window
@@ -305,20 +384,13 @@ fn in_protection_zone(
 }
 
 /// Whether an attacker at `from` sees `to` under the reference view. A source world's native
-/// floors can lie outside the 0..=15 visibility floors (Thalom is on -8..=-5); there a target on
-/// the attacker's own floor is judged on the same plane, and any other floor is not seen.
+/// floor sees as the Tibia floor of its negation (`VisibilityPosition`).
 pub(super) fn sees(from: MovementLocalPosition, to: MovementLocalPosition) -> bool {
-    const PLANE: i16 = 7;
-    let view = |position: MovementLocalPosition, floor: i16| {
-        VisibilityPosition::new(position.x, position.y, floor).ok()
-    };
-    let (observer, seen) = match (view(from, from.floor), view(to, to.floor)) {
-        (Some(observer), Some(seen)) => (Some(observer), Some(seen)),
-        _ if from.floor == to.floor => (view(from, PLANE), view(to, PLANE)),
-        _ => (None, None),
-    };
-    match (observer, seen) {
-        (Some(observer), Some(seen)) => VisibilitySettings::REFERENCE.can_see(observer, seen),
+    match (
+        VisibilityPosition::new(from.x, from.y, from.floor),
+        VisibilityPosition::new(to.x, to.y, to.floor),
+    ) {
+        (Ok(observer), Ok(seen)) => VisibilitySettings::REFERENCE.can_see(observer, seen),
         _ => false,
     }
 }
@@ -387,13 +459,62 @@ impl ChannelAttackStates {
             .position(|entry| entry.actor == actor && entry.session == session)
     }
 
-    /// Drop the entries whose actor is no longer controlled by its session's slot.
+    /// Drop the entries whose actor is no longer controlled by its session's slot, and the
+    /// block budgets of creatures no longer live.
     fn prune(&mut self, runtime: &ChannelRuntimeV1) {
         self.entries.retain(|entry| {
             runtime
                 .player_control_facts(entry.actor, entry.session)
                 .is_ok()
         });
+        self.blocks
+            .retain(|(creature, _)| runtime.contains_live_creature(*creature));
+    }
+
+    /// The equipment epoch of `actor` when it holds a target whose swing weapon is missing,
+    /// read under another digest or older than [`WEAPON_REFRESH_MICROS`]; `None` when no read
+    /// is due.
+    fn weapon_read_due(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        digest: &[u8; 32],
+        now: SemanticTimeMicros,
+    ) -> Option<u64> {
+        let entry = &self.entries[self.index(actor, session)?];
+        entry.state.target()?;
+        let fresh = entry.weapon.is_some_and(|facts| {
+            &facts.content_digest == digest
+                && now
+                    .elapsed_since(facts.read_at)
+                    .is_ok_and(|age| age < WEAPON_REFRESH_MICROS)
+        });
+        (!fresh).then_some(entry.weapon_epoch)
+    }
+
+    /// Store a swing weapon read that began at `epoch`; dropped when a move came since.
+    fn store_weapon(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        epoch: u64,
+        facts: WeaponFacts,
+    ) {
+        if let Some(index) = self.index(actor, session) {
+            let entry = &mut self.entries[index];
+            if entry.weapon_epoch == epoch {
+                entry.weapon = Some(facts);
+            }
+        }
+    }
+
+    /// An equipment move of `actor`: its swing weapon must be read again.
+    pub(crate) fn forget_weapon(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        if let Some(index) = self.index(actor, session) {
+            let entry = &mut self.entries[index];
+            entry.weapon = None;
+            entry.weapon_epoch = entry.weapon_epoch.wrapping_add(1);
+        }
     }
 
     /// The entry of a currently placed `actor` in `session`, created on first use.
@@ -422,6 +543,8 @@ impl ChannelAttackStates {
                     target_ref: None,
                     next_ordinal: 0,
                     chase: ChaseState::default(),
+                    weapon: None,
+                    weapon_epoch: 0,
                 });
                 self.entries.len() - 1
             }
@@ -841,6 +964,79 @@ fn swing_occurrence(
     DecisionOccurrenceId::from_bytes(bytes)
 }
 
+/// One draw in `[minimum, maximum]` of the swing's occurrence `tag` under `key`; a degenerate
+/// range is its bound without a draw. `None` on an RNG fault.
+#[allow(clippy::too_many_arguments)]
+fn swing_draw(
+    root: &GameplayDecisionRoot,
+    attacker: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+    tag: &[u8],
+    key: &str,
+    minimum: i64,
+    maximum: i64,
+) -> Option<i64> {
+    if maximum <= minimum {
+        return Some(minimum);
+    }
+    let draw = deterministic_decision_u64(
+        root,
+        swing_occurrence(attacker, lineage, ordinal, tag),
+        key,
+        0,
+    )
+    .ok()?;
+    let span = u64::try_from(maximum - minimum).ok()?.saturating_add(1);
+    Some(minimum.saturating_add(i64::try_from(draw % span).ok()?))
+}
+
+/// What the creature's block (when its budget allows), defence and armor leave of `damage`
+/// (`creature.cpp:958-990`): defence draws in `[defense / 2, defense]` and, when it stops the
+/// whole hit, armor is not reached; armor draws in [`armor_reduction_bounds`].
+#[allow(clippy::too_many_arguments)]
+fn creature_mitigated(
+    root: &GameplayDecisionRoot,
+    constants: &AttackConstants,
+    attacker: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+    damage: i64,
+    blocked: bool,
+    defense: u32,
+    armor: u32,
+) -> Option<i64> {
+    let mut remaining = damage;
+    if blocked {
+        let defence = swing_draw(
+            root,
+            attacker,
+            lineage,
+            ordinal,
+            b"defence-draw",
+            "attack.defence",
+            i64::from(defense / 2),
+            i64::from(defense),
+        )?;
+        remaining = remaining.saturating_sub(defence);
+        if remaining <= 0 {
+            return Some(0);
+        }
+    }
+    let (minimum, maximum) = armor_reduction_bounds(constants, armor);
+    let reduction = swing_draw(
+        root,
+        attacker,
+        lineage,
+        ordinal,
+        b"armor-draw",
+        "attack.armor",
+        i64::from(minimum),
+        i64::from(maximum),
+    )?;
+    Some(remaining.saturating_sub(reduction).max(0))
+}
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -855,6 +1051,7 @@ fn swing_plan(
     magnitude: i64,
     content_digest: &[u8; 32],
     target_identity: &str,
+    formula: &str,
 ) -> Option<EffectPlan> {
     let issuer = actor_atom(attacker);
     let target_atom = target_identity.to_owned();
@@ -868,7 +1065,7 @@ fn swing_plan(
         "ruleset:attack-v1",
         &format!("content:{}", hex(content_digest)),
         "world:attack-v1",
-        "formula:player-fist",
+        formula,
         "simulation:v1",
     )
     .ok()?;
@@ -1006,6 +1203,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chase_yield_to_client(actor, session, now);
     }
 
+    /// Read the swing weapon of this connection's `actor` from the equipment owner when its
+    /// held target's swings need one ([`ChannelAttackStates::weapon_read_due`]). A failed read
+    /// stores nothing, so the swings wait (fail closed).
+    pub(in crate::gameplay_transport) async fn refresh_attack_weapon(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let Some(content) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
+        let now = self.owner_now();
+        let digest = self
+            .runtime
+            .lock()
+            .await
+            .content_pin()
+            .server_artifact_digest();
+        let Some(epoch) = self
+            .attack
+            .lock()
+            .await
+            .weapon_read_due(actor, session, &digest, now)
+        else {
+            return;
+        };
+        let Some(equipment) = super::equipment_move::read_current_equipment(self, session).await
+        else {
+            return;
+        };
+        if equipment.content_digest != digest || content.source_digest() != digest {
+            return;
+        }
+        let Some(weapon) = swing_weapon(content, &equipment.items) else {
+            return;
+        };
+        self.attack.lock().await.store_weapon(
+            actor,
+            session,
+            epoch,
+            WeaponFacts {
+                weapon,
+                content_digest: digest,
+                read_at: now,
+            },
+        );
+    }
+
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
@@ -1033,7 +1281,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.spell_states.lock().await;
         let mut attack = self.attack.lock().await;
         attack.prune(&runtime);
-        let ChannelAttackStates { entries, kills, .. } = &mut *attack;
+        let ChannelAttackStates {
+            entries,
+            blocks,
+            kills,
+            ..
+        } = &mut *attack;
         let sink = super::kill_reward::KillSink {
             queue: kills,
             rewards: self.reward_table(),
@@ -1055,6 +1308,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.assert_actor_spell_unreserved(entry.actor).is_err() {
                 continue;
             }
+            // ATTACK-2: a swing waits for a swing weapon read under this pin within one attack
+            // interval; the attacker's own connection refreshes it (`refresh_attack_weapon`).
+            let Some(weapon) = entry.weapon.filter(|facts| {
+                facts.content_digest == digest
+                    && now
+                        .elapsed_since(facts.read_at)
+                        .is_ok_and(|age| age <= constants.attack_interval_micros())
+            }) else {
+                continue;
+            };
             let character_facts = player.character_facts();
             let Some(facts) = target_facts(&runtime, room, entry.actor, entry.session, target, now)
             else {
@@ -1094,6 +1357,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             let race_key = snapshot.state.policy.definition_key.clone();
+            // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
+            // a creature without them takes no hit (fail closed).
+            let (Some(defense), Some(armor)) =
+                (snapshot.state.policy.defense, snapshot.state.policy.armor)
+            else {
+                continue;
+            };
             let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
             run_charm_hook(
                 self.imported_charms,
@@ -1106,34 +1376,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             );
             let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
+            let (formula, attack_value, revision) = match weapon.weapon {
+                SwingWeapon::Fists => (
+                    player_fist_formula(constants),
+                    constants.fist.attack,
+                    "formula:player-fist",
+                ),
+                SwingWeapon::Melee { attack } => (
+                    player_melee_formula(constants),
+                    attack,
+                    "formula:player-melee",
+                ),
+            };
             let inputs = FormulaInputs {
                 level: character_facts.level,
                 magic_level: character_facts.magic_level,
                 base_power: None,
                 attack_skill: constants.starting_skill,
-                attack_value: constants.fist.attack,
+                attack_value,
                 attack_factor: mode.attack_factor,
                 shielding_skill: constants.starting_skill,
                 shield_defense: None,
             };
-            let Ok((minimum, maximum)) = player_fist_formula(constants).bounds(&inputs) else {
+            let Ok((minimum, maximum)) = formula.bounds(&inputs) else {
                 continue;
             };
-            let Ok(draw) = deterministic_decision_u64(
+            let Some(damage) = swing_draw(
                 &root,
-                swing_occurrence(entry.actor, swing.lineage, ordinal, b"damage-draw"),
+                entry.actor,
+                swing.lineage,
+                ordinal,
+                b"damage-draw",
                 "attack.damage",
-                0,
+                minimum,
+                maximum,
             ) else {
                 continue;
             };
-            let span = u64::try_from(maximum.saturating_sub(minimum))
-                .unwrap_or(0)
-                .saturating_add(1);
-            let magnitude = minimum.saturating_add(i64::try_from(draw % span).unwrap_or(0));
             entry
                 .state
                 .record_hit(swing.at, constants.in_fight_micros());
+            if damage <= 0 {
+                continue;
+            }
+            let index = match blocks.iter().position(|(creature, _)| *creature == target) {
+                Some(index) => index,
+                None => {
+                    if blocks.len() >= runtime.actor_slot_capacity() {
+                        continue;
+                    }
+                    // A creature's budget refills from spawn, not from the first hit on it.
+                    blocks.push((target, BlockBudget::settled(&constants.block, swing.at)));
+                    blocks.len() - 1
+                }
+            };
+            let blocked = blocks[index].1.try_block(&constants.block, swing.at);
+            let Some(magnitude) = creature_mitigated(
+                &root,
+                constants,
+                entry.actor,
+                swing.lineage,
+                ordinal,
+                damage,
+                blocked,
+                defense,
+                armor,
+            ) else {
+                continue;
+            };
             if magnitude <= 0 {
                 continue;
             }
@@ -1144,6 +1454,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 magnitude,
                 &digest,
                 &race_key,
+                revision,
             ) else {
                 continue;
             };
@@ -1229,5 +1540,154 @@ mod sees_tests {
         assert!(!sees(caster, at(100, 93)), "dy -7 is outside the window");
         assert!(!sees(caster, at(110, 100)), "dx +10 is outside the window");
         assert!(!sees(caster, at(91, 100)), "dx -9 is outside the window");
+    }
+}
+
+/// ATTACK-2: the swing weapon of the production Item policies, and the creature's block,
+/// defence and armor (`player.cpp:405-464`, `creature.cpp:958-990`).
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod weapon_tests {
+    use super::*;
+    use crate::durability::item_mint::TypedDefinitionRef;
+
+    fn item(slot: u8, tibia_id: u32) -> EquippedItem {
+        EquippedItem {
+            slot,
+            item_instance_id: [slot; 16],
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{tibia_id}"),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            state_revision: 1,
+        }
+    }
+
+    /// The production generation's Item policies, loaded once for every case.
+    fn production() -> crate::content::ContentActivationController {
+        let world = crate::foundation::WorldId::decode(&uuid(1)).expect("world id");
+        crate::content::native_gameplay::tests::activated_with_loot_tables(world, None).0
+    }
+
+    fn weapon_of(
+        controller: &crate::content::ContentActivationController,
+        items: &[(u8, u32)],
+    ) -> Option<SwingWeapon> {
+        let content = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .expect("the production generation");
+        let items: Vec<_> = items
+            .iter()
+            .map(|(slot, tibia_id)| item(*slot, *tibia_id))
+            .collect();
+        swing_weapon(content, &items)
+    }
+
+    #[test]
+    fn a_held_melee_weapon_swings_with_its_attack_and_anything_else_with_fists() {
+        let production = production();
+        let weapon_of = |items: &[(u8, u32)]| weapon_of(&production, items);
+        // Sword (3264, attack 14), staff (3289, club, attack 10), wooden shield (3412),
+        // spear (3277, distance), arrow (3447, ammunition), wand of darkness (25760).
+        assert_eq!(weapon_of(&[]), Some(SwingWeapon::Fists));
+        assert_eq!(
+            weapon_of(&[(5, 3264)]),
+            Some(SwingWeapon::Melee { attack: 14 })
+        );
+        assert_eq!(
+            weapon_of(&[(6, 3289)]),
+            Some(SwingWeapon::Melee { attack: 10 })
+        );
+        assert_eq!(
+            weapon_of(&[(6, 3412), (5, 3264)]),
+            Some(SwingWeapon::Melee { attack: 14 }),
+            "a shield is skipped for the other hand"
+        );
+        assert_eq!(
+            weapon_of(&[(6, 3289), (5, 3264)]),
+            Some(SwingWeapon::Melee { attack: 10 }),
+            "the left hand is read first"
+        );
+        assert_eq!(weapon_of(&[(6, 3412)]), Some(SwingWeapon::Fists));
+        assert_eq!(weapon_of(&[(5, 3277)]), Some(SwingWeapon::Fists));
+        assert_eq!(weapon_of(&[(5, 25760)]), Some(SwingWeapon::Fists));
+        assert_eq!(
+            weapon_of(&[(6, 3447), (5, 3264)]),
+            Some(SwingWeapon::Melee { attack: 14 }),
+            "ammunition is skipped"
+        );
+        assert_eq!(
+            weapon_of(&[(10, 3264)]),
+            Some(SwingWeapon::Fists),
+            "only the hands are read"
+        );
+        // A hand item without Known weapon facts or policy fails closed: poison field (105)
+        // has `weapon: UNKNOWN`; 1 names no policy.
+        assert_eq!(weapon_of(&[(5, 105)]), None);
+        assert_eq!(weapon_of(&[(6, 1)]), None);
+    }
+
+    fn uuid(tag: u8) -> [u8; 16] {
+        [1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
+    }
+
+    fn lineage() -> CommandRef {
+        CommandRef::new(
+            GameSessionId::decode(&uuid(3)).expect("session id"),
+            CommandId::new(1).expect("command id"),
+        )
+    }
+
+    fn mitigated(ordinal: u16, damage: i64, blocked: bool, defense: u32, armor: u32) -> i64 {
+        let constants = AttackConstants::checked_in().expect("constants");
+        creature_mitigated(
+            &GameplayDecisionRoot::from_bytes([7; 32]),
+            constants,
+            ExactActorRef::transport_fixture(
+                crate::foundation::WorldId::decode(&uuid(1)).expect("world id"),
+                crate::foundation::ChannelId::decode(&uuid(2)).expect("channel id"),
+            ),
+            lineage(),
+            ordinal,
+            damage,
+            blocked,
+            defense,
+            armor,
+        )
+        .expect("draws")
+    }
+
+    #[test]
+    fn defence_applies_only_to_a_blocked_hit_and_armor_draws_in_its_bounds() {
+        for ordinal in 0..64 {
+            assert_eq!(
+                mitigated(ordinal, 10, false, 1_000, 0),
+                10,
+                "no block, no armor"
+            );
+            assert_eq!(
+                mitigated(ordinal, 10, true, 1_000, 0),
+                0,
+                "defence stops the hit"
+            );
+            assert_eq!(
+                mitigated(ordinal, 10, false, 0, 2),
+                9,
+                "low armor reduces by 1"
+            );
+            let defended = mitigated(ordinal, 100, true, 10, 0);
+            assert!((90..=95).contains(&defended), "defence draws in [5, 10]");
+            let armored = mitigated(ordinal, 100, false, 0, 10);
+            assert!((91..=95).contains(&armored), "armor 10 draws in [5, 9]");
+            assert_eq!(mitigated(ordinal, 3, false, 0, 10), 0, "armor never heals");
+        }
+        assert_eq!(
+            mitigated(3, 100, true, 10, 10),
+            mitigated(3, 100, true, 10, 10),
+            "every draw is a pure function of the swing"
+        );
     }
 }

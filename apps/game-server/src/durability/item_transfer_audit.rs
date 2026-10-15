@@ -17,8 +17,8 @@ use super::item_mint_audit::{
     self as mint, AuditError, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1,
     ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemOperationV1, OneItemStateV1, OneItemTransactionV1,
     RL07_ENVELOPE_BYTES_MAX, RL07_PAYLOAD_BYTES_MAX, TransactionEventRefV1,
-    TransactionResourceUsage, check_content_key, check_definition, check_technical_bytes,
-    check_uuid_v7, encode_bounded,
+    TransactionResourceUsage, check_content_key, check_definition, check_key_number,
+    check_technical_bytes, check_uuid_v7, encode_bounded,
 };
 use prost::Message;
 use sha2::{Digest, Sha256};
@@ -189,7 +189,9 @@ fn check_entry(value: &OneItemContainerEntryV1) -> Result<(), AuditError> {
 fn check_state(value: &OneItemStateV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.item_instance_id)?;
     check_uuid_v7(&value.world_id)?;
-    check_definition(value.definition.as_ref())
+    check_definition(value.definition.as_ref())?;
+    // A retired full-merge source (quantity 0) is never a key: keys are not stackable.
+    check_key_number(value)
 }
 
 /// Complete closed TRANSFER shape, conservation and every registered bound.
@@ -231,6 +233,8 @@ pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditE
     if before.item_instance_id != after.item_instance_id
         || before.world_id != after.world_id
         || before.definition != after.definition
+        // A key's number is carried unchanged (WORLD-INTERACTION-0 §4.4).
+        || before.key_number != after.key_number
         || before.lifecycle != ITEM_LIFECYCLE_LIVE
         || before.quantity == 0
         || before.quantity > GAMEITEM01_STACK_QUANTITY_MAX
@@ -466,6 +470,7 @@ mod tests {
             }),
             quantity,
             lifecycle,
+            key_number: 0,
         }
     }
 
@@ -686,6 +691,37 @@ mod tests {
     }
 
     #[test]
+    fn transfer_carries_the_key_number_unchanged() {
+        let keyed = |before: u32, after: u32| {
+            let mut value = transfer(TransferShape::ContainerSlot);
+            for (state, number) in [
+                (value.before.as_mut(), before),
+                (value.after.as_mut(), after),
+            ] {
+                let state = state.unwrap();
+                state.quantity = 1;
+                state.key_number = number;
+            }
+            value
+        };
+        assert_eq!(
+            check_transfer(&keyed(4210, 4210)),
+            Ok(TransferShape::ContainerSlot)
+        );
+        for (before, after) in [(4210, 0), (0, 4210), (4210, 4211), (65_536, 65_536)] {
+            assert_eq!(
+                check_transfer(&keyed(before, after)),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        // A key is one item: a numbered stack is refused.
+        let mut stack = transfer(TransferShape::NewEntry);
+        stack.before.as_mut().unwrap().key_number = 7;
+        stack.after.as_mut().unwrap().key_number = 7;
+        assert_eq!(check_transfer(&stack), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
     fn corpse_source_round_trips_and_exactly_one_source_form_is_admitted() {
         for shape in SHAPES {
             let value = corpse_sourced(shape);
@@ -763,6 +799,7 @@ mod tests {
             definition: Some(typed),
             quantity: u32::MAX,
             lifecycle: u32::MAX,
+            key_number: 0,
         };
         let entry = OneItemContainerEntryV1 {
             parent_item_instance_id: uuid(0xee),
