@@ -3223,6 +3223,15 @@ async fn character_commands_flow(database: &Database) -> TestResult {
         decide(61, Input::Intent(changed.as_bytes())).await,
         Decision::Conflict
     );
+    // A conflict writes nothing, not even the other account's portfolio guard.
+    let guards = "SELECT count(*) FROM game_character_account_guards";
+    let before = count(&pool, guards).await?;
+    let moved = create_intent(61, 47, 90, 5, "Hero Ca", live);
+    assert_eq!(
+        decide(61, Input::Intent(moved.as_bytes())).await,
+        Decision::Conflict
+    );
+    assert_eq!(count(&pool, guards).await?, before);
     assert!(matches!(
         root.bootstrap_character(&authority, &node, &intent(61, 41, 9)?)
             .await,

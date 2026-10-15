@@ -463,6 +463,7 @@ pub trait Decider: Send {
 struct Known {
     not_before: Duration,
     attempt: u32,
+    stopped: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -581,13 +582,24 @@ impl Cursor {
             Settle::Retry => POLL.saturating_mul(1 << attempt.min(4)).min(MAX_BACKOFF),
         };
         if !self.known.contains_key(&key) && self.known.len() >= KNOWN_KEYS {
-            self.known.pop_first();
+            // A stopped key must stay suppressed until a pass omits it, so the
+            // bound evicts any other key first.
+            let evict = self
+                .known
+                .iter()
+                .find(|(_, k)| !k.stopped)
+                .or_else(|| self.known.first_key_value())
+                .map(|(k, _)| k.clone());
+            if let Some(evict) = evict {
+                self.known.remove(&evict);
+            }
         }
         self.known.insert(
             key,
             Known {
                 not_before: now.saturating_add(delay),
                 attempt,
+                stopped: settle == Settle::Stopped,
             },
         );
     }

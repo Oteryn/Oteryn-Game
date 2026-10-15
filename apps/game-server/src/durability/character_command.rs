@@ -437,16 +437,10 @@ async fn decide(
             Classified::Rejected(INTENT_INVALID),
         ),
     };
-    // Operation identity first, then the account portfolio lock (§6.3), so a
-    // concurrent reuse observes the committed receipt.
+    // Operation identity first (§6.3): every writer of either receipt table holds
+    // it, so the receipt checks below are stable before any account-scoped write.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-operation:' || encode($1, 'hex'), 0))")
         .bind(request.operation.as_slice()).execute(&mut **tx).await?;
-    if let Classified::Create(intent) = &classified {
-        sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES (encode($1, 'hex')::uuid) ON CONFLICT DO NOTHING")
-            .bind(intent.account_id.as_slice()).execute(&mut **tx).await?;
-        sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
-            .bind(intent.account_id.as_slice()).fetch_one(&mut **tx).await?;
-    }
     if let Some(row) = sqlx::query("SELECT command, command_binding, result_code, receipt FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid")
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await? {
         let same = row.try_get::<String, _>("command")? == request.command
@@ -462,6 +456,14 @@ async fn decide(
     if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid")
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some() {
         return Ok(Some(None));
+    }
+    // The account portfolio lock only once no stored receipt answers, so a
+    // conflict writes nothing (§5.2).
+    if let Classified::Create(intent) = &classified {
+        sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES (encode($1, 'hex')::uuid) ON CONFLICT DO NOTHING")
+            .bind(intent.account_id.as_slice()).execute(&mut **tx).await?;
+        sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
+            .bind(intent.account_id.as_slice()).fetch_one(&mut **tx).await?;
     }
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")

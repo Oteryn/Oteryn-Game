@@ -334,6 +334,21 @@ fn known_keys_back_off_and_leave_once_unlisted() {
     assert!(cursor.due(&k, t));
 }
 
+#[test]
+fn the_known_key_bound_keeps_stopped_keys() {
+    let t = Duration::from_secs(100);
+    let mut cursor = Cursor::new(t);
+    let stopped = key(1, 0);
+    cursor.settle(stopped.clone(), Settle::Stopped, t);
+    for index in 1..=u32::try_from(KNOWN_KEYS).unwrap() {
+        cursor.settle(key(2, index), Settle::Done, t);
+    }
+    assert!(!cursor.due(&stopped, t + SETTLED_RECHECK * 1000));
+    // The lowest settled key gave way instead.
+    assert!(cursor.due(&key(2, 1), t));
+    assert!(!cursor.due(&key(2, 2), t));
+}
+
 #[derive(Clone, Default)]
 struct Clock(Arc<Mutex<Duration>>);
 
