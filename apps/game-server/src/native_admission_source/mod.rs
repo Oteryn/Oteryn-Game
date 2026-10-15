@@ -1,5 +1,6 @@
 use std::{fmt, io};
 pub mod account_characters;
+pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
 pub mod runtime_status;
@@ -17,6 +18,9 @@ pub enum SourceError {
     InvalidInput,
     Unauthorized,
     Unavailable,
+    /// A `200` whose body exceeds the bound, where the caller asked to tell it
+    /// apart from any other over-capacity response.
+    OversizedOk,
     Io(io::Error),
     Tls(rustls::Error),
 }
@@ -28,6 +32,7 @@ impl fmt::Display for SourceError {
             Self::InvalidInput => "invalid native source input",
             Self::Unauthorized => "native source unauthorized",
             Self::Unavailable => "native source unavailable",
+            Self::OversizedOk => "native source success body over its bound",
             Self::Io(_) => "native source I/O unavailable",
             Self::Tls(_) => "native source TLS unavailable",
         })

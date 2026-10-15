@@ -34,6 +34,12 @@ pub enum Operation {
     ReportScopeAssignmentV1,
     /// Ownership-authority revocation report (same contract, §16.1).
     ReportScopeRevocationV1,
+    /// Character command pending list (`oteryn-game-character-authority-commands-v1` §4.1).
+    ListPendingCharacterCommandsV1,
+    /// Character command intent read (same contract, §4.2).
+    ReadCharacterCommandIntentV1,
+    /// Character command receipt publication (same contract, §4.3).
+    PublishCharacterCommandReceiptV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -55,11 +61,15 @@ impl Operation {
             }
             Self::ReportScopeAssignmentV1 => super::scope_assignment::PATH,
             Self::ReportScopeRevocationV1 => super::scope_assignment::REVOCATION_PATH,
+            Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
+            Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
+            Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
     /// for the runtime-status report, `LCA-REQUEST-BYTES` and
-    /// `LCA-WATERMARK-BYTES` for the account-characters projection.
+    /// `LCA-WATERMARK-BYTES` for the account-characters projection, and the
+    /// `CHARCMD-*-REQUEST-BYTES` bounds for the Character commands.
     pub const fn request_bytes_max(self) -> usize {
         match self {
             Self::ReadPremiumSnapshotV1 => 256,
@@ -68,6 +78,11 @@ impl Operation {
             Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,
             Self::ReportScopeAssignmentV1 | Self::ReportScopeRevocationV1 => {
                 super::scope_assignment::REPORT_BYTES
+            }
+            Self::ListPendingCharacterCommandsV1 => super::character_commands::LIST_REQUEST_BYTES,
+            Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_REQUEST_BYTES,
+            Self::PublishCharacterCommandReceiptV1 => {
+                super::character_commands::RECEIPT_REQUEST_BYTES
             }
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
