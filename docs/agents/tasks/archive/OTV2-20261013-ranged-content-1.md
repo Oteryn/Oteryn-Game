@@ -35,6 +35,21 @@ owned_paths:
   - tools/content-schema/quest-authoring/samples/binding_packets/** # regenerated; reward item definitions changed
   - .github/workflows/item-authoring-schema.yml # run the new test and --check
   - docs/agents/tasks/archive/OTV2-20261013-ranged-content-1.md
+  # Owner-directed CI repair: exact source-pin cascade inherited from KEY-1 on main.
+  - tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py
+  - tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py
+  - tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py
+  - docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v3.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v3.json
+  - docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v4.json
+  - docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json
+  - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json
+  - apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs
+  - apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs
+  - apps/game-server/src/content/item_numeric_modifier_promotion.rs
+  - apps/game-server/src/content/item_stack_default_successor8_promotion.rs
 public_contracts: []
 depends_on: [ITEM-SEM-2b]
 blocks: [RANGED-CONTENT-1-PR2]
@@ -122,6 +137,30 @@ Conflicts keep the Canary value: 7 wiki damage ranges, 3 ranges, 2 mana costs (h
 ## Context checkpoint
 
 ### Owner-directed PR repair (2026-10-15)
+
+CI repair: returned to AUTHORING from published head
+`c9ca0ec5e96d8774ff2c46beaf0fba80c185e138`. Item authoring reproduced a
+stale `reference_playable.rs` source pin inherited from main's KEY-1 change
+(#2120, `fe101055b3f9804471b514eb27a6a6271cabe95a`). The diff only adds
+`RewardClaimPlacement.key_number` and updates its adjacent documentation; Item
+modifier enums and qualification semantics are unchanged. The repair adds
+successor receipts, regenerates their four dependent packets and updates the
+four Rust packet hashes. Previous receipts and promoted rows remain unchanged.
+
+CI-repair validation: all 37 locally runnable stages of
+`.github/workflows/item-authoring-schema.yml` PASS, including the originally
+failing numeric17 test, the entire source-pin cascade, WorldObject/Terrain tests,
+Item Master census and Ruff (103 files). The five omitted stages install the
+already-installed pinned dependencies, fetch external appearance/catalogue
+sources, or require a clean CI checkout. Schema regeneration is byte-identical
+outside this repair. Governance validation and 124 tests PASS; formatting PASS.
+All four Rust consumers match the regenerated packet digests. Each packet's
+promotion rows and all non-source fields are identical to the published
+predecessor; all three historical receipts/proofs remain byte-identical.
+Native integration and PostgreSQL qualification remain CI responsibilities.
+`CARGO_BUILD_JOBS=1 cargo clippy --locked -p oteryn-game-server --all-targets
+--quiet -- -D warnings` PASS. The initial parallel analysis was interrupted when
+it reached this environment's 8 GB limit; serial analysis completed successfully.
 
 - Prepared a local AUTHORING repair for the owner's request on #2096. Auto-merge
   was disabled at 06:39:58 UTC, but another actor re-enabled it at 06:40:07 UTC.
