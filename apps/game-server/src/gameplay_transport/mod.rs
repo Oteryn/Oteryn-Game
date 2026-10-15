@@ -2486,13 +2486,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_), _) => None,
         };
-        if self
-            .save_familiar_at_actor_end(actor, session, logout)
-            .await
-            == actor_spell::FamiliarLogoutSave::Unknown
-        {
-            return ReleaseAttempt::Retry;
-        }
         // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
         // before the release can end the Character lease.
         if self.save_monk_state(admitted, actor).await == monk_save::MonkSave::Unknown {
@@ -2509,6 +2502,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             KillRelease::Deferred => return ReleaseAttempt::Retry,
         };
         let kills = *kills;
+        // The familiar's actor-end snapshot is the last save before the durable release, so no
+        // retryable step can follow a committed logout snapshot and leave the session running
+        // on it (#2127 Codex P1 4279636456).
+        if self
+            .save_familiar_at_actor_end(actor, session, logout)
+            .await
+            == actor_spell::FamiliarLogoutSave::Unknown
+        {
+            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+            return ReleaseAttempt::Retry;
+        }
         // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
         let releasing = self.final_position_store(store, session, actor).await;
         let outcome = match release {
