@@ -79,7 +79,7 @@ use oteryn_protocol_oteryn::achievement_notices::{
 };
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, COMMAND_TYPE_ATTACK_TARGET_INTENT,
-    COMMAND_TYPE_FIGHT_MODES_INTENT, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+    COMMAND_TYPE_FIGHT_MODES_INTENT, ChaseMode, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
     STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
     encode_attack_intent_result,
 };
@@ -430,6 +430,66 @@ pub(crate) trait FreshAdmissionAuthority {
         direction: StepDirection,
     ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
         async move { (self.step(actor, direction).await, None) }
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the server-driven chase step of `actor` due now, taken like
+    /// [`Self::paced_step`] and answered the same way; `None` when the chase takes no step.
+    /// Fixtures without a chase keep this default.
+    fn chase_step(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<(StepOutcome, Option<std::time::Duration>)>> {
+        async { None }
+    }
+
+    /// CHASE-1 (`RANGED0-RL-03`): whether `actor`'s chase has a due search the Channel budget
+    /// has not admitted yet. Fixtures without a chase keep this default.
+    fn chase_search_waiting(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the actor-owned pacing deadline of `actor` still ahead, which a
+    /// replaced or resumed connection starts from. Fixtures without one keep this default.
+    fn actor_step_deadline(
+        &self,
+        _actor: ExactActorRef,
+    ) -> impl Future<Output = Option<tokio::time::Instant>> {
+        async { None }
+    }
+
+    /// CHASE-1: claim `actor`'s pacing clock for one step of the connection owning `holder`,
+    /// atomically with the check; `Some` with when to ask again while it is still held.
+    fn begin_actor_step(
+        &self,
+        _actor: ExactActorRef,
+        _holder: &std::sync::Arc<()>,
+    ) -> impl Future<Output = Option<tokio::time::Instant>> {
+        async { None }
+    }
+
+    /// CHASE-1: the step `holder` claimed ended; `actor`'s pacing clock is now due at `due`, or
+    /// free.
+    fn record_actor_step_deadline(
+        &self,
+        _actor: ExactActorRef,
+        _holder: &std::sync::Arc<()>,
+        _due: Option<tokio::time::Instant>,
+    ) -> impl Future<Output = ()> {
+        async {}
+    }
+
+    /// CHASE-1: a client step of `actor` arrived; it wins over the chase, whose route is dropped.
+    fn yield_chase_to_client(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = ()> {
+        async {}
     }
 
     /// STEP-PACE-WIRE-1 rollout switch: whether a capability 13 session's step results carry the
@@ -1233,6 +1293,11 @@ const SERENE_EVALUATION: std::time::Duration =
 /// without its own step.
 const VISIBILITY_REFRESH: std::time::Duration = std::time::Duration::from_millis(250);
 
+/// CHASE-1 (`RANGED0-RL-03`): a chase search the Channel budget refused asks again one owner
+/// window later.
+const CHASE_SEARCH_RETRY: std::time::Duration =
+    std::time::Duration::from_micros(crate::combat_attack::CHASE_WINDOW_MICROS);
+
 /// VIS-3: the domain 1 handles of a spatial view's objects under capability 4 (ITEM-VIEW-1b
 /// §4.1); without an item view there are none to attach.
 fn attach_spatial_handles(
@@ -1309,6 +1374,26 @@ fn world_clock_delta(
 }
 
 pub(crate) async fn serve_admitted<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let (actor, session) = (admitted.runtime_actor, admitted.game_session_id);
+    let end = serve_admitted_actor(stream, admitted, authority, policy).await;
+    // CHASE-1 (`RANGED0-RL-03`): the ended connection drives no more chase, so its waiting
+    // search leaves the Channel's ordering now rather than holding a place through the grace.
+    if let Some(actor) = actor {
+        authority.yield_chase_to_client(actor, session).await;
+    }
+    end
+}
+
+async fn serve_admitted_actor<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
     authority: &A,
@@ -1788,16 +1873,27 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
-    // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
-    // frames read while a step waits in it. Those frames run, in order, only after the buffered
-    // step's result, because results commit in CommandId order (FND-02 §13); a step among them
-    // arrived while the buffer was full and is refused. All of it ends with the connection, so
-    // the buffer is dropped at disconnect and a resumed connection starts empty.
-    let mut pacer = StepPacer::default();
+    // SPEED-1 (CONDITIONS-0 §4.3): the actor's pacing clock, this connection's one-step buffer
+    // and the frames read while a step waits in it. Those frames run, in order, only after the
+    // buffered step's result, because results commit in CommandId order (FND-02 §13); a step
+    // among them arrived while the buffer was full and is refused. The buffer ends with the
+    // connection, so a resumed connection starts with an empty one; the clock is the actor's
+    // (CHASE-1, RANGED-0 §8): it starts from the actor's deadline and records to it, so a
+    // replaced or resumed connection never steps sooner.
+    let mut pacer = StepPacer::resumed(authority.actor_step_deadline(actor).await);
+    // CHASE-1: this connection's claims on the actor's pacing clock live while it does.
+    let step_holder = std::sync::Arc::new(());
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
     let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
+    // CHASE-1 (RANGED-0 §8): when the next chase step is checked, on the same pacing clock as a
+    // client step; at most one is pending. Armed by a combat tick that holds a chasing target
+    // and by a chase step that moved.
+    let mut chase_due: Option<tokio::time::Instant> = None;
+    // CHASE-1: a ready client frame was already read ahead of the due chase step; the next poll
+    // runs that step first, so non-step traffic never postpones it indefinitely.
+    let mut chase_yielded = false;
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
@@ -1810,6 +1906,7 @@ where
             Chat,
             Visibility,
             Combat,
+            Chase,
             Npc,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
@@ -1869,6 +1966,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut chase_tick = std::pin::pin!(async {
+                match chase_due {
+                    Some(due) => tokio::time::sleep_until(due).await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
@@ -1894,8 +1997,19 @@ where
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
                 }
+                // CHASE-1: one ready client frame is read before a due chase step, so a client
+                // step wins over the chase (RANGED-0 §8) and is never paced behind it; after
+                // that frame the due chase step runs before the next one.
+                let chase_ready = chase_tick.as_mut().poll(context).is_ready();
+                if chase_ready && chase_yielded {
+                    return std::task::Poll::Ready(Next::Chase);
+                }
                 if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                    chase_yielded = chase_ready;
                     return std::task::Poll::Ready(Next::Frame(read));
+                }
+                if chase_ready {
+                    return std::task::Poll::Ready(Next::Chase);
                 }
                 std::task::Poll::Pending
             })
@@ -2025,6 +2139,13 @@ where
                 else {
                     continue;
                 };
+                if chase_due.is_none()
+                    && state.target.is_some()
+                    && state.modes.chase == ChaseMode::Chase
+                {
+                    let now = tokio::time::Instant::now();
+                    chase_due = Some(pacer.wait_until(now).unwrap_or(now));
+                }
                 let Some(change) = admitted
                     .continuity
                     .combat
@@ -2040,6 +2161,58 @@ where
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                continue;
+            }
+            Next::Chase => {
+                // CHASE-1: a client step waiting in the buffer wins over the chase.
+                chase_due = None;
+                chase_yielded = false;
+                if buffered.is_some() {
+                    continue;
+                }
+                if let Some(due) =
+                    begin_actor_step(&mut pacer, authority, actor, &step_holder).await
+                {
+                    chase_due = Some(due);
+                    continue;
+                }
+                let step = authority.chase_step(actor, admitted.game_session_id).await;
+                let duration = step.as_ref().and_then(|(_, duration)| *duration);
+                record_actor_step(&mut pacer, authority, actor, &step_holder, duration).await;
+                let Some((outcome, _)) = step else {
+                    // RANGED0-RL-03: a search the Channel budget refused retries in the next
+                    // owner window, not at the next combat tick.
+                    if authority
+                        .chase_search_waiting(actor, admitted.game_session_id)
+                        .await
+                    {
+                        chase_due = Some(tokio::time::Instant::now() + CHASE_SEARCH_RETRY);
+                    }
+                    continue;
+                };
+                let Some(observation) = outcome.moved_to else {
+                    continue;
+                };
+                if moved_step_frames(
+                    stream,
+                    authority,
+                    actor,
+                    &mut admitted,
+                    visibility.as_mut(),
+                    item_view.as_mut(),
+                    world_map.as_mut(),
+                    generation,
+                    &mut sequence,
+                    &mut revision,
+                    observation,
+                )
+                .await
+                .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                let now = tokio::time::Instant::now();
+                chase_due = Some(pacer.wait_until(now).unwrap_or(now));
                 continue;
             }
             Next::Visibility => {
@@ -2275,8 +2448,18 @@ where
                     Dispatch::Step(StepOutcome::too_early(), too_early_step_wait_ms(left))
                 }
                 Ok(direction) => {
+                    // CHASE-1: client intent wins; the pending chase step and its route drop.
+                    chase_due = None;
+                    chase_yielded = false;
+                    authority
+                        .yield_chase_to_client(actor, admitted.game_session_id)
+                        .await;
                     let now = tokio::time::Instant::now();
-                    if let Some(due) = pacer.wait_until(now) {
+                    let wait = match pacer.wait_until(now) {
+                        Some(due) => Some(due),
+                        None => begin_actor_step(&mut pacer, authority, actor, &step_holder).await,
+                    };
+                    if let Some(due) = wait {
                         buffered = Some(BufferedStep { frame, due });
                         continue;
                     }
@@ -2285,7 +2468,7 @@ where
                         .await;
                     // The clock starts when the step committed, so a slow owner turn never
                     // shortens the next step's wait.
-                    pacer.record(tokio::time::Instant::now(), duration);
+                    record_actor_step(&mut pacer, authority, actor, &step_holder, duration).await;
                     // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
                     let wait = if outcome.disposition == StepDisposition::Moved {
                         moved_step_wait_ms(duration)
@@ -2812,115 +2995,24 @@ where
         }
         match dispatch {
             Dispatch::Step(outcome, _) => {
-                if let Some(observation) = outcome.moved_to {
-                    // VIS-3: with capability 6 the step's delta is the interest set's change (a
-                    // resync ends the connection); without it, the v1 own-actor delta.
-                    let (frames_out, delta_sequence, new_revision) =
-                        if let Some(view) = visibility.as_mut() {
-                            let Some(mut channel) = authority.observe_visible_entities(actor).await
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            // The step's committed position is the observer's own.
-                            let observer = channel.observer;
-                            for own in channel
-                                .entities
-                                .iter_mut()
-                                .filter(|entity| entity.identity == observer)
-                            {
-                                own.position = observation.actor_position;
-                            }
-                            let update = view.refresh(&channel, &mut |entities| {
-                                attach_spatial_handles(item_view.as_mut(), entities)
-                            });
-                            if let Some(item_view) = &item_view {
-                                admitted.continuity.item_view = item_view.continuity();
-                            }
-                            let Some(sent) = update.ok().and_then(|update| {
-                                visibility_frames(
-                                    generation,
-                                    sequence,
-                                    revision,
-                                    selected_capabilities.as_slice(),
-                                    view.lights(),
-                                    &update,
-                                )
-                            }) else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            sent
-                        } else {
-                            let (Some(delta_sequence), Some(new_revision)) =
-                                (sequence.checked_add(1), revision.checked_add(1))
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            let Ok(delta) = encode_state_delta(
-                                generation,
-                                delta_sequence,
-                                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                                revision,
-                                new_revision,
-                                DELTA_TYPE_WORLD_SPATIAL_V1,
-                                &encode_world_spatial(&observation),
-                            ) else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            (vec![delta], delta_sequence, new_revision)
-                        };
-                    sequence = delta_sequence;
-                    admitted.continuity.server_sequence = sequence;
-                    for frame in &frames_out {
-                        if write_frame(stream, frame).await.is_err() {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        }
-                    }
-                    // r4122508665: only record the new spatial revision once the delta that
-                    // carries it has actually been transmitted (this had the same
-                    // before-the-write ordering bug the overlay path did).
-                    revision = new_revision;
-                    admitted.continuity.spatial_revision = revision;
-                    // ITEM-VIEW-1b §4.3: a step out of reach or to another floor closes the
-                    // open corpse.
-                    if let Some(view) = item_view.as_mut() {
-                        let closed = view.close(&CloseTrigger::Moved {
-                            to: observation.actor_position,
-                        });
-                        admitted.continuity.item_view = view.continuity();
-                        let Ok(closed) = closed else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        if let Some(delta) = closed {
-                            let Some((delta_sequence, frame)) =
-                                item_view_delta(generation, sequence, &delta)
-                            else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            sequence = delta_sequence;
-                            admitted.continuity.server_sequence = sequence;
-                            if write_frame(stream, &frame).await.is_err() {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            }
-                        }
-                    }
-                    // MAP-WIRE-2: the tiles the step brought into, kept in or took out of view.
-                    if let (Some(view), Some(items)) = (world_map.as_mut(), item_view.as_mut()) {
-                        let update =
-                            world_map_delta(authority, actor, generation, sequence, view, items)
-                                .await;
-                        admitted.continuity.item_view = items.continuity();
-                        let Some(update) = update else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        if let Some((delta_sequence, frame)) = update {
-                            sequence = delta_sequence;
-                            admitted.continuity.server_sequence = sequence;
-                            admitted.continuity.world_map_revision = view.revision();
-                            if write_frame(stream, &frame).await.is_err() {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            }
-                        }
-                    }
+                if let Some(observation) = outcome.moved_to
+                    && moved_step_frames(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        visibility.as_mut(),
+                        item_view.as_mut(),
+                        world_map.as_mut(),
+                        generation,
+                        &mut sequence,
+                        &mut revision,
+                        observation,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
             Dispatch::Use(outcome) => {
@@ -3289,6 +3381,141 @@ fn item_view_delta(
     )
     .ok()?;
     Some((delta_sequence, frame))
+}
+
+/// SPEED-1 with CHASE-1 (RANGED-0 §8): claim `actor`'s pacing clock for one step of the
+/// connection owning `holder`; the claim holds until [`record_actor_step`], or until the
+/// connection and its holder are gone. `Some(due)` when another connection's deadline or step in
+/// flight still holds it; the connection's copy then waits for it too.
+async fn begin_actor_step<A: FreshAdmissionAuthority>(
+    pacer: &mut StepPacer,
+    authority: &A,
+    actor: ExactActorRef,
+    holder: &std::sync::Arc<()>,
+) -> Option<tokio::time::Instant> {
+    let due = authority.begin_actor_step(actor, holder).await?;
+    *pacer = StepPacer::resumed(Some(due));
+    Some(due)
+}
+
+/// SPEED-1 with CHASE-1: the step claimed by [`begin_actor_step`] ended; its pacing clock
+/// starts now, on the connection's copy and on the actor's own deadline (RANGED-0 §8). Only a
+/// moved step has a duration; any other end releases the claim.
+async fn record_actor_step<A: FreshAdmissionAuthority>(
+    pacer: &mut StepPacer,
+    authority: &A,
+    actor: ExactActorRef,
+    holder: &std::sync::Arc<()>,
+    duration: Option<std::time::Duration>,
+) {
+    pacer.record(tokio::time::Instant::now(), duration);
+    let due = duration.and(pacer.next_due());
+    authority
+        .record_actor_step_deadline(actor, holder, due)
+        .await;
+}
+
+/// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
+/// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
+/// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
+/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
+/// result, a chase step (CHASE-1) on its own. `None` ends the connection.
+#[allow(clippy::too_many_arguments)]
+async fn moved_step_frames<S, A>(
+    stream: &mut S,
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    visibility: Option<&mut SessionVisibility>,
+    mut item_view: Option<&mut SessionItemView>,
+    world_map: Option<&mut SessionMapView>,
+    generation: u64,
+    sequence: &mut u64,
+    revision: &mut u64,
+    observation: WorldSpatialObservation,
+) -> Option<()>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let selected_capabilities = admitted.continuity.selected_capabilities;
+    let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
+        let mut channel = authority.observe_visible_entities(actor).await?;
+        // The step's committed position is the observer's own.
+        let observer = channel.observer;
+        for own in channel
+            .entities
+            .iter_mut()
+            .filter(|entity| entity.identity == observer)
+        {
+            own.position = observation.actor_position;
+        }
+        let update = view.refresh(&channel, &mut |entities| {
+            attach_spatial_handles(item_view.as_deref_mut(), entities)
+        });
+        if let Some(item_view) = &item_view {
+            admitted.continuity.item_view = item_view.continuity();
+        }
+        update.ok().and_then(|update| {
+            visibility_frames(
+                generation,
+                *sequence,
+                *revision,
+                selected_capabilities.as_slice(),
+                view.lights(),
+                &update,
+            )
+        })?
+    } else {
+        let (Some(delta_sequence), Some(new_revision)) =
+            (sequence.checked_add(1), revision.checked_add(1))
+        else {
+            return None;
+        };
+        let delta = encode_state_delta(
+            generation,
+            delta_sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            *revision,
+            new_revision,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &encode_world_spatial(&observation),
+        )
+        .ok()?;
+        (vec![delta], delta_sequence, new_revision)
+    };
+    *sequence = delta_sequence;
+    admitted.continuity.server_sequence = *sequence;
+    for frame in &frames_out {
+        write_frame(stream, frame).await.ok()?;
+    }
+    // r4122508665: only record the new spatial revision once the delta that carries it has
+    // actually been transmitted.
+    *revision = new_revision;
+    admitted.continuity.spatial_revision = *revision;
+    if let Some(view) = item_view.as_deref_mut() {
+        let closed = view.close(&CloseTrigger::Moved {
+            to: observation.actor_position,
+        });
+        admitted.continuity.item_view = view.continuity();
+        if let Some(delta) = closed.ok()? {
+            let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
+            *sequence = delta_sequence;
+            admitted.continuity.server_sequence = *sequence;
+            write_frame(stream, &frame).await.ok()?;
+        }
+    }
+    if let (Some(view), Some(items)) = (world_map, item_view) {
+        let update = world_map_delta(authority, actor, generation, *sequence, view, items).await;
+        admitted.continuity.item_view = items.continuity();
+        if let Some((delta_sequence, frame)) = update? {
+            *sequence = delta_sequence;
+            admitted.continuity.server_sequence = *sequence;
+            admitted.continuity.world_map_revision = view.revision();
+            write_frame(stream, &frame).await.ok()?;
+        }
+    }
+    Some(())
 }
 
 /// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no

@@ -3231,6 +3231,45 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<Duration>)> {
+        self.chase_step_now(actor, session).await
+    }
+
+    async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.chase_yield_to_client(actor, session).await;
+    }
+
+    async fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.chase_search_waiting_now(actor, session).await
+    }
+
+    async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.actor_step_deadline_now(actor).await
+    }
+
+    async fn begin_actor_step(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+    ) -> Option<tokio::time::Instant> {
+        self.begin_actor_step_now(actor, holder).await
+    }
+
+    async fn record_actor_step_deadline(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+        due: Option<tokio::time::Instant>,
+    ) {
+        self.record_actor_step_deadline_now(actor, holder, due)
+            .await;
+    }
+
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
     async fn use_item(
         &self,

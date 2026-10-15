@@ -8,6 +8,7 @@
 //! melee and the creature's block budget, defence and armor there.
 
 mod block;
+mod chase;
 mod constants;
 mod formulas;
 #[cfg(test)]
@@ -17,6 +18,9 @@ mod target;
 mod tests;
 
 pub(crate) use block::BlockBudget;
+pub(crate) use chase::{
+    CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState,
+};
 pub(crate) use constants::{AttackConstants, FightMode};
 #[cfg(test)]
 use formulas::{DefenceSource, defence_formula, defence_mode_factor, zero_skill_defence_bounds};
