@@ -100,7 +100,10 @@ stale NAS writer restart, no arbitrary runner shell/root/Docker access.
 - python -m unittest discover -s tools/repository -p 'test_*.py': PASS (88 tests)
 - python tools/agents/validate_governance.py: PASS
 - python -m unittest discover -s tools/agents/tests: PASS (124 tests)
-- Exact game-gate and independent review: pending candidate publication.
+- Exact source candidate 26954117868d25f31575f3a5e1d3bd8f19405c69: game-gate PASS; independent Codex review completed with no findings (summary comment 6203346942).
+- Governed queue request 6203757391: executor run 38818727492/job 116709781838 succeeded; receipt 1bc51b72-cf9b-4b01-bd43-67be9149d709 sequence 1/2 readback verified.
+- Real merge_group run 38818782335 and game-gate check 116711350839: PASS at fb11de5c9845e4f3eacc0173074d9927834164ae; protected-main readback matched.
+- Protected-main governance subsequently detected the terminal active PR reference; this operational packet repair removes it while preserving the incomplete physical acceptance boundary.
 
 Review finding 4288835355 accepted: add the negative Docker capability probe
 before SSH, covering custom socket/context and DOCKER_HOST endpoints as well as
