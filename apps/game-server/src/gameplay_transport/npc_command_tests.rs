@@ -241,20 +241,20 @@ fn a_chat_greeting_and_a_command_share_one_conversation() {
         at(BASE + 300_000),
     );
     assert_eq!(topic.disposition, NpcIntentDisposition::Ok);
-    let shown = conversations.follow(&chat, &runtime, actor, session, None);
+    let shown = conversations.follow(&chat, &runtime, session, None);
     let shown = shown.expect("payload").conversation.expect("conversation");
     assert_eq!(shown.open.map(|(n, _)| n), Some(npc));
 }
 
 #[test]
 fn walking_out_of_range_closes_the_conversation_with_the_farewell() {
-    let (runtime, actor, session, npc) = fixture(TALK_RANGE_TILES + 1);
+    let (runtime, _, session, npc) = fixture(TALK_RANGE_TILES + 1);
     let chat = chat_of(session);
     let conversations = NpcConversations::default();
     let npc_actor = runtime.visible_entities().npcs[0].actor;
     chat.converse(session, |engaged| *engaged = Some(npc_actor))
         .expect("session");
-    let closed = conversations.follow(&chat, &runtime, actor, session, Some(npc));
+    let closed = conversations.follow(&chat, &runtime, session, Some(npc));
     let closed = closed.expect("payload").conversation.expect("conversation");
     assert_eq!(closed.open, None);
     assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
@@ -568,17 +568,17 @@ fn walking_away_closes_the_window_with_the_conversation() {
     // The follow tick sees the conversation intact, so nothing changes.
     assert!(
         conversations
-            .follow(&chat, &runtime, actor, session, Some(npc))
+            .follow(&chat, &runtime, session, Some(npc))
             .is_none()
     );
     chat.end_engagement(session, runtime.visible_entities().npcs[0].actor);
     let update = conversations
-        .follow(&chat, &runtime, actor, session, Some(npc))
+        .follow(&chat, &runtime, session, Some(npc))
         .expect("update");
     assert_eq!(update.window, Some(NpcTradeWindow::default()));
     assert!(
         conversations
-            .follow(&chat, &runtime, actor, session, None)
+            .follow(&chat, &runtime, session, None)
             .is_none()
     );
 }
@@ -813,4 +813,59 @@ fn a_trade_intent_needs_the_conversation_its_window_and_the_npc_in_range() {
         Err(refusal) => refusal,
     };
     assert_eq!(far.disposition, NpcIntentDisposition::NotInRange);
+}
+
+#[test]
+fn a_move_closes_only_beyond_talk_range_and_the_follow_carries_the_walk_away_line() {
+    let (runtime, _, session, _) = fixture(TALK_RANGE_TILES);
+    let chat = chat_of(session);
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    chat.converse(session, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    assert!(!chat.close_out_of_range(&runtime, session));
+    assert_eq!(chat.engaged(session), Some(npc_actor));
+
+    let (runtime, _, session, npc_far) = fixture(TALK_RANGE_TILES + 1);
+    let chat = chat_of(session);
+    let far_actor = runtime.visible_entities().npcs[0].actor;
+    chat.converse(session, |engaged| *engaged = Some(far_actor))
+        .expect("session");
+    assert!(chat.close_out_of_range(&runtime, session));
+    assert!(chat.engaged(session).is_none());
+    // Closed already: a second check changes nothing.
+    assert!(!chat.close_out_of_range(&runtime, session));
+    let closed = NpcConversations::default()
+        .follow(&chat, &runtime, session, Some(npc_far))
+        .expect("payload")
+        .conversation
+        .expect("conversation");
+    assert_eq!(closed.open, None);
+    assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
+}
+
+#[test]
+fn the_newest_customer_is_the_tail_of_the_queue() {
+    let (runtime, _, first, _) = fixture(2);
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    let chat = chat_of(first);
+    let (_, _, second) = runtime_with_capacity(0x72, 3);
+    chat.admit(second, "Bren", at(BASE));
+    chat.set_npc_service(second);
+    assert_eq!(chat.newest_customer(npc_actor), None);
+    for session in [first, second] {
+        chat.converse(session, |engaged| *engaged = Some(npc_actor))
+            .expect("session");
+    }
+    assert_eq!(chat.newest_customer(npc_actor), Some(second));
+    // A topic in an open conversation does not move the customer to the tail.
+    chat.converse(first, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    assert_eq!(chat.newest_customer(npc_actor), Some(second));
+    // The tail leaves: the NPC faces the remaining customer.
+    assert!(chat.end_engagement(second, npc_actor));
+    assert_eq!(chat.newest_customer(npc_actor), Some(first));
+    // Joining again puts it at the tail.
+    chat.converse(second, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    assert_eq!(chat.newest_customer(npc_actor), Some(second));
 }

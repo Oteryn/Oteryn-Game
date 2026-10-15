@@ -164,44 +164,27 @@ impl NpcConversations {
     }
 
     /// The domain 7 payload when the conversation of `session` differs from `shown`, the NPC the
-    /// connection last showed: a conversation the chat path opened, or one whose NPC is gone or
-    /// out of `NPC0-RL-07` range, which ends here (NPC-0 section 4.1).
+    /// connection last showed: a conversation the chat path opened, or one a move closed or whose
+    /// NPC is gone or out of `NPC0-RL-07` range, which ends here with the NPC's walk-away line
+    /// (NPC-0 section 4.1, NPC-BEHAVIOUR-0 section 7). The range check runs on every committed
+    /// step ([`ChatRuntime::close_out_of_range`]); here it also catches any other relocation.
     pub(crate) fn follow(
         &self,
         chat: &ChatRuntime,
         runtime: &ChannelRuntimeV1,
-        actor: ExactActorRef,
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
-        let engaged = chat.engaged(session);
-        let mut current = None;
-        let mut farewell = None;
-        if let Some(npc_ref) = engaged {
+        chat.close_out_of_range(runtime, session);
+        let farewell = chat.take_walked_away(session);
+        let current = chat.engaged(session).and_then(|npc_ref| {
             let visible = runtime.visible_entities();
-            let near = visible
-                .npcs
-                .iter()
-                .find(|npc| npc.actor == npc_ref)
-                .zip(visible.players.iter().find(|entry| entry.actor == actor))
-                .filter(|(npc, speaker)| {
-                    speaker.position.floor == npc.position.floor
-                        && speaker.position.x.abs_diff(npc.position.x) <= TALK_RANGE_TILES
-                        && speaker.position.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES
-                });
-            if let Some((npc, _)) = near {
-                current = Some(EntityRef {
-                    identity: npc.actor.placement_identity(),
-                    generation: npc.generation,
-                });
-            } else {
-                chat.end_engagement(session, npc_ref);
-                farewell = chat
-                    .npc_talk()
-                    .and_then(|book| runtime.npc_key(npc_ref).and_then(|key| book.get(key)))
-                    .map(|entry| entry.farewell().to_owned());
-            }
-        }
+            let npc = visible.npcs.iter().find(|npc| npc.actor == npc_ref)?;
+            Some(EntityRef {
+                identity: npc.actor.placement_identity(),
+                generation: npc.generation,
+            })
+        });
         let window = self.close_window(session, current.map(|npc| npc.identity));
         let conversation = (current != shown).then(|| NpcConversation {
             open: current.map(|npc| (npc, NpcConversationState::Open)),

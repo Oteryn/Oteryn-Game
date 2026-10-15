@@ -8,12 +8,13 @@
 
 use std::collections::HashMap;
 use std::num::NonZeroU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatSpeaker, ChatSpeechMode,
 };
-use oteryn_protocol_oteryn::npc_service::MAX_OPEN_CONVERSATIONS_PER_NPC;
+use oteryn_protocol_oteryn::npc_service::{MAX_OPEN_CONVERSATIONS_PER_NPC, TALK_RANGE_TILES};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::actor_spell::ChannelSpellStates;
@@ -45,6 +46,11 @@ struct ChatSession {
     egress: ChatEgress,
     /// The NPC this session is in conversation with (NPC-TALK-1).
     engaged: Option<ExactActorRef>,
+    /// When the session joined its NPC's customer queue: the newest customer has the highest
+    /// (NPC-TALK-2, NPC-BEHAVIOUR-0 §7).
+    joined: u64,
+    /// The walk-away line of a conversation a move closed, for the next domain 7 payload.
+    walked_away: Option<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
 }
@@ -56,6 +62,8 @@ pub(crate) struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
     npc_talk: OnceLock<Arc<NpcTalkBook>>,
+    /// The last customer queue position handed out.
+    joins: AtomicU64,
 }
 
 impl ChatRuntime {
@@ -68,11 +76,14 @@ impl ChatRuntime {
                 limiter: ChatLimiter::new(now),
                 egress: ChatEgress::new(),
                 engaged: None,
+                joined: 0,
+                walked_away: None,
                 npc_service: false,
             });
             entry.name = name.to_owned();
             entry.egress.clear();
             entry.engaged = None;
+            entry.walked_away = None;
             entry.npc_service = false;
         }
     }
@@ -100,6 +111,7 @@ impl ChatRuntime {
         {
             entry.egress.clear();
             entry.engaged = None;
+            entry.walked_away = None;
             entry.npc_service = false;
         }
     }
@@ -112,6 +124,7 @@ impl ChatRuntime {
         {
             entry.npc_service = true;
             entry.engaged = None;
+            entry.walked_away = None;
         }
     }
 
@@ -150,12 +163,84 @@ impl ChatRuntime {
         let result = step(&mut entry.engaged);
         if let Some(npc) = entry.engaged
             && prior != Some(npc)
-            && crowded(&sessions, session, npc)
         {
-            sessions.get_mut(&session)?.engaged = prior;
-            return None;
+            if crowded(&sessions, session, npc) {
+                sessions.get_mut(&session)?.engaged = prior;
+                return None;
+            }
+            sessions.get_mut(&session)?.joined = self.next_join();
         }
         Some(result)
+    }
+
+    fn next_join(&self) -> u64 {
+        self.joins.fetch_add(1, Ordering::Relaxed) + 1
+    }
+
+    /// The newest customer of `npc`, the tail of its queue: the one the NPC faces
+    /// (NPC-BEHAVIOUR-0 §7; GAME-AI reads it to turn the NPC).
+    #[allow(dead_code, reason = "GAME-AI reads it to turn the NPC (NPC-ACTOR-1)")]
+    pub(crate) fn newest_customer(&self, npc: ExactActorRef) -> Option<GameSessionId> {
+        let sessions = self.sessions.lock().ok()?;
+        sessions
+            .iter()
+            .filter(|(_, entry)| entry.engaged == Some(npc))
+            .max_by_key(|(_, entry)| entry.joined)
+            .map(|(session, _)| *session)
+    }
+
+    /// The range check after a committed move or relocation of the customer `session`
+    /// (NPC-BEHAVIOUR-0 §7, `NPC0-RL-07`): a conversation whose NPC is gone, on another floor or
+    /// more than [`TALK_RANGE_TILES`] tiles away closes, and the NPC's walk-away line waits for
+    /// the session's next domain 7 payload. Whether it closed.
+    pub(crate) fn close_out_of_range(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) -> bool {
+        let Some(npc) = self.engaged(session) else {
+            return false;
+        };
+        let customer = runtime
+            .positioned_player_for_session(session)
+            .ok()
+            .flatten()
+            .map(|(_, snapshot)| snapshot.position());
+        let visible = runtime.visible_entities();
+        let placed = visible.npcs.iter().find(|placed| placed.actor == npc);
+        let near = customer.zip(placed).is_some_and(|(at, placed)| {
+            at.floor == placed.position.floor
+                && at.x.abs_diff(placed.position.x) <= TALK_RANGE_TILES
+                && at.y.abs_diff(placed.position.y) <= TALK_RANGE_TILES
+        });
+        if near {
+            return false;
+        }
+        let line = self
+            .npc_talk()
+            .and_then(|book| runtime.npc_key(npc).and_then(|key| book.get(key)))
+            .map(|entry| entry.farewell().to_owned());
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return false;
+        };
+        match sessions.get_mut(&session) {
+            Some(entry) if entry.engaged == Some(npc) => {
+                entry.engaged = None;
+                entry.walked_away = line;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// The walk-away line of the conversation a move closed, once.
+    pub(crate) fn take_walked_away(&self, session: GameSessionId) -> Option<String> {
+        self.sessions
+            .lock()
+            .ok()?
+            .get_mut(&session)?
+            .walked_away
+            .take()
     }
 
     pub(crate) fn forget(&self, session: GameSessionId) {
@@ -379,7 +464,16 @@ pub(crate) fn chat_in_premium_channel(
     if mode == SpeechMode::Say
         && let Some(book) = chat.npc_talk.get()
     {
-        npc_answer(book, runtime, &mut sessions, session, at, &text, &listeners);
+        npc_answer(
+            book,
+            &chat.joins,
+            runtime,
+            &mut sessions,
+            session,
+            at,
+            &text,
+            &listeners,
+        );
     }
     result(ChatDisposition::Ok)
 }
@@ -398,8 +492,13 @@ fn crowded(
 }
 
 /// The answer of a nearby NPC to a `say`, queued like any other local line (NPC-TALK-1).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the answer's whole context under the chat lock"
+)]
 fn npc_answer(
     book: &NpcTalkBook,
+    joins: &AtomicU64,
     runtime: &ChannelRuntimeV1,
     sessions: &mut HashMap<GameSessionId, ChatSession>,
     session: GameSessionId,
@@ -450,6 +549,12 @@ fn npc_answer(
             speaking.engaged = prior;
         }
         return;
+    }
+    if prior != Some(reply.id)
+        && let Some(speaking) = sessions.get_mut(&session)
+        && speaking.engaged == Some(reply.id)
+    {
+        speaking.joined = joins.fetch_add(1, Ordering::Relaxed) + 1;
     }
     let Some((actor, generation, position, entry)) =
         spots.iter().find(|(actor, ..)| *actor == reply.id)
