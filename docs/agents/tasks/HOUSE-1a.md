@@ -120,3 +120,81 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded local preparation (2026-10-15)
+
+- Existing draft #2137, `skeleton/house-1a`, inspected source
+  `212540a23cfb5f1654367567ee7b9bba29f0e07d`. This preparation is restricted to
+  `src/house/auction.rs`, its `auction_tests.rs`, and this record. No module registration,
+  migration, registry, runtime, content pin, regeneration, commit or publication is included.
+- Accepted basis: HOUSE-OWN-0 §4 and §12, accepted by ACCEPT-SOCIAL-MAP-0 #1771
+  (the acceptance document explicitly names `HOUSE-OWN0-PHYSICAL-HOUSE-OWNERSHIP-V1`),
+  and SOCIAL-MAP-PACKETS-1 §1.3, §1.9 and §2.3. The older brief's CANDIDATE header does
+  not introduce an ACCEPT-BATCH #2207 dependency for this allocation.
+- Scope discrepancy: this skeleton broadly mentions rent/grace. The accepted §1.3 split
+  assigns ongoing rent collection, grace, warnings, eviction, move-out and disposition to
+  HOUSE-1b. HOUSE-1a covers acquisition/auction and the first rent reserved with a bid.
+  The packet locates pure rules under `domain/house_auction.rs`; the local allocation instead
+  owns `house/auction.rs`. Final placement/registration remains a CP-slot decision.
+- Prepared pure subset: proxy price and chronological maximum ties, the 256-bidder bound,
+  maximum-plus-snapshotted-first-rent arithmetic and raise/lower deltas, escrow-return
+  headroom arithmetic, seven-day opening and fifteen-minute anti-sniping deadlines.
+  Existing `domain::AccountId` and bank-style `u64` gold are reused. No new identity,
+  money wrapper, table, schema, authority proof, escrow writer or host action is invented.
+- A quote is a calculation over the supplied qualified bid set, not settlement authority.
+  The future writer must independently check current Character/Account/World binding,
+  property state/ownership, housing slot, ban, eligibility/Premium, held escrow and bank facts
+  under the accepted lock/fence order, then update escrow, balance, ledger and event atomically.
+  Settlement must exclude currently ineligible bids before calculating the proxy price.
+  Maximum-reached order is a serialized durable input, not a client timestamp or tie fallback.
+  The pure tests cover input ordering, not actual concurrent writers or exactly-once durability.
+- `cross_domain_finding: HOUSE-1a-BANK-HEADROOM`: SOCIAL-MAP §1.12 requires the one shared
+  credit-headroom check and architect escalation if a credit path does not use it. On this
+  supplied source, `durability/bank.rs` deposit and receiver-transfer paths directly apply
+  `checked_add`/`BANK_BALANCE_MAX` (around lines 1473 and 1781), with no shared headroom
+  helper; `bank_audit::BANK_BALANCE_MAX` is still 999,999,999,999. The detached arithmetic
+  does not implement the RL-15 deferred guard, change that ceiling or integrate any credit.
+  CP/architect must resolve and allocate this bank seam before acquisition integration.
+- HOUSE-RUNTIME-1a/1b/1c and the exit gate remain runtime/slot dependencies. The detached
+  subset assumes no unmerged schema. Premium proof consumption and batch-gate-before-lock
+  wiring (§1.4), nomination/eligibility, one bid/slot per Account+World, property/tile guards,
+  escrow custody, settlement, release jobs, replay bindings, audit, migrations and resource
+  registration remain incomplete. No auction can open from this detached module.
+
+### Source-accurate local harness
+
+`/workspace/oteryn-prep/house-1a-evidence/harness.rs` includes the allocated auction source
+by path and the verbatim existing `domain/mod.rs` prefix containing `DomainError`, UUIDv7
+validation and the existing strong-ID definitions. The harness adds no replacement identity
+implementation. Its extraction bounds and hashes are retained in `harness-provenance.txt`:
+
+- Existing domain source SHA-256:
+  `93732d431fddb5f2ca6aefc95cc1c61d5b9c513d8110e848d52e6e31762f60df`.
+- Verbatim prefix SHA-256:
+  `5bac8f9bdf403a115c84d6201dceb8350bfb91c64fb4f91620806fcf9999f0f1`.
+- Harness SHA-256:
+  `8d1c33564c46e13d5d948e48a8b61b3ffe989d9a887c599b792d1f0b50faaef6`.
+
+Focused formatting, `rustc --test` and `clippy-driver --test --emit=metadata -D warnings`
+use Rust 1.94.0 under `flock /tmp/oteryn-prep-rust.lock`, shared
+`CARGO_TARGET_DIR=/workspace/oteryn-prep/cargo-target` and `CARGO_BUILD_JOBS=2`.
+These qualify only the detached source subset; package-wide checks, PostgreSQL scenarios,
+independent exact-head review and final CP/architect/slot acceptance remain pending.
+
+Local result: **10 passed, 0 failed, 0 ignored**, covering proxy/no-reserve pricing,
+six input-order permutations and changed-maximum chronology, duplicate/ambiguous inputs,
+256/257 bidders, reserve/raise/lower conservation, gold ceiling/overflow, escrow headroom,
+closed-at-deadline/anti-sniping boundaries and time overflow. Focused `rustfmt --check`
+and `clippy-driver -D warnings` passed. Governance validation passed (22 documents, 9 lanes),
+governance unit tests **124 passed**, and `git diff --check` passed. No package-wide or
+PostgreSQL result is claimed for these unwired rules.
+
+Prepared source SHA-256:
+
+- `auction.rs`: `0fa5ed8c22c5204d09a49139031d21bec45f22ba55537581c66a0c11b604ed34`.
+- `auction_tests.rs`: `727b9289add1ce88939b881613aefcb2da68211bf8e7de7e0e0ed9f3465a12ab`.
+
+Logs/provenance and the small standalone executable remain under
+`/workspace/oteryn-prep/house-1a-evidence/` (about 6.2 MiB); no server binary was built.
+Whole-diff self-review and owned-path check: only the two allocated Rust files and this
+record differ; no shared wiring or durable authority/value mutation was prepared.
