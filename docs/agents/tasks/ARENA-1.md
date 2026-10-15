@@ -21,7 +21,7 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/arena/ (new) + tests"
-  - "content/arenas/ source inputs"
+  - "content/encounters/arenas/ and content/encounters/tibiadrome/ source inputs"
   - "docs/agents/tasks/ARENA-1.md"
 slot_only_paths:
   - "regenerate_content.py outputs, project.json, manifest.json, content.lock.json, pins, Rust pins"
@@ -47,7 +47,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 ## Owned paths (builder edits freely)
 
 - apps/game-server/src/arena/ (new) + tests
-- `content/arenas/ source inputs`
+- `content/encounters/arenas/ and content/encounters/tibiadrome/ source inputs`
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
