@@ -4,7 +4,7 @@
 task_id: RANK-1
 title: "RANK-1: highscores and analysers"
 mode: IMPLEMENT
-status: skeleton
+status: local_preparation_pending_qualification
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -119,3 +119,69 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local preparation — HS-1 ranking rules (2026-10-15, unpublished)
+
+- Existing draft #2168, branch `skeleton/rank-1`, allocated head
+  `e2fb944ced21bcc9905889cb2f4427c95290ad11`. Only
+  `highscores/ranking.rs`, `ranking_tests.rs` and this record are allocated.
+  No commit, publication, ready flag, schema, registry, content or shared wiring.
+- The lead confirmed effective HIGHSCORES0 acceptance through merged #2209.
+  Owning text was read at accepted main
+  `e2da9805d296a27b06b32335bf67394509d4910b`. Its §5 and D309 clarification
+  govern this preparation; historical CANDIDATE dependency rows above no longer
+  describe that acceptance. LOOP-PROGRESS-1 still gates family integration, not
+  these separately accepted pure ranking rules.
+- Prepared callable ordering over a complete, already eligible committed cut for
+  one World/category: descending full value, standard competition ranks
+  (1, 2, 2, 4), positions tied by raw Unicode code point name then native
+  `CharacterId`. There is no case folding, Unicode normalization, locale or SQL
+  collation. The caller's scalar or `(level, progress)` tuple is compared as-is;
+  no category, points formula, achievement aggregation or Charm score is created.
+- Each base-vocation list preserves its rows' global ranks and applies its own
+  1,000-row cap **after** filtering the uncapped eligible cut. Promotions reuse
+  the existing `character_wheel::base_vocation` mapping. An invalid/non-base
+  filter or duplicate CharacterId produces a local typed preparation error,
+  not a new wire/error-registry code. Source rows are borrowed and unchanged.
+- Native CharacterId is the real protocol/foundation type. Durable vocation keys
+  remain strings, as in the existing build state; no parallel vocation enum is
+  introduced. Snapshot name text is borrowed rather than minted as a Character
+  name: the current ASCII-only creation policy remains separate from the owning
+  highscore contract's explicit Unicode ordering rule.
+
+### Remaining indivisible integration work (REPORT_ONLY)
+
+No production module or consumer is registered. The future snapshot owner must
+select the complete eligible live-root cut for one World/category, exclude `none`
+for categories 1–9 and 11, choose each account category's representative and
+source-native values, and supply all rows before capping. These are source
+selection/eligibility responsibilities, not facts that this pure comparator can
+authenticate. Snapshot persistence, repeatable-read source transaction, job
+lease/restart/retention, wire paging and snapshot tokens, registries, protocol,
+Atlas exports and analyser emission remain outside this local scope. Ranking
+rows grant no session, World, Channel or gameplay authority.
+
+### Validation and self-review
+
+- Source-bound isolated harness: **11 passed, 0 failed**. Cases cover competition
+  gaps, raw Unicode/non-BMP and normalization/case boundaries, CharacterId tie
+  order independent of input, full level/progress tuple values, global ranks
+  across vocation ties, all five promotion families, a filtered list whose first
+  member lies below the global cap, truncation inside a tie, empty/`none` inputs,
+  invalid filters/duplicate sources, and u64 extremes without score arithmetic.
+- Isolated all-target Clippy with the native root lint table: passed. Owned-file
+  rustfmt and `cargo fmt --all --check`: passed. The harness imports the real
+  protocol crate and the literal existing vocation helper; no native type is
+  recreated. Full-server/package, persistence, wire and live-authority
+  qualification are not claimed; all remain pending their actual consumers.
+- Actual logs, harness and source/hash binding are retained outside the repository
+  in `/workspace/oteryn-prep/rank-1-evidence`. Rust commands used the shared flock,
+  target and two-job limit. No test binary was copied.
+- Governance validator passed (22 policy documents, 9 lanes); governance unit
+  tests passed (124, 0 failures). Logs are retained in that evidence directory.
+- Whole-diff self-review: rank equality depends on the full value alone; tie
+  position ordering cannot change rank; filtering cannot renumber or inherit the
+  all-list cap; native types and promotion rules are reused. No authority-bearing
+  mutation exists here, so current-session/replay-fence qualification is not
+  applicable to this callable subset. Those checks remain required at future
+  snapshot/wire consumer boundaries.
