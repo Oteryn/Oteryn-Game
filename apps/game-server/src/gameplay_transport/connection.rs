@@ -1448,10 +1448,20 @@ where
     // USE-WIRE-V1 (#162 5868482467): the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
-    let overlay = authority.observe_world_object_overlay().await;
+    // MAP-WIRE-1 section 3: a bundle World has one object domain (17), not the
+    // fixture World's legacy domain 2, even when that domain would be empty.
+    let map_selected = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW);
+    let overlay = if map_selected {
+        None
+    } else {
+        authority.observe_world_object_overlay().await
+    };
     // Absence qualifies the initial empty domain, not a reset of an overlay
     // revision already delivered on this session. Refuse an unavailable owner.
-    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
+    if !map_selected && overlay.is_none() && admitted.continuity.overlay_revision != 0 {
         return ConnectionEnd::AdmittedThenDisconnected(admitted);
     }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
@@ -1490,20 +1500,22 @@ where
             ))
         }
     };
-    // An empty overlay is still the registered domain's complete snapshot.
-    // Source-qualified maps have no legacy entry-room door; publish no invented
-    // placement, while allowing the client to distinguish empty from missing.
-    let entries = overlay.as_slice();
-    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-    };
+    // A fixture World's empty overlay is still its complete registered domain.
+    // Bundle Worlds carry object state only in the selected map domain below.
     let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
-    domains.push(DomainSnapshot {
-        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-        revision: overlay_revision,
-        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-        payload: &overlay_payload,
-    });
+    let overlay_payload;
+    if !map_selected {
+        let Ok(payload) = encode_world_object_overlay_snapshot(overlay.as_slice()) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        overlay_payload = payload;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: overlay_revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &overlay_payload,
+        });
+    }
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -1831,7 +1843,9 @@ where
     // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
     // r4122215795) must record what was actually confirmed delivered, never a value written
     // before transmission could still fail partway through.
-    admitted.continuity.overlay_revision = overlay_revision;
+    if !map_selected {
+        admitted.continuity.overlay_revision = overlay_revision;
+    }
     if let Some((vitals_revision, _)) = &vitals {
         admitted.continuity.vitals_revision = *vitals_revision;
     }

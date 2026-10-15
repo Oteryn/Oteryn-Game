@@ -36,6 +36,143 @@ const ACTOR: TilePos = TilePos {
     floor: -7,
 };
 
+#[test]
+fn bundle_join_and_resync_send_only_the_map_object_domain() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::foundation::{ExactActorRef, GameSessionId};
+    use crate::gameplay_transport::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+    };
+    use crate::gameplay_transport::connection::{
+        AdmissionRefusal, AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAttempt,
+        FreshAdmissionAuthority, IDLE_LIVENESS, SessionContinuity, serve_admitted,
+    };
+    use crate::gameplay_transport::item_view::InventoryItems;
+    use crate::gameplay_transport::world_object::WorldObjectOverlayEntry;
+    use crate::gameplay_transport::world_spatial::{
+        ChannelEntities, ChannelEntity, EntityLights, VisibleKind, WorldSpatialObservation,
+    };
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    struct BundleAuthority(Fixture);
+
+    impl FreshAdmissionAuthority for BundleAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(WorldSpatialObservation {
+                content_generation: [7; 32],
+                actor_position: at(ACTOR),
+            })
+        }
+
+        async fn observe_world_object_overlay(&self) -> Option<WorldObjectOverlayEntry> {
+            panic!("a bundle snapshot must not consult the legacy object owner")
+        }
+
+        async fn observe_character_inventory(
+            &self,
+            _actor: ExactActorRef,
+            _session: GameSessionId,
+        ) -> Option<InventoryItems> {
+            Some(InventoryItems {
+                main_backpack: None,
+                entries: Vec::new(),
+                equipment: Vec::new(),
+            })
+        }
+
+        async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
+            let observer = actor.placement_identity();
+            Some(ChannelEntities {
+                content_generation: [7; 32],
+                observer,
+                entities: vec![ChannelEntity {
+                    kind: VisibleKind::Player,
+                    identity: observer,
+                    generation: 1,
+                    position: at(ACTOR),
+                    revision: 1,
+                }],
+                lights: EntityLights::new(),
+                observed_at_ms: 0,
+            })
+        }
+
+        async fn observe_world_map(
+            &self,
+            _actor: ExactActorRef,
+            view: &mut SessionMapView,
+            items: &mut SessionItemView,
+        ) -> Option<Result<Option<MapUpdate>, MapViewError>> {
+            Some(
+                view.snapshot(items, &self.0.source(), at(ACTOR))
+                    .map(|snapshot| Some(MapUpdate::Snapshot(snapshot))),
+            )
+        }
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let authority = BundleAuthority(Fixture::new(vec![(ACTOR, vec![])]));
+            for (entry, revision) in [
+                (FirstEntryOutcome::Positioned, 0),
+                (FirstEntryOutcome::Reconciled, 41),
+            ] {
+                let mut continuity = SessionContinuity::FRESH;
+                continuity.selected_capabilities =
+                    SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 18])
+                        .ok_or("map selection")?;
+                continuity.world_map_revision = revision;
+                let admitted = AdmittedSession {
+                    game_session_id: GameSessionId::decode(&uuid(3))?,
+                    world_id: world(),
+                    channel_id: channel(),
+                    runtime_actor: Some(ExactActorRef::transport_fixture(world(), channel())),
+                    first_entry: entry,
+                    controller: None,
+                    continuity,
+                    item_fence: None,
+                };
+                let (mut server, mut client) = tokio::io::duplex(1 << 21);
+                client.shutdown().await?;
+                let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                drop(server);
+                let mut output = Vec::new();
+                client.read_to_end(&mut output).await?;
+                let first =
+                    u32::from_be_bytes(output.get(..4).ok_or("begin")?.try_into()?) as usize;
+                let offset = 4 + first;
+                let length =
+                    u32::from_be_bytes(output.get(offset..offset + 4).ok_or("chunk")?.try_into()?)
+                        as usize;
+                let chunk = oteryn_protocol_oteryn::decode_wire_envelope(
+                    output
+                        .get(offset + 4..offset + 4 + length)
+                        .ok_or("chunk body")?,
+                )?;
+                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(chunk.payload())?;
+                assert!(domains.iter().all(|domain| domain.domain_id != 2));
+                let map = domains
+                    .iter()
+                    .find(|domain| domain.domain_id == 17)
+                    .ok_or("map missing")?;
+                assert!(map.revision > revision);
+                decode_world_map_snapshot(map.payload)
+                    .map_err(|error| format!("map snapshot: {error:?}"))?;
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            }
+            Ok(())
+        })
+}
+
 const fn tp(x: u16, y: u16, floor: i8) -> TilePos {
     TilePos { x, y, floor }
 }
