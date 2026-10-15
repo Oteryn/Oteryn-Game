@@ -32,11 +32,12 @@ jobs:
     timeout-minutes: 120
     env:
       EXPECTED_RUNNER_NAME: oteryn-oracle-game
-      ACTUAL_RUNNER_NAME: ${{ runner.name }}
       OPERATION: ${{ inputs.action }}
       SOURCE_SHA: ${{ inputs.source_sha }}
     steps:
       - name: Validate target and bounded operation
+        env:
+          ACTUAL_RUNNER_NAME: ${{ runner.name }}
         shell: bash
         run: |
           set -euo pipefail
