@@ -106,3 +106,96 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local owned implementation design (2026-10-15)
+
+CP comment6193914573 releases this previously held module for independent owned-path drafting.
+Acceptance is HOUSE-OWN0§9–10, GUILD0§4.1/§10 and HOUSE-RT-INBOX§1.2 at main@ca5ea593;
+the skeleton's old CANDIDATE/dependency prose remains historical and its unchecked completion
+criteria are preserved. HOUSE1a remains an integration dependency, not an assumption of installed
+property tables. No shared registration, migration number, grants, content/pins or wire changes.
+
+The prepared owner is `durability/house_acl.rs` with the owned `house/acl.rs` as its neutral
+rules child. It reuses native HouseId, CharacterId, WorldId, CommandRef, Root/reconciled recovery,
+current session/lease/scope/node fences and the existing native UUIDv7 validator/generator.
+No supplied owner/consent/current bool or row-derived controller proof is accepted. The native
+Channel session fence is the initial actual entry port; named-House session/admission rebind
+must consume its genuine shared native fence at CP, never relax a predicate or copy a guard.
+
+Private schema proposal (UNINSTALLED): accepted `game_house_properties` identity, current owner
+kind/Character+Account or guild, lifecycle state, property `revision` and global `acl_revision`;
+`game_house_acl_entries` stores bounded Character/exclusion/guild entries by role or native door
+position; an ACL operation occurrence is bound one-to-one to native CommandRef and exact request
+bytes, with immutable result/change evidence. A successful replacement and its evidence commit
+in one native transaction, increment only the global ACL revision once and never advance
+CharacterRevision. Refusal/conflict/rollback writes nothing. A historical receipt is data only
+and must not regain current authority after owner/session replacement.
+
+GUILD0-LO-01 order: recovery/admission, operation occurrence, current acting Character/root,
+required guilds sorted by GuildId, member rows, property, ACL entries. Required guild sources
+are first read without row locks, then reread under locks; discovering a missing guild after
+property lock means rollback/retry, never a late guild lock. Guild rows/membership/ranks remain
+explicit coordinated candidate dependencies, not merged/current production membership. Actual
+SQL reads in isolated PG qualify source semantics; no caller membership callback grants access.
+
+The native0038 spell tables (`game_house_ownership`, per-list `game_house_acl`,100 members and
+wildcard text) are not silently reinterpreted as the accepted canonical property/global revision
+model. Native `game_house_access` is still a failclosed stub; HOUSE1a owns its final composed body
+and the exact future grant-part signature. This task may replace only the grant part at its CP
+slot once that signature exists. Shared spell/GUI/door/admission consumers and their registered
+HouseEvent/definer/grant integration must then consume this same source; no second live ACL truth
+is activated now. Door positions are native coordinates/data, not proof of an admitted physical
+door/current content/placement; actual catalogue and physical actor checks remain with their
+native owners at integration. Stored access observations likewise authorize no relocation/item
+or socket action by themselves.
+
+The read result's `door_list_granted` is deliberately only the selected list's grant fact,
+not the full HOUSE-RUNTIME0§5.1 physical-door decision. Absent and empty lists yield no list
+grant; the runtime must independently resolve the admitted door and whether it has a restrictive
+list before composing the invitation/owner/door rule. No guessed catalogue/list-presence or
+caller boolean is a grant. Guild owner resolution uses the same locked current member/rank rows;
+exclusions apply to nonowner grants, while the accepted owner-first composition bypasses them.
+
+The qualification property prerequisite is a minimal shape, not HOUSE1a's complete property
+schema/lifecycle. Its fixture does not synthesize rent, paid/grace dates, auctions or ownership
+transitions. The coordinated GUILD1 row prerequisite is likewise not lifecycle authority.
+The native test Root uses its unchanged administrative fixture connection; runtime-role grants,
+owner-definer-only mutation, registered HouseEvent emission and activation are NOT qualified by
+these tests and remain CP gates. Native Channel fencing is qualified; named-House fencing and
+the prepared House-session owners' exact current entry must be composed at CP.
+
+## Frozen local qualification (2026-10-15)
+
+Prepared actual native Root writer/reader plus canonical ACL rules within the four owned paths.
+The exact-source disposable native unit context passed metadata and Clippy (`-D warnings`),
+owned/workspace format, and an eight-case bridge run: four pure rule cases and four genuine
+PostgreSQL17.6/native Root cases. The native test bodies are unchanged; only eight test attrs,
+parent visibility/forwarders and one literal snapshot-only durability registration differ.
+No full native unit ELF, full package test run or production-wired gameplay test is claimed.
+
+Native PG covers property-global revision CAS, two genuine Roots/pools contending with one typed
+stale loser, exact occurrence replay/conflict, evidence-insertion failure rollback, immutable
+receipt/outbox, CharacterRevision unchanged, current owner/subowner/exclusion permissions,
+independent Character/World/Channel/connection/lease/scope/node/session-binding rejection and
+current guild leader/rank/state reads. A historical stale-generation replay returns receipt data;
+a new write under that generation rejects. Pure cases cover 200/201 and duplicate entries,
+EXACT/AT_LEAST/removal/disbanded rules, owner-first hierarchy and native max door coordinates.
+
+The first authored candidate passed four pure cases but its four PG cases failed on a private
+property-DDL syntax error before core assertions; its original Clippy failed three style lints.
+Those actual failures are retained, with corrected exact DDL rollback preflight and final native
+GREEN evidence. They are not described as environmental failures or behavioral RED qualification.
+No Rust changes were made after the final source-bound batch began.
+
+Local evidence: `/workspace/oteryn-prep/house-acl-1-evidence/` (sources, exact overlay manifests,
+raw logs/statuses, DDL rollback preflight, scope and boundary qualification). Completed first
+snapshots are losslessly archived with GNU comparison, SHA and restore commands; old own source
+bytes remain separately available. Root controls export/publication and independent review.
+
+Remaining integration criteria stay open: admitted HOUSE1a property lifecycle/current ownership
+and GUILD1 lifecycle/rank mutation owner; owner/ACL/fence composed access-function with unchanged
+native signature; House-session current fence/admission rebind; actual restricted-door/catalogue
+composition; shared spell/GUI/door/runtime revalidation and notification source; registered
+HouseEvent/audit envelope and definer-only runtime grants/immutable mutation guards. The private
+outbox is candidate evidence only. Existing0038 legacy per-list/wildcard spell behavior is not
+silently changed. No migration numbering, shared registration/wiring, registry or content changes.
