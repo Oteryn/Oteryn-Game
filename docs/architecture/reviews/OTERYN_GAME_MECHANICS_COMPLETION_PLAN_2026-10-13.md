@@ -568,7 +568,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (RUNE_USE0) is 
 | RUNE-WIRE-1 | RUNE_USE0 | impl, protocol review | yes | ITEM-USE-WIRE-1 |
 | RUNE-CONTENT-1 | RUNE_USE0 | content |  | ITEM-SEM-USE |
 | RUNE-1 | RUNE_USE0 | hard, persistence review |  | ITEM-USE-1c; RUNE-WIRE-1 |
-| RUNE-CAST-1 | RUNE_USE0 | spell lane, combat review |  | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 (merged) |
+| RUNE-CAST-1 | RUNE_USE0 | spell lane, combat review |  | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 (merged); COND-1 (§3.5 residual) |
 | RUNE-CONJ-1 | RUNE_USE0 | hard, persistence, combat and protocol review |  | RUNE-1; the instant cast composition (SPELL-D4) |
 | FIELD-1 | RUNE_USE0 | hard (combat), combat review |  | COND-1; RUNE-CAST-1 |
 | FIELD-WIRE-1 | RUNE_USE0 | impl, protocol review | yes | VIS-2; FIELD-1 |
