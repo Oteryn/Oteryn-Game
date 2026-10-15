@@ -367,12 +367,13 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
 // 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
 // content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1).
-// Registered is not offered. 13
+// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1)
+// and 23 PRESENTATION_V1 (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or
+// COMBAT-PRESENT-1). Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] =
-    &[1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    &[1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -668,7 +669,7 @@ fn validate_acceptance_value(
 
 /// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
 /// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
+/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; PRESENT-WIRE-1: 23 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
 const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -697,6 +698,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
         &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
+    ),
+    (
+        presentation::CAPABILITY_PRESENTATION_V1,
+        &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
     ),
 ];
 
@@ -2547,6 +2552,7 @@ pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
 pub mod npc_service;
+pub mod presentation;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
 pub mod world_clock;

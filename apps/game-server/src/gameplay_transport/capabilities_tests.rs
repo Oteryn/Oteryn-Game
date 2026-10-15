@@ -313,6 +313,7 @@ fn commands_and_domains_follow_the_selection() {
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
     // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18. Capability 11: command 15.
+    // Capability 23: domains 19 and 20.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -322,6 +323,7 @@ fn commands_and_domains_follow_the_selection() {
         (17, &[11, 12][..], &[10][..]),
         (19, &[][..], &[18][..]),
         (11, &[15][..], &[][..]),
+        (23, &[][..], &[19, 20][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {

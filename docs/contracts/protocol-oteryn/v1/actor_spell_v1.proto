@@ -60,9 +60,33 @@ enum SpellCastDisposition {
   SPELL_CAST_DISPOSITION_REJECTED = 10;
 }
 
+// SPELL-PRESENT-0 §8 (PRESENT-WIRE-1): which refusal text the client shows. The disposition stays
+// the outcome; the detail only picks the text. A later check with a new text adds a value behind a
+// capability revision.
+enum SpellCastRefusalDetail {
+  SPELL_CAST_REFUSAL_DETAIL_UNSPECIFIED = 0;
+  SPELL_CAST_REFUSAL_DETAIL_NOT_LEARNED = 1;
+  SPELL_CAST_REFUSAL_DETAIL_VOCATION = 2;
+  SPELL_CAST_REFUSAL_DETAIL_PREMIUM = 3;
+  SPELL_CAST_REFUSAL_DETAIL_NEEDS_WEAPON = 4;
+  SPELL_CAST_REFUSAL_DETAIL_NEEDS_SHIELD = 5;
+  SPELL_CAST_REFUSAL_DETAIL_PROTECTION_ZONE = 6;
+  SPELL_CAST_REFUSAL_DETAIL_GO_UPSTAIRS = 7;
+  SPELL_CAST_REFUSAL_DETAIL_GO_DOWNSTAIRS = 8;
+  SPELL_CAST_REFUSAL_DETAIL_OUT_OF_RANGE = 9;
+  SPELL_CAST_REFUSAL_DETAIL_NOT_REACHABLE = 10;
+  SPELL_CAST_REFUSAL_DETAIL_ONLY_CREATURES = 11;
+  SPELL_CAST_REFUSAL_DETAIL_NOT_ENOUGH_ROOM = 12;
+  SPELL_CAST_REFUSAL_DETAIL_MUTED = 13;
+}
+
 // CommandResult.payload of command type 3: outcome only, never state. At most 4 bytes.
 message WorldActorSpellCastResultV1 {
   SpellCastDisposition disposition = 1;
+  // SPELL-PRESENT-0 §8: sent only to a session holding capability 23 PRESENTATION_V1, and never
+  // with SPELL_CAST_DISPOSITION_CAST; a peer without the capability never sees field 2. Absent is
+  // no detail; an explicit zero, an unknown value, or a detail with CAST fails closed.
+  SpellCastRefusalDetail detail = 2;
 }
 
 // StateDelta.payload of domain 3, delta type 1, and StateDomainSnapshot.payload of snapshot type 1.

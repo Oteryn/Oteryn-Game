@@ -1509,6 +1509,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if placed {
                     self.last_positions
                         .respawned(session, respawned.record.cell);
+                    // NPC-TALK-2: a respawned customer away from its NPC ends its conversation.
+                    self.chat
+                        .close_out_of_range(&*self.runtime.lock().await, session);
                 }
                 placed
             }
@@ -2923,13 +2926,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn npc_follow(
         &self,
-        actor: ExactActorRef,
+        _actor: ExactActorRef,
         session: GameSessionId,
         shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> Option<npc_command::NpcUpdate> {
         let runtime = self.runtime.lock().await;
         self.npc_conversations
-            .follow(&self.chat, &runtime, actor, session, shown)
+            .follow(&self.chat, &runtime, session, shown)
     }
 
     async fn npc_talk(
@@ -3232,13 +3235,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
         };
         match outcome {
-            Ok((snapshot, duration)) => (
-                StepOutcome {
-                    disposition: StepDisposition::Moved,
-                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                },
-                Some(duration),
-            ),
+            Ok((snapshot, duration)) => {
+                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
+                self.chat.close_out_of_range(&runtime, session);
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Moved,
+                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                    },
+                    Some(duration),
+                )
+            }
             Err(
                 MovementError::Blocked
                 | MovementError::Cell(
