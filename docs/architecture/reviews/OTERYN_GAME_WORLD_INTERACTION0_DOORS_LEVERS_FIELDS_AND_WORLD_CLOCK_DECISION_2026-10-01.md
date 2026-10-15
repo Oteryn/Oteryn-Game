@@ -4,7 +4,8 @@
 - Status: **ACCEPTED** by the owner on 2026-10-11 (control plane session, decision D1019), as
   written. The acceptance covers this decision's rulings and child split; it adds no runtime
   authority (see the authority line below). The amendments listed under "Amends" stay pending on
-  their own documents.
+  their own documents, except GAME-ITEM-01 §4 (the key capability) and DUR-03 §39.1 (the Ground
+  move shape and `key_number` evidence), which the owner accepted on 2026-10-15 (#1622 issuecomment-6186538185).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the `GAME-INTERACTION-01` horizon gate (`REQUIRED_FOR_ALPHA`) and gap register §12, with
   the §9 parts on pushing, floor transitions, stairs and teleports; the owner answers **6a** and

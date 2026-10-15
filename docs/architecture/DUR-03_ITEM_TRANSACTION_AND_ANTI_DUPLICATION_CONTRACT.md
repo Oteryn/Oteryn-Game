@@ -908,7 +908,7 @@ with its four closed shapes `BURN_ONE`, `DROP_SPLIT_NEW`, `DROP_WHOLE` and `DROP
 under `WeaponUseCause`; it supersedes the earlier one-unit-only wording, and the one-item rows are
 unchanged.
 
-**Amendment (pending on acceptance of WORLD-INTERACTION-0;
+**Amendment (WORLD-INTERACTION-0, accepted by the owner 2026-10-15, #1622 issuecomment-6186538185;
 `reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`
 §4.4 and §7.2).** A one-item TRANSFER from typed `Ground` custody on one tile to `Ground` on another
 tile of the same channel scope (§32 fence), with the destination tile limit and both tile rows

@@ -79,7 +79,7 @@ and is held on the questions below.
   `content/world_reward_claims.rs` (`LeftOut::Variant`).
 - CONFLICT: the GAME-ITEM-01 §4 and DUR-03 §39.1 key amendments say "pending on acceptance of
   WORLD-INTERACTION-0"; that decision (ACCEPTED D1019) says its amendments "stay pending on their
-  own documents".
+  own documents". RESOLVED 2026-10-15 (#1622 issuecomment-6186538185, point 1): both blocks accepted, markers flipped.
 
 ## Children: status and single blocker
 
@@ -115,7 +115,8 @@ is unmerged, so they stay sealed.
 - Q1: instance-level number per ACCEPTED §4.4, no deviation; migration 0086 built locally.
 - Q2: architect ruling: WI0 §4.4/§7.2 are ACCEPTED (D1019); the GAME-ITEM-01 §4 and DUR-03 §39.1
   amendment blocks are not yet in force as those contracts' text. KEY-1 implements WI0 §4.4/§7.2;
-  the amendments stay untouched. Open to CP: must a docs-only flip of those two markers land first?
+  the amendments stay untouched. Resolved 2026-10-15: the owner accepted both amendment blocks
+  (#1622 issuecomment-6186538185, point 1); a docs-only PR flips the two markers.
 - Q3: KEY-1 here is the mint half only; the door half waits for WO-3 / WORLDINT-USE-1.
 
 ## Residue
