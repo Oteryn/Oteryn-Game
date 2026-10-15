@@ -20,7 +20,7 @@ use base64::engine::general_purpose::STANDARD;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, OwnedMutexGuard, oneshot};
 use tokio::task::JoinHandle;
 
@@ -40,11 +40,17 @@ const ACTIVATION_BACKOFF: Duration = Duration::from_millis(10);
 const PUBLICATION_SLOTS: usize = 2;
 /// NSRC-QUEUE-WAIT bound for the node's single publication lane.
 const PUBLICATION_QUEUE_WAIT: Duration = Duration::from_millis(1_000);
-/// Longest a held acceptance defers its slot clear while the caller reads the
-/// accepted evidence: one semantic pass (2,000 ms) plus scheduling slack. A
-/// longer read only means the clear finds the holder busy and the slot is
-/// released by the next reconciliation instead.
-const EVIDENCE_HOLD: Duration = Duration::from_millis(2_500);
+/// NSRC-PUBLISH: one publication operation, database acquisition included.
+/// After an acceptance, the slot clear is that operation; its acquisition
+/// waits for the caller's read of the accepted evidence, so hold and clear
+/// together end within this bound and so does the task's ownership of the
+/// lane, the reservation and the completion.
+const NSRC_PUBLISH: Duration = Duration::from_millis(2_000);
+/// The part of `NSRC_PUBLISH` always left to the clear pass itself. A read
+/// that outlasts the rest only means the clear finds the holder busy and the
+/// slot, whose outcome is already definite, is released by the next
+/// reconciliation instead.
+const CLEAR_RESERVE: Duration = Duration::from_millis(1_000);
 
 /// Why a refresh did not complete; never a statement about the account.
 ///
@@ -140,7 +146,8 @@ const fn response_cause(response: &Response) -> &'static str {
 /// The caller reads the accepted evidence on the otherwise idle durability
 /// holder, then releases it; only then does the publication task clear the
 /// slot. Dropping it releases too, so a cancelled caller never strands the
-/// lane, and the task clears after at most `EVIDENCE_HOLD` regardless.
+/// lane, and the task stops waiting and clears within `NSRC_PUBLISH` of the
+/// acceptance regardless.
 #[must_use]
 pub(crate) struct HeldEvidence {
     release: oneshot::Sender<()>,
@@ -513,23 +520,50 @@ async fn publish(
         // Retained for reconciliation; never detached or reused.
         return Err(EvidenceUnavailable::durability("accept", error).after(reconciled.replay));
     }
-    if outcome.is_ok() {
+    let _ = if outcome.is_ok() {
         // Decide-time ordering: the accepted evidence is read before this
         // clear takes the holder. The slot already has its definite outcome.
-        hand_over(accepted, release, EVIDENCE_HOLD).await;
+        let bounds = HeldClear::starting(Instant::now());
+        hand_over(accepted, release, bounds.hold_until).await;
+        root.clear_native_source_publication_by(&custody, slot, checkpoint, bounds.clear_by)
+            .await
+    } else {
+        root.clear_native_source_publication(&custody, slot, checkpoint)
+            .await
+    };
+    outcome
+        .map_err(|error| EvidenceUnavailable::durability("accept", &error).after(reconciled.replay))
+}
+
+/// The NSRC-PUBLISH budget of the clear that follows an acceptance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct HeldClear {
+    /// The caller's read of the accepted evidence is awaited until here.
+    hold_until: Instant,
+    /// The clear pass, acquisition included, ends by here.
+    clear_by: Instant,
+}
+
+impl HeldClear {
+    fn starting(accepted_at: Instant) -> Self {
+        let clear_by = accepted_at + NSRC_PUBLISH;
+        Self {
+            hold_until: clear_by - CLEAR_RESERVE,
+            clear_by,
+        }
     }
-    let _ = root
-        .clear_native_source_publication(&custody, slot, checkpoint)
-        .await;
-    outcome.map_err(|error| EvidenceUnavailable::durability("accept", &error))
 }
 
 /// Tells the caller its observation is accepted, then waits until the caller
-/// releases it, drops it, or `hold` elapses. Returns at once when the caller is
-/// gone.
-async fn hand_over(accepted: oneshot::Sender<()>, release: oneshot::Receiver<()>, hold: Duration) {
+/// releases it, drops it, or `hold_until` passes. Returns at once when the
+/// caller is gone.
+async fn hand_over(
+    accepted: oneshot::Sender<()>,
+    release: oneshot::Receiver<()>,
+    hold_until: Instant,
+) {
     if accepted.send(()).is_ok() {
-        let _ = tokio::time::timeout(hold, release).await;
+        let _ = tokio::time::timeout_at(tokio::time::Instant::from_std(hold_until), release).await;
     }
 }
 
@@ -863,7 +897,11 @@ mod tests {
             // Released by the caller: returns once the caller lets go.
             let (accepted, accepted_signal) = oneshot::channel();
             let (release, release_signal) = oneshot::channel::<()>();
-            let task = tokio::spawn(hand_over(accepted, release_signal, Duration::from_secs(60)));
+            let task = tokio::spawn(hand_over(
+                accepted,
+                release_signal,
+                Instant::now() + Duration::from_secs(60),
+            ));
             assert!(accepted_signal.await.is_ok());
             tokio::task::yield_now().await;
             assert!(!task.is_finished());
@@ -881,7 +919,11 @@ mod tests {
             assert!(
                 tokio::time::timeout(
                     Duration::from_secs(5),
-                    hand_over(accepted, release_signal, Duration::from_secs(60)),
+                    hand_over(
+                        accepted,
+                        release_signal,
+                        Instant::now() + Duration::from_secs(60)
+                    ),
                 )
                 .await
                 .is_ok()
@@ -890,10 +932,29 @@ mod tests {
             // A caller that never releases is bounded by the hold.
             let (accepted, accepted_signal) = oneshot::channel();
             let (_release, release_signal) = oneshot::channel::<()>();
-            let started = std::time::Instant::now();
-            hand_over(accepted, release_signal, Duration::from_millis(20)).await;
+            let started = Instant::now();
+            hand_over(
+                accepted,
+                release_signal,
+                started + Duration::from_millis(20),
+            )
+            .await;
             assert!(accepted_signal.await.is_ok());
             assert!(started.elapsed() >= Duration::from_millis(20));
         });
+    }
+
+    #[test]
+    fn held_clear_ends_within_one_publication_operation() {
+        assert_eq!(NSRC_PUBLISH, Duration::from_millis(2_000));
+        assert!(CLEAR_RESERVE > Duration::ZERO && CLEAR_RESERVE < NSRC_PUBLISH);
+        let accepted_at = Instant::now();
+        let bounds = HeldClear::starting(accepted_at);
+        // Hold and clear (acquisition included) end within NSRC-PUBLISH of
+        // the acceptance, and the clear always keeps its reserve.
+        assert_eq!(bounds.clear_by, accepted_at + NSRC_PUBLISH);
+        assert!(bounds.hold_until > accepted_at);
+        assert_eq!(bounds.hold_until + CLEAR_RESERVE, bounds.clear_by);
+        assert!(bounds.hold_until - accepted_at + CLEAR_RESERVE <= NSRC_PUBLISH);
     }
 }
