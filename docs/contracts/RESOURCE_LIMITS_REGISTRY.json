@@ -6833,6 +6833,236 @@
       "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
     },
     {
+      "id": "DUR03-RL-01-NPC-TRADE-EXCHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "ItemInstances touched by one DUR-03 NPC EXCHANGE transaction (NpcTradeCause side EXCHANGE)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated. 3 takes and 3 gives.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted: a 3-take, 3-give exchange",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-02-NPC-TRADE-EXCHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Location/custody lines of one DUR-03 NPC EXCHANGE transaction",
+      "unit": "location custody lines per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-06-NPC-TRADE-EXCHANGE-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Participants in one DUR-03 NPC EXCHANGE transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. Every line is one participant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-06-NPC-TRADE-EXCHANGE-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Effect work units in one DUR-03 NPC EXCHANGE transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 15,
+      "configurable_range": {
+        "minimum": 15,
+        "maximum": 15
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. NPC trade work-unit method: whole burn 3, partial burn 2, MINT 2; worst case 3 whole take burns x 3 + 3 give MINTs x 2.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=15 admitted",
+        "max+1=16 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-01-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "ItemInstances touched by one DUR-03 item conversion transaction (ConversionCause shape)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 9,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated. 4 operands, 2 REPLACE_INSTANCE new instances for USED and TARGET, 3 outputs; a C4b corpse counts as one touched item.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=9 admitted: the maximal nine-item conversion",
+        "max+1=10 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-02-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Location/custody lines of one DUR-03 item conversion transaction",
+      "unit": "location custody lines per logical transaction",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 9,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=9 admitted",
+        "max+1=10 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-04-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Transform inputs/outputs of one DUR-03 item conversion transaction",
+      "unit": "transform inputs/outputs per logical transaction",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. Two transforms, each one input and one output: USED and TARGET, or USED and a C4b corpse.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4 admitted",
+        "max+1=5 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-06-CRAFT-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Participants in one DUR-03 item conversion transaction (CRAFT1 C3a DUR03-RL-06-CRAFT, participant half)",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 12,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. The 9 items, the character_root row, the ConversionAttempt record or the cause record, and the receipt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=12 admitted",
+        "max+1=13 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-06-CRAFT-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Effect work units in one DUR-03 item conversion transaction (CRAFT1 C3a DUR03-RL-06-CRAFT, work-unit half)",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 36,
+        "maximum": 36
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. 3 work units per participant x 12 participants.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=36 admitted",
+        "max+1=37 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Audit events for one DUR-03 item conversion transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Exactly one event carrying the closed CONVERSION aggregate; the shape is never split into several events or truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: TransactionEventRef ordinal 1 of count 1",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "One encoded CONVERSION audit aggregate payload",
+      "unit": "bytes",
+      "hard_maximum": 42138,
+      "configurable_range": {
+        "minimum": 42138,
+        "maximum": 42138
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked on the encoded length before retaining or decoding; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top. 9 touched items at 4,682 B each (the per-item share of the first revision's 32,768 B ceiling for 7 items, rounded up). CRAFT-RT-1 measures the worst case (D50 method: the maximal nine-item aggregate, every key and revision at 512 B, every technical field at 128 B, maximal integers); a measured worst case above this row stops CRAFT-RT-1 for an amendment of CRAFT1 C3a.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case payload is at most 42,138 B and accepted (boundary test recorded by CRAFT-RT-1)",
+        "max=42,138 bytes accepted",
+        "max+1=42,139 bytes rejected before decode (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope carrying the CONVERSION aggregate, including payload",
+      "unit": "bytes",
+      "hard_maximum": 42452,
+      "configurable_range": {
+        "minimum": 42452,
+        "maximum": 42452
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. The payload ceiling plus the 314 B envelope overhead of the registered NPC trade rows (27,408 - 27,094). CRAFT-RT-1's migration admits a stored conversion envelope only up to this row.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case envelope (128-byte build id) is at most 42,452 B and accepted (boundary test recorded by CRAFT-RT-1)",
+        "max=42,452 bytes accepted",
+        "max+1=42,453 bytes rejected before decode (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
       "id": "DUR03-RL-03-PROF",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
       "resource": "Value lines in one perk modification receipt",
