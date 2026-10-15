@@ -353,7 +353,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<item>",
         "qualified_room",
-        "struct/declaration",
+        "struct#47/declaration",
         1,
         Gate::Declaration,
     ),
@@ -363,7 +363,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<item>",
         "qualified_room",
-        "struct/declaration",
+        "struct#61/declaration",
         3,
         Gate::Declaration,
     ),
@@ -383,7 +383,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<item>",
         "combat_room",
-        "struct/declaration",
+        "struct#47/declaration",
         2,
         Gate::Declaration,
     ),
@@ -393,7 +393,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<item>",
         "combat_room",
-        "struct/declaration",
+        "struct#61/declaration",
         4,
         Gate::Declaration,
     ),
@@ -437,8 +437,8 @@ struct Site {
 /// lies. Test code is left out: a `#[cfg(test)]` module is never followed, and every
 /// `#[cfg(test)]` item, variant, statement, expression, field or arm is skipped at any depth.
 /// What the keys cannot resolve fails closed instead of passing: two functions of one file with
-/// one name, a file loaded by two module declarations, a production `include!`, and a seam field
-/// inside a `macro_rules!` definition.
+/// one name, a file loaded by two module declarations, a production `include!`, a seam field
+/// inside a `macro_rules!` definition, and a macro defined outside the scanned modules.
 #[allow(clippy::expect_used, clippy::panic)]
 fn module_reads() -> BTreeSet<(String, Site)> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport");
@@ -446,6 +446,8 @@ fn module_reads() -> BTreeSet<(String, Site)> {
     let mut pending = vec![(dir.join("mod.rs"), true)];
     let mut seen = BTreeSet::new();
     let mut reads = BTreeSet::new();
+    let mut invoked = BTreeSet::new();
+    let mut defined = BTreeSet::new();
     while let Some((path, mod_rs)) = pending.pop() {
         let path = path.canonicalize().expect("module source");
         // A file loaded by two module declarations is compiled twice, once per module, while one
@@ -510,10 +512,49 @@ fn module_reads() -> BTreeSet<(String, Site)> {
                 site.field
             );
         }
+        invoked.extend(
+            scan.invoked
+                .into_iter()
+                .map(|macro_name| (macro_name, name.clone())),
+        );
+        defined.extend(scan.defined);
         reads.extend(scan.sites.into_iter().map(|site| (name.clone(), site)));
     }
+    // A macro defined outside the scanned modules can name a seam field in its expansion while its
+    // invocation shows none, so only upstream macros and the modules' own are let through.
+    let unknown: Vec<String> = invoked
+        .iter()
+        .filter(|(macro_name, _)| {
+            !UPSTREAM_MACROS.contains(&macro_name.as_str()) && !defined.contains(macro_name)
+        })
+        .map(|(macro_name, file)| format!("{file}: `{macro_name}!`"))
+        .collect();
+    assert!(
+        unknown.is_empty(),
+        "{}: a macro defined outside the scanned modules may read a seam field in its expansion; \
+         define it in a scanned module or write the read at its call site",
+        unknown.join(", ")
+    );
     reads
 }
+
+/// The standard-library and upstream-crate macros the modules invoke: their definitions cannot
+/// name a field of this crate, so their expansions read nothing the invocation does not show.
+const UPSTREAM_MACROS: &[&str] = &[
+    "assert",
+    "assert_eq",
+    "debug_assert",
+    "eprintln",
+    "format",
+    "include_bytes",
+    "include_str",
+    "json",
+    "matches",
+    "pin",
+    "unreachable",
+    "vec",
+    "write",
+];
 
 /// The first function name given twice, if any.
 fn ambiguous(declared: &[String]) -> Option<&String> {
@@ -532,7 +573,12 @@ fn in_macro_rules(site: &Site) -> bool {
 #[allow(clippy::expect_used)]
 fn scan(source: &str) -> Scan {
     let file = syn::parse_file(source).expect("gameplay_transport source parses");
-    let mut scan = Scan::default();
+    // The file itself counts its items, so a mention moved between two items of one kind at file
+    // scope changes its site.
+    let mut scan = Scan {
+        siblings: vec![0],
+        ..Scan::default()
+    };
     scan.visit_file(&file);
     scan
 }
@@ -547,6 +593,9 @@ struct Scan {
     owners: Vec<String>,
     /// Each production `include!` invocation: its file is loaded without being scanned.
     includes: usize,
+    /// The name of every production macro invocation, and of every `macro_rules!` definition.
+    invoked: Vec<String>,
+    defined: Vec<String>,
     /// The name of every production function, in source order. A name given to two functions is
     /// ambiguous: a read moved between them would leave its site unchanged.
     declared: Vec<String>,
@@ -589,6 +638,25 @@ impl Scan {
             site: site.join("/"),
             ordinal,
         });
+    }
+
+    /// A string literal's `{name}` captures (`format!("{combat_room:?}")` reads the binding
+    /// `combat_room`); `{{` is an escaped brace.
+    fn format_captures(&mut self, text: &str) {
+        let mut rest = text;
+        while let Some(start) = rest.find('{') {
+            rest = &rest[start + 1..];
+            if let Some(escaped) = rest.strip_prefix('{') {
+                rest = escaped;
+                continue;
+            }
+            let end = rest
+                .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .unwrap_or(rest.len());
+            if let Some(field) = FIELDS.iter().find(|field| &rest[..end] == **field) {
+                self.record((*field).to_owned(), "capture");
+            }
+        }
     }
 
     fn seam(ident: &syn::Ident) -> Option<String> {
@@ -1155,11 +1223,8 @@ impl<'ast> Visit<'ast> for Scan {
         if let syn::Member::Named(member) = &value.member
             && let Some(field) = Self::seam(member)
         {
+            // `S { field }` also reads the binding `field`: its value is visited below as a read.
             self.record(field, "initializer");
-            if value.colon_token.is_none() {
-                // `S { field }`: the shorthand's value is the same mention.
-                return;
-            }
         }
         self.within("field_value", |scan| visit::visit_field_value(scan, value));
     }
@@ -1214,8 +1279,24 @@ impl<'ast> Visit<'ast> for Scan {
         }
     }
 
+    fn visit_item_macro(&mut self, item: &'ast syn::ItemMacro) {
+        if let Some(ident) = &item.ident {
+            self.defined.push(ident.to_string());
+        }
+        visit::visit_item_macro(self, item);
+    }
+
+    fn visit_lit_str(&mut self, lit: &'ast syn::LitStr) {
+        self.format_captures(&lit.value());
+    }
+
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
+        if let Some(segment) = mac.path.segments.last()
+            && segment.ident != "macro_rules"
+        {
+            self.invoked.push(segment.ident.to_string());
+        }
         if mac
             .path
             .segments
@@ -1266,12 +1347,28 @@ impl Scan {
                     if let Some(field) = Self::seam(&ident) {
                         self.record(field, "macro_tokens");
                     }
-                    if ident == "include"
-                        && next
-                            .punct()
-                            .is_some_and(|(punct, _)| punct.as_char() == '!')
+                    // `name!` (not `name != x`, nor a keyword as in `if !x`) invokes a macro;
+                    // `macro_rules! name` defines one.
+                    if let Some((punct, after)) = next.punct()
+                        && punct.as_char() == '!'
+                        && syn::parse_str::<syn::Ident>(&ident.to_string()).is_ok()
+                        && after.punct().is_none_or(|(next, _)| next.as_char() != '=')
                     {
-                        self.includes += 1;
+                        if ident == "macro_rules" {
+                            if let Some((defined, _)) = after.ident() {
+                                self.defined.push(defined.to_string());
+                            }
+                        } else {
+                            self.invoked.push(ident.to_string());
+                        }
+                        if ident == "include" {
+                            self.includes += 1;
+                        }
+                    }
+                    cursor = next;
+                } else if let Some((literal, next)) = cursor.literal() {
+                    if let Ok(lit) = syn::parse_str::<syn::LitStr>(&literal.to_string()) {
+                        self.format_captures(&lit.value());
                     }
                     cursor = next;
                 } else if let Some((inner, _, _, next)) = cursor.any_group() {
@@ -1964,9 +2061,58 @@ fn every_test_only_cfg_predicate_is_left_out() {
         scan.sites,
         [
             site("<item>", "combat_room", "struct/declaration", 1),
-            site("<item>", "combat_room", "struct/declaration", 2),
+            site("<item>", "combat_room", "struct#2/declaration", 2),
         ]
     );
+}
+
+#[test]
+fn a_mention_moved_between_file_scope_items_changes_its_site() {
+    let first = scan("struct A { qualified_room: u8 } struct B { other: u8 }");
+    let second = scan("struct A { other: u8 } struct B { qualified_room: u8 }");
+    assert_eq!(first.sites[0].site, "struct/declaration");
+    assert_eq!(second.sites[0].site, "struct#2/declaration");
+}
+
+#[test]
+fn a_shorthand_initializer_also_reads_its_binding() {
+    let scan = scan("fn build(qualified_room: Room) -> Owner { Owner { qualified_room } }");
+    let shorthand: Vec<&str> = scan
+        .sites
+        .iter()
+        .filter(|site| site.site.contains("struct"))
+        .map(|site| site.site.as_str())
+        .collect();
+    // The initializer is a declaration; its value is a read the inventory must give a gate.
+    assert_eq!(shorthand.len(), 2);
+    assert!(shorthand[0].ends_with("/initializer"));
+    assert!(shorthand[1].ends_with("/name"));
+}
+
+#[test]
+fn a_format_capture_is_a_read() {
+    let scan = scan(
+        "fn log(combat_room: Room) { eprintln!(\"{combat_room:?} {{combat_room}}\"); \
+         m! { \"{qualified_room}\" } }",
+    );
+    let captured: Vec<&str> = scan
+        .sites
+        .iter()
+        .filter(|site| site.site.ends_with("/capture"))
+        .map(|site| site.field.as_str())
+        .collect();
+    assert_eq!(captured, ["combat_room", "qualified_room"]);
+}
+
+#[test]
+fn every_macro_invoked_or_defined_is_named() {
+    let scan = scan(
+        "macro_rules! local { () => {} } \
+         fn route(owner: &Owner) { gate!(owner); crate::outer::room!(owner); local!(); \
+         wrap! { inner!(x) if !armed { y } } }",
+    );
+    assert_eq!(scan.defined, ["local"]);
+    assert_eq!(scan.invoked, ["gate", "room", "local", "wrap", "inner"]);
 }
 
 #[test]
