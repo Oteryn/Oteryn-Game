@@ -123,6 +123,9 @@ does a hit do?
 - The target is the D85 identity of a creature visible to the session (VIS-2). A target that is
   not visible, not a creature, or in a protection zone is refused, and so is any target while the
   attacker stands in a protection zone.
+  **Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** A `pacified` attacker's set-target intent
+  is refused with `ATTACK_INTENT_DISPOSITION_REJECTED` (6) before the visibility, creature,
+  protection-zone and PvP checks above. COND-1 builds it.
 - **First slice: creatures only.** Attacking a player is refused until PARTY-PVP-0 decides PvP
   rules; `secure` is carried now and has no effect until then.
 - **Chase** is carried now and has no effect in the first slice: every actor acts as STAND. Chase
@@ -168,6 +171,9 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
 
 - **Owner.** The channel runtime holds one attack target and the fight modes per actor. Setting a
   target is a runtime action; it writes nothing durable.
+  **Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** Applying `pacified` clears the actor's
+  held attack target through this owner, as the same runtime action as a client clear; no further
+  swing of that target is scheduled. COND-1 builds it.
 - **Swing occurrence.** Each swing is a timer occurrence of the attack-target owner, keyed by
   (runtime scope, attacker actor id and generation, swing sequence). Its lineage is the CommandRef
   that set the target. The swing binds the formula content revision and the SIM profile. Its RNG
