@@ -136,14 +136,14 @@ fn decode_create(raw: &[u8], operation_id: &str) -> Option<CreateIntent> {
         || wire.audience != AUDIENCE
         || wire.operation_id != operation_id
         || !uuid_v7(&wire.operation_id)
-        || uuid_bytes(&wire.issuer_decision_id).is_none()
+        || !uuid_v7(&wire.issuer_decision_id)
         || !uuid_v7(&wire.account_id)
         || !uuid_v7(&wire.target_world_id)
     {
         return None;
     }
-    let issued_at_source = decimal(&wire.issued_at_source)?;
-    let expires_at_source = decimal(&wire.expires_at_source)?;
+    let issued_at_source = counter(&wire.issued_at_source)?;
+    let expires_at_source = counter(&wire.expires_at_source)?;
     if expires_at_source <= issued_at_source
         || expires_at_source - issued_at_source > MAX_TTL_SECONDS
         || i64::try_from(expires_at_source).is_err()
@@ -158,14 +158,6 @@ fn decode_create(raw: &[u8], operation_id: &str) -> Option<CreateIntent> {
         issued_at_source,
         expires_at_source,
     })
-}
-
-/// Canonical decimal `0|[1-9][0-9]*` within u64.
-fn decimal(value: &str) -> Option<u64> {
-    if value == "0" {
-        return Some(0);
-    }
-    counter(value)
 }
 
 /// Canonical lower-case UUID text of RFC version 1-8, as bytes.

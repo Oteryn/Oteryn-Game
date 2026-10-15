@@ -319,6 +319,19 @@ fn known_keys_back_off_and_leave_once_unlisted() {
     cursor.next_request(t);
     cursor.advance(&[]);
     assert!(cursor.due(&k, t));
+    // A refused receipt stays stopped while listed, and is forgotten once a pass omits it.
+    cursor.settle(k.clone(), Settle::Stopped, t);
+    assert!(!cursor.due(&k, t + SETTLED_RECHECK * 1000));
+    let listed = PendingEntry {
+        command: CREATE_COMMAND.into(),
+        key: k.clone(),
+    };
+    cursor.next_request(t);
+    cursor.advance(std::slice::from_ref(&listed));
+    assert!(!cursor.due(&k, t + SETTLED_RECHECK * 1000));
+    cursor.next_request(t);
+    cursor.advance(&[]);
+    assert!(cursor.due(&k, t));
 }
 
 #[derive(Clone, Default)]
@@ -495,6 +508,9 @@ fn read_conflict_and_missing_intent() {
     );
     assert_eq!(sent.len(), 5);
     assert!(log.iter().any(|l| l.contains("alarm=intent_missing")));
+    assert!(log.iter().any(|l| {
+        l.contains("result=CHAR_CMD_OPERATION_CONFLICT receipt=accepted alarm=operation_conflict")
+    }));
 }
 
 #[test]

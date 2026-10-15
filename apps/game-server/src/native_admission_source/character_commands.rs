@@ -469,6 +469,8 @@ struct Rescan {
 pub enum Settle {
     /// Decided and published, or stopped with an alarm.
     Done,
+    /// Receipt refused (`404`/`409`): not republished while it stays listed (§4.3).
+    Stopped,
     /// Transient: retry on the key's own backoff.
     Retry,
 }
@@ -561,11 +563,12 @@ impl Cursor {
     /// Record how a processed key ended.
     pub fn settle(&mut self, key: Key, settle: Settle, now: Duration) {
         let attempt = match settle {
-            Settle::Done => 0,
+            Settle::Done | Settle::Stopped => 0,
             Settle::Retry => self.known.get(&key).map_or(0, |k| k.attempt) + 1,
         };
         let delay = match settle {
             Settle::Done => SETTLED_RECHECK,
+            Settle::Stopped => Duration::MAX,
             Settle::Retry => POLL.saturating_mul(1 << attempt.min(4)).min(MAX_BACKOFF),
         };
         if !self.known.contains_key(&key) && self.known.len() >= KNOWN_KEYS {
@@ -786,6 +789,9 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             .await
             .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
         let result = match published {
+            Ok(()) if result_code == "CHAR_CMD_OPERATION_CONFLICT" => {
+                format!("{result_code} receipt=accepted alarm=operation_conflict")
+            }
             Ok(()) => format!("{result_code} receipt=accepted"),
             Err(f @ (Failure::NotFound | Failure::Conflict)) => {
                 format!("{result_code} receipt={} alarm=receipt_refused", f.label())
@@ -799,7 +805,8 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             started,
         );
         match published {
-            Ok(()) | Err(Failure::NotFound | Failure::Conflict) => Step::Settled(Settle::Done),
+            Ok(()) => Step::Settled(Settle::Done),
+            Err(Failure::NotFound | Failure::Conflict) => Step::Settled(Settle::Stopped),
             Err(f) if f.backs_off() => Step::Throttled,
             Err(_) => Step::Settled(Settle::Retry),
         }

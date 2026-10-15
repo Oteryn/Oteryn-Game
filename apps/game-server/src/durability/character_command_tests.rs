@@ -58,6 +58,16 @@ fn intents_are_classified_conflict_unsupported_then_invalid() {
         INTENT.replace(r#""source_revision":"17""#, r#""source_revision":17"#),
         INTENT.replace("1790000300", "1790000301"),
         INTENT.replace("1790000300", "1790000000"),
+        INTENT
+            .replace(
+                r#""issued_at_source":"1790000000""#,
+                r#""issued_at_source":"0""#,
+            )
+            .replace("1790000300", "1"),
+        INTENT.replace(
+            "0192a000-0000-7000-8000-0000000000a1",
+            "0192a000-0000-4000-8000-0000000000a1",
+        ),
         INTENT.replace("0190f2a1-3b4c-7d5e", "0190F2A1-3b4c-7d5e"),
         INTENT.replace("0190f2a1-3b4c-7d5e", "0190f2a1-3b4c-4d5e"),
         INTENT.replace("OTERYN_PLATFORM_CHARACTER_AUTHORITY", "OTERYN_PLATFORM"),
