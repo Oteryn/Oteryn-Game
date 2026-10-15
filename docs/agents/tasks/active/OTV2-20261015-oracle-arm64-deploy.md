@@ -4,12 +4,12 @@
 task_id: OTV2-20261015-oracle-arm64-deploy
 title: Oracle ARM64 runner and deployment
 mode: MIGRATE
-status: validating
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/oracle-arm64-deploy-20261015
+branch: null
 issue: 2217
-pr: 2218
+pr: null
 base_sha: 77af046ce14c81df6ed6cab03ae693a68acff32c
 head_sha: null
 final_head_sha: null
@@ -105,3 +105,18 @@ stale NAS writer restart, no arbitrary runner shell/root/Docker access.
 Review finding 4288835355 accepted: add the negative Docker capability probe
 before SSH, covering custom socket/context and DOCKER_HOST endpoints as well as
 the canonical socket. Apply the same guard to the sibling Platform workflow.
+
+## Operational continuation after source delivery
+
+Delivery PR #2218 owns the repository workflow step. The task continues under
+open Issue #2217 for main-only host acceptance, so it has no canonical active
+implementation PR after source delivery. Keep this operational packet waiting
+until the protected workflow, new incarnation and native entry are qualified,
+then archive it with the accepted post-deployment closeout exception. This avoids
+leaving a terminal PR as a live canonical dispatch target. Host implementation
+is Platform #1644; the separately authorized server contract repair is #2219.
+
+Source delivery PR #2218 merged at fb11de5c9845e4f3eacc0173074d9927834164ae;
+operational acceptance remains open under #2217. No source writer is allocated
+by this waiting packet. The exact queue receipt UUID and sequence1/2 readback
+were verified before protected-main readback.
