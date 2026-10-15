@@ -470,16 +470,18 @@ async fn prepare_inner(
     }
     let actor = b.actor;
     let session = b.session;
+    let before = states
+        .get(runtime, actor, session)
+        .ok_or(SpellCastDisposition::Rejected)?
+        .clone();
+    // CONDITIONS-0 §3.5: the gate families answer before the reentry and target checks.
+    crate::spell::cast::admit_condition_gates(&before, spell, now)?;
     let source_protected = runtime
         .current_player_reentry_protection(actor, session, now.get())
         .map_err(|_| SpellCastDisposition::Rejected)?;
     if spell.aggressive && source_protected {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    let before = states
-        .get(runtime, actor, session)
-        .ok_or(SpellCastDisposition::Rejected)?
-        .clone();
     let caster = owned
         .caster(
             &before,

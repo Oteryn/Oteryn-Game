@@ -104,6 +104,25 @@ pub enum SpellCastDisposition {
     Rejected = 10,
 }
 
+/// SPELL-PRESENT-0 §8: `WorldActorSpellCastResultV1.detail`, which refusal text the client shows.
+/// Sent only to a session holding capability 23 `PRESENTATION_V1`, and never with `Cast`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellCastRefusalDetail {
+    NotLearned = 1,
+    Vocation = 2,
+    Premium = 3,
+    NeedsWeapon = 4,
+    NeedsShield = 5,
+    ProtectionZone = 6,
+    GoUpstairs = 7,
+    GoDownstairs = 8,
+    OutOfRange = 9,
+    NotReachable = 10,
+    OnlyCreatures = 11,
+    NotEnoughRoom = 12,
+    Muted = 13,
+}
+
 /// `ActorVitalsV1`: the own actor's live vitals (SPELL-D2, SPELL-D8).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ActorVitals {
@@ -217,7 +236,8 @@ fn decode_sint32(value: u64) -> Result<i32, ActorSpellError> {
     Ok(((zigzag >> 1) as i32) ^ -((zigzag & 1) as i32))
 }
 
-fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
+/// Also the RUNE-USE-0 §4 `position` arm of USE field 4 (`world_object.rs`), in the same frame.
+pub(crate) fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
     let mut output = Vec::with_capacity(16);
     push_sint32(&mut output, 1, position.x);
     push_sint32(&mut output, 2, position.y);
@@ -225,7 +245,7 @@ fn encode_position(position: SpellTargetPosition) -> Vec<u8> {
     output
 }
 
-fn decode_position(input: &[u8]) -> Result<SpellTargetPosition, ActorSpellError> {
+pub(crate) fn decode_position(input: &[u8]) -> Result<SpellTargetPosition, ActorSpellError> {
     let mut cursor = 0;
     let (mut x, mut y, mut floor) = (None, None, None);
     while cursor < input.len() {
@@ -319,7 +339,11 @@ pub fn encode_spell_cast_result(disposition: SpellCastDisposition) -> Vec<u8> {
 }
 
 pub fn decode_spell_cast_result(payload: &[u8]) -> Result<SpellCastDisposition, ActorSpellError> {
-    match read_single_enum(payload, MAX_SPELL_CAST_RESULT_BYTES)? {
+    cast_disposition(read_single_enum(payload, MAX_SPELL_CAST_RESULT_BYTES)?)
+}
+
+fn cast_disposition(value: u64) -> Result<SpellCastDisposition, ActorSpellError> {
+    match value {
         1 => Ok(SpellCastDisposition::Cast),
         2 => Ok(SpellCastDisposition::CoolingDown),
         3 => Ok(SpellCastDisposition::LevelTooLow),
@@ -332,6 +356,70 @@ pub fn decode_spell_cast_result(payload: &[u8]) -> Result<SpellCastDisposition, 
         10 => Ok(SpellCastDisposition::Rejected),
         _ => Err(ActorSpellError::Malformed),
     }
+}
+
+/// SPELL-PRESENT-0 §8: the result for a session holding `PRESENTATION_V1`, with the optional
+/// `detail` (field 2). A detail with `Cast` is a server fault. Both fields are one-byte varints,
+/// so the result stays within 4 bytes.
+pub fn encode_spell_cast_result_with_detail(
+    disposition: SpellCastDisposition,
+    detail: Option<SpellCastRefusalDetail>,
+) -> Result<Vec<u8>, ActorSpellError> {
+    if detail.is_some() && disposition == SpellCastDisposition::Cast {
+        return Err(ActorSpellError::Malformed);
+    }
+    let mut output = encode_spell_cast_result(disposition);
+    if let Some(detail) = detail {
+        push_varint_field(&mut output, 2, detail as u64);
+    }
+    Ok(output)
+}
+
+fn refusal_detail(value: u64) -> Result<SpellCastRefusalDetail, ActorSpellError> {
+    use SpellCastRefusalDetail as D;
+    Ok(match value {
+        1 => D::NotLearned,
+        2 => D::Vocation,
+        3 => D::Premium,
+        4 => D::NeedsWeapon,
+        5 => D::NeedsShield,
+        6 => D::ProtectionZone,
+        7 => D::GoUpstairs,
+        8 => D::GoDownstairs,
+        9 => D::OutOfRange,
+        10 => D::NotReachable,
+        11 => D::OnlyCreatures,
+        12 => D::NotEnoughRoom,
+        13 => D::Muted,
+        _ => return Err(ActorSpellError::Malformed),
+    })
+}
+
+/// Decodes the result of a session holding `PRESENTATION_V1`: a zero or unknown detail, or a
+/// detail with `Cast`, fails closed. [`decode_spell_cast_result`] still refuses field 2.
+pub fn decode_spell_cast_result_with_detail(
+    payload: &[u8],
+) -> Result<(SpellCastDisposition, Option<SpellCastRefusalDetail>), ActorSpellError> {
+    if payload.len() > MAX_SPELL_CAST_RESULT_BYTES {
+        return Err(ActorSpellError::LimitExceeded);
+    }
+    let mut cursor = 0;
+    let (mut disposition, mut detail) = (None, None);
+    while cursor < payload.len() {
+        let slot = match read_varint(payload, &mut cursor)? {
+            0x08 => &mut disposition,
+            0x10 => &mut detail,
+            _ => return Err(ActorSpellError::Malformed),
+        };
+        let value = read_varint(payload, &mut cursor)?;
+        set_once(slot, value)?;
+    }
+    let disposition = cast_disposition(disposition.ok_or(ActorSpellError::Malformed)?)?;
+    let detail = detail.map(refusal_detail).transpose()?;
+    if detail.is_some() && disposition == SpellCastDisposition::Cast {
+        return Err(ActorSpellError::Malformed);
+    }
+    Ok((disposition, detail))
 }
 
 /// The SPELL-D8 value bounds, shared by both directions.
@@ -683,6 +771,76 @@ mod tests {
             decode_spell_cast_result(&[0x08, 0x81, 0x80, 0x80, 0x00]),
             Err(ActorSpellError::LimitExceeded)
         );
+    }
+
+    #[test]
+    fn spell_cast_result_detail_round_trips_and_fails_closed() {
+        use SpellCastRefusalDetail as D;
+        let details = [
+            D::NotLearned,
+            D::Vocation,
+            D::Premium,
+            D::NeedsWeapon,
+            D::NeedsShield,
+            D::ProtectionZone,
+            D::GoUpstairs,
+            D::GoDownstairs,
+            D::OutOfRange,
+            D::NotReachable,
+            D::OnlyCreatures,
+            D::NotEnoughRoom,
+            D::Muted,
+        ];
+        for (index, detail) in details.into_iter().enumerate() {
+            let value = u8::try_from(index + 1).expect("13 values");
+            let bytes = [0x08, 0x0a, 0x10, value];
+            assert_eq!(
+                encode_spell_cast_result_with_detail(SpellCastDisposition::Rejected, Some(detail)),
+                Ok(bytes.to_vec())
+            );
+            assert!(bytes.len() <= MAX_SPELL_CAST_RESULT_BYTES);
+            assert_eq!(
+                decode_spell_cast_result_with_detail(&bytes),
+                Ok((SpellCastDisposition::Rejected, Some(detail)))
+            );
+            // A peer without PRESENTATION_V1 never accepts field 2.
+            assert_eq!(
+                decode_spell_cast_result(&bytes),
+                Err(ActorSpellError::Malformed)
+            );
+        }
+        assert_eq!(
+            encode_spell_cast_result_with_detail(SpellCastDisposition::Cast, None),
+            Ok(vec![0x08, 0x01])
+        );
+        assert_eq!(
+            decode_spell_cast_result_with_detail(&[0x10, 0x07, 0x08, 0x07]),
+            Ok((SpellCastDisposition::NotAvailable, Some(D::GoUpstairs)))
+        );
+        assert_eq!(
+            encode_spell_cast_result_with_detail(SpellCastDisposition::Cast, Some(D::Muted)),
+            Err(ActorSpellError::Malformed)
+        );
+        for bad in [
+            &[0x08, 0x01, 0x10, 0x01][..],       // detail with CAST
+            &[0x08, 0x0a, 0x10, 0x00][..],       // zero detail
+            &[0x08, 0x0a, 0x10, 0x0e][..],       // unknown detail
+            &[0x10, 0x01][..],                   // missing disposition
+            &[0x08, 0x0a, 0x10, 0x01, 0x10][..], // repeated detail
+            &[0x08, 0x0a, 0x18, 0x01][..],       // unknown field
+        ] {
+            let expected = if bad.len() > MAX_SPELL_CAST_RESULT_BYTES {
+                ActorSpellError::LimitExceeded
+            } else {
+                ActorSpellError::Malformed
+            };
+            assert_eq!(
+                decode_spell_cast_result_with_detail(bad),
+                Err(expected),
+                "{bad:02x?}"
+            );
+        }
+        assert!(SCHEMA.contains("SpellCastRefusalDetail detail = 2;"));
     }
 
     #[test]

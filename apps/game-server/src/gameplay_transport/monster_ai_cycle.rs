@@ -29,7 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drive_owner_spawns(&mut runtime, now.get());
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
-        let Some(room) = self.combat_room else {
+        let Some(room) = self.rooms.gate_monster_ai() else {
             return;
         };
         let Some(content) = self
