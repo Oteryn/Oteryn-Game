@@ -12,7 +12,7 @@
 
 This brief decides what a World Change is in Oteryn: its content, its durable state, who activates it and when, how its map, creatures and NPCs reach every channel, and how it ends. Fury Gates and Nightmare Isles are its first two instances. Mini World Changes use the same model.
 
-It does not decide the numbers of any individual World Change (chance, rotation, weights), which are content and have no source in the repository yet (§5), and it does not decide the Hazard System (§6).
+It fixes the sourced numbers of Fury Gates, Nightmare Isles and the Mini World Changes it names (chance, variant weights, gap, duration: W15) and does not decide the Hazard System (§6).
 
 ## 2. Reference grounding
 
@@ -24,14 +24,18 @@ It does not decide the numbers of any individual World Change (chance, rotation,
   - map files `data-global/world/world_changes/`: `fury_gates/` with **ten** city files (abdendriel, ankrahmun, carlin, darashia, edron, kazordoon, libertybay, porthope, thais, venore), `nightmare_isle/` with **three** (ankrahmun-north, darashia-north, darashia-west), and `full_moon/`, `oriental_trader/`, `grimvale/`;
   - the raid `data-global/raids/fury_gate/furyosa.xml`; world-change quest actions under `data-global/scripts/actions/worldchanges/` and `data-global/scripts/quests/deeplings_worldchange/`;
   - Hazard System: `data/libs/systems/hazard.lua`, `data-global/scripts/systems/hazard_primal.lua`, `data/scripts/eventcallbacks/monster/ondroploot_hazard.lua`.
-- **Consequence.** The repository shows *which* World Changes exist and that Fury Gates and Nightmare Isles are map variants chosen from a fixed set (10 and 3). It holds no activation chance, rotation, duration or weight. Those are open points (§5), never guessed.
+- **Consequence.** The repository shows *which* World Changes exist and that Fury Gates and Nightmare Isles are map variants chosen from a fixed set (10 and 3). It holds no number; the numbers come from the sources below (W15).
+- **Number sources (searched 2026-10-15).**
+  - *Real Tibia:* TibiaWiki "Mini World Changes", section Statistics (https://tibia.fandom.com/wiki/Mini_World_Changes): days on which each change was seen active on The World Board, 465 days before Update 10.80 and 33 days after; its Talk page (https://tibia.fandom.com/wiki/Talk:Mini_World_Changes); "Nightmare Isles Mini World Change/Spoiler" and "The World Board" (same site); TibiaQA https://www.tibiaqa.com/17805 (Fury Gates, 253 of 729 days), https://www.tibiaqa.com/34256 (the board changes at each server save), https://www.tibiaqa.com/17903 (Fire from the Earth), https://www.tibiaqa.com/17667 (Bank Robbery).
+  - *OT servers:* Canary `data-otservbr-global/scripts/world_changes/*.lua` (opentibiabr/canary, commit `04b83b5`) and Crystalserver `data-global/scripts/world_changes/*.lua` (https://raw.githubusercontent.com/zimbadev/crystalserver/main/data-global/scripts/world_changes/, read 2026-10-15). Both draw in a `GlobalEvent.onStartup` (every server boot, i.e. every daily save) with `math.random`.
+  - *Not found:* an official CipSoft figure (tibia.com news and forum posts, Reddit r/TibiaMMO): web searches returned no chance, rotation or gap statement. The wiki states that CipSoft publishes none and that its statistics are a working project.
 - **Name collision.** WORLD-INTERACTION-0 §8.5's HAZARD-1 is map traps and damaging tiles (`environment_damage`, RNG purpose `trap_damage`, `WORLDINT0-RL-15`). The Tibia Hazard System (`rulesets/encounters/hazard-system/`, the Canary files above) is a different mechanic. The task record's dependency "HAZARD-1 (LEVER-1, COND-1)" is the trap mechanic; this brief narrows it (W12).
 - **Content path.** The content tree places World Changes at `content/encounters/world-changes/` and `content/encounters/mini-world-changes/` (both `READY_UNPOPULATED`). The task record's owned path `content/world_changes/` does not match; this brief follows the tree (§5).
 
 ## 3. Rules
 
 **W1. A World Change is content.** One definition per change under `content/encounters/world-changes/<key>` (kind `WORLD_CHANGE`) or `content/encounters/mini-world-changes/<key>` (kind `MINI_WORLD_CHANGE`), compiled into the World Bundle with source provenance per field. A definition has:
-- `key`, `kind`, `trigger` = `at_reset {chance_permille}` or `calendar {month, day, epochs}`; nothing else in v1 (W11);
+- `key`, `kind`, `trigger` = `at_reset {chance_permille}` (0 to 1000; 1000 = every reset) or `calendar {month, day, epochs}`; nothing else in v1 (W11); no minimum-gap field (no source shows a gap, W15);
 - `variants[]`, each `{variant_key, weight, map_layer?, spawns[], npcs[], raids[]}`; a change with one outcome has one variant;
 - `multiplicity`: the GAME-CHANNEL-01 §14 class of every value-producing source in it (W7); required, no default;
 - `announcement` text keys (W8) and `exclusive_with[]` (keys that cannot be active in the same epoch).
@@ -58,9 +62,9 @@ The compile check refuses a definition above the §3 W14 ceilings, without a mul
 
 **W9. Operator override.** The control plane may record, before a reset, an override for the next epoch only: force a change ACTIVE with a named variant, or INACTIVE (`game_world_change_overrides`, consumed by W2 in the same transaction and recorded on the activation row with the operator and reason). There is no mid-epoch override.
 
-**W10. Fury Gates.** One World Change `fury_gates`, kind `WORLD_CHANGE`, `at_reset`, with ten city variants (the ten Crystalserver map files). Each variant's layer holds the gate: a WORLD-INTERACTION-0 §6.5 teleport into the Fury Gate dungeon, whose region is base map. The raid `furyosa` names `requires_world_change {fury_gates}` (W6). Chance and weights are open points.
+**W10. Fury Gates.** One World Change `fury_gates`, kind `WORLD_CHANGE`, `at_reset`, with ten city variants (the ten Crystalserver map files). Each variant's layer holds the gate: a WORLD-INTERACTION-0 §6.5 teleport into the Fury Gate dungeon, whose region is base map. The raid `furyosa` names `requires_world_change {fury_gates}` (W6). `chance_permille` 343, ten variants of weight 1 each, no minimum gap (W15). Real Tibia has the gate on about a third of days; Canary and Crystalserver open one gate at every boot (1000), which is not used.
 
-**W11. Nightmare Isles.** One World Change `nightmare_isles`, kind `WORLD_CHANGE`, with three variants (ankrahmun-north, darashia-north, darashia-west), matching the three Crystalserver map files and the three TibiaWiki coordinates. Each layer holds its isle and the isle's spawns (Silencer, Retching Horror, Choking Fear, Terrorsleep; content). How often the active isle changes is an open point; until it is sourced, the content packet authors it as `at_reset` with equal weights and marks it `PARITY_PENDING`.
+**W11. Nightmare Isles.** One World Change `nightmare_isles`, kind `WORLD_CHANGE`, with three variants (ankrahmun-north, darashia-north, darashia-west), matching the three Crystalserver map files and the three TibiaWiki coordinates. Each layer holds its isle and the isle's spawns (Silencer, Retching Horror, Choking Fear, Terrorsleep; content). `at_reset`, `chance_permille` 1000 (real Tibia: active on every one of 33 observed days, "active every day"), three variants of weight 1 each, no minimum gap (W15). The portal location is drawn at the reset; Canary and Crystalserver do the same (uniform over the three), and the World Board has one message per location.
 
 **W12. HAZARD-1 is a content prerequisite only.** A World Change layer may contain WORLD-INTERACTION-0 traps and damaging tiles; they use HAZARD-1's triggers unchanged. EVENTS-WORLD-1 children that ship such a layer wait for HAZARD-1; the others do not. The Tibia Hazard System is not part of this brief (§6).
 
@@ -88,6 +92,36 @@ The compile check refuses a definition above the §3 W14 ceilings, without a mul
 | Activation | 1 activation row per change per epoch, 0 items, 0 value lines |
 | World job pass | `BOSSRAID0-RL-05` (cited, unchanged) |
 
+**W15. Sourced numbers.** These are the values the content packet authors (W1, W2). Rules:
+- *Chance.* `chance_permille` is the share of days the change was seen active on The World Board (TibiaWiki Statistics, both periods added: 498 days), used as the per-reset chance because one epoch is one day (W5). Real Tibia (observable) wins over the OT value (owner rule 5905825574); the OT value is recorded.
+- *Variants.* Weight 1 each (uniform). No Tibia source gives weights (the wiki lists cities and camps without any); Canary and Crystalserver draw uniformly.
+- *Gap and duration.* No minimum gap: no source shows one, and a Fury Gate was reported open 3 to 4 days in a row (https://www.tibiaqa.com/17805, comments). Duration `until_next_reset` (W5). Conflict recorded: the wiki says Mini World Changes "last a few hours" and its Talk page says some have a random duration or a chance to stay over a save (CipSoft, Goroma about a week, unverified); the day-level data cannot show hours, and TibiaQA (https://www.tibiaqa.com/34256) says the board changes at each server save.
+- *`PARITY_PENDING`* only where no source gives a number (the Nomads camps and Bank Robbery). Searched: the pages in §2.
+
+Table: `WIKI` = https://tibia.fandom.com/wiki/Mini_World_Changes (Statistics, days seen active / days observed, before 10.80 plus after). `CAN` and `CRY` = `world_changes/<file>.lua` of Canary and Crystalserver (§2); line numbers are the same in both unless noted.
+
+| Change (key) | Trigger and chance | Variants (weight) | Gap, duration | Source (Tibia value; OT value for comparison) |
+|---|---|---|---|---|
+| `fury_gates` | `at_reset` 343 | 10 cities (1) | 0; reset | `WIKI` 160/465 + 11/33 = 171/498; https://www.tibiaqa.com/17805 (253/729 = 347). OT: 1000, `fury_gates.lua:20-29` (uniform `math.random(1, 10)` at :26) |
+| `nightmare_isles` | `at_reset` 1000 | 3 isles (1) | 0; reset | `WIKI` 33/33; https://tibia.fandom.com/wiki/Nightmare_Isles_Mini_World_Change/Spoiler ("active every day"; three portals, one board message each). OT: same, `nightmare_isles.lua:85-92` |
+| `oriental_trader` (Yasir) | `at_reset` 151 | 3 towns (1) | 0; reset | `WIKI` 69/465 + 6/33 = 75/498. OT: 330, `oriental_trader.lua:3,43-44` |
+| `thawing` | `at_reset` 187 | 1 | 0; reset | `WIKI` 93/465 + 0/33. OT: Crystalserver 100, `thawing.lua:2,31-33`; Canary has none |
+| `their_masters_voice` (World Change) | `at_reset` 200 | 1 | 0; reset | no Tibia number ("less than a day", https://tibia.fandom.com/wiki/World_Changes). OT: 200, `their_masters_voice.lua:4` (Canary and Crystalserver agree) |
+| `nomads` | `at_reset` 799 | 4 camps (`PARITY_PENDING`) | 0; reset | `WIKI` 371/465 + 27/33. No source for the camp choice (wiki: "only one Nomad Camp out of four") |
+| `warpath` | `at_reset` 373 | 1 | 0; reset | `WIKI` 177/465 + 9/33 |
+| `down_the_drain` | `at_reset` 307 | 1 | 0; reset | `WIKI` 149/465 + 4/33 |
+| `river_runs_deep` | `at_reset` 269 | 1 | 0; reset | `WIKI` 122/465 + 12/33 |
+| `fire_from_the_earth` | `at_reset` 199 | 1 | 0; reset | `WIKI` 91/465 + 8/33; one private 157-day log gave 115 (https://www.tibiaqa.com/17903), not used |
+| `stampede` | `at_reset` 125 | 1 | 0; reset | `WIKI` 57/465 + 5/33 ("for one day") |
+| `noodles_is_gone` | `at_reset` 92 | 1 | 0; reset | `WIKI` 43/465 + 3/33 |
+| `lumberjack` | `at_reset` 90 | 1 | 0; reset | `WIKI` 45/465 + 0/33 |
+| `bored` | `at_reset` 82 | 1 | 0; reset | `WIKI` 40/465 + 1/33 |
+| `kingsday` | `at_reset` 24 | 1 (hourly Thais arena raids are RAID-1 content) | 0; reset | `WIKI` 11/465 + 1/33 |
+| `devovorgas_essence` | `at_reset` 16 | 1 | 0; reset | `WIKI` 7/465 + 1/33 |
+| `bank_robbery` | `PARITY_PENDING` | 1 | n/a | no number: the wiki says it is unknown how often it happens and that it has a chance to happen hourly from server boot; https://www.tibiaqa.com/17667 gives none. Mid-epoch trigger, so outside v1 (§6) |
+
+The sample is small (33 days after 10.80); the content packet keeps the days-seen counts in the provenance so a better dataset replaces them without a schema change.
+
 ## 4. Packets (proposed)
 
 Allocated one by one by the control plane after acceptance; each its own PR.
@@ -101,8 +135,8 @@ Order: WCHANGE-CONTENT-1, then WCHANGE-LAYER-1 and WCHANGE-ACT-1 in parallel, th
 
 ## 5. Open points (not decided here)
 
-- Activation chance, variant weights and any minimum gap for Fury Gates, Nightmare Isles and each Mini World Change: no repository source. The content packet sources them (Crystalserver script contents, TibiaWiki pages) or marks them `PARITY_PENDING`; never guessed.
-- Whether a Tibia World Change may stay active across several server saves (W5 v1 says one epoch).
+- `PARITY_PENDING` after the search in §2: the Bank Robbery chance and trigger (hourly from server boot, count unknown) and the Nomads camp weights. Everything else has a W15 value.
+- Whether a Tibia World Change may stay active across several server saves (W5 v1 says one epoch). Evidence both ways in W15: the board changes at each save, yet some changes are reported on 3 to 4 days in a row; the wiki's per-day shares cannot tell them apart.
 - How the client shows active World Changes (Event Schedule, Cyclopedia): CYCLOPEDIA and client presentation, with its own wire if any.
 - The task record's owned path `content/world_changes/` should become `content/encounters/world-changes/` and `content/encounters/mini-world-changes/` (the content tree); the record is not edited here.
 
