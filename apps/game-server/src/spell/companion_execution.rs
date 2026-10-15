@@ -617,16 +617,19 @@ mod tests {
                         ..
                     })
                 ));
-                assert_eq!(next.conditions.attributes_at(facts.now + 10_000_000), None);
+                let end = facts.now + caster_ms * 1000;
+                assert!(next.conditions.attributes_at(end - 1).is_some());
+                assert_eq!(next.conditions.attributes_at(end), None);
                 assert!(next.conditions.pacified_applied_since(facts.now));
-                assert!(next.conditions.has_gate(
-                    crate::ability::condition::ConditionGate::Pacified,
-                    facts.now
-                ));
-                assert!(!next.conditions.has_gate(
-                    crate::ability::condition::ConditionGate::Pacified,
-                    facts.now + 10_000_000
-                ));
+                assert!(
+                    next.conditions
+                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end - 1)
+                );
+                assert!(
+                    !next
+                        .conditions
+                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end)
+                );
             }
             assert_eq!(runtime.owned_companions(actor, session).unwrap(), census);
             assert!(
@@ -802,7 +805,7 @@ pub(crate) fn stage_haste(
             "spell.swift.attributes",
             1,
             ConditionValues::Attributes {
-                duration_ms: 10000,
+                duration_ms: duration,
                 critical_chance_percent: 0,
                 critical_extra_percentage_points: 0,
                 damage_dealt_percent: 70,
@@ -810,13 +813,14 @@ pub(crate) fn stage_haste(
             },
         )
         .ok_or(HasteExecutionError::UnsupportedProfile)?;
-        // swift_foot.lua:37-39 also pacifies the caster for spellDuration.
+        // swift_foot.lua:37-39 applies attributes and pacification for the same
+        // content spellDuration as the haste.
         let pacified = ConditionDefinition::new(
             "spell.swift_foot.pacified",
             1,
             ConditionValues::Gate {
                 gate: crate::ability::condition::ConditionGate::Pacified,
-                duration_ms: 10000,
+                duration_ms: duration,
             },
         )
         .ok_or(HasteExecutionError::UnsupportedProfile)?;
