@@ -530,7 +530,7 @@ impl ReplayWindow {
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.
     #[cfg(test)]
-    fn starting_at(floor_micros: u64) -> Self {
+    pub(crate) fn starting_at(floor_micros: u64) -> Self {
         Self {
             floor: floor_micros,
             high_water: floor_micros,

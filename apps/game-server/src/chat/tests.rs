@@ -793,3 +793,93 @@ fn a_marker_keeps_covering_overflow_until_a_line_is_delivered() {
     egress.push(room_text(103));
     assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
 }
+
+#[test]
+fn rooms_need_level_20_or_premium_except_help_and_private_needs_level_3() {
+    let gate = |level, premium_current| YellGate {
+        level,
+        premium_current,
+    };
+    for room in [ChatRoom::World, ChatRoom::English, ChatRoom::Advertising] {
+        assert!(!gate(19, false).allows_room(room), "{room:?}");
+        assert!(gate(20, false).allows_room(room), "{room:?}");
+        assert!(gate(2, true).allows_room(room), "{room:?}");
+    }
+    assert!(gate(1, false).allows_room(ChatRoom::Help));
+    assert!(!gate(2, false).allows_private());
+    assert!(gate(3, false).allows_private());
+}
+
+#[test]
+fn a_relay_line_takes_its_line_at_the_gate_and_an_empty_bucket_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    for _ in 0..BUCKET_LINES {
+        limiter.pre_gate_relay(false, at_ms(0)).expect("line");
+    }
+    assert_eq!(
+        limiter.pre_gate_relay(false, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    // Room and private lines share the bucket and the mute with local speech.
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Say, LEVEL_20, at_ms(1_000)),
+        Err(ChatRefusal::Muted { seconds: 4 })
+    );
+    assert!(limiter.is_muted(at_ms(1_000)));
+    limiter
+        .pre_gate_relay(false, at_ms(5_000))
+        .expect("after the mute");
+}
+
+#[test]
+fn advertising_allows_one_line_per_two_minutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    limiter.pre_gate_relay(true, at_ms(0)).expect("line");
+    limiter
+        .claim_advertising(at_ms(0))
+        .expect("first advertisement");
+    assert_eq!(
+        limiter.pre_gate_relay(true, at_ms(10_000)),
+        Err(ChatRefusal::Exhausted { seconds: 110 })
+    );
+    // The interval is checked again at the claim: a line racing past the gate is refused.
+    assert_eq!(
+        limiter.claim_advertising(at_ms(10_000)),
+        Err(ChatRefusal::Exhausted { seconds: 110 })
+    );
+    // Other rooms are not held back by it.
+    limiter
+        .pre_gate_relay(false, at_ms(10_000))
+        .expect("world line");
+    limiter.pre_gate_relay(true, at_ms(120_000)).expect("line");
+    limiter
+        .claim_advertising(at_ms(120_000))
+        .expect("second advertisement");
+}
+
+#[test]
+fn a_twenty_first_distinct_recipient_in_ten_minutes_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    for id in 0..20_u8 {
+        limiter
+            .admit_recipient([id; 16], at_ms(0))
+            .expect("recipient");
+    }
+    // A recipient already written to is always admitted.
+    limiter
+        .admit_recipient([3; 16], at_ms(1_000))
+        .expect("known");
+    assert_eq!(
+        limiter.admit_recipient([20; 16], at_ms(1_000)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(1_000)));
+    // Ten minutes after the first ones, they leave the window (recipient 3 stays: it was written
+    // to again), so new recipients are admitted.
+    for id in 20..39_u8 {
+        limiter
+            .admit_recipient([id; 16], at_ms(600_000))
+            .expect("new window");
+    }
+    assert!(limiter.admit_recipient([99; 16], at_ms(600_000)).is_err());
+}

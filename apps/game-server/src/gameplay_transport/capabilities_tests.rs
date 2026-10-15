@@ -1441,6 +1441,9 @@ mod chat_wire {
             session: GameSessionId,
             intent: ChatIntent,
         ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+            if let Some(done) = self.chat.pre_gate(session, &intent, NOW) {
+                return done;
+            }
             chat_in_channel(
                 &self.chat,
                 &self.runtime.borrow(),
@@ -1458,6 +1461,10 @@ mod chat_wire {
 
         async fn chat_delivered(&self, session: GameSessionId) {
             self.chat.delivered(session);
+        }
+
+        async fn chat_rooms_changed(&self, session: GameSessionId) -> Option<ChatRoomSet> {
+            self.chat.take_rooms_change(session)
         }
     }
 
@@ -1629,6 +1636,69 @@ mod chat_wire {
             assert_eq!(near_end.continuity.chat_revision, 2);
             assert!(lines(&far_frames)?.is_empty());
             assert_eq!(far_end.continuity.chat_revision, 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn an_opened_room_follows_its_result_as_one_rooms_delta() -> Result<(), Box<dyn Error>> {
+        use crate::chat::relay::{RelayKey, RelayKeyRing};
+        use oteryn_protocol_oteryn::chat::{ChatRoom, DELTA_TYPE_CHAT_ROOMS_V1, decode_chat_rooms};
+        use std::str::FromStr as _;
+        run(async {
+            let (runtime, actor, session) = runtime_with_capacity(0x71, 3);
+            let authority = ChatAuthority {
+                runtime: RefCell::new(runtime),
+                chat: ChatRuntime::default(),
+                names: vec![(session, "Aela")],
+            };
+            // A configured relay that never connects: opening a room needs no listener.
+            let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [1; 32])])
+                .map_err(|e| format!("{e:?}"))?;
+            let options =
+                sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")?;
+            let world = [0x01, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+            let relay = super::super::super::chat_relay::ChatRelay::new(ring, world, options)
+                .map_err(|e| format!("{e:?}"))?;
+            authority.chat.install_relay(std::sync::Arc::new(relay));
+            let open = encode_chat_intent(&ChatIntent::OpenRoom(ChatRoom::Help))
+                .map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_lingering(
+                &authority,
+                admitted(actor, session)?,
+                &[command(1, 13, &open), command(2, 13, &open)],
+                Duration::from_millis(300),
+            )
+            .await?;
+            let mut rooms = Vec::new();
+            let mut results = Vec::new();
+            for frame in &frames {
+                let envelope = decode_wire_envelope(frame)?;
+                match envelope.message_type() {
+                    MessageType::StateDelta => {
+                        let delta = decode_state_delta(envelope.payload())?;
+                        if delta.domain_id == 12 && delta.delta_type == DELTA_TYPE_CHAT_ROOMS_V1 {
+                            rooms.push(
+                                decode_chat_rooms(delta.payload).map_err(|e| format!("{e:?}"))?,
+                            );
+                        }
+                    }
+                    MessageType::CommandResult => {
+                        let result = decode_command_result(envelope.payload())?;
+                        results.push(
+                            decode_chat_intent_result(result.payload)
+                                .map_err(|e| format!("{e:?}"))?
+                                .disposition,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            assert_eq!(results, vec![ChatDisposition::Ok, ChatDisposition::Ok]);
+            // The second open changes nothing, so it sends no delta.
+            assert_eq!(rooms.len(), 1, "{rooms:?}");
+            assert!(rooms[0].contains(ChatRoom::Help));
+            assert_eq!(end.continuity.chat_revision, 2);
             Ok(())
         })
     }

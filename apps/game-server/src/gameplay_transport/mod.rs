@@ -9,6 +9,7 @@ mod character_progression_binding;
 mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod chat_intent;
+mod chat_relay;
 mod connection;
 mod container_view;
 mod equipment_move;
@@ -557,6 +558,13 @@ pub async fn serve_gameplay(
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
     }
+    // CHAT-2B: the World chat relay, when its key file is configured.
+    if let Some(relay) = chat_relay::configured(
+        *owners.world_id.as_bytes(),
+        owners.root.chat_relay_connect_options(),
+    ) {
+        authority.chat.install_relay(std::sync::Arc::new(relay));
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -597,6 +605,13 @@ pub async fn serve_gameplay(
             None => std::future::pending().await,
         }
     });
+    // CHAT-2B: the relay listener; it parks once shutdown is requested.
+    let mut relay = pin!(async {
+        match authority.chat.relay() {
+            Some(relay) => relay.run(&authority.chat, shutdown).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
@@ -606,6 +621,8 @@ pub async fn serve_gameplay(
         }
         // Never ends on its own; it parks once shutdown is requested.
         let _ = positions.as_mut().poll(context);
+        // Never ends: it parks once shutdown is requested.
+        let _ = relay.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -2887,6 +2904,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn chat_delivered(&self, session: GameSessionId) {
         self.chat.delivered(session);
+    }
+
+    async fn chat_rooms_changed(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
+        self.chat.take_rooms_change(session)
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {
