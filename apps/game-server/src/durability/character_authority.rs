@@ -161,7 +161,7 @@ impl DurabilityRoot {
                 .bind(account.as_slice()).execute(&mut *tx).await?;
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
-            // One operation identity is held by at most one receipt table (migration 0086).
+            // One operation identity is held by at most one receipt table (migration 0087).
             if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await?.is_some() {
                 return Ok(Err(CharacterAuthorityError::Conflict));
@@ -843,7 +843,7 @@ pub(super) async fn account_security(
 
 /// Complete first-slice integrity: each root has exactly one creation receipt, from the
 /// operator bootstrap with its reconstructed intent binding or from a committed create
-/// command (migration 0086), and no operation identity is in both receipt tables; every retained audit event binds to that
+/// command (migration 0087), and no operation identity is in both receipt tables; every retained audit event binds to that
 /// receipt and root with an intact payload hash. Expired events may be absent.
 /// The retained intent source high-water exists exactly when a receipt exists
 /// and equals the newest receipt's decision, so a restore can neither drop nor

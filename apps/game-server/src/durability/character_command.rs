@@ -3,7 +3,7 @@
 //!
 //! One transaction decides one `operation_id` and stores its receipt, or stores nothing:
 //! a stored receipt is republished byte-identical, a deterministic answer is a new stored
-//! receipt (migration 0086), and an unavailable dependency is transient. Only
+//! receipt (migration 0087), and an unavailable dependency is transient. Only
 //! `CreateCharacter` / `PLATFORM_USER_CREATE` is decided; any other command is a stored
 //! `CHAR_CMD_UNSUPPORTED` receipt. Nothing here logs an identifier or a name (§8).
 
@@ -35,7 +35,7 @@ pub const MAX_TTL_SECONDS: u64 = 300;
 pub const MAX_FUTURE_SKEW_SECONDS: u64 = 5;
 /// Listed Characters per account, the LCFA wire bound (§6.1).
 pub const MAX_ACCOUNT_CHARACTERS: i64 = 64;
-/// Receipt bytes bound of migration 0086 and of the receipt request (§12).
+/// Receipt bytes bound of migration 0087 and of the receipt request (§12).
 pub const MAX_RECEIPT_BYTES: usize = 1024;
 const MAX_INTENT_BYTES: usize = 4096;
 /// `variant` column value of `PLATFORM_USER_CREATE`.

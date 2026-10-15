@@ -8074,7 +8074,7 @@
       "consumers": [
         "apps/game-server/src/native_admission_source/character_commands.rs",
         "apps/game-server/src/durability/character_command.rs",
-        "apps/game-server/migrations/0086_character_commands.sql"
+        "apps/game-server/migrations/0087_character_commands.sql"
       ],
       "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
     },

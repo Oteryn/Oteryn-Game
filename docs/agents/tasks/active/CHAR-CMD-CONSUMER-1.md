@@ -15,9 +15,9 @@ base_sha: a94831d0
 created_at: 2026-10-14
 updated_at: 2026-10-14
 execution_policy: continuous_progress
-migration_lease: "0086"
+migration_lease: "0087"
 owned_paths:
-  - apps/game-server/migrations/0086_character_commands.sql
+  - apps/game-server/migrations/0087_character_commands.sql
   - apps/game-server/src/native_admission_source/character_commands.rs
   - apps/game-server/src/native_admission_source/character_commands_tests.rs
   - apps/game-server/src/native_admission_source/descriptor.rs
@@ -30,6 +30,7 @@ owned_paths:
   - apps/game-server/src/node/config.rs
   - apps/game-server/src/node/serve.rs
   - apps/game-server/tests/character_authority_postgres.rs
+  - apps/game-server/tests/native_admission_source_transport.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/agents/tasks/active/CHAR-CMD-CONSUMER-1.md
 public_contracts: [OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md, RESOURCE_LIMITS_REGISTRY.json]
