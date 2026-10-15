@@ -16,7 +16,7 @@ created_at: 2026-10-15
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 row HIRE-1 (row 90); §5 Wave 5"
 class: "impl"
 needs_migration: yes
-needs_registry: no
+needs_registry: yes  # HIRE1-RL-01..04 (RESOURCE_LIMITS_REGISTRY) and the HIRE-WIRE-1 capability/wire limits
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
@@ -37,7 +37,7 @@ Hirelings (house NPC servants: purchase, placement in the house, services).
 
 | Dependency | State | Gate |
 |---|---|---|
-| HOUSE-1a | NOT MERGED | **BLOCKING** |
+| HOUSE-1b | NOT MERGED | **BLOCKING** (HIRE-DATA-1 extends the HOUSE-1b rent, move-out, eviction and disposition transaction; HOUSE-1a excludes it) |
 | NPC-ECON-1 | NOT MERGED (Wave 2) | **BLOCKING** |
 | PREMIUM-1 | MERGED (#2110) | ok |
 | acceptance of the HIRE1 brief (`OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md`) | ACCEPTED by the owner 2026-10-15 ("akceptuje hire i craft"), recorded in ACCEPT-BATCH-2026-10-15 §7; effective when this PR is integrated. Delivery still waits for the Platform Store contract (#1625) | ok |
@@ -62,7 +62,7 @@ To compile on the branch the builder may add only module registration lines in s
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
-- house ownership (HOUSE-1a)
+- house ownership and disposition (HOUSE-1b)
 - NPC trade/bank (NPC-ECON-1)
 - premium gate
 - connection.rs command dispatch chain `else if command.command_type == COMMAND_TYPE_...` (USE_INTENT l.2481, CHAT_INTENT l.2735, NPC_TRADE_INTENT l.2766)
@@ -76,7 +76,7 @@ To compile on the branch the builder may add only module registration lines in s
 ## Acceptance criteria
 
 - [ ] only house owner may place a hireling
-- [ ] purchase through ledger
+- [ ] delivery consumed from the Platform Store: a signed, idempotent Store delivery is applied once per delivery id and reported by status callback; no price, currency or payment data exists in Game, and Game never sells a hireling for gold
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
 - [ ] Durable state sufficient to resume after restart / session-generation change.
 - [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.

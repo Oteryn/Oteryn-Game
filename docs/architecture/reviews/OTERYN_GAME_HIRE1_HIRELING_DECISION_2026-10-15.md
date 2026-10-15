@@ -9,6 +9,14 @@
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 - Runtime, migration, wire and production authority: NONE. Delivery is blocked by the Platform Store contract; the Game side can be written against its interface (§4).
 
+## 0. Decision test (`ARCHITECTURE_DECISION_DISCIPLINE.md`)
+
+1. **Must decide now?** YES.
+2. **Concrete downstream work blocked.** The packets of §5: HIRE-DATA-1 (tables, guards, writers, receipt kind), HIRE-NPC-1, HIRE-JOBS-1, HIRE-WIRE-1 and HIRE-STORE-1 cannot start without the record model (H2), placement and removal (H3), the house returns (H4) and the resource rows of §3. Plan row 90 places HIRE-1 in Wave 5 after HOUSE-1b, and the owner ruled it is not deferred (item 7).
+3. **Harder or impossible later.** The hireling as a durable per-character row (not an item), the receipt kind and guard-union arm, the database-held H4 invariant, and `HIRE1-RL-01` to `-04` are persistence and registry commitments: changing them later needs a migration and a receipt/guard change, and a lamp-style item representation would add MINT, retirement and Inbox causes that could not be removed once rows exist.
+4. **Evidence to supersede.** The accepted Platform Store contract (PR #1625) and the owner's S-1 to S-9 answers contradicting the delivery needs of §4; Canary or Tibia reference changes to limits or services; persistence, economy, protocol or security review findings; owner direction changing the product model.
+5. **Deliberately not decided.** Store pricing and currency (the Platform's), the guildhall guest Steward rule (GUILDHALL-1), the `HIRELING_V1` capability number (protocol registry issue #162 at allocation), the direct player-to-player house transfer (HOUSE-OWN-0 §15), and the delivery transport (§4 defines only what Game needs).
+
 ## 1. What a hireling is (reference)
 
 From `docs/reference/tibia-manual/products.md` §Hirelings and `world.md`:
@@ -101,13 +109,13 @@ Order: HIRE-DATA-1, HIRE-NPC-1, HIRE-JOBS-1, HIRE-WIRE-1, then HIRE-STORE-1. The
 ## 7. Handback
 
 ```yaml
-result: CANDIDATE
+result: ACCEPTED
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md
 resource_values_changed: true
 production_authority_changed: false
 cross_repository_authority_changed: false
-implementation_may_resume: false
+implementation_may_resume: true  # only via a fresh per-child allocation (HIRE-DATA-1 first); no standing authority
 required_fresh_allocation: true
 required_independent_review: "persistence, economy, protocol; security for HIRE-STORE-1"
-blocked_on: "Oteryn-Platform PR #1625 (Store contract) for HIRE-STORE-1 only"
+blocked_on: "Oteryn-Platform PR #1625 (Store contract) for HIRE-STORE-1 only; per-child allocation and independent review gates remain"
 ```
