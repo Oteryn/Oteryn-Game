@@ -127,3 +127,112 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded local MAIL-TEXT/address and recipient preparation — 2026-10-15
+
+Existing draft #2133, `skeleton/mail-1`, unchanged authoring base
+`06f4e8ee2479eb5bffce507ba50f9a1c10b4b718`. The active allocation permits only
+the six paths named in `mail-1-allocation.json`; historical broader paths and
+statuses above do not grant wiring/content/migration rights. No commit/push.
+
+Accepted MAIL-0 §§4–6/§11 and WRITE-0 §4–6 were read from protected main
+`3ef900c160c9713092a86bfcd1a8377c7587c898`, not inferred from the clone's stale
+CANDIDATE heading. MAIL-0's writable-text amendment is effective with accepted
+WRITE-0; a future store must retain a separate never-deleted revision row so
+deletion cannot reuse a revision. No unsupported text schema is assumed here.
+
+### Actual residue and useful owned component
+
+- Native `character_inbox.rs` provides existing Inbox reads and typed errors;
+  migration 0076 admits deliveries only through caller-owned SECURITY DEFINER
+  writers with registered causes. MAIL causes, transfer+stamp transform and
+  audit/outbox shapes are not present. A new fake delivery/MINT/BURN writer or
+  ad hoc cause is not a usable substitute: accepted letter posting preserves
+  item identity with TRANSFER+TRANSFORM and has no value/MINT/BURN line.
+- No native content/runtime model presently carries `readable`, `writable`,
+  `write_policy`, `max_characters` or an admitted letter/label/stamp mapping.
+  WRITE-CONTENT-1/MAIL-CONTENT-1 owns that qualification. A client/request
+  boolean cannot become current writable-item authority. Therefore no dead
+  item-text writer or speculative persistence table is added merely because
+  `item_text.rs` is allocated.
+- `domain/mail.rs` supplies the real accepted bounded text/address value:
+  letter 1,999/7,996 and label 79/316 scalar/byte bounds, LF only among control
+  characters, empty text retained as the eventual delete request, exact body
+  preservation and redacted Debug. It trims only the first LF-delimited line,
+  ignores town/body and reuses canonical `CharacterName` parsing/comparison key.
+  Empty/missing address is `NO_ADDRESS`; malformed names are privacy-safe
+  `UNKNOWN_RECIPIENT`. A text class is policy data, not an admitted Item definition.
+- `durability/mail.rs` uses actual existing reservation/root tables. It first
+  resolves a same-World live name hint, then independently rechecks the current
+  recipient root's World, lifecycle and addressed name under `FOR SHARE` in the
+  delivering transaction. A hint is never proof of the current root. Foreign,
+  missing, dead, renamed and held-only names expose no distinguishing result.
+  No bank same-Account/junior/online/Channel restriction is imported into letters.
+
+### Exact remaining content/CP boundaries
+
+The eventual writer must independently derive the sender's World from current
+native session/recovery/item authority; these query helpers are not an unfenced
+public recipient-lookup endpoint. Existing
+`item_transfer::character_item_fence_is_current` already checks CommandRef session,
+reconnect/lease/scope generations, current node incarnation, admission guards and
+the sender root without changing CharacterRevision. Reuse it, together with the
+current recovery seal/admission lock order; never reconstruct current facts from
+the prepared text, hint or receipt. Sender/recipient root locks must be acquired
+by CharacterId (one for self-mail), before items/container/Inbox counters. The
+recipient lock must remain held through delivery in the same transaction.
+
+Qualified writable/stamped/max-character/rewrite/current-definition facts and
+each location's current reach/fence remain prerequisites for text persistence.
+MAIL-TEXT/WRITE must implement durable non-reused revisions, two writes/second,
+CommandRef replay/conflict, deletion, current ownership/definition recheck and
+privacy-safe reached-item reads. The accepted named table shape is permitted,
+but is not enough to authorize writing an Item with missing current content facts.
+
+Full MAIL posting still needs the accepted private operation schema, closed mail
+causes/audit/outbox and privileged Inbox writer, stamp rule, sorted root/item locks,
+mail ceiling/rate, rollback/idempotency/reconciliation, mailbox reach/binding,
+content/wire/resource registries and actor/transport composition. No migrations,
+registries, shared registrations, protocol, content regeneration, Inbox schema,
+new audit causes or world truth are changed in this branch. Full task acceptance
+remains unchecked; the detached subset is not mail delivery or text persistence.
+
+### Actual local validation and scope
+
+- **8/8 passed**, 3,179 unrelated library tests filtered: five text/address
+  tests (letter/label max/max+1, four-byte scalars, combining scalars, control
+  refusal, first-line/canonical key, missing/invalid address and private Debug)
+  and three real isolated **PostgreSQL 17.6** cases (same-World/held-name privacy,
+  independent stale rename/World/root-removal facts and actual recipient
+  `FOR SHARE` versus a second connection's `DELETE`, SQLSTATE `55P03`).
+- Unit tests ran against an exact native snapshot with only domain/durability
+  mail module registration additions **outside this branch**. Upstream
+  `sqlx::test`, existing SQLx features, actual native migrations and the existing
+  genuine bestiary fixture were used. No fake current-fence or writer model.
+  Migration-owner fixture seeding/corruption is explicit and local; this is not
+  production role/authority, full sender-fence or full-mail E2E qualification.
+  CP must route these PostgreSQL cases to the real PG lane when registering
+  modules; the explicit validation script pins its local test `DATABASE_URL`.
+- Library Clippy `-D warnings`, snapshot/branch workspace format checks and
+  owned Rust formatting passed. The existing vendored Tokio missing-doc warning
+  remains in raw Cargo logs; no lint or dependency feature was changed.
+  One shared Rust lock, debug0, incremental0, jobs2; library-only Cargo commands,
+  no implicit server/migrate executable link. **83** actual source/native
+  migration inputs match before/after, and branch shared-file hashes are unchanged.
+- Governance and **124/124** agent unit tests passed; whole owned diff reviewed,
+  whitespace and exact scope checks passed for four allocated paths.
+- Earlier actual attempts are retained separately: the integration-root-only
+  shared PostgreSQL helper did not compile in a library context; a subsequent
+  6-pass/2-fail run incorrectly used lifecycle2 in fixtures. Native 0005 permits
+  only lifecycle1, so the corrected fixture tests actual root removal instead.
+  No invented lifecycle was added and product source did not change. Neither
+  setup/fixture failure is a claimed product defect or behavioral RED predecessor.
+- Durable evidence `/workspace/oteryn-prep/mail-1-evidence/`: raw logs, exact
+  accepted sources, source/snapshot bindings, prior fixture sources and commands.
+  SHA-256: domain mail
+  `d0577b8542b664c420a9f959b949863178447535b66b91eafa38e0d732a34605`;
+  durability mail `a7eef6fe053412c55a8a3bc6f2f176545c1f126bceb2dc46befa4e1154cf937a`;
+  native tests `81ec66289639e87967f15e91aecc5c367ecbbb22508ee95a30840ea584337def`.
+
+No independent exact-head review or architect/integration acceptance is claimed.
+The prepared subset is ready for CP review; full task criteria remain unchecked.
