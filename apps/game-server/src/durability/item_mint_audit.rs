@@ -1938,6 +1938,7 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
+                "src/durability/house_interior.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",
                 "src/durability/item_mint.rs",

@@ -359,3 +359,26 @@ registry delta, exact native guard bindings, final scope/patch and source hashes
 Production/registered-target metadata, formatting, architecture and governance checks
 are recorded separately there. Exact-head protected CI, full compiled source-graph
 check and independent architect/CP qualification remain required before readiness.
+
+## Exact-head CI source-guard repair — 2026-10-15
+
+Published candidate `6b4b23f848675361553813b9bb7429a5305aaa55` reached the full native
+unit suite in CI run **38779927939**, job **116577926281**: **3,172 passed,
+1 failed, 29 ignored**. The sole failure was
+`every_type2_insert_takes_its_tuple_from_a_type2_transaction`: its actual insert-site
+scan found the new `src/durability/house_interior.rs`, missing from the exhaustive
+expected list. The tuple-selection and compile-time-constant assertions had passed.
+
+The repair adds that one path in sorted order. All prior sites, production walker,
+statement extraction, tuple/encoder checks and other source remain unchanged.
+Source-bound std-only Rust validation executes the exact original whole test and
+its three unchanged helpers over all **555 actual native source files**: original C
+is RED on the missing expected site; the repaired list is GREEN. Two isolated source
+mutants still fail the original assertions: missing selected schema tuple and a
+compile-time retention tuple even with both selected-tuple calls present.
+
+Validation sources/ranges/hashes, complete source manifests and raw results are in
+`/workspace/oteryn-prep/house-runtime-1a-slot-2-evidence/`. This is a targeted source-
+guard repair, not another full native or PostgreSQL run. Production, SQL, proto,
+registry and the earlier component evidence are unchanged. The new candidate still
+needs exact-head CI/required review; the PR stays draft and only root publishes it.
