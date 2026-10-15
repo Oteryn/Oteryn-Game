@@ -41,6 +41,9 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
+use oteryn_protocol_oteryn::logout;
+/// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
+pub use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
@@ -123,7 +126,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 /// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
 /// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
 /// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
-/// types 11 and 12, domain 10; requires 6). Add an ID here only
+/// types 11 and 12, domain 10; requires 6) and 21 `LOGOUT_V1` (command type 23). Add an ID here only
 /// together with its routing, and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -131,6 +134,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
+    logout::CAPABILITY_LOGOUT_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -267,6 +271,8 @@ pub enum SessionError {
     Attack(attack::AttackWireError),
     /// A capability-4 item payload was refused by its codec.
     ItemView(ItemViewWireError),
+    /// A capability-21 logout result was refused by its codec.
+    Logout(logout::LogoutWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -424,6 +430,7 @@ impl fmt::Display for SessionError {
             Self::Chat(error) => write!(formatter, "CHAT payload refused: {error:?}"),
             Self::Attack(error) => write!(formatter, "ATTACK payload refused: {error:?}"),
             Self::ItemView(error) => write!(formatter, "ITEM payload refused: {error:?}"),
+            Self::Logout(error) => write!(formatter, "LOGOUT payload refused: {error:?}"),
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
             }
@@ -630,6 +637,17 @@ pub struct CastOutcome {
     pub disposition: SpellCastDisposition,
     pub result_server_sequence: u64,
     pub actor_vitals_delta: Option<AppliedDelta<ActorVitals>>,
+}
+
+/// The decoded `CommandResult` of a capability-21 `LOGOUT_INTENT`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogoutOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    /// `None` is a `REJECTED` with an empty payload: the server refused the command before its
+    /// logout authority (a capability or rate-limit refusal).
+    pub result: Option<LogoutResult>,
+    pub result_server_sequence: u64,
 }
 
 /// Outcome of `Session::attack_target` and `Session::set_fight_modes` (ATTACK-0, command types
@@ -1762,6 +1780,56 @@ impl<S: SessionStream> Session<S> {
             command_id: result.command_id,
             status: result.status,
             disposition,
+            result_server_sequence: result.server_sequence,
+        })
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 23 `LOGOUT_INTENT` (capability 21) and decodes its
+    /// `CommandResult`. Refused before anything is sent when capability 21 is not selected.
+    /// `IN_FIGHT` and `BUSY` are normal refusals that leave the session playing. After
+    /// `ACCEPTED` the server has ended the session and closes the transport, so this session
+    /// sends nothing further.
+    pub async fn logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+        self.ensure_usable()?;
+        if !self.is_selected(logout::CAPABILITY_LOGOUT_V1) {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: logout::CAPABILITY_LOGOUT_V1,
+            });
+        }
+        let outcome = self.exchange_logout().await;
+        if matches!(
+            outcome,
+            Ok(LogoutOutcome {
+                result: Some(LogoutResult::Accepted),
+                ..
+            })
+        ) {
+            self.unusable = true;
+        }
+        self.poison_on_error(outcome)
+    }
+
+    async fn exchange_logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+        let result = self
+            .send_and_read_result(
+                logout::COMMAND_TYPE_LOGOUT_INTENT,
+                &logout::encode_logout_intent(),
+            )
+            .await?;
+        let decoded = if result.status == CommandStatus::Rejected && result.payload.is_empty() {
+            None
+        } else {
+            Some(logout::decode_logout_result(&result.payload).map_err(SessionError::Logout)?)
+        };
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            decoded.is_none_or(LogoutResult::is_rejected),
+        )?;
+        Ok(LogoutOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            result: decoded,
             result_server_sequence: result.server_sequence,
         })
     }
@@ -3079,6 +3147,170 @@ mod tests {
         })?
     }
 
+    /// Admits with capability 21 selected, then answers each logout with the next `results`
+    /// entry (`None` is a `REJECTED` with an empty payload), checking the intent on the wire.
+    async fn logout_server(
+        mut stream: DuplexStream,
+        results: Vec<(CommandStatus, Option<LogoutResult>)>,
+    ) -> Result<(), BoxError> {
+        read_frame(&mut stream).await?;
+        write_frame(
+            &mut stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: &[logout::CAPABILITY_LOGOUT_V1],
+            })?,
+        )
+        .await?;
+        let overlay = encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        let spatial = spatial(0);
+        let domains = [
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 5,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 2,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay,
+            },
+        ];
+        for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
+            write_frame(&mut stream, &frame).await?;
+        }
+        for (index, (status, result)) in (0_u64..).zip(results) {
+            let command = read_frame(&mut stream).await?;
+            let command = decode_wire_envelope(&command)?.client_command(1)?;
+            assert_eq!(
+                (command.command_id, command.command_type),
+                (7 + index, logout::COMMAND_TYPE_LOGOUT_INTENT)
+            );
+            assert!(command.payload.is_empty());
+            let payload = match result {
+                Some(result) => logout::encode_logout_result(result)
+                    .map_err(|error| format!("logout: {error:?}"))?,
+                None => Vec::new(),
+            };
+            write_frame(
+                &mut stream,
+                &encode_command_result(1, 41 + index, 7 + index, status, &payload)?,
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
+    async fn logout_session(
+        results: Vec<(CommandStatus, Option<LogoutResult>)>,
+    ) -> Result<
+        (
+            Session<DuplexStream>,
+            tokio::task::JoinHandle<Result<(), BoxError>>,
+        ),
+        BoxError,
+    > {
+        let (client, server) = tokio::io::duplex(64 * 1024);
+        let server = tokio::spawn(logout_server(server, results));
+        let mut admission = admission()?;
+        admission.supported_capabilities = &[logout::CAPABILITY_LOGOUT_V1];
+        Ok((Session::admit(client, admission).await?, server))
+    }
+
+    #[test]
+    fn a_refused_logout_keeps_the_session_playing_and_an_accepted_one_ends_it()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, server) = logout_session(vec![
+                (
+                    CommandStatus::Rejected,
+                    Some(LogoutResult::InFight {
+                        retry_after_ms: 1_500,
+                    }),
+                ),
+                (CommandStatus::Rejected, Some(LogoutResult::Busy)),
+                (CommandStatus::Rejected, None),
+                (CommandStatus::Accepted, Some(LogoutResult::Accepted)),
+            ])
+            .await?;
+            let in_fight = session.logout().await?;
+            assert_eq!(
+                (in_fight.command_id, in_fight.status, in_fight.result),
+                (
+                    7,
+                    CommandStatus::Rejected,
+                    Some(LogoutResult::InFight {
+                        retry_after_ms: 1_500
+                    })
+                )
+            );
+            assert_eq!(session.logout().await?.result, Some(LogoutResult::Busy));
+            assert_eq!(session.logout().await?.result, None);
+            let accepted = session.logout().await?;
+            server.await??;
+            assert_eq!(
+                (
+                    accepted.status,
+                    accepted.result,
+                    accepted.result_server_sequence
+                ),
+                (CommandStatus::Accepted, Some(LogoutResult::Accepted), 44)
+            );
+            // The server ended the session: nothing further is sent on it.
+            assert!(matches!(
+                session.logout().await,
+                Err(SessionError::SessionUnusable)
+            ));
+            assert_eq!(session.next_command_id(), 11);
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_logout_result_whose_status_disagrees_with_its_code_fails_the_session()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, server) =
+                logout_session(vec![(CommandStatus::Accepted, Some(LogoutResult::Busy))]).await?;
+            assert!(matches!(
+                session.logout().await,
+                Err(SessionError::InconsistentCommandResult {
+                    command_id: 7,
+                    status: CommandStatus::Accepted
+                })
+            ));
+            server.await??;
+            assert!(matches!(
+                session.logout().await,
+                Err(SessionError::SessionUnusable)
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_logout_is_refused_before_sending_when_capability_21_is_not_selected()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, _peer) = vitals_pair().await?;
+            assert!(matches!(
+                session.logout().await,
+                Err(SessionError::CapabilityNotSelected { capability: 21 })
+            ));
+            assert_eq!(session.next_command_id(), 7);
+            Ok(())
+        })?
+    }
+
     /// An admitted session whose join carried actor vitals, paired with the peer end.
     async fn vitals_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
         let (client, mut peer) = tokio::io::duplex(64 * 1024);
@@ -4321,7 +4553,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17],
+                &[4, 6, 7, 13, 17, 21],
                 selected,
                 &[],
                 snapshot,
@@ -4799,7 +5031,7 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17]);
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21]);
     }
 
     #[test]
@@ -5396,7 +5628,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17],
+                &[4, 6, 7, 13, 17, 21],
                 ITEM_SELECTED,
                 &[],
                 snapshot,
