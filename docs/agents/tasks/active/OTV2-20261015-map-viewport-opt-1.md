@@ -6,7 +6,7 @@ title: "MAP-VIEWPORT-OPT-1 map-view budget under owner option B (walking players
 mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
-issue: 162
+issue: 1622
 lane_id: map
 base_branch: main
 branch: claude/map-viewport-opt-1-20261015
