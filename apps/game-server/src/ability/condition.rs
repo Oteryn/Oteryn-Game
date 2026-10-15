@@ -851,6 +851,9 @@ pub(crate) struct ConditionStore<S> {
     /// The simulation tick (its semantic time) of the current pass and the ticks it has dealt.
     pass_at: u64,
     pass_ticks: usize,
+    /// ATTACK-0 §4 (as amended by #2106): the semantic time of the latest `pacified`
+    /// application, kept past its expiry so the attack owner clears a target held across it.
+    pacified_applied_at: Option<u64>,
 }
 
 impl<S> Default for ConditionStore<S> {
@@ -861,6 +864,7 @@ impl<S> Default for ConditionStore<S> {
             next_sequence: 0,
             pass_at: 0,
             pass_ticks: 0,
+            pacified_applied_at: None,
         }
     }
 }
@@ -1320,6 +1324,15 @@ impl<S: Clone> ConditionStore<S> {
             self.instances.remove(index);
         }
         self.instances.push(instance);
+        if matches!(
+            definition.values,
+            ConditionValues::Gate {
+                gate: ConditionGate::Pacified,
+                ..
+            }
+        ) {
+            self.pacified_applied_at = Some(now);
+        }
         Ok(Applied { sequence, replaced })
     }
 
@@ -1713,6 +1726,12 @@ impl<S: Clone> ConditionStore<S> {
             return Err(ConditionGate::Pacified);
         }
         Ok(())
+    }
+
+    /// ATTACK-0 §4 (as amended by #2106): a `pacified` was applied at or after `since`, current
+    /// or since expired. A target held from `since` is cleared by that application.
+    pub(crate) fn pacified_applied_since(&self, since: u64) -> bool {
+        self.pacified_applied_at.is_some_and(|at| at >= since)
     }
 }
 

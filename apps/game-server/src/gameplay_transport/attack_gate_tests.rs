@@ -192,3 +192,82 @@ fn muted_and_powerless_do_not_gate_an_attack_target() {
         );
     }
 }
+
+/// Gives the player a held target, as an admitted `ATTACK_TARGET` leaves it.
+fn hold_target(
+    attack: &mut ChannelAttackStates,
+    runtime: &ChannelRuntimeV1,
+    player: ExactActorRef,
+    session: GameSessionId,
+) {
+    let entry = attack.entry(runtime, player, session).unwrap();
+    let facts = TargetFacts {
+        present_and_visible: true,
+        attackable_kind: true,
+        alive: true,
+        same_floor: true,
+        distance: 1,
+        attacker_in_protection_zone: false,
+        target_in_protection_zone: false,
+        attacker_reentry_protected: false,
+        target_reentry_protected: false,
+    };
+    entry
+        .state
+        .set_target(
+            player,
+            CommandRef::new(session, CommandId::new(1).unwrap()),
+            &facts,
+        )
+        .unwrap();
+    entry.target_ref = Some(UNSEEN);
+}
+
+#[test]
+fn applying_pacified_clears_the_held_target_before_any_read_or_swing() {
+    let states = super::super::actor_spell::ChannelSpellStates::default();
+    for key in ["muted", "powerless", "pacified"] {
+        let (_room, mut runtime, player, session) = owner();
+        let mut attack = ChannelAttackStates::default();
+        hold_target(&mut attack, &runtime, player, session);
+        assert!(!attack.settle_pacified_target(&runtime, &states, player, session));
+        gate(&mut runtime, player, session, key);
+        // The application commits; the first settle under the attack guard clears the target,
+        // with no auto-attack pass in between. Only `pacified` clears it.
+        let pacified = key == "pacified";
+        assert_eq!(
+            attack.settle_pacified_target(&runtime, &states, player, session),
+            pacified
+        );
+        assert_eq!(
+            attack.combat_state(player, session, at(1)).target,
+            (!pacified).then_some(UNSEEN)
+        );
+        assert!(!attack.settle_pacified_target(&runtime, &states, player, session));
+    }
+}
+
+#[test]
+fn a_pacified_that_expired_before_any_read_still_clears_the_target_it_was_applied_over() {
+    let states = super::super::actor_spell::ChannelSpellStates::default();
+    let (_room, mut runtime, player, session) = owner();
+    let mut attack = ChannelAttackStates::default();
+    hold_target(&mut attack, &runtime, player, session);
+    // Applied at 0 for 10 s; no reader runs until the gate has ended.
+    gate(&mut runtime, player, session, "pacified");
+    assert!(!pacified_slot(&runtime, player, session, at(20_000)));
+    assert!(attack.settle_pacified_target(&runtime, &states, player, session));
+    assert_eq!(
+        attack.combat_state(player, session, at(20_000)).target,
+        None
+    );
+    // A target set after the application is not cleared by it.
+    hold_target(&mut attack, &runtime, player, session);
+    let index = attack.index(player, session).unwrap();
+    attack.entries[index].target_set_at = at(20_000);
+    assert!(!attack.settle_pacified_target(&runtime, &states, player, session));
+    assert_eq!(
+        attack.combat_state(player, session, at(20_000)).target,
+        Some(UNSEEN)
+    );
+}

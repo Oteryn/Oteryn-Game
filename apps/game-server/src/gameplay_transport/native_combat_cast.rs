@@ -3032,12 +3032,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let attack_target = self
-            .attack
-            .lock()
-            .await
-            .combat_state(actor, session, self.owner_now())
-            .target;
+        let attack_target = {
+            let mut attack = self.attack.lock().await;
+            // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
+            attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.combat_state(actor, session, self.owner_now()).target
+        };
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.

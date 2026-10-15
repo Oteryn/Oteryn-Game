@@ -26,6 +26,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/attack.rs
   - apps/game-server/src/gameplay_transport/attack_gate_tests.rs
   - apps/game-server/src/gameplay_transport/mod.rs
+  - apps/game-server/src/gameplay_transport/native_combat_cast.rs
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs
   - apps/game-server/src/spell/actor_conditions.rs
   - apps/game-server/src/spell/actor_conditions_agony_tests.rs
@@ -51,7 +52,7 @@ external_repositories: []
 ## Outcome
 
 - The runtime condition store has the §3.5 keys `muted`, `pacified` and `powerless` (one gate family, refreshed on every application, also when shorter) and `agony` (replace when the new total is at least the remaining one, a replacement following §3.1), with `COND0-RL-01` at 32. None of them is tagged `negative`, no dispel selector takes them, they end only by duration, death or the §6.3 boundaries, and creature and Cleanse immunity do not refuse `agony`; re-entry protection refuses a creature application of every one.
-- The gates run once the action is identified, after the CHAT-0 §6 chat-mute pre-gate and before every other check: in the transport ahead of every cast dispatcher, and again first in every `spell/cast.rs` entry point and the ordinary-combat owner. Refusal order is `muted`, `pacified`, `powerless`; a spell answers `SPELL_CAST_DISPOSITION_REJECTED` (10), an attack set-target refused by `pacified` answers `ATTACK_INTENT_DISPOSITION_REJECTED` (6) before the visibility, creature, protection-zone and PvP checks, and clearing a target stays open.
+- The gates run once the action is identified, after the CHAT-0 §6 chat-mute pre-gate and before every other check: in the transport ahead of every cast dispatcher, and again first in every `spell/cast.rs` entry point and the ordinary-combat owner. Refusal order is `muted`, `pacified`, `powerless`; a spell answers `SPELL_CAST_DISPOSITION_REJECTED` (10), an attack set-target refused by `pacified` answers `ATTACK_INTENT_DISPOSITION_REJECTED` (6) before the visibility, creature, protection-zone and PvP checks, and clearing a target stays open. Applying `pacified` clears the held target (ATTACK-0 §4 as amended by #2106): the condition appliers run under `runtime` and `spell_states` without the attack owner, so the clear lands under the attack guard ahead of every use of the target, at the caster's own cast completion, at every `ACTOR_COMBAT_STATE` observation, at the SPELL-TARGET-1 read and before every swing. The condition store keeps the latest `pacified` application time past the gate's expiry and the attack owner records when each target was set, so a target held across an application is cleared even when the gate ended before any reader ran; no target held past the application is observed, sent or swung.
 - An `agony` tick skips the whole incoming mitigation stage (damage reduction and the mana shield) and every charm; in a protection zone it is refused and used up. The player cycle deals a non-lethal creature agony tick; every other occurrence goes to the combat owner.
 - COND-CONTENT-2: the condition-authoring schema, builder, validator and tests carry the four families, `MAX_CONFLICT_KEYS = 32` and the agony rules; the reference-sourced rows are `spell.swift_foot.pacified` and `monster_spell.soulpit_powerless`, and the candidate is rebuilt.
 
@@ -73,10 +74,10 @@ external_repositories: []
 
 ## Excluded scope and residuals
 
+- A creature condition tick (`agony` like the existing creature damage ticks) does not extend the victim's in-fight window or record attacker attribution; routing every creature condition tick through that bookkeeping is a follow-up for all DoT families.
 - A lethal agony tick and one of non-creature provenance go to the combat owner; routing them through `spell_periodic` is deferred.
 - No `agony` or `muted` content row exists: there is no reference evidence for one (COND-CONTENT-2 authors from reference evidence only).
 - The SPELL-PRESENT-0 `MUTED` detail, the typed refusal reasons for `pacified` and `powerless` and the icons of all four families belong to COND-WIRE-2; a rune refusal keeps `REJECTED` until RUNE-CAST-1 builds the RUNE-USE-0 PREPARE with its `REQUIREMENT_NOT_MET` mapping.
-- `pacified` clears the held target at the attack owner's next pass, before any swing; a clear inside each condition-application owner is not built here.
 
 ## Validation
 
