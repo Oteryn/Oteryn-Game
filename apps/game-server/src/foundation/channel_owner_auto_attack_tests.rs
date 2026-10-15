@@ -1273,3 +1273,211 @@ fn a_bundle_player_is_a_monster_target_outside_a_protection_zone_only() {
         );
     }
 }
+
+/// CHASE-1: the first open Thalom cell east of the player at least three tiles away.
+fn distant_open_cell() -> MovementLocalPosition {
+    let room = source_world();
+    let none = std::collections::BTreeSet::new();
+    (OPEN_PLAYER.x + 3..OPEN_PLAYER.x + 8)
+        .map(|x| MovementLocalPosition { x, ..OPEN_PLAYER })
+        .find(|cell| chase_path_tile(room.movement_cells(), &none, *cell))
+        .expect("an open Thalom cell east of the player")
+}
+
+impl Owner {
+    fn chase_modes(&mut self, chase: ChaseMode) {
+        let modes = FightModes {
+            chase,
+            ..FightModes::DEFAULT
+        };
+        assert!(
+            self.attack
+                .set_modes(&self.runtime, self.player, self.session, modes)
+        );
+    }
+
+    fn chase(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        let room = self.room.clone();
+        let none = std::collections::BTreeSet::new();
+        self.attack.chase_decision(
+            &self.runtime,
+            &room,
+            self.player,
+            self.session,
+            at(now),
+            |cell| chase_path_tile(room.movement_cells(), &none, cell),
+        )
+    }
+
+    /// A due chase search registers in its owner window and is admitted from the next one
+    /// (`RANGED0-RL-03`).
+    fn searched(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        assert_eq!(self.chase(now), None, "a due search first registers");
+        self.chase(now + crate::combat_attack::CHASE_WINDOW_MICROS)
+    }
+}
+
+#[test]
+fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
+    let rat_at = distant_open_cell();
+    let mut owner = owner_at(OPEN_PLAYER, rat_at);
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Stand);
+    assert_eq!(owner.chase(T0), None, "STAND never moves the player");
+    owner.chase_modes(ChaseMode::Chase);
+    let step = owner.searched(T0).expect("a chase step");
+    let (dx, _) = match step {
+        crate::movement::CardinalStep::East => (1, 0),
+        crate::movement::CardinalStep::West => (-1, 0),
+        _ => (0, 0),
+    };
+    assert!(
+        dx >= 0,
+        "the first step never leads away from the rat: {step:?}"
+    );
+    // A step refused as blocked drops the route; the next search waits for the 1,000 ms
+    // interval and keeps the refused cell out of the route.
+    owner
+        .attack
+        .chase_step_refused(owner.player, owner.session, at(T0 + 50_000), true);
+    assert_eq!(owner.chase(T0 + 50_001), None);
+    assert!(owner.searched(T0 + 1_050_000).is_some());
+    // A client step wins; chase re-paths a second later.
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1_150_000));
+    assert_eq!(owner.chase(T0 + 1_200_000), None);
+    assert!(owner.searched(T0 + 2_150_000).is_some());
+    // Clearing the target ends the chase.
+    assert_eq!(
+        owner.target(T0 + 2_300_000, None, 2),
+        AttackIntentDisposition::Ok
+    );
+    assert_eq!(owner.chase(T0 + 5_000_000), None);
+}
+
+#[test]
+fn an_ended_connection_and_a_mode_change_leave_the_chase_search_ordering() {
+    // RANGED0-RL-03: a waiting search counts ahead of later ones only while its connection
+    // still drives the chase; the ended connection's yield takes it out of the ordering.
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "a due search first registers");
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    // RANGED0-RL-08: reselecting the held target is no target change and keeps the chase.
+    assert_eq!(owner.target(T0, Some(rat), 2), AttackIntentDisposition::Ok);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1));
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    // RANGED0-RL-08: any accepted mode change, chase kept, resets the chase too.
+    assert_eq!(owner.chase(T0 + 1_000_001), None);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    let modes = FightModes {
+        secure: !FightModes::DEFAULT.secure,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    assert!(
+        owner
+            .attack
+            .set_modes(&owner.runtime, owner.player, owner.session, modes)
+    );
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+}
+
+#[test]
+fn the_actor_pacing_deadline_survives_a_replaced_connection() {
+    // CHASE-1 (RANGED-0 §8): the deadline is the actor's, not its connection's, so a resumed or
+    // replaced connection starts from it and never steps sooner.
+    let mut attack = ChannelAttackStates::default();
+    let player = owner().player;
+    let first = std::sync::Arc::new(());
+    let second = std::sync::Arc::new(());
+    let now = tokio::time::Instant::now();
+    let due = now + std::time::Duration::from_millis(400);
+    // A step claims the clock; while it is in flight a replacement cannot claim it, however
+    // long the step takes, and the replacement's record changes nothing.
+    assert_eq!(attack.begin_step(player, &first, now), None);
+    let late = now + std::time::Duration::from_secs(5);
+    assert!(
+        attack.begin_step(player, &second, late).is_some(),
+        "a step in flight holds the clock until it ends"
+    );
+    attack.record_step_deadline(player, &second, late, None);
+    assert!(attack.step_deadline(player, late).is_some());
+    attack.record_step_deadline(player, &first, now, Some(due));
+    // The new connection reads the deadline; a pacer resumed from it waits until it.
+    assert_eq!(attack.begin_step(player, &second, now), Some(due));
+    let resumed = crate::movement::pacing::StepPacer::resumed(attack.step_deadline(player, now));
+    assert_eq!(resumed.wait_until(now), Some(due));
+    assert_eq!(resumed.wait_until(due), None);
+    // At the deadline the clock is free again; a step that did not move releases it.
+    assert_eq!(attack.begin_step(player, &second, due), None);
+    attack.record_step_deadline(player, &second, due, None);
+    assert_eq!(attack.step_deadline(player, due), None);
+    // A claim whose connection ended mid-step frees the clock with it.
+    assert_eq!(attack.begin_step(player, &first, due), None);
+    drop(first);
+    assert_eq!(attack.step_deadline(player, due), None);
+    assert_eq!(attack.begin_step(player, &second, due), None);
+}
+
+#[test]
+fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
+    let mut owner = owner();
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "already next to the rat");
+
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    owner
+        .runtime
+        .record_control_loss(
+            owner.player,
+            owner.session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    owner
+        .runtime
+        .restore_control_after_committed_reentry(owner.player, owner.session, 1, T0)
+        .unwrap();
+    assert_eq!(
+        owner.chase(T0 + 1),
+        None,
+        "re-entry protection ends the chase"
+    );
+    assert!(owner.searched(T0 + 4_000_000).is_some());
+}
