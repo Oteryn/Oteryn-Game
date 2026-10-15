@@ -6,7 +6,7 @@
 //! Nothing here interprets the facts: S2 retains them and the composition and
 //! commit decide.
 
-use crate::admission_evidence::{Request, Response, decode_response, encode_request};
+use crate::admission_evidence::{Failure, Request, Response, decode_response, encode_request};
 use crate::durability::DurabilityError;
 use crate::durability::DurabilityRoot;
 use crate::durability::native_admission_source::{
@@ -14,13 +14,15 @@ use crate::durability::native_admission_source::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::native_admission_source::descriptor::{Operation, ProducerDescriptor};
-use crate::native_admission_source::{QueuePermit, TransientCapacity, http1_mtls};
+use crate::native_admission_source::{QueuePermit, SourceError, TransientCapacity, http1_mtls};
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
+use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
-use tokio::sync::{Mutex, OwnedMutexGuard};
+use tokio::sync::{Mutex, OwnedMutexGuard, oneshot};
+use tokio::task::JoinHandle;
 
 const FRESH_ISSUER: &str = "urn:oteryn:platform:game-admission";
 const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
@@ -38,13 +40,120 @@ const ACTIVATION_BACKOFF: Duration = Duration::from_millis(10);
 const PUBLICATION_SLOTS: usize = 2;
 /// NSRC-QUEUE-WAIT bound for the node's single publication lane.
 const PUBLICATION_QUEUE_WAIT: Duration = Duration::from_millis(1_000);
+/// Longest a held acceptance defers its slot clear while the caller reads the
+/// accepted evidence: one semantic pass (2,000 ms) plus scheduling slack. A
+/// longer read only means the clear finds the holder busy and the slot is
+/// released by the next reconciliation instead.
+const EVIDENCE_HOLD: Duration = Duration::from_millis(2_500);
 
 /// Why a refresh did not complete; never a statement about the account.
+///
+/// Every field is a fixed token naming the step that failed and its cause, so
+/// it can be logged as is: no identifier, credential or response byte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum EvidenceUnavailable {
-    Capacity,
-    Source,
-    Custody,
+pub(crate) struct EvidenceUnavailable {
+    step: &'static str,
+    cause: &'static str,
+    /// The cause of the last retained-slot replay of this demand that did not
+    /// release its slot, when one preceded the failure.
+    replay: Option<&'static str>,
+}
+
+impl EvidenceUnavailable {
+    const fn new(step: &'static str, cause: &'static str) -> Self {
+        Self {
+            step,
+            cause,
+            replay: None,
+        }
+    }
+
+    fn durability(step: &'static str, error: &DurabilityError) -> Self {
+        Self::new(step, durability_cause(error))
+    }
+
+    const fn after(mut self, replay: Option<&'static str>) -> Self {
+        if self.replay.is_none() {
+            self.replay = replay;
+        }
+        self
+    }
+}
+
+impl fmt::Display for EvidenceUnavailable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "step={} cause={}", self.step, self.cause)?;
+        if let Some(replay) = self.replay {
+            write!(f, " replay={replay}")?;
+        }
+        Ok(())
+    }
+}
+
+/// A fixed log token for a durability failure.
+const fn durability_cause(error: &DurabilityError) -> &'static str {
+    match error {
+        DurabilityError::AdmissionGameSessionLedgerExhausted => "ledger_exhausted",
+        DurabilityError::SessionUseAuthorization(_) => "session_use_authorization",
+        DurabilityError::Unavailable => "unavailable",
+        DurabilityError::Database(_) => "database",
+        DurabilityError::Migration(_) => "migration",
+        DurabilityError::SchemaIncompatible(_) => "schema_incompatible",
+        DurabilityError::InvalidConfiguration => "invalid_configuration",
+        DurabilityError::RootUnavailable => "root_unavailable",
+        DurabilityError::RootPassDeadlineExceeded => "pass_deadline",
+        DurabilityError::CommitRejected => "commit_rejected",
+        DurabilityError::CommitOutcomeUnknown => "commit_unknown",
+        DurabilityError::RootTaskFailed => "root_task_failed",
+        DurabilityError::InvalidStoredState => "invalid_stored_state",
+    }
+}
+
+/// A fixed log token for a failed source exchange.
+fn source_cause(error: &SourceError) -> &'static str {
+    match error {
+        SourceError::InvalidDescriptor => "invalid_descriptor",
+        SourceError::CapacityExceeded => "capacity_exceeded",
+        SourceError::InvalidInput => "invalid_input",
+        SourceError::Unauthorized => "unauthorized",
+        SourceError::Unavailable => "unavailable",
+        SourceError::OversizedOk => "oversized_ok",
+        SourceError::Io(error) if error.kind() == std::io::ErrorKind::TimedOut => "io_timeout",
+        SourceError::Io(_) => "io",
+        SourceError::Tls(_) => "tls",
+    }
+}
+
+/// A fixed log token for a decoded response that carries no observation.
+const fn response_cause(response: &Response) -> &'static str {
+    match response {
+        Response::Observed(_) => "observed",
+        Response::Failure(Failure::NotFound) => "not_found",
+        Response::Failure(Failure::Unavailable) => "unavailable",
+        Response::Failure(Failure::Unauthorized) => "unauthorized",
+        Response::Failure(Failure::Unsupported) => "unsupported",
+    }
+}
+
+/// One accepted observation whose publication slot is not cleared yet.
+///
+/// The caller reads the accepted evidence on the otherwise idle durability
+/// holder, then releases it; only then does the publication task clear the
+/// slot. Dropping it releases too, so a cancelled caller never strands the
+/// lane, and the task clears after at most `EVIDENCE_HOLD` regardless.
+#[must_use]
+pub(crate) struct HeldEvidence {
+    release: oneshot::Sender<()>,
+    task: JoinHandle<Result<(), EvidenceUnavailable>>,
+}
+
+impl HeldEvidence {
+    /// Lets the publication task clear the slot and waits for it to end.
+    pub(crate) async fn release(self) -> Result<(), EvidenceUnavailable> {
+        let Self { release, task } = self;
+        drop(release);
+        join_publication(task).await
+    }
 }
 
 /// The Platform admission-evidence route and its registered transient capacity.
@@ -88,13 +197,28 @@ impl FreshEvidenceSource {
         custody: &NodeIncarnationProof,
         account_id: &str,
     ) -> Result<(), EvidenceUnavailable> {
+        self.refresh_account_held(root, custody, account_id)
+            .await?
+            .release()
+            .await
+    }
+
+    /// Like [`Self::refresh_account`], but returns as soon as the observation
+    /// is accepted, before its slot clear, so the caller's decision is the
+    /// next pass on the holder and reads the evidence one pass younger.
+    pub(crate) async fn refresh_account_held(
+        &self,
+        root: &DurabilityRoot,
+        custody: &NodeIncarnationProof,
+        account_id: &str,
+    ) -> Result<HeldEvidence, EvidenceUnavailable> {
         let request = Request::Account {
             recovery: false,
             account_id,
             purpose: ACCOUNT_PURPOSE,
             scope: ACCOUNT_SCOPE,
         };
-        self.fetch_and_accept(root, custody, &request, Operation::ReadAccountSecurityV1)
+        self.fetch_and_accept_held(root, custody, &request, Operation::ReadAccountSecurityV1)
             .await
     }
 
@@ -154,18 +278,37 @@ impl FreshEvidenceSource {
         request: &Request<'_>,
         operation: Operation,
     ) -> Result<(), EvidenceUnavailable> {
+        self.fetch_and_accept_held(root, custody, request, operation)
+            .await?
+            .release()
+            .await
+    }
+
+    async fn fetch_and_accept_held(
+        &self,
+        root: &DurabilityRoot,
+        custody: &NodeIncarnationProof,
+        request: &Request<'_>,
+        operation: Operation,
+    ) -> Result<HeldEvidence, EvidenceUnavailable> {
         // Retained slots are reconciled before any new source work, so no
         // exchange starts while no end-to-end publication slot is available.
         let reservation = self.reserve_before_exchange(root, custody).await?;
         let mut permit = self.activate().await?;
-        let encoded = encode_request(request).map_err(|_| EvidenceUnavailable::Source)?;
+        let encoded =
+            encode_request(request).map_err(|_| EvidenceUnavailable::new("encode", "request"))?;
         let raw = http1_mtls::exchange(&self.descriptor, operation, &encoded, &mut permit)
             .await
-            .map_err(|_| EvidenceUnavailable::Source)?;
-        let Ok(Response::Observed(observation)) =
-            decode_response(request, self.descriptor.source_authority(), &raw)
-        else {
-            return Err(EvidenceUnavailable::Source);
+            .map_err(|error| EvidenceUnavailable::new("exchange", source_cause(&error)))?;
+        let observation = match decode_response(request, self.descriptor.source_authority(), &raw) {
+            Ok(Response::Observed(observation)) => observation,
+            Ok(response) => {
+                return Err(EvidenceUnavailable::new(
+                    "response",
+                    response_cause(&response),
+                ));
+            }
+            Err(_) => return Err(EvidenceUnavailable::new("response", "undecodable")),
         };
         let binding = PublicationBinding {
             source_authority: self.descriptor.source_authority().into(),
@@ -196,22 +339,34 @@ impl FreshEvidenceSource {
             observed_at: observation.source_observed_at,
             semantic_facts: raw,
         };
-        let checkpoint = binding.encode().ok_or(EvidenceUnavailable::Source)?;
+        let checkpoint = binding
+            .encode()
+            .ok_or(EvidenceUnavailable::new("binding", "encode"))?;
         let lane = self.enter_publication_lane().await?;
-        let result = run_on_root(
-            root,
-            publish(
-                root.clone(),
-                custody.clone(),
+        let (accepted, accepted_signal) = oneshot::channel();
+        let (release, release_signal) = oneshot::channel();
+        let task = root.spawn_task(publish(
+            Publication {
+                root: root.clone(),
+                custody: custody.clone(),
                 binding,
                 checkpoint,
                 lane,
                 reservation,
-            ),
-        )
-        .await;
+            },
+            accepted,
+            release_signal,
+        ));
+        let held = accepted_signal.await.is_ok();
         drop(permit);
-        result
+        if held {
+            return Ok(HeldEvidence { release, task });
+        }
+        drop(release);
+        match join_publication(task).await {
+            Err(unavailable) => Err(unavailable),
+            Ok(()) => Err(EvidenceUnavailable::new("publication", "not_held")),
+        }
     }
 
     /// Boot reconciliation (OPS-NODE-BOOT-01 D3 step 4): inside the lane,
@@ -226,7 +381,9 @@ impl FreshEvidenceSource {
         let (root_task, custody) = (root.clone(), custody.clone());
         run_on_root(root, async move {
             let _lane = lane;
-            reconcile_pending_publications(&root_task, &custody).await
+            reconcile_pending_publications(&root_task, &custody)
+                .await
+                .map(|reconciled| reconciled.retained)
         })
         .await
     }
@@ -243,9 +400,11 @@ impl FreshEvidenceSource {
         let reserved = self.reserved.clone();
         run_on_root(root, async move {
             let _lane = lane;
-            let retained = reconcile_pending_publications(&root_task, &custody).await?;
-            if retained + reserved.load(Ordering::Acquire) >= PUBLICATION_SLOTS {
-                return Err(EvidenceUnavailable::Capacity);
+            let reconciled = reconcile_pending_publications(&root_task, &custody).await?;
+            if reconciled.retained + reserved.load(Ordering::Acquire) >= PUBLICATION_SLOTS {
+                return Err(
+                    EvidenceUnavailable::new("reserve", "slots_retained").after(reconciled.replay)
+                );
             }
             reserved.fetch_add(1, Ordering::AcqRel);
             Ok(SlotReservation(reserved))
@@ -259,14 +418,14 @@ impl FreshEvidenceSource {
             self.publication.clone().lock_owned(),
         )
         .await
-        .map_err(|_| EvidenceUnavailable::Capacity)
+        .map_err(|_| EvidenceUnavailable::new("lane", "queue_wait"))
     }
 
     async fn activate(&self) -> Result<QueuePermit<'_>, EvidenceUnavailable> {
         let mut permit = self
             .capacity
             .try_queue()
-            .map_err(|_| EvidenceUnavailable::Capacity)?;
+            .map_err(|_| EvidenceUnavailable::new("activate", "queue_full"))?;
         for attempt in 0..ACTIVATION_ATTEMPTS {
             if permit.try_activate().is_ok() {
                 return Ok(permit);
@@ -275,7 +434,7 @@ impl FreshEvidenceSource {
                 tokio::time::sleep(ACTIVATION_BACKOFF).await;
             }
         }
-        Err(EvidenceUnavailable::Capacity)
+        Err(EvidenceUnavailable::new("activate", "no_active_slot"))
     }
 }
 
@@ -286,22 +445,44 @@ where
     T: Send + 'static,
     F: Future<Output = Result<T, EvidenceUnavailable>> + Send + 'static,
 {
-    match root.spawn_task(work).await {
+    join_publication(root.spawn_task(work)).await
+}
+
+async fn join_publication<T>(
+    task: JoinHandle<Result<T, EvidenceUnavailable>>,
+) -> Result<T, EvidenceUnavailable> {
+    match task.await {
         Ok(result) => result,
         Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
-        Err(_) => Err(EvidenceUnavailable::Custody),
+        Err(_) => Err(EvidenceUnavailable::new("publication", "task_failed")),
     }
 }
 
-/// One publication inside the lane: reconcile, checkpoint, accept, clear.
-async fn publish(
+/// What one publication task owns until it ends.
+struct Publication {
     root: DurabilityRoot,
     custody: NodeIncarnationProof,
     binding: PublicationBinding,
     checkpoint: Vec<u8>,
     lane: OwnedMutexGuard<()>,
     reservation: SlotReservation,
+}
+
+/// One publication inside the lane: reconcile, checkpoint, accept, hand the
+/// acceptance to the caller, clear.
+async fn publish(
+    publication: Publication,
+    accepted: oneshot::Sender<()>,
+    release: oneshot::Receiver<()>,
 ) -> Result<(), EvidenceUnavailable> {
+    let Publication {
+        root,
+        custody,
+        binding,
+        checkpoint,
+        lane,
+        reservation,
+    } = publication;
     let _lane = lane;
     // The reserved slot is released only when this task ends; an ambiguous
     // outcome leaves the durable slot occupied, which the next reconciliation
@@ -310,53 +491,86 @@ async fn publish(
     // Occupied slots are reconciled by their fixed identity before any
     // further work, so a running node recovers them without a restart. The
     // lane guarantees their original operation has ended in this process.
-    reconcile_pending_publications(&root, &custody).await?;
-    let now = super::unix_seconds().ok_or(EvidenceUnavailable::Custody)?;
+    let reconciled = reconcile_pending_publications(&root, &custody).await?;
+    let now = super::unix_seconds().ok_or(EvidenceUnavailable::new("clock", "unavailable"))?;
     // NSRC-PENDING-PUBLICATION: the exact binding is checkpointed before
     // SQL submission and the slot stays owned through an ambiguous outcome.
     let slot = root
         .checkpoint_native_source_publication(&custody, checkpoint.clone(), now)
         .await
-        .map_err(|_| EvidenceUnavailable::Custody)?;
-    let submitted = binding.observation().ok_or(EvidenceUnavailable::Source)?;
+        .map_err(|error| {
+            EvidenceUnavailable::durability("checkpoint", &error).after(reconciled.replay)
+        })?;
+    let submitted = binding
+        .observation()
+        .ok_or(EvidenceUnavailable::new("binding", "observation"))?;
     let outcome = root
         .accept_native_source_observation(&custody, submitted)
         .await;
-    if outcome_is_ambiguous(&outcome) {
+    if let Err(error) = &outcome
+        && outcome_is_ambiguous(&outcome)
+    {
         // Retained for reconciliation; never detached or reused.
-        return Err(EvidenceUnavailable::Custody);
+        return Err(EvidenceUnavailable::durability("accept", error).after(reconciled.replay));
+    }
+    if outcome.is_ok() {
+        // Decide-time ordering: the accepted evidence is read before this
+        // clear takes the holder. The slot already has its definite outcome.
+        hand_over(accepted, release, EVIDENCE_HOLD).await;
     }
     let _ = root
         .clear_native_source_publication(&custody, slot, checkpoint)
         .await;
-    outcome.map_err(|_| EvidenceUnavailable::Custody)
+    outcome.map_err(|error| EvidenceUnavailable::durability("accept", &error))
+}
+
+/// Tells the caller its observation is accepted, then waits until the caller
+/// releases it, drops it, or `hold` elapses. Returns at once when the caller is
+/// gone.
+async fn hand_over(accepted: oneshot::Sender<()>, release: oneshot::Receiver<()>, hold: Duration) {
+    if accepted.send(()).is_ok() {
+        let _ = tokio::time::timeout(hold, release).await;
+    }
+}
+
+/// Retained slots after one reconciliation, and the cause of its last replay
+/// that kept a slot, if any.
+struct Reconciled {
+    retained: usize,
+    replay: Option<&'static str>,
 }
 
 /// Replays every retained publication through the idempotent acceptance and
 /// releases its slot on a definite outcome. A slot whose binding cannot be read
-/// back, or whose outcome is still unknown, stays occupied. Returns the number
-/// of slots still retained.
+/// back, or whose outcome is still unknown, stays occupied.
 async fn reconcile_pending_publications(
     root: &DurabilityRoot,
     custody: &NodeIncarnationProof,
-) -> Result<usize, EvidenceUnavailable> {
+) -> Result<Reconciled, EvidenceUnavailable> {
     let pending = root
         .pending_native_source_publications(custody)
         .await
-        .map_err(|_| EvidenceUnavailable::Custody)?;
-    let mut retained = 0;
+        .map_err(|error| EvidenceUnavailable::durability("pending", &error))?;
+    let mut reconciled = Reconciled {
+        retained: 0,
+        replay: None,
+    };
     for publication in pending {
         let Some(observation) = PublicationBinding::decode(&publication.operation_binding)
             .and_then(|binding| binding.observation())
         else {
-            retained += 1;
+            reconciled.retained += 1;
+            reconciled.replay = Some("binding_unreadable");
             continue;
         };
         let outcome = root
             .accept_native_source_observation(custody, observation)
             .await;
-        if outcome_is_ambiguous(&outcome) {
-            retained += 1;
+        if let Err(error) = &outcome
+            && outcome_is_ambiguous(&outcome)
+        {
+            reconciled.retained += 1;
+            reconciled.replay = Some(durability_cause(error));
             continue;
         }
         let cleared = root
@@ -366,11 +580,12 @@ async fn reconcile_pending_publications(
                 publication.operation_binding,
             )
             .await;
-        if cleared.is_err() {
-            retained += 1;
+        if let Err(error) = cleared {
+            reconciled.retained += 1;
+            reconciled.replay = Some(durability_cause(&error));
         }
     }
-    Ok(retained)
+    Ok(reconciled)
 }
 
 /// A committed outcome is definite only when the store says so: an unknown
@@ -556,5 +771,129 @@ mod tests {
         )));
         assert!(!outcome_is_ambiguous(&Ok(())));
         assert!(!outcome_is_ambiguous(&Err(DurabilityError::Unavailable)));
+        // A pass that was never issued submitted nothing: definite.
+        assert!(!outcome_is_ambiguous(&Err(
+            DurabilityError::RootUnavailable
+        )));
+    }
+
+    #[test]
+    fn failure_reasons_are_fixed_log_tokens() {
+        let causes = [
+            durability_cause(&DurabilityError::AdmissionGameSessionLedgerExhausted),
+            durability_cause(&DurabilityError::Unavailable),
+            durability_cause(&DurabilityError::InvalidConfiguration),
+            durability_cause(&DurabilityError::RootUnavailable),
+            durability_cause(&DurabilityError::RootPassDeadlineExceeded),
+            durability_cause(&DurabilityError::CommitRejected),
+            durability_cause(&DurabilityError::CommitOutcomeUnknown),
+            durability_cause(&DurabilityError::RootTaskFailed),
+            durability_cause(&DurabilityError::InvalidStoredState),
+            source_cause(&SourceError::InvalidDescriptor),
+            source_cause(&SourceError::CapacityExceeded),
+            source_cause(&SourceError::InvalidInput),
+            source_cause(&SourceError::Unauthorized),
+            source_cause(&SourceError::Unavailable),
+            source_cause(&SourceError::OversizedOk),
+            source_cause(&SourceError::Io(std::io::ErrorKind::TimedOut.into())),
+            source_cause(&SourceError::Io(std::io::ErrorKind::ConnectionReset.into())),
+            response_cause(&Response::Failure(Failure::NotFound)),
+            response_cause(&Response::Failure(Failure::Unavailable)),
+            response_cause(&Response::Failure(Failure::Unauthorized)),
+            response_cause(&Response::Failure(Failure::Unsupported)),
+        ];
+        for cause in causes {
+            assert!(!cause.is_empty());
+            assert!(
+                cause
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte == b'_'),
+                "{cause}"
+            );
+        }
+        assert_eq!(
+            durability_cause(&DurabilityError::RootPassDeadlineExceeded),
+            "pass_deadline"
+        );
+        assert_eq!(
+            durability_cause(&DurabilityError::CommitOutcomeUnknown),
+            "commit_unknown"
+        );
+        assert_eq!(
+            source_cause(&SourceError::Io(std::io::ErrorKind::TimedOut.into())),
+            "io_timeout"
+        );
+    }
+
+    #[test]
+    fn unavailable_names_its_step_cause_and_prior_replay() {
+        let plain =
+            EvidenceUnavailable::durability("checkpoint", &DurabilityError::RootUnavailable);
+        assert_eq!(plain.to_string(), "step=checkpoint cause=root_unavailable");
+        let after = plain
+            .after(Some("commit_unknown"))
+            .after(Some("pass_deadline"));
+        assert_eq!(
+            after.to_string(),
+            "step=checkpoint cause=root_unavailable replay=commit_unknown"
+        );
+        assert_eq!(
+            EvidenceUnavailable::new("lane", "queue_wait")
+                .after(None)
+                .to_string(),
+            "step=lane cause=queue_wait"
+        );
+    }
+
+    fn runtime() -> Option<tokio::runtime::Runtime> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .ok()
+    }
+
+    #[test]
+    fn hand_over_defers_the_clear_until_the_caller_releases() {
+        let runtime = runtime();
+        assert!(runtime.is_some());
+        let Some(runtime) = runtime else {
+            return;
+        };
+        runtime.block_on(async {
+            // Released by the caller: returns once the caller lets go.
+            let (accepted, accepted_signal) = oneshot::channel();
+            let (release, release_signal) = oneshot::channel::<()>();
+            let task = tokio::spawn(hand_over(accepted, release_signal, Duration::from_secs(60)));
+            assert!(accepted_signal.await.is_ok());
+            tokio::task::yield_now().await;
+            assert!(!task.is_finished());
+            drop(release);
+            assert!(
+                tokio::time::timeout(Duration::from_secs(5), task)
+                    .await
+                    .is_ok()
+            );
+
+            // Caller gone before the hand-over: no wait at all.
+            let (accepted, accepted_signal) = oneshot::channel();
+            let (_release, release_signal) = oneshot::channel::<()>();
+            drop(accepted_signal);
+            assert!(
+                tokio::time::timeout(
+                    Duration::from_secs(5),
+                    hand_over(accepted, release_signal, Duration::from_secs(60)),
+                )
+                .await
+                .is_ok()
+            );
+
+            // A caller that never releases is bounded by the hold.
+            let (accepted, accepted_signal) = oneshot::channel();
+            let (_release, release_signal) = oneshot::channel::<()>();
+            let started = std::time::Instant::now();
+            hand_over(accepted, release_signal, Duration::from_millis(20)).await;
+            assert!(accepted_signal.await.is_ok());
+            assert!(started.elapsed() >= Duration::from_millis(20));
+        });
     }
 }
