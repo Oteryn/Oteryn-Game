@@ -18,7 +18,7 @@
 //! and reported as numbers only.
 
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use base64::Engine as _;
@@ -177,9 +177,9 @@ pub(crate) struct ChatRelay {
     channel: String,
     world: [u8; 16],
     pool: PgPool,
-    /// Listening, with a clock reading and the notification queue at most half full.
-    ready: AtomicBool,
-    /// The last database clock reading, microseconds, and when it was taken.
+    /// While the relay is ready (listening, the notification queue at most half full and the
+    /// replay window admitting what it stamps): the clock a send stamps, microseconds, and when it
+    /// was read. One value, so a send never pairs a ready state with a clock it would drop.
     clock: Mutex<Option<(u64, Instant)>>,
     /// Lines refused by the listener since the last report.
     dropped: AtomicU64,
@@ -197,7 +197,6 @@ impl ChatRelay {
             channel,
             world,
             pool: relay_pool(options),
-            ready: AtomicBool::new(false),
             clock: Mutex::new(None),
             dropped: AtomicU64::new(0),
         })
@@ -205,10 +204,10 @@ impl ChatRelay {
 
     /// Whether the relay may send now.
     pub(crate) fn is_ready(&self) -> bool {
-        self.ready.load(Ordering::Acquire) && self.db_now().is_some()
+        self.db_now().is_some()
     }
 
-    /// The database time now, extrapolated from the last reading.
+    /// The clock a send stamps now, extrapolated from the last reading; `None` when not ready.
     fn db_now(&self) -> Option<u64> {
         let (reading, at) = (*self.clock.lock().ok()?)?;
         let elapsed = u64::try_from(at.elapsed().as_micros()).ok()?;
@@ -221,7 +220,6 @@ impl ChatRelay {
         if let Ok(mut clock) = self.clock.lock() {
             *clock = Some((now, Instant::now()));
         }
-        self.ready.store(true, Ordering::Release);
     }
 
     /// Seals one line and sends it to every listener of the World, this node included.
@@ -233,9 +231,6 @@ impl ChatRelay {
         sender_name: CharacterName,
         text: ChatText,
     ) -> Result<(), ChatDisposition> {
-        if !self.ready.load(Ordering::Acquire) {
-            return Err(ChatDisposition::ChatUnavailable);
-        }
         let sent_at_micros = self.db_now().ok_or(ChatDisposition::ChatUnavailable)?;
         let sealed = seal(
             &self.ring,
@@ -284,7 +279,7 @@ impl ChatRelay {
             )
             .await;
             reconnect = true;
-            self.ready.store(false, Ordering::Release);
+            self.not_ready();
             if listened.is_none()
                 || first(tokio::time::sleep(RECONNECT_BACKOFF), shutdown.cancelled())
                     .await
@@ -384,13 +379,17 @@ impl ChatRelay {
         // Sends are stamped with the window's clock, and the relay is not ready until the window
         // admits what it stamps: after a start, a reconnect or a database clock stepped back a
         // send would otherwise return OK and be dropped here.
-        let clock = window.admitting_clock(now);
-        *self.clock.lock().map_err(|_| Lost)? = Some((clock.unwrap_or(now), read_at));
-        self.ready.store(
-            usage <= QUEUE_USAGE_MAX && clock.is_some(),
-            Ordering::Release,
-        );
+        let clock = window
+            .admitting_clock(now)
+            .filter(|_| usage <= QUEUE_USAGE_MAX);
+        *self.clock.lock().map_err(|_| Lost)? = clock.map(|clock| (clock, read_at));
         Ok(())
+    }
+
+    fn not_ready(&self) {
+        if let Ok(mut clock) = self.clock.lock() {
+            *clock = None;
+        }
     }
 
     /// Opens one notification and delivers it; a refused line is only counted.

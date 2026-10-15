@@ -103,7 +103,7 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 4 repair: `--lib -- chat npc` against PostgreSQL 17, 169 passed), 145 passed, including the two-node relay exchange,
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 5 repair: `--lib -- chat npc` against PostgreSQL 17, 170 passed), 145 passed, including the two-node relay exchange,
   the lease row and the not-ready-when-logging tests
 - `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
   33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
@@ -139,6 +139,11 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   progression level once, and room, private and yell gates use it when there are no cast facts.
   (P2, same round on eefbb2dd): a failed progression read was cached as level 1. Fixed: a failed
   read leaves the session unadmitted, as a failed name read does, so its next open reads again.
+- round 5 (P1): readiness and the send clock were published separately, so a send could pair
+  a stale ready flag with a clock its own node drops. Fixed: one value holds the send clock only
+  while ready. (P1): a reconnect floor came from the raw reading, so after a database clock
+  stepped back during an outage a line stamped near the old readings could be replayed. Fixed:
+  the floor follows the newest reading ever seen (`read_high`), which does not compound.
 
 ## PR and closeout
 

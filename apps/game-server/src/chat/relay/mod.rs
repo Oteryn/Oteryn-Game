@@ -490,6 +490,10 @@ pub(crate) struct ReplayWindow {
     /// database clock stepped back cannot make an evicted `message_id` admissible again or revive
     /// a retired key.
     high_water: u64,
+    /// The newest database reading itself, never raised to a floor: the base of a reconnect
+    /// floor, which so excludes every instant the window's clock reached however the database
+    /// clock moved, yet does not compound over quick reconnects.
+    read_high: u64,
     /// The highest lease this listener has stored durably; `None` until the first one is.
     leased_until: Option<u64>,
     expiry_of: HashMap<[u8; ID_BYTES], u64>,
@@ -523,6 +527,7 @@ impl ReplayWindow {
         Self {
             floor,
             high_water: floor,
+            read_high: db_now_micros,
             leased_until: None,
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
@@ -531,13 +536,15 @@ impl ReplayWindow {
 
     /// The same window after its listener re-established `LISTEN` at database time
     /// `db_now_micros`: lines sent while it was down are lost (CHAT-0 §5), so the floor and the
-    /// clock move past that reading as at a start. The floor follows the reading itself, never the
-    /// window's clock, so quick reconnects do not compound it, and it never moves back. The
+    /// clock move past that reading as at a start. The floor follows the newest reading itself,
+    /// never the window's raised clock, so quick reconnects do not compound it; it never moves
+    /// back, and a database clock stepped back during the outage cannot bring it below an instant
+    /// another node may have stamped while this listener was down. The
     /// de-duplication set and the stored lease are kept: a line admitted before the drop is still
     /// refused, and the lease still bounds what the window acts on.
     pub(crate) fn reconnected(&mut self, db_now_micros: u64) {
         self.observe(db_now_micros);
-        self.floor = startup_floor(db_now_micros).max(self.floor);
+        self.floor = startup_floor(self.read_high).max(self.floor);
         self.high_water = self.floor.max(self.high_water);
     }
 
@@ -559,6 +566,7 @@ impl ReplayWindow {
         Self {
             floor: floor_micros,
             high_water: floor_micros,
+            read_high: floor_micros,
             leased_until: Some(u64::MAX),
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
@@ -616,6 +624,7 @@ impl ReplayWindow {
     }
 
     fn observe(&mut self, now_micros: u64) -> u64 {
+        self.read_high = now_micros.max(self.read_high);
         self.high_water = now_micros.max(self.high_water);
         self.high_water
     }
