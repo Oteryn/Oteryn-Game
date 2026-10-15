@@ -391,106 +391,6 @@ fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-fn compact(text: &str) -> String {
-    text.split_whitespace().collect()
-}
-
-/// The source without comments, so only code is counted. A string literal (raw too) becomes
-/// `"<hex of its text>"`: its value can still be matched, but text inside it is no code. A char
-/// literal becomes `' '`; a lifetime is kept as written.
-fn code_only(source: &str) -> String {
-    let chars: Vec<char> = source.chars().collect();
-    let mut code = String::with_capacity(source.len());
-    let at = |index: usize| chars.get(index).copied();
-    let literal = |text: &[char]| format!("\"{}\"", hex(&text.iter().collect::<String>()));
-    let mut i = 0;
-    while i < chars.len() {
-        match chars[i] {
-            '/' if at(i + 1) == Some('/') => {
-                while i < chars.len() && chars[i] != '\n' {
-                    i += 1;
-                }
-            }
-            '/' if at(i + 1) == Some('*') => {
-                let mut depth = 0usize;
-                while i < chars.len() {
-                    if chars[i] == '/' && at(i + 1) == Some('*') {
-                        depth += 1;
-                        i += 2;
-                    } else if chars[i] == '*' && at(i + 1) == Some('/') {
-                        depth -= 1;
-                        i += 2;
-                        if depth == 0 {
-                            break;
-                        }
-                    } else {
-                        i += 1;
-                    }
-                }
-                code.push(' ');
-            }
-            'r' if (at(i + 1) == Some('"') || at(i + 1) == Some('#'))
-                && !chars[..i]
-                    .last()
-                    .is_some_and(|c| c.is_alphanumeric() || *c == '_') =>
-            {
-                let hashes = chars[i + 1..].iter().take_while(|c| **c == '#').count();
-                if at(i + 1 + hashes) != Some('"') {
-                    code.push('r');
-                    i += 1;
-                    continue;
-                }
-                i += 2 + hashes;
-                let start = i;
-                while i < chars.len()
-                    && !(chars[i] == '"'
-                        && chars[i + 1..].iter().take(hashes).all(|c| *c == '#')
-                        && chars.len() >= i + 1 + hashes)
-                {
-                    i += 1;
-                }
-                code.push_str(&literal(&chars[start..i.min(chars.len())]));
-                i += 1 + hashes;
-            }
-            '"' => {
-                i += 1;
-                let start = i;
-                while i < chars.len() && chars[i] != '"' {
-                    i += if chars[i] == '\\' { 2 } else { 1 };
-                }
-                code.push_str(&literal(&chars[start..i.min(chars.len())]));
-                i += 1;
-            }
-            '\'' if at(i + 1) == Some('\\') => {
-                i += 2;
-                while i < chars.len() && chars[i] != '\'' {
-                    i += 1;
-                }
-                i += 1;
-                code.push_str("' '");
-            }
-            '\'' if at(i + 2) == Some('\'') => {
-                i += 3;
-                code.push_str("' '");
-            }
-            c => {
-                code.push(c);
-                i += 1;
-            }
-        }
-    }
-    code
-}
-
-fn hex(text: &str) -> String {
-    text.bytes().map(|byte| format!("{byte:02x}")).collect()
-}
-
-/// The source as compacted code: no comments or whitespace, string literals as hex.
-fn code(source: &str) -> String {
-    compact(&code_only(source))
-}
-
 /// One seam room mention of production code (`Scan`).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Site {
@@ -639,10 +539,15 @@ impl Scan {
         let path = std::mem::take(&mut self.path);
         // A method is named with its impl's type and trait (or its trait), so the same method name
         // in two impls of one file is two functions.
-        let name = match self.owners.last() {
+        // A function in an inline `mod m { ... }` is named with its module path, so the same name
+        // in two inline modules of one file is two functions.
+        let mut name = match self.owners.last() {
             Some(owner) => format!("{owner}::{name}"),
             None => name.to_string(),
         };
+        if !self.inline.is_empty() {
+            name = format!("{}::{name}", self.inline.join("::"));
+        }
         self.functions.push(name);
         visit(self);
         self.functions.pop();
@@ -1281,43 +1186,181 @@ fn every_gate_is_recorded_in_the_plan_row() {
                 );
             }
             Gate::SourceWorldBranch => assert!(
-                clause(read, &[]),
-                "the plan row does not record the source-World branch `{}`",
-                read.gate
+                clause(
+                    read,
+                    &["are not gates".to_owned(), "`bundle_map`".to_owned()]
+                ),
+                "the plan row has no clause recording that the source-World branch `{}` is not a \
+                 gate because a bundle World is served by `bundle_map` ({})",
+                read.gate,
+                read.plan
             ),
             Gate::Plumbing | Gate::Declaration => {}
         }
     }
 }
 
-#[test]
+/// The production code of one source file: its struct literals and free functions, with every
+/// `#[cfg(test)]` item, statement, expression, field and arm left out.
+#[derive(Default)]
+struct Production<'ast> {
+    structs: Vec<&'ast syn::ExprStruct>,
+    functions: Vec<&'ast syn::ItemFn>,
+}
+
 #[allow(clippy::expect_used)]
-fn a_bundle_world_seam_has_no_qualified_room() {
-    let serve =
-        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/node/serve.rs"))
-            .expect("serve.rs");
-    assert!(
-        code(&serve).contains("qualified_room:bundle.is_none().then_some(&qualified_room),"),
-        "serve.rs no longer withholds `qualified_room` from a bundle World: every closed gate \
-         would open at once without its owner"
-    );
+fn parse_source(relative: &str) -> syn::File {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
+    let source = std::fs::read_to_string(&path).expect("production source");
+    syn::parse_file(&source).expect("production source parses")
+}
+
+fn production(file: &syn::File) -> Production<'_> {
+    let mut production = Production::default();
+    production.visit_file(file);
+    production
+}
+
+impl<'ast> Visit<'ast> for Production<'ast> {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        if !test_only(item_attrs(item)) {
+            visit::visit_item(self, item);
+        }
+    }
+
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        if !test_only(impl_item_attrs(item)) {
+            visit::visit_impl_item(self, item);
+        }
+    }
+
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        if !test_only(trait_item_attrs(item)) {
+            visit::visit_trait_item(self, item);
+        }
+    }
+
+    fn visit_local(&mut self, local: &'ast syn::Local) {
+        if !test_only(&local.attrs) {
+            visit::visit_local(self, local);
+        }
+    }
+
+    fn visit_stmt_macro(&mut self, mac: &'ast syn::StmtMacro) {
+        if !test_only(&mac.attrs) {
+            visit::visit_stmt_macro(self, mac);
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'ast syn::Expr) {
+        if !test_only(expr_kind(expr).1) {
+            visit::visit_expr(self, expr);
+        }
+    }
+
+    fn visit_field_value(&mut self, value: &'ast syn::FieldValue) {
+        if !test_only(&value.attrs) {
+            visit::visit_field_value(self, value);
+        }
+    }
+
+    fn visit_arm(&mut self, arm: &'ast syn::Arm) {
+        if !test_only(&arm.attrs) {
+            visit::visit_arm(self, arm);
+        }
+    }
+
+    fn visit_expr_struct(&mut self, expr: &'ast syn::ExprStruct) {
+        self.structs.push(expr);
+        visit::visit_expr_struct(self, expr);
+    }
+
+    fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
+        self.functions.push(item);
+        visit::visit_item_fn(self, item);
+    }
+}
+
+fn is_name(expr: &syn::Expr, name: &str) -> bool {
+    matches!(expr, syn::Expr::Path(path) if path.path.is_ident(name))
+}
+
+/// `bundle.is_none().then_some(&qualified_room)`.
+fn withholds_from_a_bundle(expr: &syn::Expr) -> bool {
+    let syn::Expr::MethodCall(then_some) = expr else {
+        return false;
+    };
+    let syn::Expr::MethodCall(is_none) = &*then_some.receiver else {
+        return false;
+    };
+    let reference = then_some.args.iter().collect::<Vec<_>>();
+    then_some.method == "then_some"
+        && is_none.method == "is_none"
+        && is_none.args.is_empty()
+        && is_name(&is_none.receiver, "bundle")
+        && matches!(
+            reference.as_slice(),
+            [syn::Expr::Reference(reference)]
+                if reference.mutability.is_none() && is_name(&reference.expr, "qualified_room")
+        )
 }
 
 #[test]
-#[allow(clippy::expect_used)]
-fn parameter_room_opens_only_the_locate_message() {
-    let source = code(
-        &std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("src/gameplay_transport/parameter_cast.rs"),
-        )
-        .expect("parameter_cast.rs"),
-    );
-    let arms = format!(
-        "matchkey{{\"{}\"=>combat,_=>qualified,}}",
-        hex("locate_message")
-    );
+fn a_bundle_world_seam_has_no_qualified_room() {
+    let serve = parse_source("src/node/serve.rs");
+    let owners: Vec<&syn::ExprStruct> = production(&serve)
+        .structs
+        .into_iter()
+        .filter(|init| path_name(&init.path) == "GameplaySeamOwners")
+        .collect();
     assert!(
-        source.contains(&arms),
+        !owners.is_empty(),
+        "serve.rs no longer builds `GameplaySeamOwners` in production code"
+    );
+    for init in owners {
+        let room = init.fields.iter().find(
+            |field| matches!(&field.member, syn::Member::Named(name) if name == "qualified_room"),
+        );
+        assert!(
+            room.is_some_and(|field| withholds_from_a_bundle(&field.expr)),
+            "a `GameplaySeamOwners` initializer in serve.rs no longer sets `qualified_room: \
+             bundle.is_none().then_some(&qualified_room)`: every closed gate would open at once \
+             without its owner"
+        );
+    }
+}
+
+/// `match key { "locate_message" => combat, _ => qualified }`, and nothing else.
+fn opens_only_the_locate_message(function: &syn::ItemFn) -> bool {
+    let [syn::Stmt::Expr(syn::Expr::Match(choice), None)] = function.block.stmts.as_slice() else {
+        return false;
+    };
+    let [locate, other] = choice.arms.as_slice() else {
+        return false;
+    };
+    let locate_key = matches!(
+        &locate.pat,
+        syn::Pat::Lit(syn::ExprLit { lit: syn::Lit::Str(key), .. }) if key.value() == "locate_message"
+    );
+    is_name(&choice.expr, "key")
+        && locate_key
+        && locate.guard.is_none()
+        && is_name(&locate.body, "combat")
+        && matches!(other.pat, syn::Pat::Wild(_))
+        && other.guard.is_none()
+        && is_name(&other.body, "qualified")
+}
+
+#[test]
+fn parameter_room_opens_only_the_locate_message() {
+    let source = parse_source("src/gameplay_transport/parameter_cast.rs");
+    let rooms: Vec<&syn::ItemFn> = production(&source)
+        .functions
+        .into_iter()
+        .filter(|function| function.sig.ident == "parameter_room")
+        .collect();
+    assert!(
+        matches!(rooms.as_slice(), [room] if opens_only_the_locate_message(room)),
         "`parameter_room` changed which parameter keys read the combat room: record the opened \
          keys in INVENTORY"
     );
@@ -1611,4 +1654,62 @@ fn a_cfg_attr_path_is_the_one_production_loads() {
             },
         ]
     );
+}
+
+#[test]
+fn a_function_is_named_with_its_inline_module() {
+    let scan = scan(
+        "mod a { fn drain(o: &O) { o.combat_room; } } \
+         mod b { fn drain(o: &O) { o.qualified_room; } }",
+    );
+    assert_eq!(
+        scan.sites,
+        [
+            site("a::drain", "o.combat_room", "field/read", 1),
+            site("b::drain", "o.qualified_room", "field/read", 1),
+        ]
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn only_the_production_seam_owners_initializer_counts() {
+    let file = syn::parse_file(
+        "fn serve() { let owners = GameplaySeamOwners { qualified_room: Some(&qualified_room) }; } \
+         fn helper() { let _ = GameplaySeamOwners { \
+             qualified_room: bundle.is_none().then_some(&qualified_room) }; } \
+         #[cfg(test)] fn probe() { let _ = GameplaySeamOwners { qualified_room: None }; }",
+    )
+    .expect("source parses");
+    let verdicts: Vec<bool> = production(&file)
+        .structs
+        .into_iter()
+        .filter_map(|init| init.fields.first())
+        .map(|field| withholds_from_a_bundle(&field.expr))
+        .collect();
+    // The exposing initializer fails even beside a withholding helper; the test-only one is not seen.
+    assert_eq!(verdicts, [false, true]);
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn parameter_room_is_judged_by_its_own_match() {
+    let judge = |source: &str| {
+        let file = syn::parse_file(source).expect("source parses");
+        production(&file)
+            .functions
+            .first()
+            .is_some_and(|function| opens_only_the_locate_message(function))
+    };
+    assert!(judge(
+        "fn parameter_room() { match key { \"locate_message\" => combat, _ => qualified, } }"
+    ));
+    assert!(!judge(
+        "fn parameter_room() { match key { \"locate_message\" | \"house_access\" => combat, \
+         _ => qualified, } }"
+    ));
+    assert!(!judge(
+        "fn parameter_room() { let _ = match key { \"locate_message\" => combat, \
+         _ => qualified, }; combat }"
+    ));
 }
