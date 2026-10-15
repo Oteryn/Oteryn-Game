@@ -67,7 +67,7 @@ Gate notes:
 
 | Item | Ruling |
 |---|---|
-| 7 | **HIRE-1** goes ahead and is not deferred. A brief is needed (brief pending, PR B). Delivery follows Tibia: the hireling is a Store product, wired once the Store contract lands (Platform #1625). |
+| 7 | **HIRE-1** goes ahead and is not deferred. A brief is needed: `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE). Delivery follows Tibia: the hireling is a Store product, wired once the Store contract lands (Platform #1625). |
 | 8 | **SOCIAL-LATE-1:** as in Tibia. No marriage. The PvP arena moves to ARENA-1. |
 | 9 | **LOOP-GROUND-1:** no periodic ground cleanup between resets. Revisit only if the server is heavily loaded in practice. |
 | 10 | **WEATHER-1** is visual only, with no gameplay effect. |
@@ -78,7 +78,7 @@ Gate notes:
 
 Executed by the control plane within architect scope:
 - **Status-line reconciliation.** GUILD-0, PARTY-PVP-0, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0 and ADR-0021 now read ACCEPTED, citing ACCEPT-SOCIAL-MAP-0 (they were accepted on 2026-10-04 and their status lines were left behind). The plan's Appendix 7 status list is refreshed.
-- **CRAFT-1 brief**: brief pending (PR B).
+- **CRAFT-1 brief** written: `OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` (CANDIDATE, architect-authored).
 - **PREM-2b+PREM-5 hold released.** The promotion source is the PREM-5 NPC promotion: 20 000 gp, level 20 or higher, Premium (PREMIUM_ACTIVATION §4.2, D70), paid in coins via GOLD-FEE-1b. "Promotion purchase" is removed from NPC-ECON-1.
 - **Registry order:** ITEM-LOOK-1, then WEATHER-1, then SEC-1.
 - **LOOP-GROUND per-tile limit:** 64 items, "not enough room" when the tile is full. ADR-0021 D191 keeps the no-timed-decay rule.
@@ -89,7 +89,7 @@ Executed by the control plane within architect scope:
 - the Status line of each brief in §1 (ACCEPTED, citing this record);
 - the Status lines of GUILD-0, PARTY-PVP-0, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0 and `ADR-0021-world-map-runtime-loading.md` (ACCEPTED, citing ACCEPT-SOCIAL-MAP-0);
 - `OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`: Appendix 7 status list; PREM-2b+PREM-5; NPC-ECON-1; the WEATHER-1, SEC-1 and ITEM-LOOK-1 order; LOOP-GROUND-1; HIRE-1; SOCIAL-LATE-1; TUTORIAL-1; CRAFT-1 rows. No file under `docs/contracts/` encodes this order or these statuses, so no registry changed;
-- the two CANDIDATE briefs CRAFT-1 and HIRE-1: brief pending (PR B); not part of this acceptance batch.
+- the two new CANDIDATE briefs CRAFT-1 and HIRE-1.
 
 ## 5. Unblocked
 
