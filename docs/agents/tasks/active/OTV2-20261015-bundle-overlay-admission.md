@@ -4,10 +4,10 @@
 task_id: OTV2-20261015-bundle-overlay-admission
 title: Preserve one object domain in bundle World admission snapshots
 mode: REPAIR
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/fix-oracle-native-entry-20261015
+branch: null
 issue: 2219
 pr: null
 base_sha: fc03ef48f9e0604bba0c1e9b484e3ffa0be50a46
@@ -86,3 +86,18 @@ changes are runner workflow/operational records only; server inputs are unchange
 Workflow parser repair is separately owned by #2217 / PR2222, not this source diff.
 Molehill-PC is offline, so real native hardware acceptance remains UNKNOWN until
 its agent returns. No runtime or entry success is claimed from local compilation.
+
+## Operational continuation and source candidate
+
+Source authoring is complete on the sole-writer branch
+`codex/fix-oracle-native-entry-20261015`, delivery PR #2223. Its exact final
+remote head is frozen and qualified through the live PR/STATE evidence; no other
+writer may mutate it. This active packet tracks the still-open main-only rollout
+and hardware acceptance under Issue2219, so canonical branch/pr dispatch fields
+remain null instead of becoming a terminal source PR after integration.
+The source PR is currently unmerged and must pass exact CI plus independent
+review before Merge Queue. Material findings return the same writer to AUTHORING,
+then freeze and qualify a successor; this record grants no authority to bypass
+those gates. Runtime and real entry acceptance remain UNKNOWN. Archive this
+operational record only after they pass under the accepted post-deployment
+closeout exception. The existing #2217 packet owns runner/workflow acceptance.
