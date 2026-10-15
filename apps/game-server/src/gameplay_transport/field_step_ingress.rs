@@ -322,7 +322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_delta,
             );
         };
-        let Some(_room) = self.qualified_room else {
+        let Some(_room) = self.rooms.gate_field_step_ingress() else {
             return fail();
         };
         let Ok(origin) = runtime.read_actor_position(actor) else {
@@ -378,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 game_session_id:session,connection_generation:current.current_connection_generation(),character_lease_generation:current.current_character_lease().generation(),runtime_scope:current.current_runtime_scope(),scope_ownership_generation:current.current_scope_generation(),
             };
             let source=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let room=owner.qualified_room.ok_or(crate::durability::DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells) {
                 Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)

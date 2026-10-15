@@ -1,9 +1,10 @@
 # Condition authoring schema candidate v1
 
-The static `ConditionDefinition` catalogue of COND-CONTENT-1
+The static `ConditionDefinition` catalogue of COND-CONTENT-1 and COND-CONTENT-2
 ([CONDITIONS-0](../../../docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md)):
 the values for the six §3 families (`SPEED`, `DAMAGE_OVER_TIME`, `FOOD_REGENERATION`, `RECOVERY`,
-`MANA_SHIELD`, `LIGHT`) used by spells, runes, potions, food, fields, monster attacks and charms.
+`MANA_SHIELD`, `LIGHT`) and the four §3.5 families (`MUTED`, `PACIFIED`, `POWERLESS`, `AGONY`) used by
+spells, runes, potions, food, fields, monster attacks and charms.
 Content owns the values. The conflict policies, ticks, dispel, lifecycle and the speed and
 capacity arithmetic belong to the COND-1 runtime. Nothing here loads at runtime.
 
@@ -19,7 +20,7 @@ commit any content.
 | `condition_authoring.py` | `capture --reference-engine <checkout>` refuses a checkout that is not a clean `04b83b51`, checks every needle in its cited lines and parses the `field` items of `items.xml`. `build` derives the catalogue (`build --check` diffs it). `validate` runs the schema and the rules. `content [--check]` writes or verifies the content family and removes (or reports) files it no longer produces. |
 | `test_condition_authoring.py` | No-network tests: the field parse order, the committed build, the authored values, the monster mirror, one negative case per rule. |
 | `samples/canary-condition-sources-04b83b51.json` | The captured Canary facts: the git blob of every cited file, and the field items. |
-| `samples/conditions-candidate.json` | The candidate catalogue, one definition per line: 842 definitions, 828 admitted, 14 blocked. |
+| `samples/conditions-candidate.json` | The candidate catalogue, one definition per line: 958 definitions, 944 admitted, 14 blocked. |
 
 ## Sources
 
@@ -35,6 +36,18 @@ commit any content.
   `oteryn:condition.monster.<Effect key tail>`. The damage schedule is copied unchanged
   (`ProjectV2DamageOverTime`). The speed coefficients come from the `SpeedModifier` Formula
   (`monsters.cpp:153-154`: `(m/2, 40, m, 40)`), in thousandths.
+- **§3.5 families (COND-CONTENT-2), Canary `04b83b51`, `OtsHypothesisOnly`.** The durations only; the keys,
+  policies and gates are the runtime's (CONDITIONS-0 §3.5):
+  - `PACIFIED`: Swift Foot (`utamo tempo san`) pacifies its caster for its `spellDuration` of 10,000 ms
+    (`data/scripts/spells/support/swift_foot.lua:1, 37-39`). Canary applies it only without a Wheel grade;
+    the Wheel is not modelled.
+  - `POWERLESS`: the Soulpit monster spell `soulpit powerless` lasts 3,000 ms
+    (`data-otservbr-global/scripts/quests/soulpit/soulpit_powerless.lua:5-7`, named in `lib/others/soulpit.lua:119`).
+  - `MUTED`: no definition. The only Canary source is the chat spam mute (`player.cpp:3530`), which
+    CONDITIONS-0 §3.5 keeps a separate CHAT-0 rule; no spell, rune, item or monster applies it.
+  - `AGONY`: no definition. Nothing at the pin applies `CONDITION_AGONY`, so no source fixes its total or
+    tick; the schema carries the runtime's value block (`total_min`, `total_max`, `per_tick`,
+    `interval_ms`, `delayed`) for a later sourced row.
 - **Food regeneration**: ITEM-USE-0 §6.1 (the 1,200 s cap; `foods.lua:145-146`). The rates come from the
   vocation data, and the time per food from the Item.
 
@@ -61,13 +74,14 @@ commit any content.
 - The schema passes, and keys are unique.
 - The conflict key belongs to the family (`speed`; the element; one key each for the others).
 - A record is admitted exactly when it carries its family's value block.
-- `negative` marks exactly damage over time and paralysis.
-- Every tick and regeneration interval is at least 1,000 ms (`COND0-RL-02`).
+- `negative` marks exactly damage over time and paralysis (never a §3.5 family).
+- Every tick and regeneration interval, the `agony` interval included, is at least 1,000 ms (`COND0-RL-02`),
+  and an `agony` `total_min` is at most its `total_max`.
 - Only fields are `field` and tick at once.
 - `a_min ≤ a_max`, and every schedule meets the `ProjectV2DamageOverTime` invariants (ranges, strictly increasing
   geometric tick counts, a factor in lowest terms).
 - The food cap is 1,200 s.
-- At most 16 conflict keys are in use (`COND0-RL-01`).
+- At most 32 conflict keys are in use (`COND0-RL-01`, raised from 16 by CONDITIONS-0 §3.5).
 
 ```sh
 pip install -r requirements.txt

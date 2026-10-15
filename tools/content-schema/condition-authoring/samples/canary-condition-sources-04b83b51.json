@@ -530,6 +530,8 @@
     }
   ],
   "git_blobs": {
+    "data-otservbr-global/lib/others/soulpit.lua": "33d615ce92e5af1beae41c3150eea0962d2ee639",
+    "data-otservbr-global/scripts/quests/soulpit/soulpit_powerless.lua": "36af89a986096081569ee9799d4c891f6dfa9894",
     "data/items/items.xml": "a3f0a44db14bf020029e4e09a319cbda320bd799",
     "data/scripts/actions/items/demonic_candy_ball.lua": "df7d4b8a328e396fa0a118f8af339298f44ef1f8",
     "data/scripts/actions/items/filled_jalapeno_peppers.lua": "cefe09724c0875c21dc7c6881215e9a01cf990aa",
@@ -550,6 +552,7 @@
     "data/scripts/spells/support/light.lua": "73dd7a804116c2305e3b4eaf6d645c33f436b951",
     "data/scripts/spells/support/magic_shield.lua": "ff55e21eafc8973c6a475962213d2832ec1bb1b0",
     "data/scripts/spells/support/strong_haste.lua": "e20b7a891cca707846e41d2eafe182dd0b898b52",
+    "data/scripts/spells/support/swift_foot.lua": "4c2b9f2528748657b141ea5453333548f93d830e",
     "data/scripts/spells/support/ultimate_light.lua": "514f8839226bc8d5d04183390c3604c645193dde",
     "src/io/iobestiary.cpp": "c0497c4d1814e7950ad8fc27b9a4ec1f86d4a5cd"
   },
