@@ -26,8 +26,8 @@ on:
       - content/assets/files/appearances-*.dat
       - tools/content-census/stage_proficiencies.py
       - rulesets/items/imbuements/**
-      - content/presentations/**
-      - content/creatures/definitions/**
+      # validate_presentation_bindings.py scans every content JSON file for presentation keys.
+      - content/**
       - crates/protocol-oteryn/src/presentation.rs
       - tools/content-schema/native-gameplay/*presentation*.py
       - tools/content-schema/native-gameplay/build_creature_races.py

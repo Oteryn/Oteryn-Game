@@ -60,6 +60,12 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(self.errors(change),
                          ['canary.appearance:missile/arrow id 3 is not in appearances.dat'])
 
+    def test_kind_must_match_key(self):
+        def change(a):
+            a[0]['records'][1].update(kind='sound', client_id=65535)
+        self.assertEqual(self.errors(change), [
+            'canary.appearance:missile/arrow kind sound is not its key kind missile'])
+
     def test_null_id_only_for_undefined_member(self):
         def change(a):
             a[0]['records'][0]['client_id'] = None

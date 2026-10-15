@@ -42,6 +42,12 @@ def colors(source):
     return {re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower() for name in re.findall(r'(\w+) =', body)}
 
 
+def key_kind(key):
+    # canary.sound:<name> and canary.sound:effect/<n> are sounds; appearance keys name their kind.
+    namespace, name = key.split(':', 1)
+    return 'sound' if namespace.endswith('sound') else name.split('/', 1)[0]
+
+
 def check(client_ids, hits, races, cues, keys, ids, color_names, creatures):
     errors = []
     records = {}
@@ -57,7 +63,9 @@ def check(client_ids, hits, races, cues, keys, ids, color_names, creatures):
     for key in sorted(set(records) - keys):
         errors.append('client id record no content uses ' + key)
     for key, record in sorted(records.items()):
-        if record['client_id'] is None:
+        if record['kind'] != key_kind(key):
+            errors.append('%s kind %s is not its key kind %s' % (key, record['kind'], key_kind(key)))
+        elif record['client_id'] is None:
             if key not in bindings.UNDEFINED:
                 errors.append('client id missing for ' + key)
         elif record['source_member'] in NONE_MEMBERS:
