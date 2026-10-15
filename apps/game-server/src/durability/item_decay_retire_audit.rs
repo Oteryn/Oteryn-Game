@@ -309,6 +309,7 @@ mod tests {
             }),
             quantity,
             lifecycle,
+            key_number: 0,
         }
     }
 

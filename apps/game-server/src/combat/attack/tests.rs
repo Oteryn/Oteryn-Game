@@ -557,11 +557,12 @@ fn waiting_target_is_held_and_cleared_target_is_dropped() {
     );
 }
 
-/// CHASE-1 is client-driven (LOOP-COMBAT-MODES-1): the client walks after its target, so the
-/// server must keep an out-of-range target through every poll while it runs and swing the
-/// moment the client has closed the distance, without spending an interval while it waited.
+/// CHASE-1 is server-driven (RANGED-0 §8, owner decision 2026-10-14): the owner, or a client
+/// step that wins over it, closes the distance, so an out-of-range target is kept through every
+/// poll meanwhile and swung at the moment it is in reach, without spending an interval while
+/// it waited.
 #[test]
-fn a_fleeing_target_is_held_for_a_chasing_client_until_it_is_in_reach() {
+fn a_fleeing_target_is_held_while_the_server_chase_closes_in_until_it_is_in_reach() {
     let interval = table().attack_interval_micros();
     let mut state = AttackState::<u32, u8>::default();
     state.set_target(9, 0, &facts()).unwrap();
@@ -693,6 +694,17 @@ fn a_protected_target_is_held_without_a_swing() {
         swing_at(state.poll_swing(ms(4_000), interval, &facts())).0,
         4_000
     );
+}
+
+#[test]
+fn a_settled_budget_starts_at_the_cap_on_the_new_cadence() {
+    let block = table().block;
+    let mut budget = BlockBudget::settled(&block, ms(5_000));
+    assert_eq!(budget.blocks(), 2);
+    assert!(budget.try_block(&block, ms(5_000)));
+    assert!(budget.try_block(&block, ms(5_000)));
+    assert!(!budget.try_block(&block, ms(5_999)));
+    assert!(budget.try_block(&block, ms(6_000)));
 }
 
 #[test]

@@ -64,7 +64,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 |---|---|---|---|---|---|---|
 | LOOP-WORLD-1 | 6, 8, 9, 10 | confirm teleports, keyed/level/quest doors, levers and tile damage on the bundle node | #2018, ENCOUNTER-RT-0, BUNDLE-COMBAT-ENABLE-1 (the `qualified_room` gate), CHAT-1; CHAT-1b-2b (ENC-WORLD-1 child only); external prerequisites of the brief children: MAP-WIRE-2, ITEM-USE-WIRE-1, ITEM-EQUIP-WIRE-1, MAP-OVERLAY-1, WO-3, QUEST-GATE-1, QUEST-TRIGGER-1, MAP-LOAD-1, VSL-MOVE-01, ATTACK-1b, ITEM-MOVE-2b, BAGS-GROUND-1, FIELD-WIRE-1, FIELD-1, PVP-RT-1, COND-1, VIS-2, WO-2, QUEST-CONTENT-2, CREATURE-AI-1 (merged), ITEM-USE-1c, BOSS-REWARD-1, QUEST-STATE-1, SCOPE-HANDOFF-1, BOSS-ROOM-1; ENC-COMBAT-1 names MONSTER-SUMMON-1 itself, a shared child of the LOOP-MONSTER-1 graph that is delivered first and is not an entry gate here | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-MAP-1 | 13 | close the cap 18 offer decision: MAP-VIEWPORT-MEASURE-1 is merged (#1873; 0.41-0.44 core per 500 players against the 20% default, so it does not fit), what remains is MAP-VIEWPORT-OPT-1 and MAP-VIEWPORT-LIMIT-1 (Appendix 7) | #1942 client proof; MAP-VIEWPORT-OPT-1; MAP-VIEWPORT-LIMIT-1; external prerequisites of the brief children: MAP-LOAD-1, MAP-OVERLAY-1, VIS-2, CHAR-REV-SEQ-1, BANK-FEE-0, SPAWN-1a (merged), SPAWN-1b | hard (child graph, App. 7) | maybe | maybe |
-| LOOP-COMBAT-MODES-1 | 20 | chase mode (CHASE-1), secure mode, fight-mode effect on targeting | none; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, DUR-03, SPEED-1 (merged), CREATURE-MOVE-1 | hard (child graph, App. 7) | maybe | maybe |
+| LOOP-COMBAT-MODES-1 | 20 | chase mode (CHASE-1), secure mode, fight-mode effect on targeting | none; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, DUR-03, SPEED-1 (merged) (CHASE-1 supplies the shared path search CREATURE-MOVE-1 reuses, so CREATURE-MOVE-1 is not a prerequisite) | hard (child graph, App. 7) | maybe | maybe |
 | LOOP-DAMAGE-1 | 23, 24, 25, 26 | enable cap 12 (EQUIP-0), resistances, crits/leech, area and chain attacks on the bundle, mana shield | EQUIP-0, BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1 (merged), SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (wire) | maybe | yes |
 | LOOP-RANGED-1 | 21, 22, 51 | projectile profiles, distance weapons and ammo (a DUR-03 burn), wands/rods, attack spells | BUNDLE-TILES-PROJECTILE-1, LOOP-DAMAGE-1, ITEM-LOOP-1; external prerequisites of the brief children: VIS-2, MOVE-RL-11, GAME-AI-01, ITEM-SEM-2b, BAGS-1, ITEM-MOVE-2a, BAGS-WIRE-1, ITEM-MOVE-2b, SPEED-1 (merged), CREATURE-MOVE-1 | hard (ammo burn) | yes | maybe |
 | CHAR-BUILD-1 | 38, 40, 41 | **MERGED (#1393 (1a, migration 0030) and the 1b writer, archive records OTV2-20260930-char-build-1 and -1b; the residues are W2b, DAWNPORT-1, DEATH-ML-LOSS-1 and LOOP-PROGRESS-1).** character build state: table, receipt kind, nullable death-receipt build columns, admission load, guards, verifier (A13 §5); takes the skill columns of SKILLS-0 in the same migration | A13 accepted, migrations 0018-0020 | hard (persistence review) | yes | no |
@@ -106,7 +106,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | Batch | Rows | Scope | Depends on | Class | Mig | Reg |
 |---|---|---|---|---|---|---|
 | MAGIC-CAST-1 | 49, 50, 52, 53, 54 | close SPELL-STARTER-1 RUNTIME_GAP and ADAPTER_MISSING: spellbook, casting, healing, support, parametric spells, cooldown groups | PREMIUM-1 (Premium spell check, PREMIUM-ACTIVATION-0 §4.6); external prerequisites of the brief children: VIS-2, SPELL-D4, ATTACK-1b, COND-1, STANCE-1, GAME-AI-01, PARTY-1, SKILLS-0, ITEM-SEM-2b; complete only when every child in App. 7 is complete | hard (child graph, App. 7) | maybe | maybe |
-| MAGIC-COND-1 | 27, 28, 29 | DoT, haste/paralyze/invisibility/outfit, muted/exhaust/infight/pacified/rooted/feared/powerless/agony | BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1 (merged), SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (child graph, App. 7) | maybe | maybe |
+| MAGIC-COND-1 | 27, 28, 29 | DoT, haste/paralyze, muted/exhaust/infight/pacified/powerless/agony (ACCEPT-CONDITIONS-0 scope); invisibility/outfit and rooted/feared policy are future scope, each gated on its own accepted decision | BUNDLE-COMBAT-ENABLE-1; external prerequisites of the brief children: ITEM-SEM-2b, ITEM-MOVE-2a, CHAR-BUILD-1 (merged), SKILLS-0, ATTACK-1b, GAME-AI-01, VIS-2, FOOD-REGEN-1 | hard (child graph, App. 7) | maybe | maybe |
 | MAGIC-ITEMS-1 | 55, 56 | rune use with target and conjure | ITEM-USE-1c (#2039 merged only 1a and 1b); external prerequisites of the brief children: ITEM-USE-WIRE-1, ITEM-SEM-USE, ITEM-USE-1c, SPELL-TARGET-1, ATTACK-0, VIS-2, CHAR-BUILD-1 (merged), SPELL-D4, COND-1 | hard (DUR-03) | maybe | maybe |
 | MAGIC-SUMMON-1 | 57, 58 | summons, familiars, magic fields; complete only when every child in App. 7 is complete | MAGIC-CAST-1 (LOOP-WORLD-1 field ingress gates only the field children, which name it themselves, not the shared summon children); external prerequisites of the brief children: MAP-OVERLAY-1, MAP-CUTOVER-1b, VIS-1 (merged), ATTACK-1b, SPEED-1 (merged), VIS-2 | hard (child graph, App. 7) | maybe | maybe |
 | PROG-ADV-1 | 42, 43, 44 | weapon proficiency (PROF-WIRE-0), wheel of destiny, gem atelier | LOOP-PROGRESS-1, PREMIUM-1; external prerequisites of the brief children: PROF-CONTENT-1, PROF-1, FORGE-1a, PROF-WIRE-1, ATTACK-1b, RANGED-1, SKILLS-0, EQUIP-RT-1, CHAR-REV-SEQ-1, GAME-ABILITY-01, CONDITIONS-0, PREM-1, GOLD-FEE-2, WHEEL-GEM-0A, ITEM-USE-0 | hard | yes | yes |
@@ -323,7 +323,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (RANGED0) is al
 | RANGED-CONTENT-1 | RANGED0 | content |  | ITEM-SEM-2b |
 | QUIVER-1 | RANGED0 | impl, persistence review |  | BAGS-1; ITEM-MOVE-2a; BAGS-WIRE-1 |
 | RANGED-1 | RANGED0 | hard (combat, persistence), combat and persistence review |  | ATTACK-1b; QUIVER-1; RANGED-CONTENT-1; ITEM-MOVE-2b; DUR-03 amendment accepted |
-| CHASE-1 | RANGED0 | hard (movement), movement and determinism review |  | ATTACK-1b; SPEED-1 (merged); CREATURE-MOVE-1 |
+| CHASE-1 | RANGED0 | hard (movement), movement and determinism review |  | ATTACK-1b; SPEED-1 (merged); supplies the shared CREATURE-MOVE-1 §5.3 path search that CREATURE-MOVE-1 then reuses (no CREATURE-MOVE-1 prerequisite) |
 | RANGED-PARITY-1 | RANGED0 | impl |  | RANGED-1 |
 
 ### LOOP-DAMAGE-1, MAGIC-COND-1
@@ -336,11 +336,14 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (CHARM4, CONDIT
 | EQUIP-RT-1 | EQUIP0 | hard (combat), combat and determinism review |  | ITEM-MOVE-2a; SPEED-1 (merged); COND-1; CHAR-BUILD-1 (merged) and SKILLS-0's live skill read (the base a `SKILL_BOOST` adds to) |
 | EQUIP-PARITY-1 | EQUIP0 | impl |  | EQUIP-RT-1 |
 | CHARM-DEF-1 | CHARM4 | combat lane, combat and determinism review |  | ATTACK-1b (creature attacks on characters) |
-| COND-1 | CONDITIONS0 | hard (combat), combat and determinism review |  | this decision |
-| SPEED-1 | CONDITIONS0 | **MERGED (#1715).** impl, movement review |  | COND-1; the GAME-AI-01 step cadence (§4.3) |
+| COND-1 | CONDITIONS0 | **COND-1a/1b/1c MERGED (#1405, #2086).** Residual: the §3.5 keys, the runtime `COND0_RL_01_INSTANCES_PER_ACTOR` bound raised from 16 to 32, the `agony` tick and its §3.5 replace-on-equal-or-greater policy, the admission gates and the `PACIFIED` clearing of a running attack target. hard (combat), combat and determinism review |  | this decision |
+| SPEED-1 | CONDITIONS0 | **MERGED (#1715).** No residual: the creature step timer is CREATURE-MOVE-1's (CONDITIONS-0 §4.3). impl, movement review |  | none (merged) |
 | COND-WIRE-1 | CONDITIONS0 | impl, protocol review | yes | COND-1; SPEED-1 (merged); VIS-2 |
 | COND-DUR-1 | CONDITIONS0 | hard (persistence), persistence review |  | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | CONDITIONS0 | **MERGED (#1400).** content |  | this decision |
+| COND-CONTENT-2 | CONDITIONS0 | content |  | this decision; COND-CONTENT-1 (merged) |
+| COND-WIRE-2 | CONDITIONS0 | impl, protocol review | yes | COND-1 (§3.5 residual); COND-WIRE-1; PRESENT-WIRE-1 |
+| COND-CLIENT-2 | CONDITIONS0 | client lane (client owner) |  | COND-WIRE-2; PRESENT-CLIENT-1 |
 
 ### MAGIC-CAST-1
 
@@ -413,7 +416,7 @@ MAGIC-SUMMON-1 is complete only when every child above, the `owned_field_buff` c
 
 Acceptance gate: no child in this graph whose Brief is CANDIDATE (BAGS0, ITEM_MOVE_WIRE0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0) is allocated until its owning decision is ACCEPTED (status of main@ab7d51ae6, 2026-10-13).
 
-Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITEM-USE-CLIENT-1 are not part of the ITEM-LOOP-1 completion set: each is allocated after the downstream child it names (DEPOT-1, TRADE-1, RANGED-1's Ground ordinal, ATTACK-CLIENT-1) and completes with that downstream family, so ITEM-STORAGE-1, TRADE-PLAYER-1 and LOOP-RANGED-1 are not blocked by them. ITEM-LOOP-1 is complete only when B3-3 (item weights, character capacity source, overweight refusal) and every other child in this table, except those integration children, are complete; B3-3 keeps the acceptance gate of the B3 brief (B3 is CANDIDATE): it is allocated only after B3's acceptance and its weight and capacity evidence.
+Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITEM-USE-CLIENT-1 are not part of the ITEM-LOOP-1 completion set: each is allocated after the downstream child it names (DEPOT-1, TRADE-1, the RANGED-0 §6.1.2 Ground order (existing `stack_ordinal`), ATTACK-CLIENT-1) and completes with that downstream family, so ITEM-STORAGE-1, TRADE-PLAYER-1 and LOOP-RANGED-1 are not blocked by them. ITEM-LOOP-1 is complete only when B3-3 (item weights, character capacity source, overweight refusal) and every other child in this table, except those integration children, are complete; B3-3 keeps the acceptance gate of the B3 brief (B3 is CANDIDATE): it is allocated only after B3's acceptance and its weight and capacity evidence.
 
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
@@ -433,7 +436,7 @@ Integration children BAGS-DEPOT-1, BAGS-TRADE-1, STACK-1, STACK-PARITY-1 and ITE
 | BAGS-DEPOT-1 | BAGS0 | hard, persistence review |  | DEPOT-1; INBOX-1a (merged); BAGS-1 |
 | BAGS-TRADE-1 | BAGS0 | hard, persistence and security review |  | TRADE-1; BAGS-1 |
 | STACK-WIRE-1 | STACK0 | impl, protocol review | yes | ITEM-EQUIP-WIRE-1; BAGS-WIRE-1 |
-| STACK-1 | STACK0 | hard (persistence), persistence review |  | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; RANGED-1's Ground ordinal |
+| STACK-1 | STACK0 | hard (persistence), persistence review |  | ITEM-MOVE-2a; ITEM-MOVE-2b; BAGS-1; GROUND-MOVE-1; the existing migration 0034 `stack_ordinal` (RANGED-0 §6.1.2; no RANGED-1 dependency) |
 | STACK-PARITY-1 | STACK0 | impl |  | STACK-1 |
 | STARTER-1 | STARTER_BACKPACK0 | hard, persistence and security review |  | this decision; the C2 fence plumbing (`CurrentCharacterItemFence` in `AdmittedSession`); STARTER-CONTENT-1 |
 | STARTER-CONTENT-1 | STARTER_BACKPACK0 | **MERGED (#1424).** content |  | this decision |
@@ -565,7 +568,7 @@ Acceptance gate: no child in this graph whose Brief is CANDIDATE (RUNE_USE0) is 
 | RUNE-WIRE-1 | RUNE_USE0 | impl, protocol review | yes | ITEM-USE-WIRE-1 |
 | RUNE-CONTENT-1 | RUNE_USE0 | content |  | ITEM-SEM-USE |
 | RUNE-1 | RUNE_USE0 | hard, persistence review |  | ITEM-USE-1c; RUNE-WIRE-1 |
-| RUNE-CAST-1 | RUNE_USE0 | spell lane, combat review |  | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 (merged) |
+| RUNE-CAST-1 | RUNE_USE0 | spell lane, combat review |  | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 (merged); COND-1 (§3.5 residual) |
 | RUNE-CONJ-1 | RUNE_USE0 | hard, persistence, combat and protocol review |  | RUNE-1; the instant cast composition (SPELL-D4) |
 | FIELD-1 | RUNE_USE0 | hard (combat), combat review |  | COND-1; RUNE-CAST-1 |
 | FIELD-WIRE-1 | RUNE_USE0 | impl, protocol review | yes | VIS-2; FIELD-1 |

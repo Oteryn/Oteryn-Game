@@ -3686,6 +3686,7 @@ mod source_creature_dot_owner_tests {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(0),
             mitigation: Some(CreatureExactRatio {
                 numerator: 0,

@@ -1,10 +1,11 @@
 //! SPEED-1 player step pacing (CONDITIONS-0 §4.3).
 //!
-//! One connection's pacing clock: a step may run once the previous moved step's duration has
+//! One player's pacing clock: a step may run once the previous moved step's duration has
 //! passed. The connection keeps at most one early step in a one-step buffer until then; a second
 //! request that arrives while the buffer is full is refused (`TOO_EARLY` under capability 13
-//! `PACED_MOVEMENT_V1`, `Rejected` without it). The clock lives with the connection, so the
-//! buffer is dropped at disconnect and a resumed connection starts with an empty one.
+//! `PACED_MOVEMENT_V1`, `Rejected` without it). The buffer lives with the connection, so it is
+//! dropped at disconnect and a resumed connection starts with an empty one; the deadline is the
+//! actor's (CHASE-1, RANGED-0 §8), so a resumed connection starts from it.
 
 use std::time::Duration;
 use tokio::time::Instant;
@@ -37,6 +38,16 @@ impl<T> Default for StepPacer<T> {
 pub(crate) type CreatureStepPacer = StepPacer<oteryn_simulation_determinism::SemanticTimeMicros>;
 
 impl<T: PacingTime> StepPacer<T> {
+    /// A clock that continues from a deadline the actor already holds.
+    pub(crate) const fn resumed(next_due: Option<T>) -> Self {
+        Self { next_due }
+    }
+
+    /// When the next step may run, if a moved step set a deadline.
+    pub(crate) const fn next_due(&self) -> Option<T> {
+        self.next_due
+    }
+
     /// `None` when a step requested at `now` may run at once, otherwise the instant it is due.
     pub(crate) fn wait_until(&self, now: T) -> Option<T> {
         self.next_due.filter(|due| now < *due)

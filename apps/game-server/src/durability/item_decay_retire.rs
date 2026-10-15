@@ -809,6 +809,7 @@ fn decay_message(
         definition: Some(admitted.definition.clone()),
         quantity,
         lifecycle,
+        key_number: 0,
     };
     let entry = admitted
         .placement_ordinal

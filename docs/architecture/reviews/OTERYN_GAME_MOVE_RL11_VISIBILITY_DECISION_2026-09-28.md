@@ -117,15 +117,16 @@ degrade and resync dispositions are unchanged
 **Amendment (pending on acceptance of NPC-BEHAVIOUR-0; `reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md` §3.2).** NPCs rank with players and creatures as actors.
 VIS-3 does not offer capability 6 before NPC-VIS-1 adds kind 5 to `world_spatial_v1.proto`
 `EntityKind`.
-**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** Items of one
-tile are ordered by their `ground_ordinal`, top last, so the client's top item is the server's.
+**Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.1.2).** None: RANGED-0 adds no `ground_ordinal`
+and makes no change to this section (the Ground order is the existing `stack_ordinal`, and the client's
+in-tile order and the 256 cutoff are unchanged); the earlier pending amendment is withdrawn. The
+rule below is the current rule.
 Selection and emission are separate orders. **Selection** (which entities survive the 256 cutoff):
 actors first as above; items by floor distance, Chebyshev distance, then the canonical tile key
 `(floor, y, x)` in native floor coordinates (`OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1` §11) so
-tiles at equal distance have a total order, then within one tile from the top down (descending
-`ground_ordinal`, then entity identity for legacy rows at ordinal 0). A cutoff inside a tile
+tiles at equal distance have a total order, then within one tile from the top down (`stack_ordinal DESC NULLS FIRST`, the migration 0034 column, then entity identity for legacy rows whose `stack_ordinal` is NULL). A cutoff inside a tile
 therefore drops its bottom items, never its top item. **Emission** (the order the client stacks a
-tile's selected items): ascending `ground_ordinal`, top last. `WorldSpatialEntityV1` carries no
+tile's selected items): the exact reverse of the selection order, `stack_ordinal ASC NULLS LAST`, with legacy NULL rows last and their entity-identity order reversed, top last. `WorldSpatialEntityV1` carries no
 ordinal, so a delta may add an item to a tile the client already shows only when it lands above
 every shown item of that tile (a new top); any other change of a shown tile's selected items (a
 cutoff moving inside the tile, a lower item entering) is sent as a new snapshot (the "resync"
@@ -209,3 +210,16 @@ remaining_unknowns:
   - dense-scene cost evidence
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates VIS-1."
 ```
+
+## 9. Amendment: VIS-2 light (CLOCK-1, 2026-10-14)
+
+WORLD-INTERACTION-0 §10.2 adds `light` to the VIS-2 entry. It is fields 11 (`light_level`,
+1..=255) and 12 (`light_color`, 0..=255) of the domain 1 type 2 entry. They are sent and accepted
+only under capability 19 `WORLD_LIGHT_V1` (which requires 6) and only on player and creature
+entries; anywhere else they fail closed. Level 0 means no light, so the light is omitted. They add
+at most 6 B per entry (`WORLDINT0-RL-20`), so the largest entry stays within 128 B and 256 lit
+entries still fit the 33,792 B bound of §4.4. A shown entity's light changes on the wire at most
+once per 1,000 ms. Until then, an entry sent for a move keeps the light last sent. A light change
+alone takes a delta update entry only within the §4.3 ceiling of 256; past it, the change waits
+for a later refresh. A session without capability 19 receives the same bytes as before. The
+other decisions of this review are unchanged.

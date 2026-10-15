@@ -112,12 +112,39 @@ fn current_index_positions_and_actor_generations_are_independently_checked() {
         owned_observer(&runtime, &index, replacement, session, 1),
         Err(Error::InvalidIndex)
     ));
-    assert!(matches!(
+    // VIS-1: a source world's native floor -5 is Tibia floor 5; -16 is outside every frame.
+    assert!(
         view(MovementLocalPosition {
             x: 0,
             y: 0,
             floor: -5
+        })
+        .is_ok()
+    );
+    assert!(matches!(
+        view(MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: -16
         }),
+        Err(Error::UnknownFrame)
+    ));
+}
+
+#[test]
+fn native_floors_rank_like_their_tibia_floors() {
+    let at = |x, y, floor| MovementLocalPosition { x, y, floor };
+    // Native -7 sees native -6 one floor up: Tibia 7 sees 6, projected one tile south-east.
+    assert_eq!(
+        plane_distance(at(100, 100, -7), at(101, 101, -6)).unwrap(),
+        plane_distance(at(100, 100, 7), at(101, 101, 6)).unwrap()
+    );
+    assert_eq!(
+        plane_distance(at(100, 100, -7), at(101, 101, -6)).unwrap(),
+        (1, 0)
+    );
+    assert!(matches!(
+        plane_distance(at(0, 0, -7), at(0, 0, -16)),
         Err(Error::UnknownFrame)
     ));
 }

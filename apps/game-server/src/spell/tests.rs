@@ -59,7 +59,7 @@ fn caster(vocation: Vocation, level: u32, magic_level: u32, mana: u32) -> Caster
         vocation,
         level,
         magic_level,
-        premium: false,
+        premium: crate::spell::CasterPremium::NotCurrent,
         mana,
         max_mana: mana,
         soul: 100,

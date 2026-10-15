@@ -348,7 +348,7 @@ impl OwnedCastFacts {
             magic_level: skill_adjustments
                 .adjust_magic_level(facts.magic_level)
                 .ok_or(OwnedFactsError::BuildMismatch)?,
-            premium: premium.is_some_and(|p| p.value),
+            premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
             mana: vitals.mana,
             max_mana: vitals.max_mana,
             soul: vitals.soul,

@@ -25,6 +25,7 @@ use crate::durability::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition,
 };
 use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::durability::character_command::{Classified, classify_intent};
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
@@ -43,6 +44,9 @@ use crate::foundation::{
 use crate::gameplay_transport::FreshEvidenceSource;
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
+};
+use crate::native_admission_source::character_commands::{
+    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
 };
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
@@ -371,6 +375,22 @@ fn unix_now() -> i64 {
         .unwrap_or(0)
 }
 
+/// PREM-WIRE-1 production composition (PREMIUM-ACTIVATION-0 §1.1-§1.2): the one Premium fence,
+/// the system trusted clock, the durable activation latch and no activation.
+fn production_premium_reads(
+    root: &DurabilityRoot,
+) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, SystemTrustedClock,
+    };
+    SpellPremiumCoordinator::new(
+        std::sync::Arc::default(),
+        Some(std::sync::Arc::new(SystemTrustedClock)),
+        None,
+        Some(root.clone()),
+    )
+}
+
 fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
@@ -388,6 +408,9 @@ struct Material {
     /// and epoch fence; `None` disables it. Taken once by the serving loop.
     account_characters:
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
+    /// Character-command consumer identity and source authority; `None`
+    /// (the default) disables it. Taken once by the serving loop.
+    character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -552,6 +575,51 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             ))
         }
     };
+    let character_commands = match &platform.character_commands {
+        None => None,
+        Some(commands) => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.character_commands.client_certificate_file",
+                &commands.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.character_commands.client_key_file",
+                &secret(
+                    "platform.character_commands.client_key_file",
+                    &commands.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = CommandDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.character_commands"))?;
+            Some((descriptor, commands.source_authority.clone()))
+        }
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -606,6 +674,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         intents,
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
+        character_commands: std::sync::Mutex::new(character_commands),
         descriptor,
         launch,
         s2,
@@ -811,6 +880,74 @@ async fn account_characters_loop(
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );
     first(publisher.run(), stop.cancelled()).await;
+}
+
+/// The Character Authority side of the command consumer: it refreshes the
+/// account's security evidence of a decoded create, then decides under the
+/// reconciled Character authority (contract §6).
+struct CommandDecider<'a, 'r, 'c> {
+    root: &'a DurabilityRoot,
+    authority: &'a ReconciledCharacterAuthority<'r, 'c>,
+    proof: &'a NodeIncarnationProof,
+    evidence: &'a FreshEvidenceSource,
+    source_authority: String,
+}
+
+impl Decider for CommandDecider<'_, '_, '_> {
+    async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
+        if let Input::Intent(raw) = input
+            && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
+        {
+            // A failed refresh leaves the evidence stale; the decision then
+            // reads it as unknown and stays transient until the intent expires.
+            let account = uuid_text(&intent.account_id);
+            let _ = self
+                .evidence
+                .refresh_account(self.root, self.proof, &account)
+                .await;
+        }
+        self.root
+            .decide_character_command(
+                self.authority,
+                self.proof,
+                &self.source_authority,
+                command,
+                operation_id,
+                input,
+            )
+            .await
+    }
+}
+
+/// The character-command consumer until `stop`; configured only by an explicit
+/// `[platform.character_commands]` section, so disabled by default.
+async fn character_commands_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    commands: Option<(CommandDescriptor, String)>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, source_authority)) = commands else {
+        return;
+    };
+    event("event=character_commands state=started");
+    let decider = CommandDecider {
+        root,
+        authority,
+        proof,
+        evidence,
+        source_authority: source_authority.clone(),
+    };
+    let consumer = Consumer::new(
+        SystemClock::default(),
+        MtlsSource::new(descriptor),
+        decider,
+        source_authority,
+        event,
+    );
+    first(consumer.run(), stop.cancelled()).await;
 }
 
 /// Output of `primary`, or `None` once `stop` completes first.
@@ -2308,6 +2445,10 @@ async fn boot_and_serve(
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
+    // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
+    // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
+    // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
+    let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2321,7 +2462,7 @@ async fn boot_and_serve(
         chest: &chest,
         spells: &spells,
         active_generation: active_content.active(),
-        premium_coordinator: None,
+        premium_coordinator: Some(&premium_reads),
         qualified_room: bundle.is_none().then_some(&qualified_room),
         combat_room: combat_room.as_ref(),
         achievements: &achievements,
@@ -2359,6 +2500,20 @@ async fn boot_and_serve(
         &loops_stop
     ));
     let mut projection_done = false;
+    // Never gates serving either; disabled unless configured.
+    let mut commands = pin!(character_commands_loop(
+        root,
+        &authority,
+        &proof,
+        evidence,
+        material
+            .character_commands
+            .lock()
+            .ok()
+            .and_then(|mut commands| commands.take()),
+        &loops_stop
+    ));
+    let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());
     let mut serve_error = None;
     // A loop that ended is never polled again.
@@ -2382,6 +2537,9 @@ async fn boot_and_serve(
         }
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
+        }
+        if !commands_done && commands.as_mut().poll(context).is_ready() {
+            commands_done = true;
         }
         Poll::Pending
     })
@@ -2420,6 +2578,9 @@ async fn boot_and_serve(
             if !projection_done && projection.as_mut().poll(context).is_ready() {
                 projection_done = true;
             }
+            if !commands_done && commands.as_mut().poll(context).is_ready() {
+                commands_done = true;
+            }
             Poll::Pending
         })
         .await;
@@ -2441,6 +2602,9 @@ async fn boot_and_serve(
         }
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
+        }
+        if !commands_done && commands.as_mut().poll(context).is_ready() {
+            commands_done = true;
         }
         Poll::Pending
     })
@@ -2470,6 +2634,9 @@ async fn boot_and_serve(
     }
     if !projection_done {
         projection.as_mut().await;
+    }
+    if !commands_done {
+        commands.as_mut().await;
     }
     if let Some(reporter) = reporter {
         reporter
@@ -2511,6 +2678,28 @@ mod tests {
             assert_eq!(calls, 3);
             let mut refused = [None, Some(false)].into_iter();
             assert!(!await_answer(async || refused.next().flatten()).await);
+        });
+    }
+
+    #[test]
+    fn production_premium_reads_configure_no_activation_and_read_the_latch() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let reads = production_premium_reads(&root);
+            // PREMIUM-ACTIVATION-0 §1.2: no activation record in production, so Premium is
+            // never delivered and every account reads Free, without a latch write.
+            assert!(reads.activation().is_none());
+            assert!(reads.reads_latch());
+            assert!(reads.has_clock());
+            assert_eq!(
+                reads.premium_gate([1; 16]).await,
+                crate::domain::premium::PremiumGate::CLOSED
+            );
         });
     }
 

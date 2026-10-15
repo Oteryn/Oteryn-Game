@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: RANGED-CONTENT-1 content-lane worker
 created_at: 2026-10-13T00:00:00Z
-updated_at: 2026-10-14T00:00:00Z
+updated_at: 2026-10-15T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/item-authoring/lower_ranged_packet.py
@@ -120,6 +120,30 @@ Conflicts keep the Canary value: 7 wiki damage ranges, 3 ranges, 2 mana costs (h
 - ownership release: pending
 
 ## Context checkpoint
+
+### Owner-directed PR repair (2026-10-15)
+
+- Prepared a local AUTHORING repair for the owner's request on #2096. Auto-merge
+  was disabled at 06:39:58 UTC, but another actor re-enabled it at 06:40:07 UTC.
+  The source branch remains at `c98b4b6d2f6694812804d067e330928f3640964d`.
+  Publication requires disabling auto-merge again, verifying the unchanged source
+  head, and using guarded expected-predecessor publication. No previous exact-head
+  qualification is inherited by this repair.
+- Merged protected `main@7a61f3660842ac8ccc4c562f760f7e96a20d7692`
+  without rebasing or replacing the existing PR history. The only textual conflict
+  was the World pin's `inputs_digest`, recomputed from the merged compiler inputs.
+- The mechanics completion plan is now present on main. RANGED-0 remains
+  CANDIDATE after the amendments in #2111 and the later chase work. Its header
+  requires independent combat, persistence, movement and protocol review before
+  acceptance. This repair does not claim or fabricate that acceptance.
+- Review finding `4273634963` remains open until the owning decision's acceptance
+  requirements are satisfied. No runtime activation or protected integration is
+  authorized by the repaired content packet alone.
+- Focused repair checks: ranged lowerer tests and packet `--check` PASS;
+  governance validation and 124 governance tests PASS; repository policy and
+  post-merge routing checks PASS; World pin compiler regressions: 3 PASS, 1 ignored
+  (release-only real-tree test). Full merged-tree `pin-check` and formatting are
+  checked separately before publication.
 
 ```yaml
 last_progress: ranged facts packet lowered, content tree regenerated, record archived

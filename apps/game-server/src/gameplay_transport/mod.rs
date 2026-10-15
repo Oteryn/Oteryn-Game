@@ -41,7 +41,6 @@ mod resume;
 mod source_item_cycle;
 mod spell_access_facts;
 mod spell_character_facts;
-pub(crate) mod spell_entitlements;
 mod spell_magnitude_facts;
 pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
@@ -540,7 +539,14 @@ pub async fn serve_gameplay(
         progression_sessions: std::sync::Mutex::default(),
         last_positions: last_position::LastPositions::default(),
         input_gate: input_gate::InputGate::default(),
-        premium: premium_refresher(owners.root),
+        // PREM-WIRE-1: one Premium fence. The refresher pulls into the consumer the spell casts
+        // and every other Premium gate read; a node without the Premium reads keeps its own.
+        premium: premium_refresher(
+            owners.root,
+            owners
+                .premium_coordinator
+                .map_or_else(Default::default, |reads| reads.consumer()),
+        ),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
         spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
@@ -618,7 +624,10 @@ pub async fn serve_gameplay(
 
 /// PREM-1b: the node's Premium pulls. Without configuration, or with an invalid one, there is no
 /// client and every account reads Free; admission is never affected.
-fn premium_refresher(root: &DurabilityRoot) -> crate::premium::refresh::PremiumRefresher {
+fn premium_refresher(
+    root: &DurabilityRoot,
+    consumer: std::sync::Arc<crate::premium::PremiumConsumer>,
+) -> crate::premium::refresh::PremiumRefresher {
     use crate::premium::client::{PremiumClientConfig, PremiumSnapshotClient};
     let client = match PremiumClientConfig::from_env()
         .and_then(|config| config.map(|c| PremiumSnapshotClient::new(&c)).transpose())
@@ -629,7 +638,7 @@ fn premium_refresher(root: &DurabilityRoot) -> crate::premium::refresh::PremiumR
             None
         }
     };
-    crate::premium::refresh::PremiumRefresher::new(Default::default(), root.clone(), client)
+    crate::premium::refresh::PremiumRefresher::new(consumer, root.clone(), client)
 }
 
 /// Fresh, unpredictable identifiers from the TLS provider's secure random
@@ -1093,6 +1102,13 @@ impl PremiumSessions {
 
     /// Drops `session`'s registration. True only when it held one and was the account's last,
     /// so a repeated release, or one racing a successor's admission, stops no pulls.
+    /// PREM-WIRE-1: the account `session` was admitted for, if it holds a registration.
+    fn account_of(&self, session: GameSessionId) -> Option<[u8; 16]> {
+        self.0
+            .iter()
+            .find_map(|(account, sessions)| sessions.contains(&session).then_some(*account))
+    }
+
     fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
         let Some(sessions) = self.0.get_mut(&account_id) else {
             return false;
@@ -1476,6 +1492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if placed {
                     self.last_positions
                         .respawned(session, respawned.record.cell);
+                    // NPC-TALK-2: a respawned customer away from its NPC ends its conversation.
+                    self.chat
+                        .close_out_of_range(&*self.runtime.lock().await, session);
                 }
                 placed
             }
@@ -2883,13 +2902,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn npc_follow(
         &self,
-        actor: ExactActorRef,
+        _actor: ExactActorRef,
         session: GameSessionId,
         shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> Option<npc_command::NpcUpdate> {
         let runtime = self.runtime.lock().await;
         self.npc_conversations
-            .follow(&self.chat, &runtime, actor, session, shown)
+            .follow(&self.chat, &runtime, session, shown)
     }
 
     async fn npc_talk(
@@ -3037,10 +3056,49 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation,
         ))
         .collect();
+        // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
+        // runtime actor-condition owner (players and creatures) and, for a player, its spell
+        // state, read under the same runtime lock (lock order: runtime, then spell_states). A
+        // store whose owner time is ahead of `now_us` gives no light. Equipped items and monster
+        // content carry no light source yet, so they add none. The census includes players whose
+        // control was lost: they stay visible during reconnect grace, so their light stays too.
+        let now_us = self.owner_now().get();
+        let mut lights = world_spatial::EntityLights::new();
+        if let Ok(census) = runtime.positioned_melee_census() {
+            let states = self.spell_states.lock().await;
+            for (actor, _, session) in census {
+                let spell = session
+                    .and_then(|session| states.get(&runtime, actor, session))
+                    .map(|state| state.owned_conditions())
+                    .filter(|conditions| conditions.accepts_time(now_us))
+                    .and_then(|conditions| conditions.light_at(now_us));
+                let owned = runtime
+                    .actor_conditions_at(actor, session, now_us)
+                    .ok()
+                    .and_then(|conditions| conditions.light_at(now_us));
+                let brightest = match (spell, owned) {
+                    (Some(a), Some(b)) => Some(if b.0 > a.0 { b } else { a }),
+                    (a, b) => a.or(b),
+                };
+                if let Some((level, color)) = brightest
+                    && level != 0
+                {
+                    lights.insert(
+                        actor.placement_identity(),
+                        world_spatial::EntityLight {
+                            level,
+                            color: color.unwrap_or(crate::world_clock::LIGHT_COLOR),
+                        },
+                    );
+                }
+            }
+        }
         Some(world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
             observer: actor.placement_identity(),
             entities,
+            lights,
+            observed_at_ms: now_us / 1_000,
         })
     }
 
@@ -3153,13 +3211,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
         };
         match outcome {
-            Ok((snapshot, duration)) => (
-                StepOutcome {
-                    disposition: StepDisposition::Moved,
-                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                },
-                Some(duration),
-            ),
+            Ok((snapshot, duration)) => {
+                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
+                self.chat.close_out_of_range(&runtime, session);
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Moved,
+                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                    },
+                    Some(duration),
+                )
+            }
             Err(
                 MovementError::Blocked
                 | MovementError::Cell(
@@ -3174,6 +3236,45 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<Duration>)> {
+        self.chase_step_now(actor, session).await
+    }
+
+    async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.chase_yield_to_client(actor, session).await;
+    }
+
+    async fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.chase_search_waiting_now(actor, session).await
+    }
+
+    async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.actor_step_deadline_now(actor).await
+    }
+
+    async fn begin_actor_step(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+    ) -> Option<tokio::time::Instant> {
+        self.begin_actor_step_now(actor, holder).await
+    }
+
+    async fn record_actor_step_deadline(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+        due: Option<tokio::time::Instant>,
+    ) {
+        self.record_actor_step_deadline_now(actor, holder, due)
+            .await;
     }
 
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
@@ -3455,6 +3556,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         self.drain_monster_melee().await;
+        self.refresh_attack_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
         self.drain_source_item_deadlines().await;
@@ -3588,6 +3690,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return None;
         }
+        self.refresh_attack_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
         self.observe_combat_state(actor, game_session_id).await

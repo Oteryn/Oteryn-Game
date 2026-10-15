@@ -44,6 +44,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(1),
             mitigation: None,
             resistances: vec![],
