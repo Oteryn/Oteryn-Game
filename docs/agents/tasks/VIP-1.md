@@ -285,3 +285,125 @@ production migration/SECURITY DEFINER functions/grants and receipt retention, sh
 registration, relay/hints, per-session handle mapping, VIP_V1 wire/capability and full runtime
 activation remain their actual CP integration gates. This is a bounded Accept storage
 component, not complete VIP-1 or production privilege-boundary qualification.
+
+## Additional owned native Add preparation (2026-10-15, authoring)
+
+This increment starts from published draft `7df915ac0bae99292c7625d4a570d9f789de6269`.
+Its exact three-file lease covers durability/vip.rs, durability/vip_tests.rs and this record.
+Accepted VIP0 §§4/5/5.1/6/9 and PREMIUM-ACTIVATION0's sealed pre-delivery exception govern
+the component. No shared registration, production migration/grants, public identifiers,
+wire dispatch, main merge or runtime activation is part of this increment.
+
+`DurabilityRoot::add_vip` now composes the actual closed `SpellPremiumCoordinator` gate
+internally. It accepts no Premium status/boolean supplied by a caller. The sealed
+`NotActivated` branch uses only the gate-supplied physical transaction, after the native
+shared latch lock; its nested savepoint rolls back all VIP writes on callback error even
+though the enclosing native gate commits callback output. Delivered branches use the
+actual consumer and registered trusted clock: Current permits 100 entries and every
+NotCurrent classification permits 20. Loaded historical ACTIVE evidence alone cannot
+authorize growth. Lapse leaves existing entries and memberships intact.
+
+Recovery and a bound historical receipt are checked before the Premium gate or new live
+session/cap/rate checks. Fresh writes reuse native recovery, admission, current session,
+connection/lease/scope-generation, assignment and node checks. The acting Account+World
+must match the actual current session. The native CharacterName parser checks the name;
+the reservation primary key selects a bounded candidate only. Actual same-World live
+root name/lifecycle facts are revalidated under sorted actor/target root locks. Offline
+targets need no online spell/session lookup; unknown and other-World names return the
+same receipted UNKNOWN_NAME, and self-add is REJECTED.
+
+Under the list lock, a second receipt check precedes the shared rate bucket, cap and
+entry/invitation changes. The Account's other characters share an entry but retain their
+own consent rows. Fresh PENDING rows expire at the database clock plus seven days;
+expired rows receive a new NO CYCLE invitation identity. Target blocking and the global
+20-pending cap leave the same successful UNCONFIRMED entry without a consent row or a
+target consent-view revision increment. Only a newly visible PENDING advances that view;
+CharacterRevision never advances. Entry numbers and invitation identities are not reused.
+The shared receipt decoder preserves prior End/Accept bindings, private codes and outcomes;
+the private uninstalled fixture proposal adds closed Add result/entry-number fields only.
+
+The target must already have an actual PARTY0046 settings row with the admitted source
+policy and valid settings. Missing/corrupt settings fail unavailable with full rollback.
+This component never manufactures PARTY defaults or target SpellItemAuthority. The real
+first-admission initializer requires target authority and its production caller remains
+a CP gate. Native0022 currently admits only live immutable names; legitimate deletion/
+rename operators are not available to fabricate as fixture mutation authority. Future
+owners must retain the same locked-root identity/lifecycle checks.
+
+### Source qualification and pending execution
+
+All 17 prior test function bodies remain byte-identical to the allocated base: three pure
+and fourteen native PostgreSQL bodies. Eight authored Add cases bring the selected family
+to 25 cases (three pure, twenty-two PostgreSQL). They cover current/free/lapse/historical
+Premium and exact 20/100 boundaries, actual offline/same-World identity and charged unknown/
+invalid refusals, shared/per-actor rows, expiry/fresh identities, block/cap privacy, callback
+savepoint rollback, replay after live-fence loss, independent assignment revocation, two
+actual Root races and the actual Premium latch writer. The latch observer verifies the
+entry-writing backend holds the real shared latch lock before permitting the writer race.
+New PostgreSQL bodies require the real configured PostgreSQL17.6 route; no missing database
+skip is counted as Add qualification. Historical root/relationship/settings rows are
+explicit fixture DATA; Premium current evidence uses the actual snapshot validator,
+durable fence and in-process consumer ingest, never a fixture current-authority flag.
+
+At this authoring checkpoint, no new Rust, Clippy or PostgreSQL execution is claimed.
+Heavy qualification and large hydration are held for the shared validation slot. Exact
+source, original-body preservation, authority/operator matrix and subsequent raw results
+belong in `/workspace/oteryn-prep/vip-1-add-native-3-evidence`. The existing acceptance
+checkboxes remain open: groups/edit/remove/hide, target baseline caller, production schema/
+definers/grants/retention, native registrations, handles/relay, protocol and VIP_V1 offering
+remain incomplete. This is native Add component preparation, not full VIP delivery.
+
+### Final native Add component qualification (2026-10-15)
+
+The preceding authoring checkpoint is superseded by actual generation 4 qualification:
+**25 original selected test bodies passed**, three pure and twenty-two PostgreSQL 17.6,
+with zero failed, ignored, measured or filtered in 36.07 seconds. The unchanged native
+database fixture asserts `server_version_num=170006` for every PG case; all eight new Add
+bodies additionally log that exact version and require a configured database route.
+None is counted through a missing-database skip. All seventeen original complete test
+functions and intervening helpers remain a literal 36,304-byte tail prefix from the
+allocated base (SHA256 470facaba44bb360aec1448fe2d897e13700365e9e2009bc3a290cb334e6eeef).
+The root fixture helper gained a World parameter for the other-World negative; its original
+entrypoint still supplies the same native World and historical bootstrap facts.
+
+Fresh Cargo capture intentionally returned 101/sentinel 86 before global root codegen; it
+is dependency capture, not a test pass. Under one shared Rust lock and the same captured
+dependency graph, selected native cfg(test) metadata/Clippy, normal native rlib compilation,
+driver linkage and the 25 bodies returned 0. The configured Clippy denials remain active;
+baseline unused Rust scaffolding warnings remain visible. This is not a blanket `-D warnings`,
+original global-unit metadata/full-server, production registration or gameplay E2E claim.
+Source and extern hashes match before/after execution. The selected snapshot binds 7,670
+original input rows to this exact HEAD or owned candidate, plus traced literal/macro inputs.
+It adds only literal validation-only domain/durability VIP registrations and mechanical
+selected-test attribute/parent-visibility changes with dispatch/forwarding glue; test bodies
+and native authority/fixture implementations remain unchanged. No tracked shared root changes.
+
+Actual PG outcomes include exact free 20/current 100/pre-delivery 100 boundaries, native
+validated/fenced/ingested Premium versus loaded-only ACTIVE history, failed pull/missing clock/
+expired lease, offline and other-World names, malformed-name and self refusals, shared entries
+and per-actor consent, expiry/new identity, block/pending-cap-20 privacy, missing target baseline,
+after-entry failure rollback, historical replay before lost live fences, independently revoked
+native assignment, duplicate/cap races through two warmed Roots, and a real activation-latch
+writer race. Native admission EXCLUSIVE relation locking also serializes the two-Root tests;
+this is not isolated fine-grained row-lock stress or throughput qualification. The observer
+uses only numeric native/test lock constants and verifies the actual writing backend's
+shared latch lock; waiter observation is scoped to its fixture database. Its generated DDL
+uses pinned SQLx's explicit owned AssertSqlSafe<String> API, never request data.
+
+All earlier stops are retained honestly: two pre-Cargo resource-gate setup stops, two actual
+selected compile failures (E0597 from the fixture's dynamic borrowed SQL), then one actual
+Clippy failure for identical new REJECTED branches. The borrowed raw_sql change alone did
+not satisfy pinned SqlSafeStr; its real owned-string contract and existing native fixture
+pattern provided the correction. The identical refusal predicates were combined without
+changing outcomes. These were not behavioral RED tests; no PG body ran before generation 4.
+No lint suppression, dependency/feature change or native predicate relaxation was used.
+
+All commands, raw logs, exact input/body/source/extern bindings, resource observations and
+failure dispositions remain under `/workspace/oteryn-prep/vip-1-add-native-3-evidence`.
+Generation 4's three completed custom metadata/rlib/driver outputs were losslessly archived
+only after execution ended and current/future-consumer checks, with raw/archive/decompressed
+hashes, modes/mtimes and exact restore argv. Their source, logs, shared dependencies and
+native anchor remain intact. Final card governance and three-file scope/source manifest
+bind this frozen packet; independent non-author review and exact immutable candidate C
+binding precede root-controlled publication. All full-family acceptance checkboxes and
+production schema/definers/grants/target-baseline/wire/relay/runtime integration gates stay open.

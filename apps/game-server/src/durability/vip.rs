@@ -202,24 +202,48 @@ impl DurabilityRoot {
     }
 }
 
-async fn receipt(
+// One receipt binding validator for Add and the existing consent operations.
+async fn bound_receipt(
     tx: &mut Transaction<'_, Postgres>,
     actor: CharacterId,
-    request: VipEndRequest,
-) -> Result<Option<VipReceipt>> {
-    let row = sqlx::query("SELECT character_id::text,kind,binding,result,seconds,revision::text FROM game_vip_command_receipts WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND command_id=$4::text::numeric")
-        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice())
-        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+    list: VipListKey,
+    command: CommandRef,
+    kind: i16,
+    binding: [u8; 32],
+) -> Result<Option<sqlx::postgres::PgRow>> {
+    let row = sqlx::query("SELECT character_id::text,kind,binding,result,seconds,revision::text,entry_no::text FROM game_vip_command_receipts WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND command_id=$4::text::numeric")
+        .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice())
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(None);
     };
     if uuid_text(row.try_get("character_id")?)? != *actor.as_bytes()
-        || row.try_get::<i16, _>("kind")? != request.operation.code()
-        || row.try_get::<Vec<u8>, _>("binding")? != digest(actor, request)
+        || row.try_get::<i16, _>("kind")? != kind
+        || row.try_get::<Vec<u8>, _>("binding")? != binding
     {
         return Err(VipError::ConflictingCommand);
     }
+    Ok(Some(row))
+}
+
+async fn receipt(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: CharacterId,
+    request: VipEndRequest,
+) -> Result<Option<VipReceipt>> {
+    let Some(row) = bound_receipt(
+        tx,
+        actor,
+        request.list,
+        request.command,
+        request.operation.code(),
+        digest(actor, request),
+    )
+    .await?
+    else {
+        return Ok(None);
+    };
     let seconds: Option<i16> = row.try_get("seconds")?;
     let result = match (row.try_get::<i16, _>("result")?, seconds) {
         (1, None) => VipResult::Ok,
@@ -515,6 +539,453 @@ async fn change_consent(
         return Err(corrupt());
     }
     Ok(VipResult::Ok)
+}
+
+use crate::domain::character_name::CharacterName;
+use crate::domain::premium::PremiumStatus;
+use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
+use sqlx::Acquire;
+
+/// Bounded parsed name DATA plus the digest of the exact original name. Invalid grammar is
+/// retained only as a digest and is a receipted REJECTED command, not rate-free probing.
+#[derive(Clone, Debug)]
+pub(crate) struct VipAddRequest {
+    pub(crate) list: VipListKey,
+    pub(crate) command: CommandRef,
+    name: Option<CharacterName>,
+    name_digest: [u8; 32],
+}
+impl VipAddRequest {
+    pub(crate) fn new(list: VipListKey, command: CommandRef, name: &str) -> Self {
+        Self {
+            list,
+            command,
+            name: CharacterName::parse(name).ok(),
+            name_digest: Sha256::digest(name.as_bytes()).into(),
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum VipAddResult {
+    Ok,
+    UnknownName,
+    AlreadyListed,
+    ListFull,
+    Rejected,
+    Exhausted { seconds: u8 },
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct VipAddReceipt {
+    pub(crate) result: VipAddResult,
+    pub(crate) entry_no: Option<u64>,
+    pub(crate) revision: u64,
+    pub(crate) replayed: bool,
+}
+// Local private SQL proposal arm; not a protocol, capability, state domain or event ID.
+const ADD_KIND: i16 = 5;
+fn add_digest(actor: CharacterId, request: &VipAddRequest) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    hash.update(b"VIP0-ADD/v1");
+    hash.update(actor.as_bytes());
+    hash.update(request.list.account_id.as_bytes());
+    hash.update(request.list.world_id.as_bytes());
+    hash.update(ADD_KIND.to_be_bytes());
+    // Binds exact supplied bytes, including malformed input, without retaining unbounded text.
+    // Never substitutes a later resolved target or a current name into a historical request.
+    hash.update(request.name_digest);
+    hash.finalize().into()
+}
+fn stored_u64(row: &sqlx::postgres::PgRow, name: &str) -> Result<u64> {
+    row.try_get::<String, _>(name)?
+        .parse()
+        .map_err(|_| corrupt())
+}
+async fn add_receipt(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: CharacterId,
+    request: &VipAddRequest,
+) -> Result<Option<VipAddReceipt>> {
+    let Some(row) = bound_receipt(
+        tx,
+        actor,
+        request.list,
+        request.command,
+        ADD_KIND,
+        add_digest(actor, request),
+    )
+    .await?
+    else {
+        return Ok(None);
+    };
+    let seconds: Option<i16> = row.try_get("seconds")?;
+    let result = match (row.try_get::<i16, _>("result")?, seconds) {
+        (1, None) => VipAddResult::Ok,
+        (4, None) => VipAddResult::ListFull,
+        (5, None) => VipAddResult::UnknownName,
+        (6, None) => VipAddResult::AlreadyListed,
+        (7, None) => VipAddResult::Rejected,
+        (3, Some(n)) if (1..=3).contains(&n) => VipAddResult::Exhausted {
+            seconds: u8::try_from(n).map_err(|_| corrupt())?,
+        },
+        _ => return Err(corrupt()),
+    };
+    let entry_no: Option<String> = row.try_get("entry_no")?;
+    let entry_no = entry_no
+        .map(|value| value.parse::<u64>().map_err(|_| corrupt()))
+        .transpose()?;
+    if entry_no == Some(0)
+        || matches!(result, VipAddResult::Ok | VipAddResult::AlreadyListed) != entry_no.is_some()
+    {
+        return Err(corrupt());
+    }
+    let revision = stored_u64(&row, "revision")?;
+    if revision == 0 {
+        return Err(corrupt());
+    }
+    Ok(Some(VipAddReceipt {
+        result,
+        entry_no,
+        revision,
+        replayed: true,
+    }))
+}
+
+impl DurabilityRoot {
+    /// Native Add, preparing private/uninstalled VIP storage. Premium is read by the actual
+    /// closed gate internally, never supplied as a bool/status or rebuilt from stored evidence.
+    /// No relay/listener/wire or production first-admission baseline is activated here.
+    pub(crate) async fn add_vip(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        premium: &SpellPremiumCoordinator,
+        request: VipAddRequest,
+    ) -> Result<VipAddReceipt> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| VipError::AuthorityRejected)?;
+        // Historical replay is independent of current Premium, session, caps and rate. This
+        // read holds no VIP list/root lock and cannot execute a fresh command.
+        let replay_recovery = recovery.clone();
+        let replay_request = request.clone();
+        let replay = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let outcome: Result<Option<VipAddReceipt>> = async {
+                        assert_recovery_fence(&mut tx, &replay_recovery).await?;
+                        add_receipt(&mut tx, fence.character_id, &replay_request).await
+                    }
+                    .await;
+                    tx.rollback().await?;
+                    match outcome {
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        other => Ok(other),
+                    }
+                })
+            })
+            .await??;
+        if let Some(receipt) = replay {
+            return Ok(receipt);
+        }
+        let root = self.clone();
+        let node = node.clone();
+        premium
+            .with_premium_gate(
+                *request.list.account_id.as_bytes(),
+                move |status, supplied| {
+                    Box::pin(async move {
+                        match (status, supplied) {
+                            (PremiumStatus::NotActivated(_held), Some(tx)) => {
+                                // The gate already took its shared latch lock as statement one and
+                                // commits callback output even on Err: all VIP writes need a savepoint.
+                                let mut savepoint = tx.begin().await?;
+                                let result = add_in_transaction(
+                                    &mut savepoint,
+                                    &recovery,
+                                    &node,
+                                    fence,
+                                    &request,
+                                    100,
+                                )
+                                .await;
+                                match result {
+                                    Ok(value) => {
+                                        savepoint.commit().await?;
+                                        Ok(value)
+                                    }
+                                    Err(error) => {
+                                        savepoint.rollback().await?;
+                                        Err(error)
+                                    }
+                                }
+                            }
+                            (PremiumStatus::Current, None) => {
+                                root.add_delivered(recovery, node, fence, request, 100)
+                                    .await
+                            }
+                            (PremiumStatus::NotCurrent, None) => {
+                                root.add_delivered(recovery, node, fence, request, 20).await
+                            }
+                            _ => Err(VipError::AuthorityRejected),
+                        }
+                    })
+                },
+            )
+            .await?
+    }
+    async fn add_delivered(
+        &self,
+        recovery: CharacterRecoveryFenceV1,
+        node: NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: VipAddRequest,
+        cap: u64,
+    ) -> Result<VipAddReceipt> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    match add_in_transaction(&mut tx, &recovery, &node, fence, &request, cap).await
+                    {
+                        Ok(value) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(value))
+                        }
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+
+async fn add_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    request: &VipAddRequest,
+    cap: u64,
+) -> Result<VipAddReceipt> {
+    assert_recovery_fence(tx, recovery).await?;
+    if let Some(receipt) = add_receipt(tx, fence.character_id, request).await? {
+        return Ok(receipt);
+    }
+    lock_admission_relations(tx).await?;
+    if request.command.game_session_id() != fence.game_session_id {
+        return Err(VipError::AuthorityRejected);
+    }
+    let account = assert_session_fence(tx, &fence, node)
+        .await?
+        .map_err(|_| VipError::AuthorityRejected)?;
+    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+        return Err(VipError::AuthorityRejected);
+    };
+    if uuid_text(&account)? != *request.list.account_id.as_bytes()
+        || world_id.as_bytes() != request.list.world_id.as_bytes()
+    {
+        return Err(VipError::AuthorityRejected);
+    }
+    // This first name lookup chooses locks, not identity authority. In particular it requires
+    // no online session. The reservation PK bounds candidate lookup; it is not current-name
+    // authority: both joined live-root facts and the later locked-root recheck are required.
+    // Unknown/other-World names have the identical later refusal.
+    let name_key = request.name.as_ref().map(CharacterName::comparison_key);
+    let candidate: Option<String> = if let Some(key) = &name_key {
+        sqlx::query_scalar("SELECT r.character_id::text FROM game_character_name_reservations n JOIN game_character_roots r ON r.character_id=n.character_id WHERE n.name_key=$2 AND r.name_key=n.name_key AND r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1")
+            .bind(request.list.world_id.as_bytes().as_slice()).bind(key)
+            .fetch_optional(&mut **tx).await?
+    } else {
+        None
+    };
+    let candidate = candidate.map(|value| uuid_text(&value)).transpose()?;
+    let mut roots = BTreeSet::from([*fence.character_id.as_bytes()]);
+    if let Some(target) = candidate {
+        roots.insert(target);
+    }
+    let mut target = None;
+    for character in roots {
+        let row = sqlx::query("SELECT account_id::text,world_id::text,name,name_key,lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+        let Some(row) = row else {
+            if character == *fence.character_id.as_bytes() {
+                return Err(VipError::AuthorityRejected);
+            }
+            continue;
+        };
+        let owner = uuid_text(row.try_get("account_id")?)?;
+        let world = uuid_text(row.try_get("world_id")?)?;
+        let live = row.try_get::<i16, _>("lifecycle")? == 1;
+        if character == *fence.character_id.as_bytes()
+            && (!live
+                || owner != *request.list.account_id.as_bytes()
+                || world != *request.list.world_id.as_bytes())
+        {
+            return Err(VipError::AuthorityRejected);
+        }
+        if Some(character) == candidate
+            && live
+            && world == *request.list.world_id.as_bytes()
+            && name_key.as_ref() == Some(&row.try_get::<String, _>("name_key")?)
+        {
+            let current =
+                CharacterName::parse(&row.try_get::<String, _>("name")?).map_err(|_| corrupt())?;
+            if Some(current.comparison_key()) != name_key {
+                return Err(corrupt());
+            }
+            target = Some(character);
+        }
+    }
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    sqlx::query("INSERT INTO game_vip_lists(account_id,world_id,revision,next_entry_no,rate_tokens,rate_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,20,$3) ON CONFLICT DO NOTHING")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
+    let list = sqlx::query("SELECT revision::text,next_entry_no::text,rate_tokens,rate_at FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if let Some(receipt) = add_receipt(tx, fence.character_id, request).await? {
+        return Ok(receipt);
+    }
+    // Lock waits cannot make an earlier sampled time reject a valid freshly written bucket.
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let revision = stored_u64(&list, "revision")?
+        .checked_add(1)
+        .ok_or_else(corrupt)?;
+    let charge = charge_vip_bucket(
+        VipRateBucket {
+            tokens: u8::try_from(list.try_get::<i16, _>("rate_tokens")?).map_err(|_| corrupt())?,
+            at_us: list.try_get("rate_at")?,
+        },
+        now,
+    )
+    .ok_or_else(corrupt)?;
+    let (result, entry_no) = if let Some(seconds) = charge.exhausted_seconds {
+        (VipAddResult::Exhausted { seconds }, None)
+    } else if name_key.is_none() || target == Some(*fence.character_id.as_bytes()) {
+        (VipAddResult::Rejected, None)
+    } else if let Some(target) = target {
+        add_target(
+            tx,
+            fence.character_id,
+            request.list,
+            target,
+            &list,
+            cap,
+            now,
+        )
+        .await?
+    } else {
+        (VipAddResult::UnknownName, None)
+    };
+    sqlx::query("UPDATE game_vip_lists SET revision=$3::text::numeric,rate_tokens=$4,rate_at=$5 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).bind(revision.to_string()).bind(i16::from(charge.bucket.tokens)).bind(charge.bucket.at_us).execute(&mut **tx).await?;
+    let (code, seconds) = match result {
+        VipAddResult::Ok => (1_i16, None),
+        VipAddResult::UnknownName => (5, None),
+        VipAddResult::AlreadyListed => (6, None),
+        VipAddResult::ListFull => (4, None),
+        VipAddResult::Rejected => (7, None),
+        VipAddResult::Exhausted { seconds } => (3, Some(i16::from(seconds))),
+    };
+    sqlx::query("INSERT INTO game_vip_command_receipts(account_id,world_id,game_session_id,command_id,character_id,kind,binding,result,seconds,revision,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,$6,$7,$8,$9,$10::text::numeric,$11::text::numeric)")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice())
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+        .bind(fence.character_id.as_bytes().as_slice()).bind(ADD_KIND).bind(add_digest(fence.character_id, request).as_slice())
+        .bind(code).bind(seconds).bind(revision.to_string()).bind(entry_no.map(|value| value.to_string())).execute(&mut **tx).await?;
+    Ok(VipAddReceipt {
+        result,
+        entry_no,
+        revision,
+        replayed: false,
+    })
+}
+
+async fn add_target(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: CharacterId,
+    list: VipListKey,
+    target: [u8; 16],
+    locked_list: &sqlx::postgres::PgRow,
+    cap: u64,
+    now: i64,
+) -> Result<(VipAddResult, Option<u64>)> {
+    // PARTY's other required settings have no defaults. VIP cannot invent their provenance
+    // for an offline target. Its genuine admission initializer remains a CP dependency.
+    let settings = sqlx::query("SELECT vip_consent_revision::text,vip_status,party_invites,channel_visibility,source_policy FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(target.as_slice()).fetch_optional(&mut **tx).await?.ok_or_else(corrupt)?;
+    if settings.try_get::<String, _>("source_policy")? != "PARTYPVP0-PARTIES-AND-PVP-V1"
+        || ![1, 2].contains(&settings.try_get::<i16, _>("party_invites")?)
+        || ![1, 2].contains(&settings.try_get::<i16, _>("channel_visibility")?)
+        || ![1, 2].contains(&settings.try_get::<i16, _>("vip_status")?)
+    {
+        return Err(corrupt());
+    }
+    let old: Option<String> = sqlx::query_scalar("SELECT entry_no::text FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
+        .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(target.as_slice()).fetch_optional(&mut **tx).await?;
+    let (entry_no, fresh) = match old {
+        Some(value) => (value.parse::<u64>().map_err(|_| corrupt())?, false),
+        None => {
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+                .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            if count < 0 {
+                return Err(corrupt());
+            }
+            if count as u64 >= cap {
+                return Ok((VipAddResult::ListFull, None));
+            }
+            (stored_u64(locked_list, "next_entry_no")?, true)
+        }
+    };
+    if entry_no == 0 {
+        return Err(corrupt());
+    }
+    let existing = sqlx::query("SELECT consent,invite_expires_at>to_timestamp($5::bigint::double precision/1000000) AS unexpired FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND inviter_character_id=encode($3,'hex')::uuid AND character_id=encode($4,'hex')::uuid")
+        .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(actor.as_bytes().as_slice()).bind(target.as_slice()).bind(now).fetch_optional(&mut **tx).await?;
+    if let Some(row) = existing {
+        match (
+            row.try_get::<i16, _>("consent")?,
+            row.try_get::<bool, _>("unexpired")?,
+        ) {
+            (2, _) | (1, true) => return Ok((VipAddResult::AlreadyListed, Some(entry_no))),
+            (1, false) => {
+                sqlx::query("DELETE FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND inviter_character_id=encode($3,'hex')::uuid AND character_id=encode($4,'hex')::uuid")
+                    .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(actor.as_bytes().as_slice()).bind(target.as_slice()).execute(&mut **tx).await?;
+            }
+            _ => return Err(corrupt()),
+        }
+    }
+    if fresh {
+        let next = entry_no.checked_add(1).ok_or_else(corrupt)?;
+        sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric)")
+            .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(target.as_slice()).bind(entry_no.to_string()).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_vip_lists SET next_entry_no=$3::text::numeric WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+            .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(next.to_string()).execute(&mut **tx).await?;
+    }
+    let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_social_blocks WHERE character_id=encode($1,'hex')::uuid AND blocked_character_id=encode($2,'hex')::uuid)")
+        .bind(target.as_slice()).bind(actor.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE character_id=encode($1,'hex')::uuid AND consent=1 AND invite_expires_at>to_timestamp($2::bigint::double precision/1000000)")
+        .bind(target.as_slice()).bind(now).fetch_one(&mut **tx).await?;
+    if pending < 0 {
+        return Err(corrupt());
+    }
+    if !blocked && pending < 20 {
+        sqlx::query("INSERT INTO game_vip_consents(account_id,world_id,inviter_character_id,character_id,consent,invite_expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,to_timestamp($5::bigint::double precision/1000000)+interval '7days')")
+            .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice()).bind(actor.as_bytes().as_slice()).bind(target.as_slice()).bind(now).execute(&mut **tx).await?;
+        let revision = stored_u64(&settings, "vip_consent_revision")?
+            .checked_add(1)
+            .ok_or_else(corrupt)?;
+        sqlx::query("UPDATE game_character_social_settings SET vip_consent_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid")
+            .bind(target.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
+    }
+    Ok((VipAddResult::Ok, Some(entry_no)))
 }
 
 #[cfg(test)]
