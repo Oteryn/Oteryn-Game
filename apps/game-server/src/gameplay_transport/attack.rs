@@ -1240,6 +1240,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).
             let now = self.owner_now();
+            // ATTACK-0 §4: a `pacified` applied over the held target clears it before the chase
+            // reads it.
+            attack.settle_pacified_target(&runtime, &states, actor, session);
             attack.chase_decision(&runtime, room, actor, session, now, |cell| {
                 chase_path_tile(cells, blocking, cell)
             })?

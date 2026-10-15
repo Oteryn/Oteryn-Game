@@ -3577,16 +3577,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let Some(state) = states.get(&runtime, actor, game_session_id) else {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         };
-        // CONDITIONS-0 §3.5 / ATTACK-0 §3: a `pacified` held in the player store refuses a new
-        // target first; `set_target` reads the runtime slot. Clearing (`None`) stays open.
-        if target.is_some()
-            && (state
+        // CONDITIONS-0 §3.5 / ATTACK-0 §3: a `pacified` held in the player store or the runtime
+        // slot refuses a new target first; the typed gate stays in the operator log (§7) and
+        // `set_target` rechecks the slot. Clearing (`None`) stays open.
+        if target.is_some() {
+            let gate = state
                 .owned_conditions()
                 .attack_target_gate(now.get())
-                .is_err()
-                || states.is_dead(actor))
-        {
-            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+                .err()
+                .or_else(|| {
+                    runtime
+                        .actor_conditions(actor, Some(game_session_id))
+                        .ok()
+                        .and_then(|store| store.attack_target_gate(now.get()).err())
+                });
+            if let Some(gate) = gate {
+                operator_event(&format!(
+                    "event=attack_target_condition_gated gate={}",
+                    gate.key()
+                ));
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            }
+            if states.is_dead(actor) {
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            }
         }
         self.attack.lock().await.set_target(
             &runtime,
