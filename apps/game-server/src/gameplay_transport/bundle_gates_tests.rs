@@ -461,6 +461,11 @@ fn module_reads() -> BTreeSet<(String, Site)> {
             }
         }
         .replace('\\', "/");
+        assert!(
+            scan.includes == 0,
+            "{name}: `include!` loads Rust source the inventory does not scan; declare it as a \
+             module instead"
+        );
         if let Some(site) = scan.sites.iter().find(|site| in_macro_rules(site)) {
             panic!(
                 "{name}: `{}` is named inside a `macro_rules!` definition, where one inventoried \
@@ -497,6 +502,8 @@ struct Scan {
     functions: Vec<String>,
     /// The type or trait of each enclosing `impl` or `trait`, innermost last.
     owners: Vec<String>,
+    /// Each production `include!` invocation: its file is loaded without being scanned.
+    includes: usize,
     path: Vec<String>,
 }
 
@@ -606,12 +613,51 @@ fn pat_name(pat: &syn::Pat) -> Option<String> {
     }
 }
 
-/// A path's segments as written, without generic arguments: `a::Owner` stays apart from `b::Owner`.
+/// A path as written, with its generic type and const arguments: `a::Owner` stays apart from
+/// `b::Owner`, and `Owner<u8>` from `Owner<u16>`. Lifetimes are left out, as they never tell two
+/// impls apart.
 fn full_path(path: &syn::Path) -> String {
     let segments: Vec<String> = path
         .segments
         .iter()
-        .map(|segment| segment.ident.to_string())
+        .map(|segment| match &segment.arguments {
+            syn::PathArguments::AngleBracketed(arguments) => {
+                let arguments: Vec<String> = arguments
+                    .args
+                    .iter()
+                    .filter_map(|argument| match argument {
+                        syn::GenericArgument::Lifetime(_) => None,
+                        syn::GenericArgument::Type(ty) => Some(type_name(ty)),
+                        syn::GenericArgument::Const(expr) => Some(const_name(expr)),
+                        syn::GenericArgument::AssocType(assoc) => {
+                            Some(format!("{}={}", assoc.ident, type_name(&assoc.ty)))
+                        }
+                        syn::GenericArgument::AssocConst(assoc) => {
+                            Some(format!("{}={}", assoc.ident, const_name(&assoc.value)))
+                        }
+                        _ => Some("<argument>".to_owned()),
+                    })
+                    .collect();
+                if arguments.is_empty() {
+                    segment.ident.to_string()
+                } else {
+                    format!("{}<{}>", segment.ident, arguments.join(","))
+                }
+            }
+            syn::PathArguments::Parenthesized(arguments) => {
+                let inputs: Vec<String> = arguments.inputs.iter().map(type_name).collect();
+                match &arguments.output {
+                    syn::ReturnType::Default => format!("{}({})", segment.ident, inputs.join(",")),
+                    syn::ReturnType::Type(_, output) => format!(
+                        "{}({})->{}",
+                        segment.ident,
+                        inputs.join(","),
+                        type_name(output)
+                    ),
+                }
+            }
+            syn::PathArguments::None => segment.ident.to_string(),
+        })
         .collect();
     let leading = if path.leading_colon.is_some() {
         "::"
@@ -621,14 +667,60 @@ fn full_path(path: &syn::Path) -> String {
     format!("{leading}{}", segments.join("::"))
 }
 
-/// An impl's self type by its full path, without generic arguments or references.
+/// A const generic argument: an integer, boolean or character literal as written, any other
+/// expression by its identifiers.
+fn const_name(expr: &syn::Expr) -> String {
+    match expr {
+        syn::Expr::Lit(lit) => match &lit.lit {
+            syn::Lit::Int(int) => int.base10_digits().to_owned(),
+            syn::Lit::Bool(boolean) => boolean.value.to_string(),
+            syn::Lit::Char(ch) => format!("{:?}", ch.value()),
+            _ => "<literal>".to_owned(),
+        },
+        syn::Expr::Block(block) => match block.block.stmts.as_slice() {
+            [syn::Stmt::Expr(inner, None)] => const_name(inner),
+            _ => format!("{{{}}}", fingerprint(|idents| idents.visit_expr(expr))),
+        },
+        _ => format!("{{{}}}", fingerprint(|idents| idents.visit_expr(expr))),
+    }
+}
+
+/// An impl's self type as written, with its full path and generic arguments, references and
+/// pointers, so two impls of one file name two types unless the compiler would merge them.
 fn type_name(ty: &syn::Type) -> String {
     match ty {
-        syn::Type::Path(path) => full_path(&path.path),
-        syn::Type::Reference(reference) => type_name(&reference.elem),
+        syn::Type::Path(path) => match &path.qself {
+            Some(qself) => format!("<{}>::{}", type_name(&qself.ty), full_path(&path.path)),
+            None => full_path(&path.path),
+        },
+        syn::Type::Reference(reference) => {
+            let mutability = if reference.mutability.is_some() {
+                "mut "
+            } else {
+                ""
+            };
+            format!("&{mutability}{}", type_name(&reference.elem))
+        }
+        syn::Type::Ptr(pointer) => {
+            let mutability = if pointer.mutability.is_some() {
+                "mut"
+            } else {
+                "const"
+            };
+            format!("*{mutability} {}", type_name(&pointer.elem))
+        }
+        syn::Type::Slice(slice) => format!("[{}]", type_name(&slice.elem)),
+        syn::Type::Array(array) => {
+            format!("[{};{}]", type_name(&array.elem), const_name(&array.len))
+        }
+        syn::Type::Tuple(tuple) => {
+            let elements: Vec<String> = tuple.elems.iter().map(type_name).collect();
+            format!("({})", elements.join(","))
+        }
         syn::Type::Paren(paren) => type_name(&paren.elem),
         syn::Type::Group(group) => type_name(&group.elem),
-        _ => "<type>".to_owned(),
+        syn::Type::Never(_) => "!".to_owned(),
+        _ => format!("<type {}>", fingerprint(|idents| idents.visit_type(ty))),
     }
 }
 
@@ -1054,6 +1146,14 @@ impl<'ast> Visit<'ast> for Scan {
 
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
+        if mac
+            .path
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == "include")
+        {
+            self.includes += 1;
+        }
         if mac.path.is_ident("macro_rules") {
             // A definition's mentions are marked so that `module_reads` refuses them.
             self.within("macro_rules", |scan| scan.macro_tokens(buffer.begin()));
@@ -1095,6 +1195,13 @@ impl Scan {
                 } else if let Some((ident, next)) = cursor.ident() {
                     if let Some(field) = Self::seam(&ident) {
                         self.record(field, "macro_tokens");
+                    }
+                    if ident == "include"
+                        && next
+                            .punct()
+                            .is_some_and(|(punct, _)| punct.as_char() == '!')
+                    {
+                        self.includes += 1;
                     }
                     cursor = next;
                 } else if let Some((inner, _, _, next)) = cursor.any_group() {
@@ -1675,6 +1782,30 @@ fn a_method_is_named_with_its_impl() {
         .map(|site| site.function.as_str())
         .collect();
     assert_eq!(functions, ["a::Owner::room", "<b::Owner as x::Seam>::hook"]);
+    let specialized = scan(
+        "impl Owner<u8> { fn room(&self) { self.combat_room; } } \
+         impl Owner<u16> { fn room(&self) {} } \
+         impl From<[u8; 4]> for &Owner<'_, (A, B)> { fn from(o: [u8; 4]) { o.qualified_room; } }",
+    );
+    let functions: Vec<&str> = specialized
+        .sites
+        .iter()
+        .map(|site| site.function.as_str())
+        .collect();
+    assert_eq!(
+        functions,
+        ["Owner<u8>::room", "<&Owner<(A,B)> as From<[u8;4]>>::from"]
+    );
+}
+
+#[test]
+fn every_include_is_counted_outside_test_code() {
+    let included = scan(
+        "fn a() { include!(\"gate.rs\"); } include!(\"items.rs\"); \
+         fn b() { routes! { live => include!(\"route.rs\") => x, } } \
+         #[cfg(test)] fn probe() { include!(\"probe.rs\"); }",
+    );
+    assert_eq!(included.includes, 3);
 }
 
 #[test]
