@@ -30,6 +30,7 @@ external_repositories: [Oteryn/Oteryn-Platform]
 ## Outcome
 
 - Gate U-CC9 (§13) is closed. It covers the cap on intents Platform commits behind the consumer's cursor per 30 s rescan interval.
+- The enabled backlog is at most 40 unreceipted PENDING intents, so a forward burst stays inside the 41-key TTL bound. Platform enforces it in `CharacterCommandSettings`.
 - Platform issuance commits no fresh intent behind the cursor, so the per-interval count is 0:
   - Platform draws the `source_revision` under its per-issuer lock and holds the lock until the outermost transaction commits.
   - It refuses and alarms on an intent whose `source_revision` is not above every stored key.
@@ -45,7 +46,8 @@ external_repositories: [Oteryn/Oteryn-Platform]
 - PROVEN (Platform test): with the PostgreSQL lock made shared, the same test fails.
 - PROVEN (Platform test): a sequence set below the table's maximum is refused, and no row is stored.
 - DERIVED: §5.4 reopens keep their original times and are decided by §5.4, so they are outside the per-interval cap.
-- UNKNOWN: whether the owner lowers `CHARACTER_AUTHORITY_COMMAND_MAX_PENDING_INTENTS` to 40 for the forward-path TTL. This is an open question in the runbook.
+- DERIVED: a forward burst is bounded by the backlog. With 30 s rescan, 24 s listing and 6 s per read and receipt, the 300 s TTL covers 41 unseen keys, so the enabled backlog is at most 40.
+- DECIDED (control plane, fix round 1 for Codex P1 4281164563): Platform's `max_pending_intents` defaults to 40, and a configured value above 41 makes the command surface unavailable. Platform PR #1632 enforces it with a test.
 
 ## High-risk authority/recovery qualification
 
@@ -54,7 +56,7 @@ external_repositories: [Oteryn/Oteryn-Platform]
 ## Acceptance criteria
 
 - [x] U-CC9 closed in §4.1 and §13, with the Platform evidence named.
-- [x] Wire unchanged: no member, path, bound, code or response edited. The lock pin is unchanged.
+- [x] Wire unchanged: no member, path, code or response edited, and `CHARCMD-PENDING-BACKLOG` stays 256. The enabled backlog of at most 40 is a Platform configuration limit inside it. The lock pin is unchanged.
 - [x] §14 step 4 points to the enablement packet.
 
 ## Excluded scope

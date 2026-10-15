@@ -150,17 +150,23 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
   8 pages, 24 s; an intent committed just behind the cursor waits at most 30 s for the next
   rescan plus 24 s of listing plus 6 s (read and receipt) for each unseen key ahead of it, so up
   to 41 unseen keys ahead of it stay inside the 300 s intent TTL (246 s / 6 s). Gate `U-CC9`
-  (closed by the §14 step 4 enablement packet): Platform's issuance commits no fresh intent
-  behind the cursor, so the per-interval count is 0 and the 41-key bound is never reached by
-  fresh issuance. Platform draws the `source_revision` under its per-issuer lock and holds that
-  lock until the issuing transaction commits, so intents commit in `source_revision` order; the
-  cursor is always a committed key the consumer has listed. Platform refuses, before it is
-  listable, an intent whose `source_revision` is not above every stored key of the issuer (a
-  sequence behind its table) and raises an operator alarm. Intents that §5.4 reopens after a
-  restore notice are the only ones listed behind the cursor; they keep their original times and
-  are decided by §5.4, not by this bound. The rescan stays as the consumer's defence. The
-  consumer raises an operator alarm when a rescan lists more than 192 entries or finds more than
-  16 unseen keys.
+  (closed by the §14 step 4 enablement packet) has two parts. First, the enabled backlog is at
+  most 40 unreceipted PENDING intents (derived: 300 s TTL less 30 s rescan and 24 s listing,
+  divided by 6 s per read and receipt, gives 41 unseen keys; 40 keeps one key of margin), so a
+  burst of fresh intents ahead of the cursor cannot push the newest one past its TTL unread.
+  Platform enforces it: its `max_pending_intents` setting defaults to 40, and a configured value
+  above 41, the proven bound, makes the whole command surface unavailable
+  (`CharacterCommandSettings`, Oteryn/Oteryn-Platform#1632). `CHARCMD-PENDING-BACKLOG` (256) stays
+  the wire ceiling the consumer's rescan and local set are sized for. Second, Platform's issuance
+  commits no fresh intent behind the cursor, so the per-interval count is 0. Platform draws the
+  `source_revision` under its per-issuer lock and holds that lock until the issuing transaction
+  commits, so intents commit in `source_revision` order; the cursor is always a committed key the
+  consumer has listed. Platform refuses, before it is listable, an intent whose `source_revision`
+  is not above every stored key of the issuer (a sequence behind its table) and raises an operator
+  alarm. Intents that §5.4 reopens after a restore notice are the only ones listed behind the
+  cursor; they keep their original times and are decided by §5.4, not by this bound. The rescan
+  stays as the consumer's defence. The consumer raises an operator alarm when a rescan lists more
+  than 192 entries or finds more than 16 unseen keys.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -633,7 +639,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | U-CC6 | rename, deletion, restore, world transfer | out of scope; later contract versions |
 | U-CC7 | Platform storage of `recovery_generation` and the restore notice (PLATFORM-RESTORE-RECONCILE-P1, not yet accepted by Platform) | enablement (§14 step 4) requires Platform's acceptance; until then both commands stay disabled |
 | U-CC8 | housing prepare command and fence representation (EXP-HOUSES-01 not started) | §6.4 semantics bind; the housing contract fixes the wire and tables |
-| U-CC9 | cap on intents Platform commits behind the consumer's cursor per 30 s rescan interval (the 300 s TTL proof in §4.1 holds for up to 41 unseen keys) | closed by the enablement packet: 0 fresh intents per interval (Platform `CharacterCommandClient` issuer-lock ordering and stored-key guard, PostgreSQL concurrency test `CharacterCommandIssuanceOrderPgsqlTest`); §5.4 reopens are outside the cap |
+| U-CC9 | cap on intents Platform commits behind the consumer's cursor per 30 s rescan interval (the 300 s TTL proof in §4.1 holds for up to 41 unseen keys) | closed by the enablement packet: enabled backlog at most 40 unreceipted PENDING intents (Platform `max_pending_intents` default 40, values above 41 refused by `CharacterCommandSettings`) and 0 fresh intents per interval (Platform `CharacterCommandClient` issuer-lock ordering and stored-key guard, PostgreSQL concurrency test `CharacterCommandIssuanceOrderPgsqlTest`); §5.4 reopens are outside the cap |
 
 ## 14. Rollout
 
@@ -657,5 +663,6 @@ status line, §14 step 1 and this section were later edited only to record the a
 later change to a member, path, bound, code or response is a new `contract_version`. Acceptance
 locks the Game-side wire only; Platform implementation needs its own separate authority (status
 line). The §4.1 rescan paragraph, the §13 U-CC9 row and §14 step 4 were later edited only to
-record the closure of gate U-CC9 by the enablement packet; no member, path, bound, code or
-response changed.
+record the closure of gate U-CC9 by the enablement packet; no member, path, code or response
+changed, and the wire bound `CHARCMD-PENDING-BACKLOG` stays 256. The enabled backlog of at most
+40 is a Platform configuration limit inside that bound.
