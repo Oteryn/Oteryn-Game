@@ -93,6 +93,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--canary', type=Path, required=True, help='opentibiabr/canary clone')
     parser.add_argument('--crystal', type=Path, required=True, help='zimbadev/crystalserver clone')
+    parser.add_argument('--check', action='store_true',
+                        help='fail if the committed file differs from the rebuilt one')
     args = parser.parse_args()
-    OUT.write_text(dumps(build({'opentibiabr/canary': args.canary,
-                                'zimbadev/crystalserver': args.crystal})))
+    built = dumps(build({'opentibiabr/canary': args.canary, 'zimbadev/crystalserver': args.crystal}))
+    if not args.check:
+        OUT.write_text(built)
+    elif OUT.read_text() != built:
+        print('FAIL %s differs from its pinned source build' % OUT.relative_to(ROOT).as_posix())
+        raise SystemExit(1)

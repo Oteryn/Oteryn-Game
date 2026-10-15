@@ -9,7 +9,8 @@ Writes two content files:
   supplies it (build_spell_cues.py resolves enums and their Lua registration).
 
 `validate_presentation_bindings.py` checks both files against `content/` and appearances.dat
-without the source checkout.
+without the source checkout; `--check` rebuilds them from the pinned sources and fails on any
+difference, so every id, colour and hit effect is the one the source gives.
 """
 import argparse
 import hashlib
@@ -271,7 +272,16 @@ if __name__ == '__main__':
                         help='opentibiabr/canary checkout at ' + PIN)
     parser.add_argument('--crystal-engine', type=Path, required=True,
                         help='zimbadev/crystalserver checkout at ' + CRYSTAL_PIN)
+    parser.add_argument('--check', action='store_true',
+                        help='fail if the committed files differ from the rebuilt ones')
     args = parser.parse_args()
     ids, hits = build(args.reference_engine, args.crystal_engine)
-    HIT_TABLE.write_text(dumps(hits))
-    CLIENT_IDS.write_text(dumps(ids))
+    stale = []
+    for path, value in ((HIT_TABLE, hits), (CLIENT_IDS, ids)):
+        if not args.check:
+            path.write_text(dumps(value))
+        elif path.read_text() != dumps(value):
+            stale.append(path.relative_to(ROOT).as_posix())
+    for path in stale:
+        print('FAIL %s differs from its pinned source build' % path)
+    raise SystemExit(1 if stale else 0)

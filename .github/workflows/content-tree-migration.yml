@@ -47,7 +47,7 @@ jobs:
   validate:
     name: Content tree / Item+Mount equivalence
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,6 +81,70 @@ jobs:
       - name: Validate SPELL-PRESENT-0 presentation bindings
         working-directory: tools/content-schema/native-gameplay
         run: python -m unittest test_presentation_bindings -q
+
+      - name: Read the presentation binding source pins
+        id: presentation-pins
+        working-directory: tools/content-schema/native-gameplay
+        run: |
+          set -euo pipefail
+          python - >> "$GITHUB_OUTPUT" <<'PY'
+          import build_creature_races as races
+          import build_presentation_bindings as bindings
+          print('canary_cues=' + bindings.PIN)
+          print('canary_monsters=' + races.SOURCES['canary/monster-file'][1])
+          print('crystal=' + bindings.CRYSTAL_PIN)
+          assert races.SOURCES['crystalserver/monster-file'][1] == bindings.CRYSTAL_PIN
+          PY
+
+      - name: Check out the pinned Canary cue source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: opentibiabr/canary
+          ref: ${{ steps.presentation-pins.outputs.canary_cues }}
+          path: _sources/canary-cues
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            src
+
+      - name: Check out the pinned Canary monster source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: opentibiabr/canary
+          ref: ${{ steps.presentation-pins.outputs.canary_monsters }}
+          path: _sources/canary-monsters
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            data-otservbr-global/monster
+
+      - name: Check out the pinned Crystal source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zimbadev/crystalserver
+          ref: ${{ steps.presentation-pins.outputs.crystal }}
+          path: _sources/crystal
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            src
+            data-crystal/monster
+            data-global/monster
+
+      - name: Rebuild the presentation bindings and creature races from the pinned sources
+        working-directory: tools/content-schema/native-gameplay
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/_sources"
+          python build_presentation_bindings.py --check \
+            --reference-engine "$SRC/canary-cues" --crystal-engine "$SRC/crystal"
+          python build_creature_races.py --check \
+            --canary "$SRC/canary-monsters" --crystal "$SRC/crystal"
+          # Later steps read the candidate tree only.
+          rm -rf "$SRC"
 
       - name: Validate successor Item/Mount tree against legacy WorldProject
         run: |

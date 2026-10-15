@@ -80,7 +80,9 @@ and checked without them:
 ## Validation
 
 - `python tools/content-migration/regenerate_content.py`: pass
-- `python -m unittest test_presentation_bindings test_spell_cues` (native-gameplay): OK (13)
+- `python -m unittest test_presentation_bindings test_spell_cues` (native-gameplay): OK (14)
+- `build_presentation_bindings.py --check` and `build_creature_races.py --check` against the
+  pinned Canary and Crystal checkouts: pass; an edited hit-table colour fails
 - `python tools/content-migration/register_spell_families.py --check`: pass
 - `python tools/content-migration/test_import_spell_families.py`: OK
 - `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . <out>`: pass
