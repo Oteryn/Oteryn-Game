@@ -12,7 +12,8 @@
   `offer_gate` in `PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json`.
 - Runtime, migration, production and protected-World authority: NONE. MAP-VIEWPORT-MEASURE-1
   needs its own #162 allocation.
-- Amended 2026-10-15 by MAP-VIEWPORT-OPT-1 (owner decision **option B**, §1.5): the 20% share
+- Amended 2026-10-15 by MAP-VIEWPORT-OPT-1 (owner decision **option B**, §1.5; recorded on #1622,
+  https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6186538185, point 2): the 20% share
   counts only the players who walk. Provisional until MAP-VIEWPORT-BUDGET-REVAL.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -84,7 +85,7 @@ need no change. The CP merges it on its own review state.
 
 MAP-VIEWPORT-MEASURE-1 measured 162.5-174.0 us of CPU per update, 0.41-0.44 core when every
 one of 500 players steps every 200 ms. That model does not fit the 20% share. The owner chose
-option B: keep 20% of one core, and size it with a realistic movement model.
+option B (https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6186538185, point 2): keep 20% of one core, and size it with a realistic movement model.
 
 - **Who rebuilds a view.** A view is rebuilt only for a player who stepped onto another tile or
   was moved (snapshot) in that tick. A player who stands rebuilds nothing. One walk step is one

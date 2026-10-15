@@ -16,7 +16,7 @@ owner: claude-code-session_0181Dg1mgG57hxwWBACEks7U (worker)
 control_plane: claude-code-session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-15
-packet: "control plane allocation of 2026-10-15; owner decision option B (2026-10-15)"
+packet: "control plane allocation of 2026-10-15; owner decision option B (2026-10-15), https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6186538185 point 2"
 head_sha: "exact frozen head in the report to the control plane"
 owned_paths:
   - apps/game-server/src/gameplay_transport/world_map_real_tests.rs
@@ -31,7 +31,7 @@ follow_up: MAP-VIEWPORT-BUDGET-REVAL
 ## Scope
 
 MAP-VIEWPORT-MEASURE-1 (#1873) measured 162.5-174.0 us of CPU per update: 0.41-0.44 core when all 500
-players step every 200 ms (option A), against 20% of one core. Owner decision 2026-10-15, option B: keep the
+players step every 200 ms (option A), against 20% of one core. Owner decision 2026-10-15, option B (https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6186538185, point 2): keep the
 20% share and count only players who walk, at walking pace. This task records that model in
 `ARCH-MAP-VIEWPORT-BUDGET-V1` §1.5, adds the option B line and a unit test to the measurement, and records the
 evidence. No code optimisation, no wire, registry, runtime or limit change.
