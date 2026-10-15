@@ -4,12 +4,12 @@
 task_id: ITEM-LOOP-1
 title: "ITEM-LOOP-1: equip, drop/pickup, containers, stacks, cap, starter pack on the bundle (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/item-loop-1
 issue: 1622
-pr: null
+pr: 2190
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 ITEM-LOOP-1 (rows 62-66, 68); App. 7 ITEM-LOOP-1; wave 1 (migration chain #1)"
 class: "hard (durable item)"
@@ -41,7 +41,7 @@ depends_on:
   - "#2039 ITEM-USE-1a/1b: MERGED"
   - "ITEM-USE-1c: MERGED #2082"
   - "ITEM-MOVE-2a: PARTIAL: EQUIP-WIRE-1 slice #2009; residue here"
-  - "BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED: BLOCKING: all CANDIDATE (plan §7 status list)"
+  - "BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED: effective acceptance #2209 on main e2da9805"
   - "MAP-PICKUP-1 (rows 62-63 base-map pickup): BLOCKING: not merged"
 blocks: []
 cross_repository_coordination_id: null
@@ -64,10 +64,10 @@ The item loop works end to end on the bundle World: equip/unequip, drop/pickup (
 | #2039 ITEM-USE-1a/1b | MERGED |
 | ITEM-USE-1c | MERGED #2082 |
 | ITEM-MOVE-2a | PARTIAL: EQUIP-WIRE-1 slice #2009; residue here |
-| BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED | BLOCKING: all CANDIDATE (plan §7 status list) |
+| BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED | Effective acceptance #2209 on main e2da9805 |
 | MAP-PICKUP-1 (rows 62-63 base-map pickup) | BLOCKING: not merged |
 
-**BLOCKING:** BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED; MAP-PICKUP-1 (rows 62-63 base-map pickup). The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+**BLOCKING for integration:** MAP-PICKUP-1 (rows 62-63 base-map pickup), applicable child/source and slot gates. Acceptance #2209 resolves the historical CANDIDATE gate above; B3-3 still requires accepted item weights and the character capacity source. This batch prepares only a detached conditional weight planner and does not enable weight checks in existing writers.
 
 ## Owned paths (builder edits freely)
 
@@ -104,7 +104,7 @@ migration+writer+durability; mint/burn+ledger for starter pack (STARTER-1 MINT).
 
 - [ ] Each child: RED then GREEN, PostgreSQL 17.6 durability tests, restart/replay.
 - [ ] Overweight refusal (B3-3) only after B3 acceptance.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
 
@@ -128,9 +128,136 @@ plan App. 7 ITEM-LOOP-1; Reference item move rules. Plan: `docs/architecture/rev
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: bounded native-type planner prepared; 12 focused tests and Clippy pass
+status: authoring
 branch: skeleton/item-loop-1
-blocker: BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED; MAP-PICKUP-1 (rows 62-63 base-map pickup)
-next_action: CP rechecks BLOCKING rows
+blocker: accepted item-weight scale and character capacity source; transaction/caller integration and child gates
+next_action: CP/architect qualify weight/capacity sources, independent review and transaction integration slot
 ```
+
+## Bounded B3-3 local preparation (2026-10-15)
+
+Existing draft #2190; source `6648cf29f3f26b6ed25c529ec87bee8bf163d26a`.
+This allocation owns exactly `durability/item_capacity.rs`,
+`tests/item_loop_capacity.rs` and this record, overriding the skeleton's broad
+family allocation for this batch. No other item writer, transport, registry,
+migration, shared wiring or content/pin path is changed. No worker commit,
+push, ready flag, queue action or external review is performed.
+
+### Accepted rules and verified residue
+
+The lead established effective acceptance #2209 on main
+`e2da9805d296a27b06b32335bf67394509d4910b`. Read-only inspection confirmed B3
+§4.2/§5 assigns overweight refusal to B3-3 but still requires evidence for item
+weights and the character capacity source. Acceptance does not supply a scale,
+base capacity or universal vocation/level formula. GAME-ITEM-01 §7.2 requires
+deterministic server evaluation over resolved definitions, quantities and
+containment, with exact arithmetic/inclusion parity gated.
+
+Accepted BAGS0 §7 supplies the narrower inclusion rule: an incoming container's
+own weight plus contents, carried equipment slots and main-backpack tree, and
+checks only for a move into the character from outside. Moves within that
+character do not change its carried weight. BAGS0 §3 caps an incoming tree at
+500 items including its root. The helper reuses that bound without changing a
+registry or admitting a graph.
+
+The existing `item_transfer.rs` header still explicitly says weight is not
+checked; `ItemDefinitionFacts` lacks weight and no capacity source is exposed
+by this writer. Current entry/merge placement checks already exist and are not
+duplicated. The native `InventoryItem`, `TypedDefinitionRef`, stack safety ceiling
+and Content `ReferenceItemField<u32>` are reused. Their relevant sources are
+unchanged between this allocation, accepted main and the retained real-library
+build's source `aaeffba3e6982ba721afa147b82fd8242731ddff`.
+
+### Prepared behavior and boundary
+
+The detached helper computes a conditional projection for a whole incoming
+source/tree. It binds each per-unit weight to the entire native item definition
+(family, key and revision), multiplies the actual quantity with checked u64
+arithmetic, counts each supplied instance once, adds the current carried total,
+and returns totals/remaining capacity or a local typed refusal. Exact capacity
+fits; overweight is refused without truncating the incoming count. No partial
+pickup/count selection or receiver choice is implemented. Existing stack-class,
+definition-specific stack-limit and placement admission remain with their owners.
+
+Unknown carried weight/capacity, non-Known weight facts, duplicate instances,
+definition mismatches, invalid quantities, oversize inputs and arithmetic overflow
+fail closed. Known zero weight remains distinct from Unknown. Internal moves
+return `Unchanged` without another weight charge or a capacity-source dependency.
+These local errors are not registered wire codes.
+
+The incoming list is an owner-qualified canonical flattening, not a graph proof.
+Arbitrary omitted descendants, forged direction, stale totals or arbitrary Known
+facts cannot become trustworthy through this helper. All numeric inputs must
+already share one admitted integer unit; no ounces/hundredths interpretation,
+metadata promotion, source authority or capacity formula is invented here.
+
+### Exact future transaction integration (REPORT_ONLY)
+
+1. Qualify the native per-unit weight representation/unit and authoritative current
+   character capacity source under their owning accepted evidence. Capacity may
+   be migration-sensitive; it must not be inferred universally from level/vocation.
+2. The existing owner, not the client, must prove external versus internal movement
+   and obtain the complete canonical source/tree and carried slots/backpack tree
+   under the applicable current item/containment/character locks. It must validate
+   root ownership, source liveness, every descendant, graph limits and each stored
+   quantity/definition. This helper cannot detect omitted descendants or prove that
+   an allegedly external source is not already carried.
+3. Resolve exact compatible active Content facts and the same admitted unit for
+   all rows and capacity. Preserve existing command ingress, source/World binding,
+   recovery/session/lease/scope fences, placement/stack rules and cause replay;
+   World and Channel remain separate. `Known` and matching immutable definition
+   refs are not current activation/authority evidence.
+4. Add the check to owning freeze/preflight and commit materialization paths as
+   required by the existing DUR-03 lifecycle. At commit, reread/recompute carried
+   total, capacity and incoming tree under the same serialized current transaction
+   boundary immediately before item/location/event/receipt writes. A prior plan
+   reserves nothing and must not survive a competing transfer or capacity change
+   as current evidence. Refusal commits no partial movement.
+5. Reconcile cause/intent/event evidence and local-refusal mapping in that owning
+   slot, with PostgreSQL current-state, concurrent-writer, unknown-outcome, restart
+   and replay tests. Do not add a second receipt, a new writer or guessed registry
+   value for this helper. Final module/test placement, independent exact-head
+   review and CP/architect gates remain required.
+
+This batch does not close B3-3, MAP-PICKUP-1, the other ITEM-LOOP children or the
+family's final migration slot. Production weight refusal remains disabled until
+the owning sources and actual transaction integration qualify it.
+
+### Focused validation and self-review
+
+- Real-library direct `rustc --test`: **12 passed, 0 failed, 0 ignored**. Tests
+  path-load only this unregistered helper and import the actual native public
+  library types. No dependency excerpt, schema surrogate or extra wrapper is used.
+- Cases cover exact capacity/one-unit overweight, incoming container plus all
+  supplied descendants exactly once, order independence, internal moves, complete
+  incoming stack quantity, unknown/ambiguous facts, all three definition-binding
+  components, invalid quantities, duplicate identities, exact u64/u32 boundaries,
+  overflow, empty input, 500/501 items, and a second request replanned against an
+  updated total. Fixtures are synthetic and do not attest a live graph or source.
+- Strict `clippy-driver --test --emit=metadata` with repository deny lints,
+  owned-file `rustfmt --check`, `cargo fmt --all --check`, governance validation
+  (22 documents, 9 lanes), **124 governance tests**, and `git diff --check` passed.
+  Every Rust command used the shared flock/target, two jobs and
+  `CARGO_INCREMENTAL=0`. No Cargo build or implicit server-bin link was run.
+- An earlier metadata check recorded the new planner file's absence. It is only
+  missing-implementation/setup evidence, **not a semantic regression RED**. The
+  production writer's unchecked weight is a documented gap outside this batch's
+  write allocation, not a runtime behavior corrected or tested by this helper.
+- Source hashes and actual logs are retained under
+  `/workspace/oteryn-prep/item-loop-1-evidence/`; `provenance.json` records native
+  library/source bindings, commands, artifact hashes and scope. Full package,
+  PostgreSQL, durable replay/concurrency, native-content and production-authority
+  qualification were not performed and are not claimed.
+- Whole-diff review confirms only the three allocated paths, no staged content or
+  commit, checked arithmetic without saturation/truncation, no duplicate placement
+  planner, and no source/authority/persistence/registry/schema/wiring invention.
+  The concurrency case is pure changed-input arithmetic, not an executed lock or
+  durable fencing test. Actual authority-consuming boundaries remain future work.
+- Future module wiring must reconcile the test's source inclusion with repository
+  duplicate-source policy; this batch adds no registration.
+
+Final Rust SHA-256:
+
+- `item_capacity.rs`: `861b1645a804bc31d2b1eba2a66104d9b38e2a9d3cc528b8fe4fae2673535c70`.
+- `item_loop_capacity.rs`: `c8e8d9deb9e983279d3de0c9861c55fd60edbffb4289dd798056afcfcca95619`.
