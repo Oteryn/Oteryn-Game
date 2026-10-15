@@ -1,10 +1,10 @@
-//! CONDITIONS-0 §3.5: the mana shield does not absorb an `agony` tick, and the condition
+//! CONDITIONS-0 §3.5: no mitigation (damage reduction, mana shield) lowers an `agony` tick, and the condition
 //! cycle deals only a non-lethal creature agony hit itself (MAGIC-COND-1).
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use super::super::Vocation;
 use super::super::cast::CharacterCastFacts;
-use super::super::combat_batch::ManaShieldState;
+use super::super::combat_batch::{AvatarState, ManaShieldState};
 use super::*;
 use crate::ability::condition::DotElement;
 
@@ -49,6 +49,31 @@ fn agony_hit_bypasses_the_mana_shield_and_other_hits_still_use_it() {
     assert_eq!(hit.health, health);
     assert_eq!(hit.mana, mana - 100);
     assert_eq!(hit.conditions.mana_shield_at(1_000_000), Some(200));
+}
+
+#[test]
+fn agony_hit_skips_damage_reduction_and_other_hits_still_take_it() {
+    let mut state = shielded();
+    apply_combat_change(
+        &mut state,
+        &OwnerCombatChange::Avatar(AvatarState {
+            expires_ms: 15000,
+            outfit_look_type: 1590,
+            incoming_reduction_percent: 80,
+            critical_chance_percent: 0,
+            critical_extra_percentage_points: 0,
+        }),
+        0,
+    )
+    .unwrap();
+    let health = state.health;
+
+    let (agony, _) = stage_agony_hit(&state, 100, 1_000_000).unwrap();
+    assert_eq!(agony.health, health - 100);
+
+    let (hit, _) = stage_creature_hit(&state, 100, 1_000_000).unwrap();
+    assert_eq!(hit.health, health);
+    assert_eq!(hit.mana, state.mana - 20);
 }
 
 #[test]

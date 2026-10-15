@@ -1007,6 +1007,25 @@ pub(crate) fn observe_vitals(
     Some((state.revision(), state.vitals()))
 }
 
+/// CONDITIONS-0 §3.5 at the transport: once the cast's spell is identified, a gate answers
+/// `REJECTED` before every dispatcher pre-check and every SPELL-D1 `resolve_cast` check; only
+/// the CHAT-0 §6 chat-mute pre-gate runs earlier. `None` lets the cast go on.
+pub(crate) fn condition_gated_cast(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    book: &SpellBook,
+    actor: ExactActorRef,
+    game_session_id: GameSessionId,
+    intent: &SpellCastIntent,
+    now: SemanticTimeMicros,
+) -> Option<SpellCastOutcome> {
+    let (spell, _) = book.source_indexed(intent.spell)?;
+    let state = states.get(runtime, actor, game_session_id)?;
+    crate::spell::cast::condition_gate(state, spell, now)
+        .err()
+        .map(|_| SpellCastOutcome::rejected())
+}
+
 /// One cast of `intent` by the admitted actor, as one Channel-owner work item under the runtime
 /// lock the caller holds (and `states` beside it): read the actor's state, resolve, plan, and compare-commit the next state
 /// with its anchor payment (SPELL-D3). `command_id` binds the occurrence and its draws, so the
@@ -1198,6 +1217,77 @@ pub(crate) mod tests {
             &exura(),
             now(millis),
         )
+    }
+
+    /// Test only: `gate` (a §3.5 key) for 10 s from time 0 in the player store.
+    fn gate_player(
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        gate: &str,
+    ) {
+        use crate::ability::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+        };
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([5; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([6; 16]),
+        };
+        let values = ConditionValues::gate(gate, 10_000).expect("gate family");
+        let definition = ConditionDefinition::new("cond.gate", 1, values).expect("definition");
+        let index = states.index(actor, session).expect("present");
+        let state = &mut states.actors[index].2;
+        let before = state.owned_conditions().clone();
+        let mut next = before.clone();
+        next.apply(
+            &definition,
+            Some("creature:test".to_owned()),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+        )
+        .expect("applied");
+        state
+            .apply_batch_conditions(&before, &next)
+            .expect("installed");
+    }
+
+    #[test]
+    fn the_transport_gate_answers_a_gated_cast_before_any_dispatcher() {
+        let book = crate::spell::cast::v1_spell_book().expect("book");
+        let (runtime, actor, session) = runtime_with_player(0x7a);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        let gated = |states: &ChannelSpellStates| {
+            condition_gated_cast(&runtime, states, &book, actor, session, &exura(), now(1))
+        };
+        assert_eq!(gated(&states), None);
+        // `exura` is not aggressive: `pacified` lets it through, `muted` refuses every spell.
+        gate_player(&mut states, actor, session, "pacified");
+        assert_eq!(gated(&states), None);
+        gate_player(&mut states, actor, session, "muted");
+        assert_eq!(gated(&states), Some(SpellCastOutcome::rejected()));
+        assert_eq!(
+            condition_gated_cast(
+                &runtime,
+                &states,
+                &book,
+                actor,
+                session,
+                &exura(),
+                now(10_000)
+            ),
+            None
+        );
     }
 
     #[test]

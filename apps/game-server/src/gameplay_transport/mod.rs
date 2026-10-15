@@ -3405,6 +3405,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.chat.muted_cast(game_session_id, self.owner_now()) {
             return Some(outcome);
         }
+        // CONDITIONS-0 §3.5: the condition gates answer next, ahead of every dispatcher.
+        let gated = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            actor_spell::condition_gated_cast(
+                &runtime,
+                &states,
+                self.spells,
+                actor,
+                game_session_id,
+                &intent,
+                self.owner_now(),
+            )
+        };
+        if gated.is_some() {
+            return gated;
+        }
         if !self.ensure_source_map_initialized().await {
             return None;
         }
@@ -3583,8 +3600,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
-        if states.get(&runtime, actor, game_session_id).is_none()
-            || (target.is_some() && states.is_dead(actor))
+        let Some(state) = states.get(&runtime, actor, game_session_id) else {
+            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+        };
+        // CONDITIONS-0 §3.5 / ATTACK-0 §3: a `pacified` held in the player store refuses a new
+        // target first; `set_target` reads the runtime slot. Clearing (`None`) stays open.
+        if target.is_some()
+            && (state
+                .owned_conditions()
+                .attack_target_gate(now.get())
+                .is_err()
+                || states.is_dead(actor))
         {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         }

@@ -625,8 +625,9 @@ pub(crate) fn stage_creature_hit(
     stage_hit(state, magnitude, now, true)
 }
 
-/// CONDITIONS-0 §3.5: an `agony` tick is damage of an undefined element, which the mana
-/// shield never absorbs (§3.3); every other stage is that of [`stage_creature_hit`].
+/// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
+/// reduction and the mana shield included, §3.3); only the D54 HP floor and the lifecycle of
+/// [`stage_creature_hit`] apply.
 pub(crate) fn stage_agony_hit(
     state: &PlayerSpellState,
     magnitude: u32,
@@ -645,7 +646,7 @@ fn stage_hit(
     state: &PlayerSpellState,
     magnitude: u32,
     now: u64,
-    mana_shield: bool,
+    mitigated: bool,
 ) -> Result<
     (
         PlayerSpellState,
@@ -663,7 +664,8 @@ fn stage_hit(
     }
     let mut next = state.clone();
     let mut remaining = magnitude;
-    if let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
+    if mitigated
+        && let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
         && let ConditionValues::Attributes {
             incoming_reduction_percent,
             ..
@@ -678,7 +680,7 @@ fn stage_hit(
             .checked_sub(u32::try_from(removed).map_err(|_| SpellCastDisposition::Rejected)?)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
-    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mana_shield) {
+    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mitigated) {
         let absorbed = remaining.min(capacity).min(next.mana);
         if absorbed > 0 {
             next.conditions

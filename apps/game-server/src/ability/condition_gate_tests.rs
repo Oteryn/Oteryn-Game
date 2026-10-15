@@ -461,6 +461,64 @@ fn gates_are_not_negative_and_end_only_by_timeout_or_death() {
 }
 
 #[test]
+fn rl_01_admits_a_17th_distinct_key_past_the_old_bound_of_16() {
+    let mut values: Vec<_> = [
+        StatusKind::Invisible,
+        StatusKind::Drunk,
+        StatusKind::Rooted,
+        StatusKind::Feared,
+    ]
+    .map(|kind| ConditionValues::TimedStatus {
+        kind,
+        duration_ms: 1_000,
+    })
+    .into_iter()
+    .collect();
+    values.extend(
+        [
+            DotElement::Poison,
+            DotElement::Fire,
+            DotElement::Energy,
+            DotElement::Bleeding,
+            DotElement::Drown,
+            DotElement::Freezing,
+            DotElement::Dazzled,
+            DotElement::Cursed,
+        ]
+        .map(|element| ConditionValues::DamageOverTime {
+            element,
+            total_min: 10,
+            total_max: 10,
+            per_tick: 10,
+            interval_ms: 1_000,
+            delayed: true,
+        }),
+    );
+    values.extend((0..=3).map(|sub_id| ConditionValues::SpellSkills {
+        duration_ms: 1_000,
+        sub_id,
+        magic_level: 1,
+        fist: 0,
+        melee: 0,
+        distance: 0,
+        shielding: 0,
+    }));
+    let mut store = ConditionStore::new();
+    for value in values {
+        apply_at(&mut store, &def("cond.any", value), 1, 0).unwrap();
+    }
+    assert_eq!(store.instances().len(), 16);
+
+    // The 17th distinct key, which the old bound of 16 refused, is admitted under 32.
+    assert_eq!(
+        apply_at(&mut store, &gate(ConditionGate::Muted, 1_000), 1, 0).map(|a| a.replaced),
+        Ok(false)
+    );
+    assert_eq!(store.instances().len(), 17);
+    assert!(store.get(ConflictKey::Gate(ConditionGate::Muted)).is_some());
+}
+
+#[test]
 fn rl_01_admits_every_exhaustive_key_at_once_and_refuses_past_32() {
     assert_eq!(COND0_RL_01_INSTANCES_PER_ACTOR, 32);
     let timed = |kind| ConditionValues::TimedStatus {
