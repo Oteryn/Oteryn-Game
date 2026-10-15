@@ -94,3 +94,26 @@ Executed by the control plane within architect scope:
 ## 5. Unblocked
 
 Each child still needs its own #162 allocation and any other accepted base that its packet names. The plan's Appendix 7 graphs list the children of each accepted brief; the "no child of a CANDIDATE brief" gate no longer applies to them. The briefs still CANDIDATE are listed in the plan's Appendix 7 status paragraph.
+
+## 6. PROG-ADV-1 decision set (owner item 3, added 2026-10-15)
+
+Owner `blakinio` answered the control plane's item "3. PROG-ADV-1" with "3 tak" (2026-10-15, control-plane chat, owner accepted via control plane). The acceptance takes effect only when the PR that adds this section passes exact-head validation, independent review and CI on its frozen head and is integrated through the protected merge path. It adds no rule text and changes no code, wire, migration or content, except the plan edits below. All paths are under `docs/architecture/reviews/`.
+
+| Brief | File |
+|---|---|
+| SKILLS0_WEAPON_SKILLS | `OTERYN_GAME_SKILLS0_WEAPON_SKILLS_DECISION_2026-09-30.md` |
+| PROFICIENCY0_WEAPON_PROFICIENCY | `OTERYN_GAME_PROFICIENCY0_WEAPON_PROFICIENCY_DECISION_2026-09-29.md` |
+| PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS | `OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` |
+| PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES | `OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md` |
+| PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS | `OTERYN_GAME_PROF_EFFECT0_KILL_CREDIT_AND_PERK_EFFECTS_DECISION_2026-10-01.md` |
+| PROF_WIRE0_PROFICIENCY_WIRE_ACCEPTANCE | `OTERYN_GAME_PROF_WIRE0_PROFICIENCY_WIRE_ACCEPTANCE_DECISION_2026-10-01.md` |
+| WHEEL0_WHEEL_OF_DESTINY_DELIVERY | `OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` |
+| WHEEL_GEM0_GEM_ATELIER | `OTERYN_GAME_WHEEL_GEM0_GEM_ATELIER_DECISION_2026-09-30.md` |
+| WHEEL_GEM0A_REFERENCE_VALUES_AMENDMENT | `OTERYN_GAME_WHEEL_GEM0A_REFERENCE_VALUES_AMENDMENT_DECISION_2026-10-01.md` |
+
+Preconditions checked:
+- A13 is ACCEPTED on main (section 1, item 2); the briefs that amend or build on A13 (SKILLS-0, PROFICIENCY-0, WHEEL-0 and later) no longer wait for it.
+- The wire part of PROFICIENCY-0 (§4.4) and PROF-WIRE-0 (the proficiency wire acceptance, capability-gated) needed owner acceptance; "3 tak" is that owner acceptance. The protocol registry IDs are still reserved only by their own child packet.
+- The gate is not waived: where a brief names a prerequisite (FORGE-1a, PROF-1, PROF-WIRE-1, CHAR-REV-SEQ-1, GOLD-FEE-2, WHEEL-GEM-0A ordering), the prerequisite still binds the child packets. Each child still needs its own #162 allocation.
+
+Every brief above has its Status line set to ACCEPTED and cites this section. Plan edits: the Appendix 7 status paragraph, the PROG-ADV-1 gate line and the PROF-ORB-BURN-1 and GEM-1 dependency cells of `OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`.
