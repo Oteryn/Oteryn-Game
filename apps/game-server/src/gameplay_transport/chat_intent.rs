@@ -802,7 +802,8 @@ fn npc_answer(
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// The speaker name, CharacterId and level of `session`'s Character from the durable root,
-    /// read once per session. A Character without a readable progression row is level 1.
+    /// read once per session. A Character without a progression row is level 1; a failed read
+    /// leaves the session unadmitted, so its next open reads again.
     async fn chat_speaker_name(&self, session: GameSessionId) -> Option<(String, [u8; 16], u32)> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (current, _) = store.current_session_at(session).await.ok()?;
@@ -817,8 +818,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .read_character_progression(self.character, character_id)
             .await
-            .ok()
-            .flatten()
+            .ok()?
             .map_or(1, |progression| progression.level);
         Some((name.as_str().to_owned(), character, level))
     }
@@ -830,7 +830,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             self.chat_speaker_name(session).await
         };
-        // Without a readable name the session is not admitted: it neither speaks nor hears.
+        // Without a readable name and level the session is not admitted: it neither speaks nor
+        // hears.
         if let Some((name, character, level)) = name {
             self.chat
                 .admit_as(session, &name, Some(character), self.owner_now());

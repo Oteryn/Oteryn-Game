@@ -137,6 +137,8 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - round 4 (P2): a Character without a vocation has no cast facts, so chat read it as level 1 and
   refused private lines and rooms its level allows. Fixed: chat admission reads the Character's
   progression level once, and room, private and yell gates use it when there are no cast facts.
+  (P2, same round on eefbb2dd): a failed progression read was cached as level 1. Fixed: a failed
+  read leaves the session unadmitted, as a failed name read does, so its next open reads again.
 
 ## PR and closeout
 
