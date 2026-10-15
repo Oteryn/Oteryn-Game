@@ -125,7 +125,7 @@ const INVENTORY: &[Read] = &[
         "spell_timer_callbacks.rs",
         "ComposedFreshAdmission::drain_native_ai_timers",
         "owner.combat_room",
-        "if/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let/try/method_call:ok_or/field/read",
+        "if(Some saved unresolved)/then/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let/try/method_call:ok_or/field/read",
         1,
         COMBAT_ENABLE,
     ),
@@ -163,7 +163,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "ComposedFreshAdmission::cast_parameters_inner",
         "self.combat_room",
-        "if/method_call:is_none/call:parameter_room/field/read",
+        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
         2,
         Gate::Open {
             batch: "MAGIC-CAST-1",
@@ -190,7 +190,7 @@ const INVENTORY: &[Read] = &[
         "parameter_cast.rs",
         "ComposedFreshAdmission::cast_parameters_inner",
         "self.qualified_room",
-        "if/method_call:is_none/call:parameter_room/field/read",
+        "if(parameter_room key self qualified_room self combat_room is_none)/method_call:is_none/call:parameter_room/field/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1"],
@@ -215,7 +215,7 @@ const INVENTORY: &[Read] = &[
         "world_item_cast.rs",
         "ComposedFreshAdmission::cast_world_items_inner",
         "self.qualified_room",
-        "if/method_call:is_none/field/read",
+        "if(self qualified_room is_none)/method_call:is_none/field/read",
         1,
         Gate::Closed {
             owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
@@ -278,7 +278,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::observe_world_object_overlay",
         "self.qualified_room",
-        "if/binary/method_call:is_some_and/field/read",
+        "if(self qualified_room is_some_and room room source_world is_some self bundle_map is_some)/binary/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -288,7 +288,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::paced_step",
         "self.qualified_room",
-        "let/if/method_call:is_some_and/field/read",
+        "let/if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -298,7 +298,7 @@ const INVENTORY: &[Read] = &[
         "mod.rs",
         "<ComposedFreshAdmission as FreshAdmissionAuthority>::use_object",
         "self.qualified_room",
-        "if/method_call:is_some_and/field/read",
+        "if(self qualified_room is_some_and room room source_world is_some)/method_call:is_some_and/field/read",
         1,
         Gate::SourceWorldBranch,
     ),
@@ -881,7 +881,22 @@ impl<'ast> Visit<'ast> for Scan {
                 syn::Expr::Macro(mac) => mac.mac.path.segments.last().map(|s| s.ident.to_string()),
                 _ => None,
             };
-            let kind = callee.map_or_else(|| kind.to_owned(), |callee| format!("{kind}:{callee}"));
+            // A control-flow node names the condition (or iterated pattern and source) it tests, so
+            // a read moved to a sibling `if`, `while` or `for` is another site.
+            let condition = match expr {
+                syn::Expr::If(expr) => Some(fingerprint(|idents| idents.visit_expr(&expr.cond))),
+                syn::Expr::While(expr) => Some(fingerprint(|idents| idents.visit_expr(&expr.cond))),
+                syn::Expr::ForLoop(expr) => Some(fingerprint(|idents| {
+                    idents.visit_pat(&expr.pat);
+                    idents.visit_expr(&expr.expr);
+                })),
+                _ => None,
+            };
+            let kind = match (callee, condition) {
+                (Some(callee), _) => format!("{kind}:{callee}"),
+                (None, Some(condition)) => format!("{kind}({condition})"),
+                (None, None) => kind.to_owned(),
+            };
             self.within(kind, |scan| visit::visit_expr(scan, expr));
         }
     }
@@ -974,6 +989,18 @@ impl<'ast> Visit<'ast> for Scan {
         visit::visit_field_pat(self, pat);
     }
 
+    fn visit_expr_if(&mut self, expr: &'ast syn::ExprIf) {
+        // The condition sits in the `if` itself; its two branches are told apart.
+        for attr in &expr.attrs {
+            self.visit_attribute(attr);
+        }
+        self.visit_expr(&expr.cond);
+        self.within("then", |scan| scan.visit_block(&expr.then_branch));
+        if let Some((_, other)) = &expr.else_branch {
+            self.within("else", |scan| scan.visit_expr(other));
+        }
+    }
+
     fn visit_expr_match(&mut self, expr: &'ast syn::ExprMatch) {
         // Each production arm is keyed by its position and its pattern's name, so a read moved to
         // another branch of the same match is another site.
@@ -1008,7 +1035,7 @@ impl Scan {
     /// most macros take, else as statements, else as items, and visited with its test code left
     /// out. A body that is none of these (a `macro_rules!` matcher, a transcriber with `$x`) is
     /// walked token by token: each group is tried the same way, a `#[cfg(test)]` attribute drops
-    /// the tokens it governs (up to its `;` or braced body), and every other seam field name counts.
+    /// the tokens it governs (up to its `;`, `,` or braced body), and every other seam field name counts.
     fn macro_tokens(&mut self, cursor: syn::buffer::Cursor<'_>) {
         let tokens = cursor.token_stream();
         let exprs = Punctuated::<syn::Expr, Token![,]>::parse_terminated;
@@ -1050,6 +1077,22 @@ impl Scan {
     }
 }
 
+/// The identifiers of a syntax node, in source order, joined by spaces.
+fn fingerprint(visit: impl FnOnce(&mut Idents)) -> String {
+    let mut idents = Idents::default();
+    visit(&mut idents);
+    idents.0.join(" ")
+}
+
+#[derive(Default)]
+struct Idents(Vec<String>);
+
+impl<'ast> Visit<'ast> for Idents {
+    fn visit_ident(&mut self, ident: &'ast syn::Ident) {
+        self.0.push(ident.to_string());
+    }
+}
+
 /// Whether a `cfg(...)` meta's predicate is test-only.
 fn cfg_needs_test(meta: &syn::Meta) -> bool {
     match meta {
@@ -1058,13 +1101,14 @@ fn cfg_needs_test(meta: &syn::Meta) -> bool {
     }
 }
 
-/// The cursor past the tokens a leading attribute governs: through the first `;` or braced group
-/// at this level, or to the end.
+/// The cursor past the tokens a leading attribute governs: through the first `;` or `,` or
+/// braced group at this level, or to the end. A `,` bounds one entry of a comma-delimited macro;
+/// stopping early there only keeps test tokens in the count, never drops production ones.
 fn skip_governed(mut cursor: syn::buffer::Cursor<'_>) -> syn::buffer::Cursor<'_> {
     while !cursor.eof() {
         if let Some((punct, next)) = cursor.punct() {
             cursor = next;
-            if punct.as_char() == ';' {
+            if matches!(punct.as_char(), ';' | ',') {
                 break;
             }
         } else if let Some((_, delimiter, _, next)) = cursor.any_group() {
@@ -1712,4 +1756,37 @@ fn parameter_room_is_judged_by_its_own_match() {
         "fn parameter_room() { let _ = match key { \"locate_message\" => combat, \
          _ => qualified, }; combat }"
     ));
+}
+
+#[test]
+fn a_read_moved_to_a_sibling_branch_is_another_site() {
+    let first =
+        scan("fn tick(&self) { if armed { consume(self.combat_room); } if idle { stop(); } }");
+    let second =
+        scan("fn tick(&self) { if armed { stop(); } if idle { consume(self.combat_room); } }");
+    let otherwise =
+        scan("fn tick(&self) { if armed { stop(); } else { consume(self.combat_room); } }");
+    let looped = scan("fn tick(&self) { while armed { consume(self.combat_room); } }");
+    let sites = |scan: &Scan| {
+        scan.sites
+            .iter()
+            .map(|site| site.site.clone())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(sites(&first), ["if(armed)/then/call:consume/field/read"]);
+    assert_eq!(sites(&second), ["if(idle)/then/call:consume/field/read"]);
+    assert_eq!(
+        sites(&otherwise),
+        ["if(armed)/else/block/call:consume/field/read"]
+    );
+    assert_eq!(sites(&looped), ["while(armed)/call:consume/field/read"]);
+}
+
+#[test]
+fn a_test_only_macro_entry_ends_at_its_comma() {
+    let scan = scan(
+        "fn route(o: &O) { routes! { #[cfg(test)] probe => o.combat_room, live => o.qualified_room, } }",
+    );
+    let fields: Vec<&str> = scan.sites.iter().map(|site| site.field.as_str()).collect();
+    assert_eq!(fields, ["qualified_room"]);
 }
