@@ -67,7 +67,7 @@ Gate notes:
 
 | Item | Ruling |
 |---|---|
-| 7 | **HIRE-1** goes ahead and is not deferred. A brief is needed (brief pending, PR B). Delivery follows Tibia: the hireling is a Store product, wired once the Store contract lands (Platform #1625). |
+| 7 | **HIRE-1** goes ahead and is not deferred. A brief is needed: `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE). Delivery follows Tibia: the hireling is a Store product, wired once the Store contract lands (Platform #1625). |
 | 8 | **SOCIAL-LATE-1:** as in Tibia. No marriage. The PvP arena moves to ARENA-1. |
 | 9 | **LOOP-GROUND-1:** no periodic ground cleanup between resets. Revisit only if the server is heavily loaded in practice. |
 | 10 | **WEATHER-1** is visual only, with no gameplay effect. |
@@ -89,7 +89,7 @@ Executed by the control plane within architect scope:
 - the Status line of each brief in §1 (ACCEPTED, citing this record);
 - the Status lines of GUILD-0, PARTY-PVP-0, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0 and `ADR-0021-world-map-runtime-loading.md` (ACCEPTED, citing ACCEPT-SOCIAL-MAP-0);
 - `OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`: Appendix 7 status list; PREM-2b+PREM-5; NPC-ECON-1; the WEATHER-1, SEC-1 and ITEM-LOOK-1 order; LOOP-GROUND-1; HIRE-1; SOCIAL-LATE-1; TUTORIAL-1; CRAFT-1 rows. No file under `docs/contracts/` encodes this order or these statuses, so no registry changed;
-- the two CANDIDATE briefs CRAFT-1 and HIRE-1: brief pending (PR B); not part of this acceptance batch.
+- the two CANDIDATE briefs CRAFT-1 and HIRE-1: the HIRE-1 brief is written (`OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md`); the CRAFT-1 brief is pending (its own PR); not part of this acceptance batch.
 
 ## 5. Unblocked
 
