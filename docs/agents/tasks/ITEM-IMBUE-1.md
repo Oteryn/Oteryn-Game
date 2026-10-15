@@ -212,3 +212,136 @@ remain required.
 Direct rustfmt --check on all three owned Rust files and workspace cargo fmt
 --all --check pass. Final source verification confirms tested bytes and unchanged
 native/registration roots. No commit or publication was performed.
+
+
+### Private native checkpoint-storage successor (2026-10-15, authoring)
+
+The root allocated a new, unused four-path successor at existing draft head
+`f30fe2a59f0179104948778129a2d5d2dd758f30` to `gm_audit_1`. The prior published
+planner packet and its qualification remain history above. This successor prepares
+actual private storage under accepted IMBUE-FORGE-0 §§4.1, 4.3 and 15. It adds no
+public Root commit/admission/timer entrypoint. A supplied remaining value, even a
+monotone one with a genuine equipment fence, does not prove elapsed ticking time.
+The actual elapsed owner and its admitted provenance remain a concrete CP gate.
+
+The proposed `game_item_imbuements` table is private and UNINSTALLED. It retains
+all original item/slot/key/content-revision/category/tier/applying-occurrence/Tx
+facts, one category per item and remaining 0..72,000,000. Its preparation guard
+allows only downward remaining updates with every other column unchanged; all
+DELETE/TRUNCATE is refused. No apply/clear/expiry API, fee, item/value mutation,
+event, new checkpoint identity/revision or CharacterRevision write is introduced.
+The future audited applying/clear/expiry owner must compose its genuine closed
+proofs before the final schema/grants/migration are installed. Initial private
+slot rows in tests are explicitly privileged synthetic DATA, not an application,
+Imbuement catalogue admission or elapsed-time source.
+
+`load_checkpoint_in_transaction` consumes the actual opaque native
+`EquipmentAuthority`, whose original producer checks recovery, current session,
+lease, Channel assignment/Node possession, live Character and independently current
+Content in that physical transaction. The unchanged equipment reader rechecks
+physical transaction identity and reads/locks native equipment state and real
+Item rows. The helper verifies all chosen item names are currently equipped and
+locks all retained slots for each chosen item in deterministic item/slot order.
+Its returned complete before snapshot remains DATA, never a reusable authority.
+
+`store_checkpoint_in_transaction` replans the supplied batch, so caller-assembled
+usage/count/order/parent fields cannot bypass the planner. It re-reads the complete
+native equipment snapshot and every selected item's retained slot rows, compares
+all before facts before its first update, and applies full-binding/remaining SQL
+CAS. A nested savepoint rolls the whole primitive back on any refusal/error even
+if a compositor later commits its enclosing transaction. Zero rows remain present.
+A stale replay is refused; an eventual elapsed/reconciliation owner must inspect
+actual committed after data rather than infer an outcome from a retry error.
+
+Current native equipment supports nine non-backpack equipment slots; its ordinary
+main backpack is a distinct owner slot. The real-PG maximum here is nine equipped
+items, 27 private rows and 36 work. The accepted planner ceiling remains ten items,
+30 rows and 40 work, with its existing pure max/max+1 checks. No synthetic tenth
+native equipment slot is created to claim unsupported runtime coverage.
+
+Qualification is still pending. Eight new original PostgreSQL cases are authored
+for zero/binding reload, each immutable-before substitution, savepoint rollback
+with outer commit, direct monotonicity/deletion guards, independent current native
+session/lease/scope/Node/content/physical-TX failures, concurrent stale-before CAS,
+actual unequip/re-equip and forged usage, and the real nine-slot maximum. They use
+unchanged native item-transfer fixtures, genuine Root recovery, mint/transfer and
+equipment writer APIs, and the existing equipment owner's explicit test-only
+classification profile pattern. Native guards stay enabled. Test-only Content
+activation, ordinary untimed items and raw Imbuement rows do not claim admission
+E2E, timed-item support or effects. The fixture grants its isolated runtime role
+only SELECT/UPDATE(remaining_ms) on the private table, never a production grant.
+
+Heavy Rust/PG validation remains on the root's resource HOLD. Direct rustfmt and
+`git diff --check` pass; no native metadata/build/test result is claimed yet.
+Outside evidence will be retained in
+`/workspace/oteryn-prep/item-imbue-1-checkpoint-native-2-evidence/`.
+Production registration/grants/migration, actual elapsed/fight/PZ/runtime clocks,
+60-second accounting and all-boundary flush, failure suspension/effects,
+audited apply/clear/expiry, native tenth-slot compatibility and full family
+integration/CI/CP remain open. No worker commit/push/ready/merge occurred.
+### Native private checkpoint qualification, 2026-10-15
+
+The subsequent actual native run qualified the private storage source above. All **20
+original cases passed**: twelve retained pure cases and eight genuine PostgreSQL cases,
+zero ignored or filtered, in13.47s. Every PG setup required the configured native admin
+route and asserted server_version_num170006. This supersedes only the earlier statement
+that these authored cases had not executed; the production/elapsed-owner gates remain open.
+
+The exact owned domain/storage/test source was compiled with the actual native crate,
+private Root/equipment APIs and unchanged item-transfer fixture. Outside-tree registration
+was cfg(test)-only; existing bestiary fixture registration was reused rather than duplicated.
+The sole added fixture expectation context preserves that fixture's original native
+clippy::expect_used context. The selected-body transform removes only the twenty test
+attributes, changes parent visibility and adds forwarding glue. Whole-file reverse
+reconstruction binds the unchanged test bodies and assertions to the driver and raw logs.
+The actual storage production implementation has no cfg(test) alternative; its only
+conditional section is the existing test-module declaration.
+
+Fresh Cargo capture intentionally stopped at sentinel86/Cargo101 before the root test
+harness. Native selected-body metadata/Clippy, normal cfg(test) rlib, driver linking and
+execution then all exited0 on that same captured dependency graph. Configured Clippy denials
+remain active and baseline Rust warnings remain visible; this is not a blanket-Dwarnings
+or original global --test metadata/full-server CI pass. No redundant compile of unchanged,
+unregistered production code is counted as qualification of this component. Candidate source
+and extern hashes before/after execution matched; shared oom/oom_kill counters remained12/7.
+
+Actual PG coverage includes full before-binding substitutions, wrong requested session,
+connection/lease/scope/World/Character/Content and independently registered foreign Node
+against otherwise valid native facts, plus genuine opaque authority moved across physical
+transactions. These requested-fence tests are not represented as independent retirement of
+each authoritative database owner. A genuine native unequip/re-equip changes the equipment
+revision and invalidates the old complete snapshot. Downward updates reach zero while
+retaining every row and immutable application identity; native equipment and CharacterRevision
+remain unchanged. Real direct SQL guard negatives reject rebinding, increases, DELETE and
+TRUNCATE. An injected second-row error proves rollback of the first update even when the
+caller commits its enclosing transaction. Two independently opened SQL transactions using
+genuine native equipment authority serialize one successful CAS and one Stale outcome;
+native admission relation locking also serializes them before finer row locks.
+
+The real installed equipment owner supports nine ordinary wearable slots, not ten. Actual
+PG qualification therefore uses nine genuine equipped items,27 retained rows and36 work;
+the accepted pure planner separately proves10items/30rows/40work and maximum-plus-one
+refusal. A genuine native MINT in Ground custody is refused as non-equipped. No synthetic
+tenth equipped slot, timed equipment admission or elapsed-time correctness is claimed.
+
+Independent Item review found one pre-execution fixture race: concurrent recovery opens
+against the native one-pass Root could fail before CAS. Recovery is now genuinely reconciled
+sequentially before joining; each physical transaction still obtains its own unchanged
+native opaque equipment authority. The correction was source-reviewed before this passing
+run. No behavioral RED was fabricated for the earlier authored fixture.
+
+Durable evidence is /workspace/oteryn-prep/item-imbue-1-checkpoint-native-2-evidence:
+attempt-1 contains actual commands/status/logs, exact input and literal-macro provenance,
+cfg/body transforms and source/extern/resource manifests. Completed custom metadata, rlib
+and driver may be losslessly archived with raw/archive/decompressed hashes and exact restore
+arguments; no shared dependency, source or authority artifact is removed. Governance checked
+22 required documents/9 lanes and124 original tests; final card/source binding, whitespace,
+formatting and exact four-path scope accompany the frozen manifest.
+
+The admitted elapsed/actor-tick producer is still absent. Supplied remaining values remain
+DATA, and genuine current equipment authority does not justify their elapsed amount. This
+private primitive has no public Root commit/admission method, production installation or
+grants, timer/controller/effect, apply/clear/expiry DELETE, value or audit write. The eventual
+elapsed owner, numbered schema/security composition, shared registration/runtime hooks and
+exact-head integrated CI remain CP work. This packet is a qualified private checkpoint
+storage component, not completed ITEM-IMBUE-1, full ticking or ready/merge authority.
