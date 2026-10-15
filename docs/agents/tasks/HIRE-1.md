@@ -40,7 +40,7 @@ Hirelings (house NPC servants: purchase, placement in the house, services).
 | HOUSE-1a | NOT MERGED | **BLOCKING** |
 | NPC-ECON-1 | NOT MERGED (Wave 2) | **BLOCKING** |
 | PREMIUM-1 | MERGED (#2110) | ok |
-| brief/packet for hirelings | MISSING on main: architect packet needed | **BLOCKING** |
+| acceptance of the HIRE1 brief (`OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md`) | ACCEPTED by the owner 2026-10-15 ("akceptuje hire i craft"), recorded in ACCEPT-BATCH-2026-10-15 §7; effective when this PR is integrated. Delivery still waits for the Platform Store contract (#1625) | ok |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
