@@ -1598,8 +1598,10 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
                 .as_ref()
                 .and_then(|_| content_controller.active()),
             premium_coordinator: None,
-            qualified_room: spell_input.as_ref().map(|_| &room),
-            combat_room: spell_input.as_ref().map(|_| &room),
+            rooms: crate::gameplay_transport::SeamRooms::new(
+                spell_input.as_ref().map(|_| &room),
+                spell_input.as_ref().map(|_| &room),
+            ),
             achievements: &achievements,
             npc_talk: None,
             imported_charms: &imported_charms,
