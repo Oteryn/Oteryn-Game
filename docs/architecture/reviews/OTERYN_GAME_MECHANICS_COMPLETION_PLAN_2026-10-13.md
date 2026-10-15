@@ -622,10 +622,10 @@ Acceptance gate: no child in this graph is allocated until its owning decision (
 | Child | Brief | Class | Reg | Depends on (from the brief) |
 |---|---|---|---|---|
 | CRAFT-CONTENT-1 | CRAFT1 | content: the `item_conversion` family, schema, generator and CI check |  | this decision |
-| CRAFT-RT-1 | CRAFT1 | hard, determinism and persistence review: conversion engine, `ConversionRngPurpose`, conversion receipt and guard arm | yes | CRAFT-CONTENT-1; ITEM-LOOP-1; ITEM-USE-1c (use-with ingress); the CRAFT1 C3a admission (DUR-03 §39.3 pointer and `DUR03-RL-*-CRAFT` rows, added at acceptance) |
+| CRAFT-RT-1 | CRAFT1 | hard, determinism and persistence review: conversion engine, `ConversionRngPurpose`, conversion receipt and guard arm | yes | CRAFT-CONTENT-1; ITEM-LOOP-1; ITEM-USE-1c (use-with ingress); the CRAFT1 C3a admission (DUR-03 §39.3 pointer and the C3a CRAFT rows, including the RL-07 event, payload and envelope byte rows, added at acceptance) |
 | CRAFT-FISH-1 | CRAFT1 | impl: fishing with the SKILLS-0 hook |  | CRAFT-RT-1; SKILLS-0 (Fishing skill and try hook); W2b (live skill-try accumulator and training formula) |
 | CRAFT-DIG-1 | CRAFT1 | impl: digging on the MAP-OVERLAY volatile layer, `revert_ms` from the row |  | CRAFT-RT-1; MAP-OVERLAY-1 |
-| CRAFT-NPC-1 | CRAFT1 | impl: NPC exchanges on the NPC-TRADE-1 writer |  | CRAFT-RT-1; NPC-TRADE-1 (writer merged, #2040) |
+| CRAFT-NPC-1 | CRAFT1 | impl: NPC exchanges on the NPC-TRADE-1 writer |  | CRAFT-RT-1; NPC-TRADE-1 (writer merged, #2040); an accepted NPC-exchange wire contract (separate candidate with protocol review, CRAFT1 C6; not allocated by CRAFT1) |
 
 ### MONSTER-META-1, EVENTS-RAID-1, EVENTS-WORLD-1, ARENA-1
 
