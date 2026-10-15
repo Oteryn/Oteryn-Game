@@ -177,19 +177,6 @@ impl NpcConversations {
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
         chat.close_out_of_range(runtime, session);
-        // A closed conversation is shown closed with its walk-away line first, even when it was
-        // never shown open or another has opened since; that one follows on the next tick. Every
-        // close since the last payload keeps its line, oldest first.
-        let farewells = chat.take_walked_away(session);
-        if !farewells.is_empty() {
-            return Some(NpcUpdate {
-                conversation: Some(NpcConversation {
-                    open: None,
-                    lines: farewells,
-                }),
-                window: self.close_window(session, None),
-            });
-        }
         let current = chat.engaged(session).and_then(|npc_ref| {
             let visible = runtime.visible_entities();
             let npc = visible.npcs.iter().find(|npc| npc.actor == npc_ref)?;
@@ -198,6 +185,19 @@ impl NpcConversations {
                 generation: npc.generation,
             })
         });
+        // A closed conversation is shown closed with its walk-away line first, even when it was
+        // never shown open or another has opened since; that one follows on the next tick and
+        // keeps its trade window. Every close since the last payload keeps its line, oldest first.
+        let farewells = chat.take_walked_away(session);
+        if !farewells.is_empty() {
+            return Some(NpcUpdate {
+                conversation: Some(NpcConversation {
+                    open: None,
+                    lines: farewells,
+                }),
+                window: self.close_window(session, current.map(|npc| npc.identity)),
+            });
+        }
         let window = self.close_window(session, current.map(|npc| npc.identity));
         let conversation = (current != shown).then(|| NpcConversation {
             open: current.map(|npc| (npc, NpcConversationState::Open)),

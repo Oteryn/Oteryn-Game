@@ -234,6 +234,16 @@ impl ChatRuntime {
         }
     }
 
+    /// A walk-away line of an earlier conversation, pending as a close would leave it.
+    #[cfg(test)]
+    pub(crate) fn push_walked_away(&self, session: GameSessionId, line: &str) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.walked_away.push(line.to_owned());
+        }
+    }
+
     /// The walk-away lines of the conversations moves closed since the last payload, once.
     pub(crate) fn take_walked_away(&self, session: GameSessionId) -> Vec<String> {
         self.sessions

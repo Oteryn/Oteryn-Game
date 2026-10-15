@@ -914,3 +914,29 @@ fn every_walk_away_line_since_the_last_payload_is_kept() {
     assert_eq!(closed.lines, vec!["Farewell.".to_owned(); 2]);
     assert!(chat.take_walked_away(session).is_empty());
 }
+
+#[test]
+fn an_earlier_walk_away_line_keeps_the_window_of_the_current_conversation() {
+    let (runtime, _, session, npc, chat, conversations) = trading(stock());
+    // An earlier conversation closed out of range before the follow tick drained its line.
+    chat.push_walked_away(session, "Good bye.");
+    let closed = conversations
+        .follow(&chat, &runtime, session, Some(npc))
+        .expect("payload");
+    assert_eq!(
+        closed.conversation.expect("conversation").lines,
+        vec!["Good bye.".to_owned()]
+    );
+    assert!(closed.window.is_none());
+    // The current conversation shows again on the next tick, its window still held: ending it
+    // closes that window.
+    let reopened = conversations
+        .follow(&chat, &runtime, session, None)
+        .expect("payload");
+    assert!(reopened.window.is_none());
+    chat.end_engagement(session, runtime.visible_entities().npcs[0].actor);
+    let ended = conversations
+        .follow(&chat, &runtime, session, Some(npc))
+        .expect("update");
+    assert_eq!(ended.window, Some(NpcTradeWindow::default()));
+}
