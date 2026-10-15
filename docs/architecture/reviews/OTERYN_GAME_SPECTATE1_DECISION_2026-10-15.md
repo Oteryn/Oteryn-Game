@@ -75,6 +75,7 @@ Order: SPECTATE-GRANT-1, SPECTATE-SESSION-1, SPECTATE-WIRE-1. The plan row's oth
 ## 5. Open points (not decided here)
 
 - **Owner question (Global parity):** no repository reference shows a player observer feature in Global Tibia (§2). Options: (a) build the contract and keep `SPECTATE_V1` off until a reference or an owner deviation exists; (b) treat it as an accepted Oteryn deviation and enable it after the children; (c) drop player observation and keep only staff observation (GM-1). Recommendation: (a), so the privacy contract is fixed before any producer exists.
+  - **Owner answer (2026-10-15): (b).** Player observation is an accepted Oteryn deviation from Global parity. `SPECTATE_V1` may be offered once SPECTATE-GRANT-1, SPECTATE-SESSION-1 and SPECTATE-WIRE-1 have merged and CP enables it; the O1 to O12 rules are unchanged.
 - Additional disclosure tiers (equipment, skills, the target's own chat) per grant.
 - An observer chat room, and whether observers may see each other.
 - Whether a broadcast delay could replace the O7 PvP refusal.
@@ -96,5 +97,6 @@ production_authority_changed: false
 implementation_may_resume: false
 required_fresh_allocation: true
 required_independent_review: "security, privacy, protocol, concurrency"
-blocked_on: "owner answer to §5 (Global parity) before SPECTATE_V1 is offered"
+owner_answer_s5: "b (accepted Oteryn deviation, 2026-10-15)"
+blocked_on: "contract acceptance (exact-head validation, independent review) and the three children before SPECTATE_V1 is offered"
 ```
