@@ -89,3 +89,43 @@ fn each_logout_attempt_has_its_own_familiar_occurrence() -> Result<(), String> {
     );
     Ok(())
 }
+
+/// #2127 Codex P1 4280143976: a familiar save whose durable session read failed proves
+/// nothing, so it is `Unknown` (the logout release retries and never commits TERMINAL over an
+/// unsaved familiar); only a row that disproves the actor end is `FencedOut`.
+#[test]
+fn an_unreadable_familiar_fence_is_unknown_and_only_a_mismatch_is_fenced_out() -> Result<(), String>
+{
+    use super::actor_spell::{
+        FamiliarActorEnd, FamiliarFenceRead, FamiliarLogoutSave, familiar_end_read,
+    };
+    use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};
+
+    let ours = AuthenticatedTransportRefV1::decode(&[1; 16]).map_err(|e| format!("{e:?}"))?;
+    let other = AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(|e| format!("{e:?}"))?;
+    let active = GameSessionState::Active;
+    for end in [
+        FamiliarActorEnd::Logout(ours, 1),
+        FamiliarActorEnd::GraceExpiry(3),
+    ] {
+        assert_eq!(familiar_end_read(end, None), FamiliarFenceRead::Unavailable);
+        assert_eq!(
+            familiar_end_read(end, None).into_save(),
+            Err(FamiliarLogoutSave::Unknown)
+        );
+    }
+    let logout = FamiliarActorEnd::Logout(ours, 1);
+    assert_eq!(
+        familiar_end_read(logout, Some((active, None, Some(ours)))).into_save(),
+        Ok(())
+    );
+    assert_eq!(
+        familiar_end_read(logout, Some((active, None, Some(other)))).into_save(),
+        Err(FamiliarLogoutSave::FencedOut)
+    );
+    assert_eq!(
+        familiar_end_read(logout, Some((GameSessionState::Terminal, None, Some(ours)))),
+        FamiliarFenceRead::Mismatch
+    );
+    Ok(())
+}

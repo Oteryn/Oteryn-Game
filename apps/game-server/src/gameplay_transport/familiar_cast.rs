@@ -136,6 +136,44 @@ pub(in crate::gameplay_transport) enum FamiliarLogoutSave {
     FencedOut,
     Unknown,
 }
+/// What the durable reads behind a familiar actor-end save proved. A failed read proves
+/// nothing, so it is `Unavailable` and the save is `Unknown` (the release retries); only a row
+/// that disproves the actor end is `Mismatch`, a `FencedOut` save (#2127 Codex P1 4280143976).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::gameplay_transport) enum FamiliarFenceRead<T> {
+    Proven(T),
+    Mismatch,
+    Unavailable,
+}
+impl<T> FamiliarFenceRead<T> {
+    pub(in crate::gameplay_transport) fn into_save(self) -> Result<T, FamiliarLogoutSave> {
+        match self {
+            Self::Proven(value) => Ok(value),
+            Self::Mismatch => Err(FamiliarLogoutSave::FencedOut),
+            Self::Unavailable => Err(FamiliarLogoutSave::Unknown),
+        }
+    }
+}
+/// Classifies the durable session row read for a familiar save; `None` is a failed read.
+pub(in crate::gameplay_transport) fn familiar_end_read(
+    end: FamiliarActorEnd,
+    row: Option<(
+        GameSessionState,
+        Option<u64>,
+        Option<crate::foundation::AuthenticatedTransportRefV1>,
+    )>,
+) -> FamiliarFenceRead<()> {
+    match row {
+        None => FamiliarFenceRead::Unavailable,
+        Some((state, loss_epoch, transport)) => {
+            if familiar_end_proven(end, state, loss_epoch, transport) {
+                FamiliarFenceRead::Proven(())
+            } else {
+                FamiliarFenceRead::Mismatch
+            }
+        }
+    }
+}
 /// Moves a parked familiar attempt into its caster's marker for the resolution (§1.6).
 pub(crate) fn restore_parked_familiar(
     states: &mut ChannelSpellStates,
@@ -451,8 +489,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(profile) = self.first_active_familiar_profile() else {
             return FamiliarLogoutSave::NotApplicable;
         };
-        let Some(fence) = self.familiar_logout_fence(session, end).await else {
-            return FamiliarLogoutSave::FencedOut;
+        let fence = match self.familiar_logout_fence(session, end).await.into_save() {
+            Ok(fence) => fence,
+            Err(save) => return save,
         };
         let Ok(Some(progression)) = self
             .root
@@ -565,8 +604,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !committed.matches_request(&prepared.fence, &prepared.request) {
             return FamiliarLogoutSave::Unknown;
         }
-        let Some(fresh) = self.familiar_logout_fence(session, end).await else {
-            return FamiliarLogoutSave::FencedOut;
+        let fresh = match self.familiar_logout_fence(session, end).await.into_save() {
+            Ok(fresh) => fresh,
+            Err(save) => return save,
         };
         let mut expected = prepared.fence;
         expected.expected_character_revision = committed.committed_character_revision();
@@ -598,27 +638,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
         end: FamiliarActorEnd,
-    ) -> Option<CurrentCharacterGameplayFence> {
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
+    ) -> FamiliarFenceRead<CurrentCharacterGameplayFence> {
+        let read = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(session)
-            .await
-            .ok()?;
-        if !familiar_end_proven(
-            end,
-            current.session_state(),
-            current.current_control_loss_epoch().map(|v| v.get()),
-            current.current_transport(),
-        ) {
-            return None;
+            .await;
+        let row = read.as_ref().ok().map(|(current, _)| {
+            (
+                current.session_state(),
+                current.current_control_loss_epoch().map(|v| v.get()),
+                current.current_transport(),
+            )
+        });
+        match familiar_end_read(end, row) {
+            FamiliarFenceRead::Proven(()) => {}
+            FamiliarFenceRead::Mismatch => return FamiliarFenceRead::Mismatch,
+            FamiliarFenceRead::Unavailable => return FamiliarFenceRead::Unavailable,
         }
-        let character =
-            CharacterId::from_bytes(*current.commit().character_id().as_bytes()).ok()?;
-        let root = self
+        let Ok((current, _)) = read else {
+            return FamiliarFenceRead::Unavailable;
+        };
+        let Ok(character) = CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+        else {
+            return FamiliarFenceRead::Unavailable;
+        };
+        let Ok(root) = self
             .root
             .read_current_character(self.character, character)
             .await
-            .ok()?;
-        Some(CurrentCharacterGameplayFence {
+        else {
+            return FamiliarFenceRead::Unavailable;
+        };
+        FamiliarFenceRead::Proven(CurrentCharacterGameplayFence {
             character_id: character,
             game_session_id: session,
             connection_generation: current.current_connection_generation(),
