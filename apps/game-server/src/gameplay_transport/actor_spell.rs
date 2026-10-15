@@ -1010,7 +1010,9 @@ pub(crate) fn observe_vitals(
 /// CONDITIONS-0 §3.5 at the transport: once the cast's spell is identified, a gate answers
 /// `REJECTED` before every dispatcher pre-check and every SPELL-D1 `resolve_cast` check; only
 /// the CHAT-0 §6 chat-mute pre-gate runs earlier. A gate in the player's spell state or in its
-/// runtime condition slot refuses alike, as at attack admission. `None` lets the cast go on.
+/// runtime condition slot refuses alike, as at attack admission. The refusal is the typed gate
+/// in §3.5 precedence across both, kept server-side (§7); the caller answers `REJECTED`.
+/// `None` lets the cast go on.
 pub(crate) fn condition_gated_cast(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -1019,18 +1021,15 @@ pub(crate) fn condition_gated_cast(
     game_session_id: GameSessionId,
     intent: &SpellCastIntent,
     now: SemanticTimeMicros,
-) -> Option<SpellCastOutcome> {
+) -> Option<crate::ability::condition::ConditionGate> {
     let (spell, _) = book.source_indexed(intent.spell)?;
     let state = states.get(runtime, actor, game_session_id)?;
     let slot = runtime
         .actor_conditions(actor, Some(game_session_id))
-        .map_or(Ok(()), |store| {
-            crate::spell::cast::store_condition_gate(store, spell, now)
-        });
-    crate::spell::cast::condition_gate(state, spell, now)
-        .and(slot)
-        .err()
-        .map(|_| SpellCastOutcome::rejected())
+        .ok()
+        .and_then(|store| crate::spell::cast::store_condition_gate(store, spell, now).err());
+    let own = crate::spell::cast::condition_gate(state, spell, now).err();
+    own.into_iter().chain(slot).min()
 }
 
 /// One cast of `intent` by the admitted actor, as one Channel-owner work item under the runtime
@@ -1132,6 +1131,7 @@ pub(crate) mod tests {
     use std::num::NonZeroU32;
 
     use super::*;
+    use crate::ability::condition::ConditionGate;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::Vocation;
 
@@ -1282,7 +1282,7 @@ pub(crate) mod tests {
         gate_player(&mut states, actor, session, "pacified");
         assert_eq!(gated(&states), None);
         gate_player(&mut states, actor, session, "muted");
-        assert_eq!(gated(&states), Some(SpellCastOutcome::rejected()));
+        assert_eq!(gated(&states), Some(ConditionGate::Muted));
         assert_eq!(
             condition_gated_cast(
                 &runtime,

@@ -274,9 +274,7 @@ fn a_pacified_that_expired_before_any_read_still_clears_the_target_it_was_applie
 
 #[test]
 fn a_gate_in_the_runtime_condition_slot_refuses_a_cast_as_well() {
-    use super::super::actor_spell::{
-        ChannelSpellStates, SpellCastOutcome, condition_gated_cast, tests,
-    };
+    use super::super::actor_spell::{ChannelSpellStates, condition_gated_cast, tests};
     let book = crate::spell::cast::v1_spell_book().expect("book");
     // `exura` is not aggressive: only `muted` refuses it.
     for (key, refused) in [("muted", true), ("pacified", false), ("powerless", false)] {
@@ -300,7 +298,7 @@ fn a_gate_in_the_runtime_condition_slot_refuses_a_cast_as_well() {
         gate(&mut runtime, player, session, key);
         assert_eq!(
             gated(&runtime, at(1)),
-            refused.then(SpellCastOutcome::rejected),
+            refused.then_some(crate::ability::condition::ConditionGate::Muted),
             "{key}"
         );
         assert_eq!(gated(&runtime, at(10_000)), None);

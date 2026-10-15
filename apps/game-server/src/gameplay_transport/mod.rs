@@ -4156,8 +4156,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_now(),
             )
         };
-        if gated.is_some() {
-            return gated;
+        if let Some(gate) = gated {
+            // §7: the typed gate stays in the operator log; the wire answer is `REJECTED`.
+            operator_event(&format!(
+                "event=spell_cast_condition_gated gate={}",
+                gate.key()
+            ));
+            return Some(actor_spell::SpellCastOutcome::rejected());
         }
         if !self.ensure_source_map_initialized().await {
             return None;
