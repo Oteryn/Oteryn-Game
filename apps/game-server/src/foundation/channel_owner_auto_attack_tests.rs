@@ -1520,6 +1520,99 @@ fn the_chase_search_drain_gives_the_same_routes_in_any_check_order() {
 }
 
 #[test]
+fn the_drain_serves_sixty_four_searches_a_window_and_the_sixty_fifth_in_the_next() {
+    // RANGED0-RL-03 max=64 / max+1=65: 65 chases wait from one window; the next window's drain
+    // serves 64 of them in actor id order, and the 65th keeps its place for the window after.
+    let rat_at = distant_open_cell();
+    let mut owner = owner_with_capacity(OPEN_PLAYER, rat_at, 66);
+    let none = std::collections::BTreeSet::new();
+    let cells: Vec<_> = (-6..=6)
+        .flat_map(|dy| (-8..=8).map(move |dx| (dx, dy)))
+        .filter(|(dx, dy): &(i32, i32)| dx.abs() > 1 || dy.abs() > 1)
+        .map(|(dx, dy)| MovementLocalPosition {
+            x: rat_at.x + dx,
+            y: rat_at.y + dy,
+            ..rat_at
+        })
+        .filter(|cell| *cell != OPEN_PLAYER)
+        .filter(|cell| chase_path_tile(owner.room.movement_cells(), &none, *cell))
+        .take(64)
+        .collect();
+    assert_eq!(cells.len(), 64, "64 open cells around the rat");
+    let mut chasers = vec![(owner.player, owner.session)];
+    for (index, cell) in cells.into_iter().enumerate() {
+        let session = GameSessionId::decode(&uuid(u8::try_from(10 + index).unwrap())).unwrap();
+        let reservation = owner.runtime.reserve_fresh_session(session).unwrap();
+        let player = owner.runtime.commit_fresh_session(reservation).unwrap();
+        owner
+            .runtime
+            .initialize_pinned_test_position(player, cell)
+            .expect("the chaser stands on its own open cell");
+        chasers.push((player, session));
+    }
+    chasers.sort_by_key(|(actor, _)| actor_order(*actor));
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let room = owner.room.clone();
+    let rat = owner.rat;
+    for &(player, session) in &chasers {
+        assert_eq!(
+            owner.attack.set_target(
+                &owner.runtime,
+                Some(&room),
+                player,
+                session,
+                at(T0),
+                Some(rat),
+                1,
+            ),
+            AttackIntentDisposition::Ok
+        );
+        assert!(
+            owner
+                .attack
+                .set_modes(&owner.runtime, player, session, modes)
+        );
+    }
+    let window = crate::combat_attack::CHASE_WINDOW_MICROS;
+    let check = |owner: &mut Owner, now: u64, (player, session): (ExactActorRef, GameSessionId)| {
+        owner
+            .attack
+            .chase_decision(&owner.runtime, &room, player, session, at(now), |cell| {
+                chase_path_tile(room.movement_cells(), &none, cell)
+            });
+    };
+    let waiting = |owner: &Owner| -> Vec<ExactActorRef> {
+        chasers
+            .iter()
+            .filter(|(player, _)| {
+                owner.attack.entries.iter().any(|entry| {
+                    entry.actor == *player && entry.chase.search_waiting_since().is_some()
+                })
+            })
+            .map(|(player, _)| *player)
+            .collect()
+    };
+    for &chaser in chasers.iter().rev() {
+        check(&mut owner, T0, chaser);
+    }
+    assert_eq!(
+        waiting(&owner).len(),
+        65,
+        "every chase waits from the first window"
+    );
+    // The highest id reaches the Channel first; the drain still serves the 64 lowest ids.
+    check(&mut owner, T0 + window, chasers[64]);
+    assert_eq!(waiting(&owner), vec![chasers[64].0]);
+    check(&mut owner, T0 + 2 * window, chasers[0]);
+    assert!(
+        waiting(&owner).is_empty(),
+        "the 65th is served in the next window"
+    );
+}
+#[test]
 fn the_actor_pacing_deadline_survives_a_replaced_connection() {
     // CHASE-1 (RANGED-0 §8): the deadline is the actor's, not its connection's, so a resumed or
     // replaced connection starts from it and never steps sooner.
