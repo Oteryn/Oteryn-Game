@@ -1,0 +1,54 @@
+// HOUSE-WIRE-1 INACTIVE PROPOSAL, pending independent protocol review and CP slot.
+// Accepted semantics: HOUSE_OWN0§11; HOUSE_RUNTIME0§5.3/§5.5 adds kick/leave.
+// This draft proposes these message/field numbers, date representation and flat byte bound;
+// it allocates NO capability ID, opcode, domain ID or resource-registry row. No codegen/pins.
+// FND-02 owns CommandRef and current session. Every body is request data, never authorization.
+// Exactly one variant required. Unknown fields/wire types, repeated singular fields, invalid
+// UTF-8/UUIDv7, duplicate list identities and >200 list entries fail closed. Empty list clears.
+// Actor's current World supplies HouseId World; body never selects owner/World/session/lease.
+// Proposed max3632 bytes derives from existing200 list entries×18B +position16B +revision11B
+// +outer3B, with2B slack. CP must register/measure bounds before activation.
+// Existing guild ACL amendment needs its own reviewed wire representation before this
+// character-only editing subset can claim complete ACL coverage. Query/domain projection,
+// common+house result mapping and client panel are NOT defined or activated by this proposal.
+syntax = "proto3";
+package oteryn.protocol.v1.house;
+
+message HouseBidV1 {
+  string house_key = 1; //1..512 UTF-8 bytes; native HouseId grammar checked by transport
+  uint64 max_gold = 2; //0 valid syntactically; owning auction writer applies actual admission
+}
+message HouseMoveOutV1 {
+  uint64 date_unix_ms = 1; //PROPOSED positive <=i64::MAX; writer checks1..30 days under DB clock
+}
+message HouseEmptyV1 {}
+enum HouseAclRole {
+  HOUSE_ACL_ROLE_UNSPECIFIED = 0;
+  HOUSE_ACL_ROLE_SUBOWNER = 1;
+  HOUSE_ACL_ROLE_GUEST = 2;
+}
+message HouseAclSetV1 {
+  HouseAclRole role = 1;
+  repeated bytes character_ids = 2; //0..200 distinct16-byte UUIDv7s; input order preserved
+  uint64 expected_revision = 3; //0 is forwarded syntactically; legal/stale revision check belongs writer
+}
+// Same encoding as native world_spatial ActorPositionV1. Actual house/door membership is not
+// implied by a syntactically valid position; owning runtime resolves it at current revision.
+message HouseDoorPositionV1 { sint32 x = 1; sint32 y = 2; sint32 floor = 3; } //floor0..15
+message HouseDoorSetV1 {
+  HouseDoorPositionV1 position = 1;
+  repeated bytes character_ids = 2;
+  uint64 expected_revision = 3;
+}
+message HouseKickV1 { bytes character_id = 1; }
+message HouseIntentV1 {
+  oneof intent {
+    HouseBidV1 bid = 1;
+    HouseMoveOutV1 move_out = 2;
+    HouseEmptyV1 cancel_move_out = 3;
+    HouseAclSetV1 acl_set = 4;
+    HouseDoorSetV1 door_set = 5;
+    HouseKickV1 kick = 6;
+    HouseEmptyV1 leave = 7;
+  }
+}
