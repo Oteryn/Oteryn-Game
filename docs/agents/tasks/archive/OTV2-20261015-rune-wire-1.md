@@ -27,6 +27,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs       # USE dispatch and result gate
   - crates/session/src/lib.rs                              # result negotiation check
   - tools/synthetic-client-harness/src/live/model.rs       # apply_use match arms only
+  - tools/qualification/node_boot/run.sh                   # ported Merge Queue CI fix, allocated by the #1622 control plane
   - docs/agents/tasks/archive/OTV2-20261015-rune-wire-1.md
 ```
 
