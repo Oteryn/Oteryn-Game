@@ -153,6 +153,9 @@ Inversion never applies to it.
   damage before the character's mitigation, the commit, and the minor. A tick runs charms only when its frozen
   source is a creature that is still present (§3.2's source lookup), since the race comes from it;
   a tick with no attacker evaluates no charm. Parry's reflection goes to that source creature.
+  An Agony tick skips every §3 step except the commit: steps 1 to 5 and 7 do not run (no charm,
+  block, armour or mitigation), and step 6 commits its full damage, death included, because Agony
+  cannot be blocked or resisted (CONDITIONS-0 §3.5).
 
 ## 5. Rejected options
 

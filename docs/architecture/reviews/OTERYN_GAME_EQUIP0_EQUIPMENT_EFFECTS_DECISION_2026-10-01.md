@@ -78,7 +78,7 @@ What does a worn item without time or charges do for its wearer, and in what ord
 | `STAT_BOOST` | max health or max mana, signed flat or percent | derived vitals maxima |
 | `SPEED` | signed flat amount, in CONDITIONS-0 §4.1's displayed units (content converts Canary's doubled unit) | CONDITIONS-0 §4.1 equipment term |
 | `PROTECTION` | element (the GAME-ABILITY-01 combat types), signed percent in [-100, 100], optional `field_only` (damage whose origin is a field) | GAME-ABILITY-01 §10 incoming contribution |
-| `SUPPRESS` | a CONDITIONS-0 conflict key | CONDITIONS-0 admission (§4) |
+| `SUPPRESS` | a CONDITIONS-0 conflict key other than `agony` (CONDITIONS-0 §3.5) | CONDITIONS-0 admission (§4) |
 | `LIGHT` | level, colour | WORLD-INTERACTION-0 §11.4 |
 
 ### 3.2 When an item is active
