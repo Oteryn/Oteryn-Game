@@ -731,7 +731,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cast_snapshot: None,
             };
             let value = &settings.value;
-            if value.premium != caster.premium {
+            if value.premium != caster.premium.is_current() {
                 return Some(SpellCastOutcome::rejected());
             }
             let Ok(equipment_speed) = owned.equipment_speed_bonus(content) else {
@@ -739,7 +739,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let facts = FamiliarOwnerFacts {
                 vocation: base_familiar_vocation(caster.vocation).to_owned(),
-                premium: caster.premium,
+                premium: caster.premium.is_current(),
                 level: caster.level,
                 account_at_least_god: value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(
@@ -1521,7 +1521,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
                 || caster
                     .as_ref()
-                    .is_some_and(|c| settings.value.premium != c.premium)
+                    .is_some_and(|c| settings.value.premium != c.premium.is_current())
             {
                 return Err(());
             }
@@ -1537,7 +1537,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The explicit NotApplicableDeath mode reaches only the source's Death
                 // branch, which never reads benefit/level/speed/cooldown inputs. These
                 // representation values grant no benefit; Cast/Login/Advance reject it.
-                premium: caster.as_ref().is_some_and(|c| c.premium),
+                premium: caster.as_ref().is_some_and(|c| c.premium.is_current()),
                 level: caster.as_ref().map_or(0, |c| c.level),
                 account_at_least_god: settings.value.account_at_least_god,
                 current_speed: i32::from(crate::spell::actor_conditions::movement_speed(

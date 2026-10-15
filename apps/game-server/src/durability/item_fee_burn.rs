@@ -465,6 +465,7 @@ async fn burn_fee(
         } else {
             ITEM_LIFECYCLE_LIVE
         },
+        key_number: 0,
     };
     let audit_lines = plan
         .lines

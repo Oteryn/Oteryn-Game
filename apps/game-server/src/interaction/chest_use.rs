@@ -214,6 +214,8 @@ pub(crate) struct ResolvedChest {
     /// with the claim. Only a placement the lowering bound (CHEST-QUEST-BIND-1) carries one; every
     /// other chest has none and its claim is unchanged.
     pub(crate) quest_transition: Option<String>,
+    /// The key number of a key reward (KEY-1), minted onto the item.
+    pub(crate) key_number: Option<u16>,
 }
 
 fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefinitionRef {
@@ -266,6 +268,7 @@ pub(crate) fn resolve_chest(
         quantity: reward.count,
         achievement: entry.achievement.clone(),
         quest_transition: entry.quest_transition.clone(),
+        key_number: entry.key_number,
     })
 }
 
@@ -317,6 +320,7 @@ pub(crate) async fn prepare_chest_use(
         sim_revision: request.sim_revision,
         achievement: chest_achievement(achievements, chest.achievement),
         quest_transition: chest.quest_transition,
+        key_number: chest.key_number,
     };
     Ok((child, mint_request))
 }
@@ -471,6 +475,7 @@ pub(crate) fn with_entry_chest(
                 }],
                 achievement: None,
                 quest_transition: None,
+                key_number: None,
             }],
         }),
         client_projection: ClientProjectionClass::ServerOnly,
@@ -615,6 +620,7 @@ mod tests {
             quantity: 1,
             achievement: None,
             quest_transition: None,
+            key_number: None,
         }
     }
 

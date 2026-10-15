@@ -460,13 +460,44 @@ impl SpellBook {
     }
 }
 
+/// The caster's Premium status for one cast (PREMIUM-ACTIVATION-0 §1.3): the gate's
+/// `PremiumStatus` without its pre-delivery witness.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CasterPremium {
+    Current,
+    NotCurrent,
+    #[allow(
+        dead_code,
+        reason = "WHEEL0-PS-1: the cast reads the gate's NotActivated with the W-1 Wheel exception"
+    )]
+    NotActivated,
+}
+impl CasterPremium {
+    /// `Current` only for a current Premium projection.
+    pub(crate) const fn from_current(current: bool) -> Self {
+        if current {
+            Self::Current
+        } else {
+            Self::NotCurrent
+        }
+    }
+    pub(crate) fn is_current(self) -> bool {
+        self == Self::Current
+    }
+    /// A Premium spell needs `Current` (§1.3). WHEEL0-PS-1 lets a `wheel_unlock` spell skip the
+    /// check under `NotActivated`; until W-1 applies it inside the gate, it fails closed too.
+    pub(crate) fn admits(self, spell: &SpellDefinition) -> bool {
+        !spell.premium || self == Self::Current
+    }
+}
+
 /// What the cast checks read from the caster.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct CasterState {
     pub(crate) vocation: Vocation,
     pub(crate) level: u32,
     pub(crate) magic_level: u32,
-    pub(crate) premium: bool,
+    pub(crate) premium: CasterPremium,
     pub(crate) mana: u32,
     pub(crate) max_mana: u32,
     pub(crate) soul: u32,
@@ -1161,7 +1192,7 @@ fn resolve(
     if spell.needs_weapon && !caster.melee_weapon {
         return Err(CastRejection::WeaponRequired);
     }
-    if spell.premium && !caster.premium {
+    if !caster.premium.admits(spell) {
         return Err(CastRejection::PremiumRequired);
     }
     if let Facts::Owned(operational, _) | Facts::CarriedItem(operational) = facts {

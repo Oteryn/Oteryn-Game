@@ -561,6 +561,7 @@ mod tests {
             } else {
                 ITEM_LIFECYCLE_LIVE
             },
+            key_number: 0,
         }
     }
 

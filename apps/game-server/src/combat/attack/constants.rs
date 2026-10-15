@@ -208,7 +208,7 @@ impl AttackConstants {
 
     #[allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )]
     pub(crate) fn block_refill_micros(&self) -> u64 {
         self.block.refill_ms.saturating_mul(1_000)

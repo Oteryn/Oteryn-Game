@@ -791,6 +791,7 @@ fn mint_message(
             definition: Some(definition_message(&request.item.definition)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
+            key_number: 0,
         }),
         destination: Some(ground),
         source: Some(OneItemMapItemMintCauseV1 {

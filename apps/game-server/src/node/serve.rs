@@ -375,6 +375,22 @@ fn unix_now() -> i64 {
         .unwrap_or(0)
 }
 
+/// PREM-WIRE-1 production composition (PREMIUM-ACTIVATION-0 §1.1-§1.2): the one Premium fence,
+/// the system trusted clock, the durable activation latch and no activation.
+fn production_premium_reads(
+    root: &DurabilityRoot,
+) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, SystemTrustedClock,
+    };
+    SpellPremiumCoordinator::new(
+        std::sync::Arc::default(),
+        Some(std::sync::Arc::new(SystemTrustedClock)),
+        None,
+        Some(root.clone()),
+    )
+}
+
 fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
@@ -2429,6 +2445,10 @@ async fn boot_and_serve(
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
+    // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
+    // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
+    // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
+    let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2442,7 +2462,7 @@ async fn boot_and_serve(
         chest: &chest,
         spells: &spells,
         active_generation: active_content.active(),
-        premium_coordinator: None,
+        premium_coordinator: Some(&premium_reads),
         qualified_room: bundle.is_none().then_some(&qualified_room),
         combat_room: combat_room.as_ref(),
         achievements: &achievements,
@@ -2658,6 +2678,28 @@ mod tests {
             assert_eq!(calls, 3);
             let mut refused = [None, Some(false)].into_iter();
             assert!(!await_answer(async || refused.next().flatten()).await);
+        });
+    }
+
+    #[test]
+    fn production_premium_reads_configure_no_activation_and_read_the_latch() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let reads = production_premium_reads(&root);
+            // PREMIUM-ACTIVATION-0 §1.2: no activation record in production, so Premium is
+            // never delivered and every account reads Free, without a latch write.
+            assert!(reads.activation().is_none());
+            assert!(reads.reads_latch());
+            assert!(reads.has_clock());
+            assert_eq!(
+                reads.premium_gate([1; 16]).await,
+                crate::domain::premium::PremiumGate::CLOSED
+            );
         });
     }
 

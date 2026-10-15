@@ -59,7 +59,7 @@ fn natures_embrace() -> SpellDefinition {
 fn druid() -> CasterState {
     CasterState {
         level: 300,
-        premium: true,
+        premium: crate::spell::CasterPremium::Current,
         ..caster(Vocation::Druid)
     }
 }

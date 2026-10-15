@@ -501,6 +501,94 @@ fn world_reward_claims_variants_and_other_records_are_filtered_out() -> TestResu
     Ok(())
 }
 
+/// An authored key variant (KEY-1) that waits for nothing but the key reward lowering.
+fn key_variant(key: &str, binding: &str, pending: &str) -> String {
+    claim(key, "ready", &[(1740, Some(100), (1, 1, 7))], REWARD)
+        .replace(
+            r#""readiness":"ready""#,
+            &format!(
+                r#""readiness":"waiting_implementation","definition_profile":"authored_variant_v1","native_admission":"WAITING_IMPLEMENTATION","data_holds":[],"source_variant":{{"achievement_grants":[],"charge_dispositions":[],"source_data":{{"status":"COMPLETE"}},"native_lowering":{{"status":"WAITING_IMPLEMENTATION","pending_implementation":[{pending}]}}}}"#
+            ),
+        )
+        .replace(
+            r#""reward":{"items":"#,
+            &format!(r#""reward":{{"key_binding":"{binding}","items":"#),
+        )
+}
+
+#[test]
+fn world_reward_claims_a_key_variant_is_served_with_its_key_number() -> TestResult {
+    let (base, _) = build(false)?;
+    const LOWERING: &str = r#""KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED""#;
+    let records = [
+        key_variant(
+            "oteryn:reward-claim.kv.key",
+            "canary:door-key/0010",
+            LOWERING,
+        ),
+        key_variant(
+            "oteryn:reward-claim.kv.other_server",
+            "crystalserver:door-key/0010",
+            LOWERING,
+        ),
+        key_variant("oteryn:reward-claim.kv.zero", "canary:door-key/0", LOWERING),
+        key_variant(
+            "oteryn:reward-claim.kv.wide",
+            "canary:door-key/65536",
+            LOWERING,
+        ),
+        key_variant(
+            "oteryn:reward-claim.kv.container",
+            "canary:door-key/0010",
+            r#""CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED","KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED""#,
+        ),
+        key_variant(
+            "oteryn:reward-claim.kv.stack",
+            "canary:door-key/0010",
+            LOWERING,
+        )
+        .replace(r#"{"count":1,"#, r#"{"count":2,"#),
+        // A plain record never carries a key binding.
+        claim(
+            "oteryn:reward-claim.kv.plain_key",
+            "ready",
+            &[(1740, Some(100), (1, 1, 7))],
+            REWARD,
+        )
+        .replace(
+            r#""reward":{"items":"#,
+            r#""reward":{"key_binding":"canary:door-key/0010","items":"#,
+        ),
+    ];
+    let report = bind(&base, &records)?;
+    let [served] = report.served.as_slice() else {
+        return Err("one served claim".into());
+    };
+    assert_eq!(served.key.as_str(), "oteryn:reward-claim.kv.key");
+    assert_eq!(served.placements[0].placement.key_number, Some(10));
+    assert_eq!(served.placements[0].placement.items[0].count, 1);
+    let left: Vec<_> = report
+        .left_out
+        .iter()
+        .map(|(k, why)| (k.as_str(), *why))
+        .collect();
+    assert_eq!(
+        left,
+        [
+            (
+                "oteryn:reward-claim.kv.other_server",
+                LeftOut::UnencodedField
+            ),
+            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+        ]
+    );
+    Ok(())
+}
+
 #[test]
 fn world_reward_claims_a_reward_item_without_a_definition_is_not_served() -> TestResult {
     let (base, _) = build(false)?;
@@ -573,9 +661,10 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         &base, &admitted,
     )?;
     // The fixture map holds none of the real chests: every ready claim is a candidate that
-    // does not bind, and the 12 waiting plain records are left out.
+    // does not bind, and the 12 waiting plain records are left out. KEY-1 adds the 21 key
+    // variants with a `canary:door-key/` binding.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    assert_eq!(candidates, 219);
+    assert_eq!(candidates, 240);
     assert!(report.served.is_empty());
     assert_eq!(
         report

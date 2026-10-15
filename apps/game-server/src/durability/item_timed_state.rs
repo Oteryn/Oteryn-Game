@@ -781,6 +781,7 @@ async fn write_expiry(
         definition: Some(definition_message(definition)),
         quantity,
         lifecycle,
+        key_number: 0,
     };
     let (after_state, row_after) = match request.target {
         Some(_) => (
