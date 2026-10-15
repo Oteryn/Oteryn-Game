@@ -390,6 +390,7 @@ impl Decider for Authority {
             Input::Intent(raw) => String::from_utf8_lossy(raw).into_owned(),
             Input::ReadConflict => "read_conflict".into(),
             Input::Unsupported => "unsupported".into(),
+            Input::Oversized => "oversized".into(),
         };
         self.seen.lock().unwrap().push((command.into(), kind));
         std::future::ready(self.decisions.pop_front().unwrap_or(Decision::Transient))
@@ -511,6 +512,21 @@ fn read_conflict_and_missing_intent() {
     assert!(log.iter().any(|l| {
         l.contains("result=CHAR_CMD_OPERATION_CONFLICT receipt=accepted alarm=operation_conflict")
     }));
+}
+
+#[test]
+fn oversized_intent_is_decided_not_retried() {
+    let (sent, seen, _) = drive(
+        vec![
+            Ok(page(&[(CREATE_COMMAND, OP1, "17")])),
+            Err(Failure::Oversized),
+            Ok(ACCEPTED.to_vec()),
+        ],
+        vec![publish("CHAR_CMD_INTENT_INVALID")],
+    );
+    assert_eq!(seen, [(CREATE_COMMAND.to_owned(), "oversized".to_owned())]);
+    assert_eq!(sent.len(), 4);
+    assert!(!Failure::Oversized.backs_off());
 }
 
 #[test]

@@ -299,6 +299,8 @@ pub enum Failure {
     RateLimited,
     /// A response outside the contract.
     InvalidResponse,
+    /// A `200` body over the operation's bound.
+    Oversized,
     /// `503`, any other status or transport failure.
     Unavailable,
 }
@@ -319,6 +321,7 @@ impl Failure {
             Self::Conflict => "conflict",
             Self::RateLimited => "rate_limited",
             Self::InvalidResponse => "invalid_response",
+            Self::Oversized => "oversized",
             Self::Unavailable => "unavailable",
         }
     }
@@ -405,7 +408,10 @@ impl CommandSource for MtlsSource {
         let (status, raw) =
             http1_mtls::exchange_with_status(&self.descriptor.0, operation, body, &mut permit)
                 .await
-                .map_err(|_| Failure::Unavailable)?;
+                .map_err(|error| match error {
+                    SourceError::OversizedOk => Failure::Oversized,
+                    _ => Failure::Unavailable,
+                })?;
         if status == 200 {
             Ok(raw)
         } else {
@@ -423,6 +429,9 @@ pub enum Input<'a> {
     ReadConflict,
     /// A command this consumer does not decide; it is not read.
     Unsupported,
+    /// The read answered `200` with a body over the intent bound (§3): not the
+    /// §4.2 wire, so the intent is invalid.
+    Oversized,
 }
 
 /// The Character Authority's answer for one operation.
@@ -738,6 +747,7 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                     Input::Intent(&intent)
                 }
                 Err(Failure::Conflict) => Input::ReadConflict,
+                Err(Failure::Oversized) => Input::Oversized,
                 Err(failure) => {
                     let alarm = if failure == Failure::NotFound {
                         "not_found alarm=intent_missing"

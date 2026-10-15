@@ -3296,6 +3296,9 @@ async fn character_commands_flow(database: &Database) -> TestResult {
         code(&decide(71, Input::Unsupported).await),
         "CHAR_CMD_UNSUPPORTED"
     );
+    let oversized = decide(74, Input::Oversized).await;
+    assert_eq!(code(&oversized), "CHAR_CMD_INTENT_INVALID");
+    assert_eq!(decide(74, Input::Oversized).await, oversized);
     // A lower revision than one already decided is still decided.
     let lower = create_intent(72, 41, 90, 2, "Hero Ci", live);
     assert_eq!(
@@ -3315,7 +3318,7 @@ async fn character_commands_flow(database: &Database) -> TestResult {
             "SELECT count(*) FROM game_character_command_receipts"
         )
         .await?,
-        12
+        13
     );
 
     // The 65th listed Character of an account is refused.

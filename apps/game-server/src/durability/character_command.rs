@@ -212,6 +212,11 @@ pub fn unsupported_binding(command: &str) -> Vec<u8> {
     binding(0x05, command.as_bytes())
 }
 
+#[must_use]
+pub fn oversized_binding(command: &str) -> Vec<u8> {
+    binding(0x06, command.as_bytes())
+}
+
 #[derive(Serialize)]
 struct RejectedReceipt<'a> {
     contract_version: u8,
@@ -315,6 +320,7 @@ enum Owned {
     Intent(Vec<u8>),
     ReadConflict,
     Unsupported,
+    Oversized,
 }
 
 /// One decision's stored outcome, before publication.
@@ -355,6 +361,7 @@ impl DurabilityRoot {
             Input::Intent(raw) => Owned::Intent(raw.to_vec()),
             Input::ReadConflict => Owned::ReadConflict,
             Input::Unsupported => Owned::Unsupported,
+            Input::Oversized => Owned::Oversized,
         };
         let proof = proof.clone();
         let source_authority = source_authority.to_owned();
@@ -424,6 +431,10 @@ async fn decide(
         Owned::Unsupported => (
             unsupported_binding(request.command),
             Classified::Rejected(UNSUPPORTED),
+        ),
+        Owned::Oversized => (
+            oversized_binding(request.command),
+            Classified::Rejected(INTENT_INVALID),
         ),
     };
     // Operation identity first, then the account portfolio lock (§6.3), so a

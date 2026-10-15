@@ -194,8 +194,10 @@ async fn exchange_status(
             .await
         } else if let Some(body_max) = super::character_commands::response_bytes(operation) {
             // Character commands (§3): every response, success or empty failure,
-            // fits the operation's bound.
-            read_response_bounded(&mut tls, require_ok, body_max, false, &[]).await
+            // fits the operation's bound. An over-bound `200` intent is reported
+            // apart so it is decided invalid rather than retried as unavailable.
+            let oversized_ok = operation == Operation::ReadCharacterCommandIntentV1;
+            read_response_framed(&mut tls, require_ok, body_max, false, &[], oversized_ok).await
         } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
@@ -246,6 +248,26 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     body_max: usize,
     require_json: bool,
     body_statuses: &[u16],
+) -> Result<(u16, Vec<u8>), SourceError> {
+    read_response_framed(
+        stream,
+        require_ok,
+        body_max,
+        require_json,
+        body_statuses,
+        false,
+    )
+    .await
+}
+/// With `oversized_ok`, a `200` body over `body_max` is `OversizedOk`; every
+/// other over-capacity response stays `CapacityExceeded`.
+pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+    body_statuses: &[u16],
+    oversized_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0 || body_max > 8192 {
         return Err(SourceError::InvalidInput);
@@ -382,8 +404,13 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
         stream.read_exact(&mut body).await?;
         Ok(body)
     }
-    .await?;
-    Ok((code, body))
+    .await;
+    match body {
+        Err(SourceError::CapacityExceeded) if oversized_ok && code == 200 => {
+            Err(SourceError::OversizedOk)
+        }
+        body => body.map(|body| (code, body)),
+    }
 }
 async fn read_chunked_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
@@ -561,6 +588,51 @@ mod premium_response_tests {
                 ] {
                     assert!(read(invalid).await.is_err());
                 }
+            });
+    }
+}
+
+#[cfg(test)]
+mod character_command_response_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    async fn read(bytes: &[u8], oversized_ok: bool) -> Result<(u16, Vec<u8>), SourceError> {
+        let mut stream = bytes;
+        read_response_framed(&mut stream, false, 4, false, &[], oversized_ok).await
+    }
+    #[test]
+    fn only_an_over_bound_success_is_told_apart() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let ok = b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n12345";
+                assert!(matches!(
+                    read(ok, true).await,
+                    Err(SourceError::OversizedOk)
+                ));
+                assert!(matches!(
+                    read(ok, false).await,
+                    Err(SourceError::CapacityExceeded)
+                ));
+                let eof = b"HTTP/1.1 200 OK\r\n\r\n12345";
+                assert!(matches!(
+                    read(eof, true).await,
+                    Err(SourceError::OversizedOk)
+                ));
+                let unavailable =
+                    b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 5\r\n\r\n12345";
+                assert!(matches!(
+                    read(unavailable, true).await,
+                    Err(SourceError::CapacityExceeded)
+                ));
+                assert_eq!(
+                    read(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n1234", true)
+                        .await
+                        .unwrap(),
+                    (200, b"1234".to_vec())
+                );
             });
     }
 }
