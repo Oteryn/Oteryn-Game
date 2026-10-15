@@ -48,22 +48,6 @@ fn native_key(spell: &SpellDefinition) -> &str {
     }
 }
 
-/// MAGIC-CAST-1 (BUNDLE-GATES-1): the room a parameter cast reads. A locate message reads it
-/// only for the caster's protection-zone tile, which the combat room serves on both World
-/// kinds (on a bundle World it is the entry room's bundle view, BUNDLE-COMBAT-ENABLE-1).
-/// House access and vertical moves read the fixture room's house and floor facts, so they keep
-/// the fixture room and stay closed on a bundle World, which has none.
-fn parameter_room<'a>(
-    key: &str,
-    qualified: Option<&'a QualifiedNativeEntryRoom>,
-    combat: Option<&'a QualifiedNativeEntryRoom>,
-) -> Option<&'a QualifiedNativeEntryRoom> {
-    match key {
-        "locate_message" => combat,
-        _ => qualified,
-    }
-}
-
 pub(super) fn named_player_spell(spell: &SpellDefinition) -> bool {
     matches!(
         spell.name.as_str(),
@@ -907,7 +891,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if parameter_room(key, self.qualified_room, self.combat_room).is_none() {
+        if self.rooms.gate_parameter_cast(key).is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -1074,7 +1058,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.intent.spell).ok_or(DurabilityError::Unavailable)?;
-            let room=parameter_room(native_key(spell),owner.qualified_room,owner.combat_room).ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_parameter_cast(native_key(spell)).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
                 runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};
@@ -1321,6 +1305,7 @@ mod tests {
     /// stay closed; on a fixture World every parameter cast reads the fixture room.
     #[test]
     fn bundle_world_opens_locate_message_only() {
+        use crate::gameplay_transport::SeamRooms;
         use crate::map::spell_tiles::tests::{id, world as bundle_world};
         let world = bundle_world();
         let world_id = crate::foundation::WorldId::decode(&id(1)).unwrap();
@@ -1338,13 +1323,17 @@ mod tests {
                 },
             )
             .unwrap();
-        let bundle = parameter_room("locate_message", None, Some(&view)).unwrap();
-        assert!(std::ptr::eq(bundle, &view));
+        let bundle = SeamRooms::new(None, Some(&view));
+        assert!(std::ptr::eq(
+            bundle.gate_parameter_cast("locate_message").unwrap(),
+            &view
+        ));
         for key in ["house_access", "vertical_move", ""] {
-            assert!(parameter_room(key, None, Some(&view)).is_none(), "{key}");
+            assert!(bundle.gate_parameter_cast(key).is_none(), "{key}");
         }
+        let fixture = SeamRooms::new(Some(&entry), Some(&entry));
         for key in ["locate_message", "house_access", "vertical_move"] {
-            let fixture = parameter_room(key, Some(&entry), Some(&entry)).unwrap();
+            let fixture = fixture.gate_parameter_cast(key).unwrap();
             assert!(std::ptr::eq(fixture, &entry), "{key}");
         }
     }

@@ -175,6 +175,67 @@ def test_rules() -> None:
     )
 
 
+def test_section_3_5_families() -> None:
+    catalogue = committed()
+    pacified = by_key(catalogue, "spell.swift_foot.pacified")
+    powerless = by_key(catalogue, "monster_spell.soulpit_powerless")
+    assert (pacified["conflict_key"], pacified["pacified"]) == (
+        "pacified",
+        {"duration_ms": 10000},
+    )
+    assert (powerless["conflict_key"], powerless["powerless"]) == (
+        "powerless",
+        {"duration_ms": 3000},
+    )
+    # §3.5: no gate is `negative`, so Cleanse and the dispel selector never pick one.
+    assert not pacified["negative"] and not powerless["negative"]
+    # No Canary content at the pin applies `muted` or `agony`: neither has a definition.
+    families = {c["family"] for c in catalogue["conditions"]}
+    assert "MUTED" not in families and "AGONY" not in families
+    assert ca.MAX_CONFLICT_KEYS == 32
+
+
+def test_section_3_5_rules() -> None:
+    base = committed()
+
+    def agony(**values) -> dict:
+        catalogue = copy.deepcopy(base)
+        row = by_key(catalogue, "spell.swift_foot.pacified")
+        row.pop("pacified")
+        row.update(family="AGONY", conflict_key="agony")
+        row["agony"] = {
+            "total_min": 30,
+            "total_max": 60,
+            "per_tick": 10,
+            "interval_ms": 2000,
+            "delayed": False,
+        } | values
+        return catalogue
+
+    assert ca.validate(agony()) == []
+    expect_invalid(agony(total_min=70), "total_min exceeds total_max")
+    expect_invalid(agony(interval_ms=500), "below COND0-RL-02")
+    expect_invalid(agony(per_tick=0), "agony/per_tick")
+    gate = copy.deepcopy(base)
+    by_key(gate, "monster_spell.soulpit_powerless")["negative"] = True
+    expect_invalid(gate, "negative must mark")
+    gate = copy.deepcopy(base)
+    by_key(gate, "monster_spell.soulpit_powerless")["conflict_key"] = "pacified"
+    expect_invalid(gate, "does not belong to POWERLESS")
+    gate = copy.deepcopy(base)
+    by_key(gate, "spell.swift_foot.pacified")["pacified"] = {"duration_ms": 0}
+    expect_invalid(gate, "pacified/duration_ms")
+    keys = len(
+        {c["conflict_key"] for c in base["conditions"] if c["status"] == "admitted"}
+    )
+    bound = ca.MAX_CONFLICT_KEYS
+    ca.MAX_CONFLICT_KEYS = keys - 1
+    try:
+        expect_invalid(base, "exceed COND0-RL-01")
+    finally:
+        ca.MAX_CONFLICT_KEYS = bound
+
+
 def test_schedule_errors_mirror_project_v2() -> None:
     geometric = {
         "tick_profile": "Geometric",

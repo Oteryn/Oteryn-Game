@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Condition authoring: build and validate the static ConditionDefinition catalogue (COND-CONTENT-1).
+"""Condition authoring: build and validate the static ConditionDefinition catalogue (COND-CONTENT-1, -2).
 
 `capture --reference-engine <checkout>` reads the pinned Canary checkout: it parses the `field` items of
 data/items/items.xml and checks every cited line range of authored-conditions.json against its needles, and
@@ -50,7 +50,7 @@ CATALOGUE_SCHEMA = "OTERYN_CONDITION_AUTHORING_CATALOGUE/v1"
 INDEX_SCHEMA = "OTERYN_FAMILY_INDEX/v1"
 SHARD_SCHEMA = "OTERYN_CONDITION_SHARD/v1"
 MIN_TICK_MS = 1000  # COND0-RL-02
-MAX_CONFLICT_KEYS = 16  # COND0-RL-01
+MAX_CONFLICT_KEYS = 32  # COND0-RL-01 (CONDITIONS-0 §3.5)
 FOOD_MAX_MS = 1_200_000  # ITEM-USE-0 §6.1, CONDITIONS-0 §4.2
 
 ELEMENTS = (
@@ -70,6 +70,11 @@ FAMILY_KEYS = {
     "RECOVERY": ("recovery",),
     "MANA_SHIELD": ("mana_shield",),
     "LIGHT": ("light",),
+    # CONDITIONS-0 §3.5: the gate families and agony, one key each; none is `negative`.
+    "MUTED": ("muted",),
+    "PACIFIED": ("pacified",),
+    "POWERLESS": ("powerless",),
+    "AGONY": ("agony",),
 }
 VALUE_BLOCK = {family: family.lower() for family in FAMILY_KEYS}  # the value block
 SPEED_KINDS = {"haste": "haste", "paralyze": "paralysis"}
@@ -491,6 +496,13 @@ def semantic_errors(catalogue: dict) -> list[str]:
             ]
             if any(g < MIN_TICK_MS for g in gaps):
                 errors.append(f"{key}: a regeneration interval is below COND0-RL-02")
+        if family == "AGONY":
+            if values["total_min"] > values["total_max"]:
+                errors.append(f"{key}: total_min exceeds total_max")
+            if values["interval_ms"] < MIN_TICK_MS:
+                errors.append(
+                    f"{key}: a tick interval is below COND0-RL-02 ({MIN_TICK_MS} ms)"
+                )
         if family == "SPEED" and values["a_min"] > values["a_max"]:
             errors.append(f"{key}: a_min exceeds a_max")
         if family == "FOOD_REGENERATION" and values["max_duration_ms"] != FOOD_MAX_MS:

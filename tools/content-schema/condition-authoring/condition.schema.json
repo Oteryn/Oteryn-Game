@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:oteryn:condition-authoring:candidate:1",
   "title": "Condition authoring schema candidate v1 - structural validation",
-  "description": "CANDIDATE static ConditionDefinition catalogue (CONDITIONS-0 §3, COND-CONTENT-1). Content owns the values; the families, conflict policies, ticks, dispel and lifecycle belong to the COND-1 runtime. Semantic rules live in condition_authoring.py.",
+  "description": "CANDIDATE static ConditionDefinition catalogue (CONDITIONS-0 §3 and §3.5, COND-CONTENT-1 and COND-CONTENT-2). Content owns the values; the families, conflict policies, ticks, dispel and lifecycle belong to the COND-1 runtime. Semantic rules live in condition_authoring.py.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "decision", "source", "conditions"],
@@ -34,6 +34,12 @@
     "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "ms": {"type": "integer", "minimum": 1},
     "positive": {"type": "integer", "minimum": 1},
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration_ms"],
+      "properties": {"duration_ms": {"$ref": "#/$defs/ms"}}
+    },
     "condition": {
       "type": "object",
       "additionalProperties": false,
@@ -50,10 +56,12 @@
           }
         },
         "name": {"type": "string", "minLength": 1},
-        "family": {"enum": ["SPEED", "DAMAGE_OVER_TIME", "FOOD_REGENERATION", "RECOVERY", "MANA_SHIELD", "LIGHT"]},
+        "family": {"enum": ["SPEED", "DAMAGE_OVER_TIME", "FOOD_REGENERATION", "RECOVERY", "MANA_SHIELD", "LIGHT",
+                            "MUTED", "PACIFIED", "POWERLESS", "AGONY"]},
         "conflict_key": {
           "enum": ["speed", "poison", "fire", "energy", "bleeding", "drown", "freezing", "dazzled", "cursed",
-                   "food_regeneration", "recovery", "mana_shield", "light"]
+                   "food_regeneration", "recovery", "mana_shield", "light",
+                   "muted", "pacified", "powerless", "agony"]
         },
         "negative": {"type": "boolean", "description": "The dispel tag `negative` (CONDITIONS-0 §5): damage over time and paralysis."},
         "used_by": {
@@ -142,6 +150,22 @@
             "duration_ms": {"$ref": "#/$defs/ms"},
             "level": {"type": "integer", "minimum": 1, "maximum": 255},
             "color": {"type": "integer", "minimum": 0, "maximum": 255}
+          }
+        },
+        "muted": {"$ref": "#/$defs/gate", "description": "CONDITIONS-0 §3.5: refuses starting any spell cast; runes are unaffected."},
+        "pacified": {"$ref": "#/$defs/gate", "description": "CONDITIONS-0 §3.5: refuses setting an attack target and every aggressive spell or rune."},
+        "powerless": {"$ref": "#/$defs/gate", "description": "CONDITIONS-0 §3.5: refuses every aggressive spell or rune."},
+        "agony": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total_min", "total_max", "per_tick", "interval_ms", "delayed"],
+          "description": "CONDITIONS-0 §3.5: damage over time of an undefined element. A total drawn in [total_min, total_max] is dealt per_tick every interval_ms; `delayed: false` deals the first tick at once.",
+          "properties": {
+            "total_min": {"$ref": "#/$defs/positive"},
+            "total_max": {"$ref": "#/$defs/positive"},
+            "per_tick": {"$ref": "#/$defs/positive"},
+            "interval_ms": {"$ref": "#/$defs/ms"},
+            "delayed": {"type": "boolean"}
           }
         }
       },

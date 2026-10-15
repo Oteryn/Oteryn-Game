@@ -42,10 +42,10 @@ use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
-    CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_USE_INTENT,
-    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-    STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
-    WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, CAPABILITY_WORLD_INTERACTION_V1,
+    COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID,
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
+    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_use_result_with_gate, encode_world_object_overlay_delta,
     encode_world_object_overlay_snapshot,
 };
@@ -2494,11 +2494,19 @@ where
                 | Ok(UseIntent {
                     use_with_map_item: Some(_),
                     ..
+                })
+                // RUNE-WIRE-1: the position arm of field 4 decodes only under capability 22, which
+                // is not offered before RUNE-CAST-1 composes the rune cast; until then no rune is
+                // usable on a tile.
+                | Ok(UseIntent {
+                    use_with_position: Some(_),
+                    ..
                 }) => Dispatch::Use(UseOutcome::rejected()),
                 Ok(UseIntent {
                     target: UseTarget::ItemByDefinition(_),
                     use_with: None,
                     use_with_map_item: None,
+                    use_with_position: None,
                 }) => Dispatch::UseItem(OpenDecision::NothingToUse, None),
                 // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
                 // call; opening writes nothing.
@@ -2506,6 +2514,7 @@ where
                     target: UseTarget::Item(handle),
                     use_with: None,
                     use_with_map_item: None,
+                    use_with_position: None,
                 }) => {
                     let key = item_view.as_ref().and_then(|view| view.resolve(handle));
                     // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
@@ -2589,6 +2598,7 @@ where
                     target: UseTarget::WorldObject(target),
                     use_with: None,
                     use_with_map_item: None,
+                    use_with_position: None,
                 }) => Dispatch::Use(
                     authority
                         .use_object(
@@ -2881,8 +2891,12 @@ where
             ),
             Dispatch::Use(outcome) => {
                 let (disposition, gate_message_id) = negotiated_use_disposition(
-                    selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
-                    selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
+                    UseCapabilities {
+                        item_use: selected_capabilities.contains(CAPABILITY_ITEM_USE_V1),
+                        world_interaction: selected_capabilities
+                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
+                        rune_use: selected_capabilities.contains(CAPABILITY_RUNE_USE_V1),
+                    },
                     outcome.disposition,
                     outcome.gate_message_id,
                 );
@@ -3304,14 +3318,21 @@ where
 /// may coalesce multiple actual owner changes from the last transmitted revision.
 /// Dispositions 7 to 10 exist only under capability 15 (ITEM-USE-0 §3): a session without it
 /// gets `Rejected`, the one refusal it can decode, for any of them. So does a session without
-/// capability 11 for the dispositions 11 to 17 (WORLD-INTERACTION-0 §10.1).
+/// capability 11 for the dispositions 11 to 17 (WORLD-INTERACTION-0 §10.1), and a session without
+/// capability 22 for the dispositions 18 and 19 (RUNE-USE-0 §4).
 fn negotiated_use_disposition(
-    item_use: bool,
-    world_interaction: bool,
+    capabilities: UseCapabilities,
     disposition: UseDisposition,
     gate_message_id: Option<u8>,
 ) -> (UseDisposition, Option<u8>) {
-    if disposition.needs_world_interaction() && !world_interaction {
+    let UseCapabilities {
+        item_use,
+        world_interaction,
+        rune_use,
+    } = capabilities;
+    if (disposition.needs_world_interaction() && !world_interaction)
+        || (disposition.needs_rune_use() && !rune_use)
+    {
         return (UseDisposition::Rejected, None);
     }
     // `SEALED` carries its gate message id and no other disposition does; a mismatch is a server
@@ -3335,6 +3356,15 @@ fn negotiated_use_disposition(
         }
         other => (other, gate_message_id),
     }
+}
+
+/// The capabilities that widen the USE result: 15 `ITEM_USE_V1`, 11 `WORLD_INTERACTION_V1` and 22
+/// `RUNE_USE_V1`.
+#[derive(Debug, Clone, Copy)]
+struct UseCapabilities {
+    item_use: bool,
+    world_interaction: bool,
+    rune_use: bool,
 }
 
 fn vitals_delta(
@@ -3691,10 +3721,18 @@ mod tests {
     use std::error::Error;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
+    fn caps(item_use: bool, world_interaction: bool) -> UseCapabilities {
+        UseCapabilities {
+            item_use,
+            world_interaction,
+            rune_use: false,
+        }
+    }
+
     #[test]
     fn use_dispositions_7_to_10_need_capability_15() {
         use UseDisposition as D;
-        let neg = |i, w, d| negotiated_use_disposition(i, w, d, None).0;
+        let neg = |i, w, d| negotiated_use_disposition(caps(i, w), d, None).0;
         for d in [D::RequirementNotMet, D::Exhausted, D::Full, D::NoTarget] {
             assert_eq!(neg(false, false, d), D::Rejected);
             assert_eq!(neg(true, false, d), d);
@@ -3721,25 +3759,60 @@ mod tests {
         }
     }
 
+    /// RUNE-WIRE-1: TARGET_ILLEGAL and PROTECTION_ZONE reach only a session that selected 22;
+    /// capability 11 alone does not admit them, and 22 alone does not admit 11 to 17.
     #[test]
-    fn sealed_carries_its_gate_message_id_only_under_capability_11() {
+    fn use_dispositions_18_and_19_need_capability_21() {
         use UseDisposition as D;
-        assert_eq!(
-            negotiated_use_disposition(true, true, D::Sealed, Some(9)),
-            (D::Sealed, Some(9))
-        );
-        assert_eq!(
-            negotiated_use_disposition(true, false, D::Sealed, Some(9)),
-            (D::Rejected, None)
-        );
-        for bad in [None, Some(0), Some(128)] {
+        let all = UseCapabilities {
+            item_use: true,
+            world_interaction: true,
+            rune_use: true,
+        };
+        let runes_only = UseCapabilities {
+            world_interaction: false,
+            ..all
+        };
+        for d in [D::TargetIllegal, D::ProtectionZone] {
             assert_eq!(
-                negotiated_use_disposition(true, true, D::Sealed, bad),
+                negotiated_use_disposition(caps(true, true), d, None).0,
+                D::Rejected
+            );
+            assert_eq!(negotiated_use_disposition(all, d, None), (d, None));
+            assert_eq!(negotiated_use_disposition(runes_only, d, None), (d, None));
+            assert_eq!(
+                negotiated_use_disposition(all, d, Some(9)),
                 (D::Rejected, None)
             );
         }
         assert_eq!(
-            negotiated_use_disposition(true, true, D::Locked, Some(9)),
+            negotiated_use_disposition(runes_only, D::Locked, None).0,
+            D::Rejected
+        );
+        for d in [D::RequirementNotMet, D::Exhausted, D::NoTarget, D::TooFar] {
+            assert_eq!(negotiated_use_disposition(runes_only, d, None).0, d);
+        }
+    }
+
+    #[test]
+    fn sealed_carries_its_gate_message_id_only_under_capability_11() {
+        use UseDisposition as D;
+        assert_eq!(
+            negotiated_use_disposition(caps(true, true), D::Sealed, Some(9)),
+            (D::Sealed, Some(9))
+        );
+        assert_eq!(
+            negotiated_use_disposition(caps(true, false), D::Sealed, Some(9)),
+            (D::Rejected, None)
+        );
+        for bad in [None, Some(0), Some(128)] {
+            assert_eq!(
+                negotiated_use_disposition(caps(true, true), D::Sealed, bad),
+                (D::Rejected, None)
+            );
+        }
+        assert_eq!(
+            negotiated_use_disposition(caps(true, true), D::Locked, Some(9)),
             (D::Rejected, None)
         );
         let payload = encode_use_result_with_gate(D::Sealed, Some(9)).expect("sealed");

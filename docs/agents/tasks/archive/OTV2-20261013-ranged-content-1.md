@@ -162,6 +162,16 @@ Native integration and PostgreSQL qualification remain CI responsibilities.
 --quiet -- -D warnings` PASS. The initial parallel analysis was interrupted when
 it reached this environment's 8 GB limit; serial analysis completed successfully.
 
+After publication of `fa3d300291a955abcb039dbb7d098f64feb5e62c`, GitHub
+reported a new merge conflict because main advanced through #2126, #2122, #2115
+and #2138. Returned to AUTHORING and merged
+`main@b2f65117ac8bfb05a98aa7d7d76f3ae20d923565`. The sole textual conflict
+was again the World input pin, caused by upstream Cargo manifest/lock changes.
+The item source-pin repair, its four Rust consumers, source qualifiers and all
+World content/compiler sources remain unchanged; their bounded qualification is
+reused. The combined World pin is re-derived and compiled before publication;
+the successor head requires fresh CI against the integrated upstream changes.
+
 - Prepared a local AUTHORING repair for the owner's request on #2096. Auto-merge
   was disabled at 06:39:58 UTC, but another actor re-enabled it at 06:40:07 UTC.
   The source branch remains at `c98b4b6d2f6694812804d067e330928f3640964d`.
