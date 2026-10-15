@@ -32,8 +32,8 @@ CREATE TABLE game_vip_group_members (
  PRIMARY KEY(account_id,world_id,character_id,group_no),FOREIGN KEY(account_id,world_id,character_id) REFERENCES game_vip_entries ON DELETE CASCADE);
 CREATE TABLE game_vip_command_receipts (
  account_id UUID NOT NULL,world_id UUID NOT NULL,game_session_id UUID NOT NULL,command_id NUMERIC(20,0) NOT NULL CHECK(command_id>0),
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),kind SMALLINT NOT NULL CHECK(kind IN(1,2,3)),binding BYTEA NOT NULL CHECK(octet_length(binding)=32),
- result SMALLINT NOT NULL CHECK(result IN(1,2,3)),seconds SMALLINT,revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),committed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),kind SMALLINT NOT NULL CHECK(kind IN(1,2,3,4)),binding BYTEA NOT NULL CHECK(octet_length(binding)=32),
+ result SMALLINT NOT NULL CHECK(result IN(1,2,3,4)),seconds SMALLINT,revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),committed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY(account_id,world_id,game_session_id,command_id),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE,
  CHECK((result=3 AND seconds IS NOT NULL AND seconds BETWEEN 1 AND 3) OR(result<>3 AND seconds IS NULL)));
 CREATE FUNCTION vip_fixture_receipt_immutable() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
@@ -696,6 +696,436 @@ fn vip_concurrent_commands_serialize_one_erase_and_receipt_each_outcome() -> Tes
         assert_eq!(footprint(h).await?, (1, 0, 3, "1".into()));
         let view:String=sqlx::query_scalar("SELECT vip_consent_revision::text FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid").bind(id(60).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(view, "4");
+        Ok(())
+    })
+}
+
+fn accept_request(number: u64, binding: VipInvitationBinding) -> VipAcceptRequest {
+    let base = request(number, VipEndOperation::Accept(binding));
+    VipAcceptRequest {
+        list: base.list,
+        command: base.command,
+        invitation: binding,
+    }
+}
+async fn accept(h: &Harness, request: VipAcceptRequest) -> TestResult<VipReceipt> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .accept_vip_invitation(&authority, &h.node, harness::item_fence()?, request)
+        .await
+        .map_err(|e| debug(e).into())
+}
+async fn accepted_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE character_id=encode($1,'hex')::uuid AND consent=2")
+        .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?)
+}
+async fn consent_view(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT vip_consent_revision::text FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?)
+}
+async fn both<A: Future, B: Future>(first: A, second: B) -> (A::Output, B::Output) {
+    let mut first = std::pin::pin!(first);
+    let mut second = std::pin::pin!(second);
+    let mut a = None;
+    let mut b = None;
+    std::future::poll_fn(|cx| {
+        if a.is_none()
+            && let Poll::Ready(value) = first.as_mut().poll(cx)
+        {
+            a = Some(value);
+        }
+        if b.is_none()
+            && let Poll::Ready(value) = second.as_mut().poll(cx)
+        {
+            b = Some(value);
+        }
+        if a.is_some() && b.is_some() {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
+    .await;
+    (a.expect("first completed"), b.expect("second completed"))
+}
+
+#[test]
+fn vip_accept_decision_expiry_and_cap_boundaries() {
+    let pending = ConsentState::Pending { expires_at_us: 100 };
+    assert_eq!(accept_consent(pending, 99, 99), AcceptDecision::Accept);
+    for count in [100, 101, u64::MAX] {
+        assert_eq!(accept_consent(pending, 99, count), AcceptDecision::ListFull);
+    }
+    for now in [100, 101, i64::MAX] {
+        assert_eq!(accept_consent(pending, now, 0), AcceptDecision::NotFound);
+        assert_eq!(accept_consent(pending, now, 100), AcceptDecision::NotFound);
+    }
+    assert_eq!(
+        accept_consent(ConsentState::Accepted, 0, 0),
+        AcceptDecision::NotFound
+    );
+}
+
+#[test]
+fn vip_accept_exact_key_old_handle_replacement_and_single_revision_effects() -> TestResult {
+    run("vipacceptbinding", async |h| {
+        fixture_character(h, 60, 70).await?;
+        fixture_character(h, 61, 70).await?;
+        let old = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let before_view = consent_view(h).await?;
+        for (number, binding) in [
+            (1, invitation(60, 70, old + 1)),
+            (2, invitation(61, 70, old)),
+            (3, invitation(60, 80, old)),
+        ] {
+            assert_eq!(
+                accept(h, accept_request(number, binding)).await?.result,
+                VipResult::NotFound
+            );
+        }
+        assert_eq!(accepted_count(h).await?, 0);
+        assert_eq!(consent_view(h).await?, before_view);
+        assert_eq!(
+            accept(h, accept_request(4, invitation(60, 70, old)))
+                .await?
+                .result,
+            VipResult::Ok
+        );
+        assert_eq!(accepted_count(h).await?, 1);
+        assert_eq!(consent_view(h).await?, "2");
+        let watcher_revision: String = sqlx::query_scalar(
+            "SELECT revision::text FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(70).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(watcher_revision, "2");
+        assert_eq!(
+            accept(h, accept_request(5, invitation(60, 70, old)))
+                .await?
+                .result,
+            VipResult::NotFound
+        );
+        assert_eq!(consent_view(h).await?, "2");
+        // A genuine target revoke then a private invitation-producer fixture obtains a new
+        // sequence identity. The old delivered handle cannot act on the replacement.
+        assert_eq!(
+            apply(
+                h,
+                request(6, VipEndOperation::Revoke(invitation(60, 70, old))),
+                harness::item_fence()?
+            )
+            .await?
+            .result,
+            VipResult::Ok
+        );
+        let fresh = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        assert!(fresh > old);
+        assert_eq!(
+            accept(h, accept_request(7, invitation(60, 70, old)))
+                .await?
+                .result,
+            VipResult::NotFound
+        );
+        assert_eq!(accepted_count(h).await?, 0);
+        assert_eq!(
+            accept(h, accept_request(8, invitation(60, 70, fresh)))
+                .await?
+                .result,
+            VipResult::Ok
+        );
+        assert_eq!(h.count("game_vip_entries").await?, 1);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_accept_receipt_precedes_live_fence_but_not_recovery_and_binding() -> TestResult {
+    run("vipacceptreplay", async |h| {
+        fixture_character(h, 60, 70).await?;
+        let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let req = accept_request(1, invitation(60, 70, number));
+        let committed = accept(h, req).await?;
+        assert_eq!(committed.result, VipResult::Ok);
+        let before = footprint(h).await?;
+        let bucket: (String, i16, i64) = sqlx::query_as("SELECT revision::text,rate_tokens,rate_at FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid")
+            .bind(id(40).as_slice()).fetch_one(&h.pool).await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3")
+            .execute(&h.pool)
+            .await?;
+        let replay = accept(h, req).await?;
+        assert!(replay.replayed);
+        assert_eq!(
+            (replay.result, replay.revision),
+            (committed.result, committed.revision)
+        );
+        assert_eq!(footprint(h).await?, before);
+        assert_eq!(consent_view(h).await?, "2");
+        let after: (String, i16, i64) = sqlx::query_as("SELECT revision::text,rate_tokens,rate_at FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid")
+            .bind(id(40).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(bucket, after);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut conflict = req;
+        conflict.invitation.invitation_id += 1;
+        assert!(matches!(
+            h.root
+                .accept_vip_invitation(&authority, &h.node, harness::item_fence()?, conflict)
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        let mut recovery = authority.record_for(&h.root).map_err(debug)?;
+        recovery.recovery_generation += 1;
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            end_in_transaction(
+                &mut tx,
+                &recovery,
+                &h.node,
+                harness::item_fence()?,
+                request(1, VipEndOperation::Accept(req.invitation))
+            )
+            .await,
+            Err(VipError::Unavailable(_))
+        ));
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_accept_current_native_authority_and_account_world_matrix() -> TestResult {
+    run("vipacceptfence", async |h| {
+        fixture_character(h, 60, 70).await?;
+        let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let req = accept_request(1, invitation(60, 70, number));
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let baseline = harness::item_fence()?;
+        let mut cases = [baseline; 7];
+        cases[0].connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        cases[1].character_lease_generation = 2;
+        cases[2].scope_ownership_generation = ScopeOwnershipGeneration::new(2).map_err(debug)?;
+        cases[3].game_session_id = GameSessionId::decode(&id(90)).map_err(debug)?;
+        cases[4].character_id = character(60); // Valid different root, wrong acting session.
+        cases[5].runtime_scope = RuntimeScopeRefV1::channel(
+            crate::foundation::WorldId::decode(&id(90)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+        );
+        cases[6].runtime_scope = RuntimeScopeRefV1::channel(
+            crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(90)).map_err(debug)?,
+        );
+        let before = footprint(h).await?;
+        for fence in cases {
+            assert!(matches!(
+                h.root
+                    .accept_vip_invitation(&authority, &h.node, fence, req)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(footprint(h).await?, before);
+            assert_eq!(accepted_count(h).await?, 0);
+            assert_eq!(consent_view(h).await?, "1");
+        }
+        for foreign in [
+            VipListKey {
+                account_id: account(70),
+                ..list(40)
+            },
+            VipListKey {
+                world_id: WorldId::from_bytes(id(90)).map_err(debug)?,
+                ..list(40)
+            },
+        ] {
+            assert!(matches!(
+                h.root
+                    .accept_vip_invitation(
+                        &authority,
+                        &h.node,
+                        baseline,
+                        VipAcceptRequest {
+                            list: foreign,
+                            ..req
+                        }
+                    )
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(footprint(h).await?, before);
+            assert_eq!(accepted_count(h).await?, 0);
+            assert_eq!(consent_view(h).await?, "1");
+        }
+        let other = harness::register(&h.root, 2).await?;
+        assert!(matches!(
+            h.root
+                .accept_vip_invitation(&authority, &other, baseline, req)
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(footprint(h).await?, before);
+        assert_eq!(accepted_count(h).await?, 0);
+        assert_eq!(consent_view(h).await?, "1");
+        // The genuine actor remains valid until this independently mutated current DB fact.
+        sqlx::query("UPDATE game_durability_admission_runtime_guards SET ready=FALSE")
+            .execute(&h.pool)
+            .await?;
+        assert!(matches!(
+            h.root
+                .accept_vip_invitation(&authority, &h.node, baseline, req)
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(footprint(h).await?, before);
+        assert_eq!(accepted_count(h).await?, 0);
+        assert_eq!(consent_view(h).await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_accept_expired_refusal_rate_and_missing_view_rollback() -> TestResult {
+    run("vipacceptrollback", async |h| {
+        fixture_character(h, 60, 70).await?;
+        let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let req = accept_request(1, invitation(60, 70, number));
+        sqlx::query(
+            "UPDATE game_vip_consents SET invite_expires_at=clock_timestamp()-interval '1day'",
+        )
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(accept(h, req).await?.result, VipResult::NotFound);
+        assert!(accept(h, req).await?.replayed);
+        assert_eq!(accepted_count(h).await?, 0);
+        sqlx::query(
+            "UPDATE game_vip_consents SET invite_expires_at=clock_timestamp()+interval '7days'",
+        )
+        .execute(&h.pool)
+        .await?;
+        sqlx::query(
+            "DELETE FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .execute(&h.pool)
+        .await?;
+        let before = footprint(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            h.root
+                .accept_vip_invitation(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    accept_request(2, req.invitation)
+                )
+                .await,
+            Err(VipError::Unavailable(_))
+        ));
+        assert_eq!(footprint(h).await?, before);
+        assert_eq!(accepted_count(h).await?, 0);
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1')").bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        sqlx::query("UPDATE game_vip_lists SET rate_tokens=0,rate_at=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint WHERE account_id=encode($1,'hex')::uuid").bind(id(40).as_slice()).execute(&h.pool).await?;
+        let exhausted = accept(h, accept_request(2, req.invitation)).await?;
+        assert!(matches!(
+            exhausted.result,
+            VipResult::Exhausted { seconds: 1..=3 }
+        ));
+        assert_eq!(
+            accept(h, accept_request(2, req.invitation)).await?.result,
+            exhausted.result
+        );
+        assert_eq!(accepted_count(h).await?, 0);
+        assert_eq!(consent_view(h).await?, "0");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_accept_two_real_roots_duplicate_and_cross_list_cap_race() -> TestResult {
+    run("vipacceptconcurrent", async |h| {
+        fixture_character(h, 60, 70).await?;
+        let first = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let second_root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(second_root.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let b = second_root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let req = accept_request(1, invitation(60, 70, first));
+        let (left, right) = both(
+            h.root
+                .accept_vip_invitation(&a, &h.node, harness::item_fence()?, req),
+            second_root.accept_vip_invitation(&b, &h.node, harness::item_fence()?, req),
+        )
+        .await;
+        let receipts = [left.map_err(debug)?, right.map_err(debug)?];
+        assert!(receipts.iter().all(|r| r.result == VipResult::Ok));
+        assert_eq!(receipts.iter().filter(|r| r.replayed).count(), 1);
+        assert_eq!(accepted_count(h).await?, 1);
+        // Synthetic historical relationship DATA; each inviter is a distinct, valid native
+        // root with its complete bootstrap history, not an invented active actor/session.
+        for inviter in 61..=158 {
+            fixture_character(h, inviter, 70).await?;
+            fixture_consent(h, 70, inviter, CHARACTER, 2).await?;
+        }
+        assert_eq!(accepted_count(h).await?, 99);
+        fixture_character(h, 159, 70).await?;
+        fixture_character(h, 160, 80).await?;
+        let one = fixture_consent(h, 70, 159, CHARACTER, 1).await?;
+        let two = fixture_consent(h, 80, 160, CHARACTER, 1).await?;
+        let before_view: u64 = consent_view(h).await?.parse()?;
+        let req1 = accept_request(2, invitation(159, 70, one));
+        let req2 = accept_request(3, invitation(160, 80, two));
+        let (left, right) = both(
+            h.root
+                .accept_vip_invitation(&a, &h.node, harness::item_fence()?, req1),
+            second_root.accept_vip_invitation(&b, &h.node, harness::item_fence()?, req2),
+        )
+        .await;
+        let receipts = [left.map_err(debug)?, right.map_err(debug)?];
+        assert_eq!(
+            receipts
+                .iter()
+                .filter(|r| r.result == VipResult::Ok)
+                .count(),
+            1
+        );
+        assert_eq!(
+            receipts
+                .iter()
+                .filter(|r| r.result == VipResult::ListFull)
+                .count(),
+            1
+        );
+        assert_eq!(accepted_count(h).await?, 100);
+        assert_eq!(consent_view(h).await?.parse::<u64>()?, before_view + 1);
+        assert_eq!(h.count("game_vip_command_receipts").await?, 3);
+        assert_eq!(h.root_revision().await?, "1");
         Ok(())
     })
 }

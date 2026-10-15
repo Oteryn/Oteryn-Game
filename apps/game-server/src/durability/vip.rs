@@ -1,9 +1,10 @@
-//! VIP0 §§4–6: private, receipted consent-ending storage preparation.
+//! VIP0 §§4–6: private, receipted consent lifecycle storage preparation.
 //!
 //! Uses native recovery/session/scope/node checks unchanged. This unregistered module is
 //! qualified with an isolated schema extension; production migration, SECURITY DEFINER
 //! functions/grants, relay and handles remain CP work. No runtime role is granted direct DML.
-//! No CharacterRevision, item, consent grant or presence state is written.
+//! Accept changes an existing pending consent only under the target's actual native fence.
+//! No CharacterRevision, item or presence state is written.
 #![allow(
     dead_code,
     reason = "VIP production module/definer registration awaits the CP slot"
@@ -19,7 +20,8 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::vip::{
-    ConsentEnd, ConsentState, VipRateBucket, can_end_consent, charge_vip_bucket,
+    AcceptDecision, ConsentEnd, ConsentState, VipRateBucket, accept_consent, can_end_consent,
+    charge_vip_bucket,
 };
 use crate::domain::{AccountId, CharacterId, WorldId};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1};
@@ -67,16 +69,21 @@ pub(crate) struct VipInvitationBinding {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum VipEndOperation {
-    Withdraw { entry_no: u64 },
+    Withdraw {
+        entry_no: u64,
+    },
     Reject(VipInvitationBinding),
     Revoke(VipInvitationBinding),
+    /// Private lifecycle extension; numeric code is fixture-local, not a wire registry ID.
+    Accept(VipInvitationBinding),
 }
 impl VipEndOperation {
-    fn kind(self) -> ConsentEnd {
+    fn kind(self) -> Option<ConsentEnd> {
         match self {
-            Self::Withdraw { .. } => ConsentEnd::Withdraw,
-            Self::Reject(_) => ConsentEnd::Reject,
-            Self::Revoke(_) => ConsentEnd::Revoke,
+            Self::Withdraw { .. } => Some(ConsentEnd::Withdraw),
+            Self::Reject(_) => Some(ConsentEnd::Reject),
+            Self::Revoke(_) => Some(ConsentEnd::Revoke),
+            Self::Accept(_) => None,
         }
     }
     fn code(self) -> i16 {
@@ -84,6 +91,7 @@ impl VipEndOperation {
             Self::Withdraw { .. } => 1,
             Self::Reject(_) => 2,
             Self::Revoke(_) => 3,
+            Self::Accept(_) => 4,
         }
     }
 }
@@ -95,10 +103,19 @@ pub(crate) struct VipEndRequest {
     pub(crate) operation: VipEndOperation,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct VipAcceptRequest {
+    /// The acting target's Account+World, independently compared with its current session.
+    pub(crate) list: VipListKey,
+    pub(crate) command: CommandRef,
+    pub(crate) invitation: VipInvitationBinding,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum VipResult {
     Ok,
     NotFound,
+    ListFull,
     Exhausted { seconds: u8 },
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,7 +135,9 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
     hash.update(request.operation.code().to_be_bytes());
     match request.operation {
         VipEndOperation::Withdraw { entry_no } => hash.update(entry_no.to_be_bytes()),
-        VipEndOperation::Reject(key) | VipEndOperation::Revoke(key) => {
+        VipEndOperation::Reject(key)
+        | VipEndOperation::Revoke(key)
+        | VipEndOperation::Accept(key) => {
             hash.update(key.watcher_account.as_bytes());
             hash.update(key.inviter.as_bytes());
             hash.update(key.invitation_id.to_be_bytes());
@@ -128,8 +147,32 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
 }
 
 impl DurabilityRoot {
+    /// Accept exactly one retained invitation. Its target is always the independently
+    /// current acting Character, never a Character supplied by a resolved handle.
+    pub(crate) async fn accept_vip_invitation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: VipAcceptRequest,
+    ) -> Result<VipReceipt> {
+        self.end_vip_consent(
+            authority,
+            node,
+            fence,
+            VipEndRequest {
+                list: request.list,
+                command: request.command,
+                operation: VipEndOperation::Accept(request.invitation),
+            },
+        )
+        .await
+    }
+
     /// A real semantic transaction when composed into the native owner. The root capability
     /// supplies recovery provenance; immutable requests never manufacture a current fence.
+    /// The original method name is retained for existing ending callers; Accept shares
+    /// this one transaction spine through the dedicated typed entry point above.
     pub(crate) async fn end_vip_consent(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -181,6 +224,7 @@ async fn receipt(
     let result = match (row.try_get::<i16, _>("result")?, seconds) {
         (1, None) => VipResult::Ok,
         (2, None) => VipResult::NotFound,
+        (4, None) => VipResult::ListFull,
         (3, Some(value)) if (1..=3).contains(&value) => VipResult::Exhausted {
             seconds: u8::try_from(value).map_err(|_| corrupt())?,
         },
@@ -258,7 +302,9 @@ async fn end_in_transaction(
                 target,
                 invitation: None,
             }),
-        VipEndOperation::Reject(key) | VipEndOperation::Revoke(key) => Some(Relationship {
+        VipEndOperation::Reject(key)
+        | VipEndOperation::Revoke(key)
+        | VipEndOperation::Accept(key) => Some(Relationship {
             list: VipListKey {
                 account_id: key.watcher_account,
                 world_id: request.list.world_id,
@@ -371,13 +417,7 @@ async fn end_in_transaction(
     let result = if let Some(seconds) = charge.exhausted_seconds {
         VipResult::Exhausted { seconds }
     } else if valid_relation {
-        erase_consent(
-            tx,
-            relation.ok_or_else(corrupt)?,
-            request.operation.kind(),
-            now,
-        )
-        .await?
+        change_consent(tx, relation.ok_or_else(corrupt)?, request.operation, now).await?
     } else {
         VipResult::NotFound
     };
@@ -406,6 +446,7 @@ async fn end_in_transaction(
     let (code, seconds) = match result {
         VipResult::Ok => (1i16, None),
         VipResult::NotFound => (2, None),
+        VipResult::ListFull => (4, None),
         VipResult::Exhausted { seconds } => (3, Some(i16::from(seconds))),
     };
     sqlx::query("INSERT INTO game_vip_command_receipts(account_id,world_id,game_session_id,command_id,character_id,kind,binding,result,seconds,revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,$6,$7,$8,$9,$10::text::numeric)")
@@ -420,10 +461,10 @@ async fn end_in_transaction(
     })
 }
 
-async fn erase_consent(
+async fn change_consent(
     tx: &mut Transaction<'_, Postgres>,
     key: Relationship,
-    action: ConsentEnd,
+    operation: VipEndOperation,
     now: i64,
 ) -> Result<VipResult> {
     let row = sqlx::query("SELECT invitation_id::text,consent,floor(extract(epoch FROM invite_expires_at)*1000000)::bigint AS expires FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND inviter_character_id=encode($3,'hex')::uuid AND character_id=encode($4,'hex')::uuid FOR UPDATE")
@@ -448,7 +489,24 @@ async fn erase_consent(
         2 => ConsentState::Accepted,
         _ => return Err(corrupt()),
     };
-    if !can_end_consent(action, state, now) {
+    if matches!(operation, VipEndOperation::Accept(_)) {
+        // Every invitation producer and consent mutation locks this same target root
+        // before any list, so this count serializes accepts across ALL watcher lists.
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND consent=2")
+            .bind(key.target.as_bytes().as_slice()).bind(key.list.world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        match accept_consent(state, now, u64::try_from(count).map_err(|_| corrupt())?) {
+            AcceptDecision::NotFound => return Ok(VipResult::NotFound),
+            AcceptDecision::ListFull => return Ok(VipResult::ListFull),
+            AcceptDecision::Accept => {}
+        }
+        let changed = sqlx::query("UPDATE game_vip_consents SET consent=2 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND inviter_character_id=encode($3,'hex')::uuid AND character_id=encode($4,'hex')::uuid AND invitation_id=$5::text::numeric AND consent=1")
+            .bind(key.list.account_id.as_bytes().as_slice()).bind(key.list.world_id.as_bytes().as_slice()).bind(key.inviter.as_bytes().as_slice()).bind(key.target.as_bytes().as_slice()).bind(invitation.to_string()).execute(&mut **tx).await?.rows_affected();
+        if changed != 1 {
+            return Err(corrupt());
+        }
+        return Ok(VipResult::Ok);
+    }
+    if !can_end_consent(operation.kind().ok_or_else(corrupt)?, state, now) {
         return Ok(VipResult::NotFound);
     }
     let changed = sqlx::query("DELETE FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND inviter_character_id=encode($3,'hex')::uuid AND character_id=encode($4,'hex')::uuid AND invitation_id=$5::text::numeric")

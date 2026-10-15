@@ -201,3 +201,87 @@ resolution and VIP_V1 wire/capability/registries must land under their owning sl
 private Rust transaction is storage/authority preparation tested with the isolated admin-owned
 fixture; it is not a production privilege-boundary qualification. Complete VIP-1 and every
 full acceptance checkbox above remain pending, including invitation producers and Premium caps.
+
+
+## Additional owned Accept preparation (2026-10-15)
+
+This increment starts from published draft head `595cf1fb7ba22783236aed1068578d9c5c47d8c1`
+with the exact five-path `vip-1-accept-native-2` allocation. The effective owning contract
+remains accepted VIP0 §§4/5.1/9 (the historical brief's CANDIDATE heading does not supersede
+ACCEPT-BATCH acceptance). No main merge, shared registration, installed migration, production
+role grant, public identifier or capability change belongs to this increment. The original
+preparation and its qualification above remain historical evidence.
+
+### Bounded native implementation
+
+`DurabilityRoot::accept_vip_invitation` accepts a typed private request with the acting
+Account+World, CommandRef and complete retained invitation binding. It reuses the original
+`end_vip_consent` native semantic transaction spine, including root-bound recovery provenance,
+recovery-before-receipt and receipt-before-live-fence ordering. Fresh operations independently
+resolve the actual current target session, connection/Character-lease/scope generation,
+Channel assignment, node incarnation and admission guards through unchanged native code.
+The acting target is derived from the fence; a caller supplies no target authority boolean.
+
+The writer locks the participating live Character roots in ascending CharacterId and both
+Account+World lists in ascending key order, then rechecks receipts. Under those locks it reads
+the database clock, locks the actual matching consent row and compares its full key plus
+never-reused invitation_id. Only an unexpired PENDING row becomes ACCEPTED. Already accepted,
+expired, absent and replaced invitation bindings answer NOT_FOUND. The target-root lock
+serializes the count of accepted consent rows across watcher lists; count 100 or greater
+answers LIST_FULL. This does not grow the shared entry/group list and invents no Premium
+activation rule. A successful Accept changes the watcher-list revision and target consent-view
+revision exactly once; the acting receipt/rate list advances once (also on fresh refusals),
+with no second watcher-list increment when the keys coincide. CharacterRevision remains
+unchanged. Existing Withdraw/Reject/Revoke bindings and digest prefix/codes are preserved.
+
+Accept's operation code 4 and LIST_FULL result code 4 are private proposed receipt values,
+not wire tags or registry reservations. Only the existing UNINSTALLED test schema's closed
+kind/result checks are extended. A pending invitation fixture is administrative relationship
+DATA with complete native root history; it proves neither an invitation producer nor
+production consent authority. PARTY0046 settings remain actual native rows; a missing target
+view is corrupt producer state and rolls back the entire Accept rather than manufacturing
+settings defaults. Add/block lifecycle, relay hints and final socket delivery remain outside
+this component. No auto-discovered root wrapper is created while native modules remain
+unregistered; the allocated tests/vip_postgres.rs remains absent.
+
+### Exact qualification
+
+On the final three Rust sources, the exact native validation overlay passed all **17 tests**
+(3 pure and 14 PostgreSQL 17.6; zero failed, ignored or filtered), including the six new
+Accept bodies and all eleven existing controls. The real native harness asserts server version
+`170006`; no database skip is counted as a pass. New cases cover exact invitation identities
+and replacement, pending/accepted/expiry and count 99/100/101 decisions, actor/session/lease/
+scope/node/account/World mismatches with pending state/view unchanged, receipt replay before
+ended-session checks but after recovery, immutable binding conflict, rate/refusal replay,
+missing-view rollback, and two independently created and warmed native Roots competing on
+identical commands and distinct watcher lists at the cap. Ninety-nine relationships are
+explicit historical fixture DATA with valid native root history, not 99 admitted actors.
+Native admission relation locking also serializes those Root passes; the test is not an
+isolated row-lock stress/throughput qualification.
+
+Fresh Cargo dependency capture intentionally stops the global native unit root with sentinel
+86 (Cargo 101); that is setup capture, not a test pass. Under the same shared Rust lock,
+original whole-native unit metadata and Clippy (`-D warnings`), owned/workspace formatting,
+normal cfg(test) native rlib compilation, driver linkage and the 17 original bodies all
+returned zero. The normal rlib discloses baseline unused-test-scaffolding warnings because it
+has no global harness; the clean original-unit Clippy result is separate. Direct dependency
+artifact hashes match before/after execution. No whole-server/global unit ELF or native
+production runtime qualification is claimed.
+
+The outside-tree snapshot contains 6024 exact original files, only literal domain/durability
+VIP registrations, and three recorded runner deltas: remove the 17 owned test attributes with
+parent visibility, append the private module dispatcher, append the library forwarding entry.
+Test bodies, actual private native authority functions, real protocol dependency and native
+fixture remain unchanged. Draft shared files are byte-identical to the allocated base.
+Evidence, commands, complete source/transform/dependency bindings and raw results are retained
+in `/workspace/oteryn-prep/vip-1-accept-native-2-evidence`.
+
+Governance/scope validation is recorded in the final bounded evidence manifest; all original
+acceptance checkboxes above remain pending.
+
+The existing full VIP-1 acceptance checkboxes remain open. Invitation production, entry/group
+editing/removal, hide-status, admitted name resolution, Premium-sensitive list growth,
+production migration/SECURITY DEFINER functions/grants and receipt retention, shared native
+registration, relay/hints, per-session handle mapping, VIP_V1 wire/capability and full runtime
+activation remain their actual CP integration gates. This is a bounded Accept storage
+component, not complete VIP-1 or production privilege-boundary qualification.

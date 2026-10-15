@@ -1,4 +1,4 @@
-//! VIP0 §5.1/§9: private consent-ending and persisted list-bucket arithmetic.
+//! VIP0 §5.1/§9: private consent transitions and persisted list-bucket arithmetic.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConsentEnd {
@@ -22,6 +22,29 @@ pub(crate) fn can_end_consent(action: ConsentEnd, state: ConsentState, now_us: i
         }
         ConsentState::Accepted => action != ConsentEnd::Reject,
     }
+}
+
+/// Pure transition decision; callers must independently resolve the exact invitation,
+/// database clock and accepted watcher count under the current target's root lock.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AcceptDecision {
+    Accept,
+    NotFound,
+    ListFull,
+}
+
+pub(crate) fn accept_consent(
+    state: ConsentState,
+    now_us: i64,
+    accepted_watchers: u64,
+) -> AcceptDecision {
+    if !matches!(state, ConsentState::Pending { expires_at_us } if now_us < expires_at_us) {
+        return AcceptDecision::NotFound;
+    }
+    if accepted_watchers >= 100 {
+        return AcceptDecision::ListFull;
+    }
+    AcceptDecision::Accept
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
