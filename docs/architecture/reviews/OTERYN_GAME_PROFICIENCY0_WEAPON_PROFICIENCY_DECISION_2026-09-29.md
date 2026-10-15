@@ -1,7 +1,7 @@
 # PROFICIENCY-0 Weapon Proficiency: content, persistence and wire
 
 - Decision: `PROFICIENCY0-WEAPON-PROFICIENCY-V1`
-- Status: **CANDIDATE**. Acceptance requires exact-head validation, independent review and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15 (answer "3 tak" to the PROG-ADV-1 decision set), owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15` §6, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original status: CANDIDATE. Original gate: Acceptance requires exact-head validation, independent review and
   protected integration. The wire part (§4.4) is a contract candidate that also needs owner
   acceptance, like every earlier state domain in `PROTOCOL_OTERYN_V1_REGISTRY.json`.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)

@@ -39,7 +39,7 @@ PROF-ORB-BURN-1 -> PROF-SHAPE-WIRE-1 -> PROF-CONTENT-2 -> PROF-PARITY-1; SPELL-W
 |---|---|
 | LOOP-PROGRESS-1 (family entry gate) | BLOCKING (Wave 1 sequential, not merged) |
 | PREMIUM-1 | MERGED (#2110) |
-| acceptance of PROFICIENCY1, PROFICIENCY1B, PROF_EFFECT0, WHEEL0, WHEEL_GEM0 (plan §7 gate) | BLOCKING |
+| acceptance of PROFICIENCY1, PROFICIENCY1B, PROF_EFFECT0, WHEEL0, WHEEL_GEM0 (plan §7 gate) | ACCEPTED by the owner 2026-10-15 ("3 tak"), recorded in ACCEPT-BATCH-2026-10-15 §6; effective when this PR is integrated |
 | W-R, W-1, PROF-SHAPE-CONTENT-1, PROF-SHAPE-1b slice, FORGE-1a | MERGED (migration 0070, #1670, #1704, #1691) |
 | CHAR-REV-SEQ-1, GOLD-FEE-2, CONDITIONS-0 | MERGED / ACCEPTED (archive, #2106) |
 | PROF-2 | MERGED (archive record) |
