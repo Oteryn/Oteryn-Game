@@ -112,3 +112,88 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Local bounded preparation — 2026-10-15 (not runtime acceptance)
+
+Allocation: existing draft #2158, `skeleton/loop-ground-1`, authoring base
+`efc7427095af92b969ca9341da5845d7bcca695b`. This allocation permits only
+`durability/ground_cell_limit.rs`, its adjacent tests, and this record; the
+historical broader owned-path list above is not an active write grant. No
+commit, push, module registration, migration, registry, content or pin edit.
+
+The independently retained protected-main decision at
+`e2da9805d296a27b06b32335bf67394509d4910b`,
+`OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md` §§2–3, releases the
+old undecided policy gate: **64 items per tile**, overflow **"not enough room"**,
+and **no periodic ground cleanup between resets**. It accepts DEATH-COMPLETE-0
+and retains ADR-0021 D191 (crash survival and planned reset). Historical
+decay/checklist/dependency text above is preserved as history, not an instruction
+to introduce a timer or retire writer. No new timed cleanup is prepared here.
+
+### Verified native gap and prepared source
+
+- Existing native Ground MINT locations in `item_mint.rs`, `map_item_mint.rs`,
+  `native_map_items.rs` and `spell_item_transaction.rs` have no per-tile 64-root
+  admission check. The spell transaction's 500-row snapshot bound is a read-work
+  limit. `map/overlay.rs::add_ground` intentionally preserves durable truth on
+  rebuild; neither that overlay nor custody writers were duplicated or edited.
+- `ground_cell_limit.rs` checks actual native `GroundItemInstance` data against
+  independently supplied typed World/Channel, ownership generation and native
+  `SpellGroundTarget`. It reuses the native signed 10-byte Ground codec and
+  rejects mismatched cell/revisions/placement context or duplicate item IDs.
+- It counts physical top-level Ground roots, not stack quantity. The caller
+  supplies complete remaining live roots after actual removals and actual new
+  roots after the native stack planner has decided merges. Contained descendants
+  belong to the separate ITEM-MOVE §5/BAGS per-channel counter, not this root
+  count. Static base-map decoration has its separate ADR-0021 base-item bound;
+  materialized map items in Ground custody are ordinary supplied roots.
+- The helper only checks a plan. It does not establish current authority,
+  completeness, ordering, an allowed merge, a destination or reserved capacity.
+  It has no mutable owner, expiry, cleanup, writer, grants or persistence.
+
+### Remaining CP/architect integration obligations
+
+Runtime acceptance remains unchecked. CP must register and integrate the check
+at every actual root-insertion boundary, including player drop, death spill,
+loot/map/spell MINT and inventory overflow, with complete live reads under the
+accepted tile/custody locks and the same physical transaction as the inserts.
+Current ownership, session-generation, recovery, admission and content fences
+remain each existing writer's independently resolved obligations. Caller data,
+prepared rows and a successful helper result are not current authority.
+
+Preserve native top-stack ordering/merge rules and per-channel counter updates;
+do not guess an overflow destination or redirect items on refusal. A retry or
+reload must independently reread occupancy and recheck. Removal-only and rebuild
+paths must preserve durable rows, including preexisting overfull tiles, without
+using admission refusal as cleanup. Death writer/schema integration, resource
+registry/error mapping and slot-only wiring remain later CP work. No PostgreSQL
+concurrency, rollback, restart durability, full-server, wire/E2E, architect
+acceptance or independent exact-head review is claimed by pure helper tests.
+
+### Actual local validation
+
+- **8/8 passed** in an exact-source standalone Rust harness: 64/65 admission,
+  batched insertion, physical stack/root counting and zero-new-root merge,
+  actual removal/replacement, duplicate IDs, independently varied World/Channel/
+  generation, each tile metadata field, opaque/truncated addresses, and repeated
+  reload evaluation without mutable state. The last case is pure determinism,
+  not proof of database restart durability. These new tests have no executed
+  behavioral RED predecessor; no setup failure is reported as a RED test.
+- Standalone `clippy-driver` passed with workspace Rust/Clippy deny settings
+  and `-D warnings`; owned `rustfmt --check` and `cargo fmt --all --check` passed.
+  Rust commands ran under `/tmp/oteryn-prep-rust.lock`, shared target/jobs 2,
+  `CARGO_INCREMENTAL=0`. No server/Cargo test binary or migrate link was built.
+- Governance validation and **124/124** agent unit tests passed. Whole owned diff
+  reviewed; no new cleanup, authority source, writer or guessed stack merge.
+  Scope and whitespace checks passed for exactly the three allocated paths.
+- Durable evidence: `/workspace/oteryn-prep/loop-ground-1-evidence/`, including
+  real raw logs, reproduction scripts and before/after bindings of five actual
+  source files. The harness imports both new files directly and uses nine
+  hashed, verbatim native type/ID/codec excerpts; no writer/authority stub.
+- Source SHA-256: helper
+  `54cae6c36bd6bef274673e3c5bb5d68fe6fa7e414d1f34bc51da5afec701c984`;
+  tests `d3b3f1fa32acce8ca5909966c6f42fffe20825dd33c60b7c8491c5e08ac48c5c`;
+  harness `f25b85af35bc9ac04e4194d103964ae111232e97c6dc163977b292e73f5fb08b`.
+
+The detached owned subset is prepared, not accepted as the full LOOP-GROUND-1
+implementation. The original runtime acceptance boxes remain unchecked.
