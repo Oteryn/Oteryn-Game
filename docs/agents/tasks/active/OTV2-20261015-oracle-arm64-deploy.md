@@ -4,12 +4,12 @@
 task_id: OTV2-20261015-oracle-arm64-deploy
 title: Oracle ARM64 runner and deployment
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/oracle-arm64-deploy-20261015
 issue: 2217
-pr: null
+pr: 2218
 base_sha: 77af046ce14c81df6ed6cab03ae693a68acff32c
 head_sha: null
 final_head_sha: null
@@ -96,8 +96,8 @@ stale NAS writer restart, no arbitrary runner shell/root/Docker access.
 
 ## Validation
 
-- python tools/repository/validate_repository_policy.py: pending
-- python -m unittest discover -s tools/repository -p 'test_*.py': pending
-- python tools/agents/validate_governance.py: pending
-- python -m unittest discover -s tools/agents/tests: pending
+- python tools/repository/validate_repository_policy.py: PASS
+- python -m unittest discover -s tools/repository -p 'test_*.py': PASS (88 tests)
+- python tools/agents/validate_governance.py: PASS
+- python -m unittest discover -s tools/agents/tests: PASS (124 tests)
 - Exact game-gate and independent review: pending candidate publication.
