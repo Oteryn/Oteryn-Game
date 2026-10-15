@@ -103,7 +103,7 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass, 145 passed, including the two-node relay exchange,
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 1 repair: `-- chat`, 98 passed), 145 passed, including the two-node relay exchange,
   the lease row and the not-ready-when-logging tests
 - `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
   33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
@@ -120,6 +120,10 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 ## Independent review
 
 - required: Codex review on the frozen head.
+- round 1 (P1): a reconnected listener kept its replay floor, so a line sent while it was down
+  could be republished and delivered. Fixed: the first tick after a reconnect moves the floor past
+  that reading (`ReplayWindow::reconnected`), keeping the de-duplication set and the lease; covered
+  by `a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_a_replay`.
 
 ## PR and closeout
 

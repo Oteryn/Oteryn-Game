@@ -466,8 +466,9 @@ fn open(
 /// line's own freshness deadline (`sent_at + 30 s`), the last instant [`open`] still accepts it,
 /// and expiry does not depend on arrival order.
 ///
-/// The window is process memory and starts empty, so it is created once per listener, at the
-/// moment `LISTEN` is established, with [`ReplayWindow::resume`]. Its guarantees survive a restart
+/// The window is process memory and starts empty, so it is created once per process, at the
+/// moment `LISTEN` is first established, with [`ReplayWindow::resume`]; every later `LISTEN`
+/// re-established after a lost connection moves its floor with [`ReplayWindow::reconnected`]. Its guarantees survive a restart
 /// through one durable value per World, the relay lease, and through nothing else:
 ///
 /// - the window acts (opens or admits) only on a clock reading at most the lease the listener has
@@ -526,6 +527,17 @@ impl ReplayWindow {
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
         }
+    }
+
+    /// The same window after its listener re-established `LISTEN` at database time
+    /// `db_now_micros`: lines sent while it was down are lost (CHAT-0 §5), so the floor and the
+    /// clock move past that reading as at a start, raised to the highest reading seen. The
+    /// de-duplication set and the stored lease are kept: a line admitted before the drop is still
+    /// refused, and the lease still bounds what the window acts on.
+    pub(crate) fn reconnected(&mut self, db_now_micros: u64) {
+        let now = self.observe(db_now_micros);
+        self.floor = startup_floor(now).max(self.floor);
+        self.high_water = self.floor.max(self.high_water);
     }
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.

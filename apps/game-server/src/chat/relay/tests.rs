@@ -735,3 +735,48 @@ fn a_private_recipient_that_is_not_a_character_id_is_a_bad_payload() {
         );
     }
 }
+
+#[test]
+fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_a_replay() {
+    let ring = ring(&[(1, 0)]);
+    let (mut window, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let start = window.floor;
+    renew(&mut window, start);
+    let admitted = room_line(1, start);
+    let admitted_text = seal_with_nonce(&ring, CHANNEL, &admitted, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &admitted_text, start),
+        Ok(admitted)
+    );
+    // The listener drops; a line is sent while it is down, and it reconnects one second later.
+    let missed = room_line(2, start + 500_000);
+    let missed_text = seal_with_nonce(&ring, CHANNEL, &missed, NONCE).expect("seal");
+    let back = start + 1_000_000;
+    window.reconnected(back);
+    assert_eq!(window.floor, startup_floor(back));
+    let floor = window.floor;
+    renew(&mut window, floor);
+    // A copy of the missed line republished after the reconnect is not delivered, nor is the line
+    // admitted before the drop; a line sent past the new floor is.
+    for (text, at) in [
+        (&missed_text, back),
+        (&admitted_text, start + FRESHNESS_MICROS),
+    ] {
+        assert!(
+            matches!(
+                window.receive(&ring, CHANNEL, text, at),
+                Err(RelayError::BeforeStart | RelayError::Stale | RelayError::Replayed)
+            ),
+            "at {at}"
+        );
+    }
+    let fresh = room_line(3, floor);
+    let fresh_text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &fresh_text, floor),
+        Ok(fresh)
+    );
+    // A reconnect reading behind the clock still moves the floor past the newest reading seen.
+    window.reconnected(NOW);
+    assert!(window.floor > floor);
+}

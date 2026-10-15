@@ -262,7 +262,8 @@ impl ChatRelay {
     }
 
     /// Listens until `shutdown`, reconnecting after a lost connection; then parks. One replay
-    /// window lives across reconnects, so a reconnect cannot admit a line twice.
+    /// window lives across reconnects, so a reconnect cannot admit a line twice, and each
+    /// reconnect moves its floor, so a line sent while the listener was down stays lost.
     pub(crate) async fn run(&self, chat: &ChatRuntime, shutdown: &CancellationToken) {
         self.run_from(None, chat, shutdown).await;
     }
@@ -275,12 +276,14 @@ impl ChatRelay {
         shutdown: &CancellationToken,
     ) {
         let mut reported = Instant::now();
+        let mut reconnect = false;
         loop {
             let listened = first(
-                self.listen(chat, &mut window, &mut reported),
+                self.listen(chat, &mut window, &mut reported, reconnect),
                 shutdown.cancelled(),
             )
             .await;
+            reconnect = true;
             self.ready.store(false, Ordering::Release);
             if listened.is_none()
                 || first(tokio::time::sleep(RECONNECT_BACKOFF), shutdown.cancelled())
@@ -298,6 +301,7 @@ impl ChatRelay {
         chat: &ChatRuntime,
         window: &mut Option<ReplayWindow>,
         reported: &mut Instant,
+        reconnect: bool,
     ) -> Lost {
         let mut listener = match PgListener::connect_with(&self.pool).await {
             Ok(listener) => listener,
@@ -308,12 +312,15 @@ impl ChatRelay {
             return Lost;
         }
         let mut next_tick = Instant::now();
+        let mut reconnect = reconnect;
         loop {
             if Instant::now() >= next_tick {
-                match tokio::time::timeout(TICK_TIMEOUT, self.tick(&mut listener, window)).await {
+                let ticked = self.tick(&mut listener, window, reconnect);
+                match tokio::time::timeout(TICK_TIMEOUT, ticked).await {
                     Ok(Ok(())) => {}
                     _ => return Lost,
                 }
+                reconnect = false;
                 next_tick = Instant::now() + TICK;
                 self.report_drops(reported);
             }
@@ -328,11 +335,13 @@ impl ChatRelay {
         }
     }
 
-    /// The listener's clock reading, its lease and the notification queue usage.
+    /// The listener's clock reading, its lease and the notification queue usage. The first tick
+    /// after a `reconnect` moves the window's floor past the reading first.
     async fn tick(
         &self,
         listener: &mut PgListener,
         window: &mut Option<ReplayWindow>,
+        reconnect: bool,
     ) -> Result<(), Lost> {
         let row = sqlx::query(
             "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint AS now, \
@@ -343,7 +352,9 @@ impl ChatRelay {
         let now = u64::try_from(row.try_get::<i64, _>("now")?).map_err(|_| Lost)?;
         let usage: f64 = row.try_get("usage")?;
         let read_at = Instant::now();
-        if window.is_none() {
+        if let Some(window) = window.as_mut().filter(|_| reconnect) {
+            window.reconnected(now);
+        } else if window.is_none() {
             let stored: Option<i64> = sqlx::query_scalar(
                 "SELECT leased_until_micros FROM game_chat_relay_leases \
                  WHERE world_id = encode($1, 'hex')::uuid",
