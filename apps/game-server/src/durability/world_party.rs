@@ -69,6 +69,52 @@ pub(crate) async fn read_world_party_in_transaction(
     let character = authority.character_id_bytes();
     observe_world_party(tx, world, character).await
 }
+/// Same-transaction setting plus its strong membership predecessor. This is data, not a
+/// current-authority token; the kill owner must hold its existing runtime/SQL fences through use.
+#[derive(Debug)]
+pub(crate) struct WorldPartyXp {
+    pub(crate) source: PartySnapshot,
+    pub(crate) enabled: bool,
+}
+/// Read the existing PARTY-1 toggle without changing the shared PartySnapshot contract.
+/// The native World lock and party/member row locks remain held by this transaction.
+pub(crate) async fn read_world_party_xp_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+) -> Result<WorldPartyXp> {
+    let source = read_world_party_in_transaction(tx, authority).await?;
+    observe_world_party_xp(tx, source).await
+}
+/// Autonomous kill owners use the existing current scope+actor resolution; no fake cast command.
+pub(crate) async fn read_world_party_xp_for_scope_actor_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> Result<WorldPartyXp> {
+    let source =
+        read_world_party_for_scope_actor_in_transaction(tx, root, scope, runtime, actor, session)
+            .await?;
+    observe_world_party_xp(tx, source).await
+}
+async fn observe_world_party_xp(
+    tx: &mut Transaction<'_, Postgres>,
+    source: PartySnapshot,
+) -> Result<WorldPartyXp> {
+    let enabled = if let Some(party) = source.party_id {
+        sqlx::query_scalar("SELECT shared_xp_enabled FROM game_parties WHERE party_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND revision=$3::text::numeric FOR SHARE")
+            .bind(party.as_slice())
+            .bind(source.world.as_slice())
+            .bind(source.revision.ok_or(reject("party XP revision unavailable"))?.to_string())
+            .fetch_optional(&mut **tx).await?
+            .ok_or(reject("party XP predecessor changed"))?
+    } else {
+        false
+    };
+    Ok(WorldPartyXp { source, enabled })
+}
 /// A real commandless source owner read for periodic Serene; no synthetic cast command.
 pub(crate) async fn read_world_party_for_scope_actor_in_transaction(
     tx: &mut Transaction<'_, Postgres>,

@@ -1776,3 +1776,73 @@ fn genuine_session_absence_hides_presence_without_removing_protected_or_active_m
         Ok(())
     })
 }
+
+#[test]
+fn party_xp_strong_read_observes_solo_disabled_and_enabled_without_a_receipt() -> TestResult {
+    run("party_xp_setting", async |h| {
+        let before = footprint(h).await?;
+        let mut tx = h.pool.begin().await?;
+        let proof = authority(&mut tx, h, 501).await?;
+        let solo =
+            crate::durability::world_party::read_world_party_xp_in_transaction(&mut tx, &proof)
+                .await
+                .map_err(debug)?;
+        assert_eq!(solo.source.party_id, None);
+        assert!(!solo.enabled);
+        tx.commit().await?;
+        assert_eq!(footprint(h).await?, before);
+
+        let mut tx = h.pool.begin().await?;
+        fixture_party(&mut tx, 80, CHARACTER).await?;
+        tx.commit().await?;
+        let mut tx = h.pool.begin().await?;
+        let proof = authority(&mut tx, h, 502).await?;
+        let disabled =
+            crate::durability::world_party::read_world_party_xp_in_transaction(&mut tx, &proof)
+                .await
+                .map_err(debug)?;
+        assert_eq!(disabled.source.party_id, Some(id(80)));
+        assert_eq!(disabled.source.leader, Some(id(CHARACTER)));
+        assert!(!disabled.enabled);
+        tx.commit().await?;
+        // Constraint fixture only: no public toggle command or current leader admission is
+        // claimed. The actual toggle writer remains a CP owner integration gate.
+        sqlx::query("UPDATE game_parties SET shared_xp_enabled=TRUE, revision=revision+1 WHERE party_id=encode($1,'hex')::uuid")
+            .bind(id(80).as_slice()).execute(&h.pool).await?;
+        let before_read = footprint(h).await?;
+        let mut tx = h.pool.begin().await?;
+        let proof = authority(&mut tx, h, 503).await?;
+        let enabled =
+            crate::durability::world_party::read_world_party_xp_in_transaction(&mut tx, &proof)
+                .await
+                .map_err(debug)?;
+        assert!(enabled.enabled);
+        assert_eq!(enabled.source.revision, Some(2));
+        tx.commit().await?;
+        assert_eq!(footprint(h).await?, before_read);
+        Ok(())
+    })
+}
+
+#[test]
+fn party_xp_read_rejects_a_different_transaction_without_mutation() -> TestResult {
+    run("party_xp_tx_binding", async |h| {
+        let before = footprint(h).await?;
+        let mut tx = h.pool.begin().await?;
+        let proof = authority(&mut tx, h, 504).await?;
+        tx.commit().await?;
+        let mut replacement_tx = h.pool.begin().await?;
+        let error = crate::durability::world_party::read_world_party_xp_in_transaction(
+            &mut replacement_tx,
+            &proof,
+        )
+        .await;
+        assert!(
+            matches!(error, Err(SpellItemError::Rejected(_))),
+            "{error:?}"
+        );
+        replacement_tx.rollback().await?;
+        assert_eq!(footprint(h).await?, before);
+        Ok(())
+    })
+}
