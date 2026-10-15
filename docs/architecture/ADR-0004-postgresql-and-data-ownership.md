@@ -50,6 +50,8 @@ They may initially run on one physical PostgreSQL cluster for operational simpli
 
 The architecture must allow later movement to separate PostgreSQL clusters without changing domain ownership.
 
+> **Amendment 2026-10-15 (cross-reference to Platform ADR-0046 §4).** Platform ADR-0046 (`docs/architecture/adr/0046-platform-persistence-moves-to-postgresql.md` in `Oteryn/oteryn-platform`, Accepted 2026-10-12) §4 requires that Platform and Game each run their own separate PostgreSQL instance and never share one cluster, because point-in-time recovery is cluster-wide and each side must be restorable without moving the other. Separate instances are therefore required. The "may initially run on one physical PostgreSQL cluster" allowance above is no longer available for `oteryn_platform` and `oteryn_game`; it is retained only as historical decision text. The logical-database separation and ownership rules of this section are unchanged. This note adds a cross-reference only and changes no other decision in this ADR.
+
 ### 3. One primary owner per data set
 
 Every persistent data set has exactly one semantic and migration owner.
