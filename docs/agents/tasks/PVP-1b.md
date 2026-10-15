@@ -85,7 +85,7 @@ migration+writer+durability.
 ## Acceptance criteria
 
 - [ ] Skull points written atomically with the death.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue'); inspection used the allocated head documented below.
 
 ## Validation
 
@@ -109,9 +109,80 @@ PARTY_PVP0 l.33, §6, §9. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANIC
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
+last_progress: detached skull-window evaluator prepared locally; source-bound checks passed
 status: waiting
 branch: skeleton/pvp-1b
 blocker: PARTY-1
-next_action: CP rechecks BLOCKING rows
+next_action: CP reviews the detached local diff; runtime remains blocked
 ```
+
+## Detached local preparation (2026-10-15, unpublished)
+
+Draft #2203, `skeleton/pvp-1b`, initial/unchanged head
+`aa9fc367f4d5159f1d4d5e98e8468982eb36db9e`. This preparation is restricted to
+`combat/pvp/skull.rs`, `combat/pvp/skull_tests.rs` and this task record. No commit,
+publication, production registration, death writer, database/schema change, ruleset, pin or
+registry edit is authorized. The broader skeleton-owned paths above are not this allocation.
+
+Residue checked before implementation: `combat/pvp/` contains legality and lock helpers, but
+no skull-window evaluator. PVP-1a already supplies `durability/pvp_state.rs` reads, deadline
+write-ahead and bounded expiry cleanup; those are reused as evidence, not reimplemented.
+The new helper imports the existing canonical `PvpSkull` enum and remains unregistered.
+
+The lead supplied the previously accepted #1771 basis; the decision document's embedded
+CANDIDATE heading remains unchanged. Only PARTY-PVP-0 §6.2/§9/RL-14..16 is implemented here,
+without using newer unmerged gap-closure proposals. Numerical provenance remains
+`PARITY_PENDING`: thresholds reproduce the accepted manual lower bounds, not a claim of
+independently demonstrated current Tibia Global parity.
+
+The evaluator totals rolling 24-hour/7-day/30-day points including one positive new increment,
+uses red 3,000/5,000/10,000 and black 6,000/10,000/20,000 milli thresholds, preserves an
+unexpired higher skull and resets the resulting red/black deadline to now +30/+45 days.
+Stored skulls expire at `until <= now` (§6.2). Zero/oversized increments, malformed states or
+point rows, future points and arithmetic deadline overflow are refused.
+
+**Endpoint assumption, not settled contract:** rolling windows use `age < duration`, or
+`(now - duration, now]`. §9 does not specify the lower-bound equality. The lead permits this
+only as a detached preparation assumption; architect acceptance and database-time precision
+binding are still required before integration. Exact-edge tests expose the choice.
+
+The input convention separates history from the new increment (1..=1,000 milli); the helper
+adds the latter once to all three totals. It cannot prove occurrence uniqueness, classification,
+World/contributor scope, snapshot completeness, current authority or that a new point row was
+committed. A future adapter must supply those facts under the victim's death transaction and
+current fences; arithmetic output is not mutation permission. Only qualified Open-PvP
+unjustified points belong on that path. No runtime gate or Optional/Hardcore behavior changes.
+
+Runtime remains blocked on PARTY/death-transaction dependencies and allocation of the actual
+writer/cleanup/ruleset/wiring work. The full atomic-death acceptance checkbox stays open.
+This detached evaluator does not bypass those gates, award points, write revenge marks,
+run cleanup or activate PvP. Newer unmerged splits are not treated as release gates satisfied.
+
+Validation is intentionally small: an isolated no-dependency harness outside the repository
+path-includes the actual `skull.rs` and its actual `skull_tests.rs`. Its only type dependency is
+the verbatim canonical `PvpSkull` definition extracted from `durability/pvp_state.rs`, with
+the full source and exact excerpt hashed. This tests arithmetic, not DB/session authority or
+production composition. No surrounding durability implementation is stubbed or compiled.
+
+- `TEST_FIRST_COMPILE_FAILURE`: before implementation, the harness failed with 20 missing
+  `evaluate_skull` errors. This is not an executed product-behavior RED claim.
+- Actual-source harness GREEN: 12 tests passed, 0 failed/ignored, covering all threshold edges,
+  rolling endpoints, new-point inclusion/reset, active-skull preservation/upgrades, expiry,
+  malformed/future input, time overflow and deterministic reorder/repeat behavior.
+- Harness `cargo clippy --all-targets -- -D warnings`: passed; explicit owned-file
+  `rustfmt --check` and corrected workspace `cargo fmt --all --check`: passed.
+- Source binding: eight inputs verified before/after checks, including actual evaluator/test
+  sources, the owning decision and verbatim canonical enum/full durability source hashes.
+- Governance validator: passed (22 documents, 9 lanes); corrected unit run: 124 passed.
+- Initial setup failures are retained separately: one governance test first errored because
+  sparse checkout omitted `experiments/world-vfx-real-content/README.md`; workspace fmt first
+  could not load the omitted `tests/security/auth/Cargo.toml`. The lead restored baseline
+  experiments/tests/vendor from this same head, with no unowned source diff. Corrected runs
+  passed; these omissions were not product defects.
+- Whole-diff adversarial self-review, owned-path/unchanged-head/source-hash checks and
+  `git diff --check`: passed. Two new Rust files plus this task record only; no commit or
+  external write. No Rust build/job remains queued by this worker.
+- Full-server/all-target production compilation, PostgreSQL transaction validation and live
+  PvP E2E are not claimed; they require the later integration allocation.
+
+Evidence is local at `/workspace/oteryn-prep/pvp-1b-evidence/`.
