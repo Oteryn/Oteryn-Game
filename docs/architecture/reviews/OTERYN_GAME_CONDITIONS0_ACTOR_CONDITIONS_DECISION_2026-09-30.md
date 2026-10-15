@@ -197,7 +197,10 @@ section fixes keys, policies and gates. Rooted and feared keep their existing ke
 - Worst case, counted exhaustively from the closed `ConflictKey` enum on main (`ability/condition.rs:75-88`), with no mutual exclusion between keys: four `Status` keys (`Invisible`, `Drunk`, `Rooted`, `Feared`), `Speed`, eight `Element` keys (poison, fire, energy, bleeding, drown, freezing, dazzled, cursed), `FoodRegeneration`, `Recovery`, `ManaShield`, `Light`, `Attributes`, `SpellSkills(0..=3)` (`ConditionDefinition::new` accepts sub-ids 0 to 3), `SpellRegeneration(1)` (sub-id 0 maps to `Recovery`, `ability/condition.rs:533-534`), `Invisible` and `Outfit` are 25 keys (`Status(Invisible)` and `Invisible` are distinct keys and both are built in production), plus the four new keys `muted`, `pacified`, `powerless` and `agony`, is 29 simultaneous keys, over 16. `COND0-RL-01` is 32 (29 and headroom for three later keys or sub-ids); a new key or sub-id that would raise the exhaustive count above 32 needs an amendment of this row.
 - Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
   transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
-- Re-entry protection (§6.1) refuses their application by creature attacks like any other condition.
+- Re-entry protection (§6.1) refuses their application by creature attacks like any other condition,
+  `agony` included: the refusal happens before any instance exists, so it is not a block or a
+  resistance of Agony, and it is an intentional rule recorded as a declared `PARITY_PENDING` gap (the
+  Reference does not say whether re-entry protection stops Agony).
 
 ### 3.3 Mana shield
 
