@@ -83,7 +83,7 @@ enum SpellCastRefusalDetail {
 // CommandResult.payload of command type 3: outcome only, never state. At most 4 bytes.
 message WorldActorSpellCastResultV1 {
   SpellCastDisposition disposition = 1;
-  // SPELL-PRESENT-0 §8: sent only to a session holding capability 20 PRESENTATION_V1, and never
+  // SPELL-PRESENT-0 §8: sent only to a session holding capability 23 PRESENTATION_V1, and never
   // with SPELL_CAST_DISPOSITION_CAST; a peer without the capability never sees field 2. Absent is
   // no detail; an explicit zero, an unknown value, or a detail with CAST fails closed.
   SpellCastRefusalDetail detail = 2;

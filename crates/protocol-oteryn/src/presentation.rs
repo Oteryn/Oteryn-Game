@@ -1,7 +1,7 @@
 //! Spell and combat presentation payloads (PRESENT-WIRE-1).
 //!
 //! Schema: `docs/contracts/protocol-oteryn/v1/presentation_v1.proto`, from SPELL-PRESENT-0 §4, §7,
-//! §9, §10 and §13 (ACCEPT-SPELL-PRESENT0-V1). Capability 20 `PRESENTATION_V1`, state domain 19
+//! §9, §10 and §13 (ACCEPT-SPELL-PRESENT0-V1). Capability 23 `PRESENTATION_V1`, state domain 19
 //! `WORLD_PRESENTATION` and state domain 20 `ACTOR_COOLDOWNS` are registered in
 //! `PROTOCOL_OTERYN_V1_REGISTRY.json`, leased by the #1622 control plane. The capability has no
 //! command type and requires 6 `WORLD_SPATIAL_ENTITIES`.
@@ -27,18 +27,18 @@ use crate::world_spatial::{ActorPosition, decode_position, encode_position};
 use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `PRESENTATION_V1`: no command type, state domains 19 and 20, requires 6.
-pub const CAPABILITY_PRESENTATION_V1: u32 = 20;
+pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] =
     [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
-/// Registered state domain `WORLD_PRESENTATION` (capability 20).
+/// Registered state domain `WORLD_PRESENTATION` (capability 23).
 pub const STATE_DOMAIN_WORLD_PRESENTATION: u32 = 19;
 /// Delta type 1 `WORLD_PRESENTATION_BATCH_V1`.
 pub const DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1: u32 = 1;
 /// Snapshot type 1 `WORLD_PRESENTATION_SNAPSHOT_V1`, always empty.
 pub const SNAPSHOT_TYPE_WORLD_PRESENTATION_V1: u32 = 1;
-/// Registered state domain `ACTOR_COOLDOWNS` (capability 20).
+/// Registered state domain `ACTOR_COOLDOWNS` (capability 23).
 pub const STATE_DOMAIN_ACTOR_COOLDOWNS: u32 = 20;
 /// Delta type 1 `ACTOR_COOLDOWNS_DELTA_V1`.
 pub const DELTA_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;

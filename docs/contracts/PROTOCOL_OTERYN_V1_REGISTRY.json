@@ -213,7 +213,7 @@
       "offer_gate": "Offered by CLOCK-1 in every offered set (production, Item view and bundle World), requiring 6. With it selected, domain 18 is sent as a snapshot at admission, reconnect and channel transfer at the session's current revision and as a delta on a light change or a new Tibian hour, at most one per 10,000 ms (WORLDINT0-RL-18), read at the node's UTC time fact against the World clock epoch, which is the Unix epoch (a whole UTC hour) until a World ruleset carries world_clock_epoch_utc_ms; and the domain 1 type 2 player and creature entries carry the VIS-2 light (fields 11-12, at most 6 bytes, WORLDINT0-RL-20), changed on the wire at most once per 1,000 ms per entity. A player's light is its current LIGHT condition; equipped items and monster content carry no light source yet. Without it selected, domain 18 and fields 11-12 are never sent and the client renders a fixed day light."
     },
     {
-      "id": 20,
+      "id": 23,
       "name": "PRESENTATION_V1",
       "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",
       "owner": "current ChannelRuntime (presentation derived from committed or refused owner decisions; the own actor's cooldowns)",
@@ -800,7 +800,7 @@
       "name": "WORLD_PRESENTATION",
       "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",
       "owner": "current ChannelRuntime",
-      "capability": 20,
+      "capability": 23,
       "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715): 0 at the initial snapshot, plus 1 for each delta sent; never reset or wound back at a resync snapshot, a reconnect or a channel transfer within the same GameSession; a batch dropped whole (SPELLPRES0-RL-07, or a snapshot in flight) consumes no revision, so no resync follows; a snapshot is empty and drops every event not yet sent; a delta is never replayed",
       "delta_types": [
         {
@@ -824,7 +824,7 @@
       "name": "ACTOR_COOLDOWNS",
       "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",
       "owner": "current ChannelRuntime (own actor only)",
-      "capability": 20,
+      "capability": 23,
       "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715): 0 at the initial snapshot, plus 1 for each delta sent; never reset or wound back at a resync snapshot, a reconnect or a channel transfer within the same GameSession; a resync, reconnect or channel transfer sends a snapshot of every running cooldown, re-expressed on the current runtime's clock, and never replays a delta",
       "delta_types": [
         {

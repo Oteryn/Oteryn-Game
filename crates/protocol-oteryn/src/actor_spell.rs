@@ -105,7 +105,7 @@ pub enum SpellCastDisposition {
 }
 
 /// SPELL-PRESENT-0 §8: `WorldActorSpellCastResultV1.detail`, which refusal text the client shows.
-/// Sent only to a session holding capability 20 `PRESENTATION_V1`, and never with `Cast`.
+/// Sent only to a session holding capability 23 `PRESENTATION_V1`, and never with `Cast`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SpellCastRefusalDetail {
     NotLearned = 1,

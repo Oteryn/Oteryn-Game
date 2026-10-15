@@ -1,6 +1,6 @@
 // PRESENT-WIRE-1 (SPELL-PRESENT-0 §4, §7, §9, §10 and §13, docs/architecture/reviews/
 // OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by
-// ACCEPT-SPELL-PRESENT0-V1): typed payloads of capability 20 PRESENTATION_V1, state domain 19
+// ACCEPT-SPELL-PRESENT0-V1): typed payloads of capability 23 PRESENTATION_V1, state domain 19
 // WORLD_PRESENTATION (snapshot type 1, delta type 1) and state domain 20 ACTOR_COOLDOWNS (snapshot
 // type 1, delta type 1). Numbers leased by the #1622 control plane; the capability has no command
 // type and requires capability 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name.

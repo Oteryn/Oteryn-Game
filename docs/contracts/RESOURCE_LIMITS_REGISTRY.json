@@ -10853,7 +10853,7 @@
     {
       "id": "SPELLPRES0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
-      "resource": "presentation events in one session's WORLD_PRESENTATION batch (state domain 19, capability 20 PRESENTATION_V1) of one sync unit",
+      "resource": "presentation events in one session's WORLD_PRESENTATION batch (state domain 19, capability 23 PRESENTATION_V1) of one sync unit",
       "unit": "events per session per sync unit",
       "hard_maximum": 1024,
       "configurable_range": {
