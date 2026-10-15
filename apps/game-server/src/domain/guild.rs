@@ -2,8 +2,8 @@
 //!
 //! These checks neither authorize an actor nor establish current guild facts. A future writer
 //! must resolve its session fence, membership, Account leadership and Premium requirements,
-//! and read the guild facts and database transaction time under GUILD0-LO-01. No clock,
-//! persistence, World job or guild mutation lives here.
+//! and read the guild facts and database transaction time under GUILD0-LO-01. The separately
+//! prepared private durability owner does that; no authority or mutation lives in this module.
 
 // GUILD-0 §3.2 uses the existing 0022 grammar and canonical key, in a separate guild namespace.
 pub use super::character_name::{
@@ -14,6 +14,26 @@ pub const MIN_RANKS: u8 = 3;
 pub const MAX_RANKS: u8 = 20;
 pub const REQUIRED_VICES: usize = 4;
 pub const VICE_DEFICIT_GRACE_MS: i64 = 14 * 24 * 60 * 60 * 1_000;
+pub const MEMBERS_MAX: usize = 2_000; // GUILD0-RL-05, PARITY_PENDING.
+pub const GUILD_INVITATIONS_MAX: usize = 500;
+pub const TARGET_INVITATIONS_MAX: usize = 50;
+pub const INVITATION_LIFETIME_MS: i64 = 30 * 24 * 60 * 60 * 1_000; // PARITY_PENDING.
+
+/// Game-issued identity shape only. A UUID is never membership or current Guild authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct GuildId([u8; 16]);
+
+impl GuildId {
+    pub fn from_bytes(bytes: [u8; 16]) -> Result<Self, super::DomainError> {
+        super::validate_uuid_v7(&bytes)?;
+        Ok(Self(bytes))
+    }
+
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GuildRuleError {

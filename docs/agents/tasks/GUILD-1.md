@@ -193,3 +193,113 @@ the full accepted packet and allocate integration; independent hard, persistence
 security and privacy reviews on the final frozen head, required repository validation
 and protected integration remain outstanding. No commit, push, PR mutation, paid review,
 regeneration, pin edit or merge was performed.
+
+## Native owned component, 2026-10-15 (qualified local preparation)
+
+This successor starts from published draft `c5833e329c234d68d2e89e58630ed134cc24f1dd`.
+The exact six-path root allocation supersedes the former pure-only preparation boundary;
+the historical plan, dependency table and full-task acceptance checkboxes remain unchanged.
+Accepted GUILD0 §3.1/3.2/4.1/4.4 and SOCIAL_MAP §2.2 delegate the native owner/schema
+preparation. Shared integration remains CP-owned under the predecessor sequence. META3.1.0
+was resolved by the lead; this worker neither publishes nor changes shared registrations.
+
+The component implements Invite/Revoke/Accept/Leave/Exclude through the actual native
+`DurabilityRoot`, independently reconciled Character recovery authority and
+`assert_session_fence`. No request bool, imported GuildBank prerequisite row, prepared
+record, caller rank or caller revision establishes current authority. These five commands
+do not carry an expected guild revision; GUILD0 §12 applies that precondition to edits.
+An immutable occurrence/CommandRef/request binding replays its original terminal receipt
+before fresh-write authority checks. New writes use actual current node/session/lease/scope,
+sorted acting/Invite-target Character roots, the guild lock, this guild's sorted member
+rows, invitations and (for a departing vice) the real Account leadership row. Other-guild
+membership is not Invite refusal; Accept requires no membership anywhere. No CharacterRevision
+is advanced.
+
+The database transaction clock owns expiry and first vice-deficit time. Invite considers
+expired retained rows, locks at most51 as an overflow sentinel, deletes at most50 target
+rows on success and enforces500 guild/50 target rows. Accept chooses the highest existing
+rank level, enforces2000 members and removes all target invitations. Leave/Exclude cannot
+remove the leader; a vice exit removes the exact Account position and preserves the first
+ACTIVE vice-deficit time. This component cannot cure/activate a guild with a rank change,
+found a guild, observe Premium, disband it, settle a Guild Bank/Hall or create runtime grants.
+
+`GUILD_TABLES_PROPOSAL` and `GUILD_GUARDS_PROPOSAL` are complete private owner table/guard
+proposals for the implemented commands, not a numbered migration or production install.
+The test fixture seeds a valid initial guild snapshot before its candidate command guards
+are installed. All existing native Character/admission/receipt guards stay enabled; complete
+historical Character creation receipts use the actual native decoder/binder, then full native
+recovery/integrity is independently reconciled. This is a privileged initial snapshot fixture,
+not a qualified formation/Premium/bootstrap writer. Two-root races exercise actual native
+outcomes; native EXCLUSIVE admission-relation locking also serializes them before row locks.
+
+Successful operations retain one same-transaction immutable event-data proposal; refusals
+retain a receipt without fabricating an event. The proposed JSON bytes are not a registered
+event/codec/retention profile. CP must admit normative Guild event publication and the
+`GUILD_ACTIVITY_RETENTION_V1` expiry boundary, privileged production access and the other
+Guild writers. In particular DISBANDED must acquire the separate Bank/Hall closure guards;
+this five-command owner cannot perform that transition. The exact published GuildBank
+prerequisite is compatibility data only: guild/member/rank column names and types stay
+compatible, while its read-only fixture trigger is not copied as Guild authority.
+
+The original private-native PostgreSQL wrapper is explicitly disabled pending native module
+registration. Qualification enables only the outside-tree snapshot, with literal native
+registrations and genuine fixture bridges; no native helper visibility is widened. A disabled
+Cargo target or absent PostgreSQL environment is never counted as a behavioral pass.
+Initial authored cases cover actual native fences, world/membership/rank/state/expiry, immutable
+refusal/success replay, command collision, vice exits,50/500/2000 bounds, two-root cap races,
+rollback and no CharacterRevision advance. Results and exact source/evidence hashes follow
+the actual execution; no test/build pass is claimed at this authoring checkpoint.
+
+
+### Actual native qualification and retained repair evidence
+
+Repaired generation10 passed **9/9 pure tests and11/11 PostgreSQL tests**, with zero
+ignored/filtered tests. Each actual PostgreSQL fixture confirmed server_version_num170006;
+the11-case run finished in62.55s. The outside dispatcher requires a configured genuine
+admin environment before each original PG body, so optional fixture early-return cannot
+produce this result. The exact20 original bodies are mechanically bound to the compiled
+snapshot: seven retained domain tests and thirteen owner tests (two pure, eleven PG).
+Assertions and native guard implementations were not substituted.
+
+Fresh original native production Clippy and the enabled original private-Root wrapper
+strict Clippy passed. Selected-original-body normal cfg(test) Clippy and native rlib
+code generation passed; unselected baseline Rust warnings remain visible. This is not a
+strict global native-unit/whole-repository CI pass. An earlier original global --test
+metadata process was SIGKILLed; a separate normal-cfg(test) blanket-warning context failed
+on unused baseline code. Their logs and source generations remain preserved. No global
+warning suppression, authority predicate weakening or native helper visibility change was
+introduced. The sole consumer-context lint adjustment is clippy::expect_used on the
+unchanged item_transfer_postgres_cases fixture module, matching its original native test
+context; no owned Guild production code is exempted.
+
+Actual generation9 passed9 pure tests but failed10 of11 PG cases. The common defect was
+including the stored generated name_key in a BEFORE UPDATE immutable-field comparison:
+PostgreSQL has not computed NEW.name_key at that point. A native catalog read and
+rollback-only generated-expression probe established that mechanism. Generation10 omits
+only that derived key; actual name and all other immutable base fields, generated expression
+and unique index remain guarded. The existing rollback case now injects only NEW.name
+through a fixture BEFORE trigger and calls an actual current-Root Revoke: the native guard
+rejects it and the complete footprint/revision/name remain unchanged. The actual server
+log identifies game_guild_command_mutation line12, PID9002 at21:49:05.745Z, inside that
+case's fixture interval; healthy native Revoke also passed. The log does not print SQLstate;
+23514 is the invoked source branch, not a claimed raw logged value. Earlier failed source,
+logs and artifacts are preserved, with lossless archive SHA/restore records.
+
+The five Rust files were unchanged throughout generation10; source and fresh extern hashes
+before/after match, and memory oom/oom_kill counters did not increase. The task card alone
+is updated afterward with these results. Durable evidence is in
+/workspace/oteryn-prep/guild-1-native-2-evidence, including exact commands, registration
+transforms, original-body maps, source/extern manifests and raw execution/server logs.
+Final direct formatting, whitespace, governance and exact-owned-path checks accompany the
+frozen six-file manifest. The GuildBank check qualifies column-shape compatibility only;
+it does not execute the Bank writer. Native global admission locking limits the races to
+whole-native outcomes rather than isolated row-lock stress.
+
+This remains an **uninstalled bounded owner component**, not complete GUILD-1 or integrated
+runtime. CP still owns migration numbering/install, production privileges, normative event
+and retention admission, module/Cargo/canonical-PG registration, runtime consumers and
+exact-head repository CI. Formation/current Premium, leader/rank edits, lifecycle jobs,
+disband/Bank/Hall closure and retirement integration are outside this five-command scope.
+The disabled tracked wrapper is compile-checked only, never counted as a zero-test pass.
+The worker does not commit or push; root may publish this coherent successor to the existing
+draft. CP retains ready/merge/queue control and independent exact-candidate review.
