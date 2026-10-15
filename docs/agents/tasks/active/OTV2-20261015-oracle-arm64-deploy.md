@@ -101,3 +101,7 @@ stale NAS writer restart, no arbitrary runner shell/root/Docker access.
 - python tools/agents/validate_governance.py: PASS
 - python -m unittest discover -s tools/agents/tests: PASS (124 tests)
 - Exact game-gate and independent review: pending candidate publication.
+
+Review finding 4288835355 accepted: add the negative Docker capability probe
+before SSH, covering custom socket/context and DOCKER_HOST endpoints as well as
+the canonical socket. Apply the same guard to the sibling Platform workflow.

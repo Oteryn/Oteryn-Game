@@ -44,6 +44,10 @@ jobs:
           test "$(uname -m)" = aarch64
           test "$(id -u)" = 1001
           test ! -S /var/run/docker.sock
+          if command -v docker >/dev/null 2>&1 && timeout 5 docker info >/dev/null 2>&1; then
+            echo 'Runner unexpectedly controls a Docker daemon.' >&2
+            exit 1
+          fi
           case "$OPERATION" in
             status) test -z "$SOURCE_SHA"; command=status ;;
             deploy) [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; command="deploy $SOURCE_SHA $GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT" ;;
