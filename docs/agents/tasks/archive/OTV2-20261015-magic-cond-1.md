@@ -32,6 +32,7 @@ owned_paths:
   - apps/game-server/src/spell/actor_conditions_agony_tests.rs
   - apps/game-server/src/spell/cast.rs
   - apps/game-server/src/spell/cast_gate_tests.rs
+  - apps/game-server/src/spell/companion_execution.rs
   - apps/game-server/src/spell/source_player_conditions.rs
   - tools/content-schema/condition-authoring/README.md
   - tools/content-schema/condition-authoring/authored-conditions.json

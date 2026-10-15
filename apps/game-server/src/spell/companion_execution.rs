@@ -618,6 +618,15 @@ mod tests {
                     })
                 ));
                 assert_eq!(next.conditions.attributes_at(facts.now + 10_000_000), None);
+                assert!(next.conditions.pacified_applied_since(facts.now));
+                assert!(next.conditions.has_gate(
+                    crate::ability::condition::ConditionGate::Pacified,
+                    facts.now
+                ));
+                assert!(!next.conditions.has_gate(
+                    crate::ability::condition::ConditionGate::Pacified,
+                    facts.now + 10_000_000
+                ));
             }
             assert_eq!(runtime.owned_companions(actor, session).unwrap(), census);
             assert!(
@@ -801,18 +810,30 @@ pub(crate) fn stage_haste(
             },
         )
         .ok_or(HasteExecutionError::UnsupportedProfile)?;
-        match staged.conditions.apply(
-            &attributes,
-            None,
-            crate::ability::condition::ConditionSourceKind::SelfUse,
-            &[],
-            facts,
-        ) {
-            Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => {}
-            Err(error) => {
-                return Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
-                    error,
-                )));
+        // swift_foot.lua:37-39 also pacifies the caster for spellDuration.
+        let pacified = ConditionDefinition::new(
+            "spell.swift_foot.pacified",
+            1,
+            ConditionValues::Gate {
+                gate: crate::ability::condition::ConditionGate::Pacified,
+                duration_ms: 10000,
+            },
+        )
+        .ok_or(HasteExecutionError::UnsupportedProfile)?;
+        for definition in [&attributes, &pacified] {
+            match staged.conditions.apply(
+                definition,
+                None,
+                crate::ability::condition::ConditionSourceKind::SelfUse,
+                &[],
+                facts,
+            ) {
+                Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => {}
+                Err(error) => {
+                    return Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
+                        error,
+                    )));
+                }
             }
         }
     }
