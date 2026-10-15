@@ -101,3 +101,103 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Private candidate document/source-binding design — before source work (2026-10-15)
+
+CP allocated exactly the two cosmetics loader files and this card on `skeleton/app-2`,
+base `afc0be27023b6ba7f937740577111df9a0e7f7cc`, existing draft #2173. The owning
+CHARACTER_APPEARANCE decision is ACCEPTED on main `ac9f172836f00226b68088aa04db95ccf1ab994e`.
+This is a candidate compiler, not active-world admission or a cosmetic grant/writer.
+
+1. **Existing reader output, not another DAT parser.** Reuse the actual
+   `tools/content-census/stage_appearance_tables.py` Outfit source observation format:
+   `imports/cipsoft-appearances/outfits/manifest.json` + its ten existing shards. The historical
+   manifest binds the 15.30 DAT source, each exact shard and each Outfit record's digest.
+   `client-assets::AppearanceIndex` is also real but is not a game-server dependency; no Cargo
+   dependency is added and no object-only item membership is misused for Outfit looks. Current
+   source observations are reference data only and grant no ProductionKey/gameplay authority.
+2. **Explicit proposed binding, no installed production pin.** The compiler receives an independent
+   proposed expected document digest/content revision, source-manifest digest and DAT digest.
+   It checks exact bytes, manifest format/family/source identity, shard names/hashes/counts and
+   duplicate/out-of-range source IDs. No hardcoded new active pin, source generation, trust root
+   or registry is installed. A proposed expected binding is data, not current authority. A later
+   CP owner must obtain it from the independently admitted active artifact/world/content source.
+3. **Private document `OTERYN_CHARACTER_COSMETICS_CANDIDATE/v1`.** Required fields: content revision,
+   source manifest/DAT digests; a content palette (identity/revision, explicit RGB entries and
+   provenance); Outfit definitions (identity/revision, male/female look refs with exact source-
+   record digests, addon count, starter flags and explicit starter-addon masks per sex, premium
+   flag, unlock-source citations and provenance); Mount definitions (identity/revision, look ref,
+   recorded speed bonus, premium flag and provenance); exactly one fallback per sex (outfit key,
+   four colour indices). Fallback has no addons/mount by shape. No serde defaults fill missing
+   facts. Unknown/duplicate members and malformed/partial input fail closed. Source citations
+   record authoring evidence; their truth/currentness is not certified by syntactic validation.
+4. **Semantic compiler.** Native ProductionKey/definition references and existing
+   `domain::appearance::{AppearanceSelection, Sex, AppearanceContent, validate_selection}` are
+   reused. Look refs must belong to the Outfit category and match their actual staged record
+   digest. Duplicate keys, invalid addon masks/counts, empty/oversized palette, non-starter
+   fallback, unknown fallback outfit and out-of-palette fallback colours reject. The compiled
+   candidate exposes a read-only AppearanceContent view, explicit sex look lookup and native
+   fallback selection. Premium is retained metadata, not a new gate (D61); Store/unlocks/speed
+   effects/current sex/active generation remain outside this compiler. Mount speed is retained
+   authored metadata, not an applied profile rule; final profile agreement is a CP prerequisite.
+5. **Bounds and qualification.** Private compiler input limits:8MiB per JSON document and32MiB
+   total staged source bytes; ID representation matches the existing native reader's u16 range,
+   palette size fits the native AppearanceContent u16 API, addon count fits native u8 bits.
+   These are defensive parse/allocation bounds, not registered runtime resource rows. Current
+   Outfit `READY_UNPOPULATED` and Mount declarations with empty `fields` remain rejected. Tests
+   may use explicitly synthetic authored documents against real pinned historical observations;
+   that proves compiler behavior only, never population or current-world admission.
+
+Shared CP work remains: concrete authoring/source facts (starter/sex/fallback/palette/unlocks),
+source/active artifact producer and compatibility/provenance admission, profile speed agreement,
+loader registration, full permanent-cosmetics population, regeneration/pins, Character sex input,
+APP-1 writer and APP-3/4 observation. The original acceptance boxes remain open. No content,
+production pin, registry, migration, wiring, dependency or remote action is authorized here.
+
+### Prepared result and exact CP seams
+
+The two owned sources implement the above private format, deterministic typed diagnostics,
+exact manifest/shard/record binding and read-only candidate view. No production source-pin
+constant was installed: all expected document/manifest/DAT/version bindings are explicit proposed
+data. Native `ProductionKey` and `DefinitionRevisionRef` enforce structural identities; the
+Reference runtime's `DefinitionFamily` has no Outfit/Mount variant, so none is invented.
+`AppearanceSelection`, `Sex`, `AppearanceContent` and `validate_selection` are actual native types
+and code, including fallback validation with no earned unlocks. Palette values, starter flags,
+look mappings, source citations and speed metadata in positive authored tests are explicitly
+RAW SYNTHETIC TEST DATA, not actual cosmetic content, AccountUnlock or world admission evidence.
+
+`tools/content-census/stage_appearance_tables.py` was actually replayed in memory on the exact
+existing 15.30 DAT from this base: all1,480 Outfit observations equal the ten existing shards.
+No outputs, content, dependencies, active pins or source/registry files were changed. The current
+Outfit index and252 Mount records remain unpopulated and fail this candidate format; no fallback,
+starter, sex, look, RGB palette, unlock source or source-value population was guessed.
+
+Native public-API source-bound qualification: **15 tests PASS,0 failed/ignored**, plus Clippy
+metadata on the same actual owned source/tests. A controlled mutant omitting the shard-byte digest
+comparison is caught by the exact negative test; unchanged original source then passes that
+focused case (1pass/14filtered). This is diagnostic-mutation RED→GREEN, not a pre-existing
+production defect. Initial wrong native reference-constructor integration failed compilation
+before any tests; its actual log/source hashes are preserved separately and carry no pass claim.
+Workspace fmt, governance124 tests (22documents/9lanes), diff/scope and hash binding are recorded
+in `/workspace/oteryn-prep/app-2-evidence`. No full native Cargo/all-target/server/E2E is claimed.
+
+Concrete integration requirements:
+
+- Normalize fully sourced permanent Outfit/Mount authoring into this private document. Existing
+  ProjectV2Declaration Outfit/Mount records have generic `fields`; their missing facts are not
+  inferred from numeric membership. Bind authoring citations to actual source facts at the owning
+  content admission boundary; syntax/hash proposals here are not a truth/currentness oracle.
+- Extend the actual `content/native_gameplay::{PinnedGameplayBytes,NativeGameplayInput,
+  compile_native_gameplay}`/`ActiveGeneration::native_gameplay` owner to retain the permanent
+  cosmetics bytes/source observations under independently qualified artifact identity. The exact
+  data field/ABI delta belongs CP; no guessed production API is added in this task.
+- The actual `ContentActivationController::activate<A: AuthorizedContentGeneration>` boundary has
+  sealed authorization, target/current identities and activation sequence. That current authority
+  must independently bind the candidate to the admitted World/artifact/content generation; a
+  matching document digest or constructed AppearanceContent object cannot replace it. Channel and
+  World are not interchanged. Candidate compilation performs no actor or session mutation.
+- Bind current Character sex, compatible earned AccountUnlock provenance and future Store
+  entitlement lifecycle through their real owners. This compiler mints none. Mount speed metadata
+  must agree with the admitted profile/ruleset fact before any speed effect; it applies no bonus.
+- Register module/load path and populate/regenerate content/pins only in the CP slot; integrate
+  APP-1 durable writer and APP-3/4 committed observation later. No readiness checkbox is closed.
