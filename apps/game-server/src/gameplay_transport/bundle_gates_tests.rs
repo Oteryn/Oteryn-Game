@@ -15,6 +15,7 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use syn::Token;
+use syn::parse::Parser;
 use syn::punctuated::Punctuated;
 use syn::visit::{self, Visit};
 
@@ -666,6 +667,27 @@ fn path_name(path: &syn::Path) -> String {
         .map_or_else(String::new, |segment| segment.ident.to_string())
 }
 
+/// A pattern's name: its path's last segment (`Some`, `Locate`), its binding, `_`, or the names of
+/// an or-pattern's cases joined by `|`; `None` for a literal, range, tuple or slice.
+fn pat_name(pat: &syn::Pat) -> Option<String> {
+    match pat {
+        syn::Pat::Ident(pat) => Some(pat.ident.to_string()),
+        syn::Pat::Path(pat) => Some(path_name(&pat.path)),
+        syn::Pat::TupleStruct(pat) => Some(path_name(&pat.path)),
+        syn::Pat::Struct(pat) => Some(path_name(&pat.path)),
+        syn::Pat::Wild(_) => Some("_".to_owned()),
+        syn::Pat::Reference(pat) => pat_name(&pat.pat),
+        syn::Pat::Paren(pat) => pat_name(&pat.pat),
+        syn::Pat::Or(pat) => pat
+            .cases
+            .iter()
+            .map(pat_name)
+            .collect::<Option<Vec<_>>>()
+            .map(|names| names.join("|")),
+        _ => None,
+    }
+}
+
 /// An impl's self type by its last path segment, without generic arguments or references.
 fn type_name(ty: &syn::Type) -> String {
     match ty {
@@ -698,9 +720,39 @@ fn needs_test(predicate: &syn::Meta) -> bool {
     }
 }
 
-/// The `#[path = "..."]` of a module declaration.
-fn module_path(attrs: &[syn::Attribute]) -> Option<String> {
-    attrs.iter().find_map(|attr| match &attr.meta {
+/// Whether a cfg predicate holds in a production build, where `test` is false: `Some` when the
+/// predicate depends on `test` alone, `None` when it names another key (a feature, a target).
+fn holds_without_test(predicate: &syn::Meta) -> Option<bool> {
+    match predicate {
+        syn::Meta::Path(path) if path.is_ident("test") => Some(false),
+        syn::Meta::List(list) => {
+            let terms = list
+                .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
+                .ok()?;
+            let terms = terms
+                .iter()
+                .map(holds_without_test)
+                .collect::<Option<Vec<_>>>()?;
+            if list.path.is_ident("not") {
+                match terms.as_slice() {
+                    [term] => Some(!term),
+                    _ => None,
+                }
+            } else if list.path.is_ident("all") {
+                Some(terms.iter().all(|term| *term))
+            } else if list.path.is_ident("any") {
+                Some(terms.iter().any(|term| *term))
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+/// The `path = "..."` value of an attribute's meta, if it is one.
+fn path_value(meta: &syn::Meta) -> Option<String> {
+    match meta {
         syn::Meta::NameValue(value) if value.path.is_ident("path") => match &value.value {
             syn::Expr::Lit(syn::ExprLit {
                 lit: syn::Lit::Str(path),
@@ -709,6 +761,29 @@ fn module_path(attrs: &[syn::Attribute]) -> Option<String> {
             _ => None,
         },
         _ => None,
+    }
+}
+
+/// The path a production build loads a module declaration from: its `#[path = "..."]`, or the
+/// `path` of a `#[cfg_attr(predicate, path = "...")]` whose predicate holds outside tests. A
+/// `cfg_attr` path whose predicate names another key cannot be decided here and fails the guard.
+#[allow(clippy::panic)]
+fn module_path(attrs: &[syn::Attribute]) -> Option<String> {
+    attrs.iter().find_map(|attr| {
+        if !attr.path().is_ident("cfg_attr") {
+            return path_value(&attr.meta);
+        }
+        let metas = attr
+            .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
+            .ok()?;
+        let mut metas = metas.iter();
+        let predicate = metas.next()?;
+        let path = metas.find_map(path_value)?;
+        match holds_without_test(predicate) {
+            Some(true) => Some(path),
+            Some(false) => None,
+            None => panic!("cfg_attr path {path:?} depends on a key other than test"),
+        }
     })
 }
 
@@ -994,34 +1069,111 @@ impl<'ast> Visit<'ast> for Scan {
         visit::visit_field_pat(self, pat);
     }
 
+    fn visit_expr_match(&mut self, expr: &'ast syn::ExprMatch) {
+        // Each production arm is keyed by its position and its pattern's name, so a read moved to
+        // another branch of the same match is another site.
+        for attr in &expr.attrs {
+            self.visit_attribute(attr);
+        }
+        self.visit_expr(&expr.expr);
+        let arms = expr.arms.iter().filter(|arm| !test_only(&arm.attrs));
+        for (index, arm) in arms.enumerate() {
+            let kind = match pat_name(&arm.pat) {
+                Some(name) => format!("arm#{}:{name}", index + 1),
+                None => format!("arm#{}", index + 1),
+            };
+            self.within(kind, |scan| visit::visit_arm(scan, arm));
+        }
+    }
+
     fn visit_arm(&mut self, arm: &'ast syn::Arm) {
         if !test_only(&arm.attrs) {
-            self.within("arm", |scan| visit::visit_arm(scan, arm));
+            visit::visit_arm(self, arm);
         }
     }
 
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
-        // A macro body is parsed as the comma-separated expressions most macros take; a body that
-        // is not one still counts every seam field name in its tokens.
-        let parser = Punctuated::<syn::Expr, Token![,]>::parse_terminated;
-        match mac.parse_body_with(parser) {
-            Ok(exprs) => self.within("macro", |scan| {
+        let buffer = syn::buffer::TokenBuffer::new2(mac.tokens.clone());
+        self.macro_tokens(buffer.begin());
+    }
+}
+
+impl Scan {
+    /// A macro body, or a delimited group inside one, is parsed as the comma-separated expressions
+    /// most macros take, else as statements, else as items, and visited with its test code left
+    /// out. A body that is none of these (a `macro_rules!` matcher, a transcriber with `$x`) is
+    /// walked token by token: each group is tried the same way, a `#[cfg(test)]` attribute drops
+    /// the tokens it governs (up to its `;` or braced body), and every other seam field name counts.
+    fn macro_tokens(&mut self, cursor: syn::buffer::Cursor<'_>) {
+        let tokens = cursor.token_stream();
+        let exprs = Punctuated::<syn::Expr, Token![,]>::parse_terminated;
+        if let Ok(exprs) = exprs.parse2(tokens.clone()) {
+            self.within("macro", |scan| {
                 exprs.iter().for_each(|expr| scan.visit_expr(expr));
-            }),
-            Err(_) => {
-                let tokens = mac.tokens.to_string();
-                for field in FIELDS {
-                    let words = tokens
-                        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
-                        .filter(|word| word == field)
-                        .count();
-                    for _ in 0..words {
-                        self.record((*field).to_owned(), "macro_tokens");
+            });
+        } else if let Ok(stmts) = syn::Block::parse_within.parse2(tokens.clone()) {
+            self.within("macro", |scan| {
+                stmts.iter().for_each(|stmt| scan.visit_stmt(stmt));
+            });
+        } else if let Ok(file) = syn::parse2::<syn::File>(tokens) {
+            self.within("macro", |scan| scan.visit_file(&file));
+        } else {
+            let mut cursor = cursor;
+            while !cursor.eof() {
+                if let Some((punct, next)) = cursor.punct()
+                    && punct.as_char() == '#'
+                    && let Some((inner, _, _, after)) = next.any_group()
+                    && syn::parse2::<syn::Meta>(inner.token_stream())
+                        .is_ok_and(|meta| meta.path().is_ident("cfg") && cfg_needs_test(&meta))
+                {
+                    cursor = skip_governed(after);
+                } else if let Some((ident, next)) = cursor.ident() {
+                    if let Some(field) = Self::seam(&ident) {
+                        self.record(field, "macro_tokens");
                     }
+                    cursor = next;
+                } else if let Some((inner, _, _, next)) = cursor.any_group() {
+                    self.macro_tokens(inner);
+                    cursor = next;
+                } else if let Some((_, next)) = cursor.token_tree() {
+                    cursor = next;
+                } else {
+                    break;
                 }
             }
         }
     }
+}
+
+/// Whether a `cfg(...)` meta's predicate is test-only.
+fn cfg_needs_test(meta: &syn::Meta) -> bool {
+    match meta {
+        syn::Meta::List(list) => list.parse_args::<syn::Meta>().is_ok_and(|p| needs_test(&p)),
+        _ => false,
+    }
+}
+
+/// The cursor past the tokens a leading attribute governs: through the first `;` or braced group
+/// at this level, or to the end.
+fn skip_governed(mut cursor: syn::buffer::Cursor<'_>) -> syn::buffer::Cursor<'_> {
+    while !cursor.eof() {
+        if let Some((punct, next)) = cursor.punct() {
+            cursor = next;
+            if punct.as_char() == ';' {
+                break;
+            }
+        } else if let Some((_, delimiter, _, next)) = cursor.any_group() {
+            cursor = next;
+            if format!("{delimiter:?}") == "Brace" {
+                break;
+            }
+        } else if let Some((_, next)) = cursor.token_tree() {
+            cursor = next;
+        } else {
+            break;
+        }
+    }
+    cursor
 }
 
 #[allow(clippy::expect_used)]
@@ -1385,4 +1537,78 @@ fn a_destructured_combat_room_is_a_read_of_an_open_gate() {
     // declaration.
     assert_eq!(read.field.rsplit('.').next(), Some("combat_room"));
     assert!(!(read.site.ends_with("/declaration") || read.site.ends_with("/initializer")));
+}
+
+#[test]
+fn a_read_moved_to_another_arm_is_another_site() {
+    let attack = scan(
+        "fn route(&self, m: Msg) { match m { Msg::Attack => use_room(self.combat_room), \
+         Msg::Trade => {} } }",
+    );
+    let trade = scan(
+        "fn route(&self, m: Msg) { match m { Msg::Attack => {} \
+         Msg::Trade => use_room(self.combat_room) } }",
+    );
+    assert_eq!(
+        attack.sites,
+        [site(
+            "route",
+            "self.combat_room",
+            "match/arm#1:Attack/call:use_room/field/read",
+            1
+        )]
+    );
+    assert_eq!(
+        trade.sites,
+        [site(
+            "route",
+            "self.combat_room",
+            "match/arm#2:Trade/call:use_room/field/read",
+            1
+        )]
+    );
+}
+
+#[test]
+fn test_code_inside_a_macro_body_is_left_out() {
+    let rules = scan(
+        "macro_rules! gate { ($x:expr) => { \
+         #[cfg(test)] fn probe(o: &O) { o.combat_room; } \
+         $x.qualified_room } }",
+    );
+    assert_eq!(
+        rules.sites,
+        [site("<item>", "qualified_room", "item/macro_tokens", 1)]
+    );
+    let items = scan(
+        "items! { #[cfg(test)] fn probe(o: &O) { o.combat_room; } \
+         fn production(o: &O) { o.qualified_room; } }",
+    );
+    assert_eq!(
+        items.sites,
+        [site("production", "o.qualified_room", "field/read", 1)]
+    );
+}
+
+#[test]
+fn a_cfg_attr_path_is_the_one_production_loads() {
+    let scan = scan(
+        "#[cfg_attr(not(test), path = \"prod.rs\")] mod room; \
+         #[cfg_attr(test, path = \"probe.rs\")] mod other;",
+    );
+    assert_eq!(
+        scan.modules,
+        [
+            Module {
+                inline: vec![],
+                name: "room".to_owned(),
+                path: Some("prod.rs".to_owned()),
+            },
+            Module {
+                inline: vec![],
+                name: "other".to_owned(),
+                path: None,
+            },
+        ]
+    );
 }
