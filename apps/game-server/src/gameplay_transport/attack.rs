@@ -624,7 +624,8 @@ impl ChannelAttackStates {
     ) -> bool {
         match self.entry(runtime, actor, session) {
             Some(entry) => {
-                if modes.chase != ChaseMode::Chase {
+                // RANGED0-RL-08: any mode change clears the route and the refused cells.
+                if modes != entry.modes || modes.chase != ChaseMode::Chase {
                     entry.chase.reset();
                 }
                 entry.modes = modes;

@@ -1358,6 +1358,52 @@ fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
 }
 
 #[test]
+fn an_ended_connection_and_a_mode_change_leave_the_chase_search_ordering() {
+    // RANGED0-RL-03: a waiting search counts ahead of later ones only while its connection
+    // still drives the chase; the ended connection's yield takes it out of the ordering.
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "a due search first registers");
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1));
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    // RANGED0-RL-08: any accepted mode change, chase kept, resets the chase too.
+    assert_eq!(owner.chase(T0 + 1_000_001), None);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    let modes = FightModes {
+        secure: !FightModes::DEFAULT.secure,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    assert!(
+        owner
+            .attack
+            .set_modes(&owner.runtime, owner.player, owner.session, modes)
+    );
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+}
+
+#[test]
 fn the_actor_pacing_deadline_survives_a_replaced_connection() {
     // CHASE-1 (RANGED-0 §8): the deadline is the actor's, not its connection's, so a resumed or
     // replaced connection starts from it and never steps sooner.

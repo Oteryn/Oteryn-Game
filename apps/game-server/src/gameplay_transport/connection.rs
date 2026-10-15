@@ -1383,6 +1383,26 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let (actor, session) = (admitted.runtime_actor, admitted.game_session_id);
+    let end = serve_admitted_actor(stream, admitted, authority, policy).await;
+    // CHASE-1 (`RANGED0-RL-03`): the ended connection drives no more chase, so its waiting
+    // search leaves the Channel's ordering now rather than holding a place through the grace.
+    if let Some(actor) = actor {
+        authority.yield_chase_to_client(actor, session).await;
+    }
+    end
+}
+
+async fn serve_admitted_actor<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     let mut admitted = admitted;
     let generation = admitted.continuity.connection_generation;
     let playable = matches!(
