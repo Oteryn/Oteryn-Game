@@ -9,13 +9,13 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-progress-1
 issue: 1622
-pr: null
+pr: 2192
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-PROGRESS-1 (rows 37, 38, 40, 41); wave 1 (migration chain #3)"
 class: "hard (Character writes)"
 migration: yes
 registry: no
-owner: unassigned (builder)
+owner: house_runtime_1a (owned preparation)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-15
@@ -87,7 +87,7 @@ migration+writer+durability.
 
 - [ ] Level-up vitals/capacity match Reference per vocation.
 - [ ] Training flag default off in production.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
 
@@ -111,9 +111,85 @@ A13; SKILLS-0; Reference vocation tables. Plan: `docs/architecture/reviews/OTERY
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
+last_progress: native committed-XP level-up maxima adapter prepared locally
 status: waiting
 branch: skeleton/loop-progress-1
 blocker: DAWNPORT-1
-next_action: CP rechecks BLOCKING rows
+next_action: native qualification, then CP/architect review and dependency integration slot
 ```
+
+
+## Owned preparation (2026-10-15)
+
+Residue checked against protected accepted main `e2da9805d296a27b06b32335bf67394509d4910b`
+and this draft's exact base `69bb29ef934a09c4f953f5c9773c12d0a925e5a7` before implementation.
+Existing `domain/progression.rs` owns XP-to-level calculation; `character_progression.rs`
+already commits/reconciles XP with one Character revision. `character_build.rs` owns build
+conversion and W2b's `spell/mana_training.rs` / `spell/hit_training.rs` own training and
+checkpoints. Those writers and production training flags are unchanged. The bounded residue
+is effect preparation for a committed level increase, identified by plan row 37.
+Accepted A13 Character Build State §§4.1–4.6 (effective through ACCEPT-BATCH #2209) does not
+transfer build authority to this adapter; SPELL-D5's existing native cast facts remain the
+vocation/HP/mana projection owner. Later protected main `3ef900c1` adds shared logout/admission
+changes; this draft is not merged/rebased and CP must revalidate those consumers at integration.
+
+`domain/progression.rs` adds only concrete `LevelUpVitalMaxima` data (level/maxHP/maxMP)
+and checked maximum differences. These values do not qualify a source or select a curve.
+`character_progression_binding.rs` binds the existing native `ExperienceCommitOutcome` to
+independently supplied pre/current fences and an owner-projected after revision/maxima pair.
+`AlreadyCommitted` emits no effect; a fresh same-level award requires no after projection.
+A level increase yields checked gains and expected receipt/fence bindings. Current pools
+are never refilled, durable state is never written and no authority is granted.
+No XP formula, vocation curve, build conversion, skill/magic accumulation or writer is copied.
+
+The pre-award maxima/fence must be retained from the independently admitted actor;
+the current fence must be independently refreshed. Neither may be reconstructed from a
+receipt. The binder checks Character identity, session, connection generation, Character
+lease, distinct WorldId/ChannelId, scope generation and exact successor Character revision.
+The supplied after revision and level must match the receipt, and maxima cannot decrease.
+These are binding/arithmetic checks, not proof of the supplied maxima's provenance.
+
+**CP hook still required:** `spell_character_facts::load_character_cast_facts` brackets existing
+build/progression reads with root revisions. The caller must project its Ready result to
+`LevelUpVitalMaxima`, retaining its returned revision and checking unchanged vocation,
+magic level and soul maximum against the admitted actor. Unavailable/no-vocation/mixed facts
+must refuse that hookup. The binder itself cannot independently make those checks.
+An attempted direct private-loader import into the binding was removed before qualification:
+`tests/support/character_progression_admission_postgres_cases.rs` path-includes that entire
+binding with public durable/domain owners only. Preserving that real consumer rules out
+private spell imports here. No cfg hiding, replacement types, new module or root wiring is used.
+The future installer must atomically revalidate session/lease/scope/Character authority at
+mutation; a prepared plan cannot substitute for current liveness.
+
+Capacity remains pending its owning accepted native source/unit and absolute capacity facts;
+the parallel ITEM-LOOP preparation likewise admits no unit conversion/base/vocation formula.
+This patch does not promote candidate capacity totals or create an authoritative progression
+snapshot. Unclassed actors, vocation transitions, native-loader qualification, durable vitals
+adoption and capacity integration remain owning work; this subset does not establish LOOP DONE.
+
+Eight inline native-library unit tests exercise actual receipt/fence binding, each replaced
+fence dimension, replay, same-level awards, missing/wrong-revision after data, level/maxima
+mismatch and malformed/overflowing receipts. Four external tests import the actual public
+library and cover checked differences without copied source. Their maxima are arithmetic
+fixtures, not curve/current-authority qualification. The existing standalone progression
+PostgreSQL wrapper must compile against the whole changed binding. No production mutation
+boundary is added: time, lock/concurrency and PostgreSQL commit qualification remain with the
+future integration and existing writers, rather than being claimed by these pure tests.
+
+Evidence is retained outside the repository in `/workspace/oteryn-prep/loop-progress-1-evidence`.
+The first native library attempt encountered 34 missing sparse-checkout include errors;
+that preserved setup failure is not product RED or a test pass. Root restored exact-HEAD
+inputs before the corrected native run. Final results/source hashes are recorded in the packet.
+Full acceptance remains pending except the completed pre-code residue check. DAWNPORT/chain #3,
+capacity ownership, native loader hookup, atomic application and durable vitals/training
+integration, exact-head CP/architect review and slot-only wiring remain required.
+
+Observed local validation: native library filter `level_up_tests` passed 8 tests; the actual
+`--test loop_progress_level_up` target passed 4 using the public native library. Existing
+`cargo check --lib --test character_progression_postgres` passed, preserving the standalone
+consumer; native `cargo clippy --lib --test loop_progress_level_up -- -D warnings` passed.
+The executions used the retained pre-annotation binding. Its only final Rust delta is four
+scoped `dead_code` attributes explaining the pending CP slot, proven by an exact byte-level
+strip comparison; final native Clippy checked that annotated source. Both source manifests
+and the execution artifacts are retained; this is not a claim that the earlier test binary
+was rebuilt from the final annotated source. No PostgreSQL execution is claimed.

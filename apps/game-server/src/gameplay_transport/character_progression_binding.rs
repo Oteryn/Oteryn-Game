@@ -5,17 +5,135 @@
 //!
 //! Depends only on the durable owners, so the PostgreSQL targets include it as it is.
 
-use crate::domain::progression::FiniteProgressionPolicy;
+use crate::domain::CharacterRevision;
+use crate::domain::progression::{
+    FiniteProgressionPolicy, LevelUpVitalMaxima, calculate_level_up_vital_change,
+};
 use crate::durability::DurabilityError;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_progression::{
-    CharacterProgressionError, CharacterProgressionState, CurrentCharacterGameplayFence,
+    CharacterProgressionError, CharacterProgressionState, CommittedExperienceAward,
+    CurrentCharacterGameplayFence, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     ProgressionInitializationOutcome, ProgressionInitializationRequest,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use std::future::Future;
 use std::time::Duration;
+
+/// Prepared maxima replacement, never a vitals write or permission to install an actor.
+/// Capacity has no admitted native source/unit yet and is deliberately absent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "effect installation awaits the LOOP-PROGRESS-1 CP slot"
+)]
+pub(crate) struct LevelUpEffectPlan {
+    pub(crate) occurrence: ExperienceRewardOccurrence,
+    pub(crate) expected_before: CurrentCharacterGameplayFence,
+    pub(crate) expected_after: CurrentCharacterGameplayFence,
+    pub(crate) maxima_before: LevelUpVitalMaxima,
+    pub(crate) maxima_after: LevelUpVitalMaxima,
+    pub(crate) health_maximum_gain: u32,
+    pub(crate) mana_maximum_gain: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "effect installation awaits the LOOP-PROGRESS-1 CP slot"
+)]
+pub(crate) enum LevelUpPlanError {
+    InvalidReceipt,
+    BindingMismatch,
+    FactsUnavailable,
+    FactsMismatch,
+}
+
+/// Prepare only a newly acknowledged XP commit. Replay never emits another effect.
+///
+/// Both maxima inputs are data, not qualified sources or authority. The caller must retain
+/// `before_maxima` and `before_fence` from the independently admitted actor immediately before
+/// this award, and independently refresh `current_fence`. `after` must project the existing
+/// native `load_character_cast_facts` result at its returned root revision, with unchanged
+/// vocation/magic/soul. Never reconstruct these inputs from the receipt or candidate curves.
+/// That private loader hookup belongs to the CP slot: this standalone-compatible preparation
+/// neither loads nor independently qualifies vocation maxima.
+///
+/// Even a successful plan does not prove current liveness. The future installer must atomically
+/// recheck session, lease, scope and Character revision against the expected binding. Current
+/// pools, durable vitals, capacity, training and revision advancement retain their owners.
+#[allow(
+    dead_code,
+    reason = "effect installation awaits the LOOP-PROGRESS-1 CP slot"
+)]
+pub(crate) fn plan_committed_experience_level_up(
+    outcome: &ExperienceCommitOutcome,
+    before_fence: CurrentCharacterGameplayFence,
+    before_maxima: LevelUpVitalMaxima,
+    current_fence: CurrentCharacterGameplayFence,
+    after: Option<(CharacterRevision, LevelUpVitalMaxima)>,
+) -> Result<Option<LevelUpEffectPlan>, LevelUpPlanError> {
+    let Some(receipt) = fresh_level_up(outcome, before_fence, before_maxima, current_fence)? else {
+        return Ok(None);
+    };
+    let (character_revision, maxima_after) = after.ok_or(LevelUpPlanError::FactsUnavailable)?;
+    if character_revision != receipt.committed_character_revision
+        || maxima_after.level != receipt.level_after
+    {
+        return Err(LevelUpPlanError::FactsMismatch);
+    }
+    let gains = calculate_level_up_vital_change(before_maxima, maxima_after)
+        .map_err(|_| LevelUpPlanError::FactsMismatch)?;
+    Ok(Some(LevelUpEffectPlan {
+        occurrence: receipt.occurrence,
+        expected_before: before_fence,
+        expected_after: current_fence,
+        maxima_before: before_maxima,
+        maxima_after,
+        health_maximum_gain: gains.health_maximum_gain,
+        mana_maximum_gain: gains.mana_maximum_gain,
+    }))
+}
+
+#[allow(
+    dead_code,
+    reason = "effect installation awaits the LOOP-PROGRESS-1 CP slot"
+)]
+fn fresh_level_up(
+    outcome: &ExperienceCommitOutcome,
+    before_fence: CurrentCharacterGameplayFence,
+    before_maxima: LevelUpVitalMaxima,
+    current_fence: CurrentCharacterGameplayFence,
+) -> Result<Option<&CommittedExperienceAward>, LevelUpPlanError> {
+    let ExperienceCommitOutcome::Committed(receipt) = outcome else {
+        return Ok(None);
+    };
+    if receipt.level_before == 0
+        || receipt.level_after < receipt.level_before
+        || receipt.experience_before.get() < 0
+        || receipt.experience_awarded.get() <= 0
+        || receipt
+            .experience_before
+            .checked_add(receipt.experience_awarded)
+            .ok()
+            != Some(receipt.experience_after)
+        || receipt.original_character_revision.get().checked_add(1)
+            != Some(receipt.committed_character_revision.get())
+    {
+        return Err(LevelUpPlanError::InvalidReceipt);
+    }
+    let mut expected_after = before_fence;
+    expected_after.expected_character_revision = receipt.committed_character_revision;
+    if before_fence.character_id != receipt.character_id
+        || before_fence.expected_character_revision != receipt.original_character_revision
+        || current_fence != expected_after
+        || before_maxima.level != receipt.level_before
+    {
+        return Err(LevelUpPlanError::BindingMismatch);
+    }
+    Ok((receipt.level_after > receipt.level_before).then_some(receipt))
+}
 
 /// Why an admitted session holds no progression binding (§1.5). Each is decided once, at
 /// admission; the session's deaths then respawn non-durably and its kills award no XP.
@@ -288,5 +406,304 @@ pub(crate) mod seam {
             })
             .ok()
             .flatten()
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod level_up_tests {
+    use super::*;
+    use crate::domain::CharacterId;
+    use crate::foundation::{
+        ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, WorldId,
+    };
+    use oteryn_simulation_determinism::ExactI64;
+
+    fn id(tag: u8) -> [u8; 16] {
+        let mut bytes = [tag; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes
+    }
+
+    fn revision(value: u64) -> CharacterRevision {
+        CharacterRevision::new(value).expect("revision")
+    }
+
+    fn receipt() -> CommittedExperienceAward {
+        CommittedExperienceAward {
+            occurrence: ExperienceRewardOccurrence::from_bytes(id(1)).expect("occurrence"),
+            character_id: CharacterId::from_bytes(id(2)).expect("character"),
+            original_character_revision: revision(4),
+            committed_character_revision: revision(5),
+            level_before: 8,
+            level_after: 10,
+            experience_before: ExactI64::new(4200),
+            experience_after: ExactI64::new(9300),
+            experience_awarded: ExactI64::new(5100),
+        }
+    }
+
+    // Independent admitted/current fixtures, never reconstructed from a receipt.
+    fn admitted() -> CurrentCharacterGameplayFence {
+        CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(2)).expect("character"),
+            game_session_id: GameSessionId::decode(&id(3)).expect("session"),
+            connection_generation: ConnectionGeneration::new(1).expect("connection"),
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(4)).expect("world"),
+                ChannelId::decode(&id(5)).expect("channel"),
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
+            expected_character_revision: revision(4),
+        }
+    }
+
+    fn current() -> CurrentCharacterGameplayFence {
+        CurrentCharacterGameplayFence {
+            expected_character_revision: revision(5),
+            ..admitted()
+        }
+    }
+
+    // Arithmetic fixtures only: these do not qualify the native vocation curves/loader.
+    fn before() -> LevelUpVitalMaxima {
+        LevelUpVitalMaxima {
+            level: 8,
+            max_health: 185,
+            max_mana: 90,
+        }
+    }
+
+    fn after() -> LevelUpVitalMaxima {
+        LevelUpVitalMaxima {
+            level: 10,
+            max_health: 215,
+            max_mana: 100,
+        }
+    }
+
+    fn plan(
+        outcome: ExperienceCommitOutcome,
+        before_fence: CurrentCharacterGameplayFence,
+        before_maxima: LevelUpVitalMaxima,
+        current_fence: CurrentCharacterGameplayFence,
+        facts: Option<(CharacterRevision, LevelUpVitalMaxima)>,
+    ) -> Result<Option<LevelUpEffectPlan>, LevelUpPlanError> {
+        plan_committed_experience_level_up(
+            &outcome,
+            before_fence,
+            before_maxima,
+            current_fence,
+            facts,
+        )
+    }
+
+    #[test]
+    fn level_up_preserves_actual_receipt_and_all_expected_binding_fields() {
+        let effect = plan(
+            ExperienceCommitOutcome::Committed(receipt()),
+            admitted(),
+            before(),
+            current(),
+            Some((revision(5), after())),
+        )
+        .expect("valid plan")
+        .expect("level-up");
+        assert_eq!(effect.expected_before, admitted());
+        assert_eq!(effect.expected_after, current());
+        assert_eq!(effect.occurrence, receipt().occurrence);
+        assert_eq!(
+            (effect.maxima_before, effect.maxima_after),
+            (before(), after())
+        );
+        assert_eq!(
+            (effect.health_maximum_gain, effect.mana_maximum_gain),
+            (30, 10)
+        );
+    }
+
+    #[test]
+    fn level_up_replay_never_reissues_an_effect_even_without_owner_data() {
+        assert_eq!(
+            plan(
+                ExperienceCommitOutcome::AlreadyCommitted(receipt()),
+                admitted(),
+                before(),
+                current(),
+                None
+            ),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn level_up_same_level_award_needs_no_maxima_reload() {
+        let mut award = receipt();
+        award.level_after = 8;
+        award.experience_awarded = ExactI64::new(1);
+        award.experience_after = ExactI64::new(4201);
+        assert_eq!(
+            plan(
+                ExperienceCommitOutcome::Committed(award),
+                admitted(),
+                before(),
+                current(),
+                None
+            ),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn level_up_rejects_each_replaced_session_scope_or_revision_binding() {
+        let mut cases = [current(); 8];
+        cases[0].character_id = CharacterId::from_bytes(id(9)).expect("other character");
+        cases[1].game_session_id = GameSessionId::decode(&id(9)).expect("other session");
+        cases[2].connection_generation = ConnectionGeneration::new(2).expect("generation");
+        cases[3].character_lease_generation = 2;
+        cases[4].runtime_scope = RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(9)).expect("world"),
+            ChannelId::decode(&id(5)).expect("channel"),
+        );
+        cases[5].runtime_scope = RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(4)).expect("world"),
+            ChannelId::decode(&id(9)).expect("channel"),
+        );
+        cases[6].scope_ownership_generation = ScopeOwnershipGeneration::new(2).expect("scope");
+        cases[7].expected_character_revision = revision(6);
+        for fence in cases {
+            assert_eq!(
+                plan(
+                    ExperienceCommitOutcome::Committed(receipt()),
+                    admitted(),
+                    before(),
+                    fence,
+                    Some((revision(5), after()))
+                ),
+                Err(LevelUpPlanError::BindingMismatch)
+            );
+        }
+    }
+
+    #[test]
+    fn level_up_rejects_stale_pre_award_revision_or_level() {
+        let stale = CurrentCharacterGameplayFence {
+            expected_character_revision: revision(3),
+            ..admitted()
+        };
+        assert_eq!(
+            plan(
+                ExperienceCommitOutcome::Committed(receipt()),
+                stale,
+                before(),
+                current(),
+                Some((revision(5), after()))
+            ),
+            Err(LevelUpPlanError::BindingMismatch)
+        );
+        assert_eq!(
+            plan(
+                ExperienceCommitOutcome::Committed(receipt()),
+                admitted(),
+                LevelUpVitalMaxima {
+                    level: 7,
+                    ..before()
+                },
+                current(),
+                Some((revision(5), after()))
+            ),
+            Err(LevelUpPlanError::BindingMismatch)
+        );
+    }
+
+    #[test]
+    fn level_up_refuses_missing_or_wrong_revision_owner_projection() {
+        assert_eq!(
+            plan(
+                ExperienceCommitOutcome::Committed(receipt()),
+                admitted(),
+                before(),
+                current(),
+                None
+            ),
+            Err(LevelUpPlanError::FactsUnavailable)
+        );
+        for root_revision in [revision(4), revision(6)] {
+            assert_eq!(
+                plan(
+                    ExperienceCommitOutcome::Committed(receipt()),
+                    admitted(),
+                    before(),
+                    current(),
+                    Some((root_revision, after()))
+                ),
+                Err(LevelUpPlanError::FactsMismatch)
+            );
+        }
+    }
+
+    #[test]
+    fn level_up_refuses_wrong_after_level_or_regressing_maxima() {
+        for changed in [
+            LevelUpVitalMaxima {
+                level: 11,
+                ..after()
+            },
+            LevelUpVitalMaxima {
+                max_health: 184,
+                ..after()
+            },
+            LevelUpVitalMaxima {
+                max_mana: 89,
+                ..after()
+            },
+        ] {
+            assert_eq!(
+                plan(
+                    ExperienceCommitOutcome::Committed(receipt()),
+                    admitted(),
+                    before(),
+                    current(),
+                    Some((revision(5), changed))
+                ),
+                Err(LevelUpPlanError::FactsMismatch)
+            );
+        }
+    }
+
+    #[test]
+    fn level_up_rejects_malformed_receipt_without_reprojecting_xp_policy() {
+        let base = receipt();
+        let mut awards = [
+            base.clone(),
+            base.clone(),
+            base.clone(),
+            base.clone(),
+            base.clone(),
+            base.clone(),
+            base.clone(),
+        ];
+        awards[0].level_before = 0;
+        awards[1].level_after = 7;
+        awards[2].experience_before = ExactI64::new(-1);
+        awards[3].experience_awarded = ExactI64::new(0);
+        awards[4].experience_after = ExactI64::new(9301);
+        awards[5].committed_character_revision = revision(6);
+        awards[6].experience_before = ExactI64::new(i64::MAX);
+        for award in awards {
+            assert_eq!(
+                plan(
+                    ExperienceCommitOutcome::Committed(award),
+                    admitted(),
+                    before(),
+                    current(),
+                    Some((revision(5), after()))
+                ),
+                Err(LevelUpPlanError::InvalidReceipt)
+            );
+        }
     }
 }
