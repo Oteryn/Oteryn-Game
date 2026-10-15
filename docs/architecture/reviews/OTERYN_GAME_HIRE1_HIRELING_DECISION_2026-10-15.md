@@ -65,12 +65,12 @@ Until the contract is accepted and merged, HIRE-1 children that touch delivery w
 
 ## 5. Packets (proposed)
 
-1. **HIRE-DATA-1** (hard, persistence review): H2, H3, H4 tables and transactions, the lamp mint/retire, the house-loss return. Needs HOUSE-1a.
+1. **HIRE-DATA-1** (hard, persistence review): H2, H3, H4 tables and transactions, the lamp mint/retire, the house-loss return. Needs HOUSE-1b (the H4 return extends the HOUSE-1b rent, move-out, eviction and disposition transaction; HOUSE-1a excludes it).
 2. **HIRE-NPC-1** (impl): the hireling NPC entity, content for the Apprentice catalogue and voice lines (NPC-0).
 3. **HIRE-JOBS-1** (hard, economy review): Banker, Trader, Steward and Cook per H5, on the accepted bank, stash and trade writers.
 4. **HIRE-WIRE-1** (protocol, Reg): the outfit window for hirelings, dress allocation, name and sex change dialogs; a contract candidate of its own.
-5. **HIRE-STORE-1** (hard, security and economy review): the delivery consumer of H1, **after** the Platform Store contract is accepted.
-Order: HIRE-DATA-1, HIRE-NPC-1, HIRE-JOBS-1, HIRE-WIRE-1, then HIRE-STORE-1. The plan lists HIRE-1 in Wave 5 after HOUSE-1a; nothing here changes that.
+5. **HIRE-STORE-1** (hard, security and economy review): the delivery consumer of H1, **after** HIRE-NPC-1, HIRE-JOBS-1 and HIRE-WIRE-1 have merged and the Platform Store contract is accepted.
+Order: HIRE-DATA-1, HIRE-NPC-1, HIRE-JOBS-1, HIRE-WIRE-1, then HIRE-STORE-1. The plan lists HIRE-1 in Wave 5 after HOUSE-1b; nothing here changes that.
 
 ## 6. Open points (not decided)
 

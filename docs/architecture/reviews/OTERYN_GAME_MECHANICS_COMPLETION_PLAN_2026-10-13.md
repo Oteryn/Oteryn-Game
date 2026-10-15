@@ -98,7 +98,7 @@ cycles (strongly connected components of entry-gate and child edges) and danglin
 | MAIL-1 | 88 | mail and parcels | ITEM-LOOP-1 (ITEM-STORAGE-1 as a whole is not an entry gate: the parcel children name DEPOT-1 through BAGS-DEPOT-1 themselves, and MAIL-TEXT-1 and MAIL-CONTENT-1 run before WRITE-1); external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1 (merged), MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, BANK-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
 | MARKET-1 | 122 | market | ITEM-LOOP-1, NPC-ECON-1 (ITEM-STORAGE-1 as a whole is not an entry gate: MARKET-CONTENT-1 runs before STASH-CONTENT-1), ECON-RET-0 (merged, #1748; MARKET-RET-0), PREMIUM-1; external prerequisites of the brief children: ITEM-VIEW-1b, VIS-2, ITEM-MOVE-2a, WO-1 (merged), MAP-LOAD-1, ITEM-MOVE-1, MAP-WIRE-2, BAGS-1, BAGS-DEPOT-1, HOUSE-CUSTODY-1, DEPOT-1, GOLD-FEE-2, DEPOT-WIRE-1 | hard | yes | yes |
 | CRAFT-1 | 89, 91 | crafting, fishing, digging, cooking; brief `OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` (CANDIDATE; children in Appendix 7, CRAFT-1 graph) | #2039 (merged), ITEM-LOOP-1 | hard (item conversions; child graph, App. 7) | yes | no |
-| HIRE-1 | 90 | hirelings (children in Appendix 7, HIRE-1 graph): a Store-delivered, house-bound NPC product; goes ahead, not deferred (owner 2026-10-15); brief `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE); delivery waits for the Platform Store contract (Platform #1625) | HOUSE-1a, NPC-ECON-1, PREMIUM-1 | hard (persistence, economy; child graph, App. 7) | yes | no |
+| HIRE-1 | 90 | hirelings (children in Appendix 7, HIRE-1 graph): a Store-delivered, house-bound NPC product; goes ahead, not deferred (owner 2026-10-15); brief `OTERYN_GAME_HIRE1_HIRELING_DECISION_2026-10-15.md` (CANDIDATE); delivery waits for the Platform Store contract (Platform #1625) | HOUSE-1b, NPC-ECON-1, PREMIUM-1 | hard (persistence, economy; child graph, App. 7) | yes | no |
 | QUEST-RT-1 | 86, 87 | quest runtime on the bundle, chest rewards, cap 16 offer | QUEST-LOWER-1, ITEM-LOOP-1, MAP-PICKUP-1 (chest and ground pickup), QUEST-XP-ADMISSION-1 (pays quest XP); external prerequisites of the brief children: MAP-LOAD-1, MAP-WIRE-2, NPC-TALK-1, GOLD-FEE-2, MAP-BUNDLE-1, NPC-CONTENT-1 | hard (rewards are mints) | maybe | yes |
 
 ### Epic 3. Magic and conditions
@@ -625,11 +625,11 @@ Acceptance gate: no child in this graph is allocated until its owning decision (
 | CRAFT-FISH-1 | CRAFT1 | impl: fishing with the SKILLS-0 hook |  | CRAFT-RT-1 |
 | CRAFT-DIG-1 | CRAFT1 | impl: digging on the MAP-OVERLAY volatile layer |  | CRAFT-RT-1; MAP-OVERLAY-1 |
 | CRAFT-NPC-1 | CRAFT1 | impl: NPC exchanges on the NPC-TRADE-1 writer |  | CRAFT-RT-1; NPC-TRADE-1 (writer merged, #2040) |
-| HIRE-DATA-1 | HIRE1 | hard, persistence review: hireling rows, lamp mint and retire, house-loss return, session fence |  | HOUSE-1a |
+| HIRE-DATA-1 | HIRE1 | hard, persistence review: hireling rows, lamp mint and retire, house-loss return, session fence |  | HOUSE-1b |
 | HIRE-NPC-1 | HIRE1 | impl: hireling NPC entity and Apprentice content |  | HIRE-DATA-1; NPC-TALK-1 |
 | HIRE-JOBS-1 | HIRE1 | hard, economy review: Banker, Trader, Steward, Cook | yes | HIRE-NPC-1; NPC-ECON-1; STASH-1 |
 | HIRE-WIRE-1 | HIRE1 | hard, protocol review: hireling outfit window, dress, name and sex change | yes | HIRE-DATA-1 |
-| HIRE-STORE-1 | HIRE1 | hard, security and economy review: Store delivery consumer; waits for the Platform Store contract (Platform #1625) | yes | HIRE-DATA-1; PREMIUM-1; Platform Store contract |
+| HIRE-STORE-1 | HIRE1 | hard, security and economy review: Store delivery consumer; waits for the Platform Store contract (Platform #1625) | yes | HIRE-DATA-1; HIRE-NPC-1; HIRE-JOBS-1; HIRE-WIRE-1; PREMIUM-1; Platform Store contract |
 
 ### MONSTER-META-1, EVENTS-RAID-1, EVENTS-WORLD-1, ARENA-1
 

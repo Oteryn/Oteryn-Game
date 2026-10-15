@@ -37,7 +37,7 @@ Facts the brief relies on:
 
 **C2. Deterministic RNG.** The only random conversion is a weighted output or the fishing catch roll. It draws from a new registered RNG purpose `ConversionRngPurpose` (variants `FishingCatch`, `WeightedOutput`), seeded from the world seed, the character id, the item uid and the per-character conversion counter, following the ATTACK-0 §4 RNG-purpose pattern. Same inputs, same result. No wall-clock or global RNG. A replayed or retried intent returns the original result (idempotent on the intent id), so a retry cannot reroll.
 
-**C3. Atomic mint and retire.** One conversion is one persistence transaction: the consumed inputs are retired and the outputs minted with a conversion cause, or nothing changes. If the outputs do not fit (capacity, container full, no room on the ground), the conversion is refused before anything is consumed, with the ITEM-LOOP-1 refusal ("not enough room" or "too heavy"). No output is dropped to the ground silently.
+**C3. Atomic mint and retire.** One durable item conversion is one persistence transaction (volatile MAP-OVERLAY transformations such as digging under C5 are exempt: they retire and mint no items and carry no persistence transaction): the consumed inputs are retired and the outputs minted with a conversion cause, or nothing changes. If the outputs do not fit (capacity, container full, no room on the ground), the conversion is refused before anything is consumed, with the ITEM-LOOP-1 refusal ("not enough room" or "too heavy"). No output is dropped to the ground silently.
 
 **C4. Fishing.**
 - Preconditions: rod in hand or inventory, a worm stack, a target water tile with fish. No worm means a refusal and no roll.
@@ -47,7 +47,7 @@ Facts the brief relies on:
 
 **C5. Digging and tile transformation.** A use-with on a diggable ground item replaces it with the opened form for `revert_ms` and returns it afterwards. The change is volatile map state under ADR-0021 (a crash resets it, as does the planned world reset). Items stacked on the tile move with it per the ITEM-LOOP-1 tile rules. No permanent tile edit is allowed.
 
-**C6. NPC exchanges.** An exchange is an NPC-trade row (NPC-TRADE-1 writer) with `give` items and `take` items and no gold. It reuses the NPC trade validation (distance, focus, capacity, bank-free). It is one transaction under C3.
+**C6. NPC exchanges.** An exchange is an NPC-trade row (NPC-TRADE-1 writer) with `give` items and `take` items and no gold. It reuses the NPC trade validation (distance, focus, capacity, bank-free). It is one transaction under C3 (a durable item conversion).
 
 **C7. Refusals are fixed messages** from the table's `result_message` set; no new free text in code.
 
