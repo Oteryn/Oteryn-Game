@@ -256,7 +256,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capabilities_6_7_13_and_17_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_and_17_whatever_the_clien
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17][..])
+        Some(&[6, 7, 13, 17, 19][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17][..])
+        Some(&[4, 6, 7, 13, 17, 19][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -423,6 +423,10 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn required_capability(&self) -> Option<u32> {
         self.required
+    }
+
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        Some(NOON_UTC_MS)
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -669,6 +673,11 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
         assert_eq!(accepted_selection(&frames)?, [6, 17]);
         let (_, frames) = admit(&authority, &bootstrap(&[17])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
+        // CLOCK-1: 19 is selected only with its required 6.
+        let (_, frames) = admit(&authority, &bootstrap(&[6, 19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 19]);
+        let (_, frames) = admit(&authority, &bootstrap(&[19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         // CHAT-WIRE-1: 7 requires nothing and is selected alone.
         let (_, frames) = admit(&authority, &bootstrap(&[7])?).await?;
         assert_eq!(accepted_selection(&frames)?, [7]);
@@ -687,12 +696,19 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 #[test]
 fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
-    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
-    // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
-    let (last, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 18 before its
+    // last entry 19; 18's crate and registry `requires` stay [4, 6] and the registry keeps 18
+    // `offered: false`.
+    let (light, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    let (last, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
+    let (item_light, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
+        .split_last()
+        .ok_or("empty item view set")?;
+    assert_eq!(light, item_light);
+    assert_eq!(light.id, 19);
     assert_eq!(
         (npc.id, npc.requires),
         (
@@ -700,7 +716,7 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6(
             &[][..]
         )
     );
-    assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
+    assert_eq!(item_view, item_rest);
     assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
     assert_eq!(last.requires, [4, 6]);
     assert!(
@@ -765,6 +781,48 @@ fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<()
         let selected = accepted_selection(&frames)?;
         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
         admitted.map_err(|end| format!("{end:?}"))?;
+        Ok(())
+    })
+}
+
+/// Tibian noon (minute 720) of the default epoch: day light 250, color 215.
+const NOON_UTC_MS: u64 = 720 * 2_500;
+
+#[test]
+fn admission_selecting_19_sends_the_domain_18_snapshot_at_the_carried_revision()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        // CLOCK-1 (§11.3): the snapshot reads the World clock at the authority's time fact.
+        use oteryn_protocol_oteryn::world_clock::{WorldClock, encode_world_clock};
+        let noon = encode_world_clock(WorldClock {
+            tibian_minute: 720,
+            light_level: 250,
+            light_color: 215,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let carries_noon = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(noon.len())
+                .any(|w| w == noon.as_slice())
+        };
+        let authority = NegotiatingAuthority::new(None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 19]);
+        let mut admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert_eq!(admitted.continuity.world_clock_revision, 0);
+        admitted.continuity.world_clock_revision = 7;
+        let (end, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_noon(&frames));
+        // A resume or transfer never winds the revision back.
+        let ConnectionEnd::AdmittedThenDisconnected(served) = end else {
+            return Err(format!("{end:?}").into());
+        };
+        assert_eq!(served.continuity.world_clock_revision, 7);
+        let (admitted, _) = admit(&authority, &bootstrap(&[6])?).await?;
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!carries_noon(&frames));
         Ok(())
     })
 }

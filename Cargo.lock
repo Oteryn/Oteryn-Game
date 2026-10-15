@@ -1975,6 +1975,7 @@ dependencies = [
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",
+ "oteryn-ntp-clock",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2016,6 +2017,13 @@ version = "0.1.0"
 dependencies = [
  "oteryn-input-actions",
  "winit",
+]
+
+[[package]]
+name = "oteryn-ntp-clock"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
