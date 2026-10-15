@@ -184,6 +184,19 @@
             "path": "apps/game-server/src/content/spell_familiar_defenses.rs"
           },
           "sha256": "07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/creatures/definitions/creature-races.json",
+          "record_count": 1863,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_CREATURE_RACES/v1",
+          "schema_contract": {
+            "kind": "source_validator",
+            "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+          },
+          "sha256": "9c20580891816d75cea03e2bf6aab39d539b7c2f8bc95e5107a6e2f1690194b6"
         }
       ],
       "Effect": [
@@ -291,19 +304,6 @@
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
           "sha256": "573c7cf169135fc40bfb62ff26d7e1ab58b0d99c956feb583c7aed10466aa71e"
-        },
-        {
-          "creates_canonical_identities": false,
-          "path": "content/presentations/bindings/creature-races.json",
-          "record_count": 1863,
-          "representation": "creature_race_overlay",
-          "runtime_activation": false,
-          "schema": "OTERYN_CREATURE_RACES/v1",
-          "schema_contract": {
-            "kind": "source_validator",
-            "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
-          },
-          "sha256": "4b83c2bfcdf51bbfabff190eef06e84c9b9a9e9c860e74d5e473a98274ceedfd"
         }
       ]
     },

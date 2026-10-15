@@ -28,7 +28,7 @@ CONTENT = ROOT / 'content'
 BINDINGS = CONTENT / 'presentations' / 'bindings'
 CLIENT_IDS = BINDINGS / 'client-ids.json'
 HIT_TABLE = BINDINGS / 'hit-table.json'
-CREATURE_RACES = BINDINGS / 'creature-races.json'
+CREATURE_RACES = CONTENT / 'creatures' / 'definitions' / 'creature-races.json'
 # The one key whose id the runtime weapon policy resolves (build_spell_cues.py).
 DYNAMIC = ['canary.appearance:missile/weapontype']
 KEY = re.compile(r'(canary\.)?(sound:(effect/[0-9]+|[a-z][a-z0-9_]*)|appearance:(effect|missile)/[a-z0-9_]+)')

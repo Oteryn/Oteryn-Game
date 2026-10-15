@@ -21,11 +21,13 @@ def fixture():
             'physical_by_race': [{'race': race, 'color': 'red'} for race in bindings.RACES],
             'by_damage_type': [{'damage_type': damage, 'color': 'blue'}
                                for damage in validator.DAMAGE_TYPES - {'physical'}]}
-    creature_races = {'record_count': 1, 'records': [{'creature': 'oteryn:creature.rat', 'race': 'blood'}]}
+    rat = ('oteryn:creature.rat', 'definition-r1')
+    creature_races = {'record_count': 1, 'records': [
+        {'creature': {'family': 'Creature', 'key': rat[0], 'revision': rat[1]}, 'race': 'blood'}]}
     cues = {'records': [{'alias': 'appearance:effect/poff', 'value': 3}]}
     keys = {record['key'] for record in client_ids['records']} | {'canary.appearance:missile/weapontype'}
     return [client_ids, hits, creature_races, cues, keys,
-            {'effect': {3}, 'missile': {3}}, {'red', 'blue'}, {'oteryn:creature.rat'}]
+            {'effect': {3}, 'missile': {3}}, {'red', 'blue'}, {rat}]
 
 
 class CheckTests(unittest.TestCase):
@@ -44,6 +46,14 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(self.errors(change), ['content key without a client id canary.sound:other',
                                                'client id record no content uses canary.sound:spell_or_rune'])
 
+    def test_dynamic_keys_are_only_the_weapon_missile(self):
+        def change(a):
+            a[0]['dynamic_keys'].append('canary.sound:other')
+            a[4] = a[4] | {'canary.sound:other'}
+        self.assertEqual(self.errors(change), [
+            'dynamic keys are not exactly the runtime-resolved weapon missile',
+            'content key without a client id canary.sound:other'])
+
     def test_id_missing_from_appearances(self):
         def change(a):
             a[5]['missile'] = {4}
@@ -61,13 +71,19 @@ class CheckTests(unittest.TestCase):
             a[1]['physical_by_race'].pop()
             a[1]['by_damage_type'].pop()
             a[2]['records'][0]['race'] = 'slime'
-            a[7] = {'oteryn:creature.rat', 'oteryn:creature.wolf'}
+            a[7] = a[7] | {('oteryn:creature.wolf', 'definition-r1')}
         self.assertEqual(self.errors(change), [
             'hit table colour outside PresentationColor white',
             'hit table races are not exactly the source races',
             'hit table damage types are not exactly the Oteryn damage types',
             'creature races do not cover exactly the Creature family',
             'unknown race slime for oteryn:creature.rat'])
+
+    def test_stale_creature_revision(self):
+        def change(a):
+            a[2]['records'][0]['creature']['revision'] = 'definition-r0'
+        self.assertEqual(self.errors(change),
+                         ['creature races do not cover exactly the Creature family'])
 
     def test_spell_cues_disagreement(self):
         def change(a):

@@ -29,9 +29,9 @@ CUES_SHA256 = "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
 # SPELL-PRESENT-0 §3: generated in place by build_presentation_bindings.py and
 # build_creature_races.py, checked by validate_presentation_bindings.py.
 PRESENTATION_BINDINGS = {
-    "content/presentations/bindings/client-ids.json": "client_id_bindings",
-    "content/presentations/bindings/hit-table.json": "hit_presentation_table",
-    "content/presentations/bindings/creature-races.json": "creature_race_overlay",
+    "content/presentations/bindings/client-ids.json": ("Presentation", "client_id_bindings"),
+    "content/presentations/bindings/hit-table.json": ("Presentation", "hit_presentation_table"),
+    "content/creatures/definitions/creature-races.json": ("Creature", "native_profile_overlay"),
 }
 PRESENTATION_VALIDATOR = "tools/content-schema/native-gameplay/test_presentation_bindings.py"
 PROVIDER_DESTINATIONS = {
@@ -242,7 +242,7 @@ def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) ->
         "representation": "source_cue_alias_bindings",
         "creates_canonical_identities": False, "runtime_activation": False,
     })
-    for path, representation in PRESENTATION_BINDINGS.items():
+    for path, (family, representation) in PRESENTATION_BINDINGS.items():
         document = json.loads(data[path])
         descriptor = {
             "path": path, "sha256": digest(data[path]), "schema": document["schema"],
@@ -252,7 +252,7 @@ def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) ->
         }
         if "records" in document:
             descriptor["record_count"] = len(document["records"])
-        result["Presentation"].append(descriptor)
+        result.setdefault(family, []).append(descriptor)
     return result
 
 

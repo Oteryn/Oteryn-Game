@@ -1,4 +1,8 @@
-"""Build content/presentations/bindings/creature-races.json: each Creature's race (SPELL-PRESENT-0 §3).
+"""Build content/creatures/definitions/creature-races.json: each Creature's race (SPELL-PRESENT-0 §3).
+
+The file is a Creature family overlay keyed by definition identity, registered on the family index
+beside the other native profile overlays: the shards themselves are regenerated from the World
+declarations, so a hand-added field would not survive their round trip.
 
 The race comes from the monster file each Creature's source binding names, at that binding's
 revision: `monster.race = "<race>"`, or Canary's MonsterType default `RACE_BLOOD`
@@ -59,7 +63,7 @@ def build(checkouts):
         if len(bindings) > 1:
             raise ValueError('more than one monster file for ' + identity['key'])
         if not bindings:
-            records.append({'creature': identity['key'], 'race': DEFAULT,
+            records.append({'creature': identity, 'race': DEFAULT,
                             'disposition': 'no_monster_file', 'source': None})
             continue
         binding = bindings[0]
@@ -70,10 +74,10 @@ def build(checkouts):
         blob = subprocess.check_output(['git', '-C', str(checkouts[repository]), 'show',
                                         revision + ':' + path])
         race, disposition = source_race(blob.decode())
-        records.append({'creature': identity['key'], 'race': race, 'disposition': disposition,
+        records.append({'creature': identity, 'race': race, 'disposition': disposition,
                         'source': {'repository': repository, 'path': path,
                                    'sha256': hashlib.sha256(blob).hexdigest()}})
-    records.sort(key=lambda r: r['creature'])
+    records.sort(key=lambda r: r['creature']['key'])
     return {
         'schema': 'OTERYN_CREATURE_RACES/v1',
         'decision': 'SPELL-PRESENT-0 §3',

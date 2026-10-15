@@ -49,7 +49,9 @@ def check(client_ids, hits, races, cues, keys, ids, color_names, creatures):
         if record['key'] in records:
             errors.append('duplicate client id record ' + record['key'])
         records[record['key']] = record
-    dynamic = set(client_ids['dynamic_keys'])
+    dynamic = set(bindings.DYNAMIC)
+    if client_ids['dynamic_keys'] != bindings.DYNAMIC:
+        errors.append('dynamic keys are not exactly the runtime-resolved weapon missile')
     for key in sorted(keys - set(records) - dynamic):
         errors.append('content key without a client id ' + key)
     for key in sorted(set(records) - keys):
@@ -72,12 +74,12 @@ def check(client_ids, hits, races, cues, keys, ids, color_names, creatures):
         errors.append('hit table damage types are not exactly the Oteryn damage types')
     if hits['player_race'] not in bindings.RACES:
         errors.append('unknown player race ' + hits['player_race'])
-    by_creature = {r['creature']: r['race'] for r in races['records']}
+    by_creature = {(r['creature']['key'], r['creature']['revision']): r['race'] for r in races['records']}
     if len(by_creature) != len(races['records']) or races['record_count'] != len(by_creature):
         errors.append('creature race records are not one per creature')
     if set(by_creature) != creatures:
         errors.append('creature races do not cover exactly the Creature family')
-    errors += ['unknown race %s for %s' % (race, creature)
+    errors += ['unknown race %s for %s' % (race, creature[0])
                for creature, race in sorted(by_creature.items()) if race not in bindings.RACES]
     for cue in cues['records']:
         record = records.get(cue['alias'])
@@ -93,7 +95,8 @@ def main():
                    json.loads(SPELL_CUES.read_bytes()), bindings.content_keys(bindings.CONTENT, hits),
                    appearance_ids((ROOT / APPEARANCES).read_bytes()),
                    colors(COLOR_ENUM.read_text()),
-                   {r['definition']['identity']['key'] for r in creature_records()})
+                   {(r['definition']['identity']['key'], r['definition']['identity']['revision'])
+                    for r in creature_records()})
     for error in errors:
         print('FAIL ' + error)
     if not errors:
