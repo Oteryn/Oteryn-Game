@@ -1492,6 +1492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if placed {
                     self.last_positions
                         .respawned(session, respawned.record.cell);
+                    // NPC-TALK-2: a respawned customer away from its NPC ends its conversation.
+                    self.chat
+                        .close_out_of_range(&*self.runtime.lock().await, session);
                 }
                 placed
             }

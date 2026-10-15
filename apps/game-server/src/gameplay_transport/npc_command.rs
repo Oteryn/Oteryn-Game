@@ -167,7 +167,8 @@ impl NpcConversations {
     /// connection last showed: a conversation the chat path opened, or one a move closed or whose
     /// NPC is gone or out of `NPC0-RL-07` range, which ends here with the NPC's walk-away line
     /// (NPC-0 section 4.1, NPC-BEHAVIOUR-0 section 7). The range check runs on every committed
-    /// step ([`ChatRuntime::close_out_of_range`]); here it also catches any other relocation.
+    /// step, relocation and respawn ([`ChatRuntime::close_out_of_range`]); here it also catches an
+    /// NPC that moved or left.
     pub(crate) fn follow(
         &self,
         chat: &ChatRuntime,
@@ -177,12 +178,14 @@ impl NpcConversations {
     ) -> Option<NpcUpdate> {
         chat.close_out_of_range(runtime, session);
         // A closed conversation is shown closed with its walk-away line first, even when it was
-        // never shown open or another has opened since; that one follows on the next tick.
-        if let Some(farewell) = chat.take_walked_away(session) {
+        // never shown open or another has opened since; that one follows on the next tick. Every
+        // close since the last payload keeps its line, oldest first.
+        let farewells = chat.take_walked_away(session);
+        if !farewells.is_empty() {
             return Some(NpcUpdate {
                 conversation: Some(NpcConversation {
                     open: None,
-                    lines: vec![farewell],
+                    lines: farewells,
                 }),
                 window: self.close_window(session, None),
             });

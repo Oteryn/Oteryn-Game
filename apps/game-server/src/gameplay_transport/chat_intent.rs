@@ -49,8 +49,9 @@ struct ChatSession {
     /// When the session joined its NPC's customer queue: the newest customer has the highest
     /// (NPC-TALK-2, NPC-BEHAVIOUR-0 §7).
     joined: u64,
-    /// The walk-away line of a conversation a move closed, for the next domain 7 payload.
-    walked_away: Option<String>,
+    /// The walk-away lines of the conversations moves closed, oldest first, for the next domain 7
+    /// payload.
+    walked_away: Vec<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
 }
@@ -77,13 +78,13 @@ impl ChatRuntime {
                 egress: ChatEgress::new(),
                 engaged: None,
                 joined: 0,
-                walked_away: None,
+                walked_away: Vec::new(),
                 npc_service: false,
             });
             entry.name = name.to_owned();
             entry.egress.clear();
             entry.engaged = None;
-            entry.walked_away = None;
+            entry.walked_away.clear();
             entry.npc_service = false;
         }
     }
@@ -111,7 +112,7 @@ impl ChatRuntime {
         {
             entry.egress.clear();
             entry.engaged = None;
-            entry.walked_away = None;
+            entry.walked_away.clear();
             entry.npc_service = false;
         }
     }
@@ -124,7 +125,7 @@ impl ChatRuntime {
         {
             entry.npc_service = true;
             entry.engaged = None;
-            entry.walked_away = None;
+            entry.walked_away.clear();
         }
     }
 
@@ -226,21 +227,24 @@ impl ChatRuntime {
         match sessions.get_mut(&session) {
             Some(entry) if entry.engaged == Some(npc) => {
                 entry.engaged = None;
-                entry.walked_away = line;
+                entry.walked_away.extend(line);
                 true
             }
             _ => false,
         }
     }
 
-    /// The walk-away line of the conversation a move closed, once.
-    pub(crate) fn take_walked_away(&self, session: GameSessionId) -> Option<String> {
+    /// The walk-away lines of the conversations moves closed since the last payload, once.
+    pub(crate) fn take_walked_away(&self, session: GameSessionId) -> Vec<String> {
         self.sessions
             .lock()
-            .ok()?
-            .get_mut(&session)?
-            .walked_away
-            .take()
+            .ok()
+            .and_then(|mut sessions| {
+                sessions
+                    .get_mut(&session)
+                    .map(|entry| std::mem::take(&mut entry.walked_away))
+            })
+            .unwrap_or_default()
     }
 
     pub(crate) fn forget(&self, session: GameSessionId) {

@@ -893,3 +893,24 @@ fn a_walk_away_line_is_sent_even_when_the_conversation_was_never_shown() {
             .is_none()
     );
 }
+
+#[test]
+fn every_walk_away_line_since_the_last_payload_is_kept() {
+    let (runtime, _, session, _) = fixture(TALK_RANGE_TILES + 1);
+    let chat = chat_of(session);
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    // Two conversations close before the follow tick drains the first walk-away line.
+    for _ in 0..2 {
+        chat.converse(session, |engaged| *engaged = Some(npc_actor))
+            .expect("session");
+        assert!(chat.close_out_of_range(&runtime, session));
+    }
+    let closed = NpcConversations::default()
+        .follow(&chat, &runtime, session, None)
+        .expect("payload")
+        .conversation
+        .expect("conversation");
+    assert_eq!(closed.open, None);
+    assert_eq!(closed.lines, vec!["Farewell.".to_owned(); 2]);
+    assert!(chat.take_walked_away(session).is_empty());
+}
