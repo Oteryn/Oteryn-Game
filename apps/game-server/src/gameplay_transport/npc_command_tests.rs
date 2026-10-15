@@ -869,3 +869,27 @@ fn the_newest_customer_is_the_tail_of_the_queue() {
         .expect("session");
     assert_eq!(chat.newest_customer(npc_actor), Some(second));
 }
+
+#[test]
+fn a_walk_away_line_is_sent_even_when_the_conversation_was_never_shown() {
+    let (runtime, _, session, _) = fixture(TALK_RANGE_TILES + 1);
+    let chat = chat_of(session);
+    let conversations = NpcConversations::default();
+    let npc_actor = runtime.visible_entities().npcs[0].actor;
+    // A chat greeting opened it; the player walked away before the first follow tick.
+    chat.converse(session, |engaged| *engaged = Some(npc_actor))
+        .expect("session");
+    assert!(chat.close_out_of_range(&runtime, session));
+    let closed = conversations
+        .follow(&chat, &runtime, session, None)
+        .expect("payload")
+        .conversation
+        .expect("conversation");
+    assert_eq!(closed.open, None);
+    assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
+    assert!(
+        conversations
+            .follow(&chat, &runtime, session, None)
+            .is_none()
+    );
+}
