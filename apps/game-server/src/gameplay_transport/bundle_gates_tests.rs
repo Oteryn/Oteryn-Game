@@ -82,7 +82,7 @@ const INVENTORY: &[Read] = &[
         "attack target",
         "player attack target",
         "mod.rs",
-        "attack_target",
+        "<ComposedFreshAdmission as FreshAdmissionAuthority>::attack_target",
         "self.combat_room",
         "method_call:set_target/field/read",
         1,
@@ -92,7 +92,7 @@ const INVENTORY: &[Read] = &[
         "auto-attack drain",
         "auto-attack drain",
         "attack.rs",
-        "drain_auto_attacks",
+        "ComposedFreshAdmission::drain_auto_attacks",
         "self.combat_room",
         "let_else/field/read",
         1,
@@ -102,7 +102,7 @@ const INVENTORY: &[Read] = &[
         "native combat cast",
         "native combat cast",
         "native_combat_cast.rs",
-        "cast_native_combat_inner",
+        "ComposedFreshAdmission::cast_native_combat_inner",
         "self.combat_room",
         "let_else/field/read",
         1,
@@ -112,7 +112,7 @@ const INVENTORY: &[Read] = &[
         "native combat cast commit",
         "native combat cast",
         "native_combat_cast.rs",
-        "cast_native_combat_inner",
+        "ComposedFreshAdmission::cast_native_combat_inner",
         "owner.combat_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
@@ -122,7 +122,7 @@ const INVENTORY: &[Read] = &[
         "ordinary combat timer continuation",
         "timer continuation",
         "spell_timer_callbacks.rs",
-        "drain_native_ai_timers",
+        "ComposedFreshAdmission::drain_native_ai_timers",
         "owner.combat_room",
         "if/try/method_call:map_err/await/method_call:run_with_context/closure/block/call:pin/async/let/try/method_call:ok_or/field/read",
         1,
@@ -132,7 +132,7 @@ const INVENTORY: &[Read] = &[
         "monster AI",
         "monster AI",
         "monster_ai_cycle.rs",
-        "drain_monster_melee",
+        "ComposedFreshAdmission::drain_monster_melee",
         "self.combat_room",
         "let_else/field/read",
         1,
@@ -145,7 +145,7 @@ const INVENTORY: &[Read] = &[
         "periodic player damage",
         "periodic player damage",
         "spell_periodic.rs",
-        "tick_spell_periodic",
+        "ComposedFreshAdmission::tick_spell_periodic",
         "self.combat_room",
         "let/try/field/read",
         1,
@@ -160,7 +160,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast: locate message",
         "`locate_message` parameter cast",
         "parameter_cast.rs",
-        "cast_parameters_inner",
+        "ComposedFreshAdmission::cast_parameters_inner",
         "self.combat_room",
         "if/method_call:is_none/call:parameter_room/field/read",
         2,
@@ -173,7 +173,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast commit: locate message",
         "`locate_message` parameter cast",
         "parameter_cast.rs",
-        "cast_parameters_inner",
+        "ComposedFreshAdmission::cast_parameters_inner",
         "owner.combat_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         4,
@@ -187,7 +187,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast: house access, vertical move",
         "`house_access` and `vertical_move` parameter casts",
         "parameter_cast.rs",
-        "cast_parameters_inner",
+        "ComposedFreshAdmission::cast_parameters_inner",
         "self.qualified_room",
         "if/method_call:is_none/call:parameter_room/field/read",
         1,
@@ -199,7 +199,7 @@ const INVENTORY: &[Read] = &[
         "parameter cast commit: house access, vertical move",
         "`house_access` and `vertical_move` parameter casts",
         "parameter_cast.rs",
-        "cast_parameters_inner",
+        "ComposedFreshAdmission::cast_parameters_inner",
         "owner.qualified_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/call:parameter_room/field/read",
         3,
@@ -212,7 +212,7 @@ const INVENTORY: &[Read] = &[
         "world item cast",
         "world item casts",
         "world_item_cast.rs",
-        "cast_world_items_inner",
+        "ComposedFreshAdmission::cast_world_items_inner",
         "self.qualified_room",
         "if/method_call:is_none/field/read",
         1,
@@ -224,7 +224,7 @@ const INVENTORY: &[Read] = &[
         "world item cast commit",
         "world item casts",
         "world_item_cast.rs",
-        "cast_world_items_inner",
+        "ComposedFreshAdmission::cast_world_items_inner",
         "owner.qualified_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
@@ -237,7 +237,7 @@ const INVENTORY: &[Read] = &[
         "field step ingress",
         "field step ingress",
         "field_step_ingress.rs",
-        "step_with_field_ingress",
+        "ComposedFreshAdmission::step_with_field_ingress",
         "self.qualified_room",
         "let_else/field/read",
         1,
@@ -249,7 +249,7 @@ const INVENTORY: &[Read] = &[
         "field step ingress commit",
         "field step ingress",
         "field_step_ingress.rs",
-        "step_with_field_ingress",
+        "ComposedFreshAdmission::step_with_field_ingress",
         "owner.qualified_room",
         "let/await/method_call:run_with_context/closure/call:pin/async/let/try/method_call:ok_or/field/read",
         2,
@@ -262,7 +262,7 @@ const INVENTORY: &[Read] = &[
         "source map initialization",
         "source map initialization",
         "source_item_cycle.rs",
-        "ensure_source_map_initialized",
+        "ComposedFreshAdmission::ensure_source_map_initialized",
         "self.qualified_room",
         "let_else/method_call:filter/field/read",
         1,
@@ -275,7 +275,7 @@ const INVENTORY: &[Read] = &[
         "source World door overlay",
         "door overlay, step blocking, USE",
         "mod.rs",
-        "observe_world_object_overlay",
+        "<ComposedFreshAdmission as FreshAdmissionAuthority>::observe_world_object_overlay",
         "self.qualified_room",
         "if/binary/method_call:is_some_and/field/read",
         1,
@@ -285,7 +285,7 @@ const INVENTORY: &[Read] = &[
         "source World step blocking",
         "door overlay, step blocking, USE",
         "mod.rs",
-        "paced_step",
+        "<ComposedFreshAdmission as FreshAdmissionAuthority>::paced_step",
         "self.qualified_room",
         "let/if/method_call:is_some_and/field/read",
         1,
@@ -295,7 +295,7 @@ const INVENTORY: &[Read] = &[
         "source World use",
         "door overlay, step blocking, USE",
         "mod.rs",
-        "use_object",
+        "<ComposedFreshAdmission as FreshAdmissionAuthority>::use_object",
         "self.qualified_room",
         "if/method_call:is_some_and/field/read",
         1,
@@ -493,7 +493,8 @@ fn code(source: &str) -> String {
 /// One seam room mention of production code (`Scan`).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Site {
-    /// The enclosing function; `<item>` outside any function.
+    /// The enclosing function, a method named with its impl (`Type::f`, `<Type as Trait>::f`) or
+    /// trait (`Trait::f`); `<item>` outside any function.
     function: String,
     /// `<receiver>.<field>` for a field access (`<expr>` when the receiver is not a plain name),
     /// the bare `<field>` for any other form.
@@ -580,6 +581,8 @@ struct Scan {
     modules: Vec<Module>,
     inline: Vec<String>,
     functions: Vec<String>,
+    /// The type or trait of each enclosing `impl` or `trait`, innermost last.
+    owners: Vec<String>,
     path: Vec<String>,
 }
 
@@ -633,19 +636,66 @@ impl Scan {
 
     fn function_body(&mut self, name: &syn::Ident, visit: impl FnOnce(&mut Self)) {
         let path = std::mem::take(&mut self.path);
-        self.functions.push(name.to_string());
+        // A method is named with its impl's type and trait (or its trait), so the same method name
+        // in two impls of one file is two functions.
+        let name = match self.owners.last() {
+            Some(owner) => format!("{owner}::{name}"),
+            None => name.to_string(),
+        };
+        self.functions.push(name);
         visit(self);
         self.functions.pop();
         self.path = path;
     }
 }
 
-/// Whether the attributes hold `#[cfg(test)]`.
+/// Whether the attributes hold a `#[cfg(...)]` that is false whenever `test` is.
 fn test_only(attrs: &[syn::Attribute]) -> bool {
     attrs.iter().any(|attr| {
         attr.path().is_ident("cfg")
-            && matches!(&attr.meta, syn::Meta::List(list) if list.tokens.to_string() == "test")
+            && attr
+                .parse_args::<syn::Meta>()
+                .is_ok_and(|predicate| needs_test(&predicate))
     })
+}
+
+/// A path's last segment name, without generic arguments: `B` for `a::B<'_>`.
+fn path_name(path: &syn::Path) -> String {
+    path.segments
+        .last()
+        .map_or_else(String::new, |segment| segment.ident.to_string())
+}
+
+/// An impl's self type by its last path segment, without generic arguments or references.
+fn type_name(ty: &syn::Type) -> String {
+    match ty {
+        syn::Type::Path(path) => path_name(&path.path),
+        syn::Type::Reference(reference) => type_name(&reference.elem),
+        syn::Type::Paren(paren) => type_name(&paren.elem),
+        syn::Type::Group(group) => type_name(&group.elem),
+        _ => "<type>".to_owned(),
+    }
+}
+
+/// Whether a cfg predicate is false whenever `test` is: `test` itself, an `all(..)` with such a
+/// term, or a non-empty `any(..)` of only such terms. `not(..)` and every other key may hold.
+fn needs_test(predicate: &syn::Meta) -> bool {
+    match predicate {
+        syn::Meta::Path(path) => path.is_ident("test"),
+        syn::Meta::List(list) => {
+            let terms = list
+                .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
+                .unwrap_or_default();
+            if list.path.is_ident("all") {
+                terms.iter().any(needs_test)
+            } else if list.path.is_ident("any") {
+                !terms.is_empty() && terms.iter().all(needs_test)
+            } else {
+                false
+            }
+        }
+        syn::Meta::NameValue(_) => false,
+    }
 }
 
 /// The `#[path = "..."]` of a module declaration.
@@ -779,6 +829,23 @@ impl<'ast> Visit<'ast> for Scan {
             _ => "item",
         };
         self.within(kind, |scan| visit::visit_item(scan, item));
+    }
+
+    fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
+        let ty = type_name(&item.self_ty);
+        let owner = match &item.trait_ {
+            Some((_, trait_path, _)) => format!("<{ty} as {}>", path_name(trait_path)),
+            None => ty,
+        };
+        self.owners.push(owner);
+        visit::visit_item_impl(self, item);
+        self.owners.pop();
+    }
+
+    fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
+        self.owners.push(item.ident.to_string());
+        visit::visit_item_trait(self, item);
+        self.owners.pop();
     }
 
     fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
@@ -987,7 +1054,8 @@ fn every_seam_room_read_is_inventoried() {
 #[test]
 fn each_gate_reads_the_room_its_state_says() {
     for read in INVENTORY {
-        let combat = read.field.ends_with(".combat_room");
+        // The field read, in any form: `x.combat_room`, a bare `combat_room` pattern or binding.
+        let combat = read.field.rsplit('.').next() == Some("combat_room");
         match read.state {
             Gate::Open { batch, pr } => {
                 assert!(combat, "open gate `{}` must read combat_room", read.gate);
@@ -1003,7 +1071,13 @@ fn each_gate_reads_the_room_its_state_says() {
             }
             Gate::SourceWorldBranch => assert!(!combat, "`{}`", read.gate),
             Gate::Plumbing => assert!(read.field.starts_with("owners."), "`{}`", read.gate),
-            Gate::Declaration => assert!(!read.field.contains('.'), "`{}`", read.gate),
+            // A declaration or initializer only: a destructuring pattern or binding is a read.
+            Gate::Declaration => assert!(
+                !read.field.contains('.')
+                    && (read.site.ends_with("/declaration") || read.site.ends_with("/initializer")),
+                "`{}`",
+                read.gate
+            ),
         }
     }
 }
@@ -1167,7 +1241,7 @@ fn every_test_only_item_is_left_out_at_any_depth() {
         scan.sites,
         [
             site("<item>", "combat_room", "struct/declaration", 1),
-            site("production", "self.combat_room", "let/field/read", 1),
+            site("Owner::production", "self.combat_room", "let/field/read", 1),
         ]
     );
     // Only the production module is followed, wherever its `#[path]` points.
@@ -1192,8 +1266,13 @@ fn each_read_in_a_function_is_its_own_site() {
     assert_eq!(
         gate.sites,
         [
-            site("cast", "self.combat_room", "let_else/field/read", 1),
-            site("cast", "self.combat_room", "call:commit/field/read", 2),
+            site("Owner::cast", "self.combat_room", "let_else/field/read", 1),
+            site(
+                "Owner::cast",
+                "self.combat_room",
+                "call:commit/field/read",
+                2
+            ),
         ]
     );
     // The preflight gate removed and another read of the same form added later in the function:
@@ -1259,4 +1338,51 @@ fn every_production_module_is_followed_through_its_path() {
             .any(|module| module.name == "tests")
     );
     assert!(sources.iter().all(|file| !file.ends_with("_tests.rs")));
+}
+
+#[test]
+fn a_method_is_named_with_its_impl() {
+    let first = scan(
+        "impl Attack { fn drain(&self) { let Some(_r) = self.combat_room else { return }; } } \
+         impl Trade { fn drain(&self) {} }",
+    );
+    let moved = scan(
+        "impl Attack { fn drain(&self) {} } \
+         impl Trade { fn drain(&self) { let Some(_r) = self.combat_room else { return }; } }",
+    );
+    assert_eq!(first.sites[0].function, "Attack::drain");
+    assert_eq!(moved.sites[0].function, "Trade::drain");
+    let traited = scan("impl<'a> Seam for Owner<'a> { fn room(&self) { self.combat_room; } }");
+    assert_eq!(traited.sites[0].function, "<Owner as Seam>::room");
+}
+
+#[test]
+fn every_test_only_cfg_predicate_is_left_out() {
+    let scan = scan(
+        "#[cfg(all(test))] struct A { combat_room: u8 } \
+         #[cfg(any(test, test))] struct B { combat_room: u8 } \
+         #[cfg(all(test, feature = \"x\"))] struct C { combat_room: u8 } \
+         #[cfg(not(test))] struct D { combat_room: u8 } \
+         #[cfg(any(test, feature = \"x\"))] struct E { combat_room: u8 }",
+    );
+    // `not(test)` and `any(test, ..)` with a non-test term may hold outside tests.
+    assert_eq!(
+        scan.sites,
+        [
+            site("<item>", "combat_room", "struct/declaration", 1),
+            site("<item>", "combat_room", "struct/declaration", 2),
+        ]
+    );
+}
+
+#[test]
+fn a_destructured_combat_room_is_a_read_of_an_open_gate() {
+    let scan = scan("fn drain(owner: &Owner) { let Owner { combat_room, .. } = owner; }");
+    let read = &scan.sites[0];
+    assert_eq!(read.field, "combat_room");
+    assert_eq!(read.site, "let/pattern");
+    // `each_gate_reads_the_room_its_state_says` takes it as a combat_room read, and not as a
+    // declaration.
+    assert_eq!(read.field.rsplit('.').next(), Some("combat_room"));
+    assert!(!(read.site.ends_with("/declaration") || read.site.ends_with("/initializer")));
 }
