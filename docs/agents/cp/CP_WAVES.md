@@ -1,8 +1,15 @@
-# CP — wave'y mechanik (stan 2026-10-15 ~07:00Z)
+# CP — wave'y mechanik (stan 2026-10-15 ~07:05Z)
 
 Źródło kolejności: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §5.
 Wave = kolejność zależności, nie harmonogram: batch startuje, gdy jego zależności są zmergowane.
 Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagent u CP; ciężkie (persistence, protokół, regeneracja contentu, duży kod) → osobny chat.
+
+## Protokół seryjny (owner 2026-10-15)
+- Kolejka merge: #2115 → #2122 → #2128 → #2130 → #2129 → #2127 → #2096. Następny merguje main i pushuje dopiero po „GO” od CP (raz).
+- Maks. 2 rundy napraw na PR; potem zamknięcie i podział zadania.
+- Codex P2 odroczone; Codex liczy się tylko na finalnym headzie.
+- Wspólny powtarzalny błąd CI → jedna poprawka na main.
+- Brak nowych zadań do zamknięcia kolejki (W2c2, W3a2 na hold).
 
 ## Zrobione (zmergowane)
 | Wave | Batch | PR |
@@ -20,18 +27,18 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 | – | CHAR-CMD-CONSUMER-1 (Game) | #2121 |
 | – | CHAR-CMD-WIRE-1 (Platform) | Platform #1622 |
 
-## W toku
-| Wave | Batch | PR | Worker (sesja) | Stan |
-|---|---|---|---|---|
-| 1 | MAGIC-COND-1 | #2122 | W1b 01QG7A9U | gotowy, auto-merge ON |
-| 1 | LOGOUT-WIRE-1 | #2127 | W2f 01Y3ihfi | merge main po #2126 |
-| 1 | LOOP-WORLD-1 marker flip | (nowy/istniejący) | W2c2 01VFYCsQ | start; amendmenty GAME-ITEM-01 §4 / DUR-03 §39.1 zaakceptowane |
-| 2 | BUNDLE-GATES-1 | #2115 | W2b 018cEadS | head 47d81309, auto-merge ON; reszta → BUNDLE-GATES-2 |
-| 2 | CHAT-2B | #2128 | W2h 013fCsCy | auto-merge ON, CI; potem CHAT-2C |
-| 2 | NPC-CONTENT-2 | #2129 | W3b 01VUmRdS | CI |
-| 2 | PRESENT-CONTENT-1 | #2130 | W2g 01Ex9Xhz | CI |
-| 2 | RANGED-CONTENT-1 PR1 | #2096 | W3c 01P6FZqT | przejęty; CI czerwone, 1 wątek |
-| 3 | MAP-VIEWPORT-OPT-1 | (nowy) | W3a2 0181Dg1m | opcja B (20% rdzenia, liczymy tylko graczy w ruchu; rewalidacja botami → MAP-VIEWPORT-BUDGET-REVAL) |
+## W toku (kolejność = kolejka merge)
+| # | Wave | Batch | PR | Worker (sesja) | Stan |
+|---|---|---|---|---|---|
+| 1 | 2 | BUNDLE-GATES-1 | #2115 | W2b 018cEadS | w merge queue; reszta → BUNDLE-GATES-2 |
+| 2 | 1 | MAGIC-COND-1 | #2122 | W1b 01QG7A9U | w merge queue |
+| 3 | 2 | CHAT-2B | #2128 | W2h 013fCsCy | auto-merge ON, CI; potem CHAT-2C |
+| 4 | 2 | PRESENT-CONTENT-1 | #2130 | W2g 01Ex9Xhz | hold do GO |
+| 5 | 2 | NPC-CONTENT-2 | #2129 | W3b 01VUmRdS | hold do GO |
+| 6 | 1 | LOGOUT-WIRE-1 | #2127 | W2f 01Y3ihfi | hold do GO (konflikt) |
+| 7 | 2 | RANGED-CONTENT-1 PR1 | #2096 | W3c 01P6FZqT | hold do GO (konflikt, CI czerwone) |
+| hold | 1 | LOOP-WORLD-1 marker flip | – | W2c2 01VFYCsQ | amendmenty GAME-ITEM-01 §4 / DUR-03 §39.1 zaakceptowane |
+| hold | 3 | MAP-VIEWPORT-OPT-1 | – | W3a2 0181Dg1m | opcja B (20% rdzenia, tylko gracze w ruchu; rewalidacja botami → MAP-VIEWPORT-BUDGET-REVAL) |
 
 ## Do zrobienia
 **Wave 1 (reszta):** ADMIT-CAP-1, CHAT-2 (po re-review CHAT-0), ITEM-LOOK-1, PREREQ-1 (dzieci w wave pierwszego konsumenta), SEC-1; sekwencyjnie (migracje): ITEM-LOOP-1, DAWNPORT-1, LOOP-PROGRESS-1, DEATH-ML-LOSS-1.
