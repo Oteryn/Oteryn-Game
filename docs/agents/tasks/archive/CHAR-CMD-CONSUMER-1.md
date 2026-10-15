@@ -4,16 +4,16 @@
 task_id: CHAR-CMD-CONSUMER-1
 title: "CHAR-CMD-CONSUMER-1: Game consumer of Platform character command intents (CREATE path, disabled by default)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/char-cmd-consumer-1
 issue: null
 governing_issue: 1622
-pr: null
+pr: 2121
 base_sha: a94831d0
 created_at: 2026-10-14
-updated_at: 2026-10-14
+updated_at: 2026-10-15
 execution_policy: continuous_progress
 migration_lease: "0087"
 owned_paths:
@@ -32,7 +32,7 @@ owned_paths:
   - apps/game-server/tests/character_authority_postgres.rs
   - apps/game-server/tests/native_admission_source_transport.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-  - docs/agents/tasks/active/CHAR-CMD-CONSUMER-1.md
+  - docs/agents/tasks/archive/CHAR-CMD-CONSUMER-1.md
 public_contracts: [OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md, RESOURCE_LIMITS_REGISTRY.json]
 external_repositories: []
 ```
@@ -82,12 +82,12 @@ independent_current_fact_sources: [S2 account security, runtime scope assignment
 
 ## Acceptance criteria
 
-- [ ] Wire, cursor, rescan and retry behaviour covered by `character_commands_tests.rs`.
-- [ ] Intent classification and receipt fixtures match the contract (`character_command_tests.rs`).
-- [ ] PostgreSQL: commit, exact republish, conflicts, every rejection code, transient without a
+- [x] Wire, cursor, rescan and retry behaviour covered by `character_commands_tests.rs`.
+- [x] Intent classification and receipt fixtures match the contract (`character_command_tests.rs`).
+- [x] PostgreSQL: commit, exact republish, conflicts, every rejection code, transient without a
       receipt, the 65th Character limit and integrity after reopen (`character_authority_postgres.rs`).
-- [ ] Disabled unless configured; config validation keeps the identity separate.
-- [ ] Limits registered as `CHARCMD-*` in `RESOURCE_LIMITS_REGISTRY.json`.
+- [x] Disabled unless configured; config validation keeps the identity separate.
+- [x] Limits registered as `CHARCMD-*` in `RESOURCE_LIMITS_REGISTRY.json`.
 
 ## Excluded scope
 
@@ -96,11 +96,16 @@ ruleset or branch-protection change.
 
 ## Validation
 
-- pending
+- `cargo fmt --check`, `cargo clippy -j2 --all-targets -- -D warnings`: clean.
+- `cargo test -j2 --no-fail-fast --tests` on the merged head against local PostgreSQL 17.11 (version
+  assertion relaxed locally, not committed): 0 failures, including
+  `character_commands_create_reject_and_republish_exactly`.
+- `validate_governance.py` and `unittest discover -s tools/agents/tests`: pass.
 
 ## Self-review
 
-- pending
+- Migration renumbered to 0087 after main took 0086; additive table and view only.
+- No AccountId, name or Character list reaches a log line; the consumer is inert without config.
 
 ## Independent review
 
@@ -108,14 +113,14 @@ ruleset or branch-protection change.
 
 ## PR and closeout
 
-- pending
+- PR #2121; CI and Codex review on the final head.
 
 ## Context checkpoint
 
 ```yaml
-status: implementing
+status: completed
 branch: claude/char-cmd-consumer-1
-pr: null
+pr: 2121
 blocker: null
-next_action: run local checks, open the PR
+next_action: CI and Codex review on #2121
 ```
