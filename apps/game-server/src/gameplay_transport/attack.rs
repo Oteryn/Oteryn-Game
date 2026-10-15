@@ -760,12 +760,12 @@ impl ChannelAttackStates {
         let facts = target_facts(runtime, room, actor, session, target, now);
         // The target stays held here, so only its route goes (RANGED-0 §8, `RANGED0-RL-08`).
         // Like the swing (ATTACK-0 §4), chase waits while either side is in a protection zone:
-        // it never walks the player out of one.
+        // it never walks the player out of one, nor toward a creature that became a companion.
         let (Some((from, to)), Some(facts)) = (positions, facts) else {
             entry.chase.hold();
             return None;
         };
-        if !(facts.present_and_visible && facts.alive && facts.same_floor)
+        if !(facts.present_and_visible && facts.attackable_kind && facts.alive && facts.same_floor)
             || facts.attacker_reentry_protected
             || facts.attacker_in_protection_zone
             || facts.target_in_protection_zone
