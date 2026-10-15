@@ -65,7 +65,7 @@ The session exposes `logout()`. The client binds Ctrl+L and Ctrl+Q to logout and
   - This PR uses the next free numbers, 21 and 23, and reported the conflict to the control plane.
 - **Familiar save at logout (#2127 Codex P1 4278730847):** the actor-end familiar save was proven only after a grace expiry. A live familiar was left open by a logout, and the next session zeroed it as a crash. The save is now keyed by `FamiliarActorEnd`:
   - `GraceExpiry(epoch)` is unchanged: same proof, same occurrence.
-  - `Logout(transport)` is proven by an ACTIVE, unlost row on the exact current transport and a runtime actor with no control-loss mark. It has its own occurrence domain `oteryn:familiar-logout-intent:v1`.
+  - `Logout(transport)` is proven by an ACTIVE row (a resumed row keeps its last loss epoch) on the exact current transport and a runtime actor with no control-loss mark (Codex P1 4278956541). It has its own occurrence domain `oteryn:familiar-logout-intent:v1`.
 - **Compile-forced edit outside owned paths:** `tools/dev-client/src/lib.rs` gains a `DevClientError::Logout` arm.
 - **Out of scope:**
   - Protection zones (PZ).

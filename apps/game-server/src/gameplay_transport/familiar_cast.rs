@@ -106,8 +106,8 @@ impl FamiliarActorEnd {
     }
 }
 /// Whether the durable session row read for a familiar save proves `end`: a non-terminal row at
-/// the exact control-loss epoch for a grace expiry, an ACTIVE, unlost row on the exact current
-/// transport for a logout.
+/// the exact control-loss epoch for a grace expiry, an ACTIVE row on the exact current transport
+/// for a logout. A resumed ACTIVE row keeps its last control-loss epoch, so a logout ignores it.
 pub(in crate::gameplay_transport) fn familiar_end_proven(
     end: FamiliarActorEnd,
     state: GameSessionState,
@@ -119,7 +119,7 @@ pub(in crate::gameplay_transport) fn familiar_end_proven(
             state != GameSessionState::Terminal && loss_epoch == Some(epoch)
         }
         FamiliarActorEnd::Logout(current) => {
-            state == GameSessionState::Active && loss_epoch.is_none() && transport == Some(current)
+            state == GameSessionState::Active && transport == Some(current)
         }
     }
 }
@@ -430,7 +430,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Save paused reference-spell cooldowns at the real final actor-end boundary.
     /// The caller supplies the actual actor end: for a grace expiry both the live Channel mark
     /// and the independently reread durable session must prove the same control-loss epoch; for
-    /// a logout both must prove an ACTIVE, unlost session on the exact current transport.
+    /// a logout both must prove an ACTIVE session on the exact current transport.
     /// This method performs no periodic save, caster payment or training mutation.
     pub(in crate::gameplay_transport) async fn save_familiar_logout(
         &self,

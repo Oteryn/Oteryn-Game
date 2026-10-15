@@ -14,7 +14,7 @@ fn the_in_fight_retry_rounds_up_to_whole_milliseconds_within_1_to_60000() {
     assert_eq!(in_fight_retry_after_ms(1_000_000, 1_000_000), 1);
 }
 
-/// #2127 Codex P1 4278730847: a logout's familiar save is proven only by an ACTIVE, unlost row on
+/// #2127 Codex P1 4278730847: a logout's familiar save is proven only by an ACTIVE row on
 /// the exact current transport; a grace-expiry save keeps its exact-epoch proof.
 #[test]
 fn a_familiar_actor_end_save_is_proven_only_for_its_own_end() -> Result<(), String> {
@@ -28,7 +28,9 @@ fn a_familiar_actor_end_save_is_proven_only_for_its_own_end() -> Result<(), Stri
     assert!(familiar_end_proven(logout, active, None, Some(ours)));
     assert!(!familiar_end_proven(logout, active, None, Some(other)));
     assert!(!familiar_end_proven(logout, active, None, None));
-    assert!(!familiar_end_proven(logout, active, Some(1), Some(ours)));
+    // A resumed ACTIVE row keeps its last control-loss epoch.
+    assert!(familiar_end_proven(logout, active, Some(1), Some(ours)));
+    assert!(!familiar_end_proven(logout, active, Some(1), Some(other)));
     assert!(!familiar_end_proven(
         logout,
         GameSessionState::Reconnectable,
