@@ -4,13 +4,13 @@
 task_id: PRESENT-WIRE-1
 title: "PRESENT-WIRE-1: Presentation wire (capability 23, domains 19 and 20, cast result detail, SPELLPRES0 rows)"
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/present-wire-1
 issue: 1622
 governing_issue: 1622
-pr: null
+pr: 2124
 base_sha: ed2b1180
 owner: claude-code-worker (CP session_01XYC239givrMonrYoBwwECV)
 control_plane: session_01XYC239givrMonrYoBwwECV
@@ -65,3 +65,15 @@ Wire only: no emitter, no runtime, nothing offered.
 - `cargo test -p oteryn-session -p oteryn-dev-client`: pass (60, 34)
 - `cargo check --workspace --all-targets`: pass
 - `oteryn-architecture-check workspace .`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass (124)
+- `python tools/repository/validate_repository_policy.py`: pass
+- `git diff --check`: pass
+- `cargo test -p oteryn-game-server`: left to CI (the local build was killed for memory)
+
+## Review
+
+- Codex on c71f58c, two P2s fixed in the final authoring commit: the emission ordinal takes the
+  full `uint32` range (the decision bounds only event and batch bytes; the worst event is 126
+  bytes), and the `ACTOR_COOLDOWNS` entry bound counts every byte of an overlong field 4 key.
+- Capability renumbered from 20 to 23 on the control plane's lease (6e2744b3).

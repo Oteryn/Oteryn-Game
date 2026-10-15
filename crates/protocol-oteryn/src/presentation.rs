@@ -48,7 +48,8 @@ pub const SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
 /// `SPELLPRES0-RL-01`: events in one session's batch of one sync unit.
 pub const MAX_PRESENTATION_EVENTS: usize = 1_024;
 /// `SPELLPRES0-RL-02`: bytes of one event, its batch tag and length included. The worst case is
-/// a `value_text` with both references and both 10-byte values: 123 bytes.
+/// a `value_text` with both references, both 10-byte values and both ordinals at `u32::MAX`: 126
+/// bytes.
 pub const MAX_PRESENTATION_EVENT_BYTES: usize = 128;
 /// `SPELLPRES0-RL-03`: bytes of one batch (1,024 x 128 plus the decision's 64-byte header slack).
 pub const MAX_PRESENTATION_BATCH_BYTES: usize = 131_136;
@@ -56,8 +57,6 @@ pub const MAX_PRESENTATION_BATCH_BYTES: usize = 131_136;
 pub const MAX_CLIENT_ID: u32 = 65_535;
 /// The highest SPELL-D1 spell index the events and cooldowns carry.
 pub const MAX_SPELL_INDEX: u32 = 65_535;
-/// The highest emission ordinal within one decision (a 2-byte varint).
-pub const MAX_EMISSION_ORDINAL: u32 = 16_383;
 /// The highest floor a position carries.
 pub const MAX_FLOOR: i16 = 15;
 
@@ -167,7 +166,7 @@ pub enum PresentationEventKind {
 pub struct PresentationEvent {
     /// The per-sync-unit ordinal of the decision that emitted it, at least 1.
     pub decision_ordinal: u32,
-    /// The ordinal within that decision, 1..=16,383.
+    /// The ordinal within that decision, 1-based.
     pub emission_ordinal: u32,
     pub kind: PresentationEventKind,
 }
@@ -278,7 +277,7 @@ fn check_value(value: &PresentationValue) -> WireResult<()> {
 
 fn check_event(event: &PresentationEvent) -> WireResult<()> {
     check_range(event.decision_ordinal, u32::MAX)?;
-    check_range(event.emission_ordinal, MAX_EMISSION_ORDINAL)?;
+    check_range(event.emission_ordinal, u32::MAX)?;
     match &event.kind {
         PresentationEventKind::MagicEffect {
             position,
@@ -734,11 +733,11 @@ pub fn encode_actor_cooldowns(cooldowns: &ActorCooldowns) -> WireResult<Vec<u8>>
     Ok(output)
 }
 
-fn read_cooldown(input: &[u8], cursor: &mut usize) -> WireResult<ActorCooldown> {
-    let start = *cursor;
+/// Reads one field 4 entry whose key began at `key_start`; the bound counts every key byte, so an
+/// overlong key cannot hide a longer entry.
+fn read_cooldown(input: &[u8], cursor: &mut usize, key_start: usize) -> WireResult<ActorCooldown> {
     let inner = read_bytes(input, cursor)?;
-    // The key byte of field 4 precedes `start`.
-    if *cursor - start + 1 > MAX_COOLDOWN_ENTRY_BYTES {
+    if *cursor - key_start > MAX_COOLDOWN_ENTRY_BYTES {
         return Err(PresentationWireError::LimitExceeded);
     }
     let (mut kind, mut id, mut expires) = (None, None, None);
@@ -768,25 +767,27 @@ pub fn decode_actor_cooldowns(payload: &[u8]) -> WireResult<ActorCooldowns> {
     }
     let (mut now, mut rtt, mut estimated) = (None, None, None);
     let mut entries = Vec::new();
-    read_fields(payload, |number, wire, input, cursor| {
-        match (number, wire) {
-            (1, 0) => set_once(&mut now, read_varint(input, cursor)?),
-            (2, 0) => set_once(&mut rtt, read_uint32(input, cursor)?),
-            (3, 0) => match read_varint(input, cursor)? {
-                0 => set_once(&mut estimated, false),
-                1 => set_once(&mut estimated, true),
-                _ => malformed(),
+    let mut cursor = 0;
+    while cursor < payload.len() {
+        let key_start = cursor;
+        let key = read_varint(payload, &mut cursor)?;
+        match (key >> 3, key & 0x07) {
+            (1, 0) => set_once(&mut now, read_varint(payload, &mut cursor)?)?,
+            (2, 0) => set_once(&mut rtt, read_uint32(payload, &mut cursor)?)?,
+            (3, 0) => match read_varint(payload, &mut cursor)? {
+                0 => set_once(&mut estimated, false)?,
+                1 => set_once(&mut estimated, true)?,
+                _ => return malformed(),
             },
             (4, 2) => {
                 if entries.len() == MAX_COOLDOWN_ENTRIES {
                     return Err(PresentationWireError::LimitExceeded);
                 }
-                entries.push(read_cooldown(input, cursor)?);
-                Ok(())
+                entries.push(read_cooldown(payload, &mut cursor, key_start)?);
             }
-            _ => malformed(),
+            _ => return malformed(),
         }
-    })?;
+    }
     let rtt = rtt.unwrap_or(0);
     let rtt_ms = match estimated.unwrap_or(false) {
         true => Some(rtt),

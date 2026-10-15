@@ -111,7 +111,7 @@ message PresentationSoundV1 {
 message PresentationEventV1 {
   // §4: the per-sync-unit ordinal of the owner decision that emitted it, 1-based.
   uint32 decision_ordinal = 1;
-  // The event's ordinal within that decision, 1..=16,383.
+  // The event's ordinal within that decision, 1-based.
   uint32 emission_ordinal = 2;
   oneof kind {
     PresentationMagicEffectV1 magic_effect = 3;

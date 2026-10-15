@@ -111,7 +111,7 @@ fn every_kind() -> Vec<PresentationEvent> {
         ),
         event(
             3,
-            MAX_EMISSION_ORDINAL,
+            u32::MAX,
             PresentationEventKind::Sound {
                 position: tile(0, 0, 0),
                 cue_id: 42,
@@ -138,13 +138,12 @@ fn events_round_trip_and_the_largest_event_is_within_its_bound() {
     let bytes = encode_presentation_batch(&events).expect("encode");
     assert_eq!(decode_presentation_batch(&bytes).expect("decode"), events);
 
-    let worst = encode_presentation_batch(&[worst_value_text(u32::MAX, MAX_EMISSION_ORDINAL)])
-        .expect("encode");
-    assert_eq!(worst.len(), 123);
+    let worst = encode_presentation_batch(&[worst_value_text(u32::MAX, u32::MAX)]).expect("encode");
+    assert_eq!(worst.len(), 126);
     assert!(worst.len() <= MAX_PRESENTATION_EVENT_BYTES);
     assert_eq!(
         decode_presentation_batch(&worst).expect("decode"),
-        [worst_value_text(u32::MAX, MAX_EMISSION_ORDINAL)]
+        [worst_value_text(u32::MAX, u32::MAX)]
     );
 
     // An independent fixture: a magic effect at (1, 2, 7), effect 3, source OWN.
@@ -176,7 +175,7 @@ fn events_round_trip_and_the_largest_event_is_within_its_bound() {
 #[test]
 fn a_full_batch_round_trips_within_its_bound() {
     let full: Vec<PresentationEvent> = (1..=MAX_PRESENTATION_EVENTS)
-        .map(|index| worst_value_text(u32::try_from(index).expect("index"), MAX_EMISSION_ORDINAL))
+        .map(|index| worst_value_text(u32::try_from(index).expect("index"), u32::MAX))
         .collect();
     let bytes = encode_presentation_batch(&full).expect("encode");
     assert!(bytes.len() <= MAX_PRESENTATION_BATCH_BYTES);
@@ -232,7 +231,6 @@ fn malformed_events_fail_closed() {
     let bad = [
         effect(0, 1),
         effect(1, 0),
-        effect(1, MAX_EMISSION_ORDINAL + 1),
         event(
             1,
             1,
@@ -689,6 +687,25 @@ fn malformed_cooldowns_fail_closed() {
     long.extend([0; 15]);
     assert_eq!(long.len(), MAX_COOLDOWN_ENTRY_BYTES + 1);
     assert_eq!(decode_actor_cooldowns(&long), Err(LIMIT));
+    // The bound counts every byte of an overlong field 4 key: a two-byte key, its length and a
+    // 13-byte body fit 16 bytes, and one more body byte (a two-byte kind) does not.
+    let body = [
+        0x08, 0x01, 0x10, 0xff, 0xff, 0x03, 0x18, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+    ];
+    let mut overlong = vec![0xa2, 0x00, 0x0d];
+    overlong.extend(body);
+    assert_eq!(overlong.len(), MAX_COOLDOWN_ENTRY_BYTES);
+    assert_eq!(
+        decode_actor_cooldowns(&overlong)
+            .expect("decode")
+            .entries
+            .len(),
+        1
+    );
+    let mut longer = vec![0xa2, 0x00, 0x0e, 0x08, 0x81, 0x00];
+    longer.extend(&body[2..]);
+    assert_eq!(longer.len(), MAX_COOLDOWN_ENTRY_BYTES + 1);
+    assert_eq!(decode_actor_cooldowns(&longer), Err(LIMIT));
     assert_eq!(
         decode_actor_cooldowns(&vec![0; MAX_ACTOR_COOLDOWNS_BYTES + 1]),
         Err(LIMIT)

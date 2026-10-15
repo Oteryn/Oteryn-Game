@@ -10885,10 +10885,10 @@
         "maximum": 128
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Every event kind is bounded by construction: the worst case, a value_text with a target, an attacker and two 10-byte values, is 123 bytes. The decoder refuses a longer entry LimitExceeded before decoding it; the encoder refuses one as a server fault.",
+      "allocation_impact": "Every event kind is bounded by construction: the worst case, a value_text with a target, an attacker, two 10-byte values and both ordinals at their uint32 maximum, is 126 bytes. The decoder refuses a longer entry LimitExceeded before decoding it; the encoder refuses one as a server fault.",
       "client_visible": true,
       "boundary_tests": [
-        "max=128: crates/protocol-oteryn/src/presentation_tests.rs events_round_trip_and_the_largest_event_is_within_its_bound (the worst-case value_text is 123 bytes)",
+        "max=128: crates/protocol-oteryn/src/presentation_tests.rs events_round_trip_and_the_largest_event_is_within_its_bound (the worst-case value_text is 126 bytes)",
         "max+1=129: crates/protocol-oteryn/src/presentation_tests.rs malformed_events_fail_closed (a 129-byte entry is refused LimitExceeded)"
       ],
       "consumers": [
