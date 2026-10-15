@@ -1009,7 +1009,8 @@ pub(crate) fn observe_vitals(
 
 /// CONDITIONS-0 §3.5 at the transport: once the cast's spell is identified, a gate answers
 /// `REJECTED` before every dispatcher pre-check and every SPELL-D1 `resolve_cast` check; only
-/// the CHAT-0 §6 chat-mute pre-gate runs earlier. `None` lets the cast go on.
+/// the CHAT-0 §6 chat-mute pre-gate runs earlier. A gate in the player's spell state or in its
+/// runtime condition slot refuses alike, as at attack admission. `None` lets the cast go on.
 pub(crate) fn condition_gated_cast(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -1021,7 +1022,13 @@ pub(crate) fn condition_gated_cast(
 ) -> Option<SpellCastOutcome> {
     let (spell, _) = book.source_indexed(intent.spell)?;
     let state = states.get(runtime, actor, game_session_id)?;
+    let slot = runtime
+        .actor_conditions(actor, Some(game_session_id))
+        .map_or(Ok(()), |store| {
+            crate::spell::cast::store_condition_gate(store, spell, now)
+        });
     crate::spell::cast::condition_gate(state, spell, now)
+        .and(slot)
         .err()
         .map(|_| SpellCastOutcome::rejected())
 }

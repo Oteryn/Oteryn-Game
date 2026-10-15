@@ -271,3 +271,38 @@ fn a_pacified_that_expired_before_any_read_still_clears_the_target_it_was_applie
         Some(UNSEEN)
     );
 }
+
+#[test]
+fn a_gate_in_the_runtime_condition_slot_refuses_a_cast_as_well() {
+    use super::super::actor_spell::{
+        ChannelSpellStates, SpellCastOutcome, condition_gated_cast, tests,
+    };
+    let book = crate::spell::cast::v1_spell_book().expect("book");
+    // `exura` is not aggressive: only `muted` refuses it.
+    for (key, refused) in [("muted", true), ("pacified", false), ("powerless", false)] {
+        let (_room, mut runtime, player, session) = owner();
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, player, session, tests::FACTS, (0, 0), at(0))
+            .expect("initialized");
+        let gated = |runtime: &ChannelRuntimeV1, now| {
+            condition_gated_cast(
+                runtime,
+                &states,
+                &book,
+                player,
+                session,
+                &tests::exura(),
+                now,
+            )
+        };
+        assert_eq!(gated(&runtime, at(1)), None);
+        gate(&mut runtime, player, session, key);
+        assert_eq!(
+            gated(&runtime, at(1)),
+            refused.then(SpellCastOutcome::rejected),
+            "{key}"
+        );
+        assert_eq!(gated(&runtime, at(10_000)), None);
+    }
+}

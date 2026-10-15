@@ -582,12 +582,19 @@ pub(crate) fn condition_gate(
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
 ) -> Result<(), crate::ability::condition::ConditionGate> {
+    store_condition_gate(&state.conditions, spell, now)
+}
+
+/// [`condition_gate`] over any condition store, such as the actor's runtime condition slot.
+pub(crate) fn store_condition_gate<S: Clone>(
+    store: &crate::ability::condition::ConditionStore<S>,
+    spell: &SpellDefinition,
+    now: SemanticTimeMicros,
+) -> Result<(), crate::ability::condition::ConditionGate> {
     if matches!(spell.carrier, super::Carrier::Rune { .. }) {
-        state.conditions.rune_gate(spell.aggressive, now.get())
+        store.rune_gate(spell.aggressive, now.get())
     } else {
-        state
-            .conditions
-            .spell_cast_gate(spell.aggressive, now.get())
+        store.spell_cast_gate(spell.aggressive, now.get())
     }
 }
 /// [`condition_gate`] on the wire: any gate refuses with `REJECTED`.
