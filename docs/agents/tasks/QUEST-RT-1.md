@@ -35,7 +35,7 @@ depends_on:
   - "ITEM-LOOP-1: BLOCKING: not merged"
   - "MAP-PICKUP-1: BLOCKING: not merged"
   - "QUEST-XP-ADMISSION-1: BLOCKING: not merged"
-  - "QUEST_GATE0, QUEST_STATE0 ACCEPTED: BLOCKING: CANDIDATE"
+  - "QUEST_GATE0, QUEST_STATE0 ACCEPTED: effective ACCEPT-BATCH #2209 (control-plane verified)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -57,9 +57,13 @@ Quest runtime on the bundle World, chest rewards, capability 16 offer.
 | ITEM-LOOP-1 | BLOCKING: not merged |
 | MAP-PICKUP-1 | BLOCKING: not merged |
 | QUEST-XP-ADMISSION-1 | BLOCKING: not merged |
-| QUEST_GATE0, QUEST_STATE0 ACCEPTED | BLOCKING: CANDIDATE |
+| QUEST_GATE0, QUEST_STATE0 ACCEPTED | ACCEPTED: effective ACCEPT-BATCH #2209; control-plane allocation cites main `3ef900c160c9713092a86bfcd1a8377c7587c898` |
 
-**BLOCKING:** ITEM-LOOP-1; MAP-PICKUP-1; QUEST-XP-ADMISSION-1; QUEST_GATE0, QUEST_STATE0 ACCEPTED. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+**Full-family dependency snapshot above is historical.** Acceptance is effective.
+QUEST-XP-ADMISSION-1's direct prerequisites, PROGRESSION-OWNER-1 and QUEST-XP-1,
+are MERGED (control-plane verified). Its missing caller remains the residue below;
+the ITEM-LOOP/MAP-PICKUP rows have not been independently reclassified here.
+Nothing in slot-only paths is authorized by this local preparation.
 
 ## Owned paths (builder edits freely)
 
@@ -88,7 +92,7 @@ mint+ledger; wire+registry+capability+handler.
 ## Acceptance criteria
 
 - [ ] Chest reward minted once per character; replay safe.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against the exclusive allocated base before code; the required caller is outside this allocation (findings below).
 
 ## Validation
 
@@ -112,9 +116,74 @@ QUEST_GATE0; QUEST_STATE0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANIC
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
+last_progress: inspected exact residue; prepared integration packet without duplicate code
 status: waiting
 branch: skeleton/quest-rt-1
-blocker: ITEM-LOOP-1; MAP-PICKUP-1; QUEST-XP-ADMISSION-1; QUEST_GATE0, QUEST_STATE0 ACCEPTED
-next_action: CP rechecks BLOCKING rows
+blocker: QUEST-XP-ADMISSION-1 caller and lifecycle ownership are outside this allocation
+next_action: CP allocates the accepted transport caller/test bundle at integration
 ```
+
+## Bounded preparation — REPORT_ONLY (2026-10-15, #2198)
+
+- Exclusive branch `skeleton/quest-rt-1`, base
+  `6160009b3d2d57da37a8baacb45dd794b638b863`. Allocation permits only new
+  `quest/admission.rs`, `admission_tests.rs`, `tests/quest_rt_admission.rs` and this
+  record. **Only this record changes.** No new module, wrapper, test-only facade,
+  content, capability, registry, writer or migration was invented.
+- Accepted `ARCH_PROGRESSION_SOURCE_PACKETS` §2.3 explicitly says "This packet adds
+  the call" and owns `gameplay_transport/mod.rs` (`refresh_quest_session` and retry
+  scheduling), its PostgreSQL case and registration. Those paths are outside this
+  allocation. A new `quest/admission.rs` would merely compose existing functions
+  while leaving all session binding/current-fence/lifecycle ownership unconnected.
+- Existing `durability/quest_state.rs::read_character_quest_state` loads one
+  coherent copy under the root share lock, bounds tracks/states/claim and XP
+  obligations, and preserves `WAITING_MIGRATION`. `admit_character_quest_state`
+  already loads that copy and requests pending claim obligations through the
+  existing sequencer. No second loader/admission owner is needed.
+- `request_pending_quest_experience` already iterates the bounded pending XP copy,
+  calls `RevisionSlot::commit_quest_experience`, reports definitive refusals, settles
+  consumed obligations on success/replay, and requests backoff only for unknown
+  `Unavailable` outcomes. The award uses `obligation.award(policy)`; quest content
+  pins remain provenance, never the active reward revision. This logic must not be
+  duplicated. Source references confirm no production caller currently exists.
+
+### Exact CP integration bundle (unowned; no edits here)
+
+1. In `ComposedFreshAdmission::refresh_quest_session`, after the existing durable
+   admission returns a usable copy, obtain this session's existing
+   `progression_sessions` binding via `progression_binding`; clone its `Arc` and
+   release the map lock before awaiting. Pass the independently resolved
+   `current_quest_fence`, existing authority/node/sequencer and that binding's
+   `policy` to the existing XP helper. Do not construct a policy from quest data,
+   reconstruct current authority from the copy, or add an alternate XP writer.
+2. OR the helper's retry result with the existing load/claim retry decision; retain
+   `QUEST_OBLIGATION_RETRY` (60 seconds). Preserve current terminal/read-failure
+   handling: terminal installs no usable copy and no retry; an unknown fence read
+   retains the prior copy and schedules existing backoff. `insert: false` must not
+   recreate an entry removed while the await was outstanding.
+3. With no progression binding, make no XP request: keep obligations pending, log
+   `quest_experience_deferred reason=no_progression_binding` once for that session,
+   and schedule no retry solely for that reason. Preserve any independently needed
+   quest/load retry. Once-only logging and session lifecycle belong to the existing
+   transport owner, not a new quest-side session map.
+4. Existing callers then cover fresh admission (progression binding precedes quest
+   admission), same-session resume, cadence retries, and chest refresh after a
+   committed quest transition. Preserve their actor/session/current-generation
+   controls and terminal cleanup. Revalidate against then-current protected main
+   at the CP slot; do not merge/rebase this isolated preparation.
+5. Add the accepted PostgreSQL 17.6 tests in the owning packet's actual transport
+   bundle: earlier-session pending XP paid once at bound admission; chest-created
+   XP paid through refresh; unknown first attempt schedules backoff and later pays
+   once; unbound deferral followed by bound admission; current-fence failure and
+   terminal/removal races do not authorize/recreate a session. Existing
+   `tests/support/quest_xp_postgres_cases.rs` already tests durable pending replay
+   and exactly-once consumption; it does not prove the missing runtime caller.
+
+### Validation scope
+
+This is a task-record-only integration packet. Governance validation/tests and
+`git diff --check` apply. No Rust code or storage flow changed, so no Rust build,
+snapshot registration or PostgreSQL run is claimed. Durable source hashes and
+original reference/callsite outputs are in
+`/workspace/oteryn-prep/quest-rt-1-evidence/`. Full QUEST-RT-1 chest/capability
+acceptance remains open; this packet makes no playable/runtime readiness claim.
