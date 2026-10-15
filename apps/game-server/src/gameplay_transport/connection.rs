@@ -3078,8 +3078,19 @@ where
         };
         if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
             // §1.6: the release committed before this result. No command is read any more and
-            // the transport closes cleanly; a failed write is no control loss either.
-            if write_frame(stream, &result).await.is_ok() {
+            // the transport closes cleanly; a failed write is no control loss either. A second
+            // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
+            // committed release keeps this a logout end.
+            if write_frame(stream, &result).await.is_ok()
+                && (!second_logout
+                    || send_error(
+                        stream,
+                        FoundationProtocolError::TooManyOutstandingCommands,
+                        admitted.continuity.connection_generation,
+                    )
+                    .await
+                    .is_ok())
+            {
                 let _ = tokio::time::timeout(
                     policy.interval,
                     tokio::io::AsyncWriteExt::shutdown(stream),

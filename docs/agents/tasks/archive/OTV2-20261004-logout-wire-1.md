@@ -66,6 +66,7 @@ The session exposes `logout()`. The client binds Ctrl+L and Ctrl+Q to logout and
 - **Familiar save at logout (#2127 Codex P1 4278730847):** the actor-end familiar save was proven only after a grace expiry. A live familiar was left open by a logout, and the next session zeroed it as a crash. The save is now keyed by `FamiliarActorEnd`:
   - `GraceExpiry(epoch)` is unchanged: same proof, same occurrence.
   - `Logout(transport)` is proven by an ACTIVE row (a resumed row keeps its last loss epoch) on the exact current transport and a runtime actor with no control-loss mark (Codex P1 4278956541). It has its own occurrence domain `oteryn:familiar-logout-intent:v1`.
+- **Second logout on the accepted path (#2127 Codex P2 4279368526):** a second `LOGOUT_INTENT` read before an `ACCEPTED` result is still answered with `TOO_MANY_OUTSTANDING_COMMANDS` after the result. The connection still ends as a logout, because the release has committed.
 - **Compile-forced edit outside owned paths:** `tools/dev-client/src/lib.rs` gains a `DevClientError::Logout` arm.
 - **Out of scope:**
   - Protection zones (PZ).

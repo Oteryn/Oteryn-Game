@@ -2032,6 +2032,41 @@ mod logout_wire {
     }
 
     #[test]
+    fn a_second_logout_before_an_accepted_result_is_a_protocol_error_after_the_logout()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
     fn a_second_logout_after_the_first_result_is_an_ordinary_command() -> Result<(), Box<dyn Error>>
     {
         run(async {
