@@ -40,9 +40,9 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, BlockBudget, CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision,
-    ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    armor_reduction_bounds, player_fist_formula, player_melee_formula,
+    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
+    ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
+    armor_reduction_bounds, chase_search_order, player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{
@@ -729,8 +729,9 @@ impl ChannelAttackStates {
     /// CHASE-1 (RANGED-0 §8): the step the chase of `actor` takes now, if any. Chase runs only
     /// with `chase=CHASE`, a held target that is alive, visible and on the attacker's floor,
     /// neither side in a protection zone, and no re-entry protection on the attacker; otherwise
-    /// its route is dropped. `path_tile` says
-    /// whether a cell is a path tile; a creature on it costs [`CREATURE_COST`] more.
+    /// its route is dropped. `path_tile` says whether a cell is a path tile of the Channel; a
+    /// creature on it costs [`CREATURE_COST`] more. The route comes from the Channel's search
+    /// drain, never from a search of this call's own.
     pub(crate) fn chase_decision(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -741,91 +742,113 @@ impl ChannelAttackStates {
         path_tile: impl Fn(MovementLocalPosition) -> bool,
     ) -> Option<CardinalStep> {
         let index = self.index(actor, session)?;
-        let Self {
-            entries,
-            chase_searches,
-            ..
-        } = self;
-        let entry = &mut entries[index];
+        let entry = &mut self.entries[index];
         let chasing = entry.modes.chase == ChaseMode::Chase;
         let Some(target) = entry.state.target().filter(|_| chasing) else {
             entry.chase.reset();
             return None;
         };
-        let positions = runtime
-            .read_actor_position(actor)
-            .ok()
-            .zip(runtime.read_actor_position(target).ok())
-            .map(|(from, to)| (from.position(), to.position()));
-        let facts = target_facts(runtime, room, actor, session, target, now);
         // The target stays held here, so only its route goes (RANGED-0 §8, `RANGED0-RL-08`).
-        // Like the swing (ATTACK-0 §4), chase waits while either side is in a protection zone:
-        // it never walks the player out of one, nor toward a creature that became a companion.
-        let (Some((from, to)), Some(facts)) = (positions, facts) else {
+        let Some((from, to)) = chase_ends(runtime, room, actor, session, target, now) else {
             entry.chase.hold();
             return None;
         };
-        if !(facts.present_and_visible && facts.attackable_kind && facts.alive && facts.same_floor)
-            || facts.attacker_reentry_protected
-            || facts.attacker_in_protection_zone
-            || facts.target_in_protection_zone
-        {
-            entry.chase.hold();
-            return None;
+        entry.chase.prepare(now.get(), from, to)?;
+        self.drain_chase_searches(runtime, room, now, &path_tile);
+        match self.entries[index].chase.next_step(from) {
+            ChaseDecision::Step(step) => Some(step),
+            ChaseDecision::Hold => None,
         }
-        // RANGED0-RL-03: a due search first registers in its owner window and is admitted from
-        // the next one, so every search due in one window is known before any of them is
-        // admitted; those that waited from an earlier window, or from the same one with a lower
-        // actor id, keep their places.
-        let window = now.get() / CHASE_WINDOW_MICROS;
-        let registered = entry
-            .chase
-            .search_waiting_since()
-            .map(|since| since / CHASE_WINDOW_MICROS);
-        let own = (registered.unwrap_or(window), actor_order(actor));
-        let ahead = entries
-            .iter()
-            .filter(|other| other.actor != actor || other.session != session)
-            .filter_map(|other| {
-                let since = other.chase.search_waiting_since()? / CHASE_WINDOW_MICROS;
-                ((since, actor_order(other.actor)) < own).then_some(())
-            })
-            .count();
-        let admissible = registered.is_some_and(|since| since < window);
-        let entry = &mut entries[index];
+    }
+
+    /// `RANGED0-RL-03`: the Channel's one chase search drain of the owner window of `now`. The
+    /// first chase check to reach the window runs every waiting search, at most
+    /// [`CHASE_SEARCHES_PER_WINDOW`], in the order [`chase_search_order`] gives, each against
+    /// the occupancy the earlier ones leave once they take their next step; every chase then
+    /// takes its own stored route. Nothing here depends on which check drains: the inputs are
+    /// the Channel's runtime, its path tiles and the waiting chases alone.
+    fn drain_chase_searches(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        now: SemanticTimeMicros,
+        path_tile: &impl Fn(MovementLocalPosition) -> bool,
+    ) {
+        let Self {
+            entries,
+            chase_searches,
+            ..
+        } = self;
+        if !chase_searches.open(now.get()) {
+            return;
+        }
+        let order = chase_search_order(
+            now.get(),
+            entries.iter().enumerate().filter_map(|(index, entry)| {
+                let since = entry.chase.search_waiting_since()?;
+                Some((since, (actor_order(entry.actor), index)))
+            }),
+        );
+        if order.is_empty() {
+            return;
+        }
         // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
         // another player; never the chasing player), and the target's own tile is no path tile.
-        let mut occupied: Option<std::collections::BTreeSet<(i32, i32)>> = None;
-        let decision = entry.chase.decide(
-            now.get(),
-            from,
-            to,
-            || admissible && chase_searches.admit(now.get(), ahead),
-            |cell| {
+        let visible = runtime.visible_entities();
+        let standing: Vec<_> = visible
+            .creatures
+            .iter()
+            .chain(&visible.npcs)
+            .chain(&visible.players)
+            .map(|other| (other.actor, other.position))
+            .collect();
+        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
+        let mut searched = 0;
+        for (_, index) in order {
+            if searched == CHASE_SEARCHES_PER_WINDOW {
+                break;
+            }
+            let entry = &mut entries[index];
+            let Some(target) = entry
+                .state
+                .target()
+                .filter(|_| entry.modes.chase == ChaseMode::Chase)
+            else {
+                continue;
+            };
+            let Some((from, to)) =
+                chase_ends(runtime, room, entry.actor, entry.session, target, now)
+            else {
+                continue;
+            };
+            let occupied: std::collections::BTreeSet<(i32, i32)> = standing
+                .iter()
+                .filter(|(other, _)| *other != entry.actor)
+                .map(|(other, position)| {
+                    stepping
+                        .iter()
+                        .find(|(stepper, _)| stepper == other)
+                        .map_or(*position, |(_, next)| *next)
+                })
+                .filter(|position| position.floor == from.floor)
+                .map(|position| (position.x, position.y))
+                .collect();
+            let ran = entry.chase.search(now.get(), from, to, |cell| {
                 if cell == to || !path_tile(cell) {
                     return None;
                 }
-                let occupied = occupied.get_or_insert_with(|| {
-                    let visible = runtime.visible_entities();
-                    visible
-                        .creatures
-                        .iter()
-                        .chain(&visible.npcs)
-                        .chain(&visible.players)
-                        .filter(|other| other.actor != actor && other.position.floor == from.floor)
-                        .map(|other| (other.position.x, other.position.y))
-                        .collect()
-                });
                 Some(if occupied.contains(&(cell.x, cell.y)) {
                     CREATURE_COST
                 } else {
                     0
                 })
-            },
-        );
-        match decision {
-            ChaseDecision::Step(step) => Some(step),
-            ChaseDecision::Hold => None,
+            });
+            if ran {
+                searched += 1;
+            }
+            if let Some(next) = entry.chase.next_cell() {
+                stepping.push((entry.actor, next));
+            }
         }
     }
 
@@ -875,6 +898,31 @@ impl ChannelAttackStates {
 }
 
 /// CHASE-1: the actor-id order of `RANGED0-RL-03` within one Channel.
+/// CHASE-1: where the chase of `actor` towards `target` runs from and to, while it may run: the
+/// target alive, visible and on the attacker's floor, and, like the swing (ATTACK-0 §4), neither
+/// side in a protection zone and no re-entry protection on the attacker. It never walks the
+/// player out of a protection zone, nor toward a creature that became a companion.
+fn chase_ends(
+    runtime: &ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    target: ExactActorRef,
+    now: SemanticTimeMicros,
+) -> Option<(MovementLocalPosition, MovementLocalPosition)> {
+    let from = runtime.read_actor_position(actor).ok()?.position();
+    let to = runtime.read_actor_position(target).ok()?.position();
+    let facts = target_facts(runtime, room, actor, session, target, now)?;
+    let runs = facts.present_and_visible
+        && facts.attackable_kind
+        && facts.alive
+        && facts.same_floor
+        && !facts.attacker_reentry_protected
+        && !facts.attacker_in_protection_zone
+        && !facts.target_in_protection_zone;
+    runs.then_some((from, to))
+}
+
 const fn actor_order(actor: ExactActorRef) -> (u32, u64) {
     (actor.actor_local_id(), actor.actor_local_generation())
 }

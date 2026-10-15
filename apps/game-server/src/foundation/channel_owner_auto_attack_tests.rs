@@ -139,6 +139,14 @@ fn owner() -> Owner {
 }
 
 fn owner_at(player_at: MovementLocalPosition, rat_at: MovementLocalPosition) -> Owner {
+    owner_with_capacity(player_at, rat_at, 2)
+}
+
+fn owner_with_capacity(
+    player_at: MovementLocalPosition,
+    rat_at: MovementLocalPosition,
+    capacity: usize,
+) -> Owner {
     let room = source_world();
     let pin = ChannelContentPin::from_activation(
         room.movement_cells().scope().world_id,
@@ -157,7 +165,7 @@ fn owner_at(player_at: MovementLocalPosition, rat_at: MovementLocalPosition) -> 
         1,
         1,
         "runtime-scope-assignment:1",
-        2,
+        capacity,
         pin.clone(),
     )
     .unwrap();
@@ -1408,6 +1416,107 @@ fn an_ended_connection_and_a_mode_change_leave_the_chase_search_ordering() {
             .attack
             .chase_search_waiting(owner.player, owner.session)
     );
+}
+
+/// CHASE-1: two players chasing the rat, the lower actor id first, each one cell from the other.
+fn two_chasers() -> (Owner, [(ExactActorRef, GameSessionId); 2]) {
+    let mut owner = owner_with_capacity(OPEN_PLAYER, distant_open_cell(), 3);
+    let none = std::collections::BTreeSet::new();
+    let beside = [(0, 1), (0, -1), (-1, 0)]
+        .into_iter()
+        .map(|(dx, dy)| MovementLocalPosition {
+            x: OPEN_PLAYER.x + dx,
+            y: OPEN_PLAYER.y + dy,
+            ..OPEN_PLAYER
+        })
+        .find(|cell| chase_path_tile(owner.room.movement_cells(), &none, *cell))
+        .expect("an open cell beside the player");
+    let session = GameSessionId::decode(&uuid(5)).unwrap();
+    let reservation = owner.runtime.reserve_fresh_session(session).unwrap();
+    let other = owner.runtime.commit_fresh_session(reservation).unwrap();
+    owner
+        .runtime
+        .initialize_pinned_test_position(other, beside)
+        .expect("the second player stands beside the first");
+    let mut chasers = [(owner.player, owner.session), (other, session)];
+    chasers.sort_by_key(|(actor, _)| (actor.actor_local_id(), actor.actor_local_generation()));
+    let rat = owner.rat;
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    for (player, session) in chasers {
+        assert_eq!(
+            owner.attack.set_target(
+                &owner.runtime,
+                Some(&owner.room),
+                player,
+                session,
+                at(T0),
+                Some(rat),
+                1,
+            ),
+            AttackIntentDisposition::Ok
+        );
+        assert!(
+            owner
+                .attack
+                .set_modes(&owner.runtime, player, session, modes)
+        );
+    }
+    (owner, chasers)
+}
+
+/// The chase steps two chasers take in the window after they registered, their checks reaching
+/// the Channel in `order`; with `commit`, each step commits before the next check.
+fn chase_steps(order: [usize; 2], commit: bool) -> [Option<crate::movement::CardinalStep>; 2] {
+    let (mut owner, chasers) = two_chasers();
+    let room = owner.room.clone();
+    let none = std::collections::BTreeSet::new();
+    let mut steps = [None; 2];
+    for now in [T0, T0 + crate::combat_attack::CHASE_WINDOW_MICROS] {
+        for index in order {
+            let (player, session) = chasers[index];
+            steps[index] = owner.attack.chase_decision(
+                &owner.runtime,
+                &room,
+                player,
+                session,
+                at(now),
+                |cell| chase_path_tile(room.movement_cells(), &none, cell),
+            );
+            let Some(step) = steps[index].filter(|_| commit) else {
+                continue;
+            };
+            let (dx, dy) = crate::movement::path_search::delta(step);
+            let mut movement = owner.runtime.borrow_movement_position();
+            let before = movement.read(player).expect("the chaser's position");
+            let position = before.position();
+            let next = MovementLocalPosition {
+                x: position.x + dx,
+                y: position.y + dy,
+                ..position
+            };
+            movement
+                .commit_cardinal(before, next)
+                .expect("the chase step commits");
+        }
+    }
+    steps
+}
+
+#[test]
+fn the_chase_search_drain_gives_the_same_routes_in_any_check_order() {
+    // RANGED0-RL-03: the first check of a window drains every waiting search in (waiting since,
+    // actor id) order, each against the occupancy the earlier ones leave; every chase then takes
+    // its own stored route, whichever connection reaches the Channel first.
+    let forward = chase_steps([0, 1], false);
+    assert!(forward.iter().all(Option::is_some), "{forward:?}");
+    assert_eq!(chase_steps([1, 0], false), forward);
+    // The lower id stepping first changes the occupancy the higher id's check reads, not the
+    // route the drain stored for it.
+    assert_eq!(chase_steps([0, 1], true), forward);
+    assert_eq!(chase_steps([1, 0], true), forward);
 }
 
 #[test]
