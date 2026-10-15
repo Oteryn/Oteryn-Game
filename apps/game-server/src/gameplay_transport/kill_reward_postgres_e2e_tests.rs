@@ -93,6 +93,23 @@ fn scenario() -> TestResult {
             (OPEN_PLAYER.x, OPEN_PLAYER.y, OPEN_PLAYER.floor),
         );
 
+        // ATTACK-2: the swing weapon is read from the equipment owner, which checks the
+        // Channel's durably active Content against the pin (the activation `serve` records) and
+        // needs its empty seed (as fresh admission leaves it; no item worn, so fists).
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(41).as_slice()).execute(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), NULL, $4, $5, $6)")
+            .bind(id(42).as_slice())
+            .bind(id(43).as_slice())
+            .bind(pin.activation_sequence().to_string())
+            .bind(pin.identity().server_artifact_digest().as_slice())
+            .bind(pin.identity().client_artifact_digest().as_slice())
+            .bind(pin.frame_binding().digest().as_slice())
+            .execute(&harness.pool)
+            .await?;
+
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             channel,
@@ -296,6 +313,8 @@ fn scenario() -> TestResult {
         }
         let mut swings = 0;
         loop {
+            // ATTACK-2: the swing weapon (here fists) is read from the equipment owner first.
+            owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
             if owner.attack.lock().await.kills().has_session(session) {
                 break;

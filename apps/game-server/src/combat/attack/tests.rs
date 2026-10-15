@@ -696,6 +696,17 @@ fn a_protected_target_is_held_without_a_swing() {
 }
 
 #[test]
+fn a_settled_budget_starts_at_the_cap_on_the_new_cadence() {
+    let block = table().block;
+    let mut budget = BlockBudget::settled(&block, ms(5_000));
+    assert_eq!(budget.blocks(), 2);
+    assert!(budget.try_block(&block, ms(5_000)));
+    assert!(budget.try_block(&block, ms(5_000)));
+    assert!(!budget.try_block(&block, ms(5_999)));
+    assert!(budget.try_block(&block, ms(6_000)));
+}
+
+#[test]
 fn block_budget_keeps_the_refill_phase_while_full() {
     let block = table().block;
     let mut budget = BlockBudget::new(&block, ms(0));

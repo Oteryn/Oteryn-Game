@@ -922,11 +922,14 @@ pub struct RewardClaimPlacement {
     /// catalogue key `oteryn:quest-transition/<marker>/chest`. Boot refuses a key the loaded
     /// quest catalogue does not hold.
     pub quest_transition: Option<String>,
+    /// The key number of a key reward (KEY-1, WORLD-INTERACTION-0 §4.4), from the claim's
+    /// `canary:door-key/<number>` binding; `None` for a reward that is not a key.
+    pub key_number: Option<u16>,
 }
 
 /// A `once` RewardClaim (D39-D42): its identity is the definition's key and revision, and it
-/// lists every chest placement that shares it. Server-only; cooldowns, container rewards,
-/// keys and random choices are later children.
+/// lists every chest placement that shares it. Server-only; cooldowns, container rewards and
+/// random choices are later children.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReferenceRewardClaimDefinition {
     pub placements: Vec<RewardClaimPlacement>,

@@ -45,6 +45,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(1),
             mitigation: None,
             resistances: vec![],
@@ -602,8 +603,10 @@ fn domain_ten_sends_a_delta_only_for_a_changed_state_and_never_reuses_a_revision
     );
 }
 
+/// ATTACK-2 (VIS-1): a source world's native floor sees as the Tibia floor of its negation:
+/// Thalom's surface -7 sees -6 and -5 above it, never the underground -8.
 #[test]
-fn a_source_world_floor_is_seen_on_its_own_plane_only() {
+fn a_source_world_floor_sees_as_the_tibia_floor_of_its_negation() {
     let at = |x, y, floor| MovementLocalPosition { x, y, floor };
     assert!(sees(at(2, 11, -7), at(1, 11, -7)));
     assert!(sees(at(0, 0, -7), at(9, 6, -7)));
@@ -611,7 +614,30 @@ fn a_source_world_floor_is_seen_on_its_own_plane_only() {
         !sees(at(0, 0, -7), at(-9, 0, -7)),
         "outside the 18 x 14 view"
     );
-    assert!(!sees(at(2, 11, -7), at(2, 11, -6)), "another native floor");
+    assert!(sees(at(2, 11, -7), at(2, 11, -6)), "a surface floor above");
+    assert!(
+        sees(at(2, 11, -7), at(1, 10, -5)),
+        "two surface floors above"
+    );
+    assert!(!sees(at(2, 11, -7), at(2, 11, -8)), "underground below");
+    assert!(
+        sees(at(2, 11, -8), at(2, 11, -6)),
+        "underground sees two up"
+    );
+    assert!(
+        sees(at(2, 11, -8), at(2, 11, -10)),
+        "underground sees two down"
+    );
+    assert!(
+        !sees(at(2, 11, -8), at(2, 11, -5)),
+        "three up is out of reach"
+    );
+    // Native floors match the Tibia floors of their negation, shift included.
+    assert_eq!(
+        sees(at(5, 5, -7), at(4, 4, -6)),
+        sees(at(5, 5, 7), at(4, 4, 6))
+    );
+    assert!(!sees(at(0, 0, -16), at(0, 0, -16)), "off the 16 floors");
     // Visibility floors keep the reference rules, other floors included.
     assert!(sees(at(0, 0, 7), at(1, 0, 7)));
     assert!(sees(at(5, 5, 7), at(4, 4, 6)));

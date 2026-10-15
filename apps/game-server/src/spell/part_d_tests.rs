@@ -162,7 +162,7 @@ pub(super) fn caster(vocation: Vocation) -> CasterState {
         vocation,
         level: 100,
         magic_level: 50,
-        premium: false,
+        premium: crate::spell::CasterPremium::NotCurrent,
         mana: 1000,
         max_mana: 1000,
         soul: 100,
@@ -632,7 +632,7 @@ fn needs_weapon_refuses_a_caster_without_a_melee_weapon() {
         Err(CastRejection::PremiumRequired)
     );
     let premium = CasterState {
-        premium: true,
+        premium: crate::spell::CasterPremium::Current,
         ..armed
     };
     assert!(

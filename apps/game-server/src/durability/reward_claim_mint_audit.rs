@@ -14,7 +14,7 @@ use super::item_mint_audit::{
     ITEM_LIFECYCLE_LIVE, OneItemOperationV1, OneItemStateV1, OneItemTransactionV1,
     OneItemTypedDefinitionRevisionV1, RL07_ENVELOPE_BYTES_MAX, RL07_PAYLOAD_BYTES_MAX,
     TransactionEventRefV1, TransactionResourceUsage, check_content_key, check_definition,
-    check_technical_text, check_uuid_v7, encode_bounded,
+    check_key_number, check_technical_text, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::{
     GAMEITEM01_STACK_QUANTITY_MAX, OneItemCommandRefV1, OneItemInventoryV1,
@@ -85,6 +85,7 @@ pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), A
     check_uuid_v7(&after.item_instance_id)?;
     check_uuid_v7(&after.world_id)?;
     check_definition(after.definition.as_ref())?;
+    check_key_number(after)?;
     check_uuid_v7(&destination.character_id)?;
     check_uuid_v7(&destination.expected_game_session_id)?;
     check_uuid_v7(&entry.parent_item_instance_id)?;
@@ -259,7 +260,7 @@ pub fn encode_reward_claim_mint_event(
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::super::item_mint_audit::{
-        RL07_CONTENT_KEY_BYTES_MAX, decode_envelope, decode_payload,
+        RL07_CONTENT_KEY_BYTES_MAX, WORLDINT0_KEY_NUMBER_MAX, decode_envelope, decode_payload,
     };
     use super::super::item_transfer_audit::{
         OneItemContainerEntryV1, decode_transfer_envelope, decode_transfer_payload,
@@ -295,6 +296,7 @@ mod tests {
                 definition: Some(definition("Item", "fixture:chest.coin")),
                 quantity: 30,
                 lifecycle: ITEM_LIFECYCLE_LIVE,
+                key_number: 0,
             }),
             destination: Some(OneItemInventoryV1 {
                 character_id: uuid(41),
@@ -460,6 +462,31 @@ mod tests {
             );
         }
         assert!(check_reward_claim_mint(&minted()).is_ok());
+    }
+
+    #[test]
+    fn a_key_number_is_one_item_within_the_registered_range() {
+        let keyed = |number: u32, quantity: u32| {
+            let mut value = minted();
+            let after = value.after.as_mut().unwrap();
+            after.key_number = number;
+            after.quantity = quantity;
+            value
+        };
+        assert!(check_reward_claim_mint(&keyed(1, 1)).is_ok());
+        assert!(check_reward_claim_mint(&keyed(WORLDINT0_KEY_NUMBER_MAX, 1)).is_ok());
+        assert_eq!(
+            check_reward_claim_mint(&keyed(WORLDINT0_KEY_NUMBER_MAX + 1, 1)),
+            Err(AuditError::InvalidInput)
+        );
+        assert_eq!(
+            check_reward_claim_mint(&keyed(7, 2)),
+            Err(AuditError::InvalidInput)
+        );
+        let wire =
+            encode_reward_claim_mint_event(identity(), keyed(4210, 1), mint::Type2EventTuple::V1)
+                .unwrap();
+        assert!(!wire.is_empty());
     }
 
     #[test]
