@@ -1,5 +1,8 @@
 """SPELL-PRESENT-0 §3 bindings: the committed files validate, and the checks reject bad bindings."""
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 import build_creature_races as races
 import build_presentation_bindings as bindings
@@ -96,6 +99,20 @@ class CheckTests(unittest.TestCase):
             a[3]['records'][0]['value'] = 4
         self.assertEqual(self.errors(change),
                          ['spell-cues.json and client-ids.json disagree on appearance:effect/poff'])
+
+
+class ContentKeyTests(unittest.TestCase):
+    def test_malformed_presentation_keys_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'cue.json').write_text(json.dumps(
+                {'effect': 'canary.appearance:effect/poff', 'raw': 'canary.appearance:effect/id-248',
+                 'note': 'appearance of the boss'}))
+            self.assertEqual(bindings.content_keys(Path(directory), {}),
+                             {'canary.appearance:effect/poff', 'canary.appearance:effect/id-248'})
+            for bad in ('canary.appearance:effect/magic-red', 'canary.sound:spell-cast', 'appearance:effect/id-x'):
+                Path(directory, 'bad.json').write_text(json.dumps([bad]))
+                with self.assertRaisesRegex(ValueError, 'malformed presentation keys'):
+                    bindings.content_keys(Path(directory), {})
 
 
 class RaceTests(unittest.TestCase):

@@ -50,8 +50,10 @@ and checked without them:
   table included) bound to its 15.30 client id and the enum member that supplies it. Canary at the
   cue PIN supplies 401; Crystal 00ce02a5 supplies the 18 newer effects Canary's PIN lacks.
   `canary.appearance:effect/poison` (harpy) and `effect/redspark` (Izcandar) are defined by neither
-  source; Lua reads nil there, so they bind to no effect (null) with a note. The weapon missile stays
-  dynamic.
+  source; Lua reads nil there, so they bind to no effect (null) with a note. `effect/id-248`
+  (murcion's raw `effect = 248`) has no source member and no appearances.dat effect, so it binds the
+  same way. The key scan rejects any malformed value in a presentation namespace. The weapon missile
+  stays dynamic.
 - `hit-table.json`: §5's colour and hit effect per damage type and per race, parsed from Canary
   `Game::combatGetTypeInfo`, `combatChangeHealth` and `combatChangeMana`, with source lines. Players
   are blood.
@@ -80,7 +82,7 @@ and checked without them:
 ## Validation
 
 - `python tools/content-migration/regenerate_content.py`: pass
-- `python -m unittest test_presentation_bindings test_spell_cues` (native-gameplay): OK (14)
+- `python -m unittest test_presentation_bindings test_spell_cues` (native-gameplay): OK (19)
 - `build_presentation_bindings.py --check` and `build_creature_races.py --check` against the
   pinned Canary and Crystal checkouts: pass; an edited hit-table colour fails
 - `python tools/content-migration/register_spell_families.py --check`: pass

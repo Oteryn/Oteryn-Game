@@ -552,6 +552,13 @@
       "source_member": "CONST_ME_ICETORNADO"
     },
     {
+      "client_id": null,
+      "key": "canary.appearance:effect/id-248",
+      "kind": "effect",
+      "note": "murcion.lua sets effect = 248; no source member has that value and appearances.dat has no effect 248, so the client shows no effect",
+      "source_member": null
+    },
+    {
       "client_id": 69,
       "key": "canary.appearance:effect/insects",
       "kind": "effect",

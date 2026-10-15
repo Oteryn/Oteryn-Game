@@ -32,7 +32,9 @@ HIT_TABLE = BINDINGS / 'hit-table.json'
 CREATURE_RACES = CONTENT / 'creatures' / 'definitions' / 'creature-races.json'
 # The one key whose id the runtime weapon policy resolves (build_spell_cues.py).
 DYNAMIC = ['canary.appearance:missile/weapontype']
-KEY = re.compile(r'(canary\.)?(sound:(effect/[0-9]+|[a-z][a-z0-9_]*)|appearance:(effect|missile)/[a-z0-9_]+)')
+# A value in a presentation namespace must be a whole key; anything else is rejected, not skipped.
+NAMESPACE = re.compile(r'(canary\.)?(sound:|appearance:(effect|missile)/)')
+KEY = re.compile(r'(canary\.)?(sound:(effect/[0-9]+|[a-z][a-z0-9_]*)|appearance:(effect|missile)/(id-[0-9]+|[a-z0-9_]+))')
 
 DAMAGE = {'COMBAT_PHYSICALDAMAGE': 'physical', 'COMBAT_ENERGYDAMAGE': 'energy',
           'COMBAT_EARTHDAMAGE': 'earth', 'COMBAT_DROWNDAMAGE': 'drowning',
@@ -51,6 +53,7 @@ COLORS = {'TEXTCOLOR_RED': 'red', 'TEXTCOLOR_LIGHTGREEN': 'light_green',
 UNDEFINED = {
     'canary.appearance:effect/poison': 'CONST_ME_POISON is undefined in both sources; harpy.lua shows no effect',
     'canary.appearance:effect/redspark': 'CONST_ME_REDSPARK is undefined in both sources; izcandar_champion_of_summer.lua shows no effect',
+    'canary.appearance:effect/id-248': 'murcion.lua sets effect = 248; no source member has that value and appearances.dat has no effect 248, so the client shows no effect',
 }
 # Crystal (the 15.30 Canary fork the Crystal creature bindings cite) defines the newer effects.
 CRYSTAL_PIN = '00ce02a57ca5a12e48f32a3476e37471167e4c3f'
@@ -151,7 +154,7 @@ def hit_table(game):
 
 
 def content_keys(content, extra):
-    keys = set()
+    keys, malformed = set(), set()
 
     def walk(value):
         if isinstance(value, dict):
@@ -162,22 +165,24 @@ def content_keys(content, extra):
                 walk(item)
         elif isinstance(value, str) and KEY.fullmatch(value):
             keys.add(value)
+        elif isinstance(value, str) and NAMESPACE.match(value):
+            malformed.add(value)
 
     for path in sorted(content.rglob('*.json')):
         if path in (CLIENT_IDS, HIT_TABLE, CREATURE_RACES):
             continue
         walk(json.loads(path.read_bytes()))
     walk(extra)
+    if malformed:
+        raise ValueError('malformed presentation keys ' + ', '.join(sorted(malformed)))
     return keys
 
 
 def resolve(key, sources):
     """(kind, member, value, source index) from the first source that defines and registers it."""
     short = key.removeprefix('canary.')
-    numeric = short.startswith('sound:effect/')
-    if numeric:
-        kind = 'sound'
-    elif short.startswith('sound:'):
+    numeric = short.startswith('sound:effect/') or '/id-' in short
+    if short.startswith('sound:'):
         kind, member = 'sound', short.split(':')[1].upper()
     elif short.startswith('appearance:effect/'):
         kind, member = 'effect', 'CONST_ME_' + short.split('/')[1].upper()
@@ -186,7 +191,7 @@ def resolve(key, sources):
     table = 'projectile' if kind == 'missile' else kind
     for index, (values, registered) in enumerate(sources):
         if numeric:
-            value = int(short.split('/')[1])
+            value = int(short.rsplit('/', 1)[1].removeprefix('id-'))
             members = sorted(m for m, v in values[table].items() if v == value and m in registered[table])
             if members:
                 return kind, members[0], value, index
