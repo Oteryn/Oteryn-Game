@@ -180,7 +180,7 @@ exactly the change, under the tile and counter row lock.
   runs (§9.1), and a rejected drop makes the item live again from the row (§9.1).
 - **Corpses.** D133 and D134 bind every move whose source is a corpse entry, on the database clock
   with reach. A corpse is never a move source.
-- **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 10. `ITEMMOVE1-RL-02` dropped items per
+- **Limits.** `ITEMMOVE1-RL-01` loose items per tile: 64 (amended 2026-10-15 from 10 by the owner LOOP-GROUND ruling, OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION §3; shared with the death drop). `ITEMMOVE1-RL-02` dropped items per
   channel: 20,000, with an alarm at 80%. A drop over a limit is `BLOCKED`. The per-tile limit takes
   a real row lock on the tile.
 - **Counter upkeep.** The per-channel count of dropped items goes down in the same transaction as
@@ -244,7 +244,7 @@ membership.
 | Equip, unequip, drop, pick-up (one item) | the existing one-item rows: 1 item, 2 location lines, 3 work units |
 | `GAMEITEM01-REACHABLE-ITEMS` | 30 per character (the main backpack, 20 entries and 9 slots) |
 | `ITEMV0-RL-01` entries in domain 9 | 30 |
-| `ITEMMOVE1-RL-01` | 10 loose items per tile |
+| `ITEMMOVE1-RL-01` | 64 loose items per tile (amended 2026-10-15 from 10, ACCEPT-BATCH-2026-10-15 §3) |
 | `ITEMMOVE1-RL-02` | 20,000 dropped items per channel, alarm at 16,000 |
 
 **Amendment (pending on acceptance of STACK-0; `reviews/OTERYN_GAME_STACK0_PARTIAL_COUNTS_AND_STACK_MERGES_DECISION_2026-10-01.md` §6).** Partial and
