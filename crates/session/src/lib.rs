@@ -1882,11 +1882,13 @@ impl<S: SessionStream> Session<S> {
             .await?;
         let (disposition, gate_message_id) =
             world_object::decode_use_result_with_gate(&result.payload)?;
-        // Dispositions 11 to 17 and the gate message id exist only under capability 11.
+        // Dispositions 11 to 17 and the gate message id exist only under capability 11, and
+        // dispositions 18 and 19 only under capability 22.
         check_use_result_negotiated(
             disposition,
             gate_message_id,
             self.is_selected(world_interaction::CAPABILITY_WORLD_INTERACTION_V1),
+            self.is_selected(world_object::CAPABILITY_RUNE_USE_V1),
         )?;
         check_status_pairing(
             result.command_id,
@@ -2516,14 +2518,17 @@ async fn read_frame_body<S: AsyncRead + Unpin>(
 /// with `REJECTED` (`connection.rs` `serve_admitted`, both `STEP` and `USE_INTENT`); any other
 /// pairing is a violation.
 /// A server that sends a capability 11 disposition (11 to 17) or a gate message id to a session
-/// that did not select capability 11 broke the negotiation: the result fails closed.
+/// that did not select capability 11 broke the negotiation: the result fails closed. So does a
+/// capability 22 disposition (18 or 19) to a session that did not select capability 22.
 fn check_use_result_negotiated(
     disposition: UseDisposition,
     gate_message_id: Option<u8>,
     world_interaction_selected: bool,
+    rune_use_selected: bool,
 ) -> Result<(), SessionError> {
-    if (disposition.needs_world_interaction() || gate_message_id.is_some())
-        && !world_interaction_selected
+    if ((disposition.needs_world_interaction() || gate_message_id.is_some())
+        && !world_interaction_selected)
+        || (disposition.needs_rune_use() && !rune_use_selected)
     {
         return Err(SessionError::WorldObject(
             world_object::WorldObjectError::Malformed,
@@ -5605,14 +5610,26 @@ mod tests {
             (D::Locked, None),
             (D::NotPossible, None),
         ] {
-            assert!(check_use_result_negotiated(disposition, gate, true).is_ok());
+            assert!(check_use_result_negotiated(disposition, gate, true, false).is_ok());
             assert!(matches!(
-                check_use_result_negotiated(disposition, gate, false),
+                check_use_result_negotiated(disposition, gate, false, true),
                 Err(SessionError::WorldObject(_))
             ));
         }
         for disposition in [D::Committed, D::NothingToUse, D::NoTarget, D::Rejected] {
-            assert!(check_use_result_negotiated(disposition, None, false).is_ok());
+            assert!(check_use_result_negotiated(disposition, None, false, false).is_ok());
+        }
+    }
+
+    #[test]
+    fn rune_use_dispositions_18_and_19_need_capability_21() {
+        use UseDisposition as D;
+        for disposition in [D::TargetIllegal, D::ProtectionZone] {
+            assert!(check_use_result_negotiated(disposition, None, false, true).is_ok());
+            assert!(matches!(
+                check_use_result_negotiated(disposition, None, true, false),
+                Err(SessionError::WorldObject(_))
+            ));
         }
     }
 

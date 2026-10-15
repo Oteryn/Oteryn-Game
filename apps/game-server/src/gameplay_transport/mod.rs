@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[cfg(test)]
+mod bundle_gates_tests;
 mod capabilities;
 mod character_progression_binding;
 #[cfg(test)]
@@ -38,6 +40,8 @@ mod qualification;
 #[cfg(test)]
 mod quest_catalogue_boot_tests;
 mod resume;
+mod seam_rooms;
+pub(crate) use seam_rooms::SeamRooms;
 mod source_item_cycle;
 mod spell_access_facts;
 mod spell_character_facts;
@@ -396,11 +400,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) spells: &'a crate::spell::SpellBook,
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
-    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
-    /// BUNDLE-COMBAT-ENABLE-1: the room player auto-attack and native combat casts read. The
-    /// qualified room itself, or for a bundle World its bundle view
-    /// (`QualifiedNativeEntryRoom::bundle_view`), whose identities match the bundle pin.
-    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// BUNDLE-GATES-1: the qualified entry room and the combat room (BUNDLE-COMBAT-ENABLE-1),
+    /// read only through their gates.
+    pub(crate) rooms: SeamRooms<'a>,
     /// The Achievement catalogue the `ACCOUNT_ACHIEVEMENTS_QUERY` display read resolves every
     /// fact against (display contract §2.1, §4), and a chest's achievement resolves in (C2).
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
@@ -515,8 +517,7 @@ pub async fn serve_gameplay(
         spells: owners.spells,
         active_generation: owners.active_generation,
         premium_coordinator: owners.premium_coordinator,
-        qualified_room: owners.qualified_room,
-        combat_room: owners.combat_room,
+        rooms: owners.rooms,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
@@ -699,9 +700,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) spells: &'a crate::spell::SpellBook,
     pub(crate) active_generation: Option<&'a crate::content::ActiveGeneration>,
     pub(crate) premium_coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
-    pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
-    /// See [`GameplaySeamOwners::combat_room`].
-    pub(crate) combat_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
+    /// See [`GameplaySeamOwners::rooms`].
+    pub(crate) rooms: SeamRooms<'a>,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
@@ -3106,7 +3106,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
     async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {
         if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
             || self.bundle_map().is_some()
         {
@@ -3166,7 +3167,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
@@ -3305,7 +3307,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: world_object::WorldObjectTarget,
     ) -> UseOutcome {
         if self
-            .qualified_room
+            .rooms
+            .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             return UseOutcome::rejected();
@@ -3447,68 +3450,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> Option<actor_spell::SpellCastOutcome> {
-        // CHAT-0 §6: a muted character cannot cast any spell.
-        if let Some(outcome) = self.chat.muted_cast(game_session_id, self.owner_now()) {
-            return Some(outcome);
-        }
-        if !self.ensure_source_map_initialized().await {
-            return None;
-        }
-        if self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-            .is_some()
-        {
-            let _ = self
-                .refresh_source_party_presence(actor, game_session_id)
-                .await;
-        }
-        // This explicit unavailable producer grants no commercial, Wheel or
-        // control benefit. A configured authenticated owner replaces this port.
-        let access = self
-            .refresh_and_apply_spell_access(actor, game_session_id)
+        let outcome = self
+            .cast_spell_dispatch(actor, game_session_id, command_id, intent)
             .await;
-        match self
-            .cast_native_familiar(actor, game_session_id, command_id, &intent, &access)
-            .await
-        {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
-            actor_spell::NativeCastDispatch::Pending => return None,
-            actor_spell::NativeCastDispatch::NotApplicable => (),
+        if outcome.is_some() {
+            self.settle_pacified_target(actor, game_session_id).await;
         }
-        match self
-            .cast_world_items(actor, game_session_id, command_id, &intent, &access)
-            .await
-        {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
-            actor_spell::NativeCastDispatch::Pending => return None,
-            actor_spell::NativeCastDispatch::NotApplicable => (),
-        }
-        match self
-            .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
-            .await
-        {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => {
-                let _ = self.drain_kill_rewards(game_session_id).await;
-                Some(outcome)
-            }
-            actor_spell::NativeCastDispatch::Pending => None,
-            actor_spell::NativeCastDispatch::NotApplicable => {
-                let outcome = self
-                    .cast_spell(actor, game_session_id, command_id, intent)
-                    .await;
-                if self
-                    .spell_states
-                    .lock()
-                    .await
-                    .has_pending_spell_commit(actor, game_session_id)
-                {
-                    None
-                } else {
-                    Some(outcome)
-                }
-            }
-        }
+        outcome
     }
 
     /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
@@ -3629,14 +3577,37 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
-        if states.get(&runtime, actor, game_session_id).is_none()
-            || (target.is_some() && states.is_dead(actor))
-        {
+        let Some(state) = states.get(&runtime, actor, game_session_id) else {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+        };
+        // CONDITIONS-0 §3.5 / ATTACK-0 §3: a `pacified` held in the player store or the runtime
+        // slot refuses a new target first; the typed gate stays in the operator log (§7) and
+        // `set_target` rechecks the slot. Clearing (`None`) stays open.
+        if target.is_some() {
+            let gate = state
+                .owned_conditions()
+                .attack_target_gate(now.get())
+                .err()
+                .or_else(|| {
+                    runtime
+                        .actor_conditions(actor, Some(game_session_id))
+                        .ok()
+                        .and_then(|store| store.attack_target_gate(now.get()).err())
+                });
+            if let Some(gate) = gate {
+                operator_event(&format!(
+                    "event=attack_target_condition_gated gate={}",
+                    gate.key()
+                ));
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            }
+            if states.is_dead(actor) {
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            }
         }
         self.attack.lock().await.set_target(
             &runtime,
-            self.combat_room,
+            self.rooms.gate_attack_target(),
             actor,
             game_session_id,
             now,
@@ -3672,12 +3643,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
         let now = self.owner_now();
-        Some(
-            self.attack
-                .lock()
-                .await
-                .combat_state(actor, game_session_id, now),
-        )
+        // ATTACK-1b lock order: runtime, spell states, attack.
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        let mut attack = self.attack.lock().await;
+        attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
+        Some(attack.combat_state(actor, game_session_id, now))
     }
 
     /// ATTACK-1b: every 250 ms while a session has domain 10, so a 2000 ms swing is late by at
@@ -4177,6 +4148,110 @@ enum ReconciliationDisposition {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn cast_spell_dispatch(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        intent: actor_spell::SpellCastIntent,
+    ) -> Option<actor_spell::SpellCastOutcome> {
+        // CHAT-0 §6: a muted character cannot cast any spell.
+        if let Some(outcome) = self.chat.muted_cast(game_session_id, self.owner_now()) {
+            return Some(outcome);
+        }
+        // CONDITIONS-0 §3.5: the condition gates answer next, ahead of every dispatcher.
+        let gated = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            actor_spell::condition_gated_cast(
+                &runtime,
+                &states,
+                self.spells,
+                actor,
+                game_session_id,
+                &intent,
+                self.owner_now(),
+            )
+        };
+        if let Some(gate) = gated {
+            // §7: the typed gate stays in the operator log; the wire answer is `REJECTED`.
+            operator_event(&format!(
+                "event=spell_cast_condition_gated gate={}",
+                gate.key()
+            ));
+            return Some(actor_spell::SpellCastOutcome::rejected());
+        }
+        if !self.ensure_source_map_initialized().await {
+            return None;
+        }
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+        {
+            let _ = self
+                .refresh_source_party_presence(actor, game_session_id)
+                .await;
+        }
+        // This explicit unavailable producer grants no commercial, Wheel or
+        // control benefit. A configured authenticated owner replaces this port.
+        let access = self
+            .refresh_and_apply_spell_access(actor, game_session_id)
+            .await;
+        match self
+            .cast_native_familiar(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::NotApplicable => (),
+        }
+        match self
+            .cast_world_items(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::NotApplicable => (),
+        }
+        match self
+            .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
+            .await
+        {
+            actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                let _ = self.drain_kill_rewards(game_session_id).await;
+                Some(outcome)
+            }
+            actor_spell::NativeCastDispatch::Pending => None,
+            actor_spell::NativeCastDispatch::NotApplicable => {
+                let outcome = self
+                    .cast_spell(actor, game_session_id, command_id, intent)
+                    .await;
+                if self
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_pending_spell_commit(actor, game_session_id)
+                {
+                    None
+                } else {
+                    Some(outcome)
+                }
+            }
+        }
+    }
+
+    /// ATTACK-0 §4 (as amended by #2106): a cast that applied `pacified` to its caster clears
+    /// the caster's held target before the intent's completion is answered.
+    async fn settle_pacified_target(&self, actor: ExactActorRef, game_session_id: GameSessionId) {
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        self.attack
+            .lock()
+            .await
+            .settle_pacified_target(&runtime, &states, actor, game_session_id);
+    }
+
     /// Record authoritative unexpected control loss, fresh-origin or after a resume. The owning
     /// source is composed at decision time from the Channel owner (actor present, placement,
     /// assignment revision), the current durable GameSession and the admitted account; the

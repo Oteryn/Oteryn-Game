@@ -10,6 +10,7 @@ syntax = "proto3";
 
 package oteryn.protocol.v1.world_object;
 
+import "actor_spell_v1.proto";
 import "item_view_v1.proto";
 import "world_spatial_v1.proto";
 
@@ -21,7 +22,7 @@ message WorldObjectTargetV1 {
 }
 
 // ClientCommand.payload of command type 2. At most 529 encoded bytes (ITEMUSE0-RL-03 keeps
-// the bound under capability 15). Field 2, the item target, is ITEM-MOVE-WIRE-0 §4.3 (D212):
+// the bound under capability 15 and RUNEUSE0-RL-04 under capability 22). Field 2, the item target, is ITEM-MOVE-WIRE-0 §4.3 (D212):
 // a handle-bearing item, gated by capability 4 ITEM_VIEW_MOVE_V1; a session that did not
 // select it and sends field 2 fails closed. Fields 4 and 5 are ITEM-USE-0 §3 (ITEM-USE-WIRE-1,
 // D485), gated by capability 15 ITEM_USE_V1 (which requires 4); a session that did not
@@ -47,12 +48,17 @@ message UseIntentV1 {
 // without a handle (a door), is the `map_object` arm, field 4: its placement and observed overlay
 // revision, as UseIntentV1 field 1 names it, with a non-empty placement of at most 496 bytes so
 // the intent stays within 529. Exactly one arm; the entity arm needs capability 15 and the map arms
-// capabilities 15 and 11. Valid only with field 2 or 5, at most once.
+// capabilities 15 and 11. Valid only with field 2 or 5, at most once. Under capability 22
+// RUNE_USE_V1 (RUNE-USE-0 §4, RUNE-WIRE-1), the `position` arm, field 5, names the tile a rune is
+// used on, in the SPELL-D7 frame (sint32 x and y, an int16 floor), at most 16 bytes; a session
+// that did not select capability 22 and sends it fails closed (REJECTED), and it is valid only
+// for a rune.
 message UseWithV1 {
   bytes identity = 1;
   uint64 generation = 2;
   oteryn.protocol.v1.item_view.ItemTargetV1 map_item = 3;
   WorldObjectTargetV1 map_object = 4;
+  oteryn.protocol.v1.actor_spell.SpellTargetPositionV1 position = 5;
 }
 
 // An item named by its 1-based definition index in the active content generation (the
@@ -82,6 +88,9 @@ enum UseDispositionV1 {
   USE_DISPOSITION_NOT_MOVABLE = 15;
   USE_DISPOSITION_NO_ROOM = 16;
   USE_DISPOSITION_NOT_POSSIBLE = 17;
+  // 18 and 19 are sent only to a session that selected capability 22 RUNE_USE_V1 (RUNE-USE-0 §4).
+  USE_DISPOSITION_TARGET_ILLEGAL = 18;
+  USE_DISPOSITION_PROTECTION_ZONE = 19;
 }
 
 // CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.

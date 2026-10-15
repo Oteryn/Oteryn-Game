@@ -114,6 +114,21 @@ pub(crate) fn lower_condition_definition(
             };
             ConditionValues::TimedStatus { kind, duration_ms }
         }
+        // CONDITIONS-0 §3.5: a gate family lasts a fixed duration. `agony` has no content
+        // shape, so it stays an unsupported condition below.
+        "muted" | "pacified" | "powerless" => {
+            if condition.lifetime != ProjectV2ConditionLifetime::FixedDuration
+                || condition.damage_over_time.is_some()
+                || condition.speed_formula.is_some()
+                || resolved_formula.is_some()
+            {
+                return Err(E::UnsupportedParameters);
+            }
+            let duration_ms = u32::try_from(duration_ms.ok_or(E::InvalidDefinition)?)
+                .map_err(|_| E::NumericOverflow)?;
+            ConditionValues::gate(&condition.condition_type, duration_ms)
+                .ok_or(E::UnsupportedCondition)?
+        }
         "attributes" => {
             if condition.lifetime != ProjectV2ConditionLifetime::FixedDuration
                 || condition.damage_over_time.is_some()
@@ -307,3 +322,7 @@ fn exact_thousandths(ratio: ProjectV2ExactRatio) -> Result<i32, ConditionContent
 #[cfg(test)]
 #[path = "condition_content_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "creature_condition_content_gate_tests.rs"]
+mod gate_tests;

@@ -41,6 +41,8 @@ oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true
+# Test-only (BUNDLE-GATES-1): the gate inventory parses the seam sources to find each room read.
+syn.workspace = true
 # Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
 rustls = { workspace = true, features = ["tls12"] }
 # Test-only (MAP-LOAD-1): the map_load tests assemble and reseal bundles byte by byte.

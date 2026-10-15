@@ -2463,8 +2463,10 @@ async fn boot_and_serve(
         spells: &spells,
         active_generation: active_content.active(),
         premium_coordinator: Some(&premium_reads),
-        qualified_room: bundle.is_none().then_some(&qualified_room),
-        combat_room: combat_room.as_ref(),
+        rooms: crate::gameplay_transport::SeamRooms::new(
+            bundle.is_none().then_some(&qualified_room),
+            combat_room.as_ref(),
+        ),
         achievements: &achievements,
         imported_charms: &imported_charms,
         npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),

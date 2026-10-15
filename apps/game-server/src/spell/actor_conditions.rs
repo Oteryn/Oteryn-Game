@@ -14,7 +14,7 @@ pub(crate) fn has_periodic_damage(state: &PlayerSpellState) -> bool {
     state.conditions.instances().iter().any(|instance| {
         matches!(
             instance.definition().condition_type(),
-            ConditionType::DamageOverTime(_)
+            ConditionType::DamageOverTime(_) | ConditionType::Agony
         )
     })
 }
@@ -545,6 +545,26 @@ fn tick_inner(
                     super::food_regeneration::credit_fed_second(&mut staged);
                 }
             }
+            // §3.5: a refused agony occurrence is used up in the protection zone.
+            TickKind::Agony { refused: true, .. } => {}
+            TickKind::Agony {
+                amount,
+                refused: false,
+            } => {
+                // These cycles record no death and have no PvP legality owner: only a
+                // non-lethal hit of creature provenance is dealt here. Any other occurrence
+                // goes to the combat owner, which deals it or leaves the pass unchanged.
+                let creature = tick.provenance.source_kind == ConditionSourceKind::Creature
+                    && tick
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|source| source.starts_with("creature:"));
+                match creature.then(|| stage_agony_hit(&staged, amount, now)) {
+                    Some(Ok((successor, _))) if successor.health > 0 => staged = successor,
+                    _ => combat.push(tick),
+                }
+            }
             TickKind::Damage { .. } | TickKind::Regeneration { .. } => combat.push(tick),
         }
     }
@@ -602,6 +622,38 @@ pub(crate) fn stage_creature_hit(
     ),
     SpellCastDisposition,
 > {
+    stage_hit(state, magnitude, now, true)
+}
+
+/// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
+/// reduction and the mana shield included, §3.3); only the D54 HP floor and the lifecycle of
+/// [`stage_creature_hit`] apply.
+pub(crate) fn stage_agony_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, false)
+}
+
+fn stage_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mitigated: bool,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
     use crate::ability::condition::ConflictKey;
     if !state.conditions.accepts_time(now)
         || state.health == 0
@@ -612,7 +664,8 @@ pub(crate) fn stage_creature_hit(
     }
     let mut next = state.clone();
     let mut remaining = magnitude;
-    if let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
+    if mitigated
+        && let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
         && let ConditionValues::Attributes {
             incoming_reduction_percent,
             ..
@@ -627,7 +680,7 @@ pub(crate) fn stage_creature_hit(
             .checked_sub(u32::try_from(removed).map_err(|_| SpellCastDisposition::Rejected)?)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
-    if let Some(capacity) = next.conditions.mana_shield_at(now) {
+    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mitigated) {
         let absorbed = remaining.min(capacity).min(next.mana);
         if absorbed > 0 {
             next.conditions
@@ -1381,3 +1434,7 @@ mod source_attribute_projection_tests {
         assert!(state.owned_skill_adjustments(1999).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "actor_conditions_agony_tests.rs"]
+mod agony_tests;
