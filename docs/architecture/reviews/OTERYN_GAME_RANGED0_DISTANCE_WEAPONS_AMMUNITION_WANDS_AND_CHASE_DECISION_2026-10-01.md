@@ -71,7 +71,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
 - Composition decision rule 2 binds a cause to a CharacterId and a fence; rule 3 proves ingress by a
   pending CommandRef; the STARTER-BACKPACK-0 amendment admits a server-originated variant fenced by
   the admitted session's `CurrentCharacterItemFence` without a CommandRef.
-- ITEM-MOVE-WIRE-1 §5: Ground drops (10 items per tile `ITEMMOVE1-RL-01`, 20,000 per channel
+- ITEM-MOVE-WIRE-1 §5: Ground drops (64 items per tile `ITEMMOVE1-RL-01`, amended from 10 on 2026-10-15, 20,000 per channel
   `ITEMMOVE1-RL-02`, house tiles `BLOCKED`, the per-tile row lock and counter); §6.2 the §32 scope
   fence on every Ground write; §6.1 supersessions; §7.2 the extended lock order; §4 refuses containers and unknown equipment semantics in the nine slots. BAGS-0
   §3: trees of depth 8 and 500 items, `GAMEITEM01-REACHABLE-ITEMS` 509; §4.1 entries keyed by
