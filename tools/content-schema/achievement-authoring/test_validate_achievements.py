@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import importlib
+import io
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -161,6 +164,214 @@ class ValidateAchievementsTest(unittest.TestCase):
             "Aye-aye, Captain!",
         ):
             self.assertEqual(v.slug(name), ots_chests.slug(name))
+
+
+class CoverageTest(unittest.TestCase):
+    def test_without_claims_every_key_is_pending(self) -> None:
+        report = v.coverage_report([SAMPLE], [])
+        self.assertEqual(report["bound_keys"], [])
+        self.assertEqual(
+            report["unearnable_pending"],
+            [
+                {
+                    "key": SAMPLE["identity"]["key"],
+                    "status": "UNEARNABLE_PENDING",
+                    "reason": "NO_ADMITTED_GRANTER; EARNING_FAMILY_UNCLASSIFIED",
+                }
+            ],
+        )
+
+    def test_claim_binding_uses_existing_slug_and_explicit_owner_resolution(
+        self,
+    ) -> None:
+        professor = variant(
+            identity={
+                **SAMPLE["identity"],
+                "key": "oteryn:achievement/the_professor_s_nut",
+            }
+        )
+        report = v.coverage_report(
+            [SAMPLE, professor],
+            [
+                "canary:achievement/allow_cookies",
+                "canary:achievement/the_professors_nut",
+            ],
+        )
+        self.assertEqual(report["unearnable_pending"], [])
+        self.assertEqual(
+            report["bound_keys"],
+            sorted([SAMPLE["identity"]["key"], professor["identity"]["key"]]),
+        )
+
+    def test_unknown_refs_and_unapproved_namespaces_never_cover_a_key(self) -> None:
+        report = v.coverage_report(
+            [SAMPLE],
+            [
+                "canary:achievement/unknown",
+                "tibia:achievement/allow_cookies",
+                "canary:item/allow_cookies",
+                "Allow Cookies?",
+            ],
+        )
+        self.assertEqual(report["bound_keys"], [])
+        self.assertEqual(len(report["unearnable_pending"]), 1)
+
+    def test_report_is_deterministic_and_bindings_are_deduplicated(self) -> None:
+        other = variant(
+            identity={**SAMPLE["identity"], "key": "oteryn:achievement/another"}
+        )
+        refs = ["canary:achievement/allow_cookies", "oteryn:achievement/allow_cookies"]
+        expected = v.coverage_report([SAMPLE, other], refs)
+        self.assertEqual(
+            expected, v.coverage_report([other, SAMPLE], list(reversed(refs)) * 2)
+        )
+        self.assertEqual(len(expected["bound_keys"]), 1)
+
+    def test_retired_bound_key_is_not_a_claim_of_earnability(self) -> None:
+        retired = variant(retired=True, points=0)
+        report = v.coverage_report([retired], [SAMPLE["identity"]["key"]])
+        self.assertEqual(report["retired_keys"], [SAMPLE["identity"]["key"]])
+        self.assertEqual(report["bound_keys"], [SAMPLE["identity"]["key"]])
+        self.assertEqual(
+            report["scope"], "SUPPLIED_INPUTS_ONLY_NOT_RUNTIME_EARNABILITY"
+        )
+        pending = v.coverage_report([retired], [])
+        self.assertEqual(
+            pending["unearnable_pending"][0]["status"], "UNEARNABLE_PENDING"
+        )
+
+    def test_text_and_provenance_do_not_classify_earning_family(self) -> None:
+        record = variant(
+            name="Level 100", description="Kill a boss, catch fish or finish a quest."
+        )
+        report = v.coverage_report([record], [])
+        self.assertIn(
+            "EARNING_FAMILY_UNCLASSIFIED", report["unearnable_pending"][0]["reason"]
+        )
+        self.assertEqual(
+            report["reason_families"],
+            ["quest_or_quest_step", "boss_or_encounter", "counter", "one_time_action"],
+        )
+        self.assertEqual(
+            report["unsupported_granters"],
+            ["quest-transition", "encounter-binding", "counter-threshold"],
+        )
+
+    def test_invalid_catalogue_never_has_positive_coverage(self) -> None:
+        for records in ([variant(points=4)], [SAMPLE, SAMPLE], [None]):
+            report = v.coverage_report(records, [SAMPLE["identity"]["key"]])
+            self.assertEqual(report, {"status": "INVALID_CATALOGUE"})
+
+    def test_cli_emits_pending_without_failing_valid_catalogue(self) -> None:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = v.main([str(ROOT / "synthetic-valid-achievement.json")])
+        self.assertEqual(result, 0)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["valid"], 1)
+        self.assertEqual(
+            report["coverage"]["unearnable_pending"][0]["status"], "UNEARNABLE_PENDING"
+        )
+
+    def test_cli_unbound_claim_fails_and_does_not_hide_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            claims = Path(directory) / "claims.json"
+            claims.write_text(
+                json.dumps(
+                    {
+                        "claims": [
+                            {
+                                "placements": [
+                                    {
+                                        "achievement": {
+                                            "key": "canary:achievement/unknown"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                )
+            )
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = v.main(
+                    [
+                        str(ROOT / "synthetic-valid-achievement.json"),
+                        "--chest-claims",
+                        str(claims),
+                    ]
+                )
+        self.assertEqual(result, 1)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["unbound_chest_refs"], ["canary:achievement/unknown"])
+        self.assertEqual(report["coverage"]["bound_keys"], [])
+        self.assertEqual(len(report["coverage"]["unearnable_pending"]), 1)
+
+    def test_cli_combines_only_placement_refs_across_claim_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            files = []
+            for index, document in enumerate(
+                [
+                    {
+                        "claims": [
+                            {
+                                "placements": [
+                                    {
+                                        "achievement": {
+                                            "key": "canary:achievement/allow_cookies"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "claims": [
+                            {
+                                "placements": [
+                                    {"achievement": {"key": SAMPLE["identity"]["key"]}}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "claims": [],
+                        "achievement_domain": {"achievement": "Allow Cookies?"},
+                        "thresholds": [{"achievement": SAMPLE["identity"]["key"]}],
+                    },
+                ]
+            ):
+                path = Path(directory) / f"claims-{index}.json"
+                path.write_text(json.dumps(document))
+                files.extend(["--chest-claims", str(path)])
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = v.main(
+                    [str(ROOT / "synthetic-valid-achievement.json"), *files]
+                )
+            self.assertEqual(result, 0)
+            report = json.loads(output.getvalue())
+            self.assertEqual(report["chest_refs"], 2)
+            self.assertEqual(
+                report["coverage"]["bound_keys"], [SAMPLE["identity"]["key"]]
+            )
+            self.assertEqual(report["coverage"]["unearnable_pending"], [])
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = v.main(
+                    [str(ROOT / "synthetic-valid-achievement.json"), *files[-2:]]
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(
+                json.loads(output.getvalue())["coverage"]["bound_keys"], []
+            )
+
+    def test_empty_catalogue_is_a_complete_empty_report(self) -> None:
+        report = v.coverage_report([], [])
+        self.assertEqual(report["bound_keys"], [])
+        self.assertEqual(report["unearnable_pending"], [])
+        self.assertEqual(report["retired_keys"], [])
 
 
 if __name__ == "__main__":

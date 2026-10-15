@@ -5,7 +5,10 @@ Usage: python validate_achievements.py RECORDS.json [RECORDS.json ...] [--chest-
 Each file holds one record, a list of records or a catalogue shard ({"family": "Achievement", "records": [...]}); all files together form one catalogue, so keys must be
 unique across them. The key is checked for format only: it is allocated once (allocate_key) and kept. With --chest-claims, every
 placement achievement of those RewardClaim documents must bind to a catalogue key (contract §2.2, §3.3). Prints one JSON report;
-the exit code is 1 when a record is invalid or a chest ref is unbound.
+the exit code is 1 when a record is invalid or a chest ref is unbound. Coverage is scoped to these supplied
+inputs, not world admission or runtime earnability. A missing binding is UNEARNABLE_PENDING (§4 of
+ACHIEVEMENT0); it does not invalidate an otherwise valid catalogue. Transition, encounter and threshold
+inputs are not admitted by this tool yet. Earning families cannot be inferred from catalogue text.
 """
 
 from __future__ import annotations
@@ -119,6 +122,53 @@ def unbound_refs(refs: list[str], records: list[dict]) -> list[str]:
     return [ref for ref in refs if bind_ref(ref, keys) is None]
 
 
+def coverage_report(records: list[dict], claim_refs: list[str]) -> dict:
+    """ACHIEVEMENT0 §4: missing granters in the supplied, supported content inputs.
+
+    `claim_refs` comes only from RewardClaim placements (the existing --chest-claims
+    input). A bound key proves a content reference, not a runnable/admitted world
+    or a durable grant. Retired keys still bind but can never earn (§3.5).
+
+    §2's earning families are listed explicitly. The catalogue has no earning
+    family field, so selecting one from a name, description or provenance would
+    invent a mapping. Every pending reason therefore remains unclassified until
+    the owning content supplies it. Unsupported granters cannot count as covered.
+    """
+    if validate(records)["invalid"]:
+        return {"status": "INVALID_CATALOGUE"}
+    keys = {record["identity"]["key"] for record in records}
+    bound = {key for ref in claim_refs if (key := bind_ref(ref, keys)) is not None}
+    return {
+        "scope": "SUPPLIED_INPUTS_ONLY_NOT_RUNTIME_EARNABILITY",
+        "supported_granters": ["reward-claim"],
+        "unsupported_granters": [
+            "quest-transition",
+            "encounter-binding",
+            "counter-threshold",
+        ],
+        "reason_families": [
+            "quest_or_quest_step",
+            "boss_or_encounter",
+            "counter",
+            "one_time_action",
+        ],
+        "bound_keys": sorted(bound),
+        "retired_keys": sorted(
+            record["identity"]["key"]
+            for record in records
+            if record.get("retired", False)
+        ),
+        "unearnable_pending": [
+            {
+                "key": key,
+                "status": "UNEARNABLE_PENDING",
+                "reason": "NO_ADMITTED_GRANTER; EARNING_FAMILY_UNCLASSIFIED",
+            }
+            for key in sorted(keys - bound)
+        ],
+    }
+
+
 def load(paths: list[Path]) -> list[dict]:
     records = []
     for path in paths:
@@ -144,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     records = load(args.records)
     report = validate(records)
+    refs = []
     if args.chest_claims:
         refs = sorted(
             {
@@ -154,6 +205,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         report["chest_refs"] = len(refs)
         report["unbound_chest_refs"] = unbound_refs(refs, records)
+    report["coverage"] = coverage_report(records, refs)
     print(json.dumps(report, indent=1, sort_keys=True))
     return 1 if report["invalid"] or report.get("unbound_chest_refs") else 0
 

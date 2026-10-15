@@ -38,9 +38,13 @@ ACH-QUEST-1, ACH-ENC-1 (hard), ACH-COUNTER-1, ACH-COVERAGE-1 (content tooling). 
 | ENC-OUTCOME-1 (ACH-ENC-1) | BLOCKING |
 | XP receipt; SKILLS-0 build receipts (ACH-COUNTER-1) | verify |
 | FND-02 / ACH-NOTIFY-1 | MERGED |
-| acceptance of ACHIEVEMENT0 (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of ACHIEVEMENT0 | ACCEPTED by ACCEPT-BATCH-2026-10-15 §1 (#2209, integrated main `e2da9805d296a27b06b32335bf67394509d4910b`, control-plane verified) |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
+
+ACH-COVERAGE-1 has **no dependencies** in the accepted brief's child graph. The
+family/runtime dependencies above do not block this separately allocated tooling
+slice and remain applicable to their respective runtime children.
 
 ## owned_paths (builder edits freely)
 
@@ -113,3 +117,42 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## ACH-COVERAGE-1 local preparation (2026-10-15, draft #2154)
+
+- One writer, branch `skeleton/ach-1`, starting HEAD
+  `1c8d0dbdd9ac7e2ecd6c7e03eb189b4b74996d46`; only the two allocated Python
+  files and this record changed. No runtime, migration, registration, generated
+  content, catalogue or pin changes; publication remains with the control plane.
+- Effective authority: ACHIEVEMENT0 §4, accepted through #2209. Its report
+  "lists every catalogue key with no granter in any admitted content (claim,
+  transition, encounter binding or threshold)"; "Such a key is
+  `UNEARNABLE_PENDING`"; "No admin, script or migration grant substitutes for
+  content." §2 names quest/quest-step, boss/encounter, counter, and one-time-action
+  earning families. The accepted source was read on main; this older draft's
+  historical CANDIDATE header does not override the integrated acceptance.
+- The CLI now always adds `coverage`, scoped explicitly to the supplied supported
+  inputs. Existing record counts, validation errors, slug/explicit-owner bindings,
+  chest-ref counts and failure exit semantics remain. Missing content bindings
+  are reportable pending records and do not fail an otherwise valid catalogue.
+- `bound_keys` means a matching RewardClaim placement reference only, never runtime
+  earnability or world admission. `retired_keys` remains explicit even when a key
+  binds: retired grants remain no-ops under the existing contract. Every key with
+  no supplied binding, including a retired key, is listed as `UNEARNABLE_PENDING`.
+  An invalid/duplicate-key catalogue reports `INVALID_CATALOGUE` instead of
+  positive coverage. Sorted keys and deduplicated bindings make output stable.
+- **Scope limit / cross_domain_findings:** the current CLI admits catalogue and
+  RewardClaim documents only. The existing quest transition schema has no
+  achievement field; the Tirecz manifest has name-only `outcome_evidence`, not a
+  keyed admitted achievement consumer; this validator has no admitted threshold
+  input. Transition, encounter-binding and counter-threshold granters therefore
+  remain explicitly unsupported. No new schemas, counter owners, thresholds,
+  event maps or name-derived bindings were invented.
+- The catalogue schema carries no earning-family/condition field. Descriptions,
+  names, Premium/secret flags and external provenance cannot supply that authority.
+  Pending reasons are explicitly `NO_ADMITTED_GRANTER;
+  EARNING_FAMILY_UNCLASSIFIED`, with all four §2 families listed in the report.
+  Exact per-key family reasons and whole-world coverage need the owning admitted
+  content/family facts; they are not claimed complete by this supported-input slice.
+- Local evidence and reproducible commands live outside the repository in
+  `/workspace/oteryn-prep/ach-1-evidence/`. No Rust build is needed for this slice.
