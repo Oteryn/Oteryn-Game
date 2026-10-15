@@ -22,6 +22,8 @@ owned_paths:
   - crates/protocol-oteryn/src/presentation_tests.rs
   - crates/protocol-oteryn/src/actor_spell.rs
   - crates/protocol-oteryn/src/lib.rs
+  - apps/game-server/src/gameplay_transport/capabilities.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - docs/contracts/protocol-oteryn/v1/presentation_v1.proto
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
@@ -69,7 +71,7 @@ Wire only: no emitter, no runtime, nothing offered.
 - `python -m unittest discover -s tools/agents/tests`: pass (124)
 - `python tools/repository/validate_repository_policy.py`: pass
 - `git diff --check`: pass
-- `cargo test -p oteryn-game-server`: left to CI (the local build was killed for memory)
+- `cargo test -p oteryn-game-server --lib gameplay_transport::capabilities`: pass
 
 ## Review
 
@@ -79,4 +81,6 @@ Wire only: no emitter, no runtime, nothing offered.
 - Codex on ec6f77a3, one P2 fixed: the SPELL-D1 index is no longer capped at 65,535. `spell_words`
   takes any nonzero `uint32`; a cooldown spell id is at most 2^28 - 1, the largest that keeps an
   entry within `SPELLPRES0-RL-05` (16 bytes).
+- Merge Queue on f5da9198: the game-server gate table lacked capability 23. Domains 19 and 20
+  are now gated by it (`capabilities.rs`), matching the registry.
 - Capability renumbered from 20 to 23 on the control plane's lease (6e2744b3).
