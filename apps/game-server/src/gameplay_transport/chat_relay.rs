@@ -11,7 +11,8 @@
 //! root's verified endpoint and credentials. Each of its connections sets
 //! `log_parameter_max_length_on_error = 0` and requires `log_parameter_max_length = 0`, so no
 //! sealed line reaches a server log; a node whose database does not assert both is not ready and
-//! answers `CHAT_UNAVAILABLE`. A node that is not listening, or whose notification queue is over
+//! answers `CHAT_UNAVAILABLE`. A configuration reload can change the setting of an open session,
+//! so the listener checks it every tick and each send checks it on its own connection first. A node that is not listening, or whose notification queue is over
 //! half full, refuses room and private lines the same way.
 //!
 //! Nothing here logs or stores chat text, sender or recipient (FND-02 §20): failures are counted
@@ -146,11 +147,7 @@ fn relay_pool(options: PgConnectOptions) -> PgPool {
                 connection
                     .execute("SET log_parameter_max_length_on_error = 0")
                     .await?;
-                let logged: String =
-                    sqlx::query_scalar("SELECT current_setting('log_parameter_max_length')")
-                        .fetch_one(&mut *connection)
-                        .await?;
-                if logged != "0" {
+                if !logs_no_parameters(connection).await? {
                     return Err(sqlx::Error::Configuration(
                         "chat relay connection may log bind parameters".into(),
                     ));
@@ -159,6 +156,18 @@ fn relay_pool(options: PgConnectOptions) -> PgPool {
             })
         })
         .connect_lazy_with(options)
+}
+
+/// Whether `connection` logs no bind parameter now. A configuration reload reaches a session after
+/// its current command and can raise `log_parameter_max_length`, so a check at connect alone is not
+/// enough: the listener repeats it every tick and each send repeats it on its own connection.
+const LOGS_NO_PARAMETERS: &str = "SELECT current_setting('log_parameter_max_length') = '0' \
+     AND current_setting('log_parameter_max_length_on_error') = '0'";
+
+async fn logs_no_parameters(connection: &mut sqlx::PgConnection) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(LOGS_NO_PARAMETERS)
+        .fetch_one(connection)
+        .await
 }
 
 /// Why the listener stops and reconnects. Never carries a database error's text.
@@ -246,12 +255,21 @@ impl ChatRelay {
             RelayError::Oversized => ChatDisposition::Rejected,
             _ => ChatDisposition::ChatUnavailable,
         })?;
-        let notify = sqlx::query("SELECT pg_notify($1, $2)")
-            .bind(&self.channel)
-            .bind(&sealed)
-            .execute(&self.pool);
+        // The precondition is checked again on the connection that sends, right before the line.
+        let notify = async {
+            let mut connection = self.pool.acquire().await?;
+            if !logs_no_parameters(&mut connection).await? {
+                return Ok(false);
+            }
+            sqlx::query("SELECT pg_notify($1, $2)")
+                .bind(&self.channel)
+                .bind(&sealed)
+                .execute(&mut *connection)
+                .await
+                .map(|_| true)
+        };
         match tokio::time::timeout(SEND_TIMEOUT, notify).await {
-            Ok(Ok(_)) => Ok(()),
+            Ok(Ok(true)) => Ok(()),
             _ => Err(ChatDisposition::ChatUnavailable),
         }
     }
@@ -341,12 +359,15 @@ impl ChatRelay {
     ) -> Result<(), Lost> {
         let row = sqlx::query(
             "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint AS now, \
-             pg_notification_queue_usage() AS usage",
+             pg_notification_queue_usage() AS usage, \
+             current_setting('log_parameter_max_length') = '0' \
+             AND current_setting('log_parameter_max_length_on_error') = '0' AS quiet",
         )
         .fetch_one(&mut *listener)
         .await?;
         let now = u64::try_from(row.try_get::<i64, _>("now")?).map_err(|_| Lost)?;
         let usage: f64 = row.try_get("usage")?;
+        let quiet: bool = row.try_get("quiet")?;
         let read_at = Instant::now();
         if let Some(window) = window.as_mut().filter(|_| reconnect) {
             window.reconnected(now);
@@ -379,9 +400,10 @@ impl ChatRelay {
         // Sends are stamped with the window's clock, and the relay is not ready until the window
         // admits what it stamps: after a start, a reconnect or a database clock stepped back a
         // send would otherwise return OK and be dropped here.
+        // A reload that lets the server log bind parameters makes the node not ready on this tick.
         let clock = window
             .admitting_clock(now)
-            .filter(|_| usage <= QUEUE_USAGE_MAX);
+            .filter(|_| quiet && usage <= QUEUE_USAGE_MAX);
         *self.clock.lock().map_err(|_| Lost)? = clock.map(|clock| (clock, read_at));
         Ok(())
     }

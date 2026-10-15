@@ -103,7 +103,7 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 5 repair: `--lib -- chat npc` against PostgreSQL 17, 170 passed), 145 passed, including the two-node relay exchange,
+  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 6 repair: `--lib -- chat npc` against PostgreSQL 17, 170 passed), 145 passed, including the two-node relay exchange,
   the lease row and the not-ready-when-logging tests
 - `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
   33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
@@ -144,6 +144,9 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   while ready. (P1): a reconnect floor came from the raw reading, so after a database clock
   stepped back during an outage a line stamped near the old readings could be replayed. Fixed:
   the floor follows the newest reading ever seen (`read_high`), which does not compound.
+- round 6 (P1): the bind-parameter logging precondition was checked only at connect, but a
+  configuration reload reaches open sessions. Fixed: the listener checks it every tick (not ready
+  otherwise) and each send checks it on its own connection right before `pg_notify`.
 
 ## PR and closeout
 
