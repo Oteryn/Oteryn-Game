@@ -2,8 +2,9 @@
 //!
 //! It is the projection of the validated v2 behaviour authoring (`ProjectV2BehaviorAuthoring`)
 //! onto what the think consumes: `targeting` (all fields), `movement.wander`, `attacks[]` and
-//! `defenses[]`, with the Ability profiles those entries name. `summons`, `voices`, periodic
-//! audio and event bindings are not projected (MONSTER-SUMMON-1 and later decisions). The carrier
+//! `defenses[]`, with the Ability profiles those entries name. The legacy projection omits
+//! `summons`; the explicit owner-schedule projection retains them without activating the think.
+//! Voices, periodic audio and event bindings are not projected. The carrier
 //! holds one per creature, given at admission; a creature without one is refused
 //! (`PROFILE_MISSING`) and never defaulted. This module holds no profile literal: every value
 //! arrives from content (or, until SPAWN-1a, from test data).
@@ -13,7 +14,10 @@
 
 use std::collections::BTreeMap;
 
-use crate::ai_think::profile_schedule::{MAX_ATTACK_ENTRIES, MAX_DEFENCE_ENTRIES, validate_entry};
+use crate::ai_think::profile_schedule::{
+    MAX_ATTACK_ENTRIES, MAX_DEFENCE_ENTRIES, MAX_MONSTER_SUMMONS, MAX_SUMMON_ENTRIES,
+    ScheduleError, validate_entry,
+};
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2AbilityKind, ProjectV2BehaviorAuthoring,
     ProjectV2DefinitionRef, ProjectV2Targeting, ProjectV2Wander,
@@ -31,6 +35,14 @@ pub enum ProfileRefusal {
     /// `PROFILE_INVALID`: above `RL-07`, a malformed or unresolved entry, a melee entry in
     /// `defenses[]`, a melee entry without a magnitude, or more than one melee entry.
     Invalid,
+}
+
+/// Typed refusal shared by the explicit owner schedule adapter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum OwnerProfileError {
+    StaleOwner,
+    StaleActor,
+    Schedule(ScheduleError),
 }
 
 /// The melee entry ATTACK-1's swing swings (§1.5); the think never casts it.
@@ -53,6 +65,29 @@ pub struct CreatureBehaviourProfile {
 }
 
 impl CreatureBehaviourProfile {
+    /// Explicit projection for the owner schedule adapter, retaining authored summons.
+    /// `project` remains the legacy no-summons think projection until its shared
+    /// `prepare_with_summons`/report seam is integrated. This does not qualify
+    /// Creature references or install any actor; the native catalog/owner does that.
+    /// Full summon entry semantics are checked by the existing schedule consumer.
+    pub(crate) fn project_with_summons(
+        behavior: Option<&ProjectV2BehaviorAuthoring>,
+        abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+    ) -> Result<Self, ProfileRefusal> {
+        let behavior = behavior.ok_or(ProfileRefusal::Missing)?;
+        if behavior.summons.as_ref().is_some_and(|summons| {
+            summons.entries.is_empty()
+                || summons.entries.len() > MAX_SUMMON_ENTRIES
+                || summons.max_summons == 0
+                || summons.max_summons > MAX_MONSTER_SUMMONS
+        }) {
+            return Err(ProfileRefusal::Invalid);
+        }
+        let mut profile = Self::project(Some(behavior), abilities)?;
+        profile.behavior.summons.clone_from(&behavior.summons);
+        Ok(profile)
+    }
+
     /// Projects and validates `behavior`. `None` is `PROFILE_MISSING`; any refusal leaves no
     /// state behind.
     pub fn project(

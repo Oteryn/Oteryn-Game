@@ -8,7 +8,8 @@
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
-use super::behaviour_profile::{CreatureBehaviourProfile, ProfileRefusal};
+use super::behaviour_profile::{CreatureBehaviourProfile, OwnerProfileError, ProfileRefusal};
+use super::profile_schedule::{MonsterSummonFacts, ProfileScheduleInput, SchedulePlan};
 use super::targeting::{self, TargetCandidate};
 use super::{
     CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW, CREATUREAI1_WAKE_CANDIDATES,
@@ -18,9 +19,48 @@ use crate::ability::RevisionSet;
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef,
 };
-use crate::foundation::{CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use crate::foundation::{
+    CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1,
+    RuntimeWorkStamp, ScopeRuntimeFence,
+};
 use crate::movement::interest::tibia_floor;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
+
+impl CreatureAiState {
+    /// Explicit schedule-only path, using this actor's one existing schedule state.
+    /// The live legacy `think` is unchanged. A caller must not run both paths for
+    /// one occurrence: native schedule replay/conflict checks remain authoritative.
+    /// Inputs are proposals/facts, never permission to realize an actor or Ability.
+    /// The future single-pass think integration must supply its selected target and
+    /// projected profile here, then return both proposal lists without a second draw.
+    pub(crate) fn prepare_owner_profile(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        current: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        input: ProfileScheduleInput<'_>,
+        summon_facts: Option<&MonsterSummonFacts>,
+    ) -> Result<SchedulePlan, OwnerProfileError> {
+        let binding = runtime.binding();
+        if !current.is_current_for_scope(
+            RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(OwnerProfileError::StaleOwner);
+        }
+        if !runtime.contains_live_creature(input.occurrence.actor)
+            || input
+                .target
+                .is_some_and(|target| runtime.read_actor_position(target.actor).is_err())
+        {
+            return Err(OwnerProfileError::StaleActor);
+        }
+        self.schedule
+            .prepare_with_summons(input, summon_facts)
+            .map_err(OwnerProfileError::Schedule)
+    }
+}
 
 impl CreatureAiTable {
     /// Admits live creature `actor` of `runtime` to thinking with its projected behaviour
