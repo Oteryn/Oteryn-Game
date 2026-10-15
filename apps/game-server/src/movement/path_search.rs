@@ -6,7 +6,8 @@
 //! occupied tile); ties by lowest total, then lowest estimate, then neighbour order, then
 //! discovery order; at most `AI01-PATH-SEARCH-WORK` (1,024) expansions and `AI01-ROUTE-STEPS`
 //! (128) steps, within the caller's search distance (Chebyshev, 12 tiles for a chase). The goal
-//! is the nearest tile at Chebyshev distance 1 from the target. A search state is a tile and the
+//! is either the nearest tile at Chebyshev distance 1 from the target (chase), or the exact
+//! spawn cell (walk back, within 50 tiles). A search state is a tile and the
 //! steps taken to it, so a cheaper but longer label never hides a dearer, shorter one the step
 //! bound still admits. Which tiles are path tiles and what they cost is the caller's; the search
 //! never changes floors. How often a search may run is the caller's budget.
@@ -28,6 +29,8 @@ pub(crate) const ROUTE_STEPS: usize = 128;
 /// `RANGED0-RL-05` (RANGED-0 §8, CREATURE-AI-0 §5.3): the 12-tile search distance of a chase,
 /// from the start (Chebyshev).
 pub(crate) const CHASE_SEARCH_DISTANCE: i32 = 12;
+/// CREATURE-MOVE-1 §1.4: walk back searches within the 50-tile leash distance.
+const WALK_BACK_SEARCH_DISTANCE: i32 = 50;
 /// The extra cost of a path tile another actor stands on (CREATURE-AI-0 §5.3 "+40 over a
 /// creature"; a player is a creature of the path profile).
 pub(crate) const CREATURE_COST: u32 = 40;
@@ -54,6 +57,12 @@ struct SearchBounds {
     distance: i32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SearchGoal {
+    NextTo,
+    Cell,
+}
+
 pub(crate) const fn delta(step: CardinalStep) -> (i32, i32) {
     match step {
         CardinalStep::North => (0, -1),
@@ -69,23 +78,26 @@ pub(crate) fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) 
     dx.max(dy)
 }
 
-/// The fewest cardinal steps from `at` to a tile at Chebyshev distance 1 from `target`, times
-/// the step cost: admissible and consistent for the goal set.
-fn estimate(at: MovementLocalPosition, target: MovementLocalPosition) -> u32 {
+/// The fewest cardinal steps to the goal set, times the step cost: admissible and consistent.
+fn estimate(at: MovementLocalPosition, target: MovementLocalPosition, goal: SearchGoal) -> u32 {
     let dx = (i64::from(target.x) - i64::from(at.x)).unsigned_abs();
     let dy = (i64::from(target.y) - i64::from(at.y)).unsigned_abs();
-    let steps = if dx == 0 && dy == 0 {
-        1
-    } else {
-        dx.saturating_sub(1).saturating_add(dy.saturating_sub(1))
+    let steps = match goal {
+        SearchGoal::Cell => dx.saturating_add(dy),
+        SearchGoal::NextTo if dx == 0 && dy == 0 => 1,
+        SearchGoal::NextTo => dx.saturating_sub(1).saturating_add(dy.saturating_sub(1)),
     };
     u32::try_from(steps)
         .unwrap_or(u32::MAX)
         .saturating_mul(STEP_COST)
 }
 
-fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition) -> bool {
-    at.floor == target.floor && chebyshev(at, target) == 1
+fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition, goal: SearchGoal) -> bool {
+    at.floor == target.floor
+        && match goal {
+            SearchGoal::NextTo => chebyshev(at, target) == 1,
+            SearchGoal::Cell => at == target,
+        }
 }
 
 /// The route from `start` to the nearest tile at Chebyshev distance 1 from `target` on the same
@@ -102,6 +114,7 @@ pub(crate) fn route_next_to(
     search(
         start,
         target,
+        SearchGoal::NextTo,
         SearchBounds {
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
@@ -111,16 +124,40 @@ pub(crate) fn route_next_to(
     )
 }
 
+/// Walk back to the exact spawn cell using the same bounded search and Movement-supplied
+/// admission/cost callback as chase. `None` means no route within the bounds; the owning think
+/// then idles in place until the next wake (CREATURE-MOVE-1 §1.5). An empty route means arrival.
+/// This returns only steps: it does not adopt a path, schedule work, relocate or grant Movement
+/// authority. The owner must still revalidate every step at execution.
+pub(crate) fn route_to_cell(
+    start: MovementLocalPosition,
+    spawn: MovementLocalPosition,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> Option<Vec<CardinalStep>> {
+    search(
+        start,
+        spawn,
+        SearchGoal::Cell,
+        SearchBounds {
+            work: PATH_SEARCH_WORK,
+            route_steps: ROUTE_STEPS,
+            distance: WALK_BACK_SEARCH_DISTANCE,
+        },
+        tile_cost,
+    )
+}
+
 fn search(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
+    goal: SearchGoal,
     bounds: SearchBounds,
     mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
     if start.floor != target.floor {
         return None;
     }
-    if is_goal(start, target) {
+    if is_goal(start, target, goal) {
         return Some(Vec::new());
     }
     // Open entries are ordered by (total, estimate, neighbour order, discovery order).
@@ -142,8 +179,8 @@ fn search(
     best.insert((start.x, start.y, 0), (0, None));
     labels.insert((start.x, start.y), vec![(0, 0)]);
     open.push(Reverse((
-        estimate(start, target),
-        estimate(start, target),
+        estimate(start, target, goal),
+        estimate(start, target, goal),
         0_u8,
         0_u64,
         start.x,
@@ -165,7 +202,7 @@ fn search(
             y,
             floor: start.floor,
         };
-        if is_goal(at, target) {
+        if is_goal(at, target, goal) {
             return route_to(&best, (start.x, start.y, 0), (x, y, steps));
         }
         expansions += 1;
@@ -209,7 +246,7 @@ fn search(
                 (next_cost, Some((step, (x, y, steps)))),
             );
             discovered += 1;
-            let h = estimate(next, target);
+            let h = estimate(next, target, goal);
             open.push(Reverse((
                 next_cost.saturating_add(h),
                 h,
@@ -374,7 +411,7 @@ mod tests {
             route_steps: 4,
             distance: i32::MAX,
         };
-        let route = search(at(0, 0), at(5, 0), bounds, cost).unwrap();
+        let route = search(at(0, 0), at(5, 0), SearchGoal::NextTo, bounds, cost).unwrap();
         assert_eq!(route, vec![CardinalStep::East; 4]);
         assert_eq!(walk(at(0, 0), &route[..1]), creature);
     }
@@ -389,9 +426,13 @@ mod tests {
             route_steps: usize::MAX,
             distance: i32::MAX,
         };
-        let route = search(at(0, 0), at(1_025, 0), bounds, corridor).map(|r| r.len());
+        let route =
+            search(at(0, 0), at(1_025, 0), SearchGoal::NextTo, bounds, corridor).map(|r| r.len());
         assert_eq!(route, Some(1_024), "1,024 expansions reach (1024, 0)");
-        assert_eq!(search(at(0, 0), at(1_026, 0), bounds, corridor), None);
+        assert_eq!(
+            search(at(0, 0), at(1_026, 0), SearchGoal::NextTo, bounds, corridor),
+            None
+        );
     }
 
     #[test]
@@ -408,6 +449,7 @@ mod tests {
         let route = search(
             at(0, 0),
             far(PATH_SEARCH_WORK),
+            SearchGoal::NextTo,
             unbounded(PATH_SEARCH_WORK),
             corridor,
         );
@@ -416,6 +458,7 @@ mod tests {
             search(
                 at(0, 0),
                 far(PATH_SEARCH_WORK + 1),
+                SearchGoal::NextTo,
                 unbounded(PATH_SEARCH_WORK),
                 corridor,
             ),
@@ -433,5 +476,135 @@ mod tests {
         };
         assert_eq!(chase(at(0, 0), at(12, 0), unreachable), None);
         assert!(calls <= 4 * PATH_SEARCH_WORK, "{calls} tile reads");
+    }
+
+    #[test]
+    fn creature_walk_back_reaches_the_cell_instead_of_stopping_adjacent() {
+        assert_eq!(route_to_cell(at(0, 0), at(0, 0), open), Some(vec![]));
+        assert_eq!(
+            route_to_cell(at(0, 0), at(1, 0), open),
+            Some(vec![CardinalStep::East])
+        );
+        let route = route_to_cell(at(0, 0), at(3, 0), open).unwrap();
+        assert_eq!(walk(at(0, 0), &route), at(3, 0));
+        // Keep the accepted player chase's adjacent goal unchanged.
+        assert_eq!(chase(at(0, 0), at(3, 0), open).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn creature_walk_back_uses_the_same_admission_and_deterministic_tie_order() {
+        let wall = |cell| (cell != at(1, 0)).then_some(0);
+        let expected = vec![
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::East,
+            CardinalStep::South,
+        ];
+        for _ in 0..8 {
+            assert_eq!(
+                route_to_cell(at(0, 0), at(2, 0), wall),
+                Some(expected.clone())
+            );
+        }
+        let closed_spawn = |cell| (cell != at(2, 0)).then_some(0);
+        assert_eq!(route_to_cell(at(0, 0), at(2, 0), closed_spawn), None);
+        assert_eq!(
+            route_to_cell(
+                at(0, 0),
+                MovementLocalPosition {
+                    floor: 8,
+                    ..at(2, 0)
+                },
+                open
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn creature_walk_back_has_the_fifty_tile_bound_and_shared_work_limit() {
+        assert_eq!(route_to_cell(at(0, 0), at(50, 0), open).unwrap().len(), 50);
+        assert_eq!(route_to_cell(at(0, 0), at(51, 0), open), None);
+        let mut reads = 0;
+        let sealed = |cell| {
+            reads += 1;
+            (chebyshev(cell, at(50, 0)) > 1).then_some(0)
+        };
+        assert_eq!(route_to_cell(at(0, 0), at(50, 0), sealed), None);
+        assert!(reads <= PATH_SEARCH_WORK * 4);
+    }
+
+    #[test]
+    fn creature_field_stub_cost_is_180_in_addition_to_occupied_cost() {
+        // No field owner exists yet: the caller supplies only this test stub term.
+        // Two corridors: straight (3 steps) or around the rectangle (9 steps). Occupancy
+        // alone costs 30 + 40 < 90; adding the field makes the detour cheaper (250 > 90).
+        let cost = |field| {
+            move |cell: MovementLocalPosition| {
+                let corridor = (0..=3).contains(&cell.x)
+                    && (-3..=0).contains(&cell.y)
+                    && (cell.y == 0 || cell.y == -3 || cell.x == 0 || cell.x == 3);
+                corridor.then_some(if cell == at(1, 0) {
+                    CREATURE_COST + field
+                } else {
+                    0
+                })
+            }
+        };
+        assert_eq!(
+            route_to_cell(at(0, 0), at(3, 0), cost(0)),
+            Some(vec![CardinalStep::East; 3])
+        );
+        let route = route_to_cell(at(0, 0), at(3, 0), cost(180)).unwrap();
+        assert_eq!(route.len(), 9);
+        let mut position = at(0, 0);
+        for step in route {
+            position = walk(position, &[step]);
+            assert_ne!(position, at(1, 0));
+        }
+        assert_eq!(position, at(3, 0));
+    }
+
+    #[test]
+    fn creature_exact_goal_keeps_both_the_route_and_expansion_limits() {
+        let corridor = |cell: MovementLocalPosition| (cell.y == 0).then_some(0);
+        let bounds = SearchBounds {
+            work: PATH_SEARCH_WORK,
+            route_steps: ROUTE_STEPS,
+            distance: i32::MAX,
+        };
+        let route = search(at(0, 0), at(128, 0), SearchGoal::Cell, bounds, corridor);
+        assert_eq!(route.unwrap().len(), 128);
+        assert_eq!(
+            search(at(0, 0), at(129, 0), SearchGoal::Cell, bounds, corridor),
+            None
+        );
+        // Vary only the route bound to isolate the work cap.
+        let work_bounds = SearchBounds {
+            route_steps: usize::MAX,
+            ..bounds
+        };
+        assert_eq!(
+            search(
+                at(0, 0),
+                at(1_024, 0),
+                SearchGoal::Cell,
+                work_bounds,
+                corridor
+            )
+            .unwrap()
+            .len(),
+            1_024
+        );
+        assert_eq!(
+            search(
+                at(0, 0),
+                at(1_025, 0),
+                SearchGoal::Cell,
+                work_bounds,
+                corridor
+            ),
+            None
+        );
     }
 }
