@@ -183,7 +183,7 @@ pub fn prepare_house_query(
         actor,
         world,
         catalogue_town,
-        cursor: query.cursor,
+        cursor: query.cursor.filter(|cursor| !cursor.is_empty()),
     })
 }
 

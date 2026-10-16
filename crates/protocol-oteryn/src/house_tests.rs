@@ -504,7 +504,7 @@ fn query() -> HouseQuery {
 }
 #[test]
 fn query_round_trip_preserves_opaque_cursor_and_absence() {
-    for cursor in [None, Some(vec![0, 255, 128])] {
+    for cursor in [None, Some(vec![]), Some(vec![0, 255, 128])] {
         let value = HouseQuery { cursor, ..query() };
         assert_eq!(
             decode_house_query(&encode_house_query(&value).unwrap()),
@@ -549,7 +549,7 @@ fn query_rejects_missing_duplicate_unknown_wrong_wire_and_invalid_identity() {
     assert!(decode_house_query(&valid[..valid.len() - 1]).is_err());
 }
 #[test]
-fn query_proposed_byte_bound_is_exact_and_each_field_fails_closed() {
+fn query_approved_byte_bound_is_exact_and_each_field_fails_closed() {
     let value = HouseQuery {
         catalogue_town: "x".repeat(MAX_HOUSE_QUERY_TOWN_BYTES),
         cursor: Some(vec![255; MAX_HOUSE_QUERY_CURSOR_BYTES]),
@@ -559,12 +559,13 @@ fn query_proposed_byte_bound_is_exact_and_each_field_fails_closed() {
     assert_eq!(bytes.len(), 1048);
     assert!(bytes.len() <= MAX_HOUSE_QUERY_BYTES);
     assert_eq!(decode_house_query(&bytes), Ok(value));
-    for cursor in [
-        Some(vec![]),
-        Some(vec![0; MAX_HOUSE_QUERY_CURSOR_BYTES + 1]),
-    ] {
-        assert!(encode_house_query(&HouseQuery { cursor, ..query() }).is_err());
-    }
+    assert!(
+        encode_house_query(&HouseQuery {
+            cursor: Some(vec![0; MAX_HOUSE_QUERY_CURSOR_BYTES + 1]),
+            ..query()
+        })
+        .is_err()
+    );
     assert!(
         encode_house_query(&HouseQuery {
             catalogue_town: String::new(),
@@ -582,5 +583,63 @@ fn query_proposed_byte_bound_is_exact_and_each_field_fails_closed() {
     assert_eq!(
         decode_house_query(&vec![0; MAX_HOUSE_QUERY_BYTES + 1]),
         Err(HouseWireError::LimitExceeded)
+    );
+}
+
+#[test]
+fn query_decode_accepts_1048_and_refuses_1049_field_overflow_or_unknown_tag() {
+    let mut bytes = Vec::new();
+    push_message_field(&mut bytes, 1, query().world_id.as_bytes());
+    push_message_field(&mut bytes, 2, &vec![b'x'; MAX_HOUSE_QUERY_TOWN_BYTES]);
+    let prefix = bytes.clone();
+    push_message_field(&mut bytes, 3, &vec![255; MAX_HOUSE_QUERY_CURSOR_BYTES]);
+    assert_eq!(bytes.len(), 1048);
+    assert_eq!(
+        decode_house_query(&bytes).unwrap().cursor.unwrap().len(),
+        512
+    );
+
+    let mut overflow = prefix;
+    push_message_field(
+        &mut overflow,
+        3,
+        &vec![255; MAX_HOUSE_QUERY_CURSOR_BYTES + 1],
+    );
+    assert_eq!(overflow.len(), 1049);
+    assert_eq!(
+        decode_house_query(&overflow),
+        Err(HouseWireError::LimitExceeded)
+    );
+
+    let mut unknown = bytes;
+    unknown.push(32); //unknown field4 varint, with missingvalue; no silent trailingbyte acceptance
+    assert_eq!(unknown.len(), 1049);
+    assert!(decode_house_query(&unknown).is_err());
+}
+
+#[test]
+fn query_empty_cursor_is_first_page_data_but_duplicate_empty_tag_is_malformed() {
+    let request = HouseQuery {
+        cursor: Some(vec![]),
+        ..query()
+    };
+    let bytes = encode_house_query(&request).unwrap();
+    assert_eq!(decode_house_query(&bytes), Ok(request));
+    let mut duplicate = bytes;
+    push_message_field(&mut duplicate, 3, &[]);
+    assert_eq!(
+        decode_house_query(&duplicate),
+        Err(HouseWireError::Malformed)
+    );
+
+    let mut nonempty_after_empty = encode_house_query(&HouseQuery {
+        cursor: Some(vec![]),
+        ..query()
+    })
+    .unwrap();
+    push_message_field(&mut nonempty_after_empty, 3, &[1]);
+    assert_eq!(
+        decode_house_query(&nonempty_after_empty),
+        Err(HouseWireError::Malformed)
     );
 }

@@ -58,9 +58,10 @@ Prior direct-rustc255/6 evidence below applies only to3142194 and is historical.
 This source generation's compile, Clippy and test execution are NOT_RUN. Exact
 Rustfmt1.94 and full whitespace checks pass. Independent Medium source review
 passed the complete six-path batch, including target binding and byte bounds.
-HOUSE_QUERY town/cursor/projection, guild ACL tags from#2153, full revisioned writer
-integration, A2 activation and client panel after#1942 remain NOT_IMPLEMENTED.
-Layout/bounds require independent protocol review; no complete feature claim.
+HOUSE_QUERY request town/cursor codec and inactive preparation are authored; request tags/bounds
+are approved by D1261. Response/projection/native privacy read, guild ACL tags from#2153, full
+revisioned writer integration, A2 activation and client panel after#1942 remain NOT_IMPLEMENTED.
+Intent layout/bounds still require independent protocol review; no complete feature claim.
 
 ## Goal
 
@@ -300,7 +301,7 @@ not a newly invented TownId. Transport validates native production-key syntax/pr
 current actor World while retaining the exact CommandRef/actor; this is immutable request data.
 Existing HOUSE_INTENT encoding/preparation remains unchanged.
 
-Field tags1/2/3 and technical caps town512B/cursor512B/body1056B are protocol-review proposals;
+CP D1261 approved field tags1/2/3 and technical caps town512B/cursor512B/body1056B;
 encoded maximum1048B leaves8B slack. The town cap matches native ProductionKey's existing512B
 cap; the cursor/body caps are technical request bounds, not gameplay values. No response,
 projection, active-bundle membership, own-bid maximum or ACL/privacy read is implemented.
@@ -310,6 +311,20 @@ NOT_IMPLEMENTED. A cursor does not grant read access or establish DB currentness
 Focused actual codec/native preparation cases are authored NOT_RUN. Current-generation
 compile/native/PG remain NOT_RUN; fmt/diffcheck alone do not qualify this successor.
 
-Independent source-only review and official fmt/diffcheck pass. Formal protocol approval and
-current-generation native qualification remain pending. This local recovery checkpoint is not
-a second D1122 publication; the existing draft remains at790c8a2e until an allowed batch.
+Independent source-only review and official fmt/diffcheck pass. D1261 approves the request
+protocol and one coherent additional checkpoint beyond D1122. Current-generation compile,
+Clippy and tests remain NOT_RUN; this checkpoint does not qualify the complete mechanic.
+
+## D1261 request conditions — CHECKPOINT, NOT_FULLY_QUALIFIED
+
+CP #2131 comment6226929679 approved HOUSE_QUERY tags1/2/3 and technical bounds
+town512B/cursor512B/body1056B (maximum canonical1048B). Existing D1170 command28 remains28.
+Present empty cursor now means only the first page, exactly like absence; native preparation
+normalizes it to None while preserving World/actor/CommandRef and granting no read authority.
+Duplicate cursor tags still refuse even when both are empty. Native privacy/currentness read,
+response/projection/ownmax/ACL and shared dispatch remain NOT_IMPLEMENTED.
+
+Added actual codec decode boundary1048/1049 and cursor512/513 cases, duplicate-empty/unknown
+rejection and native empty/absent normalization cases; all authored NOT_RUN. Official fmt and
+diffcheck are cheap source checks only; no current-generation compile/native/PG PASS claimed.
+D1261 permits one coherent checkpoint successor after Root review; this work does not publish.

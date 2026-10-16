@@ -1,6 +1,7 @@
 //! Inactive HOUSE-WIRE-1 body codec, from accepted HOUSE_OWN0 §11 and HOUSE_RUNTIME0 §5.
 //!
-//! Field tags and flat byte bounds are a protocol-review proposal in `house_v1.proto`.
+//! HOUSE_QUERY request tags/bounds are approved by CP D1261; HOUSE_INTENT remains a
+//! protocol-review proposal in `house_v1.proto`.
 //! D1170 allocates leaf numbers only; no capability or dispatch is offered. The envelope owns
 //! CommandRef and the current session. These bodies contain requests, never authority.
 
@@ -365,8 +366,9 @@ pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
     })
 }
 
-/// Protocol-review proposal: native production key cap512B, opaque cursor cap512B,
+/// CP D1261 approved request bounds: native production key cap512B, opaque cursor cap512B,
 /// flat body1056B (World18 + town515 + cursor515 =1048, plus8B slack).
+/// Absent or presentempty cursor requests only the first page; transport normalizes toNone.
 /// Cursor bytes carry no authority and are interpreted only by a future owning read port.
 pub const MAX_HOUSE_QUERY_TOWN_BYTES: usize = 512;
 pub const MAX_HOUSE_QUERY_CURSOR_BYTES: usize = 512;
@@ -388,7 +390,7 @@ fn validate_query(value: &HouseQuery) -> Result<()> {
     {
         return Err(HouseWireError::LimitExceeded);
     }
-    if value.catalogue_town.is_empty() || value.cursor.as_ref().is_some_and(Vec::is_empty) {
+    if value.catalogue_town.is_empty() {
         return malformed();
     }
     Ok(())

@@ -265,3 +265,27 @@ fn query_preparation_refuses_cross_world_and_non_native_town_keys() {
         );
     }
 }
+
+#[test]
+fn query_empty_and_absent_cursor_normalize_only_to_first_page_without_changing_binding() {
+    use oteryn_protocol_oteryn::house::{HouseQuery, encode_house_query};
+    for cursor in [None, Some(vec![])] {
+        let request = HouseQuery {
+            world_id: world(3),
+            catalogue_town: "oteryn:content.area.city.thais".into(),
+            cursor,
+        };
+        let prepared = prepare_house_query(
+            &encode_house_query(&request).unwrap(),
+            command(2),
+            actor(),
+            world(3),
+        )
+        .unwrap();
+        assert_eq!(prepared.cursor(), None);
+        assert_eq!(prepared.command(), command(2));
+        assert_eq!(prepared.actor(), actor());
+        assert_eq!(prepared.world(), world(3));
+        assert_eq!(prepared.catalogue_town().as_str(), request.catalogue_town);
+    }
+}
