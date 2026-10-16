@@ -165,6 +165,44 @@ fn valid_provenance(revision: &str) -> bool {
     !revision.is_empty() && revision.len() <= 128
 }
 
+/// APP-1's own recovery arm. The CP slot calls this from `verify_character_integrity` and
+/// adds appearance receipts to its shared global-revision union, preserving the other families.
+/// This validates historical storage only; it cannot issue gameplay authority.
+pub(crate) async fn verify_character_appearance_integrity(
+    connection: &mut PgConnection,
+) -> Result<(), AppearanceReadError> {
+    let invalid = sqlx::query(
+        "WITH ordered AS ( \
+           SELECT a.*, lag(outfit_after) OVER w AS previous_outfit, \
+             lag(colours_after) OVER w AS previous_colours, \
+             lag(addons_after) OVER w AS previous_addons, \
+             lag(mount_after) OVER w AS previous_mount, \
+             lag(content_revision) OVER w AS previous_content, \
+             lag(committed_character_revision) OVER w AS previous_revision, \
+             row_number() OVER (PARTITION BY character_id ORDER BY committed_character_revision DESC) AS latest \
+           FROM game_character_appearance_receipts a \
+           WINDOW w AS (PARTITION BY character_id ORDER BY committed_character_revision) \
+         ) SELECT 1 FROM ordered a WHERE \
+           (outfit_before,colours_before,addons_before,mount_before,content_before,selection_revision_before) \
+             IS DISTINCT FROM \
+           (previous_outfit,previous_colours,previous_addons,previous_mount,previous_content,previous_revision) \
+           OR (latest=1 AND NOT EXISTS ( \
+             SELECT 1 FROM game_character_appearance p WHERE p.character_id=a.character_id \
+               AND (p.outfit_key,p.colours,p.addons,p.mount_key,p.content_revision, \
+                    p.committed_character_revision,p.last_appearance_occurrence_id) \
+                 IS NOT DISTINCT FROM \
+                   (a.outfit_after,a.colours_after,a.addons_after,a.mount_after,a.content_revision, \
+                    a.committed_character_revision,a.appearance_occurrence_id))) \
+         UNION ALL SELECT 1 FROM game_character_appearance p \
+           WHERE NOT EXISTS (SELECT 1 FROM ordered a WHERE a.character_id=p.character_id) \
+         LIMIT 1",
+    ).fetch_optional(connection).await?;
+    if invalid.is_some() {
+        return Err(AppearanceReadError::InvalidStoredState);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "character_appearance_tests.rs"]
