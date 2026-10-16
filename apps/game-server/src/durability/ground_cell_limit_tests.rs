@@ -417,6 +417,17 @@ mod postgres {
         at: &SpellGroundTarget,
         quantity: u32,
     ) -> TestResult<Vec<[u8; 16]>> {
+        mint_quantity_with_definition(h, first, count, at, quantity, definition()).await
+    }
+
+    async fn mint_quantity_with_definition(
+        h: &Harness,
+        first: u32,
+        count: u32,
+        at: &SpellGroundTarget,
+        quantity: u32,
+        item: TypedDefinitionRef,
+    ) -> TestResult<Vec<[u8; 16]>> {
         let seal = h.recovery.seal_current().map_err(debug)?;
         let recovery = h
             .root
@@ -447,7 +458,7 @@ mod postgres {
                             "fixture:ground.drop".into(),
                             0,
                         ),
-                        item: definition(),
+                        item: item.clone(),
                         quantity,
                         ground: GroundPlacement {
                             spatial_position: at.spatial_position.clone(),
@@ -956,13 +967,25 @@ mod postgres {
             use crate::durability::spell_items_abi::{
                 SpellItemOperation, SpellItemTransactionOutcome,
             };
-            let ids = mint_quantity(h, 1, 64, &target(), 1).await?;
+            // RemoveGround validates its actual stored Item identity too. Seed
+            // this source through native MINT with the same qualified identity;
+            // do not retag a reservation or weaken the native operation check.
+            let ids = mint_quantity_with_definition(
+                h,
+                1,
+                64,
+                &target(),
+                1,
+                spell_definition().definition,
+            )
+            .await?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, command(701)?).await?;
             let removed =
                 prepare_ground_removal_in_transaction(&mut tx, &authority, &target(), ids[0])
                     .await
                     .map_err(debug)?;
+            assert_eq!(removed.definition, spell_definition().definition);
             let request = spell_request(
                 &origin,
                 701,
