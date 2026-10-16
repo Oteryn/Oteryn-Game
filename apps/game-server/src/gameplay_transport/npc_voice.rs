@@ -243,9 +243,9 @@ impl NpcVoiceState {
             return Ok(VoiceThink::Idle);
         }
         let ticks = self.ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
-        let result = if ticks < self.profile.interval_ms {
-            VoiceThink::Quiet
-        } else if draw_below(root, occurrence, PPM, 0)? >= u64::from(self.profile.chance_ppm) {
+        let result = if ticks < self.profile.interval_ms
+            || draw_below(root, occurrence, PPM, 0)? >= u64::from(self.profile.chance_ppm)
+        {
             VoiceThink::Quiet
         } else {
             let count = u64::try_from(self.profile.lines.len()).map_err(|_| VoiceError::Draw)?;

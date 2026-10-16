@@ -253,11 +253,45 @@ shared-path slot or mark a candidate frozen/qualified.
 - Seven tests were authored for a real native catalogue/model path with exact referenced
   Dialogue and source-mismatch rejection, invalid/placeholder text, cadence/retries, idle/resume,
   absent profiles and actor/owner rejection, deterministic/zero-chance selection, and original-case
-  say/yell projection. They have **not run**. No module registration, Rust compilation, server test,
-  admitted-content qualification, egress or playable voice claim is made. The lead-provided
+  say/yell projection. At the initial preparation freeze they had **not run**; subsequent actual
+  native evidence is recorded below. No production registration, admitted-content qualification,
+  egress or playable voice claim is made. The lead-provided
   isolated official `rustfmt` 1.94 formatted the owned module and its focused `--check` passed;
-  `git diff --check` also passed. Native compilation/test validation remains pending the approved
-  execution path; syntax formatting is not type checking or behavioral evidence.
+  `git diff --check` also passed. Native compilation/test validation was pending at that
+  preparation freeze; syntax formatting alone is not type checking or behavioral evidence.
 
 All original acceptance boxes remain open. Travel fee/cause, eligibility, actual relocation,
 death/admission/position integration, actor movement/content and CP slot blockers above remain.
+
+## Actual native voice qualification and lint repair (2026-10-16)
+
+The root's actual PC `npc-world-attempt-2` tested frozen candidate
+`16ac7974e877aec3072c511cb629f36ed1b1973f` with the reviewed private mount
+`a44be4c081997c6bca4c869df6bcc56cb66a4381b99e2e926890f2801de5c48f` (normal
+`mod npc_voice;` only). Evidence is retained in
+`/workspace/oteryn-family-b/actual-npc-native-2/summary.json` and adjacent native logs.
+That exact old head passed ordinary library type checking, full native library unit-test
+compilation, exact seven-case listing, **7 passed / 0 failed / 0 ignored**, and workspace fmt.
+The run verified its mounted source unchanged; it did not execute a replacement harness.
+
+Strict library and all-target Clippy both failed with the actual
+`clippy::if_same_then_else` finding in `npc_voice.rs:246-249`; overall disposition is
+`NOT_QUALIFIED_GATE_FAILURE`. The retained `clippy-lib.log` and `clippy-all-targets.log` are
+the failing evidence, not lint passes. No full-package test run or production activation
+was claimed.
+
+The lead reopened authoring for this owned repair. The duplicate quiet branches now share
+one condition using short-circuit `||`: when the cadence has not elapsed, the chance draw
+is still skipped; once due, the same native chance draw decides whether the line is quiet.
+No source admission, actor ownership, randomness, cadence state or chat policy is changed.
+The seven earlier passes belong only to `16ac7974`; this uncommitted successor requires its
+own freeze and fresh real Cargo/lint evidence. The repair author ran no PC/Cargo job and
+made no commit, push, registration or ref change.
+
+Repair-local checks passed: focused official rustfmt 1.94 and diff checks, governance validation
+(22 documents / 9 lanes), and all 124 governance unit tests. These are not successor Cargo or
+strict Clippy evidence.
+
+Full-package tests, active content binding/admission, budgeted think/chat integration and
+the other actor/travel/shared CP gates above remain outstanding. All original acceptance
+boxes remain open.
