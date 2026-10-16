@@ -288,3 +288,14 @@ raw GUARDS SQL `343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a
 Actual immutable source bytes were independently checked at the owner's stable event;
 Bank test assertions now bind these values. Previous source hashes/native evidence remain
 historical facts, not qualification of this materially changed terminal candidate.
+
+
+D1098 native compile follow-up: failed candidate9151af1c in the lead's genuine combined
+unit compile exposed HRTB/static lifetime capture errors in the two new Bank tests. Returned
+to AUTHORING for test-only repair: actual fixture pool transactions now begin directly,
+while the unchanged genuine Guild production factory still enforces current native Root,
+recovery/admission/node/World and physical xid. The test proofs are no longer captured by
+Root semantic-pass HRTB closures. Genuine Guild controller tests retain responsibility for
+its production semantic-pass wrapper. No visibility widening, fake capability, authority
+predicate/production API/SQL change or disabled guard. Native recompilation remains pending;
+failed9151 candidate and raw native-compile.log are preserved.

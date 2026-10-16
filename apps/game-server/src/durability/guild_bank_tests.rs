@@ -973,84 +973,78 @@ fn bank_disband_job(n: u8) -> TestResult<crate::durability::guild::GuildDisbandJ
     })
 }
 async fn native_controller_payout(
+    pool: &sqlx::PgPool,
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
     request: crate::durability::guild::GuildDisbandJobRequest,
     rollback: bool,
 ) -> TestResult<GuildBankDisbandPayout> {
-    root.try_issue_semantic_pass()?
-        .run(move |holder, deadline| {
-            Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                let context = crate::durability::guild::lock_guild_disband_transaction(
-                    &mut tx, root, authority, node, &request,
-                )
-                .await
-                .map_err(|_| DurabilityError::InvalidStoredState)?
-                .ok_or(DurabilityError::InvalidStoredState)?;
-                // Every prepared identity component must equal the actual prelocked tuple.
-                // No substitute class1 occurrence may be acquired after Guild/member locks.
-                let before_operations: i64 =
-                    sqlx::query_scalar("SELECT count(*) FROM game_guild_bank_operations")
-                        .fetch_one(&mut *tx)
-                        .await?;
-                for field in 0..7 {
-                    let mut changed = request.bank_identity.clone();
-                    match field {
-                        0 => changed.occurrence[2] ^= 1,
-                        1 => changed.transaction_id[2] ^= 1,
-                        2 => changed.guild_event_id[2] ^= 1,
-                        3 => changed.bank_event_id[2] ^= 1,
-                        4 => changed.guild_entry_id[2] ^= 1,
-                        5 => changed.bank_entry_id[2] ^= 1,
-                        _ => changed.occurred_at_unix_ms += 1,
-                    }
-                    assert!(
-                        matches!(
-                            payout_guild_disband_in_transaction(&mut tx, &context, &changed).await,
-                            Err(GuildBankError::NotCurrent)
-                        ),
-                        "identity field {field}"
-                    );
-                    assert_eq!(
-                        sqlx::query_scalar::<_, i64>(
-                            "SELECT count(*) FROM game_guild_bank_operations"
-                        )
-                        .fetch_one(&mut *tx)
-                        .await?,
-                        before_operations
-                    );
-                }
-                let payout =
-                    payout_guild_disband_in_transaction(&mut tx, &context, &request.bank_identity)
-                        .await
-                        .map_err(|e| match e {
-                            GuildBankError::Unavailable(e) => e,
-                            _ => DurabilityError::InvalidStoredState,
-                        })?;
-                let current = read_guild_disband_payout_in_transaction(&mut tx, &context)
-                    .await
-                    .map_err(|_| DurabilityError::InvalidStoredState)?
-                    .ok_or(DurabilityError::InvalidStoredState)?;
-                assert_eq!(
-                    current.receipt.transaction_id,
-                    payout.receipt.transaction_id
-                );
-                assert_eq!(
-                    current.retained_claim_remaining,
-                    payout.retained_claim_remaining
-                );
-                if rollback {
-                    tx.rollback().await?;
-                } else {
-                    commit_semantic_transaction(tx, deadline).await?;
-                }
-                Ok(payout)
-            })
-        })
+    // Actual native fixture transaction; the genuine production factory independently
+    // enforces current Root/recovery/node/World and physical xid. Guild controller tests
+    // qualify the production semantic-pass wrapper; borrowed test proofs stay outside HRTB.
+    let mut tx = pool.begin().await?;
+    let context = crate::durability::guild::lock_guild_disband_transaction(
+        &mut tx, root, authority, node, &request,
+    )
+    .await
+    .map_err(|_| DurabilityError::InvalidStoredState)?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    // Every prepared identity component must equal the actual prelocked tuple.
+    // No substitute class1 occurrence may be acquired after Guild/member locks.
+    let before_operations: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_guild_bank_operations")
+            .fetch_one(&mut *tx)
+            .await?;
+    for field in 0..7 {
+        let mut changed = request.bank_identity.clone();
+        match field {
+            0 => changed.occurrence[2] ^= 1,
+            1 => changed.transaction_id[2] ^= 1,
+            2 => changed.guild_event_id[2] ^= 1,
+            3 => changed.bank_event_id[2] ^= 1,
+            4 => changed.guild_entry_id[2] ^= 1,
+            5 => changed.bank_entry_id[2] ^= 1,
+            _ => changed.occurred_at_unix_ms += 1,
+        }
+        assert!(
+            matches!(
+                payout_guild_disband_in_transaction(&mut tx, &context, &changed).await,
+                Err(GuildBankError::NotCurrent)
+            ),
+            "identity field {field}"
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_guild_bank_operations")
+                .fetch_one(&mut *tx)
+                .await?,
+            before_operations
+        );
+    }
+    let payout = payout_guild_disband_in_transaction(&mut tx, &context, &request.bank_identity)
         .await
-        .map_err(Into::into)
+        .map_err(|e| match e {
+            GuildBankError::Unavailable(e) => e,
+            _ => DurabilityError::InvalidStoredState,
+        })?;
+    let current = read_guild_disband_payout_in_transaction(&mut tx, &context)
+        .await
+        .map_err(|_| DurabilityError::InvalidStoredState)?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    assert_eq!(
+        current.receipt.transaction_id,
+        payout.receipt.transaction_id
+    );
+    assert_eq!(
+        current.retained_claim_remaining,
+        payout.retained_claim_remaining
+    );
+    if rollback {
+        tx.rollback().await?;
+    } else {
+        tx.commit().await?;
+    }
+    Ok(payout)
 }
 
 #[test]
@@ -1078,15 +1072,27 @@ fn native_controller_payout_port_rolls_back_and_replays_actual_retained_state() 
                 .map_err(debug)?;
             start_real_bank_disband(&h, &a).await?;
             let before = footprint(&h).await?;
-            let rolled_back =
-                native_controller_payout(&h.root, &a, &h.node, bank_disband_job(140)?, true)
-                    .await?;
+            let rolled_back = native_controller_payout(
+                &h.pool,
+                &h.root,
+                &a,
+                &h.node,
+                bank_disband_job(140)?,
+                true,
+            )
+            .await?;
             assert!(!rolled_back.receipt.replayed);
             assert_eq!(footprint(&h).await?, before);
             assert_eq!(totals(&h).await?, (30, 70, 0));
-            let paid =
-                native_controller_payout(&h.root, &a, &h.node, bank_disband_job(140)?, false)
-                    .await?;
+            let paid = native_controller_payout(
+                &h.pool,
+                &h.root,
+                &a,
+                &h.node,
+                bank_disband_job(140)?,
+                false,
+            )
+            .await?;
             assert!(!paid.receipt.replayed);
             assert_eq!(paid.guild_debit, 70);
             assert_eq!(paid.exleader_account_id, id(40));
@@ -1100,6 +1106,7 @@ fn native_controller_payout_port_rolls_back_and_replays_actual_retained_state() 
                 .await
                 .map_err(debug)?;
             let replay = native_controller_payout(
+                &h.pool,
                 &reopened,
                 &current,
                 &h.node,
@@ -1150,41 +1157,21 @@ fn native_disband_context_cannot_reauthorize_payout_in_another_physical_transact
                 .map_err(debug)?;
             start_real_bank_disband(&h, &a).await?;
             let before = footprint(&h).await?;
-            let root = &h.root;
-            let authority = &a;
-            let node = &h.node;
             let job = bank_disband_job(144)?;
-            let context = root
-                .try_issue_semantic_pass()?
-                .run(move |holder, deadline| {
-                    Box::pin(async move {
-                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                        let context = crate::durability::guild::lock_guild_disband_transaction(
-                            &mut tx, root, authority, node, &job,
-                        )
-                        .await
-                        .map_err(|_| DurabilityError::InvalidStoredState)?
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                        tx.rollback().await?;
-                        Ok(context)
-                    })
-                })
-                .await?;
-            h.root
-                .try_issue_semantic_pass()?
-                .run(move |holder, deadline| {
-                    Box::pin(async move {
-                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                        assert!(matches!(
-                            payout_guild_disband_in_transaction(&mut tx, &context, &identity(144))
-                                .await,
-                            Err(GuildBankError::NotCurrent)
-                        ));
-                        tx.rollback().await?;
-                        Ok(())
-                    })
-                })
-                .await?;
+            let mut tx = h.pool.begin().await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(
+                &mut tx, &h.root, &a, &h.node, &job,
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("genuine pending Guild context required")?;
+            tx.rollback().await?;
+            let mut other = h.pool.begin().await?;
+            assert!(matches!(
+                payout_guild_disband_in_transaction(&mut other, &context, &identity(144)).await,
+                Err(GuildBankError::NotCurrent)
+            ));
+            other.rollback().await?;
             assert_eq!(footprint(&h).await?, before);
             assert_eq!(totals(&h).await?, (30, 70, 0));
             Ok(())
