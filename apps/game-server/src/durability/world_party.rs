@@ -101,7 +101,7 @@ async fn observe_world_party(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
             .fetch_one(&mut **tx)
             .await?;
-    let row=sqlx::query("SELECT p.party_id::text,p.revision::text,p.leader_character_id::text FROM game_party_members m JOIN game_parties p USING(party_id) WHERE m.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid FOR SHARE OF p,m")
+    let row=sqlx::query("SELECT p.party_id::text,p.revision::text,p.leader_character_id::text,p.shared_xp_enabled FROM game_party_members m JOIN game_parties p USING(party_id) WHERE m.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid FOR SHARE OF p,m")
   .bind(character.as_slice()).bind(world.as_slice()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(PartySnapshot {
@@ -110,6 +110,7 @@ async fn observe_world_party(
             party_id: None,
             revision: None,
             leader: None,
+            shared_xp_enabled: false,
             members: vec![],
             observed_database_micros: observed,
         });
@@ -147,6 +148,7 @@ async fn observe_world_party(
         party_id: Some(party),
         revision: Some(number(row.try_get("revision")?)?),
         leader: Some(uuid(row.try_get("leader_character_id")?)?),
+        shared_xp_enabled: row.try_get("shared_xp_enabled")?,
         members,
         observed_database_micros: observed,
     })
@@ -349,6 +351,20 @@ async fn apply_world_party_command_inner(
                 disposition = "NOT_MEMBER"
             } else {
                 sqlx::query("UPDATE game_parties SET leader_character_id=encode($1,'hex')::uuid,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid").bind(target.as_slice()).bind(party.ok_or(reject("leader party"))?.as_slice()).execute(&mut **tx).await?;
+            }
+        }
+        PartyAction::SetSharedExperience { enabled } => {
+            // The same-TX strong read holds the current World party, not a PartyView
+            // or a caller-supplied leader claim. The occurrence and audit path below
+            // is shared with every existing membership operation.
+            if snapshot.leader != Some(character) {
+                disposition = "NOT_LEADER";
+            } else {
+                sqlx::query("UPDATE game_parties SET shared_xp_enabled=$1,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid")
+                    .bind(enabled)
+                    .bind(party.ok_or(reject("leader party"))?.as_slice())
+                    .execute(&mut **tx)
+                    .await?;
             }
         }
         PartyAction::Leave => {

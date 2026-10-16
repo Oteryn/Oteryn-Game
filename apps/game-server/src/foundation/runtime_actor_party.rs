@@ -10,6 +10,7 @@ pub(crate) enum PartyAction {
     Revoke { target: [u8; 16] },
     Leave,
     TransferLeader { target: [u8; 16] },
+    SetSharedExperience { enabled: bool },
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PartyCommand {
@@ -45,6 +46,8 @@ pub(crate) struct PartySnapshot {
     pub(crate) party_id: Option<[u8; 16]>,
     pub(crate) revision: Option<u64>,
     pub(crate) leader: Option<[u8; 16]>,
+    /// Observed durable preference only; actual XP eligibility remains its owner's decision.
+    pub(crate) shared_xp_enabled: bool,
     pub(crate) members: Vec<PartyMemberSnapshot>,
     pub(crate) observed_database_micros: i64,
 }
@@ -70,7 +73,8 @@ impl ChannelRuntimeV1 {
             || (projection.party_id.is_none()
                 && (!projection.members.is_empty()
                     || projection.revision.is_some()
-                    || projection.leader.is_some()))
+                    || projection.leader.is_some()
+                    || projection.shared_xp_enabled))
         {
             return Err(CarrierError::PlanConflict);
         }

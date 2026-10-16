@@ -206,3 +206,124 @@ security and privacy review remain with the full implementation and CP/architect
 integration. No shared owner, DB/schema assumption, wire, PvP, party spell or XP
 implementation was added. No commit, push, external comment, PR state change, merge,
 registry, migration, regeneration, pin or wiring edit was performed.
+
+
+## Shared-XP native owner implementation — 2026-10-16
+
+This section supersedes the earlier evidence-only allocation for this bounded
+increment. The coordinator assigned an exclusive four-path source lease at existing
+draft #2201, `skeleton/party-1`, exact predecessor
+`18cddbcc85346817ebca76e32ccc161c4d1051ee`. The owner explicitly requested implementation
+of the documentation-only positions. Accepted #1771/#1773 and PARTY-PVP-0 §§4.1/4.2
+supply this operation; stale CANDIDATE headings do not block source authoring.
+CHAT-2, shared registration and production composition remain their actual CP gates.
+
+### Concrete code
+
+The actual `world_party` transaction engine now consumes
+`SetSharedExperience { enabled }`. It uses its existing independently current
+`SpellItemAuthority`, physical transaction check and serialized World owner, reads
+the acting Character's current party/leader, and permits only that current leader.
+It updates the already-existing `game_parties.shared_xp_enabled` and party revision
+in the same transaction as the original immutable occurrence receipt and audit.
+It adds no parallel command engine, schema, fake authority or pure policy module.
+Existing action intent serialization, result serialization and audit bytes are unchanged.
+Exact occurrence replay reuses the original receipt without reverting a later flag;
+a changed enabled value under the same occurrence is a binding conflict.
+
+The existing strong `PartySnapshot` now carries the flag from the durable party row.
+An explicitly observed solo Character has it disabled, and cache projection refuses
+an enabled flag on a solo snapshot. This is observed preference DATA, not a claim of
+current cache readiness, shared-XP eligibility or the XP split. Both snapshot literals
+and the only exhaustive production action match are inside the owned paths; no
+unowned consumer needs an edit. A toggle advances the party revision seen by existing
+strong-read consumers.
+
+### Native PostgreSQL source and qualification state
+
+`tests/party_shared_xp_postgres.rs` is an inactive ordinary native crate-root wrapper,
+using actual physical module declarations and the existing native Root. It mounts the
+original `world_party_tests.rs` unchanged, including its **13 original PostgreSQL bodies**.
+Its new cases reuse the existing signed-fixture producer/bootstrap/Fresh orchestration:
+real native bootstrap and `FreshAdmissionStore::commit` create the current sessions;
+the actual Root/recovery/Node and transaction constructor create authority. No
+`SpellItemAuthority`, synthetic grant, copied currentness guard or widened private
+helper substitutes for these operations. Administrative membership rows are explicitly
+constraint fixtures; they do not prove invitation production (the original cases cover it).
+
+**Nine new PostgreSQL bodies are authored, not executed:** enable/disable with same-xid
+receipt/audit and strong read; solo/member refusal; exact replay plus changed-intent
+conflict; rollback/retry; real leadership transfer before consumption; physical-TX
+substitution; one-invariant expected session/lease/scope mismatch; actual Node revocation;
+and actual scope revocation while the Node remains current. Node/scope negatives use
+the native revocation owners and keep expected session facts unchanged.
+
+Current status is **SOURCE_AUTHORED / NATIVE_UNEXECUTED**. Cheap targeted syntax/format
+and exact owned-path checks are recorded separately. No Rust compilation, PostgreSQL
+execution, large hydration, strict Clippy or complete runtime success is claimed.
+The coordinator's single-heavy gate remains in force behind the three current jobs.
+The original13 plus new9 require actual native PostgreSQL qualification and independent
+source/architecture review before any publishable component claim.
+
+### Remaining family boundary
+
+This increment implements the accepted shared-XP command and durable flag view only.
+Full legal-absence/combat-qualified member cleanup, the complete PartyView freshness/
+relay lifecycle, consent-setting operations, actual caller/CHAT integration, production
+SECURITY DEFINER/grant qualification and the separate PARTY-XP benefits remain owning
+work. No wire, migration, registry, pins, shared module/Cargo, runtime loop, admission or
+session file is changed. Worker publication/commit/push/ready/merge/queue authority is none.
+
+### PC native qualification repair (2026-10-16)
+
+The historical unexecuted state above is superseded only by these measured results:
+the exact prior source `44f60bc5` passed scoped production Clippy with strict warnings
+and produced its own native production library. The enabled ordinary wrapper then
+failed configured compilation with one `E0308`: its new test fixture assigned the
+protocol CharacterId directly to the domain CharacterId fence field. The selected
+driver and all 22 PostgreSQL bodies were **not run**; the actual failure is retained.
+
+The private test helper now passes the exact current lease ID bytes through the
+existing fallible domain constructor and propagates errors at its two callers.
+All assertions, real Fresh/current-session producers and authority guards remain
+unchanged. The 13 original test bodies remain literal; one new negative-case body
+only gains error propagation on that helper call. This is a new source candidate,
+awaiting independent repair review and actual native continuation. No PostgreSQL
+success or full PARTY-1 completion is claimed.
+
+The repaired ordinary wrapper subsequently passed configured native compilation;
+its strict warning check remained red. Selected-body compilation then found a
+second test-only type error: the one-invariant negative case applied `+= 1` to
+the opaque native scope generation type. The run stopped before a redundant
+configured replay, native linking or PostgreSQL tests. That mutation now uses
+the existing fallible `ScopeOwnershipGeneration::new(current.get() + 1)` API.
+It still changes only the expected scope generation and preserves all assertions.
+The original 13 bodies, production owner and actor remain unchanged. This new
+candidate still requires selected native compilation and all 22 PostgreSQL cases.
+
+
+### Actual native PostgreSQL qualification — 2026-10-16
+
+The repaired source candidate `a085f1a8` now passed the native component suite:
+**22 tests passed, zero failed, zero ignored and zero filtered out**. All 13
+original PostgreSQL bodies and nine new shared-XP bodies executed, each with
+an actual PostgreSQL `server_version_num=170006` check. Native selected library
+code generation, driver linking and the configured Clippy check passed. The
+ordinary native wrapper had already passed configured compilation; its result
+retains its actual predecessor provenance.
+
+The exact unchanged production owner and actor reuse their successful predecessor
+strict production check and native production library. Compiler, source, dependency, generated-input and artifact hashes were verified
+before reuse; source, dependency, generated-input and artifact hashes were checked
+again after consumers.
+The selected validation dispatcher was moved before the test module to satisfy
+Clippy, and a private canonical-name copy of the same production library supplied
+native transitive crate discovery. These are validation-only changes; no production
+source, authority guard, test assertion or original body changed for them.
+
+Strict warning-free qualification remains separate: the retained strict wrapper
+check was red, and it was not relabeled as a fresh strict pass. The native result
+qualifies this shared-XP command/flag component only. The remaining family and
+CP integration boundaries above still apply; no publication or full PARTY-1
+completion is claimed by this worker. The actual proof and every earlier failed
+attempt remain retained under `reviews/party-pc` with exact source/body hashes.
