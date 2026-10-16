@@ -519,3 +519,10 @@ D1180 run; native/Clippy remain NOT_RUN until its own source is checked. D1216
 selects main `b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16` for the actual logout
 caller, as a local integration merge commit; no PR merge/ready/rebase is done.
 Actual admission/readmission composition remains held after #2187.
+
+D1216 local integration uses exactmain b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16;
+merge conflicts: none. The existing logout_in_fight now consumes the one fact
+and exhaustively handles NotWiredInRuntime before computing retry on the same
+semantic sample. No held_step/hold_step_within or other root caller was edited.
+This changed consumer and main integration require fresh scoped native/lint
+evidence; earlier ten-case D1180 evidence remains a separate source generation.

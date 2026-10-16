@@ -1118,7 +1118,7 @@ Acceptance:
   Ground write. It amends the guards as left by every lower-numbered migration, BAGS-1's 0064
   included.
 - Merge condition: 0065 is higher than every migration on `main`; otherwise re-lease (§0.1).
-- `ITEMMOVE1-RL-01` 10 per tile under a real tile row lock; `ITEMMOVE1-RL-02` 20,000 per channel,
+- `ITEMMOVE1-RL-01` 64 per tile (amended from 10 on 2026-10-15) under a real tile row lock; `ITEMMOVE1-RL-02` 20,000 per channel,
   alarm at 16,000, with shard rows; the counter changes in the same transaction as each drop,
   pickup and `WorldReset` retirement (tests for each, and that the counter equals the live rows).
 - D222: actors rank before items in D87's order; dropped items never push an actor out of a

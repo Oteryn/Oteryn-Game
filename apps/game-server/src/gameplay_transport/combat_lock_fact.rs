@@ -40,6 +40,10 @@ impl CombatLockFact {
         }
     }
 
+    #[allow(
+        dead_code,
+        reason = "D1204 actor-bound witness consumer is owned by #2174"
+    )]
     pub(crate) fn is_for(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.actor == actor && self.session == session
     }
@@ -51,10 +55,6 @@ impl CombatLockFact {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Sample after both owning guards are acquired; never retain this snapshot across a wait.
-    #[allow(
-        dead_code,
-        reason = "D1213 caller hunk awaits the exact shared-root allocation"
-    )]
     pub(in crate::gameplay_transport) async fn combat_lock_fact(
         &self,
         actor: ExactActorRef,
