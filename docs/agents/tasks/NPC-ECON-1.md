@@ -2,23 +2,23 @@
 
 ```yaml
 task_id: NPC-ECON-1+NPC-CMD-1b+NPC-TRADE-WIRE-1
-title: "NPC-ECON-1+NPC-CMD-1b+NPC-TRADE-WIRE-1: bank, promotion purchase, NPC trade wire (skeleton)"
+title: "NPC-ECON-1+NPC-CMD-1b+NPC-TRADE-WIRE-1: Bank NPC service and NPC trade wire"
 mode: IMPLEMENT
-status: waiting
+status: waiting_cp_shared_slot
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/npc-econ-1
 issue: 1622
-pr: null
+pr: 2197
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 NPC-ECON-1 (rows 39, 81); App. 7 NPC-ECON-1; wave 2"
 class: "hard (value)"
 migration: yes
 registry: maybe
-owner: unassigned (builder)
+owner: "Codex family B lead (direct owner allocation 2026-10-16)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/npc_trade_command.rs
@@ -38,18 +38,26 @@ depends_on:
   - "NPC-CMD-1b read window: MERGED #2035 (read part); residue confirmed by builder"
   - "BANK-1: MERGED #1766"
   - "GOLD-FEE-2: MERGED #1781"
-  - "BANK-FEE-0 / BANK_FEE0 ACCEPTED: BLOCKING: CANDIDATE"
-  - "NPC0 ACCEPTED: BLOCKING: CANDIDATE"
+  - "BANK-FEE-0 / BANK_FEE0: ACCEPTED via #2209 ACCEPT-BATCH §1"
+  - "NPC0: ACCEPTED via #2209 ACCEPT-BATCH §1"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Current authoring disposition (2026-10-15): **owned native/content/pin core
-qualified; shared protocol/resource/protected-PG tail unapplied**. The original
-YAML/plan/dependency snapshot below is preserved as history; see the integrated
-implementation-slot section and the published-candidate CI successor below for
-the actual #2197 scope, evidence and open gates.
+Recorded implementation disposition at source head
+`222c7dce99ee3fb854b25bcb2140e4fde8e7fc9e`: **owned native/content/pin core
+qualified; shared protocol/resource/protected-PG tail unapplied**. The title, PR
+link, acceptance rows and narrow value-path criterion are reconciled with
+[CP gap review 6216355456](https://github.com/Oteryn/Oteryn-Game/pull/2197#issuecomment-6216355456)
+(2026-10-16). Other allocation/base fields are retained historical metadata, not
+a live lease. Historical skeleton checkpoint and preparation sections below
+remain retained. See the integrated implementation-slot and published-candidate
+CI successor sections for the actual #2197 scope, recorded evidence and open
+gates; this administrative refresh does not qualify a new candidate. The owner
+directly confirmed exclusive family-B authorship on 2026-10-16 and authorized
+return to AUTHORING in the task's owned paths without an additional CP lease
+identifier. This card-only successor leaves all shared slot paths untouched.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -57,9 +65,9 @@ CP and architect do the final review.
 
 ## Goal
 
-Bank NPC service, promotion purchase, and the NPC trade intent (command 8) wired to the merged writer (#2040).
+Bank NPC service and the NPC trade intent (command 8) wired to the merged writer (#2040), including coins-first BUY with the bank remainder. Promotion purchase belongs to PREM-2b/PREM-5 under [ACCEPT-BATCH §3](../../architecture/reviews/OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md#3-architect-rulings-a).
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+## Dependencies (acceptance reconciled 2026-10-16; other states retained from the implementation record)
 
 | Dependency | State |
 |---|---|
@@ -67,10 +75,15 @@ Bank NPC service, promotion purchase, and the NPC trade intent (command 8) wired
 | NPC-CMD-1b read window | MERGED #2035 (read part); residue confirmed by builder |
 | BANK-1 | MERGED #1766 |
 | GOLD-FEE-2 | MERGED #1781 |
-| BANK-FEE-0 / BANK_FEE0 ACCEPTED | BLOCKING: CANDIDATE |
-| NPC0 ACCEPTED | BLOCKING: CANDIDATE |
+| BANK-FEE-0 / BANK_FEE0 | ACCEPTED via #2209, ACCEPT-BATCH §1 |
+| NPC0 | ACCEPTED via #2209, ACCEPT-BATCH §1 |
 
-**BLOCKING:** BANK-FEE-0 / BANK_FEE0 ACCEPTED; NPC0 ACCEPTED. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+The former BANK_FEE0/NPC0 candidate holds are superseded by merged #2209
+[ACCEPT-BATCH §1](../../architecture/reviews/OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md#1-accepted-briefs-owner-items-1-to-6);
+their primary brief Status lines read ACCEPTED. This acceptance grants no live
+write lease. The shared protocol/resource/Cargo/protected-PG tail remains held
+by HOUSE-RUNTIME-1a (#2163), pending CP release, main composition, a new
+authorized candidate generation and exact-head qualification as recorded below.
 
 ## Owned paths (builder edits freely)
 
@@ -101,7 +114,10 @@ Bank NPC service, promotion purchase, and the NPC trade intent (command 8) wired
 
 ## Acceptance criteria
 
-- [ ] Trade command commits one DUR-03 transaction; bank fees burned through the ledger; idempotent retry.
+- [x] Trade command commits one DUR-03 transaction; bank fees burned through the ledger; idempotent retry. Evidence for the owned value path at source head `222c7dce99ee3fb854b25bcb2140e4fde8e7fc9e`:
+  - `apps/game-server/src/durability/npc_trade.rs:697-711` begins one native transaction, locks the occurrence and returns its stored outcome on replay; `:793-808` inserts the matching `FEE_DEBIT`/BURN value line; `:827-840` applies the trade and commits that same transaction.
+  - `apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs:395-429`, `actual_npc_buy_uses_coins_then_bank_in_one_native_trade_and_single_event`, asserts bank-only and mixed coins-first conservation, matching ledger/audit data, one audit event, unchanged retry footprint and insufficient-funds rollback.
+  - Recorded execution evidence: **Actual local validation and review evidence** below (33 native bodies and eight real PostgreSQL 17.6 cases, including the qualification limits), plus the **Published-candidate CI successor (slot 2)** record and `/workspace/oteryn-prep/npc-econ-1-slot-2-evidence/`. These are retained qualification reports, not a fresh run by this administrative refresh. The shared-tail, exact-head CI, independent architect review and CP gates remain open.
 - [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
@@ -123,7 +139,7 @@ NPC0; BANK0; BANK_FEE0; GOLD_FEE_BOUNDARY. Plan: `docs/architecture/reviews/OTER
 - Slot-only paths only in the final commit, after merging main at the queue turn.
 - One Codex round on the final head; at most 2 repair rounds, then CP splits the task.
 
-## Context checkpoint
+## Historical skeleton checkpoint (superseded by the integrated implementation record below)
 
 ```yaml
 last_progress: skeleton created by CP architect
