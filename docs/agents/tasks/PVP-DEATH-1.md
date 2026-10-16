@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: PVP-DEATH-1
-title: "PVP-DEATH-1: PvP death persistence (skeleton)"
-mode: REPORT_ONLY
-status: prepared
+title: "PVP-DEATH-1: outcome leaf; shared death integration after #2193 (D1105)"
+mode: IMPLEMENTATION
+status: source_authored_unqualified
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-death-1
@@ -13,37 +13,77 @@ pr: 2205
 base_sha: 5c65464f770272a315cedda4b6b6638a58363afc
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Death module D; App. 7 PARTY/PVP PVP-DEATH-1; wave 2"
 class: "hard (persistence)"
-migration: maybe
+migration: no
 registry: no
-owner: boot_rat_policy_1
+owner: family_f_pvp
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/combat/pvp/death.rs
+  - apps/game-server/src/combat/pvp/death_tests.rs
   - docs/agents/tasks/PVP-DEATH-1.md
 slot_only_paths:
-  - migration number
+  - apps/game-server/src/durability/character_death.rs (after merge #2193)
+  - apps/game-server/src/combat/pvp/mod.rs (composition)
 public_contracts: []
 depends_on:
   - "DEATH-1: MERGED"
   - "PVP-1a: MERGED"
   - "DEATH-3: BLOCKING: not merged (death module C)"
   - "PVP-1b: BLOCKING: not merged"
+  - "DEATH-ML-LOSS-1 #2193: BLOCKING for shared death writer integration (D1105)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Current allocation is a card-only native death-transaction integration packet. Original family
-requirements below remain historical and OPEN; they grant no source ownership now. Worker must
-not commit, push, mark ready or merge. Root alone may publish the reviewed card to the existing
-draft. CP controls allocation/readiness/integration, and shared slot-only files stay untouched
-until its queue turn, then-current allocation/rebase and required independent exact-head review.
+Current allocation: CP D1105 ([6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346),
+2026-10-16) authorizes #2205's own leaf now. Family F allocates only the two leaf files and
+this card to its sole writer. DEATH-ML-LOSS-1 #2193 remains the sole physical author of
+`durability/character_death.rs` until that PR merges. Shared receipt/binding/load/decode/reconcile
+and transaction hunks stay untouched here; no commit, push, ready or merge by this worker.
 
 ## Goal
 
 PvP death outcomes (frags, skull consequences, unjust loss) persisted in the death transaction.
+
+## D1105 leaf increment (2026-10-16)
+
+Exact authoring predecessor: `15de676f07d29ed8883850927e8d6b08abdfdad5`, refreshed open/draft
+PR #2205, `skeleton/pvp-death-1`. Accepted authority: PARTY-PVP0 §10 and DEATH-COMPLETE0
+§4.3/§4.6. This increment implements typed death-outcome planning in `combat/pvp/death.rs`
+and 15 tests in `death_tests.rs`, without a second death writer or a new schema.
+
+- Exact 5% classification uses widened integer comparisons; player/summon final blows qualify
+  independently of the ratio. Empty or inconsistent totals refuse; PVP-RT still owns genuine
+  lethal-time totals, source provenance and the five-minute ledger observation.
+- Ordinary outcomes reuse native death XP, current Bless reduction and deterministic item
+  selection. Red/black skulls force all equipped-item loss without AoL or a draw; accepted D65
+  and vocation exemptions precede item/AoL selection. Twist preserves regular blessings only
+  on applicable PvP deaths; no regular blessings means Twist is retained.
+- Adventurer's Open/level≤20/not-forfeited outcome precedes XP/item/amulet/blessing loss.
+  Conflicting eligible Adventurer and red/black facts refuse rather than inventing precedence;
+  the caller must reconcile the real skull/forfeiture preimage. Receipt data determines the
+  black-skull 40 HP/0 mana respawn; no current skull read replaces that historical fact.
+- The leaf returns semantic receipt data with unfair-fight reduction 0, not a persisted receipt,
+  current authority, a mutation permit or a respawn/controller grant. Module composition and
+  every real writer/placement caller remain pending; existing draft CI does not exercise an
+  unregistered leaf.
+
+**Storage reconciliation:** D1105 explicitly states that columns 0030 suffice and no migration
+is authorized/needed. Historical proposals below for additional receipt columns or migration
+leases are superseded planning assumptions, not current gates. This leaf does not pretend
+that 0030 contains named PvP columns: the sole #2193 writer owns the actual compatible
+receipt/binding representation and v1/NULL replay. #2205's shared hunks follow its merge.
+No migration, guard or SQL storage change is made by this increment.
+
+Validation performed: owned-file rustfmt and `git diff --check` pass. No Cargo compilation,
+native execution or PostgreSQL run is claimed; the 15 tests are authored, not executed.
+Independent leaf review is requested before candidate freeze. Full atomic death/replay
+acceptance, points/revenge/kill-block writes, genuine current observation ports and native
+PG qualification remain OPEN; this source increment does not activate PvP.
 
 ## Dependencies (state on main@5742f30f3, 2026-10-15)
 
@@ -63,7 +103,9 @@ PvP death outcomes (frags, skull consequences, unjust loss) persisted in the dea
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
-- migration number
+- `durability/character_death.rs` only after merge #2193 (D1105); E is its sole writer until then.
+- `combat/pvp/mod.rs` composition; no production registration in this leaf increment.
+- No task migration: D1105 states existing 0030 capacity is sufficient.
 - Always slot-only, whether or not listed: regenerate_content.py outputs, `content/project.json`, `content/manifest.json`, `content/content.lock.json`, `content/interactions/index.json`, `content/world/pins/*`, Rust pins, `docs/contracts/*REGISTRY*.json`, migration numbers, wiring in `gameplay_transport/connection.rs`, `gameplay_transport/mod.rs`, `capabilities.rs`, `crates/protocol-oteryn/src/lib.rs`.
 
 ## Wiring points (verified on main@5742f30f3)
@@ -72,7 +114,8 @@ PvP death outcomes (frags, skull consequences, unjust loss) persisted in the dea
 
 ## Inseparable bundles
 
-migration+writer+durability.
+Shared receipt/binding + writer + replay compatibility, in the D1105 integration order;
+no new migration for this task.
 
 ## Original family acceptance criteria — OPEN
 
@@ -109,7 +152,7 @@ next_action: CP allocates exact death/PvP guard and runtime integrations after r
 ```
 
 
-## Owning victim death transaction packet (2026-10-15)
+## Historical owning victim death transaction packet (2026-10-15; pre-D1105)
 
 ### Scope, authority and prerequisite decisions
 
