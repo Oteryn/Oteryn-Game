@@ -649,3 +649,15 @@ activation/integration qualification is NOT_RUN and NOT_FULLY_QUALIFIED. The
 separate native0771f0c5 source freeze covers the earlier House/Sync inputs only,
 not this later binding/consumer delta. Genuine C encoder and I sealed logout/
 pending-work drain remain required before final composition.
+
+## D1233 native component qualification
+
+Actual native Cargo no-run at source2fca2ae7 plus exact2152 donation leaf:
+compile exit0,3185unique global cases; four Reset cases executed literally
+(three House preflight +one complete drain-binding data case), each1PASS,0ignored.
+The fifth case belongs to2152 and is not counted as Reset. Only private cfg(test)
+module registrations; all frozen source hashes/actual dep-info match. Independent
+outcome review is retained with the external evidence packet. PG,strict,full
+package,canonical wiring and final activation remain NOT_RUN. I2187 alone supplies
+the sealed production drain proof. CP6226416344 requests the actual Cencoder/
+canonical House key mapping/fullbundle owned hunks; no ENTRY substitution.
