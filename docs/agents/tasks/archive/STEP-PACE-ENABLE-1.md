@@ -4,7 +4,7 @@
 task_id: STEP-PACE-ENABLE-1
 title: "STEP-PACE-ENABLE-1: step-wait receipts VPS rollout documentation"
 mode: IMPLEMENT
-status: authoring
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/step-pace-enable-1
@@ -16,6 +16,7 @@ plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-1
 plan_row: "§4 Epic 6 row STEP-PACE-ENABLE-1 (rows 3, 4); §5 Wave 5"
 created_at: 2026-10-15
 updated_at: 2026-10-16
+merge_commit: "squash merge of #2135"
 class: "docs (owner-controlled rollout)"
 needs_migration: no
 needs_registry: no
@@ -23,7 +24,7 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "deploy/synology-game/README.md (Step pacing receipts rollout section only)"
-  - "docs/agents/tasks/STEP-PACE-ENABLE-1.md"
+  - "docs/agents/tasks/archive/STEP-PACE-ENABLE-1.md"
 slot_only_paths: []
 ```
 
@@ -71,7 +72,7 @@ STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/20
 - `docker inspect oteryn-oracle-runtime-game-1`: env `OTERYN_STEP_WAIT_RECEIPTS=1`, label `io.oteryn.step-wait-receipts=1`. In the installed compose file the variable and label appear only in the `game` service (`ops` has neither).
 - Not established here: on-the-wire proof that only capability 13 sessions get `step_wait_ms`, and off-state byte identity. Both rest on Game #2041 tests, not on live traffic. Rollback: remove the marker, restart the unit (the `.bak` files remain for a full revert).
 
-**Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. The installed revision, marker, incarnation and readiness evidence is now recorded above; capability boundary and off-state evidence still rest on #2041. The owner has already waived waiting for the client release; this gap concerns actual enablement evidence.
+**Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. The installed revision, marker, incarnation and readiness evidence is now recorded above; capability boundary and off-state evidence rest on #2041, accepted by D1139 in place of a live probe. The owner has already waived waiting for the client release.
 
 ## Acceptance criteria
 
@@ -79,7 +80,7 @@ STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/20
 - [x] Runbook identifies oteryn-vps and Platform controller ownership, historical Synology location, owner-only marker/restart/rollback actions and the exact operational proof gap.
 - [x] No production action is taken by the builder; no release, retirement or active marker integration is claimed without evidence.
 - [x] Active controller support (Platform #1652 merged `562d77bd`) installed on oteryn-vps; marker, restart, label/env and readiness evidence recorded above.
-- [ ] Live capability 13 receipt boundary and off-state byte-identity evidence (owner/CP).
+- [x] Live capability 13 receipt boundary and off-state byte-identity evidence: superseded by D1139, which accepts the existing #2041 tests as that evidence; no live probe is required.
 
 ## Validation
 
@@ -90,10 +91,11 @@ Documentation-only local validation:
 - `python -m unittest discover -s tools/agents/tests -p '*governance_lifecycle*.py'`: 25 passed.
 - `python -m unittest tools.agents.tests.test_meta_agent_policy_adoption`: 30 passed.
 - 2026-10-16 evidence update: `git diff --check` clean; `python tools/agents/validate_governance.py` passed; `python -m unittest discover -s tools/agents/tests` 124 passed.
+- Codex P2 round (2026-10-16): `git diff --check` clean; `python tools/agents/validate_governance.py` pass; `python -m unittest discover -s tools/agents/tests` pass.
 - Complete diff review and a section-boundary check: only the two owned files change, and README text outside the rollout section is unchanged.
 
 Rust builds, server tests and supervisor tests are not needed because no executable file or contract changes. Existing implementation qualification is recorded under STEP-PACE-WIRE-1; it is not presented as new live VPS validation.
 
 ## Builder handback
 
-Keep #2135 draft; the control plane owns qualification and lifecycle transitions. Do not use the README's historical marker command as authority for host access. Report any required edit outside these two owned paths to its owner. This task is not operationally complete until the owner evidence gap is closed.
+Keep #2135 draft; the control plane owns qualification and lifecycle transitions. Do not use the README's historical marker command as authority for host access. Report any required edit outside these two owned paths to its owner. The task is complete: the owner evidence gap is closed by the recorded rollout and D1139.
