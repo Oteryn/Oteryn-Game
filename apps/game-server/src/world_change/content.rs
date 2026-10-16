@@ -92,6 +92,39 @@ pub(crate) enum CandidateError {
     MissingBindingGaps,
 }
 
+/// A validated selection-source entry, not an executable W1 definition (D1206).
+/// Its private field prevents a consumer from treating unchecked JSON as compiled selection.
+#[derive(Debug)]
+pub(crate) struct WorldChangeSelection<'a> {
+    source: &'a WorldChangeCandidate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WorldChangeBindingsUnavailable;
+
+impl WorldChangeSelection<'_> {
+    /// Compiler boundary for an entry that needs native W1 bindings. Selection-source
+    /// compilation alone cannot supply geometry, House, value-source or spawn authority.
+    pub(crate) fn require_w1_bindings(&self) -> Result<(), WorldChangeBindingsUnavailable> {
+        if self.source.unresolved.is_empty() {
+            Ok(())
+        } else {
+            Err(WorldChangeBindingsUnavailable)
+        }
+    }
+}
+
+/// Compile only the owned selection-source. No W1 schema or gameplay bindings are emitted.
+pub(crate) fn compile_selection_source(
+    candidates: &[WorldChangeCandidate],
+) -> Result<Vec<WorldChangeSelection<'_>>, CandidateError> {
+    validate_candidates(candidates)?;
+    Ok(candidates
+        .iter()
+        .map(|source| WorldChangeSelection { source })
+        .collect())
+}
+
 fn key(value: &str) -> bool {
     !value.is_empty()
         && value.bytes().all(|byte| {

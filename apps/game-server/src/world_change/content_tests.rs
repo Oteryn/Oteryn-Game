@@ -163,3 +163,30 @@ fn selection_source_cannot_disguise_missing_native_bindings_as_completed() -> Te
     assert!(serde_json::from_value::<WorldChangeCandidate>(json).is_err());
     Ok(())
 }
+
+#[test]
+fn typed_selection_compiles_but_w1_without_native_bindings_refuses() -> TestResult {
+    let values = candidates()?;
+    let selections = compile_selection_source(&values).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(selections.len(), 2);
+    for selection in selections {
+        assert_eq!(
+            selection.require_w1_bindings(),
+            Err(WorldChangeBindingsUnavailable)
+        );
+    }
+    // Malformed input never becomes a typed selection in the first place.
+    let mut malformed = values;
+    malformed[0].variants[0].weight = 0;
+    assert!(matches!(
+        compile_selection_source(&malformed),
+        Err(CandidateError::Weight)
+    ));
+    // A source-only compilation has no native bindings to request.
+    assert!(
+        compile_selection_source(&[])
+            .map_err(|error| format!("{error:?}"))?
+            .is_empty()
+    );
+    Ok(())
+}

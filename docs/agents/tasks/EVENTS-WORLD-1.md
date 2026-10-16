@@ -199,3 +199,20 @@ and integrated runtime remain NOT_RUN. Status stays NOT_FULLY_QUALIFIED.
 The earlier NOT_RUN entries describe the source-authoring stage, superseded only
 for this exact normal native compilation and these four tests. D1122 permits a
 coherent reviewed source checkpoint with these limits; the draft remains open.
+
+
+### D1206 scope and typed compiler refusal (source authoring)
+
+CP2131 comment6225820327 supersedes the earlier full-W1 delivery gate: #2178
+ships typed selection-source only; full W1/native schema ingress, layers/House/
+value-source and spawn/activation belong to future LAYER/ACT skeletons opened by
+CP after #2178 merges. Full integration is NOT_APPLICABLE to this PR, rather
+than NOT_RUN. No empty gameplay arrays or new ingress hunk is added.
+
+`compile_selection_source` validates before constructing the private-field
+`WorldChangeSelection`. Its `require_w1_bindings` boundary returns the typed
+`WorldChangeBindingsUnavailable` for both retained source entries; source-only
+compilation succeeds without requesting gameplay bindings. A fifth test covers
+that refusal and prevents malformed input becoming typed selection. New test
+execution remains NOT_RUN at this source checkpoint; the previous four native
+PASS remain exact to a08f37a7. Current source review/qualification is pending.
