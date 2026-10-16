@@ -118,6 +118,20 @@
       "owner_screenshot_zip_entries": 35,
       "zip_provenance": "CP_REPORTED_NOT_LOCALLY_ACCESSED_OR_VERIFIED; screenshots not redistributed",
       "manifest_requirement": "NOT_REQUIRED_BY_CP_D1242"
+    },
+    "D1242a": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226563247",
+      "scope": "ADMITTED_SOURCE_COMPONENTS_ONLY",
+      "runtime": "NotWiredInRuntime",
+      "parity_pending_groups": [
+        "POI count",
+        "found radius",
+        "speed bonus",
+        "complete donation eligibility/premium",
+        "draw order",
+        "factor composition/official33% qualification"
+      ],
+      "follow_up": "Separate owner GUI parity follow-up; no new PR now"
     }
   }
 }

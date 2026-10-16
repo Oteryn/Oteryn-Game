@@ -5,6 +5,37 @@
 pub(crate) const MIN_DONATION_GP: i64 = 1;
 pub(crate) const MAX_SINGLE_DONATION_GP: i64 = 10_000_000;
 
+/// D1242a: each unresolved group blocks the entire runtime feature.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CyclopediaParityPending {
+    PoiCount,
+    FoundRadius,
+    SpeedBonus,
+    DonationEligibilityAndPremium,
+    DrawOrder,
+    FactorCompositionAndOfficialRandomChance,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct NotWiredInRuntime {
+    pub(crate) parity_pending: [CyclopediaParityPending; 6],
+}
+
+/// Closed runtime port until separately qualified parity and integration exist.
+/// Source-region admission and a valid amount cannot open this boundary.
+pub(crate) const fn require_cyclopedia_runtime() -> Result<(), NotWiredInRuntime> {
+    Err(NotWiredInRuntime {
+        parity_pending: [
+            CyclopediaParityPending::PoiCount,
+            CyclopediaParityPending::FoundRadius,
+            CyclopediaParityPending::SpeedBonus,
+            CyclopediaParityPending::DonationEligibilityAndPremium,
+            CyclopediaParityPending::DrawOrder,
+            CyclopediaParityPending::FactorCompositionAndOfficialRandomChance,
+        ],
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DonationAmountOutOfRange;
 

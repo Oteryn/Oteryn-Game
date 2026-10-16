@@ -351,3 +351,16 @@ Native World frame/tile intersection/reachability/canonical MapAreaIds and POI
 qualification remain pending; source admission does not grant runtime membership
 or override Southern Darama's Discovery=false. Donation Rust is unchanged from
 the actual one-case nativePASS at26aa26a4.
+
+## D1242a admitted scope and closed runtime port
+
+CP6226563247 closes this PR to the16admitted source-region masks,193UNADMITTED,
+qualified donation amount and recorded Discovery decisions. Full runtime CYC is
+a separate parity follow-up; no new PR is opened here. The owned pure domain
+now exposes require_cyclopedia_runtime()->Err(NotWiredInRuntime), listing each
+of six PARITY_PENDING groups: POI count,found radius,speed bonus,complete donation
+eligibility/premium,draw order,and factor composition/official33% qualification.
+The port cannot open from source-mask admission or a valid amount. No registry,
+capability,wire,DB writer or gameplay dispatch is mounted. New port compile/runtime
+NOT_RUN; previous exact donation source26aa26a4 one-case nativePASS is retained.
+Final repository gates/review remain separate; CP owns lifecycle.
