@@ -79,6 +79,9 @@ Niezależny architekt i CP. To komponenty, nie pełne mechaniki. Braki wypisano 
 - PARTY-1 #2201 `5b46fefa`: brak PartyView, modułu party/ i ingress protokołu. Bloker: CHAT-2.
 - VIP-1 #2143 `bcb366b8`: brak wire VIP_V1 (transport/protocol/testy PG), grup (w tym GroupRemove) i vip_status. P2: receipt replay przed fence.
 
+## Przegląd luk wszystkich draftów (CP + architekt, 2026-10-16)
+63 pozostałe drafty `skeleton/*`: 37 PARTIAL, 15 SKELETON_ONLY, 9 BLOCKED_DECISION, 2 NEAR_COMPLETE (NPC-ECON-1 #2197, HOUSE-RUNTIME-1a #2163). Na każdym PR jest komentarz z listą „To complete”, blokerami i findings; budowniczy uzupełnia je jednym pushem na ten sam PR.
+
 ## Granica — PR i sesje
 - ADR-0004-XREF-1: Game #2138 (auto-merge).
 - STORE-DELIVERY-CONTRACT-1: Platform #1625 (draft, decyzje S-1..S-9).
