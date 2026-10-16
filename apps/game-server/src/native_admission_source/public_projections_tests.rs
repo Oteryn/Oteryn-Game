@@ -985,6 +985,40 @@ fn a_world_over_its_bound_fails_the_scan_without_truncation() {
 }
 
 #[test]
+fn a_world_over_its_bound_is_held_like_a_definite_refusal() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, None), (WORLD_2, Some(vec![]))]);
+    let p = publisher(&store, vec![OK; 4]);
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert_eq!(state.next_retry(), None);
+    // Held for `DEFINITE_HOLD`: later scans neither process it nor alarm again.
+    for _ in 0..3 {
+        *p.clock.0.lock().unwrap() += ONLINE_INTERVAL;
+        assert!(!block_on(p.scan(&mut state)));
+    }
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert_eq!(p.sink.operations().len(), 1);
+    assert!(p.last_cut.lock().unwrap().is_none());
+    // Still over its bound when the hold ends: refused and held again.
+    *p.clock.0.lock().unwrap() = DEFINITE_HOLD;
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 2);
+    // Within its bound after that hold: sent, and the scan completes.
+    store.lock().unwrap().worlds[0].1 = Some(vec![online_entry("Aldric")]);
+    *p.clock.0.lock().unwrap() += DEFINITE_HOLD - ONLINE_INTERVAL;
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(p.sink.operations().len(), 1);
+    *p.clock.0.lock().unwrap() += ONLINE_INTERVAL;
+    assert!(block_on(p.scan(&mut state)));
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 2);
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), 2);
+    assert!(sent[1].1.contains(WORLD) && sent[1].1.contains("Aldric"));
+}
+
+#[test]
 fn a_scan_past_its_deadline_fails() {
     let store = Shared::default();
     scanned(&store, vec![(WORLD, Some(vec![])), (WORLD_2, Some(vec![]))]);

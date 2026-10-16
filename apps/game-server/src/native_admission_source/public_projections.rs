@@ -765,7 +765,8 @@ pub struct GoodCut {
     pub read_at: Duration,
 }
 
-/// A subject whose last attempt got `400`, `401`, `409` or was unencodable.
+/// A subject whose last attempt got `400`, `401`, `409` or was refused
+/// before any exchange (over a bound, unencodable).
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Held {
     family: Family,
@@ -1062,6 +1063,34 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
 
     fn alarm(&self) -> u64 {
         self.alarms.fetch_add(1, atomic::Ordering::Relaxed) + 1
+    }
+
+    /// §6: a definite `world_online` refusal, by Platform (`400`, `401`,
+    /// `409`) or locally before any exchange (over a bound, unencodable),
+    /// holds the World for `DEFINITE_HOLD` and raises the alarm. A World
+    /// already held keeps its hold and raises nothing. Returns whether the
+    /// World was newly held.
+    fn hold_world(&self, state: &mut ScanLoop, world_id: &str) -> bool {
+        state.settled(world_id);
+        let now = self.clock.elapsed();
+        if state
+            .held
+            .iter()
+            .any(|h| h.subject == world_id && h.until > now)
+        {
+            return false;
+        }
+        let alarms = self.alarm();
+        eprintln!(
+            "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
+        );
+        state.held.retain(|h| h.subject != world_id);
+        state.held.push(Held {
+            family: Family::WorldOnline,
+            subject: world_id.to_owned(),
+            until: now + DEFINITE_HOLD,
+        });
+        true
     }
 
     /// Record one outbox delivery result: a definite refusal holds the
@@ -1506,20 +1535,22 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             }
             let Some(characters) = world.characters else {
                 // §4.6: never truncated; the World and the family go stale.
-                log(Family::WorldOnline, OPERATION, "over_bound", Duration::ZERO);
-                state.settled(&world.world_id);
+                // §6: refused before any exchange and handled like a `400`.
+                if self.hold_world(state, &world.world_id) {
+                    log(Family::WorldOnline, OPERATION, "over_bound", Duration::ZERO);
+                }
                 complete = false;
                 continue;
             };
             let Some(digest) = online_digest(&characters) else {
-                self.alarm();
-                log(
-                    Family::WorldOnline,
-                    OPERATION,
-                    "invalid_report",
-                    Duration::ZERO,
-                );
-                state.settled(&world.world_id);
+                if self.hold_world(state, &world.world_id) {
+                    log(
+                        Family::WorldOnline,
+                        OPERATION,
+                        "invalid_report",
+                        Duration::ZERO,
+                    );
+                }
                 complete = false;
                 continue;
             };
@@ -1564,14 +1595,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 characters,
             };
             let Ok(body) = encode_online(&self.source_authority, &snapshot) else {
-                self.alarm();
-                log(
-                    Family::WorldOnline,
-                    OPERATION,
-                    "invalid_report",
-                    Duration::ZERO,
-                );
-                state.settled(&world.world_id);
+                if self.hold_world(state, &snapshot.world_id) {
+                    log(
+                        Family::WorldOnline,
+                        OPERATION,
+                        "invalid_report",
+                        Duration::ZERO,
+                    );
+                }
                 complete = false;
                 continue;
             };
@@ -1633,16 +1664,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     }
                     Err(not_delivered) if definite(not_delivered) => {
                         complete = false;
-                        let alarms = self.alarm();
-                        eprintln!(
-                            "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
-                        );
-                        state.settled(&stored.world_id);
-                        state.held.push(Held {
-                            family: Family::WorldOnline,
-                            subject: stored.world_id.clone(),
-                            until: self.clock.elapsed() + DEFINITE_HOLD,
-                        });
+                        self.hold_world(state, &stored.world_id);
                     }
                     Err(_) => {
                         // `429`, `503`, a timeout or a transport error.
