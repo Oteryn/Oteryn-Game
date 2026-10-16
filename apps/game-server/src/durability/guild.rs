@@ -9,7 +9,7 @@ use super::character_progression::{assert_session_fence, numeric_u64, uuid_text}
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::guild_audit::GuildAuditProposal;
+use super::guild_audit::{GuildAuditProposal, GuildTextAuditProposal};
 use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -60,6 +60,9 @@ pub enum GuildCommand {
     Exclude(CharacterId),
     /// Only commit_guild_found may execute this creation action.
     Found,
+    /// Private proposed persistence kinds, not allocated protocol IDs.
+    SetTitle(CharacterId),
+    SetMessage,
 }
 impl GuildCommand {
     fn code(self) -> i16 {
@@ -70,12 +73,14 @@ impl GuildCommand {
             Self::Leave => 4,
             Self::Exclude(_) => 5,
             Self::Found => 6,
+            Self::SetTitle(_) => 7,
+            Self::SetMessage => 8,
         }
     }
     fn target(self, actor: CharacterId) -> CharacterId {
         match self {
-            Self::Invite(c) | Self::Revoke(c) | Self::Exclude(c) => c,
-            Self::Accept | Self::Leave | Self::Found => actor,
+            Self::Invite(c) | Self::Revoke(c) | Self::Exclude(c) | Self::SetTitle(c) => c,
+            Self::Accept | Self::Leave | Self::Found | Self::SetMessage => actor,
         }
     }
 }
@@ -117,6 +122,45 @@ impl GuildFoundRequest {
     }
 }
 
+/// Bounded edit DATA. Private fields prevent the legacy membership entry from silently
+/// interpreting a text-less new arm. The expected revision is a CAS operand, never authority.
+#[derive(Debug, Clone)]
+pub(crate) struct GuildTextRequest {
+    common: GuildRequest,
+    expected_revision: u64,
+    text: String,
+}
+impl GuildTextRequest {
+    pub(crate) fn new(
+        common: GuildRequest,
+        expected_revision: u64,
+        received: &str,
+    ) -> Result<Self> {
+        if expected_revision == 0 {
+            return Err(GuildError::InvalidInput);
+        }
+        let text = match common.operation {
+            // GUILD0 specifies only the 29-scalar title bound, not the 0022 name grammar.
+            // Empty title is bounded DATA; no empty-message/clear exception is introduced.
+            GuildCommand::SetTitle(_)
+                if received.chars().count() <= 29 && !received.contains('\0') =>
+            {
+                received.to_owned()
+            }
+            GuildCommand::SetMessage => crate::chat::ChatText::parse(received)
+                .map_err(|_| GuildError::InvalidInput)?
+                .as_str()
+                .to_owned(),
+            _ => return Err(GuildError::InvalidInput),
+        };
+        Ok(Self {
+            common,
+            expected_revision,
+            text,
+        })
+    }
+}
+
 /// Policy outcomes under actual locked facts. No caller revision is required for these five
 /// operations: GUILD0 §12 reserves expected-revision preconditions for edits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -133,6 +177,7 @@ pub enum GuildResult {
     AccountHasPosition,
     NotPremium,
     Junior,
+    StaleRevision,
 }
 impl GuildResult {
     fn code(self) -> i16 {
@@ -149,6 +194,7 @@ impl GuildResult {
             Self::AccountHasPosition => 9,
             Self::NotPremium => 10,
             Self::Junior => 11,
+            Self::StaleRevision => 12,
         }
     }
     fn from_code(code: i16) -> Option<Self> {
@@ -165,6 +211,7 @@ impl GuildResult {
             9 => Self::AccountHasPosition,
             10 => Self::NotPremium,
             11 => Self::Junior,
+            12 => Self::StaleRevision,
             _ => return None,
         })
     }
@@ -358,31 +405,81 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: GuildRequest,
     ) -> Result<GuildOutcome> {
-        if request.operation == GuildCommand::Found {
+        if matches!(
+            request.operation,
+            GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage
+        ) {
             return Err(GuildError::InvalidInput);
         }
         let binding = binding(&fence, &request)?;
+        self.commit_guild_operation(authority, node, fence, request, binding, None)
+            .await
+    }
+
+    /// One accepted title/message edit, through the same native owner transaction as the
+    /// existing commands. Text/revision carry no role, session or membership authority.
+    pub(crate) async fn commit_guild_text(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        text: GuildTextRequest,
+    ) -> Result<GuildOutcome> {
+        let mut digest = Sha256::new();
+        digest.update(b"oteryn:guild-text-proposal:v1");
+        digest.update(binding(&fence, &text.common)?);
+        digest.update(text.expected_revision.to_be_bytes());
+        digest.update(text.text.as_bytes());
+        let binding = digest.finalize().to_vec();
+        self.commit_guild_operation(
+            authority,
+            node,
+            fence,
+            text.common.clone(),
+            binding,
+            Some(text),
+        )
+        .await
+    }
+
+    async fn commit_guild_operation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: GuildRequest,
+        binding: Vec<u8>,
+        text: Option<GuildTextRequest>,
+    ) -> Result<GuildOutcome> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            // Native relation locks precede GUILD0-LO-01. No Guild row is locked first.
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guild-command:' || encode($1,'hex') || ':' || $2,0))")
-                .bind(request.command.game_session_id().as_bytes().as_slice())
-                .bind(request.command.command_id().get().to_string()).execute(&mut *tx).await?;
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guild-operation:' || encode($1,'hex'),0))")
-                .bind(request.identity.occurrence.as_slice()).execute(&mut *tx).await?;
-            let result = execute(&mut tx, &node, &fence, &request, &binding).await;
-            match result {
-                Ok(result) => { commit_semantic_transaction(tx, deadline).await?; Ok(Ok(result)) },
-                Err(GuildError::Unavailable(e)) => Err(e),
-                Err(error) => Ok(Err(error)), // Dropping the transaction rolls back every effect.
-            }
-        })).await?
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = execute_fenced_operation(
+                        &mut tx,
+                        &recovery,
+                        &node,
+                        &fence,
+                        &request,
+                        &binding,
+                        text.as_ref(),
+                    )
+                    .await;
+                    match result {
+                        Ok(result) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(result))
+                        }
+                        Err(GuildError::Unavailable(e)) => Err(e),
+                        Err(error) => Ok(Err(error)), // Dropping the transaction rolls back every effect.
+                    }
+                })
+            })
+            .await?
     }
 }
 
@@ -479,6 +576,7 @@ impl FoundWrite {
                     revisions: (None, None),
                     audit: None,
                     found_name: Some(self.name.as_str()),
+                    text: None,
                 },
             )
             .await;
@@ -517,6 +615,7 @@ impl FoundWrite {
                 revisions: (Some(0), Some(1)),
                 audit: Some(&audit),
                 found_name: Some(self.name.as_str()),
+                text: None,
             },
         )
         .await?;
@@ -572,12 +671,31 @@ fn member_in_guild<'a>(member: &'a Option<Member>, guild: &GuildId) -> Option<&'
     member.as_ref().filter(|m| m.guild == *guild.as_bytes())
 }
 
+/// The single native transaction prelude: recovery remains before historical receipt or
+/// current actor checks. Factoring it also permits negative DATA against the real predicate;
+/// no test constructs or weakens the sealed Root capability.
+async fn execute_fenced_operation(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    request: &GuildRequest,
+    binding: &[u8],
+    text: Option<&GuildTextRequest>,
+) -> Result<GuildOutcome> {
+    assert_recovery_fence(tx, recovery).await?;
+    lock_admission_relations(tx).await?;
+    lock_operation(tx, request).await?;
+    execute(tx, node, fence, request, binding, text).await
+}
+
 async fn execute(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     request: &GuildRequest,
     binding: &[u8],
+    text: Option<&GuildTextRequest>,
 ) -> Result<GuildOutcome> {
     if let Some(row) = sqlx::query("SELECT request_binding,result,previous_revision::text,revision::text,transaction_id::text,event_id::text FROM game_guild_operations WHERE occurrence=encode($1,'hex')::uuid")
         .bind(request.identity.occurrence.as_slice()).fetch_optional(&mut **tx).await? {
@@ -705,6 +823,85 @@ async fn execute(
     };
     let acting = member(actor)?;
     let subject = member(target)?;
+    if let Some(text) = text {
+        let allowed = match request.operation {
+            GuildCommand::SetTitle(_) => {
+                acting.as_ref().is_some_and(|m| m.rank == 1) && subject.is_some()
+            }
+            GuildCommand::SetMessage => acting.as_ref().is_some_and(|m| m.rank <= 2),
+            _ => return Err(GuildError::InvalidInput),
+        };
+        let refusal = if !allowed {
+            Some(GuildResult::NotAllowed)
+        } else if text.expected_revision != previous {
+            Some(GuildResult::StaleRevision)
+        } else {
+            None
+        };
+        if let Some(result) = refusal {
+            return store(
+                tx,
+                fence,
+                request,
+                binding,
+                result,
+                (Some(previous), None),
+                None,
+            )
+            .await;
+        }
+        let next = previous.checked_add(1).ok_or_else(invalid)?;
+        let audit = GuildTextAuditProposal {
+            operation: GuildAuditProposal {
+                version: 1,
+                occurrence: request.identity.occurrence,
+                transaction_id: request.identity.transaction_id,
+                event_id: request.identity.event_id,
+                guild_id: *request.guild_id.as_bytes(),
+                world_id: *fence.runtime_scope.world_id().as_bytes(),
+                actor: *actor.as_bytes(),
+                target: *target.as_bytes(),
+                action: request.operation.code(),
+                previous_revision: previous,
+                revision: next,
+                rank_before: None,
+                rank_after: None,
+                removed_invitations: 0,
+                occurred_at_unix_ms: request.identity.occurred_at_unix_ms,
+            },
+            expected_revision: text.expected_revision,
+            text: text.text.clone(),
+        }
+        .checked_bytes()
+        .ok_or_else(invalid)?;
+        let outcome = store_operation(
+            tx,
+            fence,
+            request,
+            binding,
+            GuildResult::Ok,
+            OperationPayload {
+                revisions: (Some(previous), Some(next)),
+                audit: Some(&audit),
+                found_name: None,
+                text: Some(text),
+            },
+        )
+        .await?;
+        if matches!(request.operation, GuildCommand::SetTitle(_)) {
+            let changed = sqlx::query("UPDATE game_guild_members SET title=$3 WHERE guild_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+                .bind(request.guild_id.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).bind(&text.text).execute(&mut **tx).await?.rows_affected();
+            if changed != 1 {
+                return Err(invalid());
+            }
+            sqlx::query("UPDATE game_guilds SET revision=$2::text::numeric WHERE guild_id=encode($1,'hex')::uuid")
+                .bind(request.guild_id.as_bytes().as_slice()).bind(next.to_string()).execute(&mut **tx).await?;
+        } else {
+            sqlx::query("UPDATE game_guilds SET motd=$3,revision=$2::text::numeric WHERE guild_id=encode($1,'hex')::uuid")
+                .bind(request.guild_id.as_bytes().as_slice()).bind(next.to_string()).bind(&text.text).execute(&mut **tx).await?;
+        }
+        return Ok(outcome);
+    }
     let can_invite = member_in_guild(&acting, &request.guild_id).is_some_and(|m| m.rank <= 2);
     let now: i64 = sqlx::query_scalar(
         "SELECT floor(extract(epoch FROM transaction_timestamp())*1000)::bigint",
@@ -805,7 +1002,9 @@ async fn execute(
                 GuildResult::Ok
             }
         }
-        GuildCommand::Found => return Err(GuildError::InvalidInput),
+        GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage => {
+            return Err(GuildError::InvalidInput);
+        }
         GuildCommand::Leave => match member_in_guild(&acting, &request.guild_id) {
             Some(m) if m.rank > 1 => {
                 rank_before = Some(m.rank);
@@ -924,7 +1123,9 @@ async fn execute(
             }
         }
         GuildCommand::Revoke(_) => {}
-        GuildCommand::Found => return Err(GuildError::InvalidInput),
+        GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage => {
+            return Err(GuildError::InvalidInput);
+        }
     }
     if request.operation == GuildCommand::Accept {
         remove_invitations(tx, target, &removes).await?;
@@ -974,6 +1175,7 @@ async fn store(
             revisions,
             audit,
             found_name: None,
+            text: None,
         },
     )
     .await
@@ -983,6 +1185,7 @@ struct OperationPayload<'a> {
     revisions: (Option<u64>, Option<u64>),
     audit: Option<&'a [u8]>,
     found_name: Option<&'a str>,
+    text: Option<&'a GuildTextRequest>,
 }
 
 async fn store_operation(
@@ -997,14 +1200,15 @@ async fn store_operation(
         revisions: (previous, revision),
         audit,
         found_name,
+        text,
     } = payload;
     let event = audit.map(|_| request.identity.event_id);
-    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17)")
+    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name,expected_revision,edit_text) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17,$18::text::numeric,$19)")
         .bind(request.identity.occurrence.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice())
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.guild_id.as_bytes().as_slice())
         .bind(request.operation.target(fence.character_id).as_bytes().as_slice()).bind(request.operation.code()).bind(binding).bind(result.code())
-        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name)
+        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name).bind(text.map(|t| t.expected_revision.to_string())).bind(text.map(|t| t.text.as_str()))
         .execute(&mut **tx).await?;
     if let Some(audit) = audit {
         sqlx::query("INSERT INTO game_guild_event_outbox(event_id,occurrence,guild_id,occurred_at,payload,payload_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,sha256($5))")
@@ -1080,10 +1284,15 @@ CREATE TABLE game_guild_operations(
  game_session_id UUID NOT NULL CHECK(game_character_is_uuid_v7(game_session_id)),
  command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
  actor UUID NOT NULL REFERENCES game_character_roots,world_id UUID NOT NULL,guild_id UUID NOT NULL,
- target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 6),
- request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 11),
+ target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 8),
+ request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 12),
  previous_revision NUMERIC(20,0),revision NUMERIC(20,0),event_id UUID UNIQUE,audit_sha256 BYTEA,
  found_name TEXT CHECK((action=6 AND found_name IS NOT NULL AND game_character_is_name(found_name)) OR (action<>6 AND found_name IS NULL)),
+ expected_revision NUMERIC(20,0),edit_text TEXT,
+ CHECK(CASE WHEN action IN(7,8) AND result=0 THEN expected_revision IS NOT NULL AND expected_revision=previous_revision AND expected_revision>=1 AND edit_text IS NOT NULL
+   AND ((action=7 AND char_length(edit_text)<=29) OR (action=8 AND char_length(edit_text) BETWEEN 1 AND 255 AND octet_length(edit_text)<=1020))
+   ELSE expected_revision IS NULL AND edit_text IS NULL END),
+ CHECK(result<>12 OR action IN(7,8)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
  UNIQUE(game_session_id,command_id),UNIQUE(created_xact_id),
  CHECK(CASE WHEN result=0 THEN previous_revision IS NOT NULL AND revision IS NOT NULL
@@ -1130,6 +1339,22 @@ BEGIN
     RAISE EXCEPTION 'Found must create exactly its bound initial Guild' USING ERRCODE='23514';END IF;
    RETURN NEW;
   END IF;
+  IF o.action IN(7,8) THEN
+   SELECT rank_level INTO r FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.actor;
+   IF TG_OP<>'UPDATE' OR OLD.guild_id<>o.guild_id OR OLD.world_id<>o.world_id OR OLD.state NOT IN(1,2)
+      OR OLD.revision<>o.expected_revision OR OLD.revision<>o.previous_revision OR NEW.revision<>o.revision
+      OR NOT coalesce((o.action=7 AND r=1 AND EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.target))
+         OR (o.action=8 AND r<=2 AND o.target=o.actor),false) THEN
+    RAISE EXCEPTION 'text edit requires its actual current Guild/role/revision' USING ERRCODE='23514';END IF;
+   IF o.action=7 THEN
+    IF (to_jsonb(OLD)-'revision'-'name_key')<>(to_jsonb(NEW)-'revision'-'name_key') THEN
+     RAISE EXCEPTION 'title edit changes no other Guild field' USING ERRCODE='23514';END IF;
+   ELSE
+    IF NEW.motd IS DISTINCT FROM o.edit_text OR (to_jsonb(OLD)-'revision'-'name_key'-'motd')<>(to_jsonb(NEW)-'revision'-'name_key'-'motd') THEN
+     RAISE EXCEPTION 'message edit changes only its exact bound text' USING ERRCODE='23514';END IF;
+   END IF;
+   RETURN NEW;
+  END IF;
   -- Stored generated columns are NULL in NEW until AFTER BEFORE triggers. Its immutable
   -- source name stays in the comparison; the generated expression and unique index stay active.
   IF TG_OP<>'UPDATE' OR OLD.guild_id<>o.guild_id OR OLD.state NOT IN(1,2)
@@ -1154,6 +1379,13 @@ BEGIN
       OR NEW.rank_level<3 OR w IS DISTINCT FROM o.world_id
       OR NOT EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=o.guild_id AND character_id=o.actor AND expires_at>floor(extract(epoch FROM transaction_timestamp())*1000)::bigint) THEN
     RAISE EXCEPTION 'join must consume the actual live invitation into the lowest rank' USING ERRCODE='23514';END IF;
+   RETURN NEW;
+  ELSIF TG_OP='UPDATE' AND o.action=7 THEN
+   SELECT rank_level INTO r FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.actor;
+   IF r IS DISTINCT FROM 1 OR OLD.guild_id<>o.guild_id OR OLD.character_id<>o.target OR NEW.title IS DISTINCT FROM o.edit_text
+      OR (to_jsonb(OLD)-'title')<>(to_jsonb(NEW)-'title')
+      OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=o.guild_id AND world_id=o.world_id AND state IN(1,2) AND revision=o.expected_revision) THEN
+    RAISE EXCEPTION 'title requires the current leader and exact member/text' USING ERRCODE='23514';END IF;
    RETURN NEW;
   ELSIF TG_OP='DELETE' THEN
    SELECT rank_level INTO r FROM game_guild_members WHERE character_id=o.actor AND guild_id=o.guild_id;
@@ -1234,6 +1466,11 @@ BEGIN
      OR (NEW.action=2 AND EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.target))
      OR (NEW.action=3 AND (NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level>=3) OR EXISTS(SELECT 1 FROM game_guild_invitations WHERE character_id=NEW.actor)))
      OR (NEW.action IN(4,5) AND EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=NEW.target))
+     OR (NEW.action=7 AND (NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.target AND title=NEW.edit_text)
+       OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level=1)))
+     OR (NEW.action=8 AND (NEW.target<>NEW.actor OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND motd=NEW.edit_text)
+       OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level<=2)))
+     OR (NEW.action IN(7,8) AND NEW.expected_revision IS DISTINCT FROM NEW.previous_revision)
      OR (NEW.action=6 AND (
        NEW.actor<>NEW.target OR NEW.previous_revision<>0 OR NEW.revision<>1
        OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND name=NEW.found_name AND state=1 AND vice_deficit_since IS NULL AND premium_deficit_since IS NULL AND motd='')
@@ -1254,7 +1491,10 @@ END $$;
 CREATE CONSTRAINT TRIGGER game_guild_operation_proven AFTER INSERT ON game_guild_operations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_operation_proven();
 CREATE FUNCTION game_guild_event_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS(SELECT 1 FROM game_guild_operations o WHERE o.occurrence=NEW.occurrence AND o.result=0 AND o.guild_id=NEW.guild_id AND o.event_id=NEW.event_id AND o.audit_sha256=NEW.payload_sha256 AND o.created_xact_id=pg_current_xact_id()) THEN
+ IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS(SELECT 1 FROM game_guild_operations o WHERE o.occurrence=NEW.occurrence AND o.result=0 AND o.guild_id=NEW.guild_id AND o.event_id=NEW.event_id AND o.audit_sha256=NEW.payload_sha256 AND o.created_xact_id=pg_current_xact_id()
+   AND (o.action NOT IN(7,8) OR ((convert_from(NEW.payload,'UTF8')::jsonb->>'text') IS NOT DISTINCT FROM o.edit_text
+      AND (convert_from(NEW.payload,'UTF8')::jsonb->>'expected_revision')::numeric IS NOT DISTINCT FROM o.expected_revision
+      AND (convert_from(NEW.payload,'UTF8')::jsonb->>'action')::smallint=o.action))) THEN
   RAISE EXCEPTION 'Guild event has no matching operation' USING ERRCODE='23514';END IF;
  RETURN NULL;
 END $$;

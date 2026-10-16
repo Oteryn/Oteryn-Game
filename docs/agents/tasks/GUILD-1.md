@@ -417,3 +417,158 @@ wiring, formation activation/deadline/Premium jobs, rank/leader changes, disband
 retirement and exact-head repository CI remain open. This does not close the full mechanic
 or claim production/merge readiness. Root alone may publish the frozen existing draft;
 CP retains ready/merge/queue authority. Independent exact-candidate review follows freeze.
+
+
+## Native title/message successor, 2026-10-16 (SOURCE ONLY, UNVERIFIED)
+
+This successor starts at published draft `017b71d6912c8171ebaf6013b125b6b59b9135f1`
+under root's exclusive five-path lease. It adds actual native `SetTitle` and `SetMessage`
+entries to the existing Guild owner. Accepted GUILD0 §§3.1, 3.2, 4.1, 4.4 and 9 authorize
+these bounded edits; production installation and the full Guild mechanic remain open.
+The domain data file is unchanged. Historical Found source, evidence and qualification
+above describe that predecessor only; they do not qualify this successor.
+
+`commit_guild_text` accepts bounded text and an expected Guild revision as DATA. The same
+native semantic transaction prelude checks actual recovery before receipt replay, then
+uses the existing native admission/session/Node fences, Character roots, locked Guild
+state/revision and ordered current member rows. Only the current leader sets a current
+member's title; the current leader or vice sets the message. Other-Guild membership or a
+request target never supplies authority. A fresh permitted edit compares the expected
+revision, returns typed `StaleRevision` on mismatch and advances one Guild revision on
+success. The old membership entry rejects the text operation kinds rather than supplying
+missing text. Existing Found and all five membership commands retain their own paths.
+
+Titles preserve their received text, allow an empty value and contain at most29 Unicode
+scalar values. NUL is refused because PostgreSQL TEXT cannot represent it. No character-name
+grammar or message-only control/trim rule is imposed on titles. Messages use the actual
+native `crate::chat::ChatText::parse`: received UTF-8 bytes at most1020, no control characters,
+then trim, nonempty and at most255 Unicode scalar values. Empty/whitespace-only messages
+are refused; this component introduces no clear-message exception.
+
+The immutable occurrence/CommandRef binding includes operation, target, normalized exact
+stored text and expected revision. Terminal receipt replay precedes fresh role/session
+checks after valid recovery, so replay never changes later text. Successful edits retain
+one immutable operation and one private exact text/audit proposal in the same transaction.
+The closed private SQL CHECKs, immediate field/role/revision guards and deferred transition/
+event proof extend together; only the bound title or message and Guild revision can change.
+These are uninstalled owner proposals, not a production migration, grants, admitted codec,
+event ID, retention implementation or runtime caller.
+
+Seven additional original test bodies are authored (one pure and six PostgreSQL), appended
+after the complete inherited29 bodies/helpers. The inherited66856-byte owner-test prefix
+is preserved literally; the seven domain bodies are unchanged. The intended combined
+qualification is11 pure and25 PostgreSQL bodies, all **UNEXECUTED** on this successor.
+The authored cases cover an actual Found-created Guild, title29/message255 Unicode bounds,
+empty title and invalid messages, leader/vice/member/nonmember/foreign-Guild roles, missing
+target and foreign World, both closed Guild states, expected-revision and occurrence races,
+restart replay, exact target/text/revision/operation/Guild/CommandRef conflicts, both native
+mutation boundaries' stale session/lease/connection/scope/Node fences, real native assignment
+revocation, wrong Root and negative recovery data, deferred event and unrelated-field
+rollback, missing same-TX proof, overflow and unchanged CharacterRevision.
+
+The foreign Node fixture registers once and reuses its genuine proof for both operations.
+The revocation fixture uses the actual async native `RuntimeScopeAssignmentWriter::open`,
+reuses its Root's existing `item-transfer-writer` registration, supplies an independent
+operation3 exact-scope grant for the authenticated fixture DB session and reads back actual
+REVOKED state/generation. Neither opaque authority construction nor immutable recovery-row
+mutation is used. Negative recovery DATA reaches the same production transaction prelude
+before a historical receipt; it does not claim a manufactured stale Root capability.
+
+The early independent architecture source review found no confirmed blocker on its exact
+core hashes. Final coherent independent review and cheap-check evidence are recorded outside
+the tree in `guild-1-text-native-4-evidence`; source-only review and formatter/governance
+results never imply native compilation or PG success. Heavy qualification remains HOLD
+behind Ground then VIP Remove until root grants the shared-lock resource slot. No Cargo,
+Rust compile/codegen, PostgreSQL bootstrap/execution or large source hydration was run for
+this successor during this resume. Previous strict production unused-private warnings
+remain unqualified; no warning exemptions or fake production callers are introduced.
+
+CP retains module/Cargo/canonical-PG registration, numbered migrations and production
+privileges, normative event/retention admission and runtime consumers. Formation activation,
+Premium/vice/deadline jobs, rank/leader/resign edits, disband and Bank/Hall closure remain
+outside this bounded increment. No commit, push or remote mutation is authorized for this
+worker; root alone may publish a qualified coherent successor to the existing draft, and
+CP retains ready/merge/queue authority.
+
+
+### Native attempt8 and narrow observation repair (2026-10-16)
+
+The first actual native qualification attempt used source checkpointf4d37d76 and the
+reviewed recipev8 under Root's exclusive resource grant. Configured production Clippy
+and the disabled tracked wrapper passed. Strict production exited1 for eight unused
+private/dead-code diagnostics and remains RED. The enabled native wrapper then exited1
+with six E0599 errors: the new text-test tail called `Harness::root_revision()`, which
+the real native Harness does not provide. The run stopped there. No native codegen or
+any of the36 test bodies executed; no runtime/PG success is claimed. The immutable
+attempt8 logs, exact source baseline and retired-new-metadata proof remain retained.
+
+Checkpoint2 repairs only that new-tail observation: a private `text_character_revision`
+query reads the real `game_character_roots.character_revision::text` for the fixture's
+native CHARACTER through the existing pool, using the same SQL/binding already present
+in the inherited Found test. Six call sites now use that read. Expected values, equality
+and rollback assertions are unchanged; no assertion is removed. The complete66856-byte inherited owner/helper prefix and all29 inherited
+bodies remain literal. Production core, shared Harness,
+authority construction, grants and public APIs are unchanged. This is an observation
+repair, with all11 pure and25 PG bodies still UNEXECUTED pending independent review and
+a fresh Root grant. Checkpoint2 and its narrow diff are retained in
+`guild-1-text-native-4-evidence/resume-2`; checkpointf4 and attempt8 remain historical.
+
+### Native attempt9 and explicit async result types (2026-10-16)
+
+Actual attempt9 used checkpoint2 and recipev9 under a fresh Root grant. Configured
+production Clippy and the disabled tracked wrapper passed; strict production remained
+RED for unused private/dead code. The enabled native wrapper then stopped with five
+E0282/E0283 diagnostics at two new-tail async result bindings. No native codegen or
+any of the36 test bodies ran. Attempt9 logs and checkpoint2 remain unchanged.
+
+Checkpoint3 adds only `TestResult<()>` to those two `outcome` bindings, resolving the
+error conversion type explicitly. The async bodies, cleanup, assertions and test names
+are unchanged. Reversing the two annotations restores the complete checkpoint2 test
+file byte-for-byte. The complete66856-byte inherited owner/helper prefix, all29 inherited
+bodies, production core and shared Harness remain unchanged. All11 pure and25 PG bodies
+remain UNEXECUTED on checkpoint3. Formatter and source review do not establish runtime
+success; a fresh Root execution route and grant are required. Evidence is retained in
+`guild-1-text-native-4-evidence/resume-3`; no retry is authorized by this repair.
+
+### Final native component qualification (2026-10-16)
+
+Final result on source checkpoint3 (`c14b75ac`): **11 pure +25 PostgreSQL bodies PASS**,
+with no ignored, measured or filtered bodies. These36 comprise all29 inherited bodies
+and seven new text bodies. The complete66856-byte inherited owner/helper prefix remains
+literal in authored source; its22 inherited owner bodies plus seven unchanged domain
+bodies are the preserved29. The current qualified command inventory is Found, Invite,
+Revoke, Accept, Leave, Exclude, SetTitle and SetMessage.
+
+The actual native Cargo command and all37 extern identities were captured from the
+literal native package/dependencies on retained Rust1.94.0 in an isolated task-owned PC
+context. Configured production, disabled tracked wrapper, enabled native wrapper and
+selected-body Clippy checks passed. Native library codegen and both original-body drivers
+passed. The11 pure bodies passed in the compile run. After the first PG run refused an
+unsafe15432 URL before database creation, a verified task-local canonical5432 forward
+exposed the same PostgreSQL17.6 fixture without changing the native URL guard. A separate
+PG-only run of the exact retained artifact passed all25 bodies and emitted49 actual
+`GUILD-NATIVE-PG server_version_num=170006` markers. No recompilation or source change
+occurred between those runs; qualification is this explicit11+25 composition.
+
+The native library and both driver hashes, all compiled source hashes, all37 extern
+hashes and all five source-checkpoint3 files were unchanged before/after replay. Exact
+whole-file reconstruction verifies all nine validation source/registration mappings:
+only outside module/fixture mounts, test-attribute/header visibility changes and forwarding
+functions were applied; all original bodies and assertions remain literal. Earlier
+attempt8/9 compiler failures, the PC path failure and the initial wrong-port PG refusal
+are retained as historical RED evidence, with their repaired successors separately bound.
+
+Strict production remains **RED** for eight unused-private/dead-code diagnostics. The
+configured checks above do not establish a warning-free production build. No new warning
+exemption or manufactured production caller was introduced. This scoped original-Guild-body
+qualification does not claim the whole Game-server test suite, latest-main integration
+or a live production/runtime entry. CP still owns module/Cargo/canonical-PG registration,
+numbered migrations, production privileges, admitted wire/event/retention contracts and
+runtime consumers. The private SQL proposals remain uninstalled.
+
+Actual receipts, original logs, source/body/context/extern proofs and the final document
+bridge are retained in `guild-1-text-native-4-evidence/resume-3`. Independent native review
+`3941ca3a` verifies the composed36 result and preserves the separate strict RED. This final
+append changes only the task record; all four Rust files remain source-checkpoint3 bytes.
+Root alone may publish the coherent successor to existing draft PR2136. No ready, merge
+or queue action is requested.
