@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TREE = ROOT / 'content/npcs/definitions'
 PACKET = ROOT / 'docs/agents/evidence/OTV2-20261015-npc-content-2-presence.json'
 SCHEMA = 'OTERYN_NPC_PRESENCE_STAGE/v1'
-FROM_REVISION = 'item-sem-use-2-consumables-20261013-r1'
+FROM_REVISION = 'ranged-content-1-20261013-r1'
 REVISION = 'npc-content-2-presence-20261015-r1'
 SOURCES = {
     ('crystalserver/npc-file', 'ff7ede593c69d4c658b382c97443e8155926924a'): 'crystal',

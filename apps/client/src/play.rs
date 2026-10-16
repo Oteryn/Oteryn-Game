@@ -13,9 +13,9 @@ use crate::world::{START, World};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
-    ActorPosition, EntityKind, EntityRef, JoinSnapshot, Session, SessionError, SessionEvent,
-    SessionStream, StepDirection, StepDisposition, StepOutcome, WorldObjectOverlayEntry,
-    WorldSpatialEntity,
+    ActorPosition, EntityKind, EntityRef, JoinSnapshot, LogoutResult, Session, SessionError,
+    SessionEvent, SessionStream, StepDirection, StepDisposition, StepOutcome,
+    WorldObjectOverlayEntry, WorldSpatialEntity,
 };
 use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
@@ -73,12 +73,37 @@ pub const fn public_class(_error: &SessionError) -> PublicClass {
     PublicClass::SessionUnavailable
 }
 
+/// How a play session ended: the server ended it (back to login with this public class), or the
+/// player logged out and the server committed it (back to character selection).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayEnd {
+    Ended(PublicClass),
+    LoggedOut,
+}
+
+/// The status line of a refused logout. `None` (the server refused the command before its logout
+/// authority) and `BUSY` both ask the player to try again; `IN_FIGHT` names the whole seconds
+/// left, rounded up.
+#[must_use]
+pub fn logout_refusal_text(result: Option<LogoutResult>) -> String {
+    match result {
+        Some(LogoutResult::InFight { retry_after_ms }) => format!(
+            "You may not logout during a fight ({} s)",
+            retry_after_ms.div_ceil(1_000)
+        ),
+        Some(LogoutResult::Busy | LogoutResult::Accepted) | None => {
+            "You cannot logout now, try again".to_owned()
+        }
+    }
+}
+
 /// One input waiting for its turn on the session task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Input {
     Arrow(StepDir),
     Cast(NonZeroU32),
     Attack(EntityRef),
+    Logout,
 }
 
 /// Most inputs held while the session task is busy; a later one is dropped.
@@ -107,6 +132,8 @@ pub struct PlayView {
     entities: Vec<WorldSpatialEntity>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    /// The last refused logout's line, shown until the next combat line or logout answer.
+    logout_line: Option<String>,
 }
 
 impl PlayView {
@@ -140,6 +167,7 @@ impl PlayView {
             inputs: VecDeque::new(),
             entities: Vec::new(),
             combat_line: None,
+            logout_line: None,
         };
         for entry in overlay {
             view.set_marker(entry);
@@ -225,10 +253,19 @@ impl PlayView {
         }
     }
 
-    /// The minimal spell bar: its hotkeys and the last combat or cast line.
+    /// The logout chord: at most one logout waits for the next tick.
+    pub fn logout(&mut self) {
+        self.queue(Input::Logout);
+    }
+
+    /// The minimal spell bar: its hotkeys and the last combat, cast or refused logout line.
     #[must_use]
     pub fn combat_status(&self) -> String {
-        let line = self.combat_line.unwrap_or("");
+        let line = self
+            .logout_line
+            .as_deref()
+            .or(self.combat_line)
+            .unwrap_or("");
         format!("spells 1-{SPELL_SLOTS} {line}")
             .trim_end()
             .to_owned()
@@ -237,6 +274,12 @@ impl PlayView {
     /// Shows the server's answer to a combat command.
     pub fn apply_combat(&mut self, report: CombatReport) {
         self.combat_line = report.text();
+        self.logout_line = None;
+    }
+
+    /// Shows why the server refused a logout; the session keeps playing.
+    pub fn apply_logout_refusal(&mut self, result: Option<LogoutResult>) {
+        self.logout_line = Some(logout_refusal_text(result));
     }
 
     /// An arrow key: the latest press wins over an arrow still waiting at the end of the queue.
@@ -353,18 +396,22 @@ impl PlayView {
 
     /// One shell tick, never waiting on the network: applies every outcome the session task has
     /// delivered, then hands it the next step if one is due. A session end returns to login with
-    /// its public class; a view error is a render failure.
-    pub fn tick(&mut self, link: &PlayLink) -> Result<(), PublicClass> {
+    /// its public class, a committed logout to character selection; a view error is a render
+    /// failure.
+    pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         while let Some(event) = link.poll() {
             match event {
-                PlayEvent::Stepped(outcome) => self
-                    .apply(&outcome)
-                    .map_err(|_error| PublicClass::SessionUnavailable)?,
-                PlayEvent::Pushed(pushed) => self
-                    .apply_pushed(&pushed)
-                    .map_err(|_error| PublicClass::SessionUnavailable)?,
+                PlayEvent::Stepped(outcome) => {
+                    self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
+                }
+                PlayEvent::Pushed(pushed) => {
+                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                }
                 PlayEvent::Combat(report) => self.apply_combat(report),
-                PlayEvent::Ended(class) => return Err(class),
+                PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
+                PlayEvent::LoggedOut => return Err(PlayEnd::LoggedOut),
+                PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
         // One chronological queue: each input goes out in the order it was given. A step still
@@ -373,10 +420,8 @@ impl PlayView {
             match input {
                 Input::Cast(spell) => link.request_combat(CombatCommand::Cast(spell)),
                 Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
-                Input::Arrow(_) => match self
-                    .send_step()
-                    .map_err(|_error| PublicClass::SessionUnavailable)?
-                {
+                Input::Logout => link.request_logout(),
+                Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
                     Some(direction) => link.request(direction),
                     None => break,
                 },
@@ -386,9 +431,7 @@ impl PlayView {
             }
         }
         if self.inputs.is_empty()
-            && let Some(direction) = self
-                .send_step()
-                .map_err(|_error| PublicClass::SessionUnavailable)?
+            && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
         {
             link.request(direction);
         }
@@ -415,6 +458,10 @@ pub enum PlayEvent {
     Pushed(Pushed),
     /// The server's answer to a combat command.
     Combat(CombatReport),
+    /// The server refused a logout (`None`: before its logout authority); play goes on.
+    LogoutRefused(Option<LogoutResult>),
+    /// The server committed the logout and closed the session.
+    LoggedOut,
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
@@ -465,7 +512,9 @@ struct Mailbox {
     pushed: Pushed,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
-    ended: Option<PublicClass>,
+    /// The latest refused logout not yet polled.
+    logout_refused: Option<Option<LogoutResult>>,
+    ended: Option<PlayEvent>,
 }
 
 const MAX_COMBAT_REPORTS: usize = 8;
@@ -516,9 +565,17 @@ impl Outbox {
         mailbox.combat.push_back(report);
     }
 
+    fn logout_refused(&self, result: Option<LogoutResult>) {
+        lock(&self.0).logout_refused = Some(result);
+    }
+
     /// The first end wins.
     fn end(&self, class: PublicClass) {
-        lock(&self.0).ended.get_or_insert(class);
+        lock(&self.0).ended.get_or_insert(PlayEvent::Ended(class));
+    }
+
+    fn logged_out(&self) {
+        lock(&self.0).ended.get_or_insert(PlayEvent::LoggedOut);
     }
 }
 
@@ -539,6 +596,10 @@ impl PlayLink {
         let _ = self.commands.send(PlayCommand::Combat(command));
     }
 
+    pub fn request_logout(&self) {
+        let _ = self.commands.send(PlayCommand::Logout);
+    }
+
     /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
     pub fn poll(&self) -> Option<PlayEvent> {
         let mut mailbox = lock(&self.mailbox);
@@ -554,7 +615,10 @@ impl PlayLink {
         if let Some(report) = mailbox.combat.pop_front() {
             return Some(PlayEvent::Combat(report));
         }
-        mailbox.ended.take().map(PlayEvent::Ended)
+        if let Some(result) = mailbox.logout_refused.take() {
+            return Some(PlayEvent::LogoutRefused(result));
+        }
+        mailbox.ended.take()
     }
 }
 
@@ -576,6 +640,10 @@ pub trait Stepper: Send {
         &mut self,
         command: CombatCommand,
     ) -> impl Future<Output = Result<CombatReport, SessionError>> + Send;
+    /// Sends one logout: the server's result, `None` when it refused the command before its
+    /// logout authority.
+    fn logout(&mut self)
+    -> impl Future<Output = Result<Option<LogoutResult>, SessionError>> + Send;
     /// The other visible entities when they differ from `held`.
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
@@ -603,6 +671,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
 
     async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
         run_combat(self, &mut SpellFeedback::default(), command).await
+    }
+
+    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+        Ok(Session::logout(self).await?.result)
     }
 
     fn entities_changed(&self, held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
@@ -658,6 +730,19 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Combat(command)) => match session.combat(command).await {
                 Ok(report) => {
                     outbox.combat(report);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Logout) => match session.logout().await {
+                Ok(Some(LogoutResult::Accepted)) => {
+                    // The server ended the session and closes the transport.
+                    outbox.logged_out();
+                    return;
+                }
+                Ok(refused) => {
+                    outbox.logout_refused(refused);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
@@ -939,6 +1024,14 @@ mod tests {
         queued: Vec<SessionEvent>,
         drained: Arc<AtomicUsize>,
         combats: Arc<Mutex<Vec<CombatCommand>>>,
+        /// The answer to each logout in turn; empty answers `None`.
+        logouts: Arc<Mutex<VecDeque<Option<LogoutResult>>>>,
+    }
+
+    fn lock_logouts(
+        logouts: &Mutex<VecDeque<Option<LogoutResult>>>,
+    ) -> MutexGuard<'_, VecDeque<Option<LogoutResult>>> {
+        logouts.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     impl Stepper for Fake {
@@ -954,6 +1047,10 @@ mod tests {
                 CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
                 CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),
             })
+        }
+
+        async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+            Ok(lock_logouts(&self.logouts).pop_front().flatten())
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
@@ -991,6 +1088,7 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::new(Mutex::new(Vec::new())),
+            logouts: Arc::default(),
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -1032,6 +1130,7 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::clone(&combats),
+            logouts: Arc::default(),
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -1103,15 +1202,89 @@ mod tests {
         let mut view = view().map_err(|error| format!("{error:?}"))?;
         let mut ended = None;
         for _ in 0..200 {
-            if let Err(class) = view.tick(&link) {
-                ended = Some(class);
+            if let Err(end) = view.tick(&link) {
+                ended = Some(end);
                 break;
             }
             std::thread::sleep(Duration::from_millis(5));
         }
-        assert_eq!(ended, Some(PublicClass::SessionUnavailable));
+        assert_eq!(ended, Some(PlayEnd::Ended(PublicClass::SessionUnavailable)));
         runtime.shutdown(Duration::from_millis(250));
         Ok(())
+    }
+
+    #[test]
+    fn a_refused_logout_shows_its_line_and_an_accepted_one_ends_play() -> Result<(), String> {
+        let logouts = Arc::new(Mutex::new(VecDeque::from([
+            Some(LogoutResult::InFight {
+                retry_after_ms: 2_001,
+            }),
+            None,
+            Some(LogoutResult::Accepted),
+        ])));
+        let (link, commands, events) = play_channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let fake = Fake {
+            serves: Arc::new(AtomicUsize::new(0)),
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::new(Mutex::new(Vec::new())),
+            logouts: Arc::clone(&logouts),
+        };
+        runtime
+            .spawn(run_session(fake, commands, events))
+            .map_err(|error| error.to_string())?;
+        let mut view = view().map_err(|error| format!("{error:?}"))?;
+        let tick_until = |view: &mut PlayView, done: &dyn Fn(&PlayView) -> bool| {
+            for _ in 0..200 {
+                let ticked = view.tick(&link);
+                if ticked.is_err() || done(view) {
+                    return ticked;
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            Ok(())
+        };
+        view.logout();
+        // A second press before the tick is the same logout.
+        view.logout();
+        assert_eq!(
+            tick_until(&mut view, &|view| view.combat_status().contains("fight")),
+            Ok(())
+        );
+        assert_eq!(
+            view.combat_status(),
+            "spells 1-4 You may not logout during a fight (3 s)"
+        );
+        assert_eq!(lock_logouts(&logouts).len(), 2);
+        view.logout();
+        assert_eq!(
+            tick_until(&mut view, &|view| view.combat_status().contains("again")),
+            Ok(())
+        );
+        view.logout();
+        assert_eq!(tick_until(&mut view, &|_| false), Err(PlayEnd::LoggedOut));
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn the_in_fight_line_rounds_the_wait_up_to_whole_seconds() {
+        let in_fight = |retry_after_ms| Some(LogoutResult::InFight { retry_after_ms });
+        assert_eq!(
+            logout_refusal_text(in_fight(1)),
+            "You may not logout during a fight (1 s)"
+        );
+        assert_eq!(
+            logout_refusal_text(in_fight(60_000)),
+            "You may not logout during a fight (60 s)"
+        );
+        assert_eq!(
+            logout_refusal_text(Some(LogoutResult::Busy)),
+            "You cannot logout now, try again"
+        );
     }
 
     /// Queues pushed events like `Session` does: past the cap, the session fails closed.
@@ -1127,6 +1300,10 @@ mod tests {
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
             Ok(moved_to(100, 199, 0))
+        }
+
+        async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+            Ok(Some(LogoutResult::Busy))
         }
 
         async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -1182,7 +1359,8 @@ mod tests {
                             .map_err(|error| format!("{error:?}"))?;
                     }
                     PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
-                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) => {}
+                    PlayEvent::LoggedOut => return Err("logged out".to_owned()),
+                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) | PlayEvent::LogoutRefused(_) => {}
                 }
             }
             if pushed > 4 {

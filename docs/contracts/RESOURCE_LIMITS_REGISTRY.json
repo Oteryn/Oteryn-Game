@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-14T00:00:00+00:00",
+  "updated_at": "2026-10-15T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -6833,6 +6833,236 @@
       "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
     },
     {
+      "id": "DUR03-RL-01-NPC-TRADE-EXCHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "ItemInstances touched by one DUR-03 NPC EXCHANGE transaction (NpcTradeCause side EXCHANGE)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated. 3 takes and 3 gives.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted: a 3-take, 3-give exchange",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-02-NPC-TRADE-EXCHANGE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Location/custody lines of one DUR-03 NPC EXCHANGE transaction",
+      "unit": "location custody lines per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-06-NPC-TRADE-EXCHANGE-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Participants in one DUR-03 NPC EXCHANGE transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. Every line is one participant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6 admitted",
+        "max+1=7 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-06-NPC-TRADE-EXCHANGE-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Effect work units in one DUR-03 NPC EXCHANGE transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 15,
+      "configurable_range": {
+        "minimum": 15,
+        "maximum": 15
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. NPC trade work-unit method: whole burn 3, partial burn 2, MINT 2; worst case 3 whole take burns x 3 + 3 give MINTs x 2.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=15 admitted",
+        "max+1=16 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+    },
+    {
+      "id": "DUR03-RL-01-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "ItemInstances touched by one DUR-03 item conversion transaction (ConversionCause shape)",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 9,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write and in the payload gate; never truncated. 4 operands, 2 REPLACE_INSTANCE new instances for USED and TARGET, 3 outputs; a C4b corpse counts as one touched item.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=9 admitted: the maximal nine-item conversion",
+        "max+1=10 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-02-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Location/custody lines of one DUR-03 item conversion transaction",
+      "unit": "location custody lines per logical transaction",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 9,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=9 admitted",
+        "max+1=10 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-04-CRAFT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Transform inputs/outputs of one DUR-03 item conversion transaction",
+      "unit": "transform inputs/outputs per logical transaction",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. Two transforms, each one input and one output: USED and TARGET, or USED and a C4b corpse.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4 admitted",
+        "max+1=5 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-06-CRAFT-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Participants in one DUR-03 item conversion transaction (CRAFT1 C3a DUR03-RL-06-CRAFT, participant half)",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 12,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. The 9 items, the character_root row, the ConversionAttempt record or the cause record, and the receipt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=12 admitted",
+        "max+1=13 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-06-CRAFT-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Effect work units in one DUR-03 item conversion transaction (CRAFT1 C3a DUR03-RL-06-CRAFT, work-unit half)",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 36,
+        "maximum": 36
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any write; never truncated. 3 work units per participant x 12 participants.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=36 admitted",
+        "max+1=37 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "Audit events for one DUR-03 item conversion transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Exactly one event carrying the closed CONVERSION aggregate; the shape is never split into several events or truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: TransactionEventRef ordinal 1 of count 1",
+        "max+1=2 rejected (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "One encoded CONVERSION audit aggregate payload",
+      "unit": "bytes",
+      "hard_maximum": 42138,
+      "configurable_range": {
+        "minimum": 42138,
+        "maximum": 42138
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked on the encoded length before retaining or decoding; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top. 9 touched items at 4,682 B each (the per-item share of the first revision's 32,768 B ceiling for 7 items, rounded up). CRAFT-RT-1 measures the worst case (D50 method: the maximal nine-item aggregate, every key and revision at 512 B, every technical field at 128 B, maximal integers); a measured worst case above this row stops CRAFT-RT-1 for an amendment of CRAFT1 C3a.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case payload is at most 42,138 B and accepted (boundary test recorded by CRAFT-RT-1)",
+        "max=42,138 bytes accepted",
+        "max+1=42,139 bytes rejected before decode (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
+      "id": "DUR03-RL-07-CRAFT-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope carrying the CONVERSION aggregate, including payload",
+      "unit": "bytes",
+      "hard_maximum": 42452,
+      "configurable_range": {
+        "minimum": 42452,
+        "maximum": 42452
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. The payload ceiling plus the 314 B envelope overhead of the registered NPC trade rows (27,408 - 27,094). CRAFT-RT-1's migration admits a stored conversion envelope only up to this row.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the measured worst-case envelope (128-byte build id) is at most 42,452 B and accepted (boundary test recorded by CRAFT-RT-1)",
+        "max=42,452 bytes accepted",
+        "max+1=42,453 bytes rejected before decode (CAPACITY_EXCEEDED)"
+      ],
+      "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+    },
+    {
       "id": "DUR03-RL-03-PROF",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
       "resource": "Value lines in one perk modification receipt",
@@ -11242,6 +11472,335 @@
         "SPELL-PRESENT-1 or COMBAT-PRESENT-1 presentation egress (not yet composed)"
       ],
       "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+    },
+    {
+      "id": "LOGOUT-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md",
+      "resource": "LOGOUT_INTENT commands (command type 23, capability 21) outstanding per GameSession",
+      "unit": "commands",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One flag per served GameSession connection, held while a logout command is being decided; nothing persisted. The command loop reads no further command while a logout runs, so a second logout before the first result is a protocol error that ends the connection.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: apps/game-server/src/gameplay_transport/logout_tests.rs a single logout is decided and answered",
+        "max+1=2: the same tests refuse a second logout while the first is outstanding as a protocol error"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/logout.rs MAX_OUTSTANDING_LOGOUTS",
+        "apps/game-server/src/gameplay_transport/logout.rs the per-session outstanding logout guard"
+      ],
+      "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.6 and \u00a72.2. The oteryn-protocol-oteryn test logout::tests::the_registries_bind_the_logout_constants binds this row to the constant. Registered by OTV2-20261004-logout-wire-1."
+    },
+    {
+      "id": "PUBPROJ-HS-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishWorldHighscoresV1 request body (one filter)",
+      "unit": "bytes",
+      "hard_maximum": 262144,
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields (at most 1,000 rows, HIGHSCORES0-RL-02, of at most 212 bytes plus the envelope); the store reads at most 6,001 rows per snapshot (one more than six full filters) and every filter is encoded and length-checked before the first exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 1,000 worst-case rows encode within 262144 bytes",
+        "the same test: 1,001 rows are refused before any exchange"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-PROFILE-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishCharacterProfileV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one profile entry with one guild membership and a 64-byte name: at most 680 bytes in total; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case profile encodes within 2048 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Characters in one PublishWorldOnlineV1 snapshot",
+      "unit": "entries",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The scan reads at most 4,097 online rows per World (one more than the bound) in one statement; a World above 4,096 publishes nothing and its feed goes stale, never a truncated list. The same statement reads at most 4,096 name handoffs (section 7.3), oldest first; the rest wait for a later scan. A wire bound, not a capacity.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 worst-case entries encode within PUBPROJ-ONLINE-REQUEST-BYTES; 4,097 are refused",
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a World over the bound is not published and the others are"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishWorldOnlineV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 524288,
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from at most 4,096 grammar-checked entries of at most 112 bytes plus the envelope; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 entries with 64-byte names encode within 524288 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-INTERVAL",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Fixed start interval of world_online scans",
+      "unit": "seconds",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One scan per interval reads one cut of every World; a scan never overlaps the next. No per-request allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: scans advance a World's revision only when its list changes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-WORLDS",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Changed Worlds published concurrently in one world_online scan",
+      "unit": "worlds",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most 16 exchanges in flight per scan, one per World; more changed Worlds are sent in further waves of 16 within the same scan deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: changed Worlds are sent one publication per World"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-SCAN-DEADLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "From a world_online scan's cut to the last changed World's acknowledgement",
+      "unit": "seconds",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 5,
+        "maximum": 5
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "A scan that does not finish within 5 s does not advance complete_through; each world_online exchange is bounded at 3 s on a cold connection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a scan past its deadline leaves the watermark at the last good cut"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-WATERMARK-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishPublicProjectionWatermarkV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Fixed member set of bounded decimal strings, a family name and a source authority of at most 128 bytes; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case watermark encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-WATERMARK-GAP",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Maximum gap between watermarks of one family",
+      "unit": "seconds",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "The publisher sends each family's watermark every 3 s while it has a source; no per-request allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: watermarks are sent only for families with a source"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Publications in flight per family per publisher (world_online: per World, up to PUBPROJ-ONLINE-WORLDS)",
+      "unit": "publications",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The outbox loop sends one snapshot at a time per family; a held subject (definite refusal) waits 300 s before its next attempt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a definite refusal holds the subject and raises the alarm; a transient failure backs off from 1 s to 60 s"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-PROFILE-BATCH",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Character profiles read from the outbox in one store pass and cleared in one",
+      "unit": "profiles",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One read pass returns at most 32 profile snapshots (each at most PUBPROJ-PROFILE-REQUEST-BYTES encoded); the rest wait for the next batch. Sends stay one at a time (PUBPROJ-INFLIGHT).",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: profiles are read and cleared in batches; a transient failure stops the batch and clears what was acknowledged"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 8 and 11. Bounds the publisher's passes over the shared durability root. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-NAME-HANDOFF-HOLD",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Longest hold of a character name's new holder behind an undelivered vacating publication or an unsettled name handoff (the old holder's World's world_online snapshot)",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation. A held profile stays queued; after the hold it is sent, so a rename cycle cannot hold delivery forever, and Platform answers a name with two holders as unknown (section 7.3). One game_public_name_handoffs row per vacate; the scan deletes it once settled or older than the hold.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a simple name handoff waits for the vacating row; a rename cycle waits only for the bounded hold; after the vacating row is delivered the new holder still waits until its handoff is settled, and a handoff older than the hold no longer holds; a resync clears every vacated name key",
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs a_scan_settles_only_name_handoffs_platform_has_seen: a handoff is settled only for a World acknowledged at the cut, unchanged and acknowledged, or without a snapshot, or once older than the hold"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs",
+        "apps/game-server/migrations/0091_public_projections.sql"
+      ],
+      "notes": "Contract sections 7.3, 8 and 11. Measured from the vacating outbox row's created_at, and from the name handoff's vacated_at, on the database clock. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-STORE-PASS-GAP",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Minimum gap between two public projection publisher passes over the durability root",
+      "unit": "milliseconds",
+      "hard_maximum": 50,
+      "configurable_range": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation. The publisher waits at least 50 ms after a pass before the next and skips a pass as 'not now' while gameplay waits for the single durability holder.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: the publisher yields to waiting gameplay and paces its passes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 8 and 11. A floor, not a ceiling: the hard maximum is the fixed gap; gameplay demand only lengthens it. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-RESYNC-DEADLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Pass deadline of the operator public projection resync (oteryn-game-ops public-projection resync), PostgreSQL transaction, statement and lock timeouts included",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation in the Game process. The resync is one transaction of set-based statements (one per family): it touches every Character and every highscores pair and queues one outbox row each, server-side. A resync that does not finish within 60 s rolls back whole; the epoch and every revision stay as they were and the operator re-runs it.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a full resync with an epoch raise of 10,000 Characters and 704 highscores pairs commits within the deadline and queues every subject at the new epoch"
+      ],
+      "consumers": [
+        "apps/game-server/src/node/serve.rs",
+        "apps/game-server/src/durability/public_projections.rs",
+        "apps/game-server/migrations/0091_public_projections.sql"
+      ],
+      "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Sized for a store of 1,000,000 Characters plus all their highscores pairs (about 30 s at about 30 us per subject); if a resync exceeds it, re-run one family at a time, and if a single family still exceeds it, that is a blocker for the contract owner, resolved by a contract change and never by editing this deadline in place. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
     }
   ]
 }

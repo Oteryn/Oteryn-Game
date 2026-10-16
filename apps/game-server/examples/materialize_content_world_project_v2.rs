@@ -49,6 +49,7 @@ use oteryn_game_server::content::{
     item_name15_promotion::apply_item_name15_promotion_v1,
     item_numeric_modifier_promotion::apply_item_numeric_modifier_promotion_v1,
     item_physical_promotion::apply_item_physical_promotion_v1,
+    item_ranged_promotion::apply_item_ranged_promotion_v1,
     item_stack_default_promotion::apply_item_stack_default_promotion_v1,
     item_stack_default_successor8_promotion::apply_item_stack_default_successor8_promotion_v1,
     item_stack_false_promotion::apply_item_stack_false_promotion_v1,
@@ -626,18 +627,14 @@ fn admit_consumables_on_cheese_admitted(
     Ok(true)
 }
 
-// NPC-CONTENT-2 stages NPC movement facts and admitted voices on exactly the consumables-admitted
-// package (tree digest of ITEM-SEM-USE-2); the packet mints its own revision (DUR-04).
-#[path = "npc_materializer/presence.rs"]
-mod npc_presence;
-const NPC_PRESENCE: &[u8] =
-    include_bytes!("../../../docs/agents/evidence/OTV2-20261015-npc-content-2-presence.json");
-const NPC_PRESENCE_SHA256: &str =
-    "951c421c39b969dbd348d037e5b5436b1e45cd26e74ccad81f666bd5c8d69c29";
+// RANGED-CONTENT-1 lowers the distance, throwing, ammunition and wand weapon fields on exactly the
+// consumables package (tree digest of ITEM-SEM-USE-2).
 const CONSUMABLES_ADMITTED_PREDECESSOR: &str =
     "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
+/// Revisions are immutable (DUR-04): the ranged package is a new project revision.
+const RANGED_PROJECT_REVISION: &str = "ranged-content-1-20261013-r1";
 
-fn admit_npc_presence_on_consumables_admitted(
+fn promote_ranged_on_consumables_admitted(
     parent: &Path,
     name: &std::ffi::OsStr,
     output: &Path,
@@ -645,7 +642,7 @@ fn admit_npc_presence_on_consumables_admitted(
     let filesystem = ProjectFilesystemLimits {
         project: reconciled_limits(),
         max_entries_per_directory_scan: 32,
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
     };
     let Ok(captured) = capture_world_project(parent, name, filesystem) else {
         return Ok(false);
@@ -653,6 +650,58 @@ fn admit_npc_presence_on_consumables_admitted(
     let mut draft = captured.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
     if document_tree_digest(&before) != CONSUMABLES_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let applied = apply_item_ranged_promotion_v1(&mut draft)?;
+    draft.core.project_revision = RANGED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "ranged_fields_set={} ranged_fields_unchanged={} ranged_conflicts={} ranged_quivers_deferred={} tree_sha256={tree_sha256} predecessor_mode=true",
+        applied.fields_set, applied.fields_unchanged, applied.conflicts, applied.quivers_deferred
+    );
+    Ok(true)
+}
+
+fn promote_ranged_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !promote_ranged_on_consumables_admitted(stage_parent, stage_name, output)? {
+        return Err("consumables-admitted stage is not the ranged predecessor".into());
+    }
+    Ok(())
+}
+
+// NPC-CONTENT-2 stages NPC movement facts and admitted voices on exactly the ranged package (tree
+// digest of RANGED-CONTENT-1); the packet mints its own revision (DUR-04).
+#[path = "npc_materializer/presence.rs"]
+mod npc_presence;
+const NPC_PRESENCE: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20261015-npc-content-2-presence.json");
+const NPC_PRESENCE_SHA256: &str =
+    "233cfa99f690f038606566ab03bf232b0e982cb6a4b3d6ffc5620491d4426978";
+const RANGED_ADMITTED_PREDECESSOR: &str =
+    "71e96ccf1c6b327df60e12abc6faa972f32ff9ff99260b86fcb8a7513a535685";
+
+fn admit_npc_presence_on_ranged_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != RANGED_ADMITTED_PREDECESSOR {
         return Ok(false);
     }
     let npcs = npc_presence::apply(&mut draft, NPC_PRESENCE, NPC_PRESENCE_SHA256)?;
@@ -668,14 +717,15 @@ fn admit_npc_presence_from_stage(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stage_parent = stage.parent().ok_or("stage parent missing")?;
     let stage_name = stage.file_name().ok_or("stage basename missing")?;
-    if !admit_npc_presence_on_consumables_admitted(stage_parent, stage_name, output)? {
-        return Err("consumables-admitted stage is not the NPC presence predecessor".into());
+    if !admit_npc_presence_on_ranged_admitted(stage_parent, stage_name, output)? {
+        return Err("ranged-admitted stage is not the NPC presence predecessor".into());
     }
     Ok(())
 }
 
-fn admit_consumables_then_presence(
-    cheese_stage: &Path,
+/// Ranged package then NPC presence, staging the ranged package beside the output.
+fn promote_ranged_then_presence(
+    consumables_stage: &Path,
     output: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let output_name = output
@@ -683,11 +733,11 @@ fn admit_consumables_then_presence(
         .ok_or("output basename missing")?
         .to_string_lossy()
         .into_owned();
-    let consumables_stage = output.with_file_name(format!(".{output_name}-consumables-stage"));
-    let chained = admit_consumables_from_stage(cheese_stage, &consumables_stage)
-        .and_then(|()| admit_npc_presence_from_stage(&consumables_stage, output));
-    if consumables_stage.exists() {
-        fs::remove_dir_all(&consumables_stage)?;
+    let ranged_stage = output.with_file_name(format!(".{output_name}-ranged-stage"));
+    let chained = promote_ranged_from_stage(consumables_stage, &ranged_stage)
+        .and_then(|()| admit_npc_presence_from_stage(&ranged_stage, output));
+    if ranged_stage.exists() {
+        fs::remove_dir_all(&ranged_stage)?;
     }
     chained
 }
@@ -720,8 +770,20 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
-    if admit_npc_presence_on_consumables_admitted(parent, name, output)? {
+    if admit_npc_presence_on_ranged_admitted(parent, name, output)? {
         return Ok(());
+    }
+    let ranged_stage_dir = output.with_file_name(format!(
+        ".{}-ranged-only-stage",
+        output
+            .file_name()
+            .ok_or("output basename missing")?
+            .to_string_lossy()
+    ));
+    if promote_ranged_on_consumables_admitted(parent, name, &ranged_stage_dir)? {
+        let chained = admit_npc_presence_from_stage(&ranged_stage_dir, output);
+        fs::remove_dir_all(&ranged_stage_dir)?;
+        return chained;
     }
     // The pinned predecessor predates the admissions: stage each package beside the output and
     // admit the next one on top of it, so the result is the tracked package.
@@ -731,24 +793,31 @@ fn materialize_from_predecessor(
         .to_string_lossy()
         .into_owned();
     let consumables_stage = output.with_file_name(format!(".{output_name}-consumables-stage"));
+    let cheese_stage = output.with_file_name(format!(".{output_name}-cheese-stage"));
     if admit_consumables_on_cheese_admitted(parent, name, &consumables_stage)? {
-        let chained = admit_npc_presence_from_stage(&consumables_stage, output);
+        let chained = promote_ranged_then_presence(&consumables_stage, output);
         fs::remove_dir_all(&consumables_stage)?;
         return chained;
     }
-    let cheese_stage = output.with_file_name(format!(".{output_name}-cheese-stage"));
     if admit_cheese_on_corpse_admitted(parent, name, &cheese_stage)? {
-        let chained = admit_consumables_then_presence(&cheese_stage, output);
+        let chained = admit_consumables_from_stage(&cheese_stage, &consumables_stage)
+            .and_then(|()| promote_ranged_then_presence(&consumables_stage, output));
         fs::remove_dir_all(&cheese_stage)?;
+        if consumables_stage.exists() {
+            fs::remove_dir_all(&consumables_stage)?;
+        }
         return chained;
     }
     let corpse_stage = output.with_file_name(format!(".{output_name}-corpse-stage"));
     if admit_corpse_on_reconciled(parent, name, &corpse_stage)? {
         let chained = admit_cheese_from_stage(&corpse_stage, &cheese_stage)
-            .and_then(|()| admit_consumables_then_presence(&cheese_stage, output));
+            .and_then(|()| admit_consumables_from_stage(&cheese_stage, &consumables_stage))
+            .and_then(|()| promote_ranged_then_presence(&consumables_stage, output));
         fs::remove_dir_all(&corpse_stage)?;
-        if cheese_stage.exists() {
-            fs::remove_dir_all(&cheese_stage)?;
+        for stage in [&cheese_stage, &consumables_stage] {
+            if stage.exists() {
+                fs::remove_dir_all(stage)?;
+            }
         }
         return chained;
     }
@@ -3065,6 +3134,27 @@ mod consumables_admission_revision_tests {
                 "draft.core.project_revision = CONSUMABLES_ADMITTED_PROJECT_REVISION.to_owned();"
             ));
         }
+    }
+}
+
+#[cfg(test)]
+mod ranged_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The ranged weapon
+    /// promotion runs only in `promote_ranged_on_consumables_admitted`, which mints its own.
+    #[test]
+    fn ranged_promotion_always_mints_the_ranged_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn promote_ranged_on_consumables_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("promote_ranged_on_consumables_admitted body");
+        let call = ["apply_item_ranged_promotion_v1", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("step call");
+        assert!(
+            after.contains("draft.core.project_revision = RANGED_PROJECT_REVISION.to_owned();")
+        );
     }
 }
 

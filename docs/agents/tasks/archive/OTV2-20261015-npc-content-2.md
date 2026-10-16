@@ -62,8 +62,8 @@ external_repositories: []
 - **Walk interval and radius** already live on each NPC's Behavior profile
   (`movement.can_walk`, `movement.wander {interval_ms, radius_tiles}`) and agree with the
   sources; they are not restaged.
-- The materializer chains the step on the consumables-admitted package (tree digest `6a8bd4e0`)
-  and mints `npc-content-2-presence-20261015-r1` (DUR-04). The successor tree, the NPC data pin,
+- The materializer chains the step on the ranged package (RANGED-CONTENT-1, tree digest
+  `71e96ccf`, itself chained on the consumables package) and mints `npc-content-2-presence-20261015-r1` (DUR-04). The successor tree, the NPC data pin,
   the World pin and the test digests are regenerated from it.
 
 ## Excluded
@@ -95,6 +95,13 @@ external_repositories: []
 
 - CI on `004d240`: `quest-authoring` failed on stale NPC input digests in the Quest binding
   packets and the talk-NPC and explore-area candidates; regenerated with their generators.
+
+- Merge of main (RANGED-CONTENT-1 landed on the same consumables predecessor): the presence step
+  now applies on the ranged package; the packet's `from_project_revision` is the ranged revision
+  (`FROM_REVISION` in the stage tool), the tree digest is `16913e9c`, and the tree, World pin
+  (`03f64820`), NPC data pin, preprod topology, test digests and Quest NPC input digests were
+  regenerated with their tools. The red `World bundle`, `validate` and `game-gate` checks were one
+  cause: a stale World pin `inputs_digest` against the tree.
 
 ## PR and closeout
 
