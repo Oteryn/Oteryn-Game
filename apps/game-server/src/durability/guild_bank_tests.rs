@@ -135,7 +135,7 @@ async fn install_snapshot(h: &Harness, state: i16, rank: Option<i16>, guards: bo
     // Qualification-only row-lock/owner-guard read privileges. Guild UPDATE first reads
     // job checkpoints before command operations; neither table is writable by this grant.
     // Genuine owner triggers still govern every mutation.
-    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_operations,game_guild_job_checkpoints TO oteryn_game_runtime;GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;")).await?;
+    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_operations,game_guild_job_checkpoints,game_guild_disband_steps TO oteryn_game_runtime;GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;")).await?;
     Ok(())
 }
 
