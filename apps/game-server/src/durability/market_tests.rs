@@ -205,7 +205,7 @@ fn market_book_pages_follow_best_price_time_and_id_without_skips() -> TestResult
                     account,
                     created - i64::from(index % 3),
                 );
-                price(&mut o, 100 + u64::from(index % 2));
+                price(&mut o, [2, 9, 10, 100, 101][usize::from(index % 5)]);
                 seed(h, &o).await?;
                 expected.push(o);
             }

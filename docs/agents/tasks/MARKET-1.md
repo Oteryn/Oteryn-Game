@@ -267,3 +267,8 @@ The existing reviewed PC runners admit only their exact frozen MAIL/NPC candidat
 this Market candidate; no runner was rewritten, restarted or bypassed to test it. Local
 Cargo is absent. Request a compatible native validation allocation through #2131; keep
 this owned checkpoint local/bundled pending actual validation and publication rules.
+
+Independent review found P2 in initial book pagination: the text projection alias would
+make ORDER BY sort lexically. Fixed both sides to name the numeric table column and changed
+the price fixture to 2/9/10/100/101 so an actual PG run detects the regression. Disposition:
+fixed in source; execution remains NOT_RUN until compatible native Cargo validation.
