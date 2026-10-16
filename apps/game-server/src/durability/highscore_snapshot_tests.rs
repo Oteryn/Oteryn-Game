@@ -605,7 +605,10 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
             .map_err(debug)?;
         assert_eq!(progression.balance.points_earned, 25);
         assert_eq!(progression.balance.points_spent, 5);
-        assert_eq!(progression.balance.available(CharmCurrency::CharmPoints), 20);
+        assert_eq!(
+            progression.balance.available(CharmCurrency::CharmPoints),
+            20
+        );
         // Five points were durably spent, but the highscore below still reports 25 earned.
         assert_eq!(h.count("game_character_charm_unlocks").await?, 1);
         drop(authority);
