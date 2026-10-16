@@ -100,6 +100,10 @@ pub(crate) async fn begin_in_transaction(
     begin_with_clock(connection, trust, request, signature::synchronized_now_ms).await
 }
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Used by the source-included PostgreSQL fixture, not library unit tests"
+)]
 pub(crate) async fn fixture_begin_in_transaction(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
@@ -152,6 +156,10 @@ async fn begin_with_clock(
 }
 
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Used by the source-included PostgreSQL fixture, not library unit tests"
+)]
 pub(crate) async fn fixture_begin_with_clock(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
