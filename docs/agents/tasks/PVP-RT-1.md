@@ -537,3 +537,17 @@ the fixture now uses the native `runtime-scope-assignment:1` binding and initial
 the real first-entry position, matching the existing attack owner fixture. The
 failed source/result remain retained; this repair requires a new frozen source
 and actual scoped execution. No production guard was changed.
+
+D1122 actual scoped qualification for source b9163d2f9ab7b3669c87d1981930b48deeb47e0e:
+1 real combat-fact case, 4 logout cases, and 10 canonical authority-root restore
+cases passed (7 actual PG17.6 cases +3 pure restore cases). All seven PG fixtures
+emitted server_version_num=170006, with no NONCANONICAL skip. Strict all-target
+Clippy passed. The complete source inventory stayed identical before/after.
+Raw result: evidence/2204-D1216-fixture-v2-native-result.json outside the checkout.
+The earlier fixture RED and its failed exact source remain retained.
+
+This documentation-only qualification append does not change tested Rust. This
+checkpoint remains NOT_FULLY_QUALIFIED: full package NOT_RUN, admission caller
+after2187 and actual PvP source still NotWiredInRuntime. It is neither readiness
+nor full PvP/runtime acceptance. CP owns any paid review trigger after publication;
+no ready, merge, queue change or manual review trigger is performed.
