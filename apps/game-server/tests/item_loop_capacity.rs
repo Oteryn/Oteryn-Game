@@ -10,10 +10,8 @@ use oteryn_game_server::{content, durability};
 mod item_capacity;
 
 use item_capacity::{
-    CapacityAdvance, CapacityAdvanceRefusal, CapacityMove, CapacityPlan, CapacityRefusal,
-    IncomingWeight, NewhavenCapacityMigration, ReferenceCapacityRefusal,
-    advance_global_capacity_centi_oz, initial_global_capacity_centi_oz, plan_capacity,
-    project_reference_capacity_centi_oz,
+    CapacityMove, CapacityPlan, CapacityRefusal, IncomingWeight, ReferenceCapacityRefusal,
+    plan_capacity, project_global_capacity_centi_oz, project_reference_capacity_centi_oz,
 };
 
 fn definition(key: &str) -> TypedDefinitionRef {
@@ -43,117 +41,70 @@ fn weighted<'a>(
     IncomingWeight {
         item,
         weight_definition: &item.definition,
-        unit_weight: weight,
+        unit_weight: match weight {
+            Known(value) => Some(*value),
+            _ => None,
+        },
     }
 }
 
 #[test]
-fn global_initial_capacity_and_actual_award_gains_use_native_vocation_keys() {
-    assert_eq!(initial_global_capacity_centi_oz(), 60_000);
-    for (vocation, per_level) in [
-        ("none", 1_000),
-        ("druid", 1_000),
-        ("elder_druid", 1_000),
-        ("sorcerer", 1_000),
-        ("master_sorcerer", 1_000),
-        ("paladin", 2_000),
-        ("royal_paladin", 2_000),
-        ("knight", 2_500),
-        ("elite_knight", 2_500),
-        ("monk", 2_500),
-        ("exalted_monk", 2_500),
+fn global_profile_keeps_the_native_rookie_boundary_for_every_vocation() {
+    for (vocation, at_nine, at_twenty) in [
+        ("none", 68_000, 79_000),
+        ("druid", 68_000, 79_000),
+        ("elder_druid", 68_000, 79_000),
+        ("sorcerer", 68_000, 79_000),
+        ("master_sorcerer", 68_000, 79_000),
+        ("paladin", 69_000, 91_000),
+        ("royal_paladin", 69_000, 91_000),
+        ("knight", 69_500, 97_000),
+        ("elite_knight", 69_500, 97_000),
+        ("monk", 69_500, 97_000),
+        ("exalted_monk", 69_500, 97_000),
     ] {
+        assert_eq!(project_global_capacity_centi_oz(1, vocation), Ok(60_000));
+        assert_eq!(project_global_capacity_centi_oz(7, vocation), Ok(66_000));
+        assert_eq!(project_global_capacity_centi_oz(8, vocation), Ok(67_000));
+        assert_eq!(project_global_capacity_centi_oz(9, vocation), Ok(at_nine));
         assert_eq!(
-            advance_global_capacity_centi_oz(
-                initial_global_capacity_centi_oz(),
-                3,
-                vocation,
-                NewhavenCapacityMigration::NotApplicable,
-            ),
-            Ok(CapacityAdvance {
-                capacity_centi_oz: 60_000 + 3 * per_level,
-                migration: NewhavenCapacityMigration::NotApplicable,
-            })
+            project_global_capacity_centi_oz(20, vocation),
+            Ok(at_twenty)
         );
     }
 }
 
 #[test]
-fn imported_capacity_preserves_its_stored_value_and_applies_adjustment_only_once() {
-    use NewhavenCapacityMigration::{ConsumedImported, PendingImported};
-    // An authoritative imported total need not equal either Reference or fresh formulas.
-    let stored = 71_423;
-    let first = advance_global_capacity_centi_oz(stored, 3, "knight", PendingImported).unwrap();
+fn global_projection_refuses_unknown_profiles_without_a_capacity_fallback() {
     assert_eq!(
-        first,
-        CapacityAdvance {
-            capacity_centi_oz: 98_923,
-            migration: ConsumedImported,
-        }
+        project_global_capacity_centi_oz(0, "knight"),
+        Err(ReferenceCapacityRefusal::InvalidLevel)
     );
-    let next =
-        advance_global_capacity_centi_oz(first.capacity_centi_oz, 2, "paladin", first.migration)
-            .unwrap();
-    assert_eq!(next.capacity_centi_oz, 102_923);
-    assert_eq!(next.migration, ConsumedImported);
-    let one = advance_global_capacity_centi_oz(stored, 1, "knight", PendingImported).unwrap();
-    assert_eq!(
-        advance_global_capacity_centi_oz(one.capacity_centi_oz, 2, "knight", one.migration),
-        Ok(first)
-    );
-}
-
-#[test]
-fn zero_awarded_levels_preserve_capacity_and_each_migration_state_even_at_u64_max() {
-    for migration in [
-        NewhavenCapacityMigration::NotApplicable,
-        NewhavenCapacityMigration::PendingImported,
-        NewhavenCapacityMigration::ConsumedImported,
-    ] {
-        assert_eq!(
-            advance_global_capacity_centi_oz(u64::MAX, 0, "none", migration),
-            Ok(CapacityAdvance {
-                capacity_centi_oz: u64::MAX,
-                migration,
-            })
-        );
-    }
-    assert_eq!(
-        advance_global_capacity_centi_oz(
-            60_000,
-            u32::MAX,
-            "exalted_monk",
-            NewhavenCapacityMigration::NotApplicable,
-        )
-        .unwrap()
-        .capacity_centi_oz,
-        60_000 + u64::from(u32::MAX) * 2_500
-    );
-}
-
-#[test]
-fn capacity_awards_refuse_unknown_vocations_and_both_gain_and_migration_overflow() {
-    use CapacityAdvanceRefusal::{ArithmeticOverflow, UnknownVocation};
-    use NewhavenCapacityMigration::PendingImported;
     for vocation in ["", "unknown", "Knight", "elite knight"] {
         assert_eq!(
-            advance_global_capacity_centi_oz(60_000, 1, vocation, PendingImported),
-            Err(UnknownVocation)
-        );
-    }
-    for stored in [u64::MAX, u64::MAX - 1_000] {
-        assert_eq!(
-            advance_global_capacity_centi_oz(stored, 1, "none", PendingImported),
-            Err(ArithmeticOverflow)
+            project_global_capacity_centi_oz(1, vocation),
+            Err(ReferenceCapacityRefusal::UnknownVocation)
         );
     }
 }
 
 #[test]
-fn global_initial_capacity_reaches_native_weight_consumer_without_another_unit_conversion() {
+fn global_projection_stays_exact_above_u32_without_a_stored_capacity() {
+    assert_eq!(
+        project_global_capacity_centi_oz(u32::MAX, "elite_knight"),
+        Ok(u64::from(u32::MAX) * 2_500 + 47_000)
+    );
+    assert_eq!(
+        project_global_capacity_centi_oz(u32::MAX, "none"),
+        Ok(u64::from(u32::MAX) * 1_000 + 59_000)
+    );
+}
+
+#[test]
+fn global_base_reaches_native_weight_consumer_without_another_unit_conversion() {
     let source = item(1, 1);
     let rows = [weighted(&source, &Known(1))];
-    let capacity = initial_global_capacity_centi_oz();
+    let capacity = project_global_capacity_centi_oz(1, "none").unwrap();
     assert_eq!(
         incoming(Some(59_999), Some(capacity), &rows),
         Ok(CapacityPlan::Incoming {
@@ -167,8 +118,38 @@ fn global_initial_capacity_reaches_native_weight_consumer_without_another_unit_c
         incoming(Some(60_000), Some(capacity), &rows),
         Err(CapacityRefusal::Overweight {
             required: 60_001,
-            capacity: 60_000,
+            capacity: 60_000
         })
+    );
+}
+
+#[test]
+fn native_weight_consumer_uses_the_current_level_after_award_and_level_loss() {
+    let source = item(1, 1);
+    let rows = [weighted(&source, &Known(3_000))];
+    let low = project_global_capacity_centi_oz(8, "knight").unwrap();
+    let high = project_global_capacity_centi_oz(9, "knight").unwrap();
+    let refused = Err(CapacityRefusal::Overweight {
+        required: 68_000,
+        capacity: 67_000,
+    });
+    assert_eq!(incoming(Some(65_000), Some(low), &rows), refused);
+    assert_eq!(
+        incoming(Some(65_000), Some(high), &rows),
+        Ok(CapacityPlan::Incoming {
+            weight_before: 65_000,
+            added_weight: 3_000,
+            weight_after: 68_000,
+            remaining_capacity: 1_500,
+        })
+    );
+    assert_eq!(
+        incoming(
+            Some(65_000),
+            Some(project_global_capacity_centi_oz(8, "knight").unwrap()),
+            &rows
+        ),
+        refused
     );
 }
 
@@ -299,7 +280,7 @@ fn weight_facts_must_match_the_entire_native_definition_reference() {
         let row = IncomingWeight {
             item: &source,
             weight_definition: &mismatch,
-            unit_weight: &Known(1),
+            unit_weight: Some(1),
         };
         assert_eq!(
             incoming(Some(0), Some(100), &[row]),

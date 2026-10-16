@@ -343,51 +343,36 @@ select the outstanding Character baseline or qualify production transaction
 wiring, durable concurrency, shared equipment paths or the complete ITEM-LOOP-1.
 The PR remains a draft; shared-slot and final integration gates remain binding.
 
-### D1163 Global capacity increment — authoring, NOT_FULLY_QUALIFIED
+### D1199 derived Global capacity — NOT_FULLY_QUALIFIED
 
-CP D1163 records the owner's current Tibia/Newhaven selection:
-https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225136278.
-Fresh Global initial capacity is 600 oz (60,000 centi-ounces). Actual awarded
-levels add 25 oz for Knight/Monk, 20 for Paladin, or 10 for Druid/Sorcerer/none,
-including their existing native promoted vocation keys. The old Reference
-projector and its rookie coefficients remain unchanged historical data.
+CP D1199 (comment6225695524) supersedes D1163/D1184 imported-state authoring.
+Oteryn has no imported Characters or stored capacity. Migration0106 and the
+private durable participant proposal are withdrawn; no E progression call or
+death hook is required. Historical checkpoints remain evidence of their own bytes.
 
-The new pure helper starts from authoritative stored centi-ounces, not a
-level/vocation total formula. An explicit imported pending adjustment adds
-200 oz once on the next actual level-up and returns consumed state; zero levels
-preserve the value and pending state. Multi-level awards add the adjustment
-once, with checked arithmetic. All levels in one call must share the actual
-vocation at award; the owner splits at vocation transitions. No all-level rookie
-formula or imported capacity is guessed from current level/vocation.
+The pure Global projection uses current level and vocation with the accepted
+Formulae1205374 profile (including its rookie boundary), raising the common base
+from400 to600oz. Its result is u64 centi-ounces. All11 native vocation keys,
+rookie/vocation boundaries, invalid profiles, u32::MAX level, exact capacity and
+level-up/loss consumer cases are covered. Weight inputs are already-normalized
+Option<u32> centi-ounces, bound to the exact definition; no Content dependency,
+second conversion, stored total or imported-state enum remains in this helper.
 
-The Character owner must resolve and persist the current stored value, migration
-provenance and award/replay identity atomically under its actual fences. These
-pure input/output values confer no current authority and add no persisted state,
-schema, shared writer, runtime hook or transaction integration. D1160 permits
-the single `pub(crate) mod item_capacity;` registration line now added in the
-native durability module. This makes the helper compile in the actual library;
-it does not install an authority-consuming capacity caller.
-New cases cover vocation gains, stored imported totals, zero/multi-level and
-one-time adjustment, invalid vocation, arithmetic overflow and the existing
-native weight consumer's exact 60,000/60,001 boundary.
+Actual transfer enforcement still requires complete current equipment/backpack
+weight facts from compatible admitted Content under freeze/commit locks. Current
+ItemDefinitionFacts and generation_item_facts omit weight and the request lacks
+the complete carried-definition closure. CP request6225875673 asks for the exact
+producer/caller allocation and binding compatibility decision. No invented
+provider, client total, unconditional transfer refusal or admission bypass is
+installed. A private locked native-reader proposal is preserved separately and
+is not production integration or a PostgreSQL PASS.
 
-Actual native target `cargo test --locked --offline -p oteryn-game-server --test
-item_loop_capacity --quiet -- --test-threads=1` passed **21 tests, 0 failed,
-0 ignored, 0 filtered**, with the actual library registration and public native
-types (PG URL unset). Changed-file Rustfmt and `git diff --check` passed. Strict
-Clippy for the same target is **RED**: the newly registered module's 14 unused
-items have no production caller yet. No lint or visibility is weakened. Full
-normal package, all-target Clippy, PostgreSQL/runtime and exact-head CI for this
-increment are NOT_RUN. Earlier16/9801 qualification binds earlier Rust bytes;
-it is not promoted to qualify this increment. Exact actual logs, hashes and
-commands are in `/workspace/oteryn-family/loop-global-d1163/`.
-
-D1184 (CP comment6225481669) assigns migration0106 to A for durable absolute
-centi-ounces and imported pending/consumed provenance, with imported-only source
-backfill. A exposes `capacity_on_level_up(tx, character, new_level, vocation)`;
-E owns one call inside its real level-up TX and keeps its progression files.
-The durable source/participant patch is separate private preparation, not part of
-this pure-helper checkpoint. No imported capacity or migration marker is inferred
-from current level, absence, or the fresh formula. D1122 permits this disclosed
-NOT_FULLY_QUALIFIED checkpoint on the existing draft; full mechanic acceptance,
-real current-capacity integration and final review remain open.
+Actual native `cargo test --locked --offline -p oteryn-game-server --test
+item_loop_capacity --quiet -- --test-threads=1` passed21/21,0failed/ignored/filtered,
+with the actual registered library and native types (PG URL unset). Independent
+source review, changed-file fmt, diff and governance PASS. Full package/all-target
+Clippy/PG/runtime and new exact-head CI are NOT_RUN. Previous strict target Clippy
+RED from unused production helpers remains open; the current native build again
+reports unused-helper warnings. No lint/visibility weakening is applied.
+D1122 permits the disclosed checkpoint on the existing draft; runtime acceptance,
+full package/all-target qualification and final review remain open.
