@@ -17,13 +17,10 @@ use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::content::ReferenceItemField;
-use crate::content::native_gameplay::{NativeGameplayState, NativeItemDestination};
 use crate::domain::mail::{MailText, MailTextClass, MailTextRefusal};
 use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
-use std::sync::Arc;
 
 /// Slot input only: never run by the production writer or by module loading.
 /// MAIL-0 §4/WRITE-0 §5 name the first two tables. The private receipt also
@@ -140,50 +137,50 @@ impl ItemTextWriteRequest {
     }
 }
 
-/// The accepted rewrite policies of MAIL-0 §3.1, qualified again against the
-/// exact active production definition; no request boolean grants writability.
-fn qualified_text(
-    native: &NativeGameplayState,
-    request: &ItemTextWriteRequest,
-) -> Result<MailText> {
-    let class = match request.definition.production_key.as_str() {
-        "oteryn:item.tibia.i3505" => MailTextClass::Letter,
-        "oteryn:item.tibia.i3507" => MailTextClass::Label,
-        _ => return Err(ItemTextWriteError::NotWritable),
-    };
-    let policy = native
-        .item_policy(
-            &request.definition.production_key,
-            &request.definition.revision_ref,
-        )
-        .ok_or(ItemTextWriteError::NotWritable)?;
-    let record = policy.record();
-    let definition = &record.production_definition;
-    let maximum = match class {
+/// Closed leaf ABI: facts from one exact qualified Content definition. This
+/// carries no current session, custody, offered-trade or activation authority.
+pub(crate) struct MailTextPolicy {
+    definition: TypedDefinitionRef,
+    source_digest: [u8; 32],
+    max_text_length: u32,
+    class: MailTextClass,
+    direct_backpack: MailTextDestination,
+}
+
+/// This increment admits only the direct main-backpack custody query below.
+enum MailTextDestination {
+    CharacterInventory,
+}
+
+impl MailTextPolicy {
+    /// Sole producer: NativeGameplayState::mail_text_policy in
+    /// content/mail_text_policy.rs, after exact qualified profile validation.
+    /// The writer independently checks this digest against current activation.
+    pub(crate) fn from_qualified_content(
+        definition: TypedDefinitionRef,
+        source_digest: [u8; 32],
+        max_text_length: u32,
+        class: MailTextClass,
+    ) -> Self {
+        Self {
+            definition,
+            source_digest,
+            max_text_length,
+            class,
+            direct_backpack: MailTextDestination::CharacterInventory,
+        }
+    }
+}
+
+fn qualified_text(policy: &MailTextPolicy, request: &ItemTextWriteRequest) -> Result<MailText> {
+    let maximum = match policy.class {
         MailTextClass::Letter => 1_999,
         MailTextClass::Label => 79,
     };
-    if definition.family != "Item"
-        || definition.family != request.definition.family
-        || definition.production_key != request.definition.production_key
-        || definition.revision_ref != request.definition.revision_ref
-        || !record.admission.materializable
-        || !record
-            .admission
-            .legal_destinations
-            .contains(&NativeItemDestination::CharacterInventory)
-        || !matches!(
-            &record.semantics.readable_writeable,
-            ReferenceItemField::Known(text)
-                if text.readable == ReferenceItemField::Known(true)
-                    && text.writeable == ReferenceItemField::Known(true)
-                    && text.max_text_length == ReferenceItemField::Known(maximum)
-                    && matches!(text.write_once_target, ReferenceItemField::NotApplicable)
-        )
-    {
+    if policy.definition != request.definition || policy.max_text_length != maximum {
         return Err(ItemTextWriteError::NotWritable);
     }
-    MailText::parse(class, &request.text).map_err(|error| match error {
+    MailText::parse(policy.class, &request.text).map_err(|error| match error {
         MailTextRefusal::TooLong => ItemTextWriteError::TooLong,
         MailTextRefusal::ControlCharacter => ItemTextWriteError::Rejected,
     })
@@ -213,7 +210,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        native: Arc<NativeGameplayState>,
+        policy: MailTextPolicy,
         request: ItemTextWriteRequest,
     ) -> Result<ItemTextWriteOutcome> {
         if request.command.game_session_id() != fence.game_session_id
@@ -234,7 +231,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    match rewrite(&mut tx, &node, &fence, &native, &request).await {
+                    match rewrite(&mut tx, &node, &fence, &policy, &request).await {
                         Ok(outcome) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(outcome))
@@ -252,7 +249,7 @@ async fn rewrite(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
-    native: &NativeGameplayState,
+    policy: &MailTextPolicy,
     request: &ItemTextWriteRequest,
 ) -> Result<ItemTextWriteOutcome> {
     let character = fence.character_id.as_bytes();
@@ -303,10 +300,10 @@ async fn rewrite(
     let digest: Option<Vec<u8>> = sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .fetch_optional(&mut **tx).await?;
-    if digest.as_deref() != Some(native.source_digest().as_slice()) {
+    if digest.as_deref() != Some(policy.source_digest.as_slice()) {
         return Err(ItemTextWriteError::AuthorityRejected);
     }
-    let text = qualified_text(native, request)?;
+    let text = qualified_text(policy, request)?;
     // Lock first, then read custody in a separate snapshot after any wait. A
     // joined locking SELECT could retain an old snapshot of the location row.
     let locked = sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -314,10 +311,12 @@ async fn rewrite(
     if locked.is_none() {
         return Err(ItemTextWriteError::NotReachable);
     }
-    let owned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id AND s.world_id=e.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND e.character_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family=$4 AND i.definition_production_key=$5 AND i.definition_revision_ref=$6)")
+    let owned: bool = match policy.direct_backpack {
+        MailTextDestination::CharacterInventory => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id AND s.world_id=e.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND e.character_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family=$4 AND i.definition_production_key=$5 AND i.definition_revision_ref=$6)")
         .bind(request.item_instance_id.as_slice()).bind(world.as_bytes().as_slice()).bind(character.as_slice())
         .bind(&request.definition.family).bind(&request.definition.production_key).bind(&request.definition.revision_ref)
-        .fetch_one(&mut **tx).await?;
+        .fetch_one(&mut **tx).await?,
+    };
     if !owned {
         return Err(ItemTextWriteError::NotReachable);
     }

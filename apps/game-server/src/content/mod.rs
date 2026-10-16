@@ -70,6 +70,7 @@ pub mod item_stats_promotion;
 pub mod item_timed_promotion;
 pub mod item_use_observation_promotion;
 pub mod item_weapon_metadata_promotion;
+mod mail_text_policy;
 mod model;
 pub(crate) mod native_cell_lookup;
 pub(crate) mod native_gameplay;

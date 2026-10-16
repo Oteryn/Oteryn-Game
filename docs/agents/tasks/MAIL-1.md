@@ -402,3 +402,59 @@ No later-head CI, full current-authority writer/replay/trade qualification,
 production activation, full MAIL acceptance, ready/merge or publication is
 claimed. Content admission, real trade-offer serialization, numbered
 migration/grants/cleanup and wire composition remain activation gates.
+
+## D1113 accepted leaf composition repair — 2026-10-16 AUTHORING
+
+CP explicitly accepted the leaf ABI in #2131 comment `6222415946`, archived by
+this lead at `/workspace/oteryn-family-b/coordination-D1113-D1114.json`, against
+MAIL #2133 `85bb3aeeafb5a1bd3568f7d081e789c2074eef05`. This supersedes the
+previous unresolved choice of Content composition; it does not close the other
+activation gates or authorize a readiness/merge claim.
+
+`durability/item_text.rs` now imports no Content type. Its closed
+`MailTextPolicy` has private exact-definition, generation digest, class,
+max-length and CharacterInventory/direct-main-backpack fields. The documented
+sole producer is `NativeGameplayState::mail_text_policy` in the newly allocated
+`content/mail_text_policy.rs`. The adapter looks up the actual native generation
+member and retains the same exact definition, materializability, inventory
+admission, Known(true) readable/writeable, class-compatible max_text_length and
+NotApplicable write_once_target checks. Unknown/conflicting/unsupported facts
+still refuse. No caller-supplied current-authority boolean or Content shim is
+introduced.
+
+The writer consumes the leaf policy, independently compares its native source
+digest to current DB activation under the existing lock and checks request
+identity against its exact definition. Recovery/node/session/admission fences,
+root serialization, item lock plus fresh direct-backpack custody read,
+CommandRef receipt replay/conflict, rate/revision storage and privacy handling
+remain in place. The policy conveys no current custody/activation/trade proof.
+The unnumbered schema proposal and all original fourteen test bodies are unchanged.
+
+The only granted shared edit is `mod mail_text_policy;` in `content/mod.rs`.
+The existing three MAIL domain/durability registrations still need the ordinary
+private validation mount/CP slot; no other shared registration, test root,
+visibility, migration, wire, registry, pin or Content authoring file is changed.
+The new adapter has one targeted pending-consumer dead-code expectation, naming
+real wire/content/migration/trade work; no fake caller or blanket allowance.
+
+Four additional tests in `content::mail_text_policy::tests` cover:
+
+- `text_profile_keeps_letter_and_label_limits`;
+- `text_profile_requires_exact_definition_and_inventory_admission`;
+- `text_profile_refuses_unadmitted_mail_definitions`;
+- `text_profile_refuses_unknown_conflicting_and_write_once_facts`.
+
+Their explicit decoded-field unit inputs do not construct a NativeGameplayState,
+MailTextPolicy or admitted/current Content authority. They exercise the exact
+adapter validator's positive field grammar and single-invariant refusals, not
+live writable letter admission or the full fenced writer.
+
+Only focused rustfmt parsing/formatting and whitespace/source-diff inspection
+were performed during this repair. No Cargo, test, PG or PC job was run; the
+required fresh original 14 cases plus these four adapter cases and strict
+all-target Clippy/full-package no-run remain **unexecuted for this successor**.
+Earlier native results remain bound to their historical heads. Root owns the
+new freeze, independent review, real native validation and eventual publication;
+this author made no commit/push. Activation still requires admitted Content,
+real offered-trade serialization, numbered migration/grants/cleanup and actual
+transport composition. Full MAIL/WRITE acceptance remains open.
