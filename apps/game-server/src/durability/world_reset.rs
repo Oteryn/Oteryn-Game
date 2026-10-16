@@ -27,6 +27,7 @@ pub enum WorldResetError {
     CapacityExceeded,
     InvalidStoredState,
     HouseSourceRefused,
+    DrainBindingRefused,
     HouseTargetMembershipChanged { house_key: String },
     HouseCatalogueChanged { house_key: String },
     Unavailable(DurabilityError),
@@ -178,6 +179,94 @@ pub async fn census_retiring_world_reset(
         ground_root_count: count(1)?,
         ground_corpse_entry_count: count(2)?,
     }))
+}
+
+fn check_world_drain_data(
+    binding: &super::world_reset_port::WorldDrainBinding,
+    world: WorldId,
+    node: super::runtime_scope_assignment::NodeRegistrationFact,
+) -> Result<(), WorldResetError> {
+    if binding.world != world
+        || binding.node != node
+        || super::world_reset_port::world_drain_cohort_digest(world, node, &binding.channels)
+            .map_err(|_| WorldResetError::DrainBindingRefused)?
+            != binding.cohort_digest
+    {
+        return Err(WorldResetError::DrainBindingRefused);
+    }
+    Ok(())
+}
+
+fn check_world_drain_channel(
+    expected: Option<&super::world_reset_port::DrainedChannelBinding>,
+    scope: crate::foundation::RuntimeScopeRefV1,
+    generation: u64,
+) -> Result<(), WorldResetError> {
+    if !expected.is_some_and(|entry| entry.scope == scope && entry.generation == generation) {
+        return Err(WorldResetError::DrainBindingRefused);
+    }
+    Ok(())
+}
+
+/// D1233 consumer-only check. No witness implementation or proof constructor lives here.
+/// Reacquires native admission -> RETIRING job -> assignments locks through the existing
+/// census; independently verifies current incarnation, complete replacement cohort, closed
+/// readiness and no live/reconnect sessions. Then streams every World Channel assignment,
+/// comparing its independently read holder/generation against the entire borrowed proof.
+/// Keep this same TX/locks through final activation; success is not a reusable token.
+/// I's sealed proof must additionally establish completed in-memory logout/work drain.
+pub(crate) async fn check_world_drain_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    world: WorldId,
+    witness: &(dyn super::world_reset_port::WorldDrainWitness + Sync),
+) -> Result<(), WorldResetError> {
+    if census_retiring_world_reset(tx, node, world)
+        .await?
+        .is_none()
+    {
+        return Err(WorldResetError::NotCurrent);
+    }
+    let binding = witness.drained();
+    let fact = node.fact();
+    check_world_drain_data(binding, world, fact)?;
+    let query = sqlx::query("SELECT channel_id::text,ownership_generation::text,state,holder_node_id::text,holder_registration_revision::text FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1 ORDER BY uuid_send(channel_id)")
+        .bind(world.as_bytes().as_slice());
+    let mut rows = query.fetch(&mut **tx);
+    let mut index = 0;
+    while let Some(row) = std::future::poll_fn(|cx| rows.as_mut().poll_next(cx)).await {
+        let row = row.map_err(DurabilityError::from)?;
+        let channel = ChannelId::decode(&uuid(row.try_get(0).map_err(DurabilityError::from)?)?)
+            .map_err(|_| WorldResetError::InvalidStoredState)?;
+        let generation = row
+            .try_get::<String, _>(1)
+            .map_err(DurabilityError::from)?
+            .parse::<u64>()
+            .map_err(|_| WorldResetError::InvalidStoredState)?;
+        let state: i16 = row.try_get(2).map_err(DurabilityError::from)?;
+        let holder: Option<String> = row.try_get(3).map_err(DurabilityError::from)?;
+        let revision: Option<String> = row.try_get(4).map_err(DurabilityError::from)?;
+        if state != 1
+            || holder.map(uuid).transpose()?.as_ref() != Some(fact.node_id().as_bytes())
+            || revision
+                .map(|r| r.parse::<u64>())
+                .transpose()
+                .map_err(|_| WorldResetError::InvalidStoredState)?
+                != Some(fact.registration_revision())
+        {
+            return Err(WorldResetError::DrainBindingRefused);
+        }
+        check_world_drain_channel(
+            binding.channels.get(index),
+            crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+            generation,
+        )?;
+        index += 1;
+    }
+    if index != binding.channels.len() {
+        return Err(WorldResetError::DrainBindingRefused);
+    }
+    Ok(())
 }
 
 // A source catalogue keeps opaque native position bytes; this owner never decodes or
@@ -712,5 +801,90 @@ mod reset_house_preflight_tests {
             assert!(reset_house_catalogue(vec![malformed]).is_err());
         }
         assert!(reset_house_catalogue(vec![fact("a", 1, 1), fact("a", 2, 1)]).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod world_drain_binding_data_tests {
+    use super::super::runtime_scope_assignment::NodeRegistrationFact;
+    use super::super::world_reset_port::{
+        DrainedChannelBinding, WorldDrainBinding, world_drain_cohort_digest,
+    };
+    use super::*;
+    use crate::foundation::{NodeId, RuntimeScopeRefV1};
+
+    fn identity(value: u8) -> [u8; 16] {
+        let mut bytes = [value; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes
+    }
+    fn channel(world: WorldId, id: u8) -> Result<DrainedChannelBinding, WorldResetError> {
+        Ok(DrainedChannelBinding {
+            scope: RuntimeScopeRefV1::channel(
+                world,
+                ChannelId::decode(&identity(id))
+                    .map_err(|_| WorldResetError::InvalidStoredState)?,
+            ),
+            generation: 9,
+        })
+    }
+    fn compare_channels(
+        binding: &WorldDrainBinding,
+        observed_data: &[DrainedChannelBinding],
+    ) -> Result<(), WorldResetError> {
+        for (index, row) in observed_data.iter().enumerate() {
+            check_world_drain_channel(binding.channels.get(index), row.scope, row.generation)?;
+        }
+        if observed_data.len() != binding.channels.len() {
+            return Err(WorldResetError::DrainBindingRefused);
+        }
+        Ok(())
+    }
+    #[test]
+    fn drain_binding_data_rejects_each_independent_mismatch() -> Result<(), WorldResetError> {
+        // Data equality/digest only: no witness impl, current-incarnation or DB proof.
+        let world =
+            WorldId::decode(&identity(1)).map_err(|_| WorldResetError::InvalidStoredState)?;
+        let other_world =
+            WorldId::decode(&identity(2)).map_err(|_| WorldResetError::InvalidStoredState)?;
+        let node_id =
+            NodeId::decode(&identity(3)).map_err(|_| WorldResetError::InvalidStoredState)?;
+        let node = NodeRegistrationFact::new(node_id, 7);
+        let channels = vec![channel(world, 4)?, channel(world, 5)?];
+        let digest = world_drain_cohort_digest(world, node, &channels)
+            .map_err(|_| WorldResetError::DrainBindingRefused)?;
+        let mut binding = WorldDrainBinding {
+            world,
+            node,
+            channels: channels.clone(),
+            cohort_digest: digest,
+        };
+        check_world_drain_data(&binding, world, node)?;
+        compare_channels(&binding, &channels)?;
+        assert!(compare_channels(&binding, &channels[..1]).is_err());
+        assert!(compare_channels(&binding, &[channels[0], channels[1], channels[1]]).is_err());
+        let mut changed = channels.clone();
+        changed[1].generation += 1;
+        assert!(compare_channels(&binding, &changed).is_err());
+        assert!(check_world_drain_data(&binding, other_world, node).is_err());
+        assert!(
+            check_world_drain_data(&binding, world, NodeRegistrationFact::new(node_id, 8)).is_err()
+        );
+        let other_node =
+            NodeId::decode(&identity(6)).map_err(|_| WorldResetError::InvalidStoredState)?;
+        assert!(
+            check_world_drain_data(&binding, world, NodeRegistrationFact::new(other_node, 7))
+                .is_err()
+        );
+        binding.cohort_digest[0] ^= 1;
+        assert!(check_world_drain_data(&binding, world, node).is_err());
+        binding.cohort_digest = digest;
+        binding.channels.reverse();
+        assert!(check_world_drain_data(&binding, world, node).is_err());
+        assert!(world_drain_cohort_digest(world, node, &[channels[0], channels[0]]).is_err());
+        changed[0] = channel(other_world, 4)?;
+        assert!(world_drain_cohort_digest(world, node, &changed).is_err());
+        Ok(())
     }
 }

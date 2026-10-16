@@ -621,3 +621,31 @@ The preflight consumer requires `&(dyn WorldResetHouseSource + Sync)` because it
 borrow spans SQLx awaits in the durable semantic lane. The CP local trait is
 unchanged and no production implementation is invented. The prior three native
 case PASS remains exact to6bd7824e; this signature's renewed compile is NOT_RUN.
+
+### D1233 complete World drain binding — source checkpoint
+
+The durability-local port now borrows WorldDrainBinding: World, exact
+NodeRegistrationFact, complete sorted per-Channel scopes/generations and a
+canonical cohort digest. Only I/#2187 implements WorldDrainWitness from its actual
+sealed proof; this checkpoint adds no production witness implementation or proof
+constructor. I must call the single owned world_drain_cohort_digest helper rather
+than copy its encoding. Its internal fixed domain/version hashes World16,Node16,
+registration u64BE,count u64BE,then sorted Channel16/generation u64BE entries;
+wrong-World/non-Channel/duplicate/unsorted or zero-generation input refuses.
+
+The caller-TX consumer first uses the existing native census, retaining admission,
+RETIRING job and assignment locks and independently revalidating current node,
+complete replacement cohort/closed readiness/session absence. It then streams
+all ordinary Channel assignments for this World in byte order, checking every
+holder node/revision and scope/generation against the entire borrowed binding.
+Missing/extra channels, changed generation/node/World or digest refuse; no
+representative Channel or request-derived authority is accepted. No data row
+buffer, activation SQL write/commit or new schema is added.
+
+One authored data-only unit case checks exact binding/digest agreement and each
+mismatch axis, plus malformed ordering/duplicate/foreign-World entries. It mints
+no witness and establishes no current authority. New D1233 compile/unit/PG/
+activation/integration qualification is NOT_RUN and NOT_FULLY_QUALIFIED. The
+separate native0771f0c5 source freeze covers the earlier House/Sync inputs only,
+not this later binding/consumer delta. Genuine C encoder and I sealed logout/
+pending-work drain remain required before final composition.
