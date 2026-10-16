@@ -67,17 +67,61 @@ fn malformed_results_cannot_carry_hidden_facts() {
 }
 
 #[test]
-fn existing_envelope_ceiling_includes_text_framing() {
-    // Field tag + three-byte length at this existing envelope bound.
+fn ascii_text_limit_is_512_bytes_on_encode_and_decode() {
+    assert_eq!(MAX_ITEM_LOOK_TEXT_BYTES, 512);
+    let exact = ItemLookResult::Text("x".repeat(512));
+    let encoded = encode_item_look_result(&exact).unwrap();
+    assert_eq!(encoded.len(), 515); // Tag + two-byte length + 512 text bytes.
+    assert_eq!(decode_item_look_result(&encoded), Ok(exact));
+    let oversized = "x".repeat(513);
+    assert_eq!(
+        encode_item_look_result(&ItemLookResult::Text(oversized.clone())),
+        Err(ItemLookWireError::LimitExceeded)
+    );
+    let mut encoded = Vec::new();
+    push_message_field(&mut encoded, 1, oversized.as_bytes());
+    assert_eq!(
+        decode_item_look_result(&encoded),
+        Err(ItemLookWireError::LimitExceeded)
+    );
+}
+
+#[test]
+fn multibyte_text_limit_counts_utf8_bytes_in_both_directions() {
+    let text = "é".repeat(256);
+    assert_eq!(text.len(), 512);
+    assert_eq!(text.chars().count(), 256);
+    let exact = ItemLookResult::Text(text);
+    let encoded = encode_item_look_result(&exact).unwrap();
+    assert_eq!(decode_item_look_result(&encoded), Ok(exact));
+    let oversized = "é".repeat(257);
+    assert_eq!(oversized.len(), 514);
+    assert_eq!(
+        encode_item_look_result(&ItemLookResult::Text(oversized.clone())),
+        Err(ItemLookWireError::LimitExceeded)
+    );
+    let mut encoded = Vec::new();
+    push_message_field(&mut encoded, 1, oversized.as_bytes());
+    assert_eq!(
+        decode_item_look_result(&encoded),
+        Err(ItemLookWireError::LimitExceeded)
+    );
+}
+
+#[test]
+fn text_limit_refuses_old_envelope_sized_text_and_retains_outer_ceiling() {
+    // The old envelope-sized result is now refused by the stricter text bound.
     let text = "x".repeat(MAX_COMMAND_RESULT_PAYLOAD_BYTES - 4);
-    let encoded = encode_item_look_result(&ItemLookResult::Text(text.clone())).unwrap();
+    assert!(text.len() > MAX_ITEM_LOOK_TEXT_BYTES);
+    assert_eq!(
+        encode_item_look_result(&ItemLookResult::Text(text.clone())),
+        Err(ItemLookWireError::LimitExceeded)
+    );
+    let mut encoded = Vec::new();
+    push_message_field(&mut encoded, 1, text.as_bytes());
     assert_eq!(encoded.len(), MAX_COMMAND_RESULT_PAYLOAD_BYTES);
     assert_eq!(
         decode_item_look_result(&encoded),
-        Ok(ItemLookResult::Text(text.clone()))
-    );
-    assert_eq!(
-        encode_item_look_result(&ItemLookResult::Text(format!("{text}x"))),
         Err(ItemLookWireError::LimitExceeded)
     );
     assert_eq!(

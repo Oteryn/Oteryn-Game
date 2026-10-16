@@ -274,3 +274,34 @@ hashes, exact RED/GREEN and final-check logs, explicit registration-root copies,
 small source/patch artifacts and restoration instructions. It contains no target,
 ELF, dependency tree or recursive overlay/symlink copy. The temporary paths above
 are conveniences; they are not the sole copy of the repair evidence.
+
+### D1143 default authoring packet — NOT_FULLY_QUALIFIED
+
+CP D1143 (comment6224931148 on #2131) supplies this authoring contract:
+request = Item (position or container reference) | Creature (id); result = UTF-8
+text at most 512 bytes; refusals = NOT_VISIBLE | NOT_REACHABLE | RATE_LIMITED |
+NOT_AVAILABLE; rate = 10 requests per 1 second per GameSession. These defaults
+remain subject to CP's protocol review; this entry does not assign wire IDs/tags
+or authorize a negotiated runtime offer.
+
+This increment implements only the unambiguous 512-UTF-8-byte text bound in the
+existing codec and its single `pub mod item_look;` native registration under
+D1160. Encode refuses before output allocation; decode refuses before `to_owned`.
+The existing envelope ceiling, nonempty success and strict malformed/oneof rules
+remain in force. Native tests are authored for 512/513 ASCII bytes, 512/>512
+multibyte bytes in both directions, and the stricter limit within the old envelope.
+
+The current request still uses the existing ItemTargetV1/ItemHandle shape; the
+Creature request, the new reference/refusal shapes, rate enforcement and actual
+dispatch are NOT_IMPLEMENTED/NOT_RUN by this increment. Existing capability and
+command IDs remain None, with no offer, new tags, server changes or activation.
+Actual changed-file Rustfmt, strict native protocol all-target Clippy and the
+complete native protocol package test command passed: **248 tests, 0 failed,
+0 ignored, 0 filtered**, plus zero doc tests. Commands used the actual full Git
+checkout/package, `--locked --offline`, the compatible cache and one Cargo job;
+no excerpt harness, mounts, replacement types or server test rerun is involved.
+Root independently reviewed the bounded worker-authored source before execution.
+Exact source/commands/log hashes are in `/workspace/oteryn-family/look-d1143/`.
+Earlier server qualification remains bound to its original source and context;
+new server runtime/Creature/rate/dispatch and exact-head CI remain NOT_RUN.
+This checkpoint is NOT_FULLY_QUALIFIED and does not establish complete ITEM-LOOK-1.
