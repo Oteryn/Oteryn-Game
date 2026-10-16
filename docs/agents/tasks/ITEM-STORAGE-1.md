@@ -401,3 +401,45 @@ The two-line shared workflow registration remedy remains unapplied pending its
 CP slot. The owned candidate is secured as a local commit and verified recovery
 bundle outside this checkout; exact identifiers are in the family recovery record.
 No shared file, ready, merge or rebase is part of this checkpoint.
+
+### D1122/D1147/D1160 checkpoint — NOT_FULLY_QUALIFIED
+
+CP comment6224930201 (D1122) explicitly permits one coherent checkpoint push
+to this existing draft before full qualification, with fmt/diff checks and honest
+RED/NOT_RUN disclosure. This supersedes the publication hold above only; it does
+not grant ready, review, merge, CI restarts or product authority.
+
+CP comment6224931148 (D1147) assigns this PR its own existing PG target
+registration now. The workflow adds only `item_storage_postgres` through the
+unchanged `run_registered_target` helper; Forge is not registered here. CP
+comment6224912485 (D1160) allows registration-only lines for this PR's own
+modules: `durability::character_depot` and `gameplay_transport::depot` now join
+the actual library. No other shared module code changes in this checkpoint.
+
+The unchanged native std-only `postgres_target_aggregation.rs` guard is executed
+against this actual checkout before and after registration. Its previous RED
+specifically named this unregistered Storage target; exact receipts and all
+checkpoint checks are kept outside the checkout in
+`/workspace/oteryn-family/storage-checkpoint-d1122/`.
+
+Retained source-compatible evidence: depot7/7 pure and separate cloud4/4 actual
+PG17.6; prior combined all-target Clippy/fmt PASS and aggregation RED remain
+historical, not an exact checkpoint PASS. Full normal package, all-target Clippy,
+new canonical module compilation and exact-head CI are NOT_RUN for this new
+input unless separately recorded below. Protected workflow pins are not changed;
+any validator RED remains explicit. This is NOT_FULLY_QUALIFIED.
+
+Runtime destination/fence/audit/receipt/guards remain after #2190 and #2163 per
+D1120/D1142. Migration0102 is reserved by D1158, not installed here. Exact depot
+placement/definition binding belongs to this PR's `map/facts.rs`; locker/container
+must come from an admitted world-bundle, otherwise UNKNOWN, with no substitute
+fixture. Native depot value moves and complete mechanic acceptance remain gated.
+
+Actual registration check: the unchanged native aggregation guard compiled from
+its complete source with rustc1.94, then passed 1/1 after registration (before:
+0/1, with only `item_storage_postgres` named). This isolated std-only guard is
+not package/PG execution. Repository policy is RED/E8002 (reviewed MQ blob
+contract); the matching workflow regression is RED at its protected blob pin
+`d7cfbf90b2b81c43f92c010660f41d242a3cf840`. Both are retained without changing
+pins or validators. Exact owner request: CP comment6225410275. D1122 permits
+this disclosed checkpoint; it remains NOT_FULLY_QUALIFIED.

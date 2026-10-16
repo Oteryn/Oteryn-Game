@@ -17,6 +17,7 @@ pub mod character_build;
 pub(crate) mod character_chat_name;
 pub mod character_command;
 pub mod character_death;
+pub(crate) mod character_depot;
 pub mod character_equipment;
 pub mod character_familiar;
 pub mod character_forge_dust;
