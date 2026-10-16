@@ -5,7 +5,6 @@ task_id: ACH-1
 title: "ACH-1: achievements, badges, titles"
 mode: IMPLEMENT
 status: NOT_FULLY_QUALIFIED
-status: skeleton
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4

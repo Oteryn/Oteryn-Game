@@ -235,20 +235,46 @@ fn achievement_batch_concurrent_reversed_inputs_keep_one_fact_per_key() -> TestR
         let requests = vec![grant(COOKIES, 60), grant(NUT, 70)];
         let reversed = requests.iter().cloned().rev().collect();
         let current = fence(1)?;
-        let (left, right) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            tokio::join!(
-                root.commit_test_achievement_grants(&authority, &harness.node, current, requests),
-                competing.commit_test_achievement_grants(
-                    &competing_authority,
-                    &harness.node,
-                    current,
-                    reversed
-                )
-            )
-        })
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+        let mut left = std::pin::pin!(root.commit_test_achievement_grants(
+            &authority,
+            &harness.node,
+            current,
+            requests,
+        ));
+        let mut right = std::pin::pin!(competing.commit_test_achievement_grants(
+            &competing_authority,
+            &harness.node,
+            current,
+            reversed,
+        ));
+        let (mut left_result, mut right_result) = (None, None);
+        let (left, right) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            poll_fn(|context| {
+                if left_result.is_none()
+                    && let Poll::Ready(value) = left.as_mut().poll(context)
+                {
+                    left_result = Some(value);
+                }
+                if right_result.is_none()
+                    && let Poll::Ready(value) = right.as_mut().poll(context)
+                {
+                    right_result = Some(value);
+                }
+                if left_result.is_some() && right_result.is_some() {
+                    Poll::Ready((left_result.take(), right_result.take()))
+                } else {
+                    Poll::Pending
+                }
+            }),
+        )
         .await?;
-        let left = left.map_err(debug)?;
-        let right = right.map_err(debug)?;
+        let left = left.ok_or("left grant did not complete")?.map_err(debug)?;
+        let right = right
+            .ok_or("right grant did not complete")?
+            .map_err(debug)?;
         let outcomes: Vec<_> = left.iter().chain(&right).collect();
         assert_eq!(
             outcomes
