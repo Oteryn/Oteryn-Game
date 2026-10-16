@@ -4,7 +4,7 @@
 task_id: RANK-1
 title: "RANK-1: highscores and analysers"
 mode: IMPLEMENT
-status: local_preparation_pending_qualification
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -456,3 +456,34 @@ Validation at authoring was source review and `git diff --check` only. No Cargo,
 PostgreSQL run, PC operation, commit or publication was performed in this worker;
 all added assertions remain unexecuted pending a new frozen candidate and fresh
 native qualification. The root control plane owns independent review and gates.
+
+
+### CP D1122/D1155: publishable implementation checkpoint
+
+AUTHORING resumed for this task record; the Rust bytes of frozen runtime
+candidate b83207bcc055290f3f46feaeb40d53abb524e837 are unchanged.
+The concrete Unavailable(Unavailable) test failure was a fixture binding
+error, repaired in b83207bc. Its separate source-bound evidence retains
+26/26 selected native PASS (15 PostgreSQL17.6 and 11 ranking), the repaired
+case07 PASS and independent source/runtime review PASS. No selected suite
+is rerun or attributed to unexecuted package checks.
+
+NOT_FULLY_QUALIFIED under CP D1122: remaining unfiltered literal-candidate
+all-target Clippy, duplicate-source guard and complete package tests are
+NOT_RUN. A bounded admission ended HOLD/postgres at 20:53:34Z without
+creating attempt5. CP D1155 allows one new bounded attempt5, using the same
+frozen b832 source and reviewed canonical V2/PG/stop-and-reap guards; no
+new runner or hidden restart is authorized by this record.
+
+CP6224947337 assigns migration0097 with roles/grants and snapshot spawn
+to this PR. Test bodies must move to `tests/support/highscores_postgres_cases.rs`
+and the canonical `character_authority_postgres.rs` root after #2198;
+no Cargo target and no cfg(any()) in that final integration. Reset
+notifications come from #2167. Shared file order remains
+#2163 -> #2197 -> #2167 -> #2198 -> #2168 -> #2151 -> #2149.
+
+HS-WIRE-1 gets cap9/cmd14, no state domain, subject to the required live
+open-draft collision check before publication. Its layout/tags and
+SNAPSHOT_EXPIRED registration remain to implement. ANALYSER consumes
+existing receipts under cap10 without inventing a hook or statistics owner.
+This checkpoint neither completes RANK-1 nor requests ready/merge.
