@@ -433,3 +433,45 @@ fn reset_native_frozen_v1_survives_real_activation_and_new_work_uses_v2() -> Tes
   drop(authority);drop(seal);drop(permit);h.cleanup().await
  })
 }
+
+#[test]
+fn reset_issuance_core_is_private_and_control_wrapper_still_records() -> TestResult {
+    let admin = configured_admin().ok_or("routed PostgreSQL required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetissuancecore").await?;
+        install(&h).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
+        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
+        // A genuinely granted control call proves the extracted native issuer still writes.
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+            .bind(next.to_string()).bind(previous.map(|value|value.to_string()))
+            .bind([31_u8;32].as_slice()).bind([32_u8;32].as_slice()).bind([33_u8;32].as_slice())
+            .execute(&h.pool).await?;
+        let recorded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND activation_sequence=$3::text::numeric AND server_artifact_digest=$4 AND client_artifact_digest=$5 AND frame_binding_digest=$6)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).bind(next.to_string())
+            .bind([31_u8;32].as_slice()).bind([32_u8;32].as_slice()).bind([33_u8;32].as_slice()).fetch_one(&h.pool).await?;
+        assert!(recorded);
+        let mut tx = h.pool.begin().await?;
+        let exists: bool = sqlx::query_scalar("SELECT to_regprocedure('game_content_record_activation_core(uuid,uuid,numeric,numeric,bytea,bytea,bytea)') IS NOT NULL AND has_schema_privilege('oteryn_game_runtime',current_schema(),'USAGE')")
+            .fetch_one(&mut *tx).await?;
+        assert!(exists);
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let may_execute: bool = sqlx::query_scalar("SELECT has_function_privilege(current_user,'game_content_record_activation_core(uuid,uuid,numeric,numeric,bytea,bytea,bytea)','EXECUTE')")
+            .fetch_one(&mut *tx).await?;
+        assert!(!may_execute);
+        // The exact already-recorded replay is valid data; only EXECUTE authority changes.
+        let denied = sqlx::query("SELECT game_content_record_activation_core(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+            .bind(next.to_string()).bind(previous.map(|value|value.to_string()))
+            .bind([31_u8;32].as_slice()).bind([32_u8;32].as_slice()).bind([33_u8;32].as_slice())
+            .execute(&mut *tx).await;
+        assert!(matches!(denied,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("42501")));
+        tx.rollback().await?;
+        h.cleanup().await
+    })
+}

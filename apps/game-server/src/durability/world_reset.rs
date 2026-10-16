@@ -592,6 +592,7 @@ impl DurabilityRoot {
 /// trigger or replaces their existing positive/refusal clauses. Fixtures install this same SQL.
 pub fn candidate_schema_sql() -> Result<String, &'static str> {
     let mut sql = RESET_SCHEMA.to_owned();
+    sql.push_str(&candidate_reset_issuance_sql()?);
     for (source, name, record) in [
         (
             include_str!("../../migrations/0015_corpse_decay_retire.sql"),
@@ -633,6 +634,65 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
         sql.push_str(&format!("\nDO $$ BEGIN EXECUTE format('ALTER FUNCTION {name}() SET search_path = pg_catalog, %I, pg_temp',current_schema()); END $$;\n"));
     }
     Ok(sql)
+}
+
+/// D1189a/0096 uninstalled candidate: one native issuance body, two separately
+/// authorized entry points. The reset entry point is not installed here yet.
+/// Preserve the native replay/CAS/INSERT bytes and the public op4 check exactly.
+fn candidate_reset_issuance_sql() -> Result<String, &'static str> {
+    const SOURCE: &str = include_str!("../../migrations/0008_native_entry_content_activation.sql");
+    const START: &str = "CREATE FUNCTION game_content_record_activation(";
+    const END: &str = "\nEND; $$;";
+    const WRITE_START: &str = "    PERFORM pg_advisory_xact_lock(";
+    if SOURCE.matches(START).count() != 1 {
+        return Err("native issuance definition changed");
+    }
+    let start = SOURCE.find(START).ok_or("native issuance missing")?;
+    let native = &SOURCE[start..];
+    let end = native
+        .find(END)
+        .ok_or("native issuance terminator missing")?
+        + END.len();
+    let (header, body) = native[..end]
+        .split_once("BEGIN\n")
+        .ok_or("native issuance body missing")?;
+    let (grant, write_body) = body
+        .split_once(WRITE_START)
+        .ok_or("native issuance write boundary missing")?;
+    if !grant.starts_with("    IF NOT EXISTS (\n")
+        || !grant.ends_with("    END IF;\n")
+        || !grant.contains("g.control_role = session_user")
+        || !grant.contains("g.operation = 4")
+    {
+        return Err("native issuance authorization changed");
+    }
+    let core = format!(
+        "{}BEGIN\n{WRITE_START}{write_body}",
+        header.replacen(
+            START,
+            "CREATE FUNCTION game_content_record_activation_core(",
+            1
+        )
+    );
+    let (signature, _) = header
+        .split_once("DECLARE\n")
+        .ok_or("native issuance declaration changed")?;
+    let wrapper = format!(
+        "{}BEGIN\n{grant}    PERFORM game_content_record_activation_core(\
+         p_world_id,p_channel_id,p_sequence,p_previous,p_server,p_client,p_frame);\nEND; $$;",
+        signature.replacen("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1)
+    );
+    Ok(format!(
+        "\n{core}\n{wrapper}\n\
+         REVOKE ALL ON FUNCTION game_content_record_activation_core(UUID,UUID,NUMERIC,NUMERIC,BYTEA,BYTEA,BYTEA) \
+         FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;\n\
+         DO $$ BEGIN\n\
+         EXECUTE format('ALTER FUNCTION game_content_record_activation_core(uuid,uuid,numeric,numeric,bytea,bytea,bytea) \
+         SET search_path = pg_catalog, %I, pg_temp',current_schema());\n\
+         EXECUTE format('ALTER FUNCTION game_content_record_activation(uuid,uuid,numeric,numeric,bytea,bytea,bytea) \
+         SET search_path = pg_catalog, %I, pg_temp',current_schema());\n\
+         END $$;\n"
+    ))
 }
 
 const RESET_SCHEMA: &str = r#"
@@ -885,6 +945,45 @@ mod world_drain_binding_data_tests {
         assert!(world_drain_cohort_digest(world, node, &[channels[0], channels[0]]).is_err());
         changed[0] = channel(other_world, 4)?;
         assert!(world_drain_cohort_digest(world, node, &changed).is_err());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reset_issuance_core_source_tests {
+    use super::candidate_reset_issuance_sql;
+
+    #[test]
+    fn one_private_native_issuance_body_preserves_control_authorization() -> Result<(), &'static str>
+    {
+        let native = include_str!("../../migrations/0008_native_entry_content_activation.sql");
+        let sql = candidate_reset_issuance_sql()?;
+        let (core, wrapper) = sql
+            .split_once("CREATE OR REPLACE FUNCTION game_content_record_activation(")
+            .ok_or("public wrapper missing")?;
+        let native_write = &native[native
+            .find("    PERFORM pg_advisory_xact_lock(")
+            .ok_or("native write missing")?..];
+        let native_write = &native_write[..native_write
+            .find("\nEND; $$;")
+            .ok_or("native write terminator missing")?
+            + "\nEND; $$;".len()];
+        assert!(core.ends_with(&format!("{native_write}\n")));
+        assert_eq!(
+            sql.matches("INSERT INTO game_content_activations").count(),
+            1
+        );
+        assert!(!wrapper.contains("INSERT INTO game_content_activations"));
+        assert!(wrapper.contains("g.control_role = session_user"));
+        assert!(wrapper.contains("g.operation = 4"));
+        assert!(wrapper.contains("PERFORM game_content_record_activation_core("));
+        assert!(wrapper.contains("FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;"));
+        assert_eq!(
+            wrapper
+                .matches("SET search_path = pg_catalog, %I, pg_temp")
+                .count(),
+            2
+        );
         Ok(())
     }
 }

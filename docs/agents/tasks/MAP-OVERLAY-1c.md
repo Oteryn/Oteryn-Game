@@ -746,3 +746,23 @@ movement_cells/from_bundle. The resulting bundle catalogue has digestNone,
 refuses retained ENTRY scope and reports Unknown in its own bundle scope. No
 mock bundle index or current-authority witness is constructed. All new D1245/
 D1245a/D1246 compilation and test execution remain NOT_RUN before lead review.
+
+## D1189a private native issuance core candidate
+
+CP6226612398 approves the0096 private SQL issuance-core extraction. The owned
+candidate_schema_sql now derives exactly one core from native0008, retaining its
+advisory lock/replay/CAS/INSERT bytes. The existing public control wrapper keeps
+the exact session_user/op4 check and delegates to that core. Both functions have
+pinned search_path; core EXECUTE is revoked from PUBLIC/runtime/control, leaving
+the migration owner. No general runtime op4 or second INSERT writer is added.
+This remains UNINSTALLED candidate SQL for0096 promotion, not a migration install
+or successful reset activation. The reset-specific authorized wrapper and atomic
+ACTIVATED/epoch/history/read composition remain separate required work.
+
+One authored pure source case checks the exact native write-body preservation,
+single INSERT, public authorization/delegation and private ACL/search_path. An
+owned PG case installs the real candidate DDL, records a genuine granted control
+issuance and independently verifies runtime cannot execute core even for that
+valid exact replay (42501), with schema/function existence checked first. New
+source compile/pure case and PG case are NOT_RUN until their recorded execution;
+no role/SQL authority result is inferred from source strings.
