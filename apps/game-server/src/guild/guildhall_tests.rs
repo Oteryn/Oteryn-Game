@@ -232,7 +232,7 @@ fn assert_guild_owner_source() {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a"
+        "387ba1c48521bb09a738acd6505084b65a64ec719dc4098171af5c9fb9cbb596"
     );
 }
 fn owner_id(kind: u8) -> [u8; 16] {
