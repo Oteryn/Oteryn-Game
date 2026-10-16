@@ -561,3 +561,22 @@ The unchanged Source7 component30PASS remains historical proof, not a fresh
 canonical-head result. The known foreign fixture failures are not rerun.
 Formatting and whitespace of the changed files are checked before the coherent
 D1122 repair push; no CI rerun, review trigger, ready, merge or rebase is used.
+
+
+### D1115/D1119 owned readiness helper transfer
+
+The granted new support file retains the exact14-line helper from qualified
+Source7. It delegates to the existing genuine bestiary RuntimeReadiness issuer;
+it adds no new issuer, fake Current fact or public authority constructor.
+H's published handoff57c7882a exists, and its actual bestiary source contains
+that issuer/preparation mechanism. The new support file itself is not present
+in57c; this extraction is attributed to the actual H-source commit author.
+
+The helper must be a child of bestiary_postgres_harness to borrow its private
+issuer. D1119 assigns that additive mount/delegation to H/#2170 after #2158
+merges. G does not write that shared fixture or mount the file in an unrelated
+root. Canonical helper integration therefore remains NOT_RUN. Source7 actual
+component results retain their old exact source maps; this transfer alone does
+not qualify the published aggregate or the complete mechanic. The future D1096
+proposal changes the existing module's visibility rather than registering it
+twice, installs one aggregate case include, and deletes the disabled old target.
