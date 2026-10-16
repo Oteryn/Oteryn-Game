@@ -1057,9 +1057,22 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
-            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict).await{
+            // D1193/D1194: this is the positively resolved player ingress. Unknown origin
+            // is never relabelled Monster/System, including retained prepared attempts.
+            let Some(origin) = attempt.request.caster_origin.as_ref() else {
+                return Err(DurabilityError::Unavailable);
+            };
+            if origin.actor != actor
+                || origin.character_lease_generation != attempt.fence.character_lease_generation
+            {
+                return Err(DurabilityError::Unavailable);
+            }
+            let outcome=match items::apply_spell_items_in_transaction_guarded(
+                &mut tx,&authority,&attempt.request,verdict,
+                items::SpellFieldOrigin::Player(owner.required_capabilities.as_ref()),
+            ).await{
                 Ok(outcome)=>outcome,
-                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{
+                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED) | items::SpellItemError::FieldCapabilityRefused(_))=>{
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;

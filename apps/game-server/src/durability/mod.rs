@@ -33,6 +33,7 @@ pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub(crate) mod equipment_policy_abi;
+pub(crate) mod field_capability_port;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod house_scope_handoff;

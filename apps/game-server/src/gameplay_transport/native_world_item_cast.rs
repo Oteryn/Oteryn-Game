@@ -622,9 +622,15 @@ async fn prepare_barrier(
     let policy = content
         .item_policy(&preview.item.key, &preview.item.revision)
         .ok_or(SpellCastDisposition::NotAvailable)?;
-    let definition =
+    let mut definition =
         crate::spell::world_items_execution::QualifiedItemDefinition::from_native_policy(policy)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    // The actual qualified NativeProfile Barrier plan above is the positive Wall source.
+    definition.field_class = crate::spell::world_items_execution::qualified_barrier_field_class(
+        &definition.definition,
+        &preview,
+    )
+    .map_err(|_| SpellCastDisposition::NotAvailable)?;
     let record = policy.record();
     let blocks_movement = record
         .attributes

@@ -19,8 +19,17 @@ pub(crate) struct SpellGroundTarget {
 /// A source-qualified definition from the compatible content generation. The
 /// durable corpse cause is checked separately; appearance membership cannot
 /// construct or authorize a corpse reservation.
+/// D1207: positively qualified source semantics, never inferred from lifetime or collision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpellFieldClass {
+    Field,
+    Wall,
+    NotField,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct QualifiedItemDefinition {
+    pub(crate) field_class: SpellFieldClass,
     pub(crate) definition: TypedDefinitionRef,
     pub(crate) content_generation_digest: [u8; 32],
     pub(crate) materializable: bool,

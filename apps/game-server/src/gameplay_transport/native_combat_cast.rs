@@ -3218,9 +3218,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
-            let items=match item_tx::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict).await {
+            let items=match item_tx::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict,item_tx::SpellFieldOrigin::Player(owner.required_capabilities.as_ref())).await {
                 Ok(items)=>items,
-                Err(item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))=>{
+                Err(item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED) | item_tx::SpellItemError::FieldCapabilityRefused(_))=>{
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;

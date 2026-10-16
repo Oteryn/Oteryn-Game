@@ -859,7 +859,8 @@ fn item_failure(error: super::spell_item_transaction::SpellItemError) -> Durabil
             CharacterProgressionError::Unavailable(value) => value,
             _ => DurabilityError::InvalidStoredState,
         },
-        super::spell_item_transaction::SpellItemError::Rejected(_) => {
+        super::spell_item_transaction::SpellItemError::Rejected(_)
+        | super::spell_item_transaction::SpellItemError::FieldCapabilityRefused(_) => {
             DurabilityError::InvalidStoredState
         }
     }
@@ -881,9 +882,10 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
     ) -> Result<FamiliarSpellCommit> {
         self.commit_familiar_spell_inner(
-            window, authority, node, fence, request, cost, training, true,
+            window, authority, node, fence, request, cost, training, origin, true,
         )
         .await
     }
@@ -904,9 +906,10 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
     ) -> Result<FamiliarSpellCommit> {
         self.commit_familiar_spell_inner(
-            window, authority, node, fence, request, cost, training, false,
+            window, authority, node, fence, request, cost, training, origin, false,
         )
         .await
     }
@@ -926,9 +929,12 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
     ) -> Result<FamiliarSpellCommit> {
-        self.familiar_spell_on_fresh_lane(authority, node, fence, request, cost, training, true)
-            .await
+        self.familiar_spell_on_fresh_lane(
+            authority, node, fence, request, cost, training, origin, true,
+        )
+        .await
     }
 
     /// Test-only counterpart of [`Self::reconcile_familiar_spell_in_window`]; see
@@ -945,9 +951,12 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
     ) -> Result<FamiliarSpellCommit> {
-        self.familiar_spell_on_fresh_lane(authority, node, fence, request, cost, training, false)
-            .await
+        self.familiar_spell_on_fresh_lane(
+            authority, node, fence, request, cost, training, origin, false,
+        )
+        .await
     }
 
     #[cfg(test)]
@@ -962,6 +971,7 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
         allow_new_mutation: bool,
     ) -> Result<FamiliarSpellCommit> {
         let mut permit =
@@ -976,6 +986,7 @@ impl DurabilityRoot {
                 request,
                 cost,
                 training,
+                origin,
                 allow_new_mutation,
             )
             .await;
@@ -1000,6 +1011,7 @@ impl DurabilityRoot {
         request: FamiliarStateRequest,
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
+        origin: super::spell_item_transaction::SpellFieldOrigin<'_>,
         allow_new_mutation: bool,
     ) -> Result<FamiliarSpellCommit> {
         request.validate()?;
@@ -1015,10 +1027,11 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let root = self.clone();
         let node = node.clone();
-        let mut context = window;
+        let mut context = (window, origin);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, window| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
+                    let (window, origin) = context;
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let item_fence = super::item_transfer::CurrentCharacterItemFence {
                         character_id: fence.character_id,
@@ -1060,6 +1073,7 @@ impl DurabilityRoot {
                         &mut tx,
                         &item_authority,
                         &cost,
+                        *origin,
                     )
                     .await
                     .map_err(item_failure)?;

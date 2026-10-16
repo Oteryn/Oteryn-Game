@@ -20,6 +20,7 @@ use sqlx::{Postgres, Row, Transaction};
 #[derive(Debug)]
 pub(crate) enum SpellItemError {
     Rejected(&'static str),
+    FieldCapabilityRefused(super::field_capability_port::FieldCapabilityRefused),
     Durability(DurabilityError),
     Database(sqlx::Error),
     Training(super::character_progression::CharacterProgressionError),
@@ -197,16 +198,18 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: SpellItemTransactionRequest,
         training: Option<WorldItemTraining>,
+        origin: SpellFieldOrigin<'_>,
     ) -> Result<WorldItemSpellCommit> {
         let recovery = recovery_authority
             .record_for(self)
             .map_err(|_| SpellItemError::Rejected("unbound Character recovery authority"))?;
         let root = self.clone();
         let node = node.clone();
-        let mut context = window;
+        let mut context = (window, origin);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, window| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
+                    let (window, origin) = context;
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let authority = match assert_spell_item_authority_with_recovery(
                         &mut tx,
@@ -224,7 +227,7 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     };
                     let items =
-                        match apply_spell_items_in_transaction(&mut tx, &authority, &request).await
+                        match apply_spell_items_in_transaction(&mut tx, &authority, &request, *origin).await
                         {
                             Ok(value) => value,
                             Err(error) => return Ok(Err(error)),
@@ -687,6 +690,7 @@ pub(crate) async fn reconcile_committed_companion_acquisition_in_transaction(
 /// frozen reservation cannot construct this proof, and a different transaction
 /// cannot reuse it. The root compositor owns the transaction's lifetime.
 pub(crate) struct SpellItemAuthority {
+    root: DurabilityRoot,
     due_read_only: bool,
     physical_transaction: String,
     world: [u8; 16],
@@ -1138,7 +1142,7 @@ pub(crate) async fn assert_spell_item_authority_in_transaction(
 pub(super) async fn assert_spell_item_authority_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
-    _root: &DurabilityRoot,
+    root: &DurabilityRoot,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
@@ -1181,6 +1185,7 @@ pub(super) async fn assert_spell_item_authority_with_recovery(
     .execute(&mut **tx)
     .await?;
     Ok(SpellItemAuthority {
+        root: root.clone(),
         due_read_only: false,
         physical_transaction,
         world: *world.as_bytes(),
@@ -1782,6 +1787,70 @@ fn encode_intent(
     Ok(bytes)
 }
 
+/// D1194 as amended by D1208: explicit provenance, no Option/default grant.
+#[derive(Clone, Copy)]
+pub(crate) enum SpellFieldOrigin<'a> {
+    Player(&'a dyn super::field_capability_port::PlayerFieldCapabilityCheck),
+    Monster,
+    System,
+}
+
+fn operation_creates_field_or_wall(operation: &SpellItemOperation) -> bool {
+    matches!(operation, SpellItemOperation::MintGround { definition, .. }
+        | SpellItemOperation::MintInventory { definition, .. }
+        if matches!(definition.field_class, SpellFieldClass::Field | SpellFieldClass::Wall))
+}
+fn creates_field_or_wall(request: &SpellItemTransactionRequest) -> bool {
+    request
+        .operations
+        .iter()
+        .any(operation_creates_field_or_wall)
+}
+
+async fn check_player_field_new_write(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    checker: &dyn super::field_capability_port::PlayerFieldCapabilityCheck,
+) -> Result<()> {
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    };
+    let refused = || {
+        SpellItemError::FieldCapabilityRefused(
+            super::field_capability_port::FieldCapabilityRefused::refused(),
+        )
+    };
+    // Same physical transaction and existing admission/assignment locks as the Item owner.
+    // Load and validate actual native guard history/mirrors, not the immutable boot binding.
+    let guard =
+        super::admission_authority_guards::AdmissionGuardStore::from_root(authority.root.clone())
+            .load_locked(
+                tx,
+                &AdmissionAuthorityGuardKeyV1::Runtime(authority.runtime_scope),
+            )
+            .await?
+            .ok_or_else(refused)?;
+    let AdmissionAuthorityGuardStateV1::Runtime {
+        ownership_generation,
+        ready: true,
+        world_policy_revision,
+        ..
+    } = guard.state
+    else {
+        return Err(refused());
+    };
+    if ownership_generation != authority.ownership_generation {
+        return Err(refused());
+    }
+    checker
+        .check_player_field(
+            authority.runtime_scope,
+            ownership_generation,
+            &world_policy_revision,
+        )
+        .map_err(SpellItemError::FieldCapabilityRefused)
+}
+
 /// The caller commits this transaction together with all companion/caster
 /// source receipts. Errors require rollback. An AlreadyCommitted result is a
 /// historical classification, never authorization to reapply runtime effects.
@@ -1789,8 +1858,9 @@ pub(crate) async fn apply_spell_items_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
+    origin: SpellFieldOrigin<'_>,
 ) -> Result<SpellItemTransactionOutcome> {
-    apply_spell_items_in_transaction_guarded(tx, authority, request, Ok(())).await
+    apply_spell_items_in_transaction_guarded(tx, authority, request, Ok(()), origin).await
 }
 
 /// Current eligibility gates new source writes. An exact prior occurrence is
@@ -1803,6 +1873,7 @@ pub(crate) async fn apply_spell_items_in_transaction_guarded(
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
     new_write_verdict: Result<()>,
+    origin: SpellFieldOrigin<'_>,
 ) -> Result<SpellItemTransactionOutcome> {
     if authority.due_read_only {
         return Err(SpellItemError::Rejected(
@@ -1864,6 +1935,11 @@ pub(crate) async fn apply_spell_items_in_transaction_guarded(
         return Ok(SpellItemTransactionOutcome::AlreadyCommitted(receipt));
     }
     new_write_verdict?;
+    if creates_field_or_wall(request)
+        && let SpellFieldOrigin::Player(checker) = origin
+    {
+        check_player_field_new_write(tx, authority, checker).await?;
+    }
     let occurred_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
@@ -3486,4 +3562,78 @@ fn decode_creature_field_origin(
         ));
     }
     Ok(Some(origin))
+}
+
+#[cfg(test)]
+mod field_capability_applicability_tests {
+    use super::*;
+    #[test]
+    fn permanent_field_wall_and_decaying_conjure_use_the_qualified_class_only() {
+        let source = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "fixture:item".into(),
+            revision_ref: "r1".into(),
+        };
+        for (field_class, decay, expected) in [
+            (SpellFieldClass::Field, None, true),
+            (SpellFieldClass::Wall, None, true),
+            (
+                SpellFieldClass::NotField,
+                Some(QualifiedItemDecay {
+                    duration_millis: 1000,
+                    target: None,
+                }),
+                false,
+            ),
+        ] {
+            let operation = SpellItemOperation::MintGround {
+                item_instance_id: [7; 16],
+                definition: QualifiedItemDefinition {
+                    field_class,
+                    definition: source.clone(),
+                    content_generation_digest: [3; 32],
+                    materializable: true,
+                    movable: true,
+                    stack_maximum: 1,
+                    container_capacity: None,
+                    inventory_destination: false,
+                    ground_destination: true,
+                    decay,
+                    decay_chain: Vec::new(),
+                },
+                quantity: 1,
+                placement: GroundPlacement {
+                    spatial_position: vec![0; 10],
+                    corpse_ref: Vec::new(),
+                    map_revision: "fixture".into(),
+                    content_revision: "fixture".into(),
+                    native_room_placement_context: Vec::new(),
+                },
+                lifetime_millis: None,
+                blocks_movement: false,
+                blocks_projectile: false,
+                description: None,
+            };
+            // Pure applicability only: no request/current authority or PostgreSQL success is fabricated.
+            assert_eq!(operation_creates_field_or_wall(&operation), expected);
+            if let SpellItemOperation::MintGround {
+                definition,
+                placement,
+                ..
+            } = operation
+            {
+                for allow_ground_overflow in [false, true] {
+                    let inventory = SpellItemOperation::MintInventory {
+                        item_instance_id: [8; 16],
+                        definition: definition.clone(),
+                        quantity: 1,
+                        backpack: definition.clone(),
+                        overflow_placement: placement.clone(),
+                        allow_ground_overflow,
+                    };
+                    assert_eq!(operation_creates_field_or_wall(&inventory), expected);
+                }
+            }
+        }
+    }
 }

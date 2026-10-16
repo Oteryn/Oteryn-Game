@@ -341,3 +341,119 @@ Governance validation, 124 governance tests, whitespace and exact card-only scop
 recorded in raw logs/final binding. No Rust/Cargo, PostgreSQL, runtime, client or
 performance tests were run here. Whole-diff worker self-review preserves all original
 card bytes; CP and independent protocol/security/determinism review remain required.
+
+## D1207/D1208 concrete field fact and closed durability port
+
+[CP D1207](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225826999)
+and [D1208](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225834935)
+resolve the classification/type decisions below. New owned allocations are the
+closed `durability/field_capability_port.rs`, its one D1160 registration line,
+`spell_items_abi.rs::QualifiedItemDefinition`, the named source producers and all
+actual writer/Familiar origin callers. No I-owned source body is copied here.
+
+The real guarded writer now takes mandatory fifth `SpellFieldOrigin` with
+Player(&dyn PlayerFieldCapabilityCheck), Monster, System; the legacy Item wrapper
+has a mandatory fourth origin and the outer commit wrapper explicitly forwards
+it through the existing semantic context. There is no Option/default origin.
+Only positively qualified Field/Wall Ground MINTs with Player origin invoke the
+check. The exact historical receipt returns first. The current root's validated
+locked Runtime guard supplies scope/generation/world_policy_revision; none is
+reconstructed from the immutable boot binding or retained request. The check
+runs before the first new receipt, operation, cost or audit write. A local typed
+refusal follows the actual callers' existing definite-rollback and reservation
+release path; no public error number or failure receipt is invented.
+
+D1207 `SpellFieldClass` is derived from actual typed Item classification. Unknown
+source refuses; lifetime/decay/collision never classify it. Ordinary MagicField
+qualification preserves Field even for a permanent nonblocking field. The typed
+native Barrier preview, matched to the exact qualified Item, supplies Wall.
+Ordinary items remain NotField even with decay. All constructors are explicit.
+Three new unit tests cover source qualification/refusal, exact Barrier identity
+and permanent field/wall versus decaying-conjure applicability. They are NOT_RUN.
+
+All three current guarded production callers are player ingress and explicitly
+borrow the real admission owner's binding. Familiar's proven empty-operation
+cost path now forwards an explicit origin too, including its actual transport
+and four existing PG fixture calls; a test-only refusing implementation is used
+for those empty costs, never a production no-op. No unknown player source is
+relabelled Monster/System. Real monster work keeps its distinct source-scope
+writer. The I-authored world_item_cast hunk was applied with its exact three
+hashes; G then adds only the typed-refusal cleanup alternative to its existing
+rollback match, preserving I's origin/call bytes.
+
+D1208's BoundRequiredCapabilities implementation is retained as an **impl-only
+private patch** against I's actual published source, not a copied dependency:
+`/workspace/oteryn-family-g/evidence/2150-D1208-I-impl/`. Its freeze records I head,
+before/after file hashes and exact patch hash. It delegates directly to this
+leaf's existing generation-bound guard. A2 must compose the real I file/impl,
+module declaration and ComposedFreshAdmission.required_capabilities plumbing.
+The concrete canonical branch cannot yet compile those unmerged owner fields;
+this is a source-visible dependency, not a claimed executed compiler failure.
+Durability imports no gameplay type and remains usable by its actual PG roots.
+
+**NOT_FULLY_QUALIFIED.** Changed Rustfmt, diff and exact source/patch checks PASS;
+new compilation/strict lint/unit/Familiar PG/runtime are NOT_RUN. The requested
+real player-field missing-capability/no-write, historical replay, decaying-conjure
+and genuine monster PG controls remain unqualified: no real field-producing
+native fixture is fabricated from a stone Item or caller-selected field boolean.
+I's actual overlay/A2 and the native field fixture/caller composition are needed
+for that proof. No new runner, heavy job, full package result, push/freeze or
+ready transition is performed by this author before independent source review.
+
+## Historical D1193/D1194 boundary assessment — decisions resolved by D1207/D1208
+
+CP2131 comments6225592781/6225633260 place the check in the real guarded writer,
+after exact historical receipt classification and under its existing authority
+locks. The five-argument origin is mandatory; no default Monster/System or
+caller-reconstructed current facts are permitted. CP6225719708 delegates I's
+exact `world_item_cast.rs` patch from6225716534 to this sole writer.
+
+That patch is applied locally without adaptation: before SHA256
+`fc61cd1a5086cea0d50005f6dc560c8ad495be07f2e215887ddc06ee33dc62b1`,
+patch `dbb3a8bc3a481975af3b5e9700a6d3749f7e60c83e999cea2396bdad970aa3d6`,
+after `674495174762f6023f9491371c28ca5301fb94cf14cdc8d704aa058ceb168542`.
+It refuses absent/mismatched player origin and borrows the actual admission
+binding. No production compilation or completed guarded callee is claimed.
+
+Two concrete source dependencies need CP resolution before a correct completed
+callee can be authored:
+- `durability/spell_items_abi.rs::QualifiedItemDefinition` has no positive
+  field/barrier classification. Native `world_items_execution.rs` qualifies
+  permanent nonblocking MagicFields with no decay chain, duration or blocking
+  flags, while ordinary conjures may have Item decay. Inferring field identity
+  from those optional facts either misses a field or gates ordinary conjures.
+  The source-qualified semantic fact and its genuine producers need allocation;
+  no detached caller boolean or default is inserted here.
+- D1194's concrete `BoundRequiredCapabilities` lives in `gameplay_transport`.
+  Real PG roots such as `character_authority_postgres.rs`, `bank_postgres.rs`
+  and `account_achievement_postgres.rs` path-include durability without that
+  module. Directly importing the private gameplay type/check into durability
+  therefore breaks their actual composition; a visibility edit alone cannot
+  supply the absent module. CP must choose a genuine closed current-capability
+  read ABI or owner-coordinated type relocation, without test shims/duplicates.
+
+The legacy three-argument wrapper additionally serves an unused potentially
+field-bearing World-item API and Familiar's already-empty-operation cost path.
+Neither receives a fabricated System classification. A sealed cost-only route
+or genuine owner-binding propagation requires the corresponding owner decision.
+All three real guarded production callers are player paths; genuine monster
+field work uses a distinct source-scope writer, not this guarded entry.
+
+NOT_FULLY_QUALIFIED: this local hunk awaits the concrete callee, all caller
+composition and I's A2 `ComposedFreshAdmission` binding. Required real PG
+missing-capability/no-write, unchanged historical replay and genuine monster
+control evidence remain NOT_RUN. No placeholder allowed result, field identity,
+module shim, new runner, build, push or freeze is introduced by this continuation.
+
+The positive qualified Field/Wall check covers both MintGround and MintInventory,
+including its optional Ground-overflow route. Existing inventory validation does
+not refuse a positive field classification, so destination/overflow flags never
+exempt such a definition. The applicability case exercises both overflow settings;
+NotField remains exempt even with decay. This added case remains NOT_RUN.
+
+Lead independent review PASS after repairing the inventory-overflow finding:
+positive Field/Wall applicability covers MintGround and MintInventory, including
+both overflow settings, while qualified NotField remains exempt. All indexed
+constructors/callers and exhaustive error mappings were checked. New unit/PG/
+strict/native integration remain NOT_RUN; exact published I Composed fields and
+registrations are still absent, so no canonical compile success is claimed.

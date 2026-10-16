@@ -125,6 +125,7 @@ mod tests {
         DurableInventoryConsumption {
             item_instance_id: [7; 16],
             definition: QualifiedItemDefinition {
+                field_class: crate::durability::spell_items_abi::SpellFieldClass::NotField,
                 definition: TypedDefinitionRef {
                     family: "Item".into(),
                     production_key: "source:rune".into(),

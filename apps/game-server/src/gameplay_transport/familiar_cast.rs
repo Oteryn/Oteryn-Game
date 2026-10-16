@@ -1101,6 +1101,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     request,
                     cost,
                     training_request,
+                    crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                        self.required_capabilities.as_ref(),
+                    ),
                 )
                 .await
         } else {
@@ -1113,6 +1116,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     request,
                     cost,
                     training_request,
+                    crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                        self.required_capabilities.as_ref(),
+                    ),
                 )
                 .await
         };
