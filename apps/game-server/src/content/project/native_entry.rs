@@ -697,18 +697,18 @@ impl NativeEntryMovementCells {
     }
 
     /// The movement cells of a Channel booted from a world bundle (MAP-CUTOVER-1a): the bundle
-    /// index and the bundle's own spell tiles (BUNDLE-TILES-1) under `scope`. `entry`'s house
-    /// tiles are kept under their own scope, so their lookups refuse the bundle's cells until
-    /// the bundle supplies its own.
+    /// index and the bundle's own spell tiles (BUNDLE-TILES-1) under `scope`.
+    /// House metadata is explicitly Unknown in the bundle scope; an entry overlay's
+    /// catalogue/digest cannot be inherited as this owner's House data.
     pub(crate) fn from_bundle(
-        entry: &Self,
+        _entry: &Self,
         scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
         index: crate::map::boot::BundleCollisionIndex,
         spell_tiles: std::sync::Arc<crate::map::spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
             spell_tiles: QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles),
-            house_tiles: entry.house_tiles.clone(),
+            house_tiles: super::QualifiedHouseTiles::unknown_for_scope(scope.clone()),
             index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
             scope,
         }
@@ -2474,4 +2474,122 @@ pub(crate) fn qualify_native_source_spell_world_with_gameplay(
         // The source world is a different map: the entry room's den cells are not in it.
         spawn_source: None,
     })
+}
+
+#[cfg(test)]
+mod bundle_house_scope_tests {
+    use super::*;
+    use std::fmt::Write;
+
+    #[test]
+    fn full_bundle_has_no_house_digest_and_refuses_retained_entry_catalogue()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world_id = crate::foundation::WorldId::decode(&[
+            1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])?;
+        let channel_id = crate::foundation::ChannelId::decode(&[
+            1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2,
+        ])?;
+        let baseline = native_entry_room_documents(world_id)?;
+        let baseline = ProjectSnapshot::new(
+            baseline.documents().clone(),
+            native_entry_first_slice_limits().project,
+        )?
+        .parse_native_entry()?;
+        let mut draft = baseline.project().migrate_to_v2();
+        draft.state.declarations.push(ProjectV2Declaration::House {
+            identity: ProjectV2Identity {
+                key: "oteryn:content.house.bundle_regression".into(),
+                revision: "oteryn:rev/fixture-house-r1".into(),
+            },
+            fields: Vec::new(),
+        });
+        let raw: serde_json::Value = serde_json::from_slice(NATIVE_ENTRY_ROOM_SOURCE)?;
+        let mut overlay: NativeFirstEntryDocument = serde_json::from_value(
+            raw.get("native_first_entry")
+                .ok_or("actual overlay missing")?
+                .clone(),
+        )?;
+        overlay.house_tiles = Some(NativeHouseTileDocument {
+            schema: "OTERYN_NATIVE_HOUSE_TILES/v1".into(),
+            houses: vec![NativeHousePlacement {
+                house: ProjectV2DefinitionRef {
+                    family: ProjectV2Family::House,
+                    key: "oteryn:content.house.bundle_regression".into(),
+                    revision: "oteryn:rev/fixture-house-r1".into(),
+                },
+                cells: vec!["oteryn:cell/entry-east".into()],
+                entry_cell: "oteryn:cell/entry-start".into(),
+                doors: BTreeMap::new(),
+            }],
+        });
+        let canonical = CanonicalProjectDocuments::from_native_entry_draft(draft, overlay)?;
+        let project = ProjectSnapshot::new(
+            canonical.documents().clone(),
+            native_entry_first_slice_limits().project,
+        )?
+        .parse_native_entry()?;
+        let cell = project
+            .source()
+            .cells
+            .iter()
+            .find(|cell| cell.key.as_str() == "oteryn:cell/entry-east")
+            .ok_or("qualified cell missing")?;
+        let position = crate::content::LogicalCell {
+            x: cell.x,
+            y: cell.y,
+            z: i32::from(cell.z),
+        };
+        let compiled = compile_first_production(
+            project.source(),
+            FirstProductionCompileTarget::OrdinaryRelease,
+        )?;
+        let entry = project.room_with_compiled(compiled)?;
+        let entry_cells = entry.movement_cells();
+        assert!(entry_cells.house_tiles().placement_digest().is_some());
+        assert!(
+            entry_cells
+                .house_tiles()
+                .house_at(entry_cells.scope(), position)?
+                .is_some()
+        );
+
+        // Existing real binary-bundle fixture and production boot/rebind, not a mock index.
+        let (bytes, load) = crate::map::boot::tests::bundle();
+        let mut revision = String::from("sha256:");
+        for byte in load.digest {
+            write!(&mut revision, "{byte:02x}")?;
+        }
+        let pins = crate::map::boot::BootPins {
+            bundle: load,
+            map_revision: revision,
+            start: crate::map::overlay::TilePos {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let bundle = crate::map::boot::boot(
+            &bytes,
+            &pins,
+            world_id,
+            channel_id,
+            crate::map::boot::tests::items,
+        )?;
+        let cells = bundle.movement_cells(entry_cells)?;
+        assert!(matches!(
+            cells.index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ));
+        assert_eq!(cells.house_tiles().placement_digest(), None);
+        assert_eq!(
+            cells.house_tiles().house_at(entry_cells.scope(), position),
+            Err("House map scope mismatch")
+        );
+        assert_eq!(
+            cells.house_tiles().house_at(cells.scope(), position),
+            Err("House placement metadata unavailable")
+        );
+        Ok(())
+    }
 }

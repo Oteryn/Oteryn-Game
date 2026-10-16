@@ -689,3 +689,60 @@ catalogue or new hash is introduced. Actual House metadata/declaration carrier a
 0047 placement-digest provenance are still needed before the D1241 producer can
 qualify tile.house nonzero/same-within/distinct-between checks and reset source
 binding. The source remains NOT_FULLY_QUALIFIED pending that genuine composition.
+
+
+## D1245 carrier correction and qualified placement digest
+
+D1245 CP6226519383 supersedes D1241's full-bundle producer allocation and the
+historical carrier gap above. The actual House carrier is the existing
+NativeFirstEntryDocument.house_tiles optional document, serialized/hashed with
+its native overlay and admitted by NativeEntryProject::movement_cells through
+QualifiedHouseTiles::qualify. This checkpoint adds a test-only authored overlay
+through CanonicalProjectDocuments::from_native_entry_draft and parse_native_entry.
+That parser automatically validates movement_cells; the test returns a second
+explicit qualification against the same parsed source and derived scope.
+NativeGameplayInput has no supplied House-overlay field: this fixture does not
+claim an operator-configurable or selected-manifest House producer. No production
+House allocation, pinned manifest alteration, new runtime seam or full-bundle
+metadata/schema is added.
+
+The canonical encoder, checked LogicalCell conversion and exact-byte test move
+to content/project/native_house_tiles.rs; the death_reward caller follows it.
+Only this PR's earlier map/boot helper/test additions are removed in this
+successor, respecting D1245's withdrawal. The c89880eb commit/bundle and its six
+actual native cases remain historical exact-source evidence; relocated code/new
+digest tests are NOT_RUN pending new native qualification.
+
+QualifiedHouseTiles::placement_digest returns None for Unknown metadata and
+SHA256 for explicit qualified placement data, including explicit empty data.
+The documented internal v1 serialization sorts Houses by key/revision, retains
+sorted cell/door coordinates, and binds key,revision,cells,entry and door numbers
+with fixed-width BE coordinates/counts and length-prefixed UTF8. It uses no
+request/current authority facts and invents no observed0047 value or external
+hash vector. Authored overlay tests cover reordered Houses/cells, revision/
+entry/door mutation, None versus SomeEmpty and an invalid physical cell. An
+independently computed fixed SHA256 vector for the literal domain plus zero
+u64BE House count pins the explicit-empty canonical encoding.
+
+The no-argument digest identifies the retained qualified catalogue only. Current
+native_entry::from_bundle retains entry.house_tiles under its original scope;
+house_at correctly refuses that catalogue for bundle scope. It is not literally
+housesNone when the input entry overlay had metadata. D1245a/D1246 CP6226622415/6226640326 now allocate the exact from_bundle
+successor: QualifiedHouseTiles::unknown_for_scope(scope.clone()), retaining the
+now-unused entry argument as _entry for caller compatibility. The granted
+6916c5f9 patch was applied only after verifying exact before df1b9490 and
+intermediate after1e851e4d hashes; no other caller changes. Lookup refusal alone
+cannot protect a no-argument digest consumer, so bundle metadata is now explicitly
+Unknown under its actual scope. Full-bundle House production remains a separate mechanic, not a
+blocker of the admitted overlay fixture. Reset source/durable preflight/current
+0047 binding, I's sealed drain and final activation remain NOT_FULLY_QUALIFIED.
+
+
+D1245a/D1246 adds a real full-bundle regression in native_entry.rs. It first
+qualifies a test-only House overlay through canonical documents and the actual
+NativeEntryProject movement path, proves ENTRY has a digest/positive lookup, then
+boots the existing real binary-bundle fixture through production map::boot and
+movement_cells/from_bundle. The resulting bundle catalogue has digestNone,
+refuses retained ENTRY scope and reports Unknown in its own bundle scope. No
+mock bundle index or current-authority witness is constructed. All new D1245/
+D1245a/D1246 compilation and test execution remain NOT_RUN before lead review.
