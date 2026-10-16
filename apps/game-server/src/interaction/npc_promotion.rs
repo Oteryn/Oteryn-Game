@@ -4,7 +4,7 @@
 //! owner must recheck current Character facts and Premium inside the actual command boundary,
 //! and commit the coins-only GOLD-FEE-1b burn and promotion/provenance together, idempotently.
 
-use crate::domain::premium::{PremiumGate, PremiumRefusal};
+use crate::domain::premium::{PremiumGate, PremiumRefusal, PremiumStatus};
 use crate::premium::promotion::{PromotionRefusal, check_promotion_eligibility};
 
 /// ACCEPT_BATCH §3 and PREMIUM_ACTIVATION §4.2: one-time promotion, paid in coins.
@@ -15,7 +15,7 @@ pub(crate) const PROMOTION_FEE_GOLD_UNITS: u64 = 20_000;
 pub(crate) fn promotion_coin_fee_quote(
     level: u32,
     durable_promoted: bool,
-    premium: PremiumGate,
+    premium: &PremiumStatus<'_>,
 ) -> Result<u64, PromotionRefusal> {
     check_promotion_eligibility(level, durable_promoted, premium)?;
     Ok(PROMOTION_FEE_GOLD_UNITS)

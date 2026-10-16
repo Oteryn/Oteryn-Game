@@ -9,16 +9,16 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/prem-2b-prem-5
 issue: 1622
-pr: null
+pr: 2194
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 PREREQ-1; App. 7 Supporting PREM-2b+PREM-5; wave 2"
 class: "hard"
 migration: maybe
 registry: maybe
-owner: unassigned (builder)
+owner: "Codex family lead: Rozwój postaci i trening; policy worker /root/training_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
@@ -34,8 +34,8 @@ depends_on:
   - "PREM-WIRE-1 (PREMIUM-1): MERGED #2110"
   - "NPC-TALK-1: MERGED #1976"
   - "PREMIUM_ACTIVATION ACCEPTED: MERGED #2089"
-  - "promotion source: ACCEPTED #2209, ACCEPT_BATCH §3 (NPC, 20,000 gp, level >=20, Premium; coins GOLD-FEE-1b)"
-  - "spell P3b-2 vitals, progression readiness: UNKNOWN: CP verifies"
+  - "promotion source: ACCEPTED #2209, ACCEPT_BATCH §3; WHEEL-0 §6.2 pre-delivery exception effective through #2161"
+  - "spell P3b-2 vitals and progression #1143: MERGED/completed per accepted WHEEL-0 §6.2"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -114,14 +114,14 @@ PREMIUM_ACTIVATION0 §2-§4.3; WHEEL0 §6.2. Plan: `docs/architecture/reviews/OT
 ## Context checkpoint
 
 ```yaml
-last_progress: detached eligibility, login display and NPC policies prepared; local checks passed
+last_progress: accepted promotion pre-delivery exception retained in native status policy
 status: waiting
 branch: skeleton/prem-2b-prem-5
 blocker: shared durable promotion/coin transaction and runtime seams require CP slot
-next_action: root reviews the local policy diff and coordinates CP-slot integration
+next_action: native RED/GREEN qualification and independent review; CP allocates durable bundle
 ```
 
-## Local preparation (2026-10-15)
+## Historical local preparation (2026-10-15; exception superseded below)
 
 Draft #2194, `skeleton/prem-2b-prem-5`, initial/unchanged head
 `1a02f222cfd0b2102e11e828e66b6282ce6ac469`. The lead confirmed accepted #2209 at main
@@ -202,3 +202,46 @@ uncomposed coordinator constructor, with no allowance on new policy/test code or
 
 Raw logs, harness scripts, source/contract hashes and check commands are retained outside the
 repository at `/workspace/oteryn-prep/prem-2b-prem-5-evidence/` for handoff/rotation.
+
+## Accepted pre-delivery policy correction (2026-10-16)
+
+- Exact starting draft: `b0644c352c214368de328f87a36a0bddeb0ac210`, #2194,
+  `skeleton/prem-2b-prem-5`. One family author changes only
+  `apps/game-server/src/domain/premium.rs`, `src/premium/promotion.rs`,
+  `src/interaction/npc_promotion.rs`, `tests/promotion_policy.rs` under that app,
+  and this task record. No shared registration, durable writer, fee shape or
+  monetary/state transaction is added.
+- Protected main `24fc332f256638e3b784bff1b3c85b18e2665a76` accepts WHEEL-0.
+  Its §6.2 and PREMIUM_ACTIVATION §4.2 exempt promotion purchase/benefits from
+  the Premium condition until delivery. ACCEPT_BATCH activates accepted
+  amendments; the historical CANDIDATE rationale and no-exception policy above
+  are superseded. The already accepted NPC source does not need reapproval.
+- Promotion policy now borrows native `PremiumStatus` inside the existing gate
+  closure. The promotion-specific native requirement selects its exception only
+  with `&PreDelivery`, whose empty-latch witness remains borrowed from that gate.
+  It creates no witness, stored approval, grant, fee permit or alternate entitlement
+  classification. Each command still needs its own native status and current facts.
+  General `PremiumGate`, all three blessing gates and the owner soul amendment are
+  unchanged. After delivery, unknown/unavailable/NotCurrent still refuse; Current
+  permits eligible promotion. Durable promotion is not cleared by lapse.
+- Native domain regression tests use the owner's existing test-only latch witness
+  to distinguish pre-delivery promotion eligibility from the still-closed general
+  gate, then verify post-delivery refusal/renewal. Existing actual-source policy
+  tests retain level 20, exactly 20,000 coins, duplicate-purchase refusal, login
+  display and Current-only blessings using borrowed native status. The tests
+  are logical policy evidence, not database/producer authority qualification.
+- The behavioral RED snapshot preserves the old status-to-gate behavior with the
+  new native regression assertions. A real native library run produced exactly
+  the two expected failures (NotCurrent instead of the pre-delivery allowance).
+  Restoring the fix passed all nine native Premium tests and all nine explicit
+  actual-source promotion/NPC policy tests on Rust 1.94. No extracted-owner bridge
+  or database execution is claimed. Broader exact-candidate checks remain separate.
+  Owned-file rustfmt and diff checks pass; governance validator and all 124
+  governance tests pass. The pre-delivery witness fixture remains inside its
+  native owner test module; no public test factory or duplicate policy-source
+  compilation context is introduced for the detached integration tests.
+- Full PREM-2b+PREM-5 remains PARTIAL: durable promotion/provenance plus coins-only
+  burn/audit in one fenced idempotent transaction, blessing purchase writer,
+  qualified NPC/login/death/Wheel consumers and PostgreSQL qualification still
+  require their CP allocations. Re-entry is an actual allocation/integration event;
+  no background continuation, ready, merge or deployment authority is asserted.

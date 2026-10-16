@@ -1,11 +1,11 @@
 //! PREM-2b pure promotion policy; not registered in the runtime.
 //!
-//! ACCEPT_BATCH (2026-10-15) §3 releases the NPC source with Premium required. The older
-//! WHEEL-0 pre-delivery amendment is still CANDIDATE and supplies no exception here.
-//! Callers obtain the native PremiumGate from the existing gate once per command/use; no
-//! entitlement classification, cached authority or alternate Premium predicate lives here.
+//! ACCEPT_BATCH (2026-10-15) releases the NPC source and accepts WHEEL-0 §6.2's
+//! pre-delivery exception. Callers borrow the native PremiumStatus inside the gate
+//! closure once per command/use; the exception retains its native PreDelivery witness.
+//! No entitlement classification or reusable authority is constructed here.
 
-use crate::domain::premium::{PremiumGate, PremiumRefusal, promotion_benefit_current};
+use crate::domain::premium::{PremiumRefusal, PremiumStatus, require_promotion_premium};
 
 /// PREMIUM_ACTIVATION §4.2: promotion starts at level 20.
 pub(crate) const PROMOTION_MINIMUM_LEVEL: u32 = 20;
@@ -23,9 +23,9 @@ pub(crate) enum PromotionRefusal {
 pub(crate) fn check_promotion_eligibility(
     level: u32,
     durable_promoted: bool,
-    premium: PremiumGate,
+    premium: &PremiumStatus<'_>,
 ) -> Result<(), PromotionRefusal> {
-    premium.require().map_err(PromotionRefusal::Premium)?;
+    require_promotion_premium(premium).map_err(PromotionRefusal::Premium)?;
     if level < PROMOTION_MINIMUM_LEVEL {
         return Err(PromotionRefusal::LevelTooLow);
     }
@@ -41,7 +41,7 @@ pub(crate) fn check_promotion_eligibility(
 #[must_use]
 pub(crate) const fn effective_promotion_at_login(
     durable_promoted: bool,
-    premium: PremiumGate,
+    premium: &PremiumStatus<'_>,
 ) -> bool {
-    promotion_benefit_current(durable_promoted, premium.premium_current())
+    durable_promoted && require_promotion_premium(premium).is_ok()
 }
