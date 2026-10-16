@@ -680,7 +680,8 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
         .fetch_one(&h.pool)
         .await?;
         if !installed {
-            h.pool.execute(migration.as_str()).await?;
+            // Fixed owning migration from this verified source tree; no dynamic SQL inputs.
+            h.pool.execute(sqlx::AssertSqlSafe(migration)).await?;
         }
         h.pool
             .execute(PUBLIC_PROJECTION_ATTACHMENT_PROPOSAL)
