@@ -13,6 +13,19 @@ owner: root
 
 ## Authority and publication state
 
+### World-input companion repair — 2026-10-16 / AUTHORING
+
+7d71a035 fixes character clipping/ZIP; CI supply-chain now passes116942718400.
+World job116942718319 and the unchanged local release compiler both reject
+stale9d8ccdae inputs after the Cargo.lock patch. Root missed that companion
+check before freezing. Explicitly return to AUTHORING, refresh only inputs_digest
+to the compiler-derived5ff3f898, then double-build the unchanged7429f13b bundle.
+No World content, identity, start, validator or protection change. This is a
+material CI repair, not a retrigger. Earlier qualification does not qualify
+the successor. Owner has now confirmed the a534 Enter World click; selected
+identity remains unbound. Test13344 closed normally by approved WM_CLOSE,
+without force. The isolated QA browser again confirms both known characters.
+
 ### Launcher / dependency repair — 2026-10-16 / AUTHORING
 
 a5342336 was published and qualified on Windows: client236/226/5 + Session88,
