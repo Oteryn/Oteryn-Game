@@ -233,6 +233,7 @@ pub fn general_action_supported(action: &str) -> bool {
             | "client.next_profile"
             | "client.previous_profile"
             | "client.stop"
+            | "client.logout"
             | "client.fullscreen"
             | "client.fps"
             | "client.screenshot"
@@ -1331,7 +1332,6 @@ window.vip=19:C,-"#
             "client.change_character",
             "client.clear_message",
             "client.ignore",
-            "client.logout",
             "client.mount",
             "client.names",
             "combat.chase",
@@ -1356,6 +1356,64 @@ window.vip=19:C,-"#
         ] {
             assert!(!general_action_supported(action), "{action}");
         }
+    }
+
+    #[test]
+    fn logout_resolves_the_selected_profiles_exact_chat_context_and_keys()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let pair = |binding| HotkeyPair {
+            first: Some(binding),
+            second: None,
+        };
+        let mut preferences = HotkeyPreferences::default();
+        for chat_on in [false, true] {
+            for key in [15, 20] {
+                assert_eq!(
+                    preferences.resolve(&[pressed(key, true)?], chat_on),
+                    vec![ResolvedHotkey::General("client.logout".into())]
+                );
+            }
+        }
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile
+            .general_chat_on
+            .insert("client.logout".into(), pair(binding(63, false)));
+        profile
+            .general_chat_off
+            .insert("client.logout".into(), pair(binding(64, false)));
+        for (chat_on, key, other) in [(true, 63, 64), (false, 64, 63)] {
+            assert_eq!(
+                preferences.resolve(&[pressed(key, false)?], chat_on),
+                vec![ResolvedHotkey::General("client.logout".into())]
+            );
+            assert!(
+                preferences
+                    .resolve(&[pressed(other, false)?], chat_on)
+                    .is_empty()
+            );
+            for old in [15, 20] {
+                assert!(
+                    preferences
+                        .resolve(&[pressed(old, true)?], chat_on)
+                        .is_empty()
+                );
+            }
+            let extra_modifier = NormalizedInputEvent::Key {
+                code: KeyCode::new(key)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Shift),
+                repeat: false,
+            };
+            assert!(preferences.resolve(&[extra_modifier], chat_on).is_empty());
+            let repeat = NormalizedInputEvent::Key {
+                code: KeyCode::new(key)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::NONE,
+                repeat: true,
+            };
+            assert!(preferences.resolve(&[repeat], chat_on).is_empty());
+        }
+        Ok(())
     }
 
     #[test]

@@ -417,7 +417,7 @@ pub fn logout_key(events: &[NormalizedInputEvent]) -> bool {
                 state: ButtonState::Pressed,
                 modifiers,
                 repeat: false,
-            } if matches!(code.get(), KEY_L | KEY_Q) && modifiers.contains(Modifier::Control)
+            } if matches!(code.get(), KEY_L | KEY_Q) && *modifiers == Modifiers::one(Modifier::Control)
         )
     })
 }
@@ -992,6 +992,13 @@ mod tests {
         )]));
         assert!(!logout_key(&[key(KeyCode::new(KEY_Q)?, ctrl, true)]));
         assert!(!logout_key(&[key(KeyCode::KEY_W, ctrl, false)]));
+        for modifier in [Modifier::Shift, Modifier::Alt, Modifier::Super] {
+            assert!(!logout_key(&[key(
+                KeyCode::new(KEY_Q)?,
+                ctrl.with(modifier),
+                false
+            )]));
+        }
         Ok(())
     }
 }

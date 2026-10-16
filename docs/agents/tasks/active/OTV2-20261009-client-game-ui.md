@@ -15,6 +15,25 @@ owner: root
 
 ### Playable continuation — 2026-10-16 / AUTHORING
 
+e3ca05b1 was published and frozen for qualification, then explicitly returned to
+AUTHORING after a verified profile-consumer defect: main's raw Ctrl+L/Q probe
+bypassed profile changes while the observed Logout row remained unsupported.
+The first regression run now fails2/4 for exactly that missing resolver action
+and acceptance of extra modifiers. The repair connects client.logout through
+the existing per-chat/profile resolver and native general-action consumer;
+dialogs, inactive windows, wrong contexts/modifiers and OS repeats do not logout.
+The raw utility probe is no longer used by the native router.
+
+Prior e3ca Windows source qualification passed235/226/5+Session88, strict Clippy,
+full fmt and release; executable SHA256
+d9989e0567dec155d5498df3996b6362e93a2c591e638759407ec7ae82d9c178.
+It does NOT qualify the successor. Git's initial CRLF checkout failed the raw
+checksum/fmt preparation; preserved LF worktree bytes match published hashes
+and pass. No policy/formatter weakening. Old39716 had already exited before
+the owner-approved normal-close driver checked it; no WM_CLOSE/force was sent.
+Read-only Platform projection currently confirms BOTH QA characters AVAILABLE;
+do not infer that the earlier one-row native capture is current projection truth.
+
 Owner resumed real gameplay work after the admitted Windows session showed blank
 vitals/equipment and a chat refusal. Preserve these as distinct observations:
 map/Play transition and live TCP were observed after Oracle deployed24fc332f

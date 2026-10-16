@@ -18,6 +18,15 @@ patch/lock successor requires fresh qualification and independent security revie
 
 ## Reference audit correction
 
+Playable continuation2026-10-16 connects the observed Logout action to the real
+profile/chat-context resolver and typed LOGOUT_V1 consumer. Rebinding replaces
+the old defaults; extra modifiers, key repeats, dialogs and inactive windows do
+not request logout. Main's hard-coded key probe is not a parallel native route.
+Accepted/refused/unselected logout, map/receipt coexistence and a committed join's
+initial HUD projections have deterministic regressions; live successor acceptance
+is pending. No vitals, items or chat success is manufactured when the server
+does not supply them. This does not close the other settings/gameplay gaps.
+
 [Live observations](UI-REFERENCE-OBSERVATIONS.md) establish **35 HUD conditions**
 and the later [settings inventory](UI-REFERENCE-SETTINGS.md) establishes **50 slots
 in each of all nine action bars**. The draft now carries those cardinalities and

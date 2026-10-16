@@ -1,5 +1,5 @@
 use oteryn_client::hotkeys::{ClaimedKeyLifecycle, ResolvedHotkey};
-use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile, logout_key};
+use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile};
 use oteryn_client::map_draw::{MapAssetPaths, MapAssets};
 use oteryn_client::play::{BattleTargetSelection, PlayEnd, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
@@ -288,18 +288,6 @@ impl Application {
             self.fail(event_loop, ShellError::InputInitialization);
             return suppress_egui;
         };
-        // Logout is an explicit session command, including while the chat composer owns
-        // ordinary text keys. Dialogs and inactive windows must never issue it.
-        if self.focused
-            && !gameplay_modal
-            && self.login.is_none()
-            && logout_key(events)
-            && let Some(play) = &mut self.play
-        {
-            self.movement_repeat.clear();
-            play.view.logout();
-            return true;
-        }
         if consumed && hotkey_direction.is_none() {
             return suppress_egui;
         }
@@ -435,6 +423,16 @@ impl Application {
                 continue;
             };
             if modal {
+                continue;
+            }
+            if action == "client.logout" {
+                if self.focused
+                    && let Some(play) = &mut self.play
+                {
+                    claimed = true;
+                    self.movement_repeat.clear();
+                    play.view.logout();
+                }
                 continue;
             }
             if action == "client.options" {
