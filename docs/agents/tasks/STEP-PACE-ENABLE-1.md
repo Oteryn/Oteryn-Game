@@ -1,106 +1,87 @@
-# STEP-PACE-ENABLE-1 — enable step-wait receipts rollout switch (skeleton task record)
+# STEP-PACE-ENABLE-1 — document the owner-controlled VPS rollout
 
 ```yaml
 task_id: STEP-PACE-ENABLE-1
-title: "STEP-PACE-ENABLE-1: enable step-wait receipts rollout switch (skeleton)"
+title: "STEP-PACE-ENABLE-1: step-wait receipts VPS rollout documentation"
 mode: IMPLEMENT
-status: skeleton
+status: authoring
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/step-pace-enable-1
 base_sha: 5742f30f3
+pr: 2135
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
+plan_row: "§4 Epic 6 row STEP-PACE-ENABLE-1 (rows 3, 4); §5 Wave 5"
 created_at: 2026-10-15
-plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 row STEP-PACE-ENABLE-1 (rows 3, 4); §5 Wave 5"
-class: "ops (rollout switch)"
+updated_at: 2026-10-16
+class: "docs (owner-controlled rollout)"
 needs_migration: no
 needs_registry: no
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
-  - "deploy/synology-game/README.md (rollout section)"
-  - "deploy/synology-game/supervisor.sh"
-  - "deploy/synology-game/test-supervisor-npc.sh"
+  - "deploy/synology-game/README.md (Step pacing receipts rollout section only)"
   - "docs/agents/tasks/STEP-PACE-ENABLE-1.md"
-slot_only_paths:
-  - "none expected (no content, registry, migration or wiring change); if a default flip in `world_spatial.rs` is chosen instead of the host marker, that file becomes slot-only"
-  - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
+slot_only_paths: []
 ```
 
-## Goal
+## Goal and accepted decisions
 
-Turn on `OTERYN_STEP_WAIT_RECEIPTS=1` for the serve process (residue of STEP-PACE-WIRE-1, #2041) once the client with the capability 13 field 2 decoder ships and the 9c and 6c3 builds are retired.
+Document the immediate owner-controlled enablement of `OTERYN_STEP_WAIT_RECEIPTS=1` on oteryn-vps. The README retains its historical location; Synology is not the deployment target.
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+- [CP D1066–D1068](https://github.com/Oteryn/Oteryn-Game/pull/2135#issuecomment-6216594441): use the host marker `BASE/run/step-wait-receipts` containing exactly `1`; leave the code default off. Scope is the README rollout section and this record.
+- [Owner instruction, 2026-10-16](https://github.com/Oteryn/Oteryn-Game/pull/2135#issuecomment-6216813505): deploy immediately on oteryn-vps, superseding the release/retirement gate in D1066/D1068. Do not await #1942 or invent release/retirement evidence.
+- D1067 retains byte-identical results when off and receipts only for capability 13 sessions when on. Serialized transitions and durable resume state are not acceptance criteria for this documentation task.
 
-| Dependency | State | Gate |
-|---|---|---|
-| STEP-PACE-WIRE-1 | MERGED (#2041) | ok |
-| STEP-PACE-CLIENT-1 / client release with capability 13 field 2 decoder (client-owned #1942) | OPEN (#1942 draft) | **BLOCKING** |
-| retirement of the 9c and 6c3 client builds | NOT DONE | **BLOCKING** |
+The old capability 13 builds 9c/6c3 reject field 2. The owner supersession removes their retirement as a prerequisite; it does not make their decoders compatible or claim they were retired.
 
-Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
+## Owned scope and boundaries
 
-## Owned paths (builder edits freely)
+Update the README rollout section and this task card on #2135 in one authoring batch. No server default flip, supervisor code, test code, protocol, registry, content, migration or shared wiring change is needed. No queue-time slot edits are expected. No Platform writes, production action, review trigger, ready transition, merge or deployment are delegated to the builder.
 
-- deploy/synology-game/README.md (rollout section)
-- `deploy/synology-game/supervisor.sh`
-- `deploy/synology-game/test-supervisor-npc.sh`
+The prior `supervisor.sh` and `test-supervisor-npc.sh` owned paths are removed by D1067. The previous default-flip alternative is superseded by D1066. The README documents owner actions; it does not execute them.
 
-## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
+## Existing implementation and contracts
 
-- none expected (no content, registry, migration or wiring change); if a default flip in `world_spatial.rs` is chosen instead of the host marker, that file becomes slot-only
-- tools/content-migration/regenerate_content.py outputs; content/project.json; content/manifest.json, content/world/manifest.json; content/content.lock.json, content/world/content.lock.json; content/interactions/index.json; content/world/pins/*; Rust pins
-- docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
-- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring; crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants; module registration in lib.rs / durability/mod.rs / domain/mod.rs
+STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/2041). The existing Game implementation reads `OTERYN_STEP_WAIT_RECEIPTS` once per process; only exactly `1` enables it. Off preserves all step-result bytes. On emits field 2 only to sessions that selected capability 13, on `MOVED` and `TOO_EARLY`, never `BLOCKED` or `REJECTED`.
 
-To compile on the branch the builder may add only module registration lines in shared `mod.rs`/`lib.rs`; they are re-applied in the slot commit after merging main.
+- `apps/game-server/src/gameplay_transport/world_spatial.rs`: switch and receipt boundary.
+- `apps/game-server/src/gameplay_transport/connection.rs`: connection-level receipt selection.
+- `docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto`: `WorldActorStepResultV1.step_wait_ms`.
+- `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`: capability 13 and command type 1 bounds.
+- `docs/agents/tasks/archive/OTV2-20261013-step-pace-wire-1.md`: implementation and historical rollout gate; the owner instruction above supersedes that gate.
 
-## Wiring points (verified on origin/main 5742f30f3)
+## Active controller and remaining operational evidence
 
-- apps/game-server/src/gameplay_transport/world_spatial.rs:530 `STEP_WAIT_RECEIPTS_ENV`
-- apps/game-server/src/gameplay_transport/connection.rs:497 (read once per connection)
-- deploy/synology-game/supervisor.sh:68 (marker file `BASE/run/step-wait-receipts`)
-- connection.rs command dispatch chain `else if command.command_type == COMMAND_TYPE_...` (USE_INTENT l.2481, CHAT_INTENT l.2735, NPC_TRADE_INTENT l.2766)
-- capabilities.rs `GATED` table l.165, offered sets l.76/104/132 (new capability not offered until CP decides)
+[Game #2218](https://github.com/Oteryn/Oteryn-Game/pull/2218) moves current operations to Oracle and the separately installed durable Game incarnation controller. Game `deploy/oracle/README.md` on protected main routes host implementation to Oteryn-Platform `deploy/oracle/`; this task's old base predates that migration.
 
-## Inseparable bundles (never split across PRs)
+**PROVEN source gap:** Platform [`7552a5003cf637bee7798743b913d915dd55e825`](https://github.com/Oteryn/Oteryn-Platform/tree/7552a5003cf637bee7798743b913d915dd55e825/deploy/oracle) starts Game `serve` directly in `game-runtime.compose.yml`; its Game environment has no `OTERYN_STEP_WAIT_RECEIPTS`. `game-supervisor.py` has no step-wait marker handling. The historical Game `deploy/synology-game/supervisor.sh` marker implementation does not prove an active VPS integration.
 
-- switch + deploy docs + supervisor test in one PR; the host marker itself is an owner (1001) production action, not a repo change
+**UNKNOWN installed state:** controller/configuration revision, marker consumption, process environment, enabled receipts and off-state byte identity on the VPS. These are not established by source inspection or by this PR. The marker alone cannot close this evidence gap.
+
+**Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. Retain links to the installed revision, marker inspection, incarnation/readiness and capability boundary/off-state evidence before claiming operational completion. The owner has already waived waiting for the client release; this gap concerns actual enablement evidence.
 
 ## Acceptance criteria
 
-- [ ] receipts are emitted only for sessions that selected capability 13 when the switch is on; byte-identical step results when off
-- [ ] client release and build retirement evidenced by link before ready
-- [ ] no production action taken by the builder
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
-- [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
+- [x] README and task card record the host-marker decision, default-off behavior, capability 13 boundary and owner supersession of the release/retirement gate.
+- [x] Runbook identifies oteryn-vps and Platform controller ownership, historical Synology location, owner-only marker/restart/rollback actions and the exact operational proof gap.
+- [x] No production action is taken by the builder; no release, retirement or active marker integration is claimed without evidence.
+- [ ] OWNER-I supplies active controller support and rollout evidence described above (operational handback, outside builder authoring scope).
 
-## Validation commands
+## Validation
 
-```sh
-cargo test -p oteryn-game-server step_wait
-sh deploy/synology-game/test-supervisor-npc.sh
-cargo fmt --all -- --check
-cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
-```
+Documentation-only local validation:
 
-## Reference evidence pointers
+- `git diff --check`: passed.
+- `python tools/agents/validate_governance.py`: passed.
+- `python -m unittest discover -s tools/agents/tests -p '*governance_lifecycle*.py'`: 25 passed.
+- `python -m unittest tools.agents.tests.test_meta_agent_policy_adoption`: 30 passed.
+- Complete diff review and a section-boundary check: only the two owned files change, and README text outside the rollout section is unchanged.
 
-- `docs/agents/tasks/archive/OTV2-20261013-step-pace-wire-1.md`
-- `deploy/synology-game/README.md:127`
-- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 5), §7
-- docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
+Rust builds, server tests and supervisor tests are not needed because no executable file or contract changes. Existing implementation qualification is recorded under STEP-PACE-WIRE-1; it is not presented as new live VPS validation.
 
-## Builder instructions
+## Builder handback
 
-- Fill only owned_paths until CP gives the queue turn; then merge main and add slot-only paths in ONE final commit.
-- Push rarely and batched: one push per round of fixes (heavy builds per push); no status-only commits.
-- Never mark the PR ready, never enable auto-merge, never post `@codex review`; CP does that.
-- Max 2 fix rounds; after that CP closes and splits the task.
-- Confirm every BLOCKING dependency on main before starting code that needs it.
-- A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+Keep #2135 draft; the control plane owns qualification and lifecycle transitions. Do not use the README's historical marker command as authority for host access. Report any required edit outside these two owned paths to its owner. This task is not operationally complete until the owner evidence gap is closed.
