@@ -248,3 +248,22 @@ History retention/order therefore needs the CP Market schema decision alongside 
 numbered migration. Existing Market Bank/Inbox/custody/Content/wire gates remain open.
 Preserve this candidate locally and in a verified bundle outside the checkout until required
 checks/publication policy allow its existing-draft push (CP question #2131 comment6224104932).
+
+### Owned book-query completion (2026-10-16)
+
+Returned MARKET to AUTHORING from local `9be1efda` while preserving its verified bundle.
+Completed the second accepted MARKET0 §10 read: private book pages of 32 offers with a
+33rd-row continuation sentinel, best price first (sell ascending, buy descending), then
+creation time and offer id. Keyset continuation binds World/ware/side; invalid cursor
+prices/times or cross-book/side reuse fail closed. A single-statement timestamp excludes
+expired and future OPEN rows. Stored anonymous rows remain private adapter input; native
+depot admission, Content marketability and anonymous wire redaction remain caller gates.
+No offers, value, custody, operation, schema, wire or shared registration are mutated.
+
+Added two native PG tests for both price directions, time/id ties, the exact 32+3 split,
+continuation, cross-book/side cursor rejection, and expiry/future/ended/ware/World filters.
+Rustfmt/whitespace checks pass; all four new PG tests and Cargo remain **NOT_RUN**.
+The existing reviewed PC runners admit only their exact frozen MAIL/NPC candidates, not
+this Market candidate; no runner was rewritten, restarted or bypassed to test it. Local
+Cargo is absent. Request a compatible native validation allocation through #2131; keep
+this owned checkpoint local/bundled pending actual validation and publication rules.

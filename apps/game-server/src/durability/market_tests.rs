@@ -192,6 +192,99 @@ fn market_own_open_offers_reject_overflow_instead_of_truncating() -> TestResult 
 }
 
 #[test]
+fn market_book_pages_follow_best_price_time_and_id_without_skips() -> TestResult {
+    run("marketpages", async |h| {
+        let created = now(h).await? - 1000;
+        let key = offer(60, Side::Sell, 40, created).book();
+        for (side, first_id, account) in [(Side::Sell, 100, 40), (Side::Buy, 150, 70)] {
+            let mut expected = Vec::new();
+            for index in 0..35 {
+                let mut o = offer(
+                    first_id + index,
+                    side,
+                    account,
+                    created - i64::from(index % 3),
+                );
+                price(&mut o, 100 + u64::from(index % 2));
+                seed(h, &o).await?;
+                expected.push(o);
+            }
+            expected.sort_by(|a, b| {
+                let prices = match side {
+                    Side::Sell => a.piece_price.cmp(&b.piece_price),
+                    Side::Buy => b.piece_price.cmp(&a.piece_price),
+                };
+                prices
+                    .then(a.created_at_us.cmp(&b.created_at_us))
+                    .then(a.id.cmp(&b.id))
+            });
+            let mut connection = h.pool.acquire().await?;
+            let first = book_page(&mut connection, &key, side, None).await?;
+            assert_eq!(first.offers, expected[..32]);
+            let cursor = first.next.expect("continuation");
+            let second = book_page(&mut connection, &key, side, Some(&cursor)).await?;
+            assert_eq!(second.offers, expected[32..]);
+            assert_eq!(second.next, None);
+            let wrong_side = if side == Side::Buy {
+                Side::Sell
+            } else {
+                Side::Buy
+            };
+            assert!(matches!(
+                book_page(&mut connection, &key, wrong_side, Some(&cursor)).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            let wrong_book = BookKey {
+                world: WorldId::from_bytes(id(90))?,
+                ..key.clone()
+            };
+            assert!(matches!(
+                book_page(&mut connection, &wrong_book, side, Some(&cursor)).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn market_book_pages_exclude_expired_future_ended_and_other_wares() -> TestResult {
+    run("marketpagefilter", async |h| {
+        let created = now(h).await? - 1000;
+        let mut live = offer(60, Side::Sell, 40, created);
+        live.anonymous = true;
+        let expired = offer(61, Side::Sell, 40, 0);
+        let future = offer(62, Side::Sell, 40, created + 1_000_000_000);
+        let mut ended = offer(63, Side::Sell, 40, created);
+        ended.state = OfferState::Ended(EndState::Cancelled);
+        let mut other_ware = offer(64, Side::Sell, 40, created);
+        other_ware.definition = TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new("oteryn:content.item.other")?,
+            DefinitionRevisionRef::new("r1")?,
+        );
+        for o in [&live, &expired, &future, &ended, &other_ware] {
+            seed(h, o).await?;
+        }
+        let mut connection = h.pool.acquire().await?;
+        let page = book_page(&mut connection, &live.book(), Side::Sell, None).await?;
+        assert_eq!(page.offers, vec![live.clone()]);
+        assert_eq!(page.next, None);
+        let other_world = BookKey {
+            world: WorldId::from_bytes(id(90))?,
+            ..live.book()
+        };
+        assert!(
+            book_page(&mut connection, &other_world, Side::Sell, None)
+                .await?
+                .offers
+                .is_empty()
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn market_checked_total_and_fee_limits() {
     assert_eq!(offer_total(1, MAX_TOTAL), Ok(MAX_TOTAL));
     for (amount, price) in [

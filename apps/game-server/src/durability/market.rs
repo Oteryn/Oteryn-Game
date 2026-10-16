@@ -94,6 +94,74 @@ pub(crate) async fn open_character_offers(
     rows.iter().map(decode).collect()
 }
 
+/// Stable price/time/id pagination data, never a reservation or current offer proof.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BookCursor {
+    pub(crate) book: BookKey,
+    pub(crate) side: Side,
+    pub(crate) piece_price: u64,
+    pub(crate) created_at_us: i64,
+    pub(crate) offer: MarketOfferId,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct BookPage {
+    pub(crate) offers: Vec<Offer>,
+    pub(crate) next: Option<BookCursor>,
+}
+
+/// MARKET0 §10 private stored book data, 32 offers per page. The adapter must enforce
+/// the native depot-view gates, admit the requested ware and redact anonymous sellers.
+/// A page is not a matching decision: offers may change between pages or before execution.
+pub(crate) async fn book_page(
+    connection: &mut PgConnection,
+    key: &BookKey,
+    side: Side,
+    after: Option<&BookCursor>,
+) -> Result<BookPage> {
+    if after.is_some_and(|cursor| {
+        cursor.book != *key
+            || cursor.side != side
+            || !(1..=MAX_TOTAL).contains(&cursor.piece_price)
+            || cursor.created_at_us < 0
+    }) {
+        return Err(invalid());
+    }
+    // Closed queries keep the accepted best-price ordering explicit. The 33rd row is
+    // only a continuation sentinel. No OFFSET scan or caller-controlled page size.
+    let query = match side {
+        Side::Sell => {
+            "SELECT offer_id::text,world_id::text,definition_key,definition_revision,side,account_id::text,character_id::text,piece_price::text,amount,remaining,anonymous,created_at_us,expires_at_us,state,ended_as,escrow_gold::text,held_credit_gold::text,matching_pending FROM game_market_offers WHERE world_id=encode($1,'hex')::uuid AND definition_key=$2 AND side=2 AND state=1 AND created_at_us<=floor(extract(epoch FROM statement_timestamp())*1000000)::bigint AND expires_at_us>floor(extract(epoch FROM statement_timestamp())*1000000)::bigint AND ($3::text IS NULL OR (piece_price,created_at_us,offer_id)>($3::text::numeric,$4,encode($5,'hex')::uuid)) ORDER BY piece_price ASC,created_at_us,offer_id LIMIT 33"
+        }
+        Side::Buy => {
+            "SELECT offer_id::text,world_id::text,definition_key,definition_revision,side,account_id::text,character_id::text,piece_price::text,amount,remaining,anonymous,created_at_us,expires_at_us,state,ended_as,escrow_gold::text,held_credit_gold::text,matching_pending FROM game_market_offers WHERE world_id=encode($1,'hex')::uuid AND definition_key=$2 AND side=1 AND state=1 AND created_at_us<=floor(extract(epoch FROM statement_timestamp())*1000000)::bigint AND expires_at_us>floor(extract(epoch FROM statement_timestamp())*1000000)::bigint AND ($3::text IS NULL OR piece_price<$3::text::numeric OR (piece_price=$3::text::numeric AND (created_at_us,offer_id)>($4,encode($5,'hex')::uuid))) ORDER BY piece_price DESC,created_at_us,offer_id LIMIT 33"
+        }
+    };
+    let rows = sqlx::query(query)
+        .bind(key.world.as_bytes().as_slice())
+        .bind(key.definition.as_str())
+        .bind(after.map(|cursor| cursor.piece_price.to_string()))
+        .bind(after.map(|cursor| cursor.created_at_us))
+        .bind(after.map(|cursor| cursor.offer.as_bytes().as_slice()))
+        .fetch_all(connection)
+        .await?;
+    let mut offers: Vec<Offer> = rows.iter().map(decode).collect::<Result<_>>()?;
+    let next = if offers.len() > 32 {
+        offers.truncate(32);
+        let last = offers.last().ok_or_else(invalid)?;
+        Some(BookCursor {
+            book: key.clone(),
+            side,
+            piece_price: last.piece_price,
+            created_at_us: last.created_at_us,
+            offer: last.id,
+        })
+    } else {
+        None
+    };
+    Ok(BookPage { offers, next })
+}
+
 /// The borrow prevents reuse of this transaction through the component while the book is held.
 /// PostgreSQL holds the actual row lock to transaction end; callers may not commit a selection
 /// as a Market mutation without all bank/item/Inbox/event effects in that same transaction.
