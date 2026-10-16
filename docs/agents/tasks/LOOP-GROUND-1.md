@@ -1,4 +1,10 @@
-# LOOP-GROUND-1 — ground loop: dropped item decay and cell limit (skeleton task record)
+# LOOP-GROUND-1 — Ground cell limit (task record)
+
+Current rule: ACCEPT-BATCH-2026-10-15 §§2–3 accepts **64 physical Ground roots**,
+overflow **"not enough room"**, and **no periodic ground cleanup between resets**
+(ADR-0021 D191). Earlier decay wording and policy-decision blockers below are
+historical. The current implementation remains incomplete: production writer
+integration and DEATH-DUR-1 are blocking, not deferred slot-only work.
 
 ```yaml
 task_id: LOOP-GROUND-1
@@ -78,11 +84,11 @@ To compile on the branch the builder may add only the module registration lines 
 - decay schedule + retire writer + audit
 - cell limit (RESOURCE_LIMITS) + drop refusal + tests
 
-## Acceptance criteria
+## Acceptance criteria (current accepted rule)
 
-- [ ] Dropped items decay on the decided schedule exactly once, including across restart.
-- [ ] A drop beyond the cell limit is refused (or redirected per decision) with a typed code.
-- [ ] Decay never removes items under custody or in a corpse still owned per DEATH-COMPLETE-0.
+- [ ] Ground items survive crashes and follow D191 planned-reset retirement; no periodic dropped-item cleanup is introduced.
+- [ ] A drop beyond the cell limit is refused with a typed "not enough room" code.
+- [ ] Admission never removes or hides existing custody, including overfull tiles and owned corpses.
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
 - [ ] Durable state sufficient to resume after restart / session-generation change.
 
@@ -319,3 +325,66 @@ stack planning, current Content/map authority, full-server/wire/E2E, global stri
 CI or the complete mechanic. Those CP and runtime acceptance gates remain open.
 Final independent execution review and root-owned candidate publication follow
 this checkpoint; the worker has made no commit or push.
+
+## CP repair, 2026-10-16 — authoring, integration still blocked
+
+Authority/currentness: CP review comment `6215954253` is against source head
+`e1eab53df8e14ed07c10835735d2327176ed52d3`; the lead allocated one author on
+`skeleton/loop-ground-1`. The active four-path allocation remains the helper,
+adjacent tests, PostgreSQL wrapper and this record. Accepted Batch §§2–3 was
+read from retained protected-main commit
+`e2da9805d296a27b06b32335bf67394509d4910b`. No periodic decay is authorized.
+
+P2 disposition: **fixed in the pending local delta**. The pure policy must allow
+zero new roots on an already-overfull tile while still checking native identity,
+scope/generation and target placement. The old 65+0 rejection assertion is
+removed; separate regression cases cover 65/255+0 and malformed rows beyond the
+64th root. Existing 64+1 and 65+1 refusals remain. This capacity-only repair
+introduces no writer, authority constructor, persistence change or cleanup.
+
+### Mechanic integration blockers (cross-domain findings; report only)
+
+An exact-source sweep found no production admission caller. Four native Ground
+INSERT boundaries require composition after actual removals and before actual
+new roots in the same locked physical transaction, with the writer's independent
+current authority, target qualification, stack plan and typed refusal:
+
+- `item_mint.rs::insert_mint_with_corpse_attribution`: creature/corpse root MINT;
+  its existing native death/scope fences must remain authoritative.
+- `map_item_mint.rs::apply_mint`: map item MINT; retain its admitted map source.
+- `native_map_items.rs::initialize_in_transaction`: source-map materialization;
+  retain its `NativeMapInitializationProof`, current scope and Node checks.
+- `spell_item_transaction.rs::apply_physical_item_line`: Player and Creature
+  Ground MINT; qualify complete batches after removals rather than charging
+  individual lines before their actual removal/merge plan is applied.
+
+These files are outside the active allocation. The existing sealed
+`SpellItemScopeAuthority` is not a permission to substitute caller-derived
+authority for the MINT/map writers' native fences. CP must allocate the owning
+durability/spell/map integration packet (F); this is mechanic implementation,
+not merely module registration or queue-slot wiring.
+
+Player drop is itself absent at this head:
+`gameplay_transport/item_move.rs::step` rejects Ground destinations with
+`NotSupported`. Its accepted owner is ITEM-MOVE-2b (ITEM-MOVE-WIRE-1 §5).
+`character_death.rs` writes Character state only; the death spill remains owned
+by DEATH-DUR-1 and remains a blocking dependency. No guessed drop/spill/overflow
+destination or fake consumer was added to bypass either missing owner.
+
+Runtime acceptance, strict full-package checks and native PostgreSQL
+requalification remain pending. The existing PostgreSQL wrapper remains
+disabled; executing it with zero tests would not qualify anything. Focused pure
+qualification uses literal native type/codec/function/test excerpts and excludes
+all async transaction code and PostgreSQL; its provenance is retained separately
+under `/workspace/oteryn-family-g/evidence/2158-ground-fix/`.
+
+Focused repair validation: the ten literal pure test bodies first ran against
+the unmodified helper (**8 PASS / 2 FAIL**, the two new regressions), then against
+the repaired helper (**10 PASS / 0 FAIL**, zero ignored). The same Rust 1.94.0
+compiler and unchanged test bodies were used. This is behavioral RED→GREEN,
+not a setup failure. The identity set now accommodates more than 64 existing
+roots without suppressing validation or indexing beyond a 64-entry array.
+Owned Rust formatting, workspace `cargo fmt --all --check`, focused pure
+`clippy-driver -D warnings`, governance validation and all **124/124** governance
+unit tests passed. Full Cargo/Clippy, PostgreSQL and global integration qualification
+are not claimed by these bounded results. No commit or push was performed.

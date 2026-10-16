@@ -132,7 +132,9 @@ pub(crate) async fn check_ground_cell_root_admission_in_transaction(
 /// Never use a truncated projection, receipt or cache as an empty-tile fallback.
 /// Recheck on retry/reload; this result reserves no room. Rebuild and removal-only
 /// paths must preserve existing durable truth and do not use admission rejection
-/// to retire or hide existing items. Inventory overflow must be resolved by its
+/// to retire or hide existing items. With no new roots, even overfull input incurs
+/// no capacity charge; identity, scope and placement checks still apply.
+/// Inventory overflow must be resolved by its
 /// existing writer before calling; this function never guesses a destination.
 pub(crate) fn check_ground_cell_root_admission(
     world_id: WorldId,
@@ -145,15 +147,17 @@ pub(crate) fn check_ground_cell_root_admission(
     decode_ground_cell(&target.spatial_position)
         .map_err(|_| GroundCellLimitError::IncompatibleInput)?;
 
-    // Check lengths without addition overflow, before inspecting unbounded input.
-    if remaining.len() > GROUND_CELL_ROOT_LIMIT
-        || inserted.len() > GROUND_CELL_ROOT_LIMIT - remaining.len()
+    // Only actual new roots incur a capacity charge. Check without addition
+    // overflow; existing overfull truth still needs input validation below.
+    if !inserted.is_empty()
+        && (remaining.len() > GROUND_CELL_ROOT_LIMIT
+            || inserted.len() > GROUND_CELL_ROOT_LIMIT - remaining.len())
     {
         return Err(GroundCellLimitError::NotEnoughRoom);
     }
 
-    let mut seen = [[0; 16]; GROUND_CELL_ROOT_LIMIT];
-    for (index, item) in remaining.iter().chain(inserted).enumerate() {
+    let mut seen = std::collections::BTreeSet::new();
+    for item in remaining.iter().chain(inserted) {
         if item.world_id != world_id
             || item.channel_id != channel_id
             || item.runtime_scope_ownership_generation != ownership_generation
@@ -161,11 +165,10 @@ pub(crate) fn check_ground_cell_root_admission(
             || item.ground.map_revision != target.map_revision
             || item.ground.content_revision != target.content_revision
             || item.ground.native_room_placement_context != target.placement_context
-            || seen[..index].contains(&item.item_instance_id)
+            || !seen.insert(item.item_instance_id)
         {
             return Err(GroundCellLimitError::IncompatibleInput);
         }
-        seen[index] = item.item_instance_id;
     }
     Ok(())
 }

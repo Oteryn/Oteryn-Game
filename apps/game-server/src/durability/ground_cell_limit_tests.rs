@@ -86,14 +86,41 @@ fn accepts_exactly_64_physical_roots_and_refuses_the_65th() {
         Err(GroundCellLimitError::NotEnoughRoom)
     );
     assert_eq!(
-        check(&roots(65), &[]),
-        Err(GroundCellLimitError::NotEnoughRoom)
-    );
-    assert_eq!(
         GroundCellLimitError::NotEnoughRoom.user_message(),
         Some("not enough room")
     );
     assert_eq!(GroundCellLimitError::IncompatibleInput.user_message(), None);
+}
+
+#[test]
+fn no_new_roots_preserves_preexisting_overfull_ground() {
+    assert_eq!(check(&roots(65), &[]), Ok(()));
+    assert_eq!(check(&roots(255), &[]), Ok(()));
+    assert_eq!(
+        check(&roots(65), &[root(65)]),
+        Err(GroundCellLimitError::NotEnoughRoom)
+    );
+}
+
+#[test]
+fn overfull_no_new_root_still_checks_identity_scope_and_placement() {
+    for mutate in [
+        |item: &mut GroundItemInstance| item.item_instance_id = uuid(0),
+        |item: &mut GroundItemInstance| item.world_id = world(3),
+        |item: &mut GroundItemInstance| item.channel_id = channel(3),
+        |item: &mut GroundItemInstance| item.runtime_scope_ownership_generation += 1,
+        |item: &mut GroundItemInstance| item.ground.spatial_position[0] ^= 1,
+        |item: &mut GroundItemInstance| item.ground.map_revision.push('b'),
+        |item: &mut GroundItemInstance| item.ground.content_revision.push('b'),
+        |item: &mut GroundItemInstance| item.ground.native_room_placement_context.push(1),
+    ] {
+        let mut existing = roots(65);
+        mutate(&mut existing[64]);
+        assert_eq!(
+            check(&existing, &[]),
+            Err(GroundCellLimitError::IncompatibleInput)
+        );
+    }
 }
 
 #[test]
