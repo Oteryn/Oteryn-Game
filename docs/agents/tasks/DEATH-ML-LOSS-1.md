@@ -107,7 +107,7 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 last_progress: accepted SKILLS-0 domain loss calculation prepared; durable writer remains pending
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: CP shared character_death.rs author/preimage with DEATH-COMPLETE-1; LOOP-PROGRESS-1; runtime integration
+blocker: CP shared character_death.rs author/preimage with PR 2205; LOOP-PROGRESS-1; runtime integration
 next_action: qualify the domain candidate; CP allocates the shared writer and native caller slot
 ```
 
