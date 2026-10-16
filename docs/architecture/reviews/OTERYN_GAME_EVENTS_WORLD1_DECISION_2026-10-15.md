@@ -1,7 +1,7 @@
 # EVENTS-WORLD-1 World Changes, Fury Gates and Nightmare Isles
 
 - Decision: `EVENTSWORLD1-WORLD-CHANGES-V1`
-- Status: **CANDIDATE** (architect-authored). Acceptance needs exact-head validation, independent review (determinism, persistence, map/content and protocol) and protected integration. Owner acceptance is the owner's to give; none is recorded here.
+- Status: **ACCEPTED WITH AMENDMENTS** by CP D1052–D1057 and owner acceptance; D1136 assigns the ADR-0021 §4.2/§4.7 and BOSS-RAID-0 §4.1 amendments to #2178. This branch carries those amendments for protected integration; it does not claim they are already on main or that the children are implemented. Independent review, exact-head validation and the owning integration gates remain required.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the mechanics completion plan rows 103 and 104 (`OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`, batch EVENTS-WORLD-1: "world changes, Fury Gates, Nightmare Isles, hazard"); the task record `docs/agents/tasks/EVENTS-WORLD-1.md` ("brief child graph for world changes"); BOSS-RAID-0 §3 and §18, which leave World Changes and the Hazard System to separate decisions; the scope matrix row "Raids and events" (scope declared in the event definition, no implicit default).
 - Builds on: BOSS-RAID-0 (accepted 2026-10-15: §4 raid definition, schedule, firing and channel run; §9 eligibility; §12 lock order and World jobs); ADR-0021 (accepted: §4.4 channel overlay, §4.7 planned reset, reset epoch and bundle activation); WORLD-INTERACTION-0 (accepted: §6.5 teleports, §8.5 HAZARD-1 traps, §9 volatile state and reset, §11 World clock); HOUSE-OWN-0 §9 (the World job pattern); GAME-CHANNEL-01 §13 to §15 (multiplicity classes, simulation and eligibility scope); ENCOUNTER-RT-0 (accepted 2026-10-14: encounter runtime); ADR-0001 §7; the content and ruleset tree (`OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`); owner rule 5905825574 (Global parity).
@@ -42,17 +42,17 @@ It fixes the sourced numbers of Fury Gates, Nightmare Isles and the Mini World C
 
 The compile check refuses a definition above the §3 W14 ceilings, without a multiplicity class, with a layer that touches a house tile (HOUSE-CUSTODY-0) or with an `exclusive_with` cycle that has no resolution order. Code holds no World Change.
 
-**W2. Activation happens once per reset epoch, at the planned reset.** In the ADR-0021 §4.7 activation transaction (step 4, which writes epoch N+1 and ACTIVATED), the World writes one row per World Change of the active bundle into `game_world_change_activations` (WorldId, reset epoch, change key): `state` ACTIVE or INACTIVE, the chosen `variant_key`, the bundle digest and the draw inputs. The draw uses the simulation-determinism RNG with the new purpose `world_change_activation`, seeded by (WorldId, change key, reset epoch): first the chance, then, for an active change, the weighted variant. Changes are evaluated in key order; an `exclusive_with` conflict makes the later key INACTIVE. A replay of a crashed reset writes the same rows (the rows are keyed; the draw is a pure function of the key). This is an ADR-0021 §4.7 amendment, pending on acceptance of this brief. A World without activation rows for the current epoch does not open admission.
+**W2. Activation happens once per reset epoch, at the planned reset.** In the ADR-0021 §4.7 activation transaction (step 4, which writes epoch N+1 and ACTIVATED), the World writes one row per World Change of the active bundle into `game_world_change_activations` (WorldId, reset epoch, change key): `state` ACTIVE or INACTIVE, the chosen `variant_key`, the bundle digest and the draw inputs. The draw uses the simulation-determinism RNG with the new purpose `world_change_activation`, seeded by (WorldId, change key, reset epoch): first the chance, then, for an active change, the weighted variant. Changes are evaluated in key order; an `exclusive_with` conflict makes the later key INACTIVE. A replay of a crashed reset writes the same rows (the rows are keyed; the draw is a pure function of the key). This ADR-0021 §4.7 amendment is accepted by D1053 and carried by #2178 under D1136; protected integration remains pending. A World without activation rows for the current epoch does not open admission.
 
 **W3. One decision per World, the same on every channel.** Every channel of the World runs the same active set and the same variants for the whole epoch. A channel never draws on its own. A channel that starts mid-epoch (a restart, a new channel) reads the activation rows and builds the same state.
 
-**W4. Map changes are bundle layers, not runtime edits.** A World Change map variant is compiled into the World Bundle as a named optional layer: tiles that replace base tiles inside a bounded area, validated by the World Project compiler with the bundle. The Crystalserver map files are source evidence only; each layer is re-authored through the World Project pipeline with provenance. A channel composes base plus the layers of its epoch's active variants at channel start, and the composition is immutable for the epoch. Layer tiles are not channel overlay state: they do not count against `MAP01-CHANNEL-OVERLAY-BYTES`, and the channel overlay (doors, levers, moved items) sits on top of the composed map exactly as on the base (WORLD-INTERACTION-0 §9.1). Because a layer is chosen only at the reset, when every overlay is empty, Ground is retired and every channel starts fresh (ADR-0021 §4.7), no live map mutation and no overlay migration ever happens. A channel restart rebuilds base plus the same layers from the durable rows (the task's restart-safety criterion). This is an ADR-0021 §4.2 and §4.7 amendment, pending on acceptance of this brief.
+**W4. Map changes are bundle layers, not runtime edits.** A World Change map variant is compiled into the World Bundle as a named optional layer: tiles that replace base tiles inside a bounded area, validated by the World Project compiler with the bundle. The Crystalserver map files are source evidence only; each layer is re-authored through the World Project pipeline with provenance. A channel composes base plus the layers of its epoch's active variants at channel start, and the composition is immutable for the epoch. Layer tiles are not channel overlay state: they do not count against `MAP01-CHANNEL-OVERLAY-BYTES`, and the channel overlay (doors, levers, moved items) sits on top of the composed map exactly as on the base (WORLD-INTERACTION-0 §9.1). Because a layer is chosen only at the reset, when every overlay is empty, Ground is retired and every channel starts fresh (ADR-0021 §4.7), no live map mutation and no overlay migration ever happens. A channel restart rebuilds base plus the same layers from the durable rows (the task's restart-safety criterion). This ADR-0021 §4.2 and §4.7 amendment is accepted by D1053 and carried by #2178 under D1136; protected integration remains pending.
 
 **W5. A World Change ends at the next planned reset.** v1 has one duration, `until_next_reset`. Nothing is reverted at runtime: the next epoch composes its own layers, the channels start with empty overlays, and runtime creatures and NPCs go with the reset. Durable results (items looted, receipts, quest state) stay. A character whose durable position falls on a tile that the new composition makes unusable takes the CHAR-POSITION-0 §3.3 fallback at admission (ADR-0021 §4.4). Mid-epoch start or end is split out (§6).
 
 **W6. Creatures, raids and NPCs of a World Change.**
 - **Spawns** of an active variant are ordinary channel-local spawn sources (GAME-AI-01), active for the epoch on every channel, rebuilt after a channel restart like any base spawn.
-- **Raids**: a raid that belongs to a World Change (the Fury Gate raid `furyosa`) is a RAID-1 raid whose definition gains `requires_world_change {key, variant?}`; the BOSS-RAID-0 §4.2 check skips it in an epoch where the change is not active. This is a BOSS-RAID-0 §4.1 amendment, pending on acceptance of this brief. Everything else of the raid (firings, channel runs, LOST on restart, §9 eligibility) is unchanged.
+- **Raids**: a raid that belongs to a World Change (the Fury Gate raid `furyosa`) is a RAID-1 raid whose definition gains `requires_world_change {key, variant?}`; the BOSS-RAID-0 §4.2 check skips it in an epoch where the change is not active. This BOSS-RAID-0 §4.1 amendment is accepted by D1053 and carried by #2178 under D1136; protected integration remains pending. Everything else of the raid (firings, channel runs, LOST on restart, §9 eligibility) is unchanged.
 - **NPCs**: an NPC present only during a World Change (the oriental trader) is content whose placement names the change and variant; NPC-0 places it at channel start when active.
 - **Encounters**: mechanics of a World Change that need the encounter vocabulary run on ENCOUNTER-RT-0; nothing here adds a runtime.
 
@@ -107,7 +107,7 @@ Table: `WIKI` = https://tibia.fandom.com/wiki/Mini_World_Changes (Statistics, da
 | `oriental_trader` (Yasir) | `at_reset` 151 | 3 towns (1) | 0; reset | `WIKI` 69/465 + 6/33 = 75/498. OT: 330, `oriental_trader.lua:3,43-44` |
 | `thawing` | `at_reset` 187 | 1 | 0; reset | `WIKI` 93/465 + 0/33. OT: Crystalserver 100, `thawing.lua:2,31-33`; Canary has none |
 | `their_masters_voice` (World Change) | `at_reset` 200 | 1 | 0; reset | no Tibia number ("less than a day", https://tibia.fandom.com/wiki/World_Changes). OT: 200, `their_masters_voice.lua:4` (Canary and Crystalserver agree) |
-| `nomads` | `at_reset` 799 | 4 camps (`PARITY_PENDING`) | 0; reset | `WIKI` 371/465 + 27/33. No source for the camp choice (wiki: "only one Nomad Camp out of four") |
+| `nomads` | `at_reset` 799 | 4 camps, weight 1 each (D1055) | 0; reset | `WIKI` 371/465 + 27/33. No source for the camp choice (wiki: "only one Nomad Camp out of four") |
 | `warpath` | `at_reset` 373 | 1 | 0; reset | `WIKI` 177/465 + 9/33 |
 | `down_the_drain` | `at_reset` 307 | 1 | 0; reset | `WIKI` 149/465 + 4/33 |
 | `river_runs_deep` | `at_reset` 269 | 1 | 0; reset | `WIKI` 122/465 + 12/33 |
@@ -124,7 +124,7 @@ The sample is small (33 days after 10.80); the content packet keeps the days-see
 
 ## 4. Packets (proposed)
 
-Allocated one by one by the control plane after acceptance; each its own PR.
+D1057: CONTENT, RT and ANNOUNCE are commits on #2178; LAYER and ACT require separate CP-allocated PRs. This builder creates no new PR.
 1. **WCHANGE-CONTENT-1** (content): the `world-changes` and `mini-world-changes` families, schema, generator and the W1 compile check, with Fury Gates and Nightmare Isles definitions and provenance. No runtime.
 2. **WCHANGE-LAYER-1** (hard, persistence and map review): optional bundle layers in the compiler and the channel composition (W4), the restart rebuild, and the map revision of a composed map (the layer set digest bound into the session's map revision, a MAP-WIRE amendment of its own). Needs MAP-LOAD-1 and MAP-OVERLAY-1.
 3. **WCHANGE-ACT-1** (hard, determinism and persistence review): migration for the activation and override tables, W2 in the reset transaction, the RNG purpose, the boot refusal without rows, crash-replay tests. Needs WCHANGE-CONTENT-1 and the ADR-0021 §4.7 reset record (the MAP-OVERLAY-1 family).
@@ -135,7 +135,7 @@ Order: WCHANGE-CONTENT-1, then WCHANGE-LAYER-1 and WCHANGE-ACT-1 in parallel, th
 
 ## 5. Open points (not decided here)
 
-- `PARITY_PENDING` after the search in §2: the Bank Robbery chance and trigger (hourly from server boot, count unknown) and the Nomads camp weights. Everything else has a W15 value.
+- D1055 resolves the implementation choices: Nomads has weight 1 per camp; Bank Robbery is outside v1. The source search in §2 remains historical evidence, not an unresolved v1 gate.
 - Whether a Tibia World Change may stay active across several server saves (W5 v1 says one epoch). Evidence both ways in W15: the board changes at each save, yet some changes are reported on 3 to 4 days in a row; the wiki's per-day shares cannot tell them apart.
 - How the client shows active World Changes (Event Schedule, Cyclopedia): CYCLOPEDIA and client presentation, with its own wire if any.
 - The task record's owned path `content/world_changes/` should become `content/encounters/world-changes/` and `content/encounters/mini-world-changes/` (the content tree); the record is not edited here.
@@ -152,12 +152,12 @@ Each needs its own future decision packet; nothing here allocates it.
 ## 7. Handback
 
 ```yaml
-result: CANDIDATE
+result: ACCEPTED_WITH_AMENDMENTS
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md
 resource_values_changed: false
 production_authority_changed: false
-implementation_may_resume: false
+implementation_may_resume: true # owned authoring under D1054/D1136; final integration gates remain
 required_fresh_allocation: true
 required_independent_review: "determinism, persistence, map/content, protocol"
-amends_pending_acceptance: "ADR-0021 §4.2 and §4.7 (W2, W4); BOSS-RAID-0 §4.1 (W6)"
+amends_pending_protected_integration: "ADR-0021 §4.2 and §4.7 (W2, W4); BOSS-RAID-0 §4.1 (W6)"
 ```

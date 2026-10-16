@@ -144,6 +144,12 @@ A raid is an Encounter with `encounter_type` Raid and scope `channel_shared`, pl
 - `waves[]`: `{delay_s, entries[] {creature, count, area anchor}}`;
 - `despawn_after_s` (optional; otherwise raid creatures stay until the next reset, as in Tibia);
 - `channels`: every live channel (ruling R1, §17).
+- `requires_world_change {key, variant?}` (optional; EVENTS-WORLD-1 W6, CP D1053/D1136):
+  the schedule check reads the World's durable activation for the current reset epoch
+  and skips this raid when the change is inactive or the required variant differs.
+  Missing activation rows do not constitute activation; the World remains closed under
+  ADR-0021 §4.7. This precondition does not change firing identities, Channel runs,
+  restart/LOST handling, persistent-raid guards or §9 reward eligibility.
 
 Validation refuses a raid above `BOSSRAID0-RL-03` creatures or `BOSSRAID0-RL-04` waves. A raid's
 creatures and anchors must be admitted (E4). A boss wave entry with `reward_boss` uses §7-§9.

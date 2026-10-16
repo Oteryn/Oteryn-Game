@@ -4,7 +4,7 @@
 task_id: EVENTS-WORLD-1
 title: "EVENTS-WORLD-1: world changes, Fury Gates, Nightmare Isles, hazard (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/events-world-1
@@ -21,7 +21,7 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/world_change/ (new) + tests"
-  - "content/world_changes/ source inputs"
+  - "content/encounters/{world-changes,mini-world-changes}/ source inputs"
   - "docs/agents/tasks/EVENTS-WORLD-1.md"
 slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, manifest.json, content.lock.json, content/world/pins/*, Rust pins"
@@ -47,7 +47,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 ## Owned paths (builder edits freely)
 
 - apps/game-server/src/world_change/ (new) + tests
-- `content/world_changes/ source inputs`
+- `content/encounters/{world-changes,mini-world-changes}/ source inputs`
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -104,3 +104,21 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+
+## D1136 acceptance-amendment checkpoint
+
+CP2131 comment6224930839 D1136 assigns this PR the ADR-0021 §4.2/§4.7
+and BOSS-RAID-0 §4.1 amendments required by D1053. They now carry W2/W4
+atomic reset activation and immutable layer composition/restart behavior, plus
+W6's durable World Change prerequisite for raid scheduling. The accepted brief
+header records D1052–D1057/owner acceptance without claiming protected-main
+integration. No runtime, schema, RNG registry, content pin, map format or other
+owner's implementation changes in this checkpoint.
+
+Status NOT_FULLY_QUALIFIED: CONTENT source population/validation, separate
+WCHANGE-LAYER-1 and WCHANGE-ACT-1 allocations, runtime/announce integration
+and mechanic qualification remain NOT_RUN. LAYER/ACT require separate CP PRs
+under D1057; this builder creates none. EVENTS-RAID-1 gates RT, not this
+amendment authoring. Nomads uses accepted weight1 per camp; Bank Robbery is
+outside v1, and traps alone require HAZARD-1. The checkpoint follows D1122.

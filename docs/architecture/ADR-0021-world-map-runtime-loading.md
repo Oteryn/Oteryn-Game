@@ -192,6 +192,14 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
 
 ### 4.2 Representation (2a)
 
+- **World Change layers (EVENTS-WORLD-1 W4; CP D1053/D1136).** A variant is a named,
+  bounded optional tile layer authored and validated through the World Project compiler
+  with the World Bundle. Legacy map files are provenance evidence, not runtime input.
+  A Channel composes the base with the variants selected for its durable reset epoch;
+  this composition is immutable until the next reset. Door/lever/moved-item overlay state
+  sits above that composition. Layer tiles are not Channel overlay state and do not consume
+  `MAP01-CHANNEL-OVERLAY-BYTES`. The layer-set digest must bind the composed map revision
+  through the separately reviewed WCHANGE-LAYER-1/MAP-WIRE integration.
 - **Source.** B3 placements and the world families are the World Project source. The server never
   reads them.
 - **Server World Bundle.** The compiler produces one. It reuses the B3 sector container (32x32
@@ -350,6 +358,21 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
      `CorpseDecay`.
   4. When none remains, activation writes the new digest, epoch N+1 and ACTIVATED atomically,
      bound to the content activation record. Channels then start with empty overlays.
+- **World Change activation (EVENTS-WORLD-1 W2/W4; CP D1053/D1136).** In that same
+  step-4 transaction, write one immutable `game_world_change_activations` row for each
+  change in the target bundle, keyed by (WorldId, reset epoch, change key), with ACTIVE
+  or INACTIVE, selected variant, bundle digest and draw inputs. Evaluate change keys in
+  order using `world_change_activation`: chance first, then the weighted active variant;
+  a conflict with an earlier active `exclusive_with` key makes the later key INACTIVE.
+  Consume a next-epoch override in this transaction, retaining its operator and reason.
+  Respect the accepted EVENTS-WORLD-1 bounds. A World with missing current-epoch rows
+  cannot open admission. This contract is implemented by WCHANGE-ACT-1; it is not a
+  schema installation or an additional independent activation transaction.
+- **Layer recovery.** Channels rebuild the same base and selected layers from those rows
+  after restart, without rerolling or switching the active revision. The next planned
+  reset selects the next epoch's composition only after overlay clearing and Ground
+  retirement. There is no mid-epoch layer replacement or overlay migration; durable
+  loot, receipts and quest state remain durable. Admission position fallback follows §4.4.
 - **Crash recovery.** A crash while the record is RETIRING makes boot refuse admission and resume
   from step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired Ground. A crash restart outside a reset
   reuses the active bundle and never switches revisions.
