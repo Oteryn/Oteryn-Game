@@ -2,6 +2,14 @@
 //! CP D1094 authoring; connection/registries/offer/owner call sites remain closed until A2.
 //! Prepared commands are immutable expectations, not current authority. Every mutation uses
 //! the real APP-1 writer; every observation separately reads its current gameplay fence.
+
+// A2 owns the shared dispatcher, sequencer and observation callers. Keep this leaf compiled
+// and type checked while those callers are gated; remove this expectation when A2 wires them.
+#![expect(
+    dead_code,
+    reason = "APP-3 native leaf awaits A2 dispatcher, sequencer and observation composition"
+)]
+
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

@@ -251,6 +251,9 @@ exercise the actual envelope codecs for mapping-before-stationary-UPDATE, hidden
 context/refusal atomicity, capability gates, exhaustion, leave/reentry/reset,
 temporary clear/latest base and unresolved-versus-known-rejection settlement.
 These are mechanism tests, not fabricated native authority qualification.
+The unwired server leaf explicitly expects only `dead_code` until A2 supplies its
+shared callers; it remains compiled and type checked with every other lint enabled.
+Remove that expectation when those callers are integrated.
 
 Author validation of the exact protocol source with a private `pub mod appearance;`
 registration in the actual protocol crate: **14 passed, 0 failed, 0 ignored**;
