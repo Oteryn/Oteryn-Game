@@ -389,7 +389,11 @@ async fn persist_rewrite(
 }
 
 #[cfg(test)]
-mod tests {
+#[allow(
+    dead_code,
+    reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
+)]
+pub(crate) mod tests {
     use super::*;
     use crate::foundation::{CommandId, GameSessionId};
     use sqlx::Connection;
@@ -503,8 +507,7 @@ mod tests {
         Ok(outcome)
     }
 
-    #[sqlx::test(migrations = "./migrations")]
-    async fn text_storage_delete_retains_tombstone_and_rewrite_advances(
+    pub(crate) async fn text_storage_delete_retains_tombstone_and_rewrite_advances(
         pool: sqlx::PgPool,
     ) -> TestResult {
         let character = storage_fixture(&pool).await?;
@@ -529,8 +532,7 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "./migrations")]
-    async fn text_storage_rate_refusal_preserves_text_and_revision(
+    pub(crate) async fn text_storage_rate_refusal_preserves_text_and_revision(
         pool: sqlx::PgPool,
     ) -> TestResult {
         let character = storage_fixture(&pool).await?;
@@ -563,8 +565,7 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "./migrations")]
-    async fn text_storage_rollback_loses_neither_atomicity_nor_command_retry(
+    pub(crate) async fn text_storage_rollback_loses_neither_atomicity_nor_command_retry(
         pool: sqlx::PgPool,
     ) -> TestResult {
         let character = storage_fixture(&pool).await?;

@@ -3054,6 +3054,9 @@ mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
 
+#[path = "support/mail_postgres_cases.rs"]
+mod mail_postgres_cases;
+
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
 mod npc_trade_postgres_cases;

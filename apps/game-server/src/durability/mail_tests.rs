@@ -38,8 +38,7 @@ async fn seed(
     Ok(CharacterId::from_bytes(super::uuid_text(&id)?)?)
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn mail_recipient_same_world_self_and_unknown_are_privacy_safe(
+pub(crate) async fn mail_recipient_same_world_self_and_unknown_are_privacy_safe(
     pool: sqlx::PgPool,
 ) -> TestResult {
     let mut connection = pool.acquire().await?;
@@ -74,8 +73,7 @@ async fn mail_recipient_same_world_self_and_unknown_are_privacy_safe(
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn mail_stale_hint_rechecks_rename_lifecycle_and_world_independently(
+pub(crate) async fn mail_stale_hint_rechecks_rename_lifecycle_and_world_independently(
     pool: sqlx::PgPool,
 ) -> TestResult {
     let mut connection = pool.acquire().await?;
@@ -128,8 +126,7 @@ async fn mail_stale_hint_rechecks_rename_lifecycle_and_world_independently(
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn mail_recipient_root_share_lock_blocks_terminal_change_until_transaction_ends(
+pub(crate) async fn mail_recipient_root_share_lock_blocks_terminal_change_until_transaction_ends(
     pool: sqlx::PgPool,
 ) -> TestResult {
     let mut connection = pool.acquire().await?;

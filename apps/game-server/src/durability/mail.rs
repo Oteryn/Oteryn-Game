@@ -64,5 +64,9 @@ pub async fn lock_mail_recipient_root(
 }
 
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
+)]
 #[path = "mail_tests.rs"]
-mod tests;
+pub(crate) mod tests;
