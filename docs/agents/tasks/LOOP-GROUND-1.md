@@ -543,3 +543,21 @@ D1122 explicitly permits this coherent owned checkpoint before full controls:
 draft status, truthful RED/NOT_RUN, formatting and diff checks, no review trigger,
 ready transition or CI restart. The 30-case evidence and source maps are retained
 in the Source7 packet; adding this record does not claim fresh runtime.
+
+
+### D1160 registration correction after actual checkpoint CI RED
+
+CP2131 comment6225509183 identified E0433 at the genuine caller sites because
+`ground_cell_limit` was not registered. The one added `mod ground_cell_limit;`
+line in `durability/mod.rs` is explicitly permitted by that decision/D1160.
+It compiles the owned guard with its real production callers; no extra root,
+fixture, allowance or fake call is added. D1096/D1116 aggregate and H delegation
+remain separate. The old shared proposal's registration hunk is now superseded
+by this exact line; do not apply it a second time in the final assembly.
+
+Status NOT_FULLY_QUALIFIED: the observed E0433 RED is preserved, its source cause
+is repaired here, and fresh canonical compile/strict/runtime is NOT_RUN locally.
+The unchanged Source7 component30PASS remains historical proof, not a fresh
+canonical-head result. The known foreign fixture failures are not rerun.
+Formatting and whitespace of the changed files are checked before the coherent
+D1122 repair push; no CI rerun, review trigger, ready, merge or rebase is used.
