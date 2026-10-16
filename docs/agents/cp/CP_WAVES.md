@@ -71,6 +71,14 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 - OPS-SAVE-2 już zmergowane (#2083), bez draftu.
 - Blokery decyzyjne: zbiorczy przegląd architekta w toku (briefy CANDIDATE, GUILD0/PARTY_PVP0, CRAFT/HIRE/SOCIAL-LATE/TUTORIAL, LOOP-GROUND, PREM-2b, WEATHER vs SEC, Store S-1..S-9).
 
+## Przegląd CP 2026-10-16 (5 paczek z checkpointu 6195906702): wszystkie NOT READY
+Niezależny architekt i CP. To komponenty, nie pełne mechaniki. Braki wypisano w komentarzu na każdym PR; budowniczy uzupełnia je jednym pushem na ten sam PR.
+- PVP-RT-1 #2204 `4e466076`: brak legalności celu PvP w attack/spell, PZ i skull/death (PVP-1b).
+- APP-4 #2176 `0a7d8133`: brak okna strojów (tylko odblokowane), renderu innych aktorów, przejść i resume. Blokery: APP-3, #1942.
+- LOOP-GROUND-1 #2158 `e1eab53d`: brak wywołań w zapisach drop/death/spell. Bloker: DEATH-DUR-1. P2: pusty insert odrzucany na przepełnionym polu.
+- PARTY-1 #2201 `5b46fefa`: brak PartyView, modułu party/ i ingress protokołu. Bloker: CHAT-2.
+- VIP-1 #2143 `bcb366b8`: brak wire VIP_V1 (transport/protocol/testy PG), grup (w tym GroupRemove) i vip_status. P2: receipt replay przed fence.
+
 ## Granica — PR i sesje
 - ADR-0004-XREF-1: Game #2138 (auto-merge).
 - STORE-DELIVERY-CONTRACT-1: Platform #1625 (draft, decyzje S-1..S-9).
