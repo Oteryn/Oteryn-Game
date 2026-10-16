@@ -485,6 +485,41 @@ pub(crate) struct FireReport {
 }
 
 impl SpellTimerOwner {
+    /// D1218: read the one actual Expiry event for this full familiar lifecycle.
+    /// Warnings and another actor/session/creature/epoch never supply its deadline.
+    /// Zero or multiple matches are unknown; neither callback nor lane state is changed.
+    pub(crate) fn familiar_expiry_due(
+        &self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Option<SemanticTimeMicros> {
+        use super::companion_lifecycle::FamiliarTimerEvent;
+        let cast = self.payloads.iter().filter_map(|pending| {
+            let TimerPayload::Familiar(saved) = &pending.payload else {
+                return None;
+            };
+            (saved.binding.caster == owner
+                && saved.binding.command.game_session_id() == session
+                && saved.creature == creature
+                && saved.lifecycle_epoch == lifecycle_epoch
+                && saved.event == FamiliarTimerEvent::Expiry)
+                .then_some(pending.due)
+        });
+        let returned = self.lifecycle_payloads.iter().filter_map(|pending| {
+            let saved = &pending.saved;
+            (saved.binding.owner() == owner
+                && saved.binding.session() == session
+                && saved.creature == creature
+                && saved.lifecycle_epoch == lifecycle_epoch
+                && saved.event == FamiliarTimerEvent::Expiry)
+                .then_some(pending.due)
+        });
+        let mut matches = cast.chain(returned);
+        let due = matches.next()?;
+        matches.next().is_none().then_some(due)
+    }
     /// Actual lane metadata only; reading a deadline grants no callback authority.
     pub(crate) fn next_due_time(&self) -> Option<SemanticTimeMicros> {
         self.payloads

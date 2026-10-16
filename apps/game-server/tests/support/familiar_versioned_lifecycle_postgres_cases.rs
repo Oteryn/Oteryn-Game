@@ -98,6 +98,25 @@ fn familiar_v2_converts_linked_checkpoint_and_rejects_record_derived_writer() ->
             assert!(matches!(h.root.commit_character_familiar_state(&authority,&h.node,fence(2)?,second.clone()).await.map_err(debug)?,FamiliarStateOutcome::Committed(_)));
             let downgraded = h.root.commit_character_familiar_state(&authority,&h.node,fence(3)?,request(124,after.clone(),first.after.clone())?).await;
             assert!(matches!(downgraded,Err(CharacterProgressionError::InvalidInput)),"{downgraded:?}");
+            let transport = crate::foundation::AuthenticatedTransportRefV1::decode(&[9;16]).map_err(debug)?;
+            let wrong_transport = crate::foundation::AuthenticatedTransportRefV1::decode(&[8;16]).map_err(debug)?;
+            let mut clean = after.clone();
+            clean.lifecycle.as_mut().ok_or("missing v2")?.clean_end_game_session_id = Some(writer.game_session_id.clone());
+            // This fixture is still Reconnectable (GraceExpiry context), never clean Logout.
+            let not_logout = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(125,after.clone(),clean.clone())?,transport).await;
+            assert!(matches!(not_logout,Err(CharacterProgressionError::AuthorityRejected)),"{not_logout:?}");
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2 WHERE game_session_id=encode($1,'hex')::uuid").bind(fence(3)?.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            let wrong = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(126,after.clone(),clean.clone())?,wrong_transport).await;
+            assert!(matches!(wrong,Err(CharacterProgressionError::AuthorityRejected)),"{wrong:?}");
+            let generic = h.root.commit_character_familiar_state(&authority,&h.node,fence(3)?,request(127,after.clone(),clean.clone())?).await;
+            assert!(matches!(generic,Err(CharacterProgressionError::AuthorityRejected)),"{generic:?}");
+            let clean_request = request(128,after.clone(),clean.clone())?;
+            let genuine = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,clean_request.clone(),transport).await.map_err(debug)?;
+            assert!(matches!(genuine,FamiliarStateOutcome::Committed(_)),"{genuine:?}");
+            assert_eq!(h.root.read_character_familiar_state(&authority,CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?).await.map_err(debug)?.state(),&clean);
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1 WHERE game_session_id=encode($2,'hex')::uuid").bind(wrong_transport.to_bytes().as_slice()).bind(fence(4)?.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            let replay = h.root.commit_character_familiar_state(&authority,&h.node,fence(3)?,clean_request).await.map_err(debug)?;
+            assert!(matches!(replay,FamiliarStateOutcome::AlreadyCommitted(_)),"{replay:?}");
             let retained = h.root.reconcile_character_familiar_state(&authority, first.occurrence)
                 .await.map_err(debug)?.ok_or("missing legacy receipt")?;
             assert_eq!(retained.before(), &DurableFamiliarState::default());

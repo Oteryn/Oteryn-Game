@@ -374,3 +374,38 @@ c248 has `save_familiar_at_actor_end` only for expired grace and raw loss epoch;
 there is no FamiliarActorEnd enum. Timer due is private in SpellTimerOwner's Pending
 and LifecyclePending; registered_familiar returns an event but no due. Lead has the
 exact required caller/topology and timer accessor packet. No clean proof is guessed.
+
+### D1216 / D1218 integration source continuation (supersedes held-port note)
+
+The lead began a local merge of protected main b3e4fa0d into f0f9dfbc; this worker
+resolved only its familiar_cast conflict, retaining actual main FamiliarActorEnd,
+current transport/attempt, loss-epoch checks and pending retry/supersession behavior.
+No merge/commit/stash/push is performed by this worker. Main's Logout entry is the
+clean-end producer; GraceExpiry never supplies a clean marker or the new clean-end
+commit port. Existing runtime then spell_states locks serialize the snapshot and
+its pending receipt. Owner time is sampled once under both guards for actual expiry
+remaining and reference cooldowns. A present familiar without exactly one matching
+expiry is Unknown; an independently observed absence of physical familiars is zero.
+
+D1218 adds only read-only SpellTimerOwner::familiar_expiry_due(self, owner, session,
+creature, lifecycle_epoch), scanning actual cast and return Expiry entries. Warnings,
+other full identities, absent and duplicate entries supply no deadline. No timer is
+scheduled, canceled, advanced or consumed by this accessor. Existing hardlinked timer
+source and test file were atomically detached before editing.
+
+The crate-private clean-end writer port carries the authenticated Logout transport
+into the same existing fenced receipt TX. Generic commits retain marker refusal.
+The TX independently checks Active session/current transport and marker==fence session;
+existing full authority checks hold the session row FOR SHARE. Historical receipt
+lookup precedes these current-mutation checks; original bindings/history remain intact.
+The source PG case now prepares direct-marker refusal, GraceExpiry/Reconnectable
+refusal, wrong transport refusal, genuine Active/current-transport clean commit and
+history replay after transport replacement. The existing real timer-owner unit case
+adds cast full-key/warning/duplicate metadata assertions; return-path implementation
+is prepared but has no separately executed qualification here.
+
+Unresolved scope remains explicit: a prior committed clean marker on a subsequent
+non-spawn/GraceExpiry path is held by generic writer refusal; no marker is silently
+cleared. Same-session open Login reconstruction still refuses resetting a live timer.
+No build/native/PG/strict Clippy/full package was executed for the integrated source.
+The pre-integration f0f9dfbc bundle and all older evidence remain historical.

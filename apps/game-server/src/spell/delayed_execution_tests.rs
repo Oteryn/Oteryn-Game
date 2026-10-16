@@ -85,6 +85,51 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         runtime.binding().scope_generation(),
     )
     .unwrap();
+    // D1218 read-only metadata: warnings/other session/epoch cannot substitute expiry.
+    let expiry = super::super::companion_lifecycle::SavedFamiliarTimer {
+        binding: binding.clone(),
+        creature: target,
+        lifecycle_epoch: 7,
+        event: super::super::companion_lifecycle::FamiliarTimerEvent::Expiry,
+    };
+    let due = SemanticTimeMicros::from_micros(1_500_000);
+    let pending = Pending {
+        occurrence: SpellTimerOccurrence {
+            command: binding.command,
+            phase: 0,
+        },
+        due,
+        payload: TimerPayload::Familiar(expiry.clone()),
+    };
+    assert_eq!(owner.familiar_expiry_due(caster, session, target, 7), None);
+    owner.payloads.push(pending.clone());
+    assert_eq!(
+        owner.familiar_expiry_due(caster, session, target, 7),
+        Some(due)
+    );
+    assert_eq!(
+        owner.familiar_expiry_due(other_caster, session, target, 7),
+        None
+    );
+    assert_eq!(
+        owner.familiar_expiry_due(caster, other_session, target, 7),
+        None
+    );
+    assert_eq!(owner.familiar_expiry_due(caster, session, caster, 7), None);
+    assert_eq!(owner.familiar_expiry_due(caster, session, target, 8), None);
+    let mut warning = expiry;
+    warning.event = super::super::companion_lifecycle::FamiliarTimerEvent::Warning { index: 0 };
+    owner.payloads.push(Pending {
+        payload: TimerPayload::Familiar(warning),
+        ..pending.clone()
+    });
+    assert_eq!(
+        owner.familiar_expiry_due(caster, session, target, 7),
+        Some(due)
+    );
+    owner.payloads.push(pending);
+    assert_eq!(owner.familiar_expiry_due(caster, session, target, 7), None);
+    owner.payloads.clear();
     let original = OwnerCombatBatch {
         caster,
         attacker,

@@ -452,7 +452,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, true)
+        self.commit_character_familiar_state_inner(authority, node, fence, request, true, None)
             .await
     }
 
@@ -463,8 +463,29 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, false)
+        self.commit_character_familiar_state_inner(authority, node, fence, request, false, None)
             .await
+    }
+
+    /// Only the actor-end Logout producer supplies this authenticated current transport.
+    /// The same TX independently verifies Active/session/transport; JSON is not its proof.
+    pub(crate) async fn commit_character_familiar_clean_end(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        transport: crate::foundation::AuthenticatedTransportRefV1,
+    ) -> Result<FamiliarStateOutcome> {
+        self.commit_character_familiar_state_inner(
+            authority,
+            node,
+            fence,
+            request,
+            true,
+            Some(transport),
+        )
+        .await
     }
 
     async fn commit_character_familiar_state_inner(
@@ -474,6 +495,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
         allow_new_mutation: bool,
+        clean_end_transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
     ) -> Result<FamiliarStateOutcome> {
         request.validate()?;
         let binding = command_binding(&fence, &request)?;
@@ -493,6 +515,7 @@ impl DurabilityRoot {
                         request,
                         binding,
                         allow_new_mutation,
+                        clean_end_transport,
                     )
                     .await?;
                     let outcome = match outcome {
@@ -531,7 +554,7 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-        apply_familiar_transaction(tx, &recovery, node, fence, request, binding, true).await?
+        apply_familiar_transaction(tx, &recovery, node, fence, request, binding, true, None).await?
     }
 
     pub async fn reconcile_character_familiar_state(
@@ -632,6 +655,10 @@ fn binding_from_identity(
     binding.extend_from_slice(&Sha256::digest(&semantic));
     Ok(binding)
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one existing TX carries independently current clean-end transport evidence"
+)]
 async fn apply_familiar_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
@@ -640,6 +667,7 @@ async fn apply_familiar_transaction(
     request: FamiliarStateRequest,
     binding: Vec<u8>,
     allow_new_mutation: bool,
+    clean_end_transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
 ) -> std::result::Result<Result<PendingFamiliarStateOutcome>, DurabilityError> {
     if fence.character_lease_generation == 0
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -702,10 +730,22 @@ async fn apply_familiar_transaction(
         return Ok(Err(CharacterProgressionError::InvalidInput));
     }
     if let Some(lifecycle) = &request.after.lifecycle {
-        // No accepted close/barrier proof enters this API yet. A caller-supplied
-        // marker is not proof, even with a genuine current gameplay fence.
-        if lifecycle.clean_end_game_session_id.is_some() {
-            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+        match (
+            lifecycle.clean_end_game_session_id.as_deref(),
+            clean_end_transport,
+        ) {
+            (None, None) => {}
+            (Some(marker), Some(transport))
+                if marker == lifecycle_uuid_text(fence.game_session_id.as_bytes()) =>
+            {
+                let active_transport: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
+                    .bind(fence.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice())
+                    .fetch_one(&mut **tx).await?;
+                if !active_transport {
+                    return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                }
+            }
+            _ => return Ok(Err(CharacterProgressionError::AuthorityRejected)),
         }
         if lifecycle.writer
             != FamiliarLifecycleWriter::from_fence(&fence)
@@ -1281,7 +1321,7 @@ impl DurabilityRoot {
                         }
                     }
                     let familiar = match apply_familiar_transaction(
-                        &mut tx, &recovery, &node, fence, request, binding, allow_new_mutation,
+                        &mut tx, &recovery, &node, fence, request, binding, allow_new_mutation, None,
                     )
                     .await?
                     {

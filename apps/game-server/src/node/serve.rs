@@ -49,6 +49,9 @@ use crate::native_admission_source::character_commands::{
     CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
 };
 use crate::native_admission_source::descriptor::ProducerDescriptor;
+use crate::native_admission_source::public_projections::{
+    self, MtlsPublicSink, PublicProjectionDescriptor,
+};
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
@@ -411,6 +414,11 @@ struct Material {
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
     character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
+    /// Public-projection publisher: its identity, source authority and epoch
+    /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
+    /// by the serving loop.
+    public_projections:
+        std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -620,6 +628,62 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             Some((descriptor, commands.source_authority.clone()))
         }
     };
+    let public_projections = match &platform.public_projections {
+        Some(public) if public.enabled => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.public_projections.client_certificate_file",
+                &public.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.public_projections.client_key_file",
+                &secret(
+                    "platform.public_projections.client_key_file",
+                    &public.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            // Its own identity, never one of the other purposes' (contract §3).
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            if let Some(commands) = &platform.character_commands {
+                others.push(chain(
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = PublicProjectionDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.public_projections"))?;
+            Some((
+                descriptor,
+                public.source_authority.clone(),
+                public.epoch_fence_file.clone(),
+            ))
+        }
+        _ => None,
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -675,6 +739,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
         character_commands: std::sync::Mutex::new(character_commands),
+        public_projections: std::sync::Mutex::new(public_projections),
         descriptor,
         launch,
         s2,
@@ -728,6 +793,9 @@ const RESYNC_TIMEOUTS: &str = "SELECT set_config('transaction_timeout', $1, true
 const RESYNC_LOCK: &str = "SELECT projection_epoch, \
      floor(extract(epoch FROM transaction_timestamp()) * 1000)::bigint AS now_ms \
      FROM game_character_account_projection_epoch FOR UPDATE";
+const PUBLIC_RESYNC_LOCK: &str = "SELECT projection_epoch, \
+     floor(extract(epoch FROM transaction_timestamp()) * 1000)::bigint AS now_ms \
+     FROM game_public_projection_epoch FOR UPDATE";
 
 /// `oteryn-game-ops projection resync`: re-enqueue every account in one
 /// transaction (migration 0024). With `raise_epoch` the epoch row is locked
@@ -737,6 +805,51 @@ pub async fn resync(
     root: &DurabilityRoot,
     raise_epoch: bool,
     fence: &mut impl EpochFence,
+) -> Result<u64, ResyncError> {
+    resync_projection(
+        root,
+        raise_epoch,
+        fence,
+        RESYNC_LOCK,
+        ("SELECT game_character_account_projection_resync($1)", None),
+    )
+    .await
+}
+
+/// `oteryn-game-ops public-projection resync` (migration 0091): re-enqueue
+/// one family (`all`, `highscores`, `character_profile` or `world_online`)
+/// in one transaction, under `PUBPROJ-RESYNC-DEADLINE` rather than the
+/// ordinary pass deadline (the node is stopped). An epoch raise covers every
+/// family and follows the same fence rules against `F_pub`. Returns the epoch.
+pub async fn public_resync(
+    root: &DurabilityRoot,
+    family: &str,
+    raise_epoch: bool,
+    fence: &mut impl EpochFence,
+) -> Result<u64, ResyncError> {
+    let _recovery = root.boot_pass_deadline(crate::durability::public_projections::RESYNC_DEADLINE);
+    resync_projection(
+        root,
+        raise_epoch,
+        fence,
+        PUBLIC_RESYNC_LOCK,
+        (
+            "SELECT game_public_projection_resync($1, $2)",
+            Some(family.to_owned()),
+        ),
+    )
+    .await
+}
+
+/// One resync transaction: `lock` reads the epoch row `FOR UPDATE`; `call`
+/// is the resync function, bound to the family (when it takes one) and the
+/// raise choice.
+async fn resync_projection(
+    root: &DurabilityRoot,
+    raise_epoch: bool,
+    fence: &mut impl EpochFence,
+    lock: &'static str,
+    (call, family): (&'static str, Option<String>),
 ) -> Result<u64, ResyncError> {
     use crate::durability::DurabilityError;
     use sqlx::Row;
@@ -764,7 +877,7 @@ pub async fn resync(
                     .await?;
                 let mut expected = None;
                 if let Some(fence) = floor {
-                    let row = sqlx::query(RESYNC_LOCK).fetch_one(&mut *tx).await?;
+                    let row = sqlx::query(lock).fetch_one(&mut *tx).await?;
                     let current: i64 = row.try_get("projection_epoch")?;
                     let now_ms: i64 = row.try_get("now_ms")?;
                     match account_characters::raised_epoch(current, now_ms, fence) {
@@ -780,11 +893,11 @@ pub async fn resync(
                         }
                     }
                 }
-                let epoch: i64 =
-                    sqlx::query_scalar("SELECT game_character_account_projection_resync($1)")
-                        .bind(floor.is_some())
-                        .fetch_one(&mut *tx)
-                        .await?;
+                let mut query = sqlx::query_scalar(call);
+                if let Some(family) = family {
+                    query = query.bind(family);
+                }
+                let epoch: i64 = query.bind(floor.is_some()).fetch_one(&mut *tx).await?;
                 let epoch = u64::try_from(epoch).ok();
                 if epoch.is_none() || expected.is_some_and(|e| Some(e) != epoch) {
                     tx.rollback().await?;
@@ -882,6 +995,95 @@ async fn account_characters_loop(
     first(publisher.run(), stop.cancelled()).await;
 }
 
+const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SELECT') \
+     AND has_table_privilege('game_character_progression_state', 'SELECT') \
+     AND has_table_privilege('game_character_build_state', 'SELECT') \
+     AND has_table_privilege('game_durability_reconnect_sessions', 'SELECT') \
+     AND has_table_privilege('game_public_projection_epoch', 'SELECT') \
+     AND has_table_privilege('game_public_character_profiles', 'SELECT') \
+     AND has_table_privilege('game_public_highscores', 'SELECT') \
+     AND has_table_privilege('game_public_character_profile_outbox', 'SELECT') \
+     AND has_table_privilege('game_public_character_profile_outbox', 'DELETE') \
+     AND has_table_privilege('game_public_highscore_outbox', 'SELECT') \
+     AND has_table_privilege('game_public_highscore_outbox', 'DELETE') \
+     AND has_table_privilege('game_public_world_online', 'SELECT') \
+     AND has_table_privilege('game_public_world_online', 'INSERT') \
+     AND has_table_privilege('game_public_world_online', 'UPDATE')";
+
+/// Whether the node's database role can read the public sources and
+/// acknowledge the public outboxes; `None` while no answer was available.
+pub async fn public_store_readable(root: &DurabilityRoot) -> Option<bool> {
+    let pass = root.try_issue_semantic_pass().ok()?;
+    pass.run(|holder, _| {
+        Box::pin(async move {
+            Ok(sqlx::query_scalar::<_, bool>(PUBLIC_PRIVILEGES)
+                .fetch_one(&mut **holder)
+                .await?)
+        })
+    })
+    .await
+    .ok()
+}
+
+/// The public-projection publisher until `stop`, under the reconciled
+/// Character authority. Disabled unless configured and enabled; refused (and
+/// logged) when the node's role lacks the privileges, so Platform keeps the
+/// families stale and unserved.
+async fn public_projections_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    public: Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, source_authority, fence)) = public else {
+        return;
+    };
+    match first(
+        await_answer(async || public_store_readable(root).await),
+        stop.cancelled(),
+    )
+    .await
+    {
+        None => return,
+        Some(false) => {
+            event("event=public_projections state=refused reason=privileges");
+            return;
+        }
+        Some(true) => {}
+    }
+    event("event=public_projections state=started");
+    let publisher = public_projections::Publisher::new(
+        SystemClock::default(),
+        crate::durability::public_projections::PublicProjectionsStore { root, authority },
+        MtlsPublicSink::new(descriptor),
+        EpochFenceFile::new(fence),
+        source_authority,
+        crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
+    );
+    first(publisher.run(), stop.cancelled()).await;
+}
+
+/// Both futures to completion on this task.
+async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
+    let mut a = pin!(a);
+    let mut b = pin!(b);
+    let (mut a_done, mut b_done) = (false, false);
+    poll_fn(|context| {
+        if !a_done {
+            a_done = a.as_mut().poll(context).is_ready();
+        }
+        if !b_done {
+            b_done = b.as_mut().poll(context).is_ready();
+        }
+        if a_done && b_done {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
+    .await;
+}
+
 /// The Character Authority side of the command consumer: it refreshes the
 /// account's security evidence of a decoded create, then decides under the
 /// reconciled Character authority (contract §6).
@@ -895,18 +1097,37 @@ struct CommandDecider<'a, 'r, 'c> {
 
 impl Decider for CommandDecider<'_, '_, '_> {
     async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
+        let mut held = None;
         if let Input::Intent(raw) = input
             && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
         {
             // A failed refresh leaves the evidence stale; the decision then
             // reads it as unknown and stays transient until the intent expires.
+            // The reason is logged as fixed tokens only (no account or bytes).
             let account = uuid_text(&intent.account_id);
-            let _ = self
+            let started = std::time::Instant::now();
+            match self
                 .evidence
-                .refresh_account(self.root, self.proof, &account)
-                .await;
+                .refresh_account_held(self.root, self.proof, &account)
+                .await
+            {
+                Ok(evidence) => {
+                    event(&format!(
+                        "event=character_commands operation=refresh command={command} result=accepted elapsed_ms={}",
+                        started.elapsed().as_millis()
+                    ));
+                    held = Some(evidence);
+                }
+                Err(unavailable) => event(&format!(
+                    "event=character_commands operation=refresh command={command} result=unavailable {unavailable} elapsed_ms={}",
+                    started.elapsed().as_millis()
+                )),
+            }
         }
-        self.root
+        // The decision is the next pass after the acceptance; the accepted
+        // slot is cleared only once it has read the evidence.
+        let decision = self
+            .root
             .decide_character_command(
                 self.authority,
                 self.proof,
@@ -915,7 +1136,11 @@ impl Decider for CommandDecider<'_, '_, '_> {
                 operation_id,
                 input,
             )
-            .await
+            .await;
+        if let Some(evidence) = held {
+            let _ = evidence.release().await;
+        }
+        decision
     }
 }
 
@@ -1632,14 +1857,14 @@ async fn bootstrap_one(
     {
         Ok(Some(_)) => return "committed",
         Ok(None) => {}
-        Err(_) => return "unavailable",
+        Err(_) => return bootstrap_unavailable("reconcile", "durability"),
     }
     let intent = {
         let Ok(mut permit) = capacity.try_queue() else {
-            return "unavailable";
+            return bootstrap_unavailable("intent_queue", "capacity");
         };
         if permit.try_activate().is_err() {
-            return "unavailable";
+            return bootstrap_unavailable("intent_activation", "capacity");
         }
         match crate::character_bootstrap_intent::read_authenticated_intent(
             intents,
@@ -1649,17 +1874,22 @@ async fn bootstrap_one(
         .await
         {
             Ok(intent) => intent,
-            Err(_) => return "unavailable",
+            Err(crate::character_bootstrap_intent::IntentReadError::Source(_)) => {
+                return bootstrap_unavailable("intent_read", "source");
+            }
+            Err(crate::character_bootstrap_intent::IntentReadError::Invalid(_)) => {
+                return bootstrap_unavailable("intent_read", "invalid_intent");
+            }
         }
     };
     let account = uuid_text(intent.account_id().as_bytes());
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
-    if evidence
-        .refresh_account(root, proof, &account)
-        .await
-        .is_err()
-    {
+    // The refresh failure renders as fixed step/cause tokens only.
+    if let Err(unavailable) = evidence.refresh_account(root, proof, &account).await {
+        event(&format!(
+            "event=character_bootstrap_failure stage=account_security reason=evidence {unavailable}"
+        ));
         return "unavailable";
     }
     match root.bootstrap_character(authority, proof, &intent).await {
@@ -1669,8 +1899,17 @@ async fn bootstrap_one(
             | crate::durability::character_authority::CharacterAuthorityError::Conflict
             | crate::durability::character_authority::CharacterAuthorityError::NameUnavailable,
         ) => "rejected",
-        Err(_) => "unavailable",
+        Err(_) => bootstrap_unavailable("commit", "durability"),
     }
+}
+
+// Only static stage/reason classes reach diagnostics. Never format the intent,
+// account, operation or underlying database/TLS error into a bootstrap log.
+fn bootstrap_unavailable(stage: &'static str, reason: &'static str) -> &'static str {
+    event(&format!(
+        "event=character_bootstrap_failure stage={stage} reason={reason}"
+    ));
+    "unavailable"
 }
 
 fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
@@ -2490,16 +2729,29 @@ async fn boot_and_serve(
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
-    // Never gates serving; its end is not a shutdown reason.
-    let mut projection = pin!(account_characters_loop(
-        root,
-        &authority,
-        material
-            .account_characters
-            .lock()
-            .ok()
-            .and_then(|mut projection| projection.take()),
-        &loops_stop
+    // Never gates serving; its end is not a shutdown reason. The public
+    // projections run beside it, disabled unless configured and enabled.
+    let mut projection = pin!(both(
+        account_characters_loop(
+            root,
+            &authority,
+            material
+                .account_characters
+                .lock()
+                .ok()
+                .and_then(|mut projection| projection.take()),
+            &loops_stop
+        ),
+        public_projections_loop(
+            root,
+            &authority,
+            material
+                .public_projections
+                .lock()
+                .ok()
+                .and_then(|mut public| public.take()),
+            &loops_stop
+        ),
     ));
     let mut projection_done = false;
     // Never gates serving either; disabled unless configured.

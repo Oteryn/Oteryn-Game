@@ -1,7 +1,7 @@
 # HOUSE-RUNTIME-0 House interior runtime
 
 - Decision: `HOUSE-RUNTIME0-HOUSE-INTERIOR-RUNTIME-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (security,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) through the control plane (D551, owner answer 1a), recorded by the acceptance PR (`ACCEPT-SOCIAL-MAP-0`, `OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md`); status line reconciled 2026-10-15 (ACCEPT-BATCH-2026-10-15); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (security,
   persistence, protocol) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30, verbatim: "zacznij 1,2,3,4,5,7,6,8,9,10,11", item 1

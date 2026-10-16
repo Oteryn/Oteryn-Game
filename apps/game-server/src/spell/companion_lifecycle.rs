@@ -2407,6 +2407,10 @@ pub(crate) fn commit_lifecycle_familiar(
 /// Snapshot the actual shared reference-ID condition at a genuine logout decision.
 /// Caller writes this via the fenced familiar writer before releasing control. No timer fires
 /// while offline and no periodic/logout-stances writer is introduced.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual owner snapshot and independently validated actor-end identity"
+)]
 pub(crate) fn familiar_logout_snapshot(
     current: &DurableFamiliarState,
     player: &super::cast::PlayerSpellState,
@@ -2414,13 +2418,12 @@ pub(crate) fn familiar_logout_snapshot(
     book: &super::SpellBook,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
     unix: FamiliarUnixTime,
+    checkpoint_committed_at_ms: Option<i64>,
+    writer: &FamiliarLifecycleWriter,
+    remaining_ms: u64,
+    clean_end_game_session_id: Option<String>,
 ) -> Result<DurableFamiliarState, CompanionExecutionError> {
     parameters(profile, "familiar_summon")?;
-    // Closing v2 needs the actual timer remaining AND the return-admission barrier.
-    // Neither is supplied by this legacy actor-end API; never invent clean-end proof.
-    if current.lifecycle.is_some() {
-        return Err(CompanionExecutionError::InvalidOwnerFacts);
-    }
     let mut references = std::collections::BTreeMap::new();
     for spell in &book.spells {
         let super::Execution::NativeProfile(profile) = &spell.execution else {
@@ -2447,7 +2450,23 @@ pub(crate) fn familiar_logout_snapshot(
     if references.is_empty() {
         return Err(CompanionExecutionError::UnqualifiedProfile);
     }
-    let mut next = current.clone();
+    let mut next = current
+        .for_next_write(checkpoint_committed_at_ms, writer)
+        .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    let lifecycle = next
+        .lifecycle
+        .as_mut()
+        .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+    lifecycle.familiar_remaining_ms = remaining_ms;
+    lifecycle.writer = writer.clone();
+    if let Some(session) = clean_end_game_session_id {
+        if session != writer.game_session_id {
+            return Err(CompanionExecutionError::InvalidOwnerFacts);
+        }
+        lifecycle.open = false;
+        lifecycle.clean_end_game_session_id = Some(session);
+    }
+
     next.last_logout_unix = unix.seconds();
     next.cooldowns = references
         .into_iter()
