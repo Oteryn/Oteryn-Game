@@ -1445,14 +1445,28 @@ where
     // that its objects carry their item handles under capability 4.
     let spatial: (u32, Vec<u8>);
     let mut domains = Vec::new();
-    // USE-WIRE-V1 (#162 5868482467): the join/resync snapshot also carries the door's current
+    // USE-WIRE-V1 (#162 5868482467): for a session served domain 2 (a fixture World session,
+    // without capability 18), the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
+    // MAP-WIRE-1 contract §3: a session that selected capability 18 is served by a bundle World,
+    // which carries its object states in domain 17 and never serves domain 2.
+    let overlay_served = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_WORLD_OBJECT_OVERLAY);
     let overlay = authority.observe_world_object_overlay().await;
-    // Absence qualifies the initial empty domain, not a reset of an overlay
-    // revision already delivered on this session. Refuse an unavailable owner.
-    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    match (&overlay, admitted.continuity.overlay_revision) {
+        // Overlay state for a session with 18 has no domain 17 form: fail closed rather than
+        // send domain 2 or drop the state.
+        (Some(_), _) if !overlay_served => {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        // Absence qualifies the initial empty domain, not a reset of an overlay revision already
+        // delivered on this session: refuse an unavailable owner. A session with 18 never holds
+        // a revision above 0.
+        (None, 1..) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+        _ => {}
     }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
     let vitals = authority
@@ -1490,20 +1504,24 @@ where
             ))
         }
     };
-    // An empty overlay is still the registered domain's complete snapshot.
-    // Source-qualified maps have no legacy entry-room door; publish no invented
-    // placement, while allowing the client to distinguish empty from missing.
-    let entries = overlay.as_slice();
-    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-    };
+    let overlay_payload;
     let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
-    domains.push(DomainSnapshot {
-        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-        revision: overlay_revision,
-        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-        payload: &overlay_payload,
-    });
+    if overlay_served {
+        // A session served domain 2 (without capability 18): an empty overlay is still the
+        // registered domain's complete snapshot. Source-qualified maps have no legacy entry-room
+        // door; publish no invented placement, while allowing the client to distinguish empty
+        // from missing.
+        let Ok(bytes) = encode_world_object_overlay_snapshot(overlay.as_slice()) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        overlay_payload = bytes;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: overlay_revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &overlay_payload,
+        });
+    }
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3222,6 +3240,13 @@ where
                 // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
                 // by advancing its revision by exactly one.
                 if let Some(entry) = outcome.committed {
+                    // MAP-WIRE-1 contract §3: a bundle World's object states are tile changes
+                    // of domain 17 and it commits no domain 2 entry. One committed for a session
+                    // that selected capability 18 has no domain 17 form: fail closed, never send
+                    // domain 2 or drop the state.
+                    if !overlay_served {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                     let (Some(delta_sequence), Some(prior_revision)) =
                         (sequence.checked_add(1), entry.revision.checked_sub(1))
                     else {
