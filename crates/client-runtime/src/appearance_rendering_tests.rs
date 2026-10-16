@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_renderer::{SpriteBatch, TileCoord, TileView};
 use std::error::Error;
 use std::path::PathBuf;
 type TestResult = Result<(), Box<dyn Error>>;
@@ -181,6 +182,107 @@ fn native_white_palette_matches_actual_native_base_resolver_four_directions() ->
     }
     Ok(())
 }
+
+#[test]
+fn native_composed_cells_match_renderer_placement_and_culling_with_elevation() -> TestResult {
+    let r = fixture_root();
+    let store = AssetStore::open_pinned(
+        &r.join("content/assets/files"),
+        &r.join("imports/official/client-assets/15.30/manifest.json"),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    let appearance = index.outfit(128).ok_or("actual look128 absent")?;
+    assert!(
+        appearance.displacement_x > 0 || appearance.displacement_y > 0,
+        "the native fixture must distinguish displacement signs"
+    );
+    let mut sheets = SpriteSheets::new(store, catalog);
+    let mut subject = assets()?;
+    let (mut drawn, mut culled) = (0, 0);
+    for (direction_index, direction) in [
+        OutfitDirection::North,
+        OutfitDirection::East,
+        OutfitDirection::South,
+        OutfitDirection::West,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let composed = subject.compose(
+            OutfitPixels {
+                direction,
+                ..look()
+            },
+            &[[255; 3]; 133],
+        )?;
+        let native = index.resolve_outfit(&sheets, 128, direction_index as u32)?;
+        assert_eq!(native.cells.len(), composed.atlas.cell_count() as usize);
+        let columns = composed.atlas.width() / CELL_PX;
+        for cell in native.cells {
+            let native_atlas = AtlasImage::new(
+                CELL_PX,
+                1,
+                1,
+                sheets.cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)?,
+            )?;
+            let composed_cell = u16::try_from(cell.cell_y * columns + cell.cell_x)?;
+            for tile_px in [16, 32, 64] {
+                let view = TileView::new(TileCoord::new(100, -40), tile_px, 8, 8)?;
+                for tile in [
+                    TileCoord::new(103, -37),
+                    TileCoord::new(100, -40),
+                    TileCoord::new(99, -41),
+                    TileCoord::new(108, -32),
+                ] {
+                    for elevation in [0, 24] {
+                        // The oracle is the existing native resolver's DrawCell, passed
+                        // through the actual renderer. No anchor/displacement formula is
+                        // reproduced here. Elevation follows Scene's caller contract.
+                        let mut expected = SpriteBatch::new();
+                        let native_drawn = expected.push_offset(
+                            &view,
+                            &native_atlas,
+                            tile,
+                            0,
+                            [cell.offset_x - elevation, cell.offset_y - elevation],
+                            CELL_PX,
+                        )?;
+                        let mut actual = SpriteBatch::new();
+                        let composed_drawn = actual.push_offset(
+                            &view,
+                            &composed.atlas,
+                            tile,
+                            composed_cell,
+                            [
+                                composed.offset[0] + (cell.cell_x * CELL_PX) as i32 - elevation,
+                                composed.offset[1] + (cell.cell_y * CELL_PX) as i32 - elevation,
+                            ],
+                            CELL_PX,
+                        )?;
+                        assert_eq!(composed_drawn, native_drawn);
+                        assert_eq!(actual.len(), expected.len());
+                        for (actual, expected) in
+                            actual.instances().iter().zip(expected.instances())
+                        {
+                            assert_eq!(actual.position, expected.position);
+                            assert_eq!(actual.size, expected.size);
+                        }
+                        if native_drawn {
+                            drawn += 1;
+                        } else {
+                            culled += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(drawn > 0 && culled > 0);
+    Ok(())
+}
+
 #[test]
 fn native_exact_mask_pixels_tint_actual_hash_verified_base_cells() -> TestResult {
     let r = fixture_root();
