@@ -6,7 +6,8 @@
 //! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
-use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
+use crate::input::{ClickWalk, StepDeadline, StepDir, StepResult, TargetKind, Targetable};
+use crate::map_view::{MapTarget, MapView};
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
 use crate::world::{START, World};
@@ -14,14 +15,14 @@ use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
     ActorPosition, EntityKind, EntityRef, JoinSnapshot, LogoutResult, Session, SessionError,
-    SessionEvent, SessionStream, StepDirection, StepDisposition, StepOutcome,
+    SessionEvent, SessionStream, StepDirection, StepDisposition, StepOutcome, StepReceiptOutcome,
     WorldObjectOverlayEntry, WorldSpatialEntity,
 };
 use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// How long the session task serves liveness probes while no step is pending; well inside the
@@ -103,11 +104,45 @@ enum Input {
     Arrow(StepDir),
     Cast(NonZeroU32),
     Attack(EntityRef),
+    Stop,
+    UseMap(MapTarget),
     Logout,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BattleTargetSelection {
+    First,
+    Next,
+    Previous,
 }
 
 /// Most inputs held while the session task is busy; a later one is dropped.
 const MAX_QUEUED_INPUTS: usize = 16;
+
+#[derive(Debug, Clone, Copy)]
+struct StepAnimation {
+    previous: ActorPosition,
+    destination: ActorPosition,
+    received_at: Instant,
+    duration: Duration,
+}
+
+impl StepAnimation {
+    fn finished(&self, now: Instant) -> bool {
+        now.saturating_duration_since(self.received_at) >= self.duration
+    }
+    fn offset(&self, now: Instant) -> [i32; 2] {
+        let remaining = self
+            .duration
+            .saturating_sub(now.saturating_duration_since(self.received_at));
+        let pixels =
+            i32::try_from(32 * remaining.as_nanos() / self.duration.as_nanos()).unwrap_or(0);
+        [
+            (self.previous.x - self.destination.x) * pixels,
+            (self.previous.y - self.destination.y) * pixels,
+        ]
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
@@ -126,12 +161,20 @@ pub struct PlayView {
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
+    retry_cancelled: bool,
+    paced: bool,
+    walking: Option<StepAnimation>,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    /// Latest complete server-composed map; never reconstructed from local placements.
+    map: Option<MapView>,
+    map_draw: Arc<Mutex<crate::map_draw::MapDraw>>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    /// Preserved when pushed session state rebuilds the scene.
+    target_frame: bool,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
 }
@@ -139,11 +182,22 @@ pub struct PlayView {
 impl PlayView {
     pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
         let position = snapshot.world_spatial.actor_position;
-        Self::new(
+        let mut view = Self::new(
             TileCoord::new(position.x, position.y),
             position.floor,
             &snapshot.world_object_overlay,
-        )
+        )?;
+        if let Some(snapshot) = &snapshot.world_map {
+            let payload = oteryn_session::map_view::encode_world_map_snapshot(snapshot)
+                .map_err(|_| BatchError::InvalidView)?;
+            let mut map = MapView::new(snapshot.header.content_generation)
+                .map_err(|_| BatchError::InvalidView)?;
+            map.replace_snapshot(&payload)
+                .map_err(|_| BatchError::InvalidView)?;
+            view.map = Some(map);
+            view.rebuild()?;
+        }
+        Ok(view)
     }
 
     pub fn new(
@@ -164,9 +218,15 @@ impl PlayView {
             map_floor: None,
             walk: ClickWalk::new(),
             in_flight: false,
+            retry_cancelled: false,
+            paced: false,
+            walking: None,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            map: None,
+            map_draw: Arc::new(Mutex::new(crate::map_draw::MapDraw::placeholders())),
             combat_line: None,
+            target_frame: true,
             logout_line: None,
         };
         for entry in overlay {
@@ -198,16 +258,113 @@ impl PlayView {
         &self.scene
     }
 
+    pub fn take_page_uploads(&mut self) -> Vec<oteryn_renderer::SpritePageUpload> {
+        self.scene.take_page_uploads()
+    }
+
+    pub fn reset_page(&mut self) -> Result<(), BatchError> {
+        self.scene.reset_page()
+    }
+
+    #[must_use]
+    pub fn world_map(&self) -> Option<&MapView> {
+        self.map.as_ref()
+    }
+
+    #[must_use]
+    pub const fn floor(&self) -> i16 {
+        self.floor
+    }
+
+    /// Whether this exact received actor is visible in the current battle view.
+    /// Visibility does not grant attack permission: players and NPCs remain
+    /// eligible rows, and zero health is displayed without inventing a filter.
+    #[must_use]
+    pub fn is_battle_entity_visible(&self, entity: &WorldSpatialEntity) -> bool {
+        if !self.entities.contains(entity)
+            || !matches!(entity.detail, oteryn_session::EntityDetail::Actor { .. })
+            || entity.position.floor != self.floor
+        {
+            return false;
+        }
+        let tile = if let Some(map) = &self.map {
+            let Some(header) = map.header() else {
+                return false;
+            };
+            if entity.position.floor > header.first_visible_floor
+                || !oteryn_session::map_view::in_window(header.origin, entity.position)
+            {
+                return false;
+            }
+            let Some(tile) = crate::map_draw::projected(entity.position, header.origin) else {
+                return false;
+            };
+            if crate::input::map_pick(map, tile)
+                .is_some_and(|cover| cover.position.floor > entity.position.floor)
+            {
+                return false;
+            }
+            tile
+        } else {
+            TileCoord::new(entity.position.x, entity.position.y)
+        };
+        self.scene.view().contains(tile)
+    }
+
+    pub fn set_target_frame(&mut self, enabled: bool) -> Result<(), BatchError> {
+        self.target_frame = enabled;
+        self.scene.set_target_frame(enabled)
+    }
+
+    #[must_use]
+    pub fn minimap_image(&self) -> Option<crate::minimap::LoadedMinimap> {
+        if self.map.is_some() {
+            return None;
+        }
+        crate::minimap::LoadedMinimap::from_world(&self.world)
+    }
+
+    #[must_use]
+    pub fn minimap_location(&self) -> Option<crate::minimap::MapLocation> {
+        crate::minimap::MapLocation::from_session(
+            ActorPosition {
+                x: self.own.x,
+                y: self.own.y,
+                floor: self.floor,
+            },
+            self.anchor,
+            self.map_floor,
+        )
+    }
+
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the start floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
         self.world = world;
+        if self.map.is_some() {
+            self.anchor = TileCoord::new(0, 0);
+            self.map_floor = None;
+            return self.rebuild();
+        }
         self.map_floor = Some(self.floor);
         // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
         self.anchor = TileCoord::new(
             START.0.wrapping_sub(self.own.x),
             START.1.wrapping_sub(self.own.y),
         );
+        self.rebuild()
+    }
+
+    /// Changing the provider invalidates atlas residency and all pending old pixels.
+    pub fn set_map_draw(
+        &mut self,
+        draw: Arc<Mutex<crate::map_draw::MapDraw>>,
+    ) -> Result<(), BatchError> {
+        if Arc::ptr_eq(&draw, &self.map_draw) {
+            return Ok(());
+        }
+        self.map_draw = draw;
+        self.scene.streamed = None;
         self.rebuild()
     }
 
@@ -226,8 +383,45 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        if let Some(map) = &self.map {
+            if let Some(target) = crate::input::map_actor_target(map, &self.entities, tile) {
+                self.scene.select_map_actor(target)?;
+                if let Some(entity) = target.entity {
+                    self.queue(Input::Attack(entity));
+                }
+                return Ok(());
+            }
+            if let Some(picked) = crate::input::map_pick(map, tile) {
+                self.scene.select_map_tile(tile)?;
+                if picked.position.floor == self.floor
+                    && map
+                        .tile(picked.position)
+                        .and_then(|tile| tile.items.last())
+                        .is_some_and(|item| {
+                            matches!(
+                                item.definition,
+                                oteryn_session::map_view::MapDefinition::Terrain(_)
+                            ) || self
+                                .map_draw
+                                .lock()
+                                .unwrap_or_else(PoisonError::into_inner)
+                                .is_ground(item.appearance_id)
+                        })
+                {
+                    self.walk
+                        .set_goal(TileCoord::new(picked.position.x, picked.position.y));
+                    self.retry_cancelled = false;
+                } else if picked.target.is_none() {
+                    self.combat_line = Some("That item is out of reach");
+                }
+                return Ok(());
+            }
+        }
         match self.scene.select_tile(tile)? {
-            None => self.walk.set_goal(tile),
+            None => {
+                self.walk.set_goal(tile);
+                self.retry_cancelled = false;
+            }
             Some(Targetable {
                 entity: Some(target),
                 ..
@@ -235,6 +429,94 @@ impl PlayView {
             Some(_) => {}
         }
         Ok(())
+    }
+
+    /// A native USE click names only the highest visible received entry.
+    pub fn use_map(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        let Some(picked) = self
+            .map
+            .as_ref()
+            .and_then(|map| crate::input::map_pick(map, tile))
+        else {
+            return Ok(());
+        };
+        self.scene.select_map_tile(tile)?;
+        if let Some(target) = picked.target {
+            self.queue(Input::UseMap(target));
+        } else {
+            self.combat_line = Some("That item is out of reach");
+        }
+        Ok(())
+    }
+
+    /// Select and attack an admitted, currently visible battle target. Cycling
+    /// follows the server projection order and the same attackability boundary
+    /// as pointer selection; players, NPCs and object-only entities are not
+    /// guessed to be attackable by this client.
+    pub fn select_battle_target(
+        &mut self,
+        selection: BattleTargetSelection,
+    ) -> Result<bool, BatchError> {
+        let candidates = self
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.position.floor == self.floor
+                    && entity.kind == EntityKind::Creature
+                    && self.map.as_ref().is_none_or(|map| {
+                        crate::input::map_actor_target(
+                            map,
+                            &self.entities,
+                            TileCoord::new(entity.position.x, entity.position.y),
+                        )
+                        .is_some_and(|target| target.entity == Some(entity.entity))
+                    })
+                    && self
+                        .scene
+                        .view()
+                        .contains(TileCoord::new(entity.position.x, entity.position.y))
+            })
+            .map(|entity| {
+                (
+                    entity.entity,
+                    TileCoord::new(entity.position.x, entity.position.y),
+                )
+            })
+            .collect::<Vec<_>>();
+        if candidates.is_empty() {
+            return Ok(false);
+        }
+        let current = self
+            .scene
+            .target()
+            .and_then(|target| target.entity)
+            .and_then(|target| {
+                candidates
+                    .iter()
+                    .position(|(candidate, _)| *candidate == target)
+            });
+        let index = match selection {
+            BattleTargetSelection::First => 0,
+            BattleTargetSelection::Next => {
+                current.map_or(0, |index| (index + 1) % candidates.len())
+            }
+            BattleTargetSelection::Previous => current.map_or(candidates.len() - 1, |index| {
+                index.checked_sub(1).unwrap_or(candidates.len() - 1)
+            }),
+        };
+        let (entity, tile) = candidates[index];
+        self.scene.select_tile(tile)?;
+        self.queue(Input::Attack(entity));
+        Ok(true)
+    }
+
+    /// Drop queued local actions and enqueue the protocol's explicit stop-attack
+    /// intent. An already-sent step can only be resolved by the server.
+    pub fn stop_all(&mut self) {
+        self.retry_cancelled = true;
+        self.inputs.clear();
+        self.walk.cancel();
+        self.queue(Input::Stop);
     }
 
     /// A spell hotkey: casts the 1-based spell-book entry. Entries past the bar are ignored and
@@ -284,7 +566,12 @@ impl PlayView {
 
     /// An arrow key: the latest press wins over an arrow still waiting at the end of the queue.
     pub fn arrow(&mut self, direction: StepDir) {
-        if matches!(self.inputs.back(), Some(Input::Arrow(_))) {
+        self.retry_cancelled = false;
+        if self.paced {
+            self.walk.cancel();
+            self.inputs
+                .retain(|input| !matches!(input, Input::Arrow(_)));
+        } else if matches!(self.inputs.back(), Some(Input::Arrow(_))) {
             self.inputs.pop_back();
         }
         self.queue(Input::Arrow(direction));
@@ -319,6 +606,7 @@ impl PlayView {
     /// Applies one step outcome: the domain-1 delta moves the own actor, the domain-2 delta
     /// moves a marker. A refused step ends the click walk.
     pub fn apply(&mut self, outcome: &StepOutcome) -> Result<(), BatchError> {
+        self.retry_cancelled = false;
         self.in_flight = false;
         self.walk
             .on_result(if outcome.disposition == StepDisposition::Moved {
@@ -335,6 +623,67 @@ impl PlayView {
         self.rebuild()
     }
 
+    fn apply_receipt(
+        &mut self,
+        result: &StepReceiptOutcome,
+        now: Instant,
+    ) -> Result<(), BatchError> {
+        let cancelled = std::mem::take(&mut self.retry_cancelled);
+        self.paced |= result.receipt.is_some();
+        if self.paced {
+            let last = self
+                .inputs
+                .iter()
+                .rposition(|input| matches!(input, Input::Arrow(_)));
+            let mut index = 0;
+            self.inputs.retain(|input| {
+                let keep = !matches!(input, Input::Arrow(_)) || Some(index) == last;
+                index += 1;
+                keep
+            });
+        }
+        if result.receipt.is_some() && result.disposition == StepDisposition::TooEarly {
+            self.in_flight = false;
+            self.walk.on_result(StepResult::Retry);
+            if !cancelled
+                && self.walk.goal().is_none()
+                && !self
+                    .inputs
+                    .iter()
+                    .any(|input| matches!(input, Input::Arrow(_)))
+            {
+                self.arrow(self.facing);
+            }
+            return self.rebuild_at(now);
+        }
+        let previous = ActorPosition {
+            x: self.own.x,
+            y: self.own.y,
+            floor: self.floor,
+        };
+        self.walking = None;
+        self.apply(&result.outcome)?;
+        if let Some(receipt) = result.receipt
+            && result.disposition == StepDisposition::Moved
+            && let Some(delta) = &result.world_spatial_delta
+        {
+            let destination = delta.value.actor_position;
+            if previous.floor == destination.floor
+                && u64::from(previous.x.abs_diff(destination.x))
+                    + u64::from(previous.y.abs_diff(destination.y))
+                    == 1
+            {
+                self.walking = Some(StepAnimation {
+                    previous,
+                    destination,
+                    received_at: receipt.received_at,
+                    duration: Duration::from_millis(u64::from(receipt.wait_ms)),
+                });
+            }
+        }
+        self.rebuild_at(now)
+    }
+
     /// Applies what the server pushed outside any step, coalesced: the latest own position and
     /// the latest entry per placement. Other domains are not drawn by this view.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
@@ -344,6 +693,9 @@ impl PlayView {
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);
         }
+        if let Some(map) = &pushed.map {
+            self.map = Some((**map).clone());
+        }
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
@@ -351,6 +703,9 @@ impl PlayView {
     }
 
     fn place(&mut self, position: ActorPosition) {
+        if self.own != TileCoord::new(position.x, position.y) || self.floor != position.floor {
+            self.walking = None;
+        }
         self.own = TileCoord::new(position.x, position.y);
         self.floor = position.floor;
     }
@@ -367,6 +722,80 @@ impl PlayView {
     }
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
+        self.rebuild_at(Instant::now())
+    }
+
+    fn rebuild_at(&mut self, now: Instant) -> Result<(), BatchError> {
+        if let Some(map) = &self.map {
+            let header = map.header().ok_or(BatchError::InvalidView)?;
+            let drawable = |position: ActorPosition| {
+                position.floor <= header.first_visible_floor
+                    && oteryn_session::map_view::in_window(header.origin, position)
+            };
+            let entities = self
+                .entities
+                .iter()
+                .filter(|entity| {
+                    drawable(entity.position)
+                        && matches!(
+                            entity.kind,
+                            EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+                        )
+                })
+                .collect::<Vec<_>>();
+            let visible = entities
+                .iter()
+                .filter_map(|entity| {
+                    Some(Targetable {
+                        tile: crate::map_draw::projected(entity.position, header.origin)?,
+                        kind: TargetKind::Entity,
+                        glyph: true,
+                        entity: (entity.kind == EntityKind::Creature).then_some(entity.entity),
+                    })
+                })
+                .collect::<Vec<_>>();
+            let own = ActorPosition {
+                x: self.own.x,
+                y: self.own.y,
+                floor: self.floor,
+            };
+            let actors = entities
+                .into_iter()
+                .map(|entity| (entity.position, false))
+                .chain([(own, true)])
+                .map(|(position, own_actor)| crate::map_draw::MapActor {
+                    position,
+                    previous: self
+                        .walking
+                        .filter(|animation| own_actor && !animation.finished(now))
+                        .map(|animation| animation.previous),
+                    offset: self
+                        .walking
+                        .filter(|animation| own_actor && !animation.finished(now))
+                        .map_or([0, 0], |animation| animation.offset(now)),
+                    cells: Vec::new(),
+                })
+                .collect();
+            let mut scene = Scene::centered_with(
+                Arc::clone(&self.world),
+                None,
+                self.own,
+                self.facing,
+                &[],
+                &visible,
+            )?;
+            scene.set_target_frame(self.target_frame)?;
+            scene.streamed = Some(crate::streamed_scene::StreamedScene::compose(
+                map,
+                actors,
+                Arc::clone(&self.map_draw),
+                self.scene.streamed.take(),
+                scene.view(),
+                None,
+            )?);
+            self.scene = scene;
+            return Ok(());
+        }
         let markers = self.drawn_markers().collect::<Vec<_>>();
         let entities = self
             .entities
@@ -383,7 +812,7 @@ impl PlayView {
                 entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
             })
             .collect::<Vec<_>>();
-        self.scene = Scene::centered_with(
+        let mut scene = Scene::centered_with(
             Arc::clone(&self.world),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
@@ -391,28 +820,60 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        scene.set_target_frame(self.target_frame)?;
+        self.scene = scene;
         Ok(())
     }
 
     /// One shell tick, never waiting on the network: applies every outcome the session task has
     /// delivered, then hands it the next step if one is due. A session end returns to login with
-    /// its public class, a committed logout to character selection; a view error is a render
-    /// failure.
+    /// its public class; a view error is a render failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        self.tick_at(link, Instant::now())
+    }
+
+    fn tick_at(&mut self, link: &PlayLink, now: Instant) -> Result<(), PlayEnd> {
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         while let Some(event) = link.poll() {
             match event {
-                PlayEvent::Stepped(outcome) => {
-                    self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                }
+                PlayEvent::Stepped(outcome) => self
+                    .apply_receipt(&outcome, now)
+                    .map_err(|_error| UNAVAILABLE)?,
                 PlayEvent::Pushed(pushed) => {
-                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
+                PlayEvent::Used(outcome) => {
+                    self.combat_line = Some(
+                        match outcome.as_deref().map(|outcome| outcome.disposition) {
+                            Some(oteryn_session::UseDisposition::Committed) => "Item used",
+                            Some(oteryn_session::UseDisposition::StaleState) | None => {
+                                "Item is no longer available"
+                            }
+                            Some(oteryn_session::UseDisposition::TooFar) => {
+                                "That item is out of reach"
+                            }
+                            _ => "Item use refused",
+                        },
+                    )
+                }
+                PlayEvent::Ended(class) => {
+                    self.walk.cancel();
+                    self.inputs.clear();
+                    self.in_flight = false;
+                    self.paced = false;
+                    self.walking = None;
+                    return Err(PlayEnd::Ended(class));
+                }
                 PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
                 PlayEvent::LoggedOut => return Err(PlayEnd::LoggedOut),
-                PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
+        }
+        if let Some(animation) = self.walking {
+            if animation.finished(now) {
+                self.walking = None;
+            }
+            self.rebuild_at(now).map_err(|_| UNAVAILABLE)?;
         }
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
@@ -420,20 +881,29 @@ impl PlayView {
             match input {
                 Input::Cast(spell) => link.request_combat(CombatCommand::Cast(spell)),
                 Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
+                Input::Stop => link.request_combat(CombatCommand::Stop),
                 Input::Logout => link.request_logout(),
-                Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
-                    None => break,
-                },
+                Input::UseMap(target) => {
+                    if link.commands.send(PlayCommand::UseMap(target)).is_ok() {
+                        lock(&link.mailbox).wake.notify_one();
+                    }
+                }
+                Input::Arrow(_) => {
+                    if !link
+                        .request_step_at(now, || self.send_step())
+                        .map_err(|_error| UNAVAILABLE)?
+                    {
+                        break;
+                    }
+                }
             }
             if !matches!(input, Input::Arrow(_)) {
                 self.inputs.pop_front();
             }
         }
-        if self.inputs.is_empty()
-            && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
-        {
-            link.request(direction);
+        if self.inputs.is_empty() {
+            link.request_step_at(now, || self.send_step())
+                .map_err(|_error| UNAVAILABLE)?;
         }
         Ok(())
     }
@@ -453,11 +923,12 @@ impl PlayView {
 /// What the session task reports to the shell.
 #[derive(Debug)]
 pub enum PlayEvent {
-    Stepped(Box<StepOutcome>),
+    Stepped(Box<StepReceiptOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Pushed),
     /// The server's answer to a combat command.
     Combat(CombatReport),
+    Used(Option<Box<oteryn_session::UseOutcome>>),
     /// The server refused a logout (`None`: before its logout authority); play goes on.
     LogoutRefused(Option<LogoutResult>),
     /// The server committed the logout and closed the session.
@@ -473,6 +944,8 @@ pub struct Pushed {
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
+    /// Complete latest-state map, bounded by the Session store, not a growing delta queue.
+    pub map: Option<Box<MapView>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
 }
@@ -494,6 +967,7 @@ impl Pushed {
     fn absorb(&mut self, newer: Self) {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
+        self.map = newer.map.or(self.map.take());
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -508,13 +982,27 @@ const MAX_PUSHED_MARKERS: usize = 1024;
 struct Mailbox {
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
-    stepped: Option<Box<StepOutcome>>,
+    stepped: Option<Box<StepReceiptOutcome>>,
+    /// Held from enqueue until the shell consumes the outcome, not just until task completion.
+    step_pending: bool,
+    step_deadline: StepDeadline,
+    connection_generation: Option<u64>,
+    wake: Arc<tokio::sync::Notify>,
     pushed: Pushed,
+    last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
+    used: Option<Option<Box<oteryn_session::UseOutcome>>>,
+    ended: Option<PlayEnd>,
+    end_delivered: bool,
+    game: GameState,
+    chat_pending: Option<oteryn_session::ChatIntent>,
+    chat_result: Option<oteryn_session::ChatOutcome>,
+    chat_receipts: VecDeque<ChatReceipt>,
+    action_pending: Option<crate::action_bar::ActionBarCommand>,
+    action_result: Option<crate::action_bar::ActionBarOutcome>,
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
-    ended: Option<PlayEvent>,
 }
 
 const MAX_COMBAT_REPORTS: usize = 8;
@@ -530,11 +1018,31 @@ fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
 pub struct Outbox(SharedMailbox);
 
 impl Outbox {
+    #[cfg(test)]
     fn stepped(&self, outcome: StepOutcome) {
+        self.stepped_with_receipt(outcome.into());
+    }
+
+    fn stepped_with_receipt(&self, result: StepReceiptOutcome) {
         let mut mailbox = lock(&self.0);
+        mailbox.step_deadline.reset();
+        if let Some(receipt) = result.receipt
+            && (receipt.command_id != result.command_id
+                || mailbox.connection_generation != Some(receipt.connection_generation)
+                || mailbox
+                    .step_deadline
+                    .observe(receipt.received_at, receipt.wait_ms)
+                    .is_err())
+        {
+            mailbox
+                .ended
+                .get_or_insert(PlayEnd::Ended(PublicClass::SessionUnavailable));
+            mailbox.step_pending = false;
+            return;
+        }
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
-        mailbox.stepped = Some(Box::new(outcome));
+        mailbox.stepped = Some(Box::new(result));
     }
 
     fn push(&self, events: Vec<SessionEvent>) {
@@ -548,6 +1056,18 @@ impl Outbox {
                     mailbox.pushed.own = Some(delta.value.actor_position);
                 }
                 SessionEvent::WorldObjectOverlay(delta) => mailbox.pushed.set_marker(delta.value),
+                SessionEvent::ChatLine(delta) => {
+                    if mailbox.chat_receipts.len() == oteryn_session::MAX_CHAT_LOG_LINES {
+                        mailbox.chat_receipts.pop_front();
+                    }
+                    mailbox.chat_receipts.push_back(ChatReceipt {
+                        server_sequence: delta.server_sequence,
+                        line: delta.value,
+                        local_time: time::OffsetDateTime::now_local()
+                            .ok()
+                            .map(|now| [now.hour(), now.minute(), now.second()]),
+                    });
+                }
                 _ => {}
             }
         }
@@ -555,6 +1075,14 @@ impl Outbox {
 
     fn entities(&self, entities: Vec<WorldSpatialEntity>) {
         lock(&self.0).pushed.entities = Some(entities);
+    }
+
+    fn map(&self, revision: u64, map: &MapView) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.last_map_revision != Some(revision) {
+            mailbox.pushed.map = Some(Box::new(map.clone()));
+            mailbox.last_map_revision = Some(revision);
+        }
     }
 
     fn combat(&self, report: CombatReport) {
@@ -571,15 +1099,53 @@ impl Outbox {
 
     /// The first end wins.
     fn end(&self, class: PublicClass) {
-        lock(&self.0).ended.get_or_insert(PlayEvent::Ended(class));
+        let mut mailbox = lock(&self.0);
+        mailbox.ended.get_or_insert(PlayEnd::Ended(class));
+        mailbox.step_deadline.reset();
     }
 
     fn logged_out(&self) {
-        lock(&self.0).ended.get_or_insert(PlayEvent::LoggedOut);
+        let mut mailbox = lock(&self.0);
+        mailbox.ended.get_or_insert(PlayEnd::LoggedOut);
+        mailbox.step_deadline.reset();
     }
 }
 
-/// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
+/// Read-only, capability-gated projections copied from the owning session.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct GameState {
+    pub vitals: Option<oteryn_session::ActorVitals>,
+    pub inventory: Option<oteryn_session::CharacterInventory>,
+    pub container: Option<oteryn_session::OpenContainer>,
+    pub chat: Option<oteryn_session::ChatLog>,
+    /// Bounded received lines with client receipt times; these are not server
+    /// timestamps or additional authoritative chat state.
+    pub chat_receipts: Vec<ChatReceipt>,
+    pub entities: Vec<oteryn_session::WorldSpatialEntity>,
+}
+
+impl GameState {
+    /// Availability only: no resource values, identities, item handles or chat content.
+    pub fn availability_diagnostic(&self) -> String {
+        format!(
+            "Oteryn diagnostic: HUD projection vitals={} inventory={} container={} chat={} entities={}",
+            self.vitals.is_some(),
+            self.inventory.is_some(),
+            self.container.is_some(),
+            self.chat.is_some(),
+            !self.entities.is_empty(),
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChatReceipt {
+    pub server_sequence: u64,
+    pub line: oteryn_session::ChatLine,
+    pub local_time: Option<[u8; 3]>,
+}
+
+/// The shell's end of the session task: commands out, bounded projections in.
 #[derive(Debug)]
 pub struct PlayLink {
     commands: UnboundedSender<PlayCommand>,
@@ -587,17 +1153,125 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
-    pub fn request(&self, direction: StepDir) {
-        // A closed task has already reported or will report `Ended`.
-        let _ = self.commands.send(PlayCommand::Step(direction));
+    /// Fences transient UI intent to the admitted connection, not reused item handles.
+    #[must_use]
+    pub fn connection_generation(&self) -> Option<u64> {
+        lock(&self.mailbox).connection_generation
+    }
+
+    /// One pending action shared by mouse activation and physical shortcuts.
+    pub fn send_action(&self, command: crate::action_bar::ActionBarCommand) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox
+                .ended
+                .get_or_insert(PlayEnd::Ended(PublicClass::SessionUnavailable));
+        }
+        if mailbox.ended.is_some() || mailbox.action_pending.is_some() {
+            return false;
+        }
+        mailbox.action_pending = Some(command);
+        mailbox.wake.notify_one();
+        true
+    }
+
+    #[must_use]
+    pub fn action_result(&self) -> Option<crate::action_bar::ActionBarOutcome> {
+        lock(&self.mailbox).action_result.clone()
+    }
+
+    #[must_use]
+    pub fn game_state(&self) -> GameState {
+        let mailbox = lock(&self.mailbox);
+        let mut game = mailbox.game.clone();
+        game.chat_receipts = mailbox.chat_receipts.iter().cloned().collect();
+        game
+    }
+
+    /// One pending chat intent: repeated UI submissions cannot grow an unbounded queue.
+    pub fn send_chat(&self, intent: oteryn_session::ChatIntent) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox
+                .ended
+                .get_or_insert(PlayEnd::Ended(PublicClass::SessionUnavailable));
+        }
+        if mailbox.ended.is_some() || mailbox.chat_pending.is_some() {
+            return false;
+        }
+        mailbox.chat_pending = Some(intent);
+        mailbox.wake.notify_one();
+        true
+    }
+
+    #[must_use]
+    pub fn chat_result(&self) -> Option<oteryn_session::ChatOutcome> {
+        lock(&self.mailbox).chat_result.clone()
+    }
+
+    /// A busy link rejects another step; no second outcome can overwrite an undrained one.
+    pub fn request(&self, direction: StepDir) -> bool {
+        self.request_step(|| Ok(Some(direction))).unwrap_or(false)
+    }
+
+    /// Reserve the single step before consuming view input. The same lock protects direct
+    /// callers, the shell and the task; pushes and task completion do not release it.
+    fn request_step(
+        &self,
+        next: impl FnOnce() -> Result<Option<StepDir>, BatchError>,
+    ) -> Result<bool, BatchError> {
+        self.request_step_at(Instant::now(), next)
+    }
+
+    fn request_step_at(
+        &self,
+        now: Instant,
+        next: impl FnOnce() -> Result<Option<StepDir>, BatchError>,
+    ) -> Result<bool, BatchError> {
+        let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed() {
+            mailbox
+                .ended
+                .get_or_insert(PlayEnd::Ended(PublicClass::SessionUnavailable));
+        }
+        if mailbox.ended.is_some() || mailbox.step_pending || !mailbox.step_deadline.ready(now) {
+            return Ok(false);
+        }
+        let Some(direction) = next()? else {
+            return Ok(false);
+        };
+        mailbox.step_pending = true;
+        if self.commands.send(PlayCommand::Step(direction)).is_err() {
+            mailbox.step_pending = false;
+            mailbox
+                .ended
+                .get_or_insert(PlayEnd::Ended(PublicClass::SessionUnavailable));
+            return Ok(false);
+        }
+        mailbox.wake.notify_one();
+        Ok(true)
+    }
+
+    /// A future native wake-up, not a stale deadline that would busy-loop the shell.
+    #[must_use]
+    pub fn step_deadline(&self, now: Instant) -> Option<Instant> {
+        let mailbox = lock(&self.mailbox);
+        (!mailbox.step_pending && mailbox.ended.is_none())
+            .then(|| mailbox.step_deadline.next())
+            .flatten()
+            .filter(|deadline| *deadline > now)
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let _ = self.commands.send(PlayCommand::Combat(command));
+        if self.commands.send(PlayCommand::Combat(command)).is_ok() {
+            lock(&self.mailbox).wake.notify_one();
+        }
     }
 
     pub fn request_logout(&self) {
-        let _ = self.commands.send(PlayCommand::Logout);
+        if self.commands.send(PlayCommand::Logout).is_ok() {
+            lock(&self.mailbox).wake.notify_one();
+        }
     }
 
     /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
@@ -607,6 +1281,7 @@ impl PlayLink {
             return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.before)));
         }
         if let Some(outcome) = mailbox.stepped.take() {
+            mailbox.step_pending = false;
             return Some(PlayEvent::Stepped(outcome));
         }
         if mailbox.pushed != Pushed::default() {
@@ -615,23 +1290,79 @@ impl PlayLink {
         if let Some(report) = mailbox.combat.pop_front() {
             return Some(PlayEvent::Combat(report));
         }
+        if let Some(outcome) = mailbox.used.take() {
+            return Some(PlayEvent::Used(outcome));
+        }
         if let Some(result) = mailbox.logout_refused.take() {
             return Some(PlayEvent::LogoutRefused(result));
         }
-        mailbox.ended.take()
+        let end = mailbox.ended?;
+        if mailbox.end_delivered {
+            return None;
+        }
+        mailbox.end_delivered = true;
+        Some(match end {
+            PlayEnd::Ended(class) => PlayEvent::Ended(class),
+            PlayEnd::LoggedOut => PlayEvent::LoggedOut,
+        })
     }
 }
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn connection_generation(&self) -> Option<u64> {
+        None
+    }
+    fn use_map(
+        &mut self,
+        _target: MapTarget,
+    ) -> impl Future<Output = Result<Option<oteryn_session::UseOutcome>, SessionError>> + Send {
+        async { Ok(None) }
+    }
+    fn map_view(&self) -> Option<(u64, &MapView)> {
+        None
+    }
+    fn action(
+        &mut self,
+        _command: &crate::action_bar::ActionBarCommand,
+    ) -> impl Future<Output = Result<Option<crate::action_bar::ActionBarOutcome>, SessionError>> + Send
+    {
+        async { Ok(None) }
+    }
+
+    fn game_state(&self) -> GameState {
+        GameState::default()
+    }
+
+    fn chat(
+        &mut self,
+        _intent: &oteryn_session::ChatIntent,
+    ) -> impl Future<Output = Result<Option<oteryn_session::ChatOutcome>, SessionError>> + Send
+    {
+        async { Ok(None) }
+    }
+
     fn step(
         &mut self,
         direction: StepDirection,
     ) -> impl Future<Output = Result<StepOutcome, SessionError>> + Send;
+    fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> impl Future<Output = Result<StepReceiptOutcome, SessionError>> + Send {
+        async move { self.step(direction).await.map(StepReceiptOutcome::from) }
+    }
     fn serve(
         &mut self,
         duration: Duration,
     ) -> impl Future<Output = Result<(), SessionError>> + Send;
+    fn serve_or_wake(
+        &mut self,
+        duration: Duration,
+        _wake: &tokio::sync::Notify,
+    ) -> impl Future<Output = Result<(), SessionError>> + Send {
+        async move { self.serve(duration).await }
+    }
     /// The pushed deltas applied since the last call; the session fails closed when this queue
     /// is left to fill.
     fn drain(&mut self) -> Vec<SessionEvent>;
@@ -642,8 +1373,11 @@ pub trait Stepper: Send {
     ) -> impl Future<Output = Result<CombatReport, SessionError>> + Send;
     /// Sends one logout: the server's result, `None` when it refused the command before its
     /// logout authority.
-    fn logout(&mut self)
-    -> impl Future<Output = Result<Option<LogoutResult>, SessionError>> + Send;
+    fn logout(
+        &mut self,
+    ) -> impl Future<Output = Result<Option<LogoutResult>, SessionError>> + Send {
+        async { Ok(None) }
+    }
     /// The other visible entities when they differ from `held`.
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
@@ -651,6 +1385,52 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn connection_generation(&self) -> Option<u64> {
+        Some(Session::connection_generation(self))
+    }
+    async fn use_map(
+        &mut self,
+        target: MapTarget,
+    ) -> Result<Option<oteryn_session::UseOutcome>, SessionError> {
+        self.use_map_target(target).await
+    }
+    fn map_view(&self) -> Option<(u64, &MapView)> {
+        self.world_map_view()
+            .map(|map| (self.world_map_revision(), map))
+    }
+    async fn action(
+        &mut self,
+        command: &crate::action_bar::ActionBarCommand,
+    ) -> Result<Option<crate::action_bar::ActionBarOutcome>, SessionError> {
+        match command.execute(self).await {
+            Err(SessionError::CapabilityNotSelected { .. }) => {
+                Ok(Some(crate::action_bar::ActionBarOutcome::Unavailable))
+            }
+            result => result.map(Some),
+        }
+    }
+
+    fn game_state(&self) -> GameState {
+        GameState {
+            vitals: self.actor_vitals().copied(),
+            inventory: self.inventory().cloned(),
+            container: self.open_container().cloned(),
+            chat: self.chat_log().cloned(),
+            chat_receipts: Vec::new(),
+            entities: self
+                .world_entities()
+                .map(|world| world.others().copied().collect())
+                .unwrap_or_default(),
+        }
+    }
+
+    async fn chat(
+        &mut self,
+        intent: &oteryn_session::ChatIntent,
+    ) -> Result<Option<oteryn_session::ChatOutcome>, SessionError> {
+        Session::chat(self, intent).await.map(Some)
+    }
+
     fn step(
         &mut self,
         direction: StepDirection,
@@ -658,11 +1438,26 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.step_retrying(direction)
     }
 
+    fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> impl Future<Output = Result<StepReceiptOutcome, SessionError>> + Send {
+        self.step_retrying_with_receipt(direction)
+    }
+
     fn serve(
         &mut self,
         duration: Duration,
     ) -> impl Future<Output = Result<(), SessionError>> + Send {
         self.service_liveness(duration)
+    }
+
+    fn serve_or_wake(
+        &mut self,
+        duration: Duration,
+        wake: &tokio::sync::Notify,
+    ) -> impl Future<Output = Result<(), SessionError>> + Send {
+        self.service_liveness_interruptible(duration, wake)
     }
 
     fn drain(&mut self) -> Vec<SessionEvent> {
@@ -674,7 +1469,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
 
     async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
-        Ok(Session::logout(self).await?.result)
+        match Session::logout(self).await {
+            Err(SessionError::CapabilityNotSelected { .. }) => Ok(None),
+            result => result.map(|outcome| outcome.result),
+        }
     }
 
     fn entities_changed(&self, held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
@@ -697,9 +1495,26 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     )
 }
 
+/// Hand off the committed admission state before scheduling asynchronous play. An empty
+/// admitted inventory or chat log is available, not the same as a missing projection.
+pub fn play_channel_for_session<T: Stepper>(
+    session: &T,
+) -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
+    let (link, commands, outbox) = play_channel();
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.game = session.game_state();
+        mailbox.connection_generation = session.connection_generation();
+    }
+    (link, commands, outbox)
+}
+
 /// Hands the shell what the session pushed, and the visible entities when they changed.
 fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
     outbox.push(session.drain());
+    if let Some((revision, map)) = session.map_view() {
+        outbox.map(revision, map);
+    }
     if let Some(entities) = session.entities_changed(held) {
         held.clone_from(&entities);
         outbox.entities(entities);
@@ -714,13 +1529,61 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    let wake = Arc::clone(&lock(&outbox.0).wake);
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.game = session.game_state();
+        mailbox.connection_generation = session.connection_generation();
+        mailbox.step_deadline.reset();
+    }
     let mut held = Vec::new();
     loop {
+        let action = lock(&outbox.0).action_pending.take();
+        if let Some(command) = action {
+            match session.action(&command).await {
+                Ok(result) => {
+                    lock(&outbox.0).action_result = result;
+                    publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+        }
+        let pending = lock(&outbox.0).chat_pending.take();
+        if let Some(intent) = pending {
+            match session.chat(&intent).await {
+                Ok(result) => {
+                    lock(&outbox.0).chat_result = result;
+                    publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+        }
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::UseMap(target)) => match session.use_map(target).await {
+                Ok(outcome) => {
+                    lock(&outbox.0).used = Some(outcome.map(Box::new));
+                    publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Step(direction)) => {
-                match session.step(step_direction(direction)).await {
+                match session.step_with_receipt(step_direction(direction)).await {
                     Ok(outcome) => {
-                        outbox.stepped(outcome);
+                        // A step exchange can receive unrelated domain pushes.
+                        // Expose their admitted projections before the shell
+                        // observes completion or accepts another item action.
+                        lock(&outbox.0).game = session.game_state();
+                        outbox.stepped_with_receipt(outcome);
                         publish(&mut session, &outbox, &mut held);
                         continue;
                     }
@@ -731,6 +1594,7 @@ pub async fn run_session<T: Stepper>(
                 Ok(report) => {
                     outbox.combat(report);
                     publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
                     continue;
                 }
                 Err(error) => error,
@@ -744,14 +1608,16 @@ pub async fn run_session<T: Stepper>(
                 Ok(refused) => {
                     outbox.logout_refused(refused);
                     publish(&mut session, &outbox, &mut held);
+                    lock(&outbox.0).game = session.game_state();
                     continue;
                 }
                 Err(error) => error,
             },
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
-                match session.serve(IDLE_SLICE).await {
+                match session.serve_or_wake(IDLE_SLICE, &wake).await {
                     Ok(()) => {
                         publish(&mut session, &outbox, &mut held);
+                        lock(&outbox.0).game = session.game_state();
                         continue;
                     }
                     Err(error) => error,
@@ -774,6 +1640,271 @@ mod tests {
     };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn chat_receipts_keep_identical_lines_distinct_bounded_and_read_only() {
+        let (link, _commands, outbox) = play_channel();
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Peer".into(),
+            text: "same".into(),
+        };
+        for sequence in 1..=70 {
+            outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+                server_sequence: sequence,
+                base_revision: sequence - 1,
+                new_revision: sequence,
+                value: line.clone(),
+            })]);
+        }
+        let mut displayed = link.game_state();
+        assert_eq!(
+            displayed.chat_receipts.len(),
+            oteryn_session::MAX_CHAT_LOG_LINES
+        );
+        assert_eq!(displayed.chat_receipts[0].server_sequence, 7);
+        assert_eq!(displayed.chat_receipts[63].server_sequence, 70);
+        #[cfg(windows)]
+        assert!(
+            displayed
+                .chat_receipts
+                .iter()
+                .all(|receipt| receipt.local_time.is_some())
+        );
+        assert!(
+            displayed
+                .chat_receipts
+                .iter()
+                .all(|receipt| receipt.line == line)
+        );
+        displayed.chat_receipts.clear();
+        assert_eq!(link.game_state().chat_receipts.len(), 64);
+    }
+
+    #[test]
+    fn chat_submission_is_bounded_and_terminal_sessions_reject_it() {
+        let (link, _commands, outbox) = play_channel();
+        let intent = oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "hello".into(),
+        };
+        assert!(link.send_chat(intent.clone()));
+        assert!(!link.send_chat(intent.clone()));
+        lock(&outbox.0).chat_pending.take();
+        assert!(link.send_chat(intent.clone()));
+        outbox.end(PublicClass::SessionUnavailable);
+        assert!(!link.send_chat(intent));
+    }
+
+    #[test]
+    fn chat_submission_rejects_a_closed_receiver_without_reserving_or_sending() {
+        let (link, commands, _) = play_channel();
+        drop(commands);
+        assert!(!link.send_chat(oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "closed transport".into(),
+        }));
+        assert!(lock(&link.mailbox).chat_pending.is_none());
+        assert_eq!(
+            lock(&link.mailbox).ended,
+            Some(PlayEnd::Ended(PublicClass::SessionUnavailable))
+        );
+    }
+
+    #[test]
+    fn hud_state_is_a_copy_and_cannot_mutate_session_projections()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, _commands, outbox) = play_channel();
+        lock(&outbox.0).game.vitals = Some(oteryn_session::ActorVitals {
+            health: 37,
+            max_health: 100,
+            mana: 12,
+            max_mana: 50,
+            ..Default::default()
+        });
+        let mut displayed = link.game_state();
+        displayed.vitals.as_mut().ok_or("vitals")?.health = 100;
+        assert_eq!(link.game_state().vitals.ok_or("server copy")?.health, 37);
+        Ok(())
+    }
+
+    #[test]
+    fn admitted_session_handoff_excludes_only_own_identity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Static FND-02 frames follow protocol-oteryn's encode_server_accepted
+        // and encode_single_chunk_snapshot layouts, and VIS-2's
+        // encode_world_spatial_entities_snapshot layout. No client wire codec.
+        // Generation 91, next command 7, schema 1, capability 6, snapshot 1
+        // at sequence 40. Domain 1/revision 1/type 2 carries content [0x11;32],
+        // own identity [1;16], and four actors at (0,0,0): own Player [1;16],
+        // other Player [2;16], Creature [3;16], NPC [4;16]. Their generations
+        // are 1..4, facing South, appearance 1 and health 100. Domain 2/type 1
+        // is an empty overlay. The co-located other Player must not be removed.
+        const FRAMES: &[&[u8]] = &[
+            &[
+                0x08, 0x02, 0x22, 0x42, 0x0a, 0x10, 0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x01,
+                0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33, 0x44, 0x01, 0x12, 0x10, 0x01, 0x93, 0x4f, 0x10,
+                0x7c, 0x00, 0x70, 0x02, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33, 0x44, 0x02, 0x1a, 0x10,
+                0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x03, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33,
+                0x44, 0x03, 0x20, 0x5b, 0x30, 0x07, 0x38, 0x01, 0x40, 0x01, 0x48, 0x01, 0x50, 0x06,
+            ],
+            &[
+                0x08, 0x0b, 0x10, 0x5b, 0x22, 0x09, 0x08, 0x01, 0x10, 0x01, 0x18, 0xcc, 0x01, 0x20,
+                0x28,
+            ],
+            &[
+                0x08, 0x0c, 0x10, 0x5b, 0x22, 0xd1, 0x01, 0x08, 0x01, 0x1a, 0xcc, 0x01, 0x0a, 0xbf,
+                0x01, 0x08, 0x01, 0x10, 0x01, 0x18, 0x02, 0x22, 0xb6, 0x01, 0x0a, 0x20, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x12, 0x00, 0x1a, 0x10, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x22, 0x1e, 0x08, 0x01, 0x12, 0x10,
+                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01, 0x18, 0x01, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x22, 0x1e,
+                0x08, 0x01, 0x12, 0x10, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+                0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x18, 0x02, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01,
+                0x38, 0x64, 0x22, 0x1e, 0x08, 0x02, 0x12, 0x10, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+                0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x18, 0x03, 0x22, 0x00,
+                0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x22, 0x1e, 0x08, 0x05, 0x12, 0x10, 0x04, 0x04,
+                0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+                0x18, 0x04, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x0a, 0x08, 0x08, 0x02,
+                0x10, 0x01, 0x18, 0x01, 0x22, 0x00,
+            ],
+            &[0x08, 0x0d, 0x10, 0x5b, 0x22, 0x02, 0x08, 0x01],
+        ];
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let (client, mut peer) = tokio::io::duplex(4096);
+            let server = tokio::spawn(async move {
+                let _bootstrap = oteryn_session::read_frame(&mut peer).await?;
+                for frame in FRAMES {
+                    oteryn_session::write_frame(&mut peer, frame).await?;
+                }
+                Ok::<_, oteryn_session::SessionError>(())
+            });
+            let session = Session::admit(
+                client,
+                oteryn_session::Admission {
+                    schema_revision: 1,
+                    character_id: oteryn_session::CharacterId::decode(&[
+                        0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x04, 0x80, 0x5b, 0x3b, 0x11,
+                        0x22, 0x33, 0x44, 0x04,
+                    ])?,
+                    admission_material: b"test-grant",
+                    client_build_id: "client-hud-projection-test",
+                    supported_capabilities: &[6],
+                    deadline: Duration::from_secs(5),
+                },
+            )
+            .await?;
+            server.await??;
+            assert_eq!(
+                session
+                    .world_entities()
+                    .ok_or("entity store missing")?
+                    .len(),
+                4
+            );
+            let state = session.game_state();
+            assert_eq!(
+                state
+                    .entities
+                    .iter()
+                    .map(|entity| entity.entity.identity)
+                    .collect::<Vec<_>>(),
+                vec![[2; 16], [3; 16], [4; 16]],
+            );
+            assert!(state.vitals.is_none());
+            assert!(state.inventory.is_none());
+            assert!(state.container.is_none());
+            assert!(state.chat.is_none());
+            let (link, commands, outbox) = play_channel_for_session(&session);
+            assert_eq!(link.game_state(), state);
+            assert_eq!(link.connection_generation(), Some(91));
+            let task = run_session(session, commands, outbox);
+            assert_eq!(link.game_state(), state);
+            drop(task);
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+    }
+
+    #[test]
+    fn committed_join_projections_are_available_before_the_play_task_is_polled() {
+        struct Joined(GameState);
+        impl Stepper for Joined {
+            fn connection_generation(&self) -> Option<u64> {
+                Some(91)
+            }
+            fn game_state(&self) -> GameState {
+                self.0.clone()
+            }
+            async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+            async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+                std::future::pending().await
+            }
+            fn drain(&mut self) -> Vec<SessionEvent> {
+                Vec::new()
+            }
+            async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+        }
+        let state = GameState {
+            vitals: Some(oteryn_session::ActorVitals {
+                health: 37,
+                max_health: 100,
+                mana: 11,
+                max_mana: 50,
+                soul: 3,
+                harmony: 0,
+                serene: false,
+            }),
+            inventory: Some(oteryn_session::CharacterInventory::default()),
+            container: Some(oteryn_session::OpenContainer::default()),
+            chat: Some(oteryn_session::ChatLog::default()),
+            ..GameState::default()
+        };
+        let session = Joined(state.clone());
+        let (link, commands, outbox) = play_channel_for_session(&session);
+        // Merely constructing this future must not be needed to populate the UI.
+        let task = run_session(session, commands, outbox);
+        assert_eq!(link.game_state(), state);
+        assert_eq!(link.connection_generation(), Some(91));
+        assert_eq!(
+            link.game_state().availability_diagnostic(),
+            "Oteryn diagnostic: HUD projection vitals=true inventory=true container=true chat=true entities=false"
+        );
+        assert_eq!(
+            GameState::default().availability_diagnostic(),
+            "Oteryn diagnostic: HUD projection vitals=false inventory=false container=false chat=false entities=false"
+        );
+        drop(task);
+    }
+
+    #[test]
+    fn logout_wakes_idle_play_and_remains_terminal_after_delivery() {
+        use std::task::{Context, Poll, Waker};
+        let (link, mut commands, outbox) = play_channel();
+        let wake = Arc::clone(&lock(&outbox.0).wake);
+        let mut notified = std::pin::pin!(wake.notified());
+        let mut context = Context::from_waker(Waker::noop());
+        assert_eq!(notified.as_mut().poll(&mut context), Poll::Pending);
+        link.request_logout();
+        assert_eq!(notified.as_mut().poll(&mut context), Poll::Ready(()));
+        assert!(matches!(commands.try_recv(), Ok(PlayCommand::Logout)));
+        outbox.logged_out();
+        outbox.end(PublicClass::SessionUnavailable);
+        assert!(matches!(link.poll(), Some(PlayEvent::LoggedOut)));
+        assert!(link.poll().is_none());
+        assert!(!link.request(StepDir::North));
+        assert!(!link.send_chat(oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "not sent after logout".into(),
+        }));
+    }
 
     fn key(x: u32, y: u16, floor: i16, ordinal: u8) -> Vec<u8> {
         let floor_byte = u64::from(floor.unsigned_abs());
@@ -810,6 +1941,433 @@ mod tests {
         }
     }
 
+    fn timed(
+        mut outcome: StepOutcome,
+        received_at: Instant,
+        wait_ms: u32,
+        early: bool,
+    ) -> StepReceiptOutcome {
+        if early {
+            outcome.disposition = StepDisposition::TooEarly;
+            outcome.status = CommandStatus::Rejected;
+            outcome.world_spatial_delta = None;
+        }
+        let receipt = Some(oteryn_session::StepReceipt {
+            command_id: outcome.command_id,
+            connection_generation: 1,
+            received_at,
+            wait_ms,
+        });
+        StepReceiptOutcome { outcome, receipt }
+    }
+
+    #[test]
+    fn real_dispatch_gate_runs_ten_thousand_jittered_receipts_without_early_or_burst_steps()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, mut commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let mut now = Instant::now();
+        let mut seed = 17u64;
+        assert!(link.request_step_at(now, || Ok(Some(StepDir::East)))?);
+        commands.try_recv()?;
+        for index in 0..10_000 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let received = now + Duration::from_millis(seed % 38);
+            let early = index % 17 == 0;
+            let wait = if early {
+                37
+            } else if index == 9999 {
+                111150
+            } else {
+                50 * (1 + index % 5)
+            };
+            let mut outcome = moved_to(100, 200, 0);
+            outcome.command_id = u64::from(index) + 7;
+            outbox.stepped_with_receipt(timed(outcome, received, wait, early));
+            // A completed but undrained outcome retains the one-flight reservation.
+            assert!(!link.request_step_at(received, || Err(BatchError::InvalidView))?);
+            assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
+            let due = received + Duration::from_millis(u64::from(wait));
+            now = received + Duration::from_millis((seed >> 32) % 20);
+            while now < due {
+                // An early attempt must not consume any queued view input.
+                assert!(!link.request_step_at(now, || Err(BatchError::InvalidView))?);
+                assert!(commands.try_recv().is_err());
+                now += Duration::from_millis(20);
+            }
+            assert!(now.duration_since(due) <= Duration::from_millis(20));
+            assert!(link.request_step_at(now, || Ok(Some(StepDir::East)))?);
+            assert!(matches!(
+                commands.try_recv()?,
+                PlayCommand::Step(StepDir::East)
+            ));
+            assert!(!link.request_step_at(now, || Err(BatchError::InvalidView))?);
+            assert!(commands.try_recv().is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn receipt_too_early_preserves_goal_latest_buffer_and_exact_remaining_deadline()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut view = view()?;
+        let (link, mut commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let received = Instant::now();
+        view.click(TileCoord::new(98, 200))?;
+        view.tick_at(&link, received)
+            .map_err(|_| "initial tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::West)
+        ));
+        outbox.stepped_with_receipt(timed(moved_to(100, 200, 0), received, 37, true));
+        view.tick_at(&link, received)
+            .map_err(|_| "receipt tick failed")?;
+        assert_eq!(view.walk.goal(), Some(TileCoord::new(98, 200)));
+        assert!(commands.try_recv().is_err());
+        view.arrow(StepDir::North);
+        view.cast(NonZeroU32::MIN);
+        view.arrow(StepDir::East);
+        assert_eq!(
+            view.inputs
+                .iter()
+                .filter(|input| matches!(input, Input::Arrow(_)))
+                .count(),
+            1
+        );
+        view.tick_at(&link, received + Duration::from_millis(36))
+            .map_err(|_| "early tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Combat(CombatCommand::Cast(_))
+        ));
+        assert!(commands.try_recv().is_err());
+        assert_eq!(view.inputs.front(), Some(&Input::Arrow(StepDir::East)));
+        view.tick_at(&link, received + Duration::from_millis(37))
+            .map_err(|_| "due tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::East)
+        ));
+        assert!(commands.try_recv().is_err());
+        // Stop is drained before the outstanding TOO_EARLY arrives: it must not resurrect.
+        view.stop_all();
+        view.tick_at(&link, received + Duration::from_millis(37))
+            .map_err(|_| "stop tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Combat(CombatCommand::Stop)
+        ));
+        outbox.stepped_with_receipt(timed(
+            moved_to(100, 200, 0),
+            received + Duration::from_millis(37),
+            37,
+            true,
+        ));
+        view.tick_at(&link, received + Duration::from_millis(74))
+            .map_err(|_| "cancelled retry tick failed")?;
+        assert!(commands.try_recv().is_err());
+        view.arrow(StepDir::North);
+        view.tick_at(&link, received + Duration::from_millis(74))
+            .map_err(|_| "fresh intent tick failed")?;
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Step(StepDir::North)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn receipt_generation_fence_and_terminal_reset_do_not_survive_fresh_admission()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let now = Instant::now();
+        let (link, _commands, outbox) = play_channel();
+        lock(&outbox.0).connection_generation = Some(1);
+        let mut wrong = timed(moved_to(100, 200, 0), now, 100, false);
+        wrong
+            .receipt
+            .as_mut()
+            .ok_or("missing receipt")?
+            .connection_generation = 2;
+        outbox.stepped_with_receipt(wrong);
+        assert!(!link.request(StepDir::East));
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        let (next, mut commands, outbox) = play_channel();
+        assert!(next.request_step_at(now, || Ok(Some(StepDir::North)))?);
+        commands.try_recv()?;
+        lock(&outbox.0).connection_generation = Some(3);
+        let mut result = timed(moved_to(100, 199, 0), now, 111150, false);
+        result
+            .receipt
+            .as_mut()
+            .ok_or("missing receipt")?
+            .connection_generation = 3;
+        outbox.stepped_with_receipt(result);
+        outbox.end(PublicClass::SessionUnavailable);
+        assert_eq!(next.step_deadline(now), None);
+        assert!(
+            !next.request_step_at(now + Duration::from_secs(200), || Ok(Some(StepDir::North)))?
+        );
+        let (fresh, _commands, _outbox) = play_channel();
+        assert!(fresh.request_step_at(now, || Ok(Some(StepDir::North)))?);
+        Ok(())
+    }
+
+    #[test]
+    fn completed_step_exposes_received_projections_without_waiting_for_idle()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct ProjectionStepper {
+            state: GameState,
+            next: GameState,
+            release: tokio::sync::oneshot::Receiver<()>,
+        }
+        impl Stepper for ProjectionStepper {
+            fn game_state(&self) -> GameState {
+                self.state.clone()
+            }
+            async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                (&mut self.release)
+                    .await
+                    .map_err(|_| SessionError::SessionUnusable)?;
+                self.state.clone_from(&self.next);
+                Ok(moved_to(100, 199, 0))
+            }
+            async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+                // No successful idle exchange may hide the missing step refresh.
+                std::future::pending().await
+            }
+            fn drain(&mut self) -> Vec<SessionEvent> {
+                Vec::new()
+            }
+            async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+        }
+        let item = oteryn_session::ItemEntry {
+            handle: std::num::NonZeroU64::new(101).ok_or("item handle")?,
+            item_definition_ref: std::num::NonZeroU32::new(201).ok_or("definition")?,
+            count: std::num::NonZeroU32::new(9).ok_or("count")?,
+            sub_type: 0,
+        };
+        for closed in [false, true] {
+            let before = GameState {
+                vitals: Some(oteryn_session::ActorVitals {
+                    health: 37,
+                    ..Default::default()
+                }),
+                inventory: Some(oteryn_session::CharacterInventory {
+                    entries: vec![item],
+                    equipment: Vec::new(),
+                    main_backpack: None,
+                }),
+                container: Some(oteryn_session::OpenContainer {
+                    container_handle: std::num::NonZeroU64::new(1000),
+                    entries: vec![item],
+                }),
+                ..Default::default()
+            };
+            let after = GameState {
+                vitals: Some(oteryn_session::ActorVitals {
+                    health: 23,
+                    ..Default::default()
+                }),
+                inventory: Some(oteryn_session::CharacterInventory {
+                    entries: Vec::new(),
+                    equipment: Vec::new(),
+                    main_backpack: None,
+                }),
+                container: if closed {
+                    Some(oteryn_session::OpenContainer::default())
+                } else {
+                    Some(oteryn_session::OpenContainer {
+                        container_handle: std::num::NonZeroU64::new(1000),
+                        entries: Vec::new(),
+                    })
+                },
+                chat: Some(oteryn_session::ChatLog::default()),
+                ..Default::default()
+            };
+            let (release, released) = tokio::sync::oneshot::channel();
+            let (link, commands, outbox) = play_channel();
+            let mut task = std::pin::pin!(run_session(
+                ProjectionStepper {
+                    state: before.clone(),
+                    next: after.clone(),
+                    release: released,
+                },
+                commands,
+                outbox
+            ));
+            assert!(link.request(StepDir::North));
+            let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(task.as_mut().poll(&mut cx).is_pending());
+            assert_eq!(link.game_state(), before);
+            assert!(link.poll().is_none());
+            assert!(release.send(()).is_ok());
+            assert!(task.as_mut().poll(&mut cx).is_pending());
+            assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
+            assert_eq!(link.game_state(), after);
+            assert!(link.poll().is_none());
+            // Taking a displayed copy cannot resurrect a stale source.
+            let mut copy = link.game_state();
+            copy.container = before.container;
+            assert_eq!(link.game_state(), after);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_task_uses_timed_outcomes_and_command_wakes_instead_of_legacy_methods()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct TimedStepper {
+            received_at: Instant,
+            calls: Arc<AtomicUsize>,
+        }
+        impl Stepper for TimedStepper {
+            fn connection_generation(&self) -> Option<u64> {
+                Some(1)
+            }
+            async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                Err(SessionError::SessionUnusable) // The native task must not discard timing here.
+            }
+            async fn step_with_receipt(
+                &mut self,
+                _: StepDirection,
+            ) -> Result<StepReceiptOutcome, SessionError> {
+                let index = self.calls.fetch_add(1, Ordering::SeqCst);
+                Ok(timed(
+                    moved_to(100, 199, 0),
+                    self.received_at + Duration::from_millis(index as u64 * 100),
+                    100,
+                    false,
+                ))
+            }
+            async fn serve(&mut self, _: Duration) -> Result<(), SessionError> {
+                Err(SessionError::SessionUnusable) // Old idle polling must not hide the wake.
+            }
+            async fn serve_or_wake(
+                &mut self,
+                _: Duration,
+                wake: &tokio::sync::Notify,
+            ) -> Result<(), SessionError> {
+                wake.notified().await;
+                Ok(())
+            }
+            fn drain(&mut self) -> Vec<SessionEvent> {
+                vec![]
+            }
+            async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                Err(SessionError::SessionUnusable)
+            }
+        }
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let (link, commands, outbox) = play_channel();
+            let calls = Arc::new(AtomicUsize::new(0));
+            let received = Instant::now();
+            let mut task = std::pin::pin!(run_session(
+                TimedStepper {
+                    received_at: received,
+                    calls: Arc::clone(&calls),
+                },
+                commands,
+                outbox
+            ));
+            let first =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(first.is_pending()); // Native idle future has registered its command wake.
+            assert!(link.request_step_at(received, || Ok(Some(StepDir::North)))?);
+            let next =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(next.is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            assert!(
+                matches!(link.poll(), Some(PlayEvent::Stepped(result)) if result.receipt.is_some())
+            );
+            assert!(
+                !link.request_step_at(received + Duration::from_millis(99), || Err(
+                    BatchError::InvalidView
+                ))?
+            );
+            assert!(
+                link.request_step_at(received + Duration::from_millis(100), || Ok(Some(
+                    StepDir::North
+                )))?
+            );
+            let next =
+                std::future::poll_fn(|cx| std::task::Poll::Ready(task.as_mut().poll(cx))).await;
+            assert!(next.is_pending());
+            assert_eq!(calls.load(Ordering::SeqCst), 2);
+            assert!(
+                matches!(link.poll(), Some(PlayEvent::Stepped(result)) if result.receipt.is_some())
+            );
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+    }
+
+    #[test]
+    fn receipt_animates_actual_streamed_actor_for_the_server_duration_and_resets_on_correction()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        let bytes = encode_world_map_snapshot(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [1; 32],
+                bundle_digest: [2; 32],
+                reset_epoch: 1,
+                origin: ActorPosition {
+                    x: 100,
+                    y: 200,
+                    floor: -7,
+                },
+                first_visible_floor: 0,
+            },
+            tiles: vec![],
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+        map.replace_snapshot(&bytes).map_err(|e| format!("{e:?}"))?;
+        view.apply_pushed(&Pushed {
+            map: Some(Box::new(map)),
+            ..Pushed::default()
+        })?;
+        let start = Instant::now();
+        view.apply_receipt(&timed(moved_to(100, 199, -7), start, 100, false), start)?;
+        assert_eq!(view.own(), TileCoord::new(100, 199)); // authority is never interpolated
+        let (link, _commands, _outbox) = play_channel();
+        for (elapsed, expected_y) in [(0, 288.0), (50, 264.0), (100, 240.0)] {
+            view.tick_at(&link, start + Duration::from_millis(elapsed))
+                .map_err(|_| "animation tick failed")?;
+            let frame = view.scene().sprite_frame().ok_or("not streamed")?;
+            assert_eq!(frame.quads().quad_count(), 1);
+            assert_eq!(frame.quads().batches()[0][0].position, [336.0, expected_y]);
+        }
+        assert!(view.walking.is_none());
+        view.apply_receipt(&timed(moved_to(101, 199, -7), start, 111150, false), start)?;
+        assert_eq!(
+            view.walking.ok_or("no animation")?.duration,
+            Duration::from_millis(111150)
+        );
+        view.apply_pushed(&Pushed {
+            own: Some(ActorPosition {
+                x: 101,
+                y: 200,
+                floor: -7,
+            }),
+            ..Pushed::default()
+        })?;
+        assert!(view.walking.is_none());
+        Ok(())
+    }
+
     fn view() -> Result<PlayView, BatchError> {
         PlayView::new(
             TileCoord::new(100, 200),
@@ -820,6 +2378,26 @@ mod tests {
                 entry(b"x".to_vec()),
             ],
         )
+    }
+
+    fn actor(kind: EntityKind, ordinal: u8, x: i32) -> WorldSpatialEntity {
+        WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity: [ordinal; 16],
+                generation: u64::from(ordinal),
+            },
+            position: ActorPosition {
+                x,
+                y: 200,
+                floor: 0,
+            },
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        }
     }
 
     #[test]
@@ -855,6 +2433,111 @@ mod tests {
     }
 
     #[test]
+    fn battle_visibility_keeps_received_actors_but_refuses_stale_or_hidden_rows()
+    -> Result<(), BatchError> {
+        let player = actor(EntityKind::Player, 1, 98);
+        let creature = actor(EntityKind::Creature, 2, 99);
+        let npc = actor(EntityKind::Npc, 3, 101);
+        let zero_health = WorldSpatialEntity {
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 0,
+            },
+            ..actor(EntityKind::Creature, 4, 102)
+        };
+        let hidden_floor = WorldSpatialEntity {
+            position: ActorPosition {
+                floor: 1,
+                ..creature.position
+            },
+            ..actor(EntityKind::Creature, 5, 103)
+        };
+        let offscreen = actor(EntityKind::Creature, 6, 150);
+        let visible = view()?.with_entities(vec![
+            player,
+            creature,
+            npc,
+            zero_health,
+            hidden_floor,
+            offscreen,
+        ])?;
+        for entity in [player, creature, npc, zero_health] {
+            assert!(visible.is_battle_entity_visible(&entity));
+        }
+        for entity in [hidden_floor, offscreen] {
+            assert!(!visible.is_battle_entity_visible(&entity));
+        }
+        let stale = WorldSpatialEntity {
+            entity: EntityRef {
+                generation: creature.entity.generation + 1,
+                ..creature.entity
+            },
+            ..creature
+        };
+        assert!(!visible.is_battle_entity_visible(&stale));
+        let stale_position = WorldSpatialEntity {
+            position: ActorPosition {
+                x: creature.position.x + 1,
+                ..creature.position
+            },
+            ..creature
+        };
+        assert!(!visible.is_battle_entity_visible(&stale_position));
+        Ok(())
+    }
+
+    #[test]
+    fn battle_target_hotkeys_cycle_only_visible_attackable_entities() -> Result<(), BatchError> {
+        let player = actor(EntityKind::Player, 1, 98);
+        let first = actor(EntityKind::Creature, 2, 99);
+        let second = actor(EntityKind::Creature, 3, 101);
+        let npc = actor(EntityKind::Npc, 4, 102);
+        let hidden_floor = WorldSpatialEntity {
+            position: ActorPosition {
+                floor: 1,
+                ..first.position
+            },
+            ..actor(EntityKind::Creature, 5, 103)
+        };
+        let mut selected_view =
+            view()?.with_entities(vec![player, first, second, npc, hidden_floor])?;
+
+        assert!(selected_view.select_battle_target(BattleTargetSelection::First)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(first.entity)
+        );
+        assert!(selected_view.select_battle_target(BattleTargetSelection::Next)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(second.entity)
+        );
+        assert!(selected_view.select_battle_target(BattleTargetSelection::Previous)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(first.entity)
+        );
+
+        let mut previous = view()?.with_entities(vec![player, first, second, npc, hidden_floor])?;
+        assert!(previous.select_battle_target(BattleTargetSelection::Previous)?);
+        assert_eq!(
+            previous.scene().target().and_then(|target| target.entity),
+            Some(second.entity)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn arrow_key_steps_without_a_goal() -> Result<(), BatchError> {
         let mut view = view()?;
         assert_eq!(view.facing(), StepDir::South);
@@ -885,6 +2568,29 @@ mod tests {
         // A cast waiting at the front holds the step behind it.
         view.inputs.pop_front();
         assert_eq!(view.next_step(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn stop_all_replaces_queued_local_actions_with_one_stop_intent() -> Result<(), BatchError> {
+        let mut view = view()?;
+        view.click(TileCoord::new(98, 200))?;
+        view.arrow(StepDir::North);
+        view.cast(NonZeroU32::MIN);
+        assert!(view.walk.goal().is_some());
+        assert!(view.inputs.len() > 1);
+
+        view.stop_all();
+        assert_eq!(view.walk.goal(), None);
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![Input::Stop]
+        );
+        view.stop_all();
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![Input::Stop]
+        );
         Ok(())
     }
 
@@ -1017,6 +2723,91 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn direct_steps_wait_until_the_previous_outcome_is_consumed() {
+        let (link, mut commands, outbox) = play_channel();
+        link.request(StepDir::North);
+        for _ in 0..100 {
+            link.request(StepDir::East);
+        }
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::North))
+        ));
+        assert!(commands.try_recv().is_err());
+
+        outbox.push(vec![spatial_event(1, 99)]);
+        outbox.stepped(moved_to(100, 199, 0));
+        outbox.push(vec![spatial_event(3, 101)]);
+        // Neither task completion nor an older push releases the reservation.
+        link.request(StepDir::West);
+        assert!(matches!(link.poll(), Some(PlayEvent::Pushed(_))));
+        link.request(StepDir::West);
+        assert!(commands.try_recv().is_err());
+        assert!(matches!(link.poll(), Some(PlayEvent::Stepped(outcome))
+            if outcome.world_spatial_delta.as_ref().is_some_and(|delta| delta.value.actor_position.y == 199)));
+        link.request(StepDir::West);
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::West))
+        ));
+        assert!(matches!(link.poll(), Some(PlayEvent::Pushed(_))));
+        link.request(StepDir::South);
+        assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn consumed_end_stays_terminal_and_cannot_be_replaced() {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.end(PublicClass::ClientUpdateRequired);
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::ClientUpdateRequired))
+        ));
+        outbox.end(PublicClass::SessionUnavailable);
+        assert!(link.poll().is_none());
+        link.request(StepDir::North);
+        assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn closed_step_channel_reports_end_without_consuming_input() -> Result<(), BatchError> {
+        let (link, commands, _outbox) = play_channel();
+        drop(commands);
+        let mut view = view()?;
+        view.arrow(StepDir::North);
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(view.next_step(), Some(StepDir::North));
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        assert!(link.poll().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn a_busy_link_preserves_the_views_waiting_direction() -> Result<(), BatchError> {
+        let (link, mut commands, outbox) = play_channel();
+        let mut view = view()?;
+        link.request(StepDir::East);
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::East))
+        ));
+        view.arrow(StepDir::North);
+        assert_eq!(view.tick(&link), Ok(()));
+        assert!(commands.try_recv().is_err());
+        outbox.stepped(moved_to(101, 200, 0));
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(view.own(), TileCoord::new(101, 200));
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(PlayCommand::Step(StepDir::North))
+        ));
+        Ok(())
+    }
+
     struct Fake {
         serves: Arc<AtomicUsize>,
         fail_step: bool,
@@ -1024,6 +2815,8 @@ mod tests {
         queued: Vec<SessionEvent>,
         drained: Arc<AtomicUsize>,
         combats: Arc<Mutex<Vec<CombatCommand>>>,
+        step_calls: Option<Arc<AtomicUsize>>,
+        step_release: Option<tokio::sync::oneshot::Receiver<()>>,
         /// The answer to each logout in turn; empty answers `None`.
         logouts: Arc<Mutex<VecDeque<Option<LogoutResult>>>>,
     }
@@ -1046,6 +2839,7 @@ mod tests {
             Ok(match command {
                 CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
                 CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),
+                CombatCommand::Stop => CombatReport::Stop(AttackIntentDisposition::Ok),
             })
         }
 
@@ -1054,6 +2848,12 @@ mod tests {
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
+            if let Some(calls) = &self.step_calls {
+                calls.fetch_add(1, Ordering::SeqCst);
+            }
+            if let Some(release) = self.step_release.take() {
+                release.await.map_err(|_| SessionError::SessionUnusable)?;
+            }
             if self.fail_step {
                 Err(SessionError::SessionUnusable)
             } else {
@@ -1088,6 +2888,8 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::new(Mutex::new(Vec::new())),
+            step_calls: None,
+            step_release: None,
             logouts: Arc::default(),
         };
         runtime
@@ -1104,6 +2906,79 @@ mod tests {
             std::thread::sleep(Duration::from_millis(5));
         }
         None
+    }
+
+    #[test]
+    fn a_delayed_task_runs_only_one_step_until_the_shell_consumes_it() -> Result<(), String> {
+        let (link, commands, outbox) = play_channel();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let (release, delayed) = tokio::sync::oneshot::channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let fake = Fake {
+            serves: Arc::new(AtomicUsize::new(0)),
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::new(Mutex::new(Vec::new())),
+            step_calls: Some(Arc::clone(&calls)),
+            step_release: Some(delayed),
+            logouts: Arc::default(),
+        };
+        runtime
+            .spawn(run_session(fake, commands, outbox))
+            .map_err(|error| error.to_string())?;
+        assert!(link.request(StepDir::North));
+        for _ in 0..200 {
+            if calls.load(Ordering::SeqCst) == 1 {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        for _ in 0..100 {
+            assert!(!link.request(StepDir::East));
+        }
+        release
+            .send(())
+            .map_err(|()| "task exited before release")?;
+        for _ in 0..200 {
+            if lock(&link.mailbox).stepped.is_some() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(lock(&link.mailbox).stepped.is_some());
+        assert!(!link.request(StepDir::West));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(matches!(wait_for(&link), Some(PlayEvent::Stepped(_))));
+        assert!(link.request(StepDir::West));
+        assert!(matches!(wait_for(&link), Some(PlayEvent::Stepped(_))));
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn enqueue_close_race_rolls_back_the_step_and_latches_end() -> Result<(), BatchError> {
+        let (link, commands, _outbox) = play_channel();
+        assert!(!link.request_step(|| {
+            drop(commands);
+            Ok(Some(StepDir::North))
+        })?);
+        assert!(!lock(&link.mailbox).step_pending);
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
+        ));
+        let consumed = std::cell::Cell::new(false);
+        assert!(!link.request_step(|| {
+            consumed.set(true);
+            Ok(Some(StepDir::East))
+        })?);
+        assert!(!consumed.get());
+        assert!(link.poll().is_none());
+        Ok(())
     }
 
     #[test]
@@ -1130,6 +3005,8 @@ mod tests {
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::clone(&combats),
+            step_calls: None,
+            step_release: None,
             logouts: Arc::default(),
         };
         runtime
@@ -1232,6 +3109,8 @@ mod tests {
             drained: Arc::new(AtomicUsize::new(0)),
             combats: Arc::new(Mutex::new(Vec::new())),
             logouts: Arc::clone(&logouts),
+            step_calls: None,
+            step_release: None,
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -1360,7 +3239,10 @@ mod tests {
                     }
                     PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
                     PlayEvent::LoggedOut => return Err("logged out".to_owned()),
-                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) | PlayEvent::LogoutRefused(_) => {}
+                    PlayEvent::Stepped(_)
+                    | PlayEvent::Combat(_)
+                    | PlayEvent::Used(_)
+                    | PlayEvent::LogoutRefused(_) => {}
                 }
             }
             if pushed > 4 {
@@ -1420,6 +3302,222 @@ mod tests {
         let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
         assert_eq!(view.marker_count(), 1);
         assert_eq!(view.scene().sprites().len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn streamed_ground_click_walks_but_roof_click_does_not_guess_a_lower_floor()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader, WorldMapViewSnapshot,
+            encode_world_map_snapshot,
+        };
+        let own = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        for (floor, terrain, appearance, expected) in [
+            (-7, true, 0, Some(StepDir::East)),
+            (-6, true, 0, None),
+            (-7, false, 0, None),
+            (-7, false, 104, Some(StepDir::East)),
+        ] {
+            let shift = i32::from(floor - own.floor);
+            let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    content_generation: [1; 32],
+                    bundle_digest: [2; 32],
+                    reset_epoch: 1,
+                    origin: own,
+                    first_visible_floor: 0,
+                },
+                tiles: vec![MapTile {
+                    position: ActorPosition {
+                        x: 101 + shift,
+                        y: 100 + shift,
+                        floor,
+                    },
+                    more: false,
+                    ground_speed: 150,
+                    items: vec![MapItem {
+                        definition: if terrain {
+                            MapDefinition::Terrain(std::num::NonZeroU32::MIN)
+                        } else {
+                            MapDefinition::Item(std::num::NonZeroU32::MIN)
+                        },
+                        count: 1,
+                        sub_type: 0,
+                        appearance_id: appearance,
+                        origin: MapOrigin::DisplayOnly,
+                    }],
+                }],
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+            map.replace_snapshot(&payload)
+                .map_err(|e| format!("{e:?}"))?;
+            let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+            view.apply_pushed(&Pushed {
+                map: Some(Box::new(map)),
+                ..Pushed::default()
+            })?;
+            if appearance == 104 {
+                let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+                let mut draw = crate::map_draw::MapDraw::load(&root)?;
+                assert!(draw.is_ground(appearance));
+                let frame = draw.frame(
+                    view.world_map().ok_or("no map")?,
+                    &[],
+                    &mut oteryn_renderer::AtlasPage::new(),
+                    view.scene().view(),
+                )?;
+                let key = frame.uploads().first().ok_or("no appearance cell")?.0;
+                let expected_pixels = draw.cell_rgba(key)?;
+                assert_ne!(expected_pixels, crate::world::builtin_rgba()[8192..12288]);
+                view.set_map_draw(Arc::new(Mutex::new(draw)))?;
+                let uploads = view.take_page_uploads();
+                assert_eq!(uploads.len(), 1);
+                assert_eq!(uploads[0].rgba, expected_pixels);
+                view.reset_page()?;
+                let reset = view.take_page_uploads();
+                assert_eq!(
+                    reset.iter().map(|u| (u.slot, &u.rgba)).collect::<Vec<_>>(),
+                    uploads
+                        .iter()
+                        .map(|u| (u.slot, &u.rgba))
+                        .collect::<Vec<_>>()
+                );
+            }
+            view.click(TileCoord::new(101, 100))?;
+            assert_eq!(view.next_step(), expected);
+            assert_eq!(
+                view.combat_line,
+                expected.is_none().then_some("That item is out of reach")
+            );
+            if appearance == 104 {
+                view.set_map_draw(Arc::new(Mutex::new(
+                    crate::map_draw::MapDraw::placeholders(),
+                )))?;
+                assert!(view.take_page_uploads().is_empty());
+                assert!(
+                    view.scene()
+                        .sprite_frame()
+                        .ok_or("not streamed")?
+                        .quads()
+                        .batches()
+                        .iter()
+                        .flatten()
+                        .all(|quad| quad.uv == oteryn_renderer::AtlasPage::placeholder_uv())
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn streamed_play_uses_server_coordinates_and_not_the_local_start_map()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let own = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [1; 32],
+                bundle_digest: [2; 32],
+                reset_epoch: 1,
+                origin: own,
+                first_visible_floor: 0,
+            },
+            tiles: vec![],
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+        map.replace_snapshot(&payload)
+            .map_err(|e| format!("{e:?}"))?;
+        let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+        view.apply_pushed(&Pushed {
+            map: Some(Box::new(map)),
+            ..Pushed::default()
+        })?;
+        assert_eq!(
+            view.scene()
+                .sprite_frame()
+                .ok_or("not streamed")?
+                .quads()
+                .quad_count(),
+            1
+        );
+        assert_eq!(view.scene().atlas().width(), 2048);
+        view.set_world(Arc::new(World::builtin()?))?;
+        assert_eq!(view.anchor, TileCoord::new(0, 0));
+        assert!(view.map_floor.is_none());
+        assert!(view.minimap_image().is_none());
+        assert_eq!(
+            view.scene()
+                .sprite_frame()
+                .ok_or("lost streamed view")?
+                .quads()
+                .quad_count(),
+            1
+        );
+        view.scene.select_tile(TileCoord::new(100, 100))?;
+        assert_eq!(view.take_page_uploads().len(), 1);
+        view.reset_page()?;
+        assert_eq!(view.take_page_uploads().len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn undrained_map_mailbox_keeps_complete_latest_state_across_step_ordering()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let (link, _commands, outbox) = play_channel();
+        let map = |x| -> Result<MapView, String> {
+            let snapshot = WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    content_generation: [1; 32],
+                    bundle_digest: [2; 32],
+                    reset_epoch: 1,
+                    origin: ActorPosition {
+                        x,
+                        y: 100,
+                        floor: -7,
+                    },
+                    first_visible_floor: 0,
+                },
+                tiles: vec![],
+            };
+            let bytes = encode_world_map_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+            let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+            map.replace_snapshot(&bytes).map_err(|e| format!("{e:?}"))?;
+            Ok(map)
+        };
+        for revision in 1..=1000 {
+            outbox.map(revision, &map(revision as i32)?);
+        }
+        let before = std::mem::take(&mut lock(&outbox.0).pushed);
+        lock(&outbox.0).before.absorb(before);
+        outbox.map(1001, &map(1001)?);
+        // Same revision must not copy over an already published projection.
+        outbox.map(1001, &map(2000)?);
+        for expected in [1000, 1001] {
+            let Some(PlayEvent::Pushed(pushed)) = link.poll() else {
+                return Err("missing map".into());
+            };
+            assert_eq!(
+                pushed.map.and_then(|map| map.header()).map(|h| h.origin.x),
+                Some(expected)
+            );
+        }
+        assert!(link.poll().is_none());
         Ok(())
     }
 

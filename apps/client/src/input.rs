@@ -4,9 +4,7 @@
 //! (north is `y - 1`); N4 maps it 1:1 onto the session's `step` command. No command, wire
 //! message or server behaviour is added.
 //!
-//! SPEED-1 step pacing (CONDITIONS-0 §4.2, §4.3): the client reads the same checked-in step-speed
-//! table as the server and waits a moved step's duration before sending the next one, so a paced
-//! walk never sends a step the server would hold or refuse.
+//! Native step pacing consumes command-bound server receipts, never tile/actor speed guesses.
 
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
@@ -16,7 +14,101 @@ use oteryn_input_actions::{
 use oteryn_renderer::{TileCoord, TileView};
 use oteryn_session::EntityRef;
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+/// Monotonic receipt deadline; transport reservation remains in the play mailbox.
+#[derive(Debug, Default)]
+pub struct StepDeadline {
+    next: Option<Instant>,
+}
+
+impl StepDeadline {
+    pub fn reset(&mut self) {
+        self.next = None;
+    }
+    pub fn observe(
+        &mut self,
+        received_at: Instant,
+        wait_ms: u32,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        self.next = Some(
+            received_at
+                .checked_add(Duration::from_millis(u64::from(wait_ms)))
+                .ok_or(oteryn_renderer::BatchError::InvalidView)?,
+        );
+        Ok(())
+    }
+    #[must_use]
+    pub fn ready(&self, now: Instant) -> bool {
+        self.next.is_none_or(|deadline| now >= deadline)
+    }
+    #[must_use]
+    pub const fn next(&self) -> Option<Instant> {
+        self.next
+    }
+}
+
+/// Client-owned movement repeat, independent of the operating system's key
+/// repeat rate. Releases and focus/device loss always reconcile held keys.
+#[derive(Debug, Default)]
+pub struct MovementRepeat {
+    held: Vec<(KeyCode, StepDir)>,
+    last_step: Option<Instant>,
+}
+
+impl MovementRepeat {
+    pub fn clear(&mut self) {
+        self.held.clear();
+        self.last_step = None;
+    }
+
+    pub fn reconcile(&mut self, events: &[NormalizedInputEvent]) {
+        for event in events {
+            match event {
+                // Cardinal movement bindings are unmodified physical keys.
+                // A changed chord cannot inherit a repeat admitted earlier.
+                NormalizedInputEvent::Key { modifiers, .. } if *modifiers != Modifiers::NONE => {
+                    self.clear()
+                }
+                NormalizedInputEvent::Key {
+                    code,
+                    state: ButtonState::Released,
+                    ..
+                } => {
+                    self.held.retain(|(held, _)| held != code);
+                }
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::DeviceLost => self.clear(),
+                _ => {}
+            }
+        }
+    }
+
+    /// The caller has resolved this initial press using the active hotkey
+    /// profile and dispatched its first step through the normal session path.
+    pub fn pressed(&mut self, code: KeyCode, direction: StepDir, now: Instant) {
+        self.held.retain(|(held, _)| *held != code);
+        self.held.push((code, direction));
+        self.last_step = Some(now);
+    }
+
+    #[must_use]
+    pub fn deadline(&self, delay: Duration) -> Option<Instant> {
+        (!self.held.is_empty()).then_some(())?;
+        self.last_step?
+            .checked_add(delay.max(Duration::from_millis(1)))
+    }
+
+    /// Emit at most one step per poll; never replay missed repeats in a burst.
+    pub fn poll(&mut self, now: Instant, delay: Duration) -> Option<StepDir> {
+        if now < self.deadline(delay)? {
+            return None;
+        }
+        let direction = self.held.last()?.1;
+        self.last_step = Some(now);
+        Some(direction)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepDir {
@@ -71,6 +163,7 @@ pub fn step_toward(from: TileCoord, to: TileCoord) -> Option<StepDir> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepResult {
     Moved,
+    Retry,
     Refused,
 }
 
@@ -245,6 +338,50 @@ pub fn pick_target(tile: TileCoord, visible: &[Targetable]) -> Option<Targetable
         .copied()
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MapPick {
+    pub position: oteryn_session::ActorPosition,
+    /// `None` for a received display-only entry, not a fallback to a lower entry/floor.
+    pub target: Option<crate::map_view::MapTarget>,
+}
+
+/// Highest drawn floor and its topmost received entry; never reconstructs a hidden stack.
+#[must_use]
+pub fn map_pick(map: &crate::map_view::MapView, screen_tile: TileCoord) -> Option<MapPick> {
+    let tile = map.visible_tile_at(screen_tile.x, screen_tile.y)?;
+    Some(MapPick {
+        position: tile.position,
+        target: map.target(tile.position, tile.items.len().checked_sub(1)?),
+    })
+}
+
+/// Actor picking obeys the same perspective and upper-floor occlusion as map picking.
+#[must_use]
+pub fn map_actor_target(
+    map: &crate::map_view::MapView,
+    actors: &[oteryn_session::WorldSpatialEntity],
+    tile: TileCoord,
+) -> Option<Targetable> {
+    let header = map.header()?;
+    let cover = map_pick(map, tile).map(|picked| picked.position.floor);
+    let actor = actors
+        .iter()
+        .filter(|actor| {
+            actor.kind == oteryn_session::EntityKind::Creature
+                && actor.position.floor <= header.first_visible_floor
+                && cover.is_none_or(|floor| floor <= actor.position.floor)
+                && oteryn_session::map_view::in_window(header.origin, actor.position)
+                && crate::map_draw::projected(actor.position, header.origin) == Some(tile)
+        })
+        .max_by_key(|actor| actor.position.floor)?;
+    Some(Targetable {
+        tile,
+        kind: TargetKind::Entity,
+        glyph: true,
+        entity: Some(actor.entity),
+    })
+}
+
 /// The step an arrow-key press asks for. Held keys repeat, so a held arrow keeps walking.
 #[must_use]
 pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
@@ -280,19 +417,21 @@ pub fn logout_key(events: &[NormalizedInputEvent]) -> bool {
                 state: ButtonState::Pressed,
                 modifiers,
                 repeat: false,
-            } if matches!(code.get(), KEY_L | KEY_Q) && modifiers.contains(Modifier::Control)
+            } if matches!(code.get(), KEY_L | KEY_Q) && *modifiers == Modifiers::one(Modifier::Control)
         )
     })
 }
 
 /// Action id of the primary-button click in the gameplay context.
 pub const CLICK_ACTION: &str = "client.click";
+pub const USE_CLICK_ACTION: &str = "client.map-use";
 
 /// A gameplay click at a window pixel, produced only by the routed `client.click` action.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ClickAction {
     pub x: f64,
     pub y: f64,
+    pub use_item: bool,
 }
 
 /// Routes normalized platform events (from `InputPlatformAdapter`) through `InputRouter`, so a
@@ -319,15 +458,26 @@ impl MouseActions {
                 ContextDefinition::new(text.clone(), ContextKind::Text, 10),
                 ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
             ],
-            vec![Binding::new(
-                gameplay.clone(),
-                InputChord::new(
-                    Modifiers::NONE,
-                    vec![InputAtom::Mouse(MouseButton::PRIMARY)],
-                )?,
-                ActionId::new(CLICK_ACTION.to_owned())?,
-                RepeatPolicy::Ignore,
-            )],
+            vec![
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new(CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::SECONDARY)],
+                    )?,
+                    ActionId::new(USE_CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+            ],
             &[],
         )?;
         let mut router = InputRouter::new(map);
@@ -358,6 +508,19 @@ impl MouseActions {
         &self.gameplay
     }
 
+    /// Always reconcile releases and lifecycle events, including events consumed by UI.
+    pub fn route_with_ui(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        text: bool,
+        modal: bool,
+        consumed: bool,
+    ) -> Result<Vec<ClickAction>, InputError> {
+        self.set_text_active(text)?;
+        self.set_modal_active(modal || consumed)?;
+        Ok(self.route(events))
+    }
+
     /// Feeds normalized events and returns the gameplay clicks they produced.
     pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ClickAction> {
         let mut clicks = Vec::new();
@@ -378,12 +541,16 @@ impl MouseActions {
                 _ => {}
             }
             for action in self.router.process(event) {
-                if action.action().as_str() == CLICK_ACTION
+                if matches!(action.action().as_str(), CLICK_ACTION | USE_CLICK_ACTION)
                     && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
                     && let Some((x, y)) = self.pointer
                 {
-                    clicks.push(ClickAction { x, y });
+                    clicks.push(ClickAction {
+                        x,
+                        y,
+                        use_item: action.action().as_str() == USE_CLICK_ACTION,
+                    });
                 }
             }
         }
@@ -392,9 +559,98 @@ impl MouseActions {
 }
 
 #[cfg(test)]
+#[path = "input_map_tests.rs"]
+mod map_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use oteryn_input_actions::ButtonState;
+
+    #[test]
+    fn movement_repeat_obeys_delay_releases_and_lifecycle() -> Result<(), InputError> {
+        let now = Instant::now();
+        let north = KeyCode::new(26)?;
+        let east = KeyCode::new(7)?;
+        let delay = Duration::from_millis(250);
+        let mut repeat = MovementRepeat::default();
+        repeat.pressed(north, StepDir::North, now);
+        assert_eq!(repeat.poll(now + Duration::from_millis(249), delay), None);
+        assert_eq!(repeat.poll(now + delay, delay), Some(StepDir::North));
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(10), delay),
+            Some(StepDir::North)
+        );
+        assert_eq!(repeat.poll(now + Duration::from_secs(10), delay), None);
+        repeat.pressed(east, StepDir::East, now + Duration::from_secs(11));
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(12), delay),
+            Some(StepDir::East)
+        );
+        repeat.reconcile(&[NormalizedInputEvent::Key {
+            code: east,
+            state: ButtonState::Released,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        }]);
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(13), delay),
+            Some(StepDir::North)
+        );
+        repeat.reconcile(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+        assert_eq!(repeat.poll(now + Duration::from_secs(14), delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        repeat.reconcile(&[NormalizedInputEvent::DeviceLost]);
+        assert_eq!(repeat.deadline(delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        repeat.reconcile(&[NormalizedInputEvent::Key {
+            code: KeyCode::new(224)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(oteryn_input_actions::Modifier::Control),
+            repeat: false,
+        }]);
+        assert_eq!(repeat.deadline(delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        assert_eq!(repeat.poll(now, Duration::ZERO), None);
+        assert_eq!(
+            repeat.poll(now + Duration::from_millis(1), Duration::ZERO),
+            Some(StepDir::North)
+        );
+        repeat.clear();
+        assert_eq!(repeat.poll(now + delay, delay), None);
+        Ok(())
+    }
+
+    #[test]
+    fn movement_repeat_settings_retain_custom_delay_under_default_master() {
+        use crate::{settings::ClientSettings, settings_catalog::FutureValue};
+        let mut settings = ClientSettings::default();
+        assert_eq!(settings.movement_repeat_delay(), None);
+        settings.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(false),
+        );
+        settings.future_preferences.insert(
+            "controls.controls.key_delay_ms".into(),
+            FutureValue::Int(93),
+        );
+        assert_eq!(
+            settings.movement_repeat_delay(),
+            Some(Duration::from_millis(93))
+        );
+        settings.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(true),
+        );
+        assert_eq!(
+            settings.movement_repeat_delay(),
+            Some(Duration::from_millis(250))
+        );
+        assert_eq!(
+            settings.stored_int("controls.controls.key_delay_ms"),
+            Some(93)
+        );
+    }
 
     fn t(x: i32, y: i32) -> TileCoord {
         TileCoord::new(x, y)
@@ -572,8 +828,43 @@ mod tests {
     fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
-        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert_eq!(
+            clicks,
+            vec![ClickAction {
+                x: 100.0,
+                y: 60.0,
+                use_item: false
+            }]
+        );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn release_consumed_by_ui_does_not_block_the_next_map_click() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        assert_eq!(
+            actions
+                .route_with_ui(
+                    &[moved(100, 60)?, primary(ButtonState::Pressed)],
+                    false,
+                    false,
+                    false
+                )?
+                .len(),
+            1
+        );
+        assert!(
+            actions
+                .route_with_ui(&[primary(ButtonState::Released)], false, false, true)?
+                .is_empty()
+        );
+        assert_eq!(
+            actions
+                .route_with_ui(&[primary(ButtonState::Pressed)], false, false, false)?
+                .len(),
+            1
+        );
         Ok(())
     }
 
@@ -618,7 +909,11 @@ mod tests {
         actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
         assert_eq!(
             actions.route(&[primary(ButtonState::Pressed)]),
-            vec![ClickAction { x: 30.0, y: 40.0 }]
+            vec![ClickAction {
+                x: 30.0,
+                y: 40.0,
+                use_item: false
+            }]
         );
         actions.route(&[
             primary(ButtonState::Released),
@@ -697,6 +992,13 @@ mod tests {
         )]));
         assert!(!logout_key(&[key(KeyCode::new(KEY_Q)?, ctrl, true)]));
         assert!(!logout_key(&[key(KeyCode::KEY_W, ctrl, false)]));
+        for modifier in [Modifier::Shift, Modifier::Alt, Modifier::Super] {
+            assert!(!logout_key(&[key(
+                KeyCode::new(KEY_Q)?,
+                ctrl.with(modifier),
+                false
+            )]));
+        }
         Ok(())
     }
 }

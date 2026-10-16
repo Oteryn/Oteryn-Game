@@ -621,6 +621,9 @@ impl RenderModel {
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
                 // The harness model does not track combat state.
                 SessionEvent::ActorCombatState(_) => {}
+                // This fixture harness does not advertise capability 18. Its map
+                // qualification model must be added before testing a bundle World.
+                SessionEvent::WorldMapView(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());

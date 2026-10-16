@@ -5,6 +5,7 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
+use crate::streamed_scene::StreamedScene;
 use crate::world::{
     BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, TARGET_CELL, World,
 };
@@ -39,6 +40,8 @@ pub struct Scene {
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
     target: Option<Targetable>,
+    target_frame: bool,
+    pub(crate) streamed: Option<StreamedScene>,
 }
 
 impl Scene {
@@ -99,6 +102,8 @@ impl Scene {
             sprites: SpriteBatch::new(),
             visible,
             target: None,
+            target_frame: true,
+            streamed: None,
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -121,6 +126,21 @@ impl Scene {
         Ok(Some(picked))
     }
 
+    pub(crate) fn select_map_tile(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        self.target = Some(Targetable {
+            tile,
+            kind: TargetKind::Object,
+            glyph: false,
+            entity: None,
+        });
+        self.rebuild_sprites()
+    }
+
+    pub(crate) fn select_map_actor(&mut self, target: Targetable) -> Result<(), BatchError> {
+        self.target = Some(target);
+        self.rebuild_sprites()
+    }
+
     /// Turns the player to `facing`, keeping the target.
     pub fn set_facing(&mut self, facing: StepDir) -> Result<(), BatchError> {
         self.facing = facing;
@@ -132,11 +152,23 @@ impl Scene {
         self.rebuild_sprites()
     }
 
+    /// Enables or disables the atlas frame drawn around the selected target.
+    pub fn set_target_frame(&mut self, enabled: bool) -> Result<(), BatchError> {
+        if self.target_frame != enabled {
+            self.target_frame = enabled;
+            self.rebuild_sprites()?;
+        }
+        Ok(())
+    }
+
     /// Row by row, [`SCAN_MARGIN`] tiles past the view on the right and bottom (the world drops
     /// map cells reaching further up and left): each tile's map items, its markers and the
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
+        if let Some(streamed) = &mut self.streamed {
+            return streamed.rebuild(&self.view, self.target.filter(|_| self.target_frame));
+        }
         let mut sprites = SpriteBatch::new();
         let (atlas, origin) = (self.world.atlas(), self.view.origin());
         let push = |sprites: &mut SpriteBatch, tile, draw: &Draw, lift: i32| {
@@ -182,7 +214,9 @@ impl Scene {
                 }
             }
         }
-        if let Some(target) = self.target {
+        if self.target_frame
+            && let Some(target) = self.target
+        {
             sprites.push(&self.view, atlas, target.tile, TARGET_CELL)?;
         }
         self.sprites = sprites;
@@ -196,7 +230,27 @@ impl Scene {
 
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
-        self.world.atlas()
+        self.streamed
+            .as_ref()
+            .map_or_else(|| self.world.atlas(), StreamedScene::atlas)
+    }
+
+    #[must_use]
+    pub fn sprite_frame(&self) -> Option<&oteryn_renderer::SpriteFrame> {
+        self.streamed.as_ref().map(StreamedScene::frame)
+    }
+
+    pub fn take_page_uploads(&mut self) -> Vec<oteryn_renderer::SpritePageUpload> {
+        self.streamed
+            .as_mut()
+            .map_or_else(Vec::new, StreamedScene::take_uploads)
+    }
+
+    pub fn reset_page(&mut self) -> Result<(), BatchError> {
+        if let Some(streamed) = &mut self.streamed {
+            streamed.reset_page(&self.view, self.target.filter(|_| self.target_frame))?;
+        }
+        Ok(())
     }
 
     #[must_use]
@@ -307,6 +361,11 @@ mod tests {
             assert_eq!(scene.target(), picked);
             assert_eq!(scene.sprites().len(), 4);
             assert_eq!(scene.sprites().instances()[3].position, [x, y]);
+            scene.set_target_frame(false)?;
+            assert_eq!(scene.target(), picked);
+            assert_eq!(scene.sprites().len(), 3);
+            scene.set_target_frame(true)?;
+            assert_eq!(scene.sprites().len(), 4);
         }
         // An empty tile keeps the target; clearing removes the highlight.
         assert_eq!(scene.select_tile(TileCoord::new(5, 3))?, None);

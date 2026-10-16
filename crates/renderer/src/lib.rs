@@ -4,6 +4,11 @@ use std::fmt::{self, Display, Formatter};
 
 mod batch;
 mod resources;
+mod scene_sampling;
+pub use scene_sampling::SceneSampling;
+
+#[cfg(windows)]
+mod scene_resampler;
 
 #[cfg(windows)]
 mod scene_gpu;
@@ -12,9 +17,9 @@ mod windows;
 
 pub use batch::{
     AtlasImage, AtlasPage, BatchError, CellKey, CellSlot, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS,
-    MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES,
-    QuadBatches, QuadInstance, SpriteBatch, SpriteFrame, TileBatch, TileCoord, TileView,
-    VERTICES_PER_QUAD, instance_bytes,
+    MAX_SPRITE_FRAME_BATCHES, MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW,
+    PlacedCell, QUAD_INSTANCE_BYTES, QuadBatches, QuadInstance, SpriteBatch, SpriteFrame,
+    SpritePageUpload, TileBatch, TileCoord, TileView, VERTICES_PER_QUAD, instance_bytes,
 };
 pub use resources::ResourceCache;
 
@@ -22,6 +27,152 @@ pub use resources::ResourceCache;
 pub use windows::WindowsRenderer;
 
 pub const MAX_RECONFIGURE_ATTEMPTS: u8 = 3;
+
+/// Read-only identity of the active physical renderer, not a selectable or
+/// persisted preference. Names come from the adapter held by the renderer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveRendererIdentity {
+    pub backend: String,
+    pub adapter: String,
+}
+
+/// A surface-sized, row-major RGBA readback of one presented frame.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CapturedFrame {
+    pub width: u32,
+    pub height: u32,
+    pub rgba: Vec<u8>,
+}
+
+impl CapturedFrame {
+    /// Keeps only complete physical pixels inside the supplied renderer viewport.
+    /// Fractional outer pixels are discarded so a game-only capture cannot include
+    /// adjacent client chrome.
+    pub fn crop_physical_viewport(
+        self,
+        [x, y, width, height]: [f32; 4],
+    ) -> Result<Self, RendererError> {
+        let expected_len = self
+            .width
+            .checked_mul(self.height)
+            .and_then(|pixels| pixels.checked_mul(4))
+            .and_then(|bytes| usize::try_from(bytes).ok())
+            .ok_or(RendererError::CaptureSize)?;
+        let right = x + width;
+        let bottom = y + height;
+        if self.rgba.len() != expected_len
+            || ![x, y, width, height, right, bottom]
+                .iter()
+                .all(|value| value.is_finite())
+            || x < 0.0
+            || y < 0.0
+            || width <= 0.0
+            || height <= 0.0
+            || right > self.width as f32
+            || bottom > self.height as f32
+        {
+            return Err(RendererError::CaptureSize);
+        }
+        let left = x.ceil() as u32;
+        let top = y.ceil() as u32;
+        let right = right.floor() as u32;
+        let bottom = bottom.floor() as u32;
+        let output_width = right
+            .checked_sub(left)
+            .filter(|width| *width > 0)
+            .ok_or(RendererError::CaptureSize)?;
+        let output_height = bottom
+            .checked_sub(top)
+            .filter(|height| *height > 0)
+            .ok_or(RendererError::CaptureSize)?;
+        let source_row_bytes = usize::try_from(self.width)
+            .ok()
+            .and_then(|width| width.checked_mul(4))
+            .ok_or(RendererError::CaptureSize)?;
+        let output_row_bytes = usize::try_from(output_width)
+            .ok()
+            .and_then(|width| width.checked_mul(4))
+            .ok_or(RendererError::CaptureSize)?;
+        let output_len = output_row_bytes
+            .checked_mul(
+                usize::try_from(output_height).map_err(|_error| RendererError::CaptureSize)?,
+            )
+            .ok_or(RendererError::CaptureSize)?;
+        let left_bytes = usize::try_from(left)
+            .ok()
+            .and_then(|left| left.checked_mul(4))
+            .ok_or(RendererError::CaptureSize)?;
+        let mut rgba = Vec::with_capacity(output_len);
+        for row in top..bottom {
+            let start = usize::try_from(row)
+                .ok()
+                .and_then(|row| row.checked_mul(source_row_bytes))
+                .and_then(|offset| offset.checked_add(left_bytes))
+                .ok_or(RendererError::CaptureSize)?;
+            let end = start
+                .checked_add(output_row_bytes)
+                .ok_or(RendererError::CaptureSize)?;
+            rgba.extend_from_slice(
+                self.rgba
+                    .get(start..end)
+                    .ok_or(RendererError::CaptureSize)?,
+            );
+        }
+        Ok(Self {
+            width: output_width,
+            height: output_height,
+            rgba,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(any(windows, test))]
+enum CapturedPixelOrder {
+    Rgba,
+    Bgra,
+}
+
+#[cfg(any(windows, test))]
+fn unpack_capture_rows(
+    source: &[u8],
+    width: u32,
+    height: u32,
+    padded_bytes_per_row: u32,
+    order: CapturedPixelOrder,
+) -> Result<Vec<u8>, RendererError> {
+    let row_bytes = width.checked_mul(4).ok_or(RendererError::CaptureSize)?;
+    if padded_bytes_per_row < row_bytes {
+        return Err(RendererError::CaptureSize);
+    }
+    let source_len = padded_bytes_per_row
+        .checked_mul(height)
+        .and_then(|length| usize::try_from(length).ok())
+        .ok_or(RendererError::CaptureSize)?;
+    let output_len = row_bytes
+        .checked_mul(height)
+        .and_then(|length| usize::try_from(length).ok())
+        .ok_or(RendererError::CaptureSize)?;
+    if source.len() != source_len {
+        return Err(RendererError::CaptureSize);
+    }
+    let row_bytes = usize::try_from(row_bytes).map_err(|_error| RendererError::CaptureSize)?;
+    let padded =
+        usize::try_from(padded_bytes_per_row).map_err(|_error| RendererError::CaptureSize)?;
+    let mut rgba = Vec::with_capacity(output_len);
+    for row in source.chunks_exact(padded) {
+        let pixels = &row[..row_bytes];
+        match order {
+            CapturedPixelOrder::Rgba => rgba.extend_from_slice(pixels),
+            CapturedPixelOrder::Bgra => {
+                for pixel in pixels.chunks_exact(4) {
+                    rgba.extend_from_slice(&[pixel[2], pixel[1], pixel[0], pixel[3]]);
+                }
+            }
+        }
+    }
+    Ok(rgba)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SurfaceSize {
@@ -221,6 +372,9 @@ pub enum RendererError {
     AdapterUnavailable,
     DeviceRequest,
     SurfaceUnsupported,
+    CaptureUnsupported,
+    CaptureSize,
+    CaptureMap,
     Validation,
     BackendFatal,
 }
@@ -250,6 +404,11 @@ impl Display for RendererError {
             Self::SurfaceUnsupported => {
                 formatter.write_str("renderer surface is unsupported by the adapter")
             }
+            Self::CaptureUnsupported => {
+                formatter.write_str("renderer surface does not support native frame capture")
+            }
+            Self::CaptureSize => formatter.write_str("renderer capture dimensions are invalid"),
+            Self::CaptureMap => formatter.write_str("renderer frame readback failed"),
             Self::Validation => formatter.write_str("renderer validation failed"),
             Self::BackendFatal => formatter.write_str("renderer backend failed"),
         }
@@ -685,6 +844,81 @@ mod tests {
                 phase: SurfacePhase::Closing,
                 event: SurfaceEventKind::Presented,
             })
+        );
+    }
+
+    #[test]
+    fn capture_readback_removes_padding_and_converts_bgra() {
+        let source = [
+            3, 2, 1, 4, 7, 6, 5, 8, 0, 0, 0, 0, 0, 0, 0, 0, // row one
+            11, 10, 9, 12, 15, 14, 13, 16, 0, 0, 0, 0, 0, 0, 0, 0, // row two
+        ];
+        assert_eq!(
+            unpack_capture_rows(&source, 2, 2, 16, CapturedPixelOrder::Bgra),
+            Ok(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+        );
+    }
+
+    #[test]
+    fn capture_readback_rejects_truncated_or_narrow_rows() {
+        assert_eq!(
+            unpack_capture_rows(&[0; 15], 2, 1, 16, CapturedPixelOrder::Rgba),
+            Err(RendererError::CaptureSize)
+        );
+        assert_eq!(
+            unpack_capture_rows(&[0; 4], 2, 1, 4, CapturedPixelOrder::Rgba),
+            Err(RendererError::CaptureSize)
+        );
+    }
+
+    #[test]
+    fn capture_crop_keeps_only_complete_physical_viewport_pixels() {
+        let mut rgba = Vec::new();
+        for pixel in 0_u8..12 {
+            rgba.extend_from_slice(&[pixel, pixel, pixel, 255]);
+        }
+        let cropped = CapturedFrame {
+            width: 4,
+            height: 3,
+            rgba,
+        }
+        .crop_physical_viewport([0.25, 0.25, 3.5, 2.5]);
+        assert_eq!(
+            cropped,
+            Ok(CapturedFrame {
+                width: 2,
+                height: 1,
+                rgba: vec![5, 5, 5, 255, 6, 6, 6, 255],
+            })
+        );
+    }
+
+    #[test]
+    fn capture_crop_rejects_invalid_bounds_and_storage() {
+        let frame = CapturedFrame {
+            width: 2,
+            height: 2,
+            rgba: vec![0; 16],
+        };
+        for viewport in [
+            [-1.0, 0.0, 1.0, 1.0],
+            [0.0, 0.0, 3.0, 1.0],
+            [0.0, 0.0, 0.5, 0.5],
+            [f32::NAN, 0.0, 1.0, 1.0],
+        ] {
+            assert_eq!(
+                frame.clone().crop_physical_viewport(viewport),
+                Err(RendererError::CaptureSize)
+            );
+        }
+        assert_eq!(
+            CapturedFrame {
+                width: 2,
+                height: 2,
+                rgba: vec![0; 15],
+            }
+            .crop_physical_viewport([0.0, 0.0, 2.0, 2.0]),
+            Err(RendererError::CaptureSize)
         );
     }
 }

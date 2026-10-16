@@ -1,0 +1,1542 @@
+//! Configurable action slots over existing session commands.
+//!
+//! Only layout and physical shortcuts persist. Spell-book indices and item handles belong to
+//! one admitted session and are deliberately cleared on reconnect. A future generation-pinned
+//! catalogue can supply durable semantic assignments without persisting these transient IDs.
+use oteryn_input_actions::{
+    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
+    ContextKind, InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers,
+    NormalizedInputEvent, RepeatPolicy,
+};
+use oteryn_session::{
+    CastOutcome, ChatIntent, ChatOutcome, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    ItemMoveOutcomeResult, Session, SessionError, SessionStream, SpellTarget, UseOutcome,
+};
+use serde::{Deserialize, Serialize, ser::SerializeStruct};
+use std::{collections::BTreeSet, io, num::NonZeroU32};
+
+/// The reference client exposes fifty independently bindable positions per row.
+pub const ACTION_BAR_SLOTS: usize = 50;
+pub const ACTION_BAR_ROWS: usize = 9;
+pub const TOTAL_ACTION_BAR_SLOTS: usize = ACTION_BAR_ROWS * ACTION_BAR_SLOTS;
+pub const ACTION_ROW_HEIGHT: f32 = 38.0;
+pub const ACTION_COLUMN_WIDTH: f32 = 30.0;
+pub const BOTTOM_ROWS: [usize; 3] = [0, 1, 2];
+pub const LEFT_ROWS: [usize; 3] = [3, 4, 5];
+pub const RIGHT_ROWS: [usize; 3] = [6, 7, 8];
+const PREFIX: &str = "client.action-slot.";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ActionBarEdge {
+    Bottom,
+    Left,
+    Right,
+}
+
+#[must_use]
+pub const fn row_position(row: usize) -> Option<(ActionBarEdge, usize)> {
+    match row {
+        0..=2 => Some((ActionBarEdge::Bottom, row)),
+        3..=5 => Some((ActionBarEdge::Left, row - 3)),
+        6..=8 => Some((ActionBarEdge::Right, row - 6)),
+        _ => None,
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SlotShortcut {
+    /// USB HID physical position, matching the platform adapter.
+    pub key: u16,
+    /// The input router's Shift/Control/Alt/Super bitset.
+    pub modifiers: u8,
+}
+
+impl SlotShortcut {
+    pub fn chord(self) -> Result<InputChord, InputError> {
+        InputChord::new(
+            Modifiers::from_bits(self.modifiers)?,
+            vec![InputAtom::Key(KeyCode::new(self.key)?)],
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ActionBarPreferences {
+    pub visible: bool,
+    /// Locks pointer drag/drop editing, never command activation or explicit
+    /// context-menu and Settings actions.
+    pub locked: bool,
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    /// Three bottom, three left, three right rows; the legacy fields remain bottom row 1.
+    #[serde(default)]
+    pub extra_rows: [ActionRowPreferences; ACTION_BAR_ROWS - 1],
+    /// Independent bottom/left/right visibility masters; raw row selections and hotkeys
+    /// remain intact. Legacy files retain their existing layout through enabled masters.
+    #[serde(default = "default_edge_enabled")]
+    pub edge_enabled: [bool; 3],
+}
+
+const fn default_edge_enabled() -> [bool; 3] {
+    [true; 3]
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ActionRowPreferences {
+    pub visible: bool,
+    pub locked: bool,
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+}
+
+const fn empty_shortcuts() -> [Option<SlotShortcut>; ACTION_BAR_SLOTS] {
+    [None; ACTION_BAR_SLOTS]
+}
+
+impl Default for ActionRowPreferences {
+    fn default() -> Self {
+        Self {
+            visible: false,
+            locked: false,
+            shortcuts: empty_shortcuts(),
+            secondary_shortcuts: empty_shortcuts(),
+            chat_on_shortcuts: empty_shortcuts(),
+            chat_on_secondary_shortcuts: empty_shortcuts(),
+        }
+    }
+}
+
+fn serialize_shortcuts<S>(
+    shortcuts: &[Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    shortcuts.as_slice().serialize(serializer)
+}
+
+fn deserialize_shortcuts<'de, D>(
+    deserializer: D,
+) -> Result<[Option<SlotShortcut>; ACTION_BAR_SLOTS], D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let saved = Vec::<Option<SlotShortcut>>::deserialize(deserializer)?;
+    if saved.len() > ACTION_BAR_SLOTS {
+        return Err(serde::de::Error::custom("too many action-bar shortcuts"));
+    }
+    let mut shortcuts = empty_shortcuts();
+    for (index, shortcut) in saved.into_iter().enumerate() {
+        shortcuts[index] = shortcut;
+    }
+    Ok(shortcuts)
+}
+
+impl Default for ActionBarPreferences {
+    fn default() -> Self {
+        let keys = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69];
+        let mut shortcuts = [None; ACTION_BAR_SLOTS];
+        let mut chat_on_shortcuts = [None; ACTION_BAR_SLOTS];
+        for (slot, key) in keys.into_iter().enumerate() {
+            shortcuts[slot] = Some(SlotShortcut { key, modifiers: 0 });
+            chat_on_shortcuts[slot] = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        Self {
+            visible: true,
+            locked: false,
+            shortcuts,
+            secondary_shortcuts: empty_shortcuts(),
+            chat_on_shortcuts,
+            chat_on_secondary_shortcuts: empty_shortcuts(),
+            extra_rows: [ActionRowPreferences::default(); ACTION_BAR_ROWS - 1],
+            edge_enabled: default_edge_enabled(),
+        }
+    }
+}
+
+impl Serialize for ActionBarPreferences {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Older builds persisted one lock bit per row. Preserve that wire shape, but
+        // converge every successful save on the reference client's single global lock.
+        // OR is fail-safe for an inconsistent legacy file: no formerly protected row
+        // becomes editable merely because another row happened to be unlocked.
+        let locked = self.assignments_locked();
+        let mut extra_rows = self.extra_rows;
+        for row in &mut extra_rows {
+            row.locked = locked;
+        }
+        let mut state = serializer.serialize_struct("ActionBarPreferences", 8)?;
+        state.serialize_field("visible", &self.visible)?;
+        state.serialize_field("locked", &locked)?;
+        state.serialize_field("shortcuts", self.shortcuts.as_slice())?;
+        state.serialize_field("secondary_shortcuts", self.secondary_shortcuts.as_slice())?;
+        state.serialize_field("chat_on_shortcuts", self.chat_on_shortcuts.as_slice())?;
+        state.serialize_field(
+            "chat_on_secondary_shortcuts",
+            self.chat_on_secondary_shortcuts.as_slice(),
+        )?;
+        state.serialize_field("extra_rows", &extra_rows)?;
+        state.serialize_field("edge_enabled", &self.edge_enabled)?;
+        state.end()
+    }
+}
+
+impl ActionBarPreferences {
+    /// The reference client has one assignment lock shared by all nine rows.
+    /// Legacy per-row state is interpreted conservatively until the next save.
+    #[must_use]
+    pub fn assignments_locked(&self) -> bool {
+        self.locked || self.extra_rows.iter().any(|row| row.locked)
+    }
+
+    /// Update the compatibility fields together so every visible lock control
+    /// represents the same effective state.
+    pub fn set_assignments_locked(&mut self, locked: bool) {
+        self.locked = locked;
+        for row in &mut self.extra_rows {
+            row.locked = locked;
+        }
+    }
+
+    /// Version-one clients shipped number-row defaults for the first twelve
+    /// buttons. Upgrade only that exact untouched primary sequence.
+    pub(crate) fn migrate_v1_default_shortcuts(&mut self) -> bool {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let matches_legacy = self.shortcuts[..legacy.len()]
+            .iter()
+            .zip(legacy)
+            .all(|(shortcut, key)| *shortcut == Some(SlotShortcut { key, modifiers: 0 }));
+        let target_key = |shortcut: &Option<SlotShortcut>| {
+            shortcut.is_some_and(|shortcut| {
+                shortcut.modifiers == 0 && (58..=69).contains(&shortcut.key)
+            })
+        };
+        let chat_off_conflict = self.shortcuts[legacy.len()..].iter().any(target_key)
+            || self.secondary_shortcuts.iter().any(target_key)
+            || self.extra_rows.iter().any(|row| {
+                row.shortcuts.iter().any(target_key)
+                    || row.secondary_shortcuts.iter().any(target_key)
+            });
+        let chat_on_conflict = self.chat_on_shortcuts[..legacy.len()]
+            .iter()
+            .any(Option::is_some)
+            || self.chat_on_shortcuts[legacy.len()..]
+                .iter()
+                .any(target_key)
+            || self.chat_on_secondary_shortcuts.iter().any(target_key)
+            || self.extra_rows.iter().any(|row| {
+                row.chat_on_shortcuts.iter().any(target_key)
+                    || row.chat_on_secondary_shortcuts.iter().any(target_key)
+            });
+        if matches_legacy && !chat_off_conflict && !chat_on_conflict {
+            for (shortcut, key) in self.shortcuts[..legacy.len()].iter_mut().zip(58_u16..=69) {
+                *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+            }
+            for (shortcut, key) in self.chat_on_shortcuts[..legacy.len()]
+                .iter_mut()
+                .zip(58_u16..=69)
+            {
+                *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Effective rendering visibility, separate from the retained raw row selection.
+    #[must_use]
+    pub fn row_is_visible(&self, row: usize) -> bool {
+        self.edge_enabled
+            .get(row / 3)
+            .is_some_and(|enabled| *enabled)
+            && self.row(row).is_some_and(|preferences| preferences.visible)
+    }
+
+    #[must_use]
+    pub fn visible_rows(&self) -> [u8; 3] {
+        let mut counts = [0; 3];
+        for row in 0..ACTION_BAR_ROWS {
+            if self.row_is_visible(row) {
+                counts[row / 3] += 1;
+            }
+        }
+        counts
+    }
+
+    #[must_use]
+    pub fn row(&self, row: usize) -> Option<ActionRowPreferences> {
+        let locked = self.assignments_locked();
+        if row == 0 {
+            Some(ActionRowPreferences {
+                visible: self.visible,
+                locked,
+                shortcuts: self.shortcuts,
+                secondary_shortcuts: self.secondary_shortcuts,
+                chat_on_shortcuts: self.chat_on_shortcuts,
+                chat_on_secondary_shortcuts: self.chat_on_secondary_shortcuts,
+            })
+        } else {
+            self.extra_rows
+                .get(row - 1)
+                .copied()
+                .map(|mut preferences| {
+                    preferences.locked = locked;
+                    preferences
+                })
+        }
+    }
+
+    pub fn set_row(&mut self, row: usize, preferences: ActionRowPreferences) -> io::Result<()> {
+        if row == 0 {
+            self.visible = preferences.visible;
+            self.shortcuts = preferences.shortcuts;
+            self.secondary_shortcuts = preferences.secondary_shortcuts;
+            self.chat_on_shortcuts = preferences.chat_on_shortcuts;
+            self.chat_on_secondary_shortcuts = preferences.chat_on_secondary_shortcuts;
+        } else {
+            let destination = self
+                .extra_rows
+                .get_mut(row - 1)
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row"))?;
+            *destination = preferences;
+        }
+        self.set_assignments_locked(preferences.locked);
+        Ok(())
+    }
+
+    pub fn all_shortcuts(&self) -> impl Iterator<Item = &Option<SlotShortcut>> {
+        self.shortcuts_for_context(false)
+            .chain(self.shortcuts_for_context(true))
+    }
+
+    pub fn shortcuts_for_context(
+        &self,
+        chat_on: bool,
+    ) -> impl Iterator<Item = &Option<SlotShortcut>> {
+        let (primary, secondary) = if chat_on {
+            (&self.chat_on_shortcuts, &self.chat_on_secondary_shortcuts)
+        } else {
+            (&self.shortcuts, &self.secondary_shortcuts)
+        };
+        primary
+            .iter()
+            .chain(secondary.iter())
+            .chain(self.extra_rows.iter().flat_map(move |row| {
+                if chat_on {
+                    row.chat_on_shortcuts
+                        .iter()
+                        .chain(row.chat_on_secondary_shortcuts.iter())
+                } else {
+                    row.shortcuts.iter().chain(row.secondary_shortcuts.iter())
+                }
+            }))
+    }
+
+    /// Reserve application Escape/Enter and the configured movement chords. Reject
+    /// conflicts before replacing any live bindings or saving preferences.
+    pub fn validate(&self, movement_keys: &[u16]) -> io::Result<()> {
+        for chat_on in [false, true] {
+            let mut seen = Vec::new();
+            for shortcut in self.shortcuts_for_context(chat_on) {
+                let Some(shortcut) = shortcut else { continue };
+                if shortcut.chord().is_err()
+                    || matches!(shortcut.key, 40 | 41)
+                    || (!chat_on
+                        && shortcut.modifiers == 0
+                        && movement_keys.contains(&shortcut.key))
+                    || seen.contains(shortcut)
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid or conflicting action shortcut",
+                    ));
+                }
+                seen.push(*shortcut);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// An actual existing command, never a locally simulated gameplay result.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ActionBarCommand {
+    CastSpell {
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    },
+    /// USE_INTENT's item target currently opens a visible corpse. Do not present this as
+    /// consumable-item use, which requires its own engine contract and command.
+    OpenItem(ItemHandle),
+    MoveToBackpack(ItemHandle),
+    Chat(ChatIntent),
+}
+
+#[derive(Clone, Debug)]
+pub enum ActionBarOutcome {
+    Unavailable,
+    Cast(CastOutcome),
+    Used(UseOutcome),
+    Moved(ItemMoveOutcomeResult),
+    Chat(ChatOutcome),
+}
+
+impl ActionBarCommand {
+    /// Call only on the owning session task. Session gates capabilities, sequences the
+    /// command, validates its result and applies authoritative deltas.
+    pub async fn execute<S: SessionStream>(
+        &self,
+        session: &mut Session<S>,
+    ) -> Result<ActionBarOutcome, SessionError> {
+        match self {
+            Self::CastSpell {
+                spell,
+                target,
+                aim_at_target,
+            } => session
+                .cast_spell(*spell, *target, *aim_at_target)
+                .await
+                .map(ActionBarOutcome::Cast),
+            Self::OpenItem(handle) => session.use_item(*handle).await.map(ActionBarOutcome::Used),
+            Self::MoveToBackpack(handle) => session
+                .move_item(&ItemMoveIntent {
+                    source: *handle,
+                    destination: ItemMoveDestination::MainBackpack,
+                })
+                .await
+                .map(ActionBarOutcome::Moved),
+            Self::Chat(intent) => session.chat(intent).await.map(ActionBarOutcome::Chat),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SlotAssignment {
+    pub label: String,
+    pub command: ActionBarCommand,
+}
+
+/// Runtime assignments are recreated for each admission; preferences alone cross sessions.
+#[derive(Debug)]
+pub struct ActionBar {
+    preferences: ActionBarPreferences,
+    assignments: [Option<SlotAssignment>; TOTAL_ACTION_BAR_SLOTS],
+    router: InputRouter,
+    text: ContextId,
+    modal: ContextId,
+    held: BTreeSet<KeyCode>,
+    quarantined: BTreeSet<KeyCode>,
+    text_active: bool,
+    modal_active: bool,
+    focused: bool,
+    pending_lock_change: Option<bool>,
+}
+
+impl ActionBar {
+    pub fn new(preferences: ActionBarPreferences, movement_keys: &[u16]) -> io::Result<Self> {
+        preferences.validate(movement_keys)?;
+        Self::build(preferences).map_err(io::Error::other)
+    }
+
+    fn build(preferences: ActionBarPreferences) -> Result<Self, InputError> {
+        let gameplay = ContextId::new("actionbar-gameplay".into())?;
+        let text = ContextId::new("actionbar-text".into())?;
+        let modal = ContextId::new("actionbar-modal".into())?;
+        let mut bindings = Vec::new();
+        for row in 0..ACTION_BAR_ROWS {
+            if let Some(row_preferences) = preferences.row(row) {
+                for (context, primary, secondary) in [
+                    (
+                        gameplay.clone(),
+                        &row_preferences.shortcuts,
+                        &row_preferences.secondary_shortcuts,
+                    ),
+                    (
+                        text.clone(),
+                        &row_preferences.chat_on_shortcuts,
+                        &row_preferences.chat_on_secondary_shortcuts,
+                    ),
+                ] {
+                    for (slot, shortcut) in primary
+                        .iter()
+                        .zip(secondary.iter())
+                        .enumerate()
+                        .flat_map(|(slot, pair)| [(slot, pair.0), (slot, pair.1)])
+                    {
+                        if let Some(shortcut) = shortcut {
+                            bindings.push(Binding::new(
+                                context.clone(),
+                                shortcut.chord()?,
+                                ActionId::new(format!(
+                                    "{PREFIX}{}",
+                                    row * ACTION_BAR_SLOTS + slot
+                                ))?,
+                                RepeatPolicy::Ignore,
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        let map = BindingMap::new(
+            vec![
+                ContextDefinition::new(gameplay.clone(), ContextKind::Gameplay, 0),
+                ContextDefinition::new(text.clone(), ContextKind::Text, 10),
+                ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
+            ],
+            bindings,
+            &[],
+        )?;
+        let mut router = InputRouter::new(map);
+        router.set_context_active(&gameplay, true)?;
+        Ok(Self {
+            preferences,
+            assignments: std::array::from_fn(|_| None),
+            router,
+            text,
+            modal,
+            held: BTreeSet::new(),
+            quarantined: BTreeSet::new(),
+            text_active: false,
+            modal_active: false,
+            focused: true,
+            pending_lock_change: None,
+        })
+    }
+
+    #[must_use]
+    pub const fn preferences(&self) -> &ActionBarPreferences {
+        &self.preferences
+    }
+
+    #[must_use]
+    pub fn assignment(&self, slot: usize) -> Option<&SlotAssignment> {
+        self.assignments.get(slot).and_then(Option::as_ref)
+    }
+
+    /// Whether the admitted session currently has anything whose placement can
+    /// be protected by the assignment lock. The production shell intentionally
+    /// starts empty until an authoritative session-backed source supplies an
+    /// assignment.
+    #[must_use]
+    pub fn has_assignments(&self) -> bool {
+        self.assignments.iter().any(Option::is_some)
+    }
+
+    /// Whether one specific reference row currently contains a session-backed
+    /// action that an explicit Clear command could remove.
+    #[must_use]
+    pub fn row_has_assignments(&self, row: usize) -> bool {
+        let Some(start) = row.checked_mul(ACTION_BAR_SLOTS) else {
+            return false;
+        };
+        let Some(assignments) = self
+            .assignments
+            .get(start..start.saturating_add(ACTION_BAR_SLOTS))
+        else {
+            return false;
+        };
+        assignments.iter().any(Option::is_some)
+    }
+
+    pub fn assign(&mut self, slot: usize, assignment: Option<SlotAssignment>) -> io::Result<()> {
+        let destination = self
+            .assignments
+            .get_mut(slot)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action slot"))?;
+        if let Some(assignment) = &assignment
+            && (assignment.label.trim().is_empty()
+                || assignment.label.len() > 80
+                || assignment.label.chars().any(char::is_control))
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid action label",
+            ));
+        }
+        *destination = assignment;
+        Ok(())
+    }
+
+    /// Pointer drag/drop assignment respects the row lock. Explicit assignment
+    /// menus use [`Self::assign`] because the reference lock does not gate them.
+    pub fn assign_from_drop(
+        &mut self,
+        slot: usize,
+        assignment: Option<SlotAssignment>,
+    ) -> io::Result<()> {
+        if self.assignments.get(slot).is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action slot",
+            ));
+        }
+        if self.preferences.assignments_locked() {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Action bars are locked",
+            ));
+        }
+        self.assign(slot, assignment)
+    }
+
+    /// Move an occupied pointer-drag source into an empty slot, or swap it with
+    /// an occupied destination. The operation is atomic and uses only the current
+    /// session's assignments; no transient handle is persisted.
+    pub fn move_or_swap_from_drop(&mut self, source: usize, destination: usize) -> io::Result<()> {
+        if source >= TOTAL_ACTION_BAR_SLOTS || destination >= TOTAL_ACTION_BAR_SLOTS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action slot",
+            ));
+        }
+        if self.preferences.assignments_locked() {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Action bars are locked",
+            ));
+        }
+        if self.assignments[source].is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Empty action slot cannot be dragged",
+            ));
+        }
+        if source != destination {
+            self.assignments.swap(source, destination);
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn assignments_locked(&self) -> bool {
+        self.preferences.assignments_locked()
+    }
+
+    /// Called by any of the edge lock controls. The shell consumes the pending
+    /// value after the frame and commits it through the normal settings save path.
+    pub fn set_assignments_locked(&mut self, locked: bool) {
+        if self.preferences.assignments_locked() != locked {
+            self.preferences.set_assignments_locked(locked);
+            self.pending_lock_change = Some(locked);
+        }
+    }
+
+    pub fn take_assignments_lock_change(&mut self) -> Option<bool> {
+        self.pending_lock_change.take()
+    }
+
+    /// Explicit bulk clear is a Settings action, so it is not a pointer drop and
+    /// remains available while a row is locked.
+    pub fn clear_row(&mut self, row: usize) -> io::Result<()> {
+        if self.preferences.row(row).is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action row",
+            ));
+        }
+        self.assignments[row * ACTION_BAR_SLOTS..(row + 1) * ACTION_BAR_SLOTS].fill(None);
+        Ok(())
+    }
+
+    /// A failed rebind leaves the previous keymap and assignments intact. Replacing a valid
+    /// map cancels held input, so a held key cannot fire under the new binding.
+    pub fn reconfigure(
+        &mut self,
+        preferences: ActionBarPreferences,
+        movement_keys: &[u16],
+    ) -> io::Result<()> {
+        let mut replacement = Self::new(preferences, movement_keys)?;
+        replacement.assignments = self.assignments.clone();
+        replacement.held = self.held.clone();
+        replacement.quarantined = self.held.union(&self.quarantined).copied().collect();
+        replacement
+            .set_input_context(self.text_active, self.modal_active)
+            .map_err(io::Error::other)?;
+        replacement.focused = self.focused;
+        replacement
+            .router
+            .process(&NormalizedInputEvent::FocusChanged {
+                focused: self.focused,
+            });
+        *self = replacement;
+        Ok(())
+    }
+
+    /// Admission changes clear every session handle and spell index. Held keys need release.
+    pub fn reset_session(&mut self) -> io::Result<()> {
+        self.reconfigure(self.preferences.clone(), &[])?;
+        self.assignments.fill(None);
+        Ok(())
+    }
+
+    pub fn set_input_context(
+        &mut self,
+        text_active: bool,
+        modal_active: bool,
+    ) -> Result<(), InputError> {
+        self.router.set_context_active(&self.text, text_active)?;
+        self.router.set_context_active(&self.modal, modal_active)?;
+        self.text_active = text_active;
+        self.modal_active = modal_active;
+        Ok(())
+    }
+
+    /// Current router context used for both activation and visible shortcut labels.
+    #[must_use]
+    pub const fn chat_context_active(&self) -> bool {
+        self.text_active
+    }
+
+    /// Process focus/release events even while text/modal input suppresses gameplay.
+    /// Physical held state suppresses repeats. Slots are independent one-shot actions:
+    /// each accepted press/release pulse stays inside this private semantic router and
+    /// does not change the physical state or the movement/platform input stream.
+    pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ActionBarCommand> {
+        self.route_with_match(events).0
+    }
+
+    /// Route commands and report whether an executable slot assignment claimed
+    /// this press. A persisted shortcut for an empty runtime slot must remain
+    /// available to the general-hotkey router instead of swallowing the input.
+    pub fn route_with_match(
+        &mut self,
+        events: &[NormalizedInputEvent],
+    ) -> (Vec<ActionBarCommand>, bool) {
+        let mut slots = Vec::new();
+        for event in events {
+            match event {
+                NormalizedInputEvent::Key {
+                    code,
+                    state,
+                    repeat,
+                    ..
+                } => {
+                    if *state == ButtonState::Released {
+                        self.held.remove(code);
+                        self.quarantined.remove(code);
+                    } else {
+                        if !self.focused {
+                            continue;
+                        }
+                        let fresh = self.held.insert(*code);
+                        if !fresh || *repeat || self.quarantined.contains(code) {
+                            continue;
+                        }
+                    }
+                    if !matches!(code.get(), 224..=231)
+                        && !self
+                            .preferences
+                            .all_shortcuts()
+                            .flatten()
+                            .any(|s| s.key == code.get())
+                    {
+                        continue;
+                    }
+                }
+                NormalizedInputEvent::MouseButton { .. } | NormalizedInputEvent::Wheel { .. } => {
+                    continue;
+                }
+                NormalizedInputEvent::FocusChanged { focused } => {
+                    self.focused = *focused;
+                    if !focused {
+                        self.held.clear();
+                        self.quarantined.clear();
+                    }
+                }
+                NormalizedInputEvent::DeviceLost => {
+                    self.held.clear();
+                    self.quarantined.clear();
+                }
+                _ => {}
+            }
+            slots.extend(
+                self.router
+                    .process(event)
+                    .iter()
+                    .filter(|event| event.phase() == ActionPhase::Started)
+                    .filter_map(|event| {
+                        event
+                            .action()
+                            .as_str()
+                            .strip_prefix(PREFIX)?
+                            .parse::<usize>()
+                            .ok()
+                    }),
+            );
+            if let NormalizedInputEvent::Key {
+                code,
+                state: ButtonState::Pressed,
+                modifiers,
+                ..
+            } = event
+            {
+                self.router.process(&NormalizedInputEvent::Key {
+                    code: *code,
+                    state: ButtonState::Released,
+                    modifiers: *modifiers,
+                    repeat: false,
+                });
+            }
+        }
+        let commands = slots
+            .into_iter()
+            .filter_map(|slot| self.activate(slot))
+            .collect::<Vec<_>>();
+        let matched = !commands.is_empty();
+        (commands, matched)
+    }
+
+    /// Hidden rows keep shortcuts active, matching the legacy visibility preference.
+    /// Click activation uses the same assignment as its physical shortcut. Locking the row
+    /// locks editing, not clicking. The shell suppresses clicks while its modal is open.
+    #[must_use]
+    pub fn activate(&self, slot: usize) -> Option<ActionBarCommand> {
+        self.assignment(slot)
+            .map(|assignment| assignment.command.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_input_actions::ButtonState;
+    use oteryn_session::ChatRoom;
+
+    fn event(state: ButtonState, repeat: bool) -> Result<NormalizedInputEvent, InputError> {
+        key_event(58, 0, state, repeat)
+    }
+
+    fn key_event(
+        key: u16,
+        modifiers: u8,
+        state: ButtonState,
+        repeat: bool,
+    ) -> Result<NormalizedInputEvent, InputError> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(key)?,
+            state,
+            modifiers: Modifiers::from_bits(modifiers)?,
+            repeat,
+        })
+    }
+
+    fn assigned_bar() -> io::Result<ActionBar> {
+        let mut bar = ActionBar::new(ActionBarPreferences::default(), &[82, 79, 81, 80])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+        Ok(bar)
+    }
+
+    #[test]
+    fn chat_context_routes_its_default_while_modal_and_repeat_stay_suppressed()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        bar.set_input_context(true, false)?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        bar.set_input_context(false, true)?;
+        assert!(bar.route(&[event(ButtonState::Pressed, false)?]).is_empty());
+        bar.route(&[event(ButtonState::Released, false)?]);
+        bar.set_input_context(false, false)?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        assert!(bar.route(&[event(ButtonState::Pressed, true)?]).is_empty());
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_on_and_chat_off_shortcuts_route_only_in_their_own_context()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.chat_on_shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 0,
+        });
+        let mut bar = ActionBar::new(preferences, &[82, 79, 81, 80])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert!(
+            bar.route(&[key_event(4, 0, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        bar.route(&[key_event(4, 0, ButtonState::Released, false)?]);
+
+        bar.set_input_context(true, false)?;
+        assert!(bar.route(&[event(ButtonState::Pressed, false)?]).is_empty());
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert_eq!(
+            bar.route(&[key_event(4, 0, ButtonState::Pressed, false)?])
+                .len(),
+            1
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn configured_shortcut_does_not_claim_a_press_before_its_session_assignment_exists()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = ActionBar::new(ActionBarPreferences::default(), &[82, 79, 81, 80])?;
+        let (commands, matched) = bar.route_with_match(&[event(ButtonState::Pressed, false)?]);
+        assert!(!matched);
+        assert!(commands.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn assigned_shortcut_claims_a_press_with_its_executable_command()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let expected = bar.assignment(0).ok_or("assigned fixture")?.command.clone();
+        let (commands, matched) = bar.route_with_match(&[event(ButtonState::Pressed, false)?]);
+        assert!(matched);
+        assert_eq!(commands, vec![expected]);
+        Ok(())
+    }
+
+    #[test]
+    fn movement_and_pointer_holds_do_not_block_an_action_shortcut()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let movement = NormalizedInputEvent::Key {
+            code: KeyCode::new(82)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        let mouse = NormalizedInputEvent::MouseButton {
+            button: oteryn_input_actions::MouseButton::PRIMARY,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+        };
+        assert!(bar.route(&[movement, mouse]).is_empty());
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn independent_slots_fire_while_another_action_key_remains_held()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let world = ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World));
+        bar.assign(
+            1,
+            Some(SlotAssignment {
+                label: "World".into(),
+                command: world.clone(),
+            }),
+        )?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        assert_eq!(
+            bar.route(&[key_event(59, 0, ButtonState::Pressed, false)?]),
+            vec![world]
+        );
+        assert!(
+            bar.route(&[
+                event(ButtonState::Pressed, false)?,
+                key_event(59, 0, ButtonState::Pressed, false)?,
+                event(ButtonState::Pressed, true)?,
+                key_event(59, 0, ButtonState::Pressed, true)?,
+            ])
+            .is_empty()
+        );
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        assert!(
+            bar.route(&[key_event(59, 0, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn independent_modified_slots_keep_physical_holds_across_context_and_focus_changes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let mut preferences = bar.preferences().clone();
+        preferences.shortcuts[1] = Some(SlotShortcut {
+            key: 59,
+            modifiers: 1,
+        });
+        bar.reconfigure(preferences, &[])?;
+        bar.assign(1, bar.assignment(0).cloned())?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        assert_eq!(
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                .len(),
+            1
+        );
+        assert!(
+            bar.route(&[key_event(58, 1, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
+        for (text, modal) in [(true, false), (false, true)] {
+            bar.set_input_context(text, modal)?;
+            assert!(
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                    .is_empty()
+            );
+            bar.set_input_context(false, false)?;
+            assert!(
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                    .is_empty()
+            );
+            bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
+            assert_eq!(
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                    .len(),
+                1
+            );
+            bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
+        }
+        bar.route(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+        assert!(
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        bar.route(&[NormalizedInputEvent::FocusChanged { focused: true }]);
+        assert!(
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, true)?])
+                .is_empty()
+        );
+        assert!(
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
+        assert_eq!(
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
+                .len(),
+            1
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn failed_rebind_preserves_assignment_and_current_keymap()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let mut conflict = ActionBarPreferences::default();
+        conflict.shortcuts[1] = conflict.shortcuts[0];
+        assert!(bar.reconfigure(conflict, &[]).is_err());
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        assert_eq!(bar.preferences(), &ActionBarPreferences::default());
+        let mut conflict = ActionBarPreferences::default();
+        conflict.shortcuts[0] = Some(SlotShortcut {
+            key: 82,
+            modifiers: 0,
+        });
+        assert!(bar.reconfigure(conflict, &[82, 79, 81, 80]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn persistence_retains_shortcuts_and_lock_but_not_session_identifiers()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let mut preferences = bar.preferences().clone();
+        preferences.locked = true;
+        bar.reconfigure(preferences, &[])?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(0, None)?;
+        assert!(bar.assignment(0).is_none());
+        bar.assign(0, assignment)?;
+        assert_eq!(
+            bar.assign_from_drop(0, None)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        assert!(bar.activate(0).is_some());
+        let json = serde_json::to_string(bar.preferences())?;
+        let reopened = ActionBar::new(serde_json::from_str(&json)?, &[])?;
+        assert!(reopened.preferences().locked);
+        assert!(reopened.activate(0).is_none());
+        assert!(!json.contains("handle") && !json.contains("spell"));
+        Ok(())
+    }
+
+    #[test]
+    fn secondary_shortcut_activates_the_same_action_slot() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.shortcuts[0] = None;
+        preferences.secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 58,
+            modifiers: 0,
+        });
+        let mut bar = ActionBar::new(preferences, &[])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_json_keeps_primary_defaults_and_bounds_extra_rows()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut json = serde_json::to_value(ActionBarPreferences::default())?;
+        let object = json.as_object_mut().ok_or("Expected preferences object")?;
+        object.remove("extra_rows");
+        object.remove("edge_enabled");
+        let old: ActionBarPreferences = serde_json::from_value(json)?;
+        assert_eq!(old, ActionBarPreferences::default());
+        assert_eq!(old.visible_rows(), [1, 0, 0]);
+        assert_eq!(old.edge_enabled, [true; 3]);
+        assert!(
+            old.extra_rows
+                .iter()
+                .all(|r| !r.visible && r.shortcuts.iter().all(Option::is_none))
+        );
+        let mut json = serde_json::to_value(old)?;
+        json["extra_rows"] = serde_json::json!([]);
+        assert!(serde_json::from_value::<ActionBarPreferences>(json).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn edge_masters_retain_noncontiguous_rows_chords_locks_and_session_assignments()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(4 * ACTION_BAR_SLOTS, assignment.clone())?;
+        let mut preferences = bar.preferences().clone();
+        preferences.extra_rows[1].visible = true;
+        preferences.extra_rows[3].visible = true;
+        preferences.extra_rows[3].locked = true;
+        preferences.extra_rows[3].shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        preferences.extra_rows[7].visible = true;
+        let rows: Vec<_> = (0..ACTION_BAR_ROWS)
+            .map(|row| preferences.row(row))
+            .collect();
+        for edge in 0..3 {
+            let mut hidden = preferences.clone();
+            hidden.edge_enabled[edge] = false;
+            bar.reconfigure(hidden, &[])?;
+            let mut expected = [2, 1, 1];
+            expected[edge] = 0;
+            assert_eq!(bar.preferences().visible_rows(), expected);
+            assert_eq!(
+                (0..ACTION_BAR_ROWS)
+                    .map(|row| bar.preferences().row(row))
+                    .collect::<Vec<_>>(),
+                rows
+            );
+            assert!((edge * 3..edge * 3 + 3).all(|row| !bar.preferences().row_is_visible(row)));
+            assert_eq!(bar.assignment(4 * ACTION_BAR_SLOTS), assignment.as_ref());
+        }
+        let mut hidden = preferences.clone();
+        hidden.edge_enabled = [false; 3];
+        bar.reconfigure(hidden, &[])?;
+        assert_eq!(bar.preferences().visible_rows(), [0; 3]);
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        bar.reconfigure(preferences.clone(), &[])?;
+        assert_eq!(bar.preferences().visible_rows(), [2, 1, 1]);
+        assert_eq!(bar.preferences(), &preferences);
+        assert_eq!(bar.assignment(4 * ACTION_BAR_SLOTS), assignment.as_ref());
+        assert!(!preferences.row_is_visible(ACTION_BAR_ROWS));
+        assert!(!preferences.row_is_visible(usize::MAX));
+        let mut normalized = preferences.clone();
+        normalized.set_assignments_locked(true);
+        assert_eq!(
+            serde_json::from_slice::<ActionBarPreferences>(&serde_json::to_vec(&preferences)?)?,
+            normalized
+        );
+        for invalid in [
+            serde_json::json!([true, false]),
+            serde_json::json!([true, true, true, true]),
+            serde_json::json!(null),
+            serde_json::json!([true, 1, false]),
+        ] {
+            let mut json = serde_json::to_value(&preferences)?;
+            json["edge_enabled"] = invalid;
+            assert!(serde_json::from_value::<ActionBarPreferences>(json).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn shortcuts_conflict_across_hidden_rows() -> io::Result<()> {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.extra_rows[7].shortcuts[11] = preferences.shortcuts[0];
+        assert!(preferences.validate(&[]).is_err());
+        for invalid in [
+            SlotShortcut {
+                key: 82,
+                modifiers: 0,
+            },
+            SlotShortcut {
+                key: 30,
+                modifiers: 16,
+            },
+            SlotShortcut {
+                key: 0,
+                modifiers: 0,
+            },
+        ] {
+            preferences.extra_rows[7].shortcuts[11] = Some(invalid);
+            assert!(preferences.validate(&[82]).is_err());
+        }
+        preferences.extra_rows[7].shortcuts[11] = Some(SlotShortcut {
+            key: 82,
+            modifiers: 2,
+        });
+        preferences.validate(&[82])?;
+        preferences.extra_rows[0].shortcuts[0] = preferences.extra_rows[7].shortcuts[11];
+        assert!(preferences.validate(&[82]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn default_action_buttons_use_f1_through_f12_including_f10() -> io::Result<()> {
+        let preferences = ActionBarPreferences::default();
+        for shortcuts in [
+            &preferences.shortcuts[..12],
+            &preferences.chat_on_shortcuts[..12],
+        ] {
+            let keys = shortcuts
+                .iter()
+                .map(|shortcut| shortcut.map(|shortcut| shortcut.key))
+                .collect::<Vec<_>>();
+            assert_eq!(keys, (58_u16..=69).map(Some).collect::<Vec<Option<u16>>>());
+        }
+        preferences.validate(&[82, 79, 81, 80])
+    }
+
+    #[test]
+    fn v1_default_shortcuts_migrate_once_without_overwriting_custom_bindings() {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut preferences = ActionBarPreferences::default();
+        for (shortcut, key) in preferences.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        preferences.chat_on_shortcuts = empty_shortcuts();
+        assert!(preferences.migrate_v1_default_shortcuts());
+        assert_eq!(
+            preferences.chat_on_shortcuts[9].map(|shortcut| shortcut.key),
+            Some(67)
+        );
+        assert!(!preferences.migrate_v1_default_shortcuts());
+
+        let mut customized = ActionBarPreferences::default();
+        for (shortcut, key) in customized.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        customized.chat_on_shortcuts = empty_shortcuts();
+        customized.shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        assert!(!customized.migrate_v1_default_shortcuts());
+        assert_eq!(
+            customized.shortcuts[0].map(|shortcut| shortcut.key),
+            Some(4)
+        );
+
+        let mut collision = ActionBarPreferences::default();
+        for (shortcut, key) in collision.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        collision.chat_on_shortcuts = empty_shortcuts();
+        collision.extra_rows[0].secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 58,
+            modifiers: 0,
+        });
+        assert!(!collision.migrate_v1_default_shortcuts());
+        assert_eq!(
+            collision.shortcuts[0].map(|shortcut| shortcut.key),
+            Some(30)
+        );
+    }
+
+    #[test]
+    fn twelve_slot_preferences_migrate_to_fifty_without_losing_bindings()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let shortcut = serde_json::json!({"key": 30, "modifiers": 0});
+        let mut primary = vec![serde_json::Value::Null; 12];
+        primary[0] = shortcut.clone();
+        let rows = (0..ACTION_BAR_ROWS - 1)
+            .map(|_| {
+                serde_json::json!({
+                    "visible": false,
+                    "locked": false,
+                    "shortcuts": vec![serde_json::Value::Null; 12]
+                })
+            })
+            .collect::<Vec<_>>();
+        let restored: ActionBarPreferences = serde_json::from_value(serde_json::json!({
+            "visible": true,
+            "locked": false,
+            "shortcuts": primary,
+            "extra_rows": rows,
+            "edge_enabled": [true, true, true]
+        }))?;
+        assert_eq!(
+            restored.shortcuts[0],
+            Some(SlotShortcut {
+                key: 30,
+                modifiers: 0
+            })
+        );
+        assert!(restored.shortcuts[12..].iter().all(Option::is_none));
+        assert!(restored.secondary_shortcuts.iter().all(Option::is_none));
+        assert!(restored.extra_rows.iter().all(|row| {
+            row.shortcuts.iter().all(Option::is_none)
+                && row.secondary_shortcuts.iter().all(Option::is_none)
+        }));
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_row_lock_becomes_global_without_blocking_activation_or_explicit_clear()
+    -> io::Result<()> {
+        let mut bar = assigned_bar()?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(TOTAL_ACTION_BAR_SLOTS - 1, assignment.clone())?;
+        let mut preferences = bar.preferences().clone();
+        preferences.visible = false;
+        preferences.extra_rows[7].visible = true;
+        preferences.extra_rows[7].locked = true;
+        bar.reconfigure(preferences, &[])?;
+        assert_eq!(bar.preferences().visible_rows(), [0, 0, 1]);
+        assert!(bar.assignments_locked());
+        assert!(
+            (0..ACTION_BAR_ROWS)
+                .all(|row| bar.preferences().row(row).is_some_and(|row| row.locked))
+        );
+        assert!(bar.activate(0).is_some()); // Hidden means rendering only.
+        assert!(bar.activate(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
+        assert_eq!(
+            bar.assign_from_drop(TOTAL_ACTION_BAR_SLOTS - 1, None)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
+        bar.clear_row(ACTION_BAR_ROWS - 1)?;
+        assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_none());
+        assert_eq!(
+            bar.assign_from_drop(0, None)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        bar.set_assignments_locked(false);
+        assert_eq!(bar.take_assignments_lock_change(), Some(false));
+        assert!(!bar.assignments_locked());
+        assert!(bar.preferences().extra_rows.iter().all(|row| !row.locked));
+        bar.assign_from_drop(0, assignment)?;
+        assert!(bar.assignment(0).is_some());
+        bar.clear_row(0)?;
+        assert!(bar.assignment(0).is_none());
+        assert!(bar.assign(TOTAL_ACTION_BAR_SLOTS, None).is_err());
+        assert!(bar.assign_from_drop(TOTAL_ACTION_BAR_SLOTS, None).is_err());
+        bar.reset_session()?;
+        assert!((0..TOTAL_ACTION_BAR_SLOTS).all(|slot| bar.assignment(slot).is_none()));
+        assert!(!bar.preferences().extra_rows[7].locked);
+        Ok(())
+    }
+
+    #[test]
+    fn pointer_drop_moves_into_empty_slots_swaps_occupied_slots_and_is_atomic_when_locked()
+    -> io::Result<()> {
+        let mut bar = assigned_bar()?;
+        assert!(bar.has_assignments());
+        let help = bar
+            .assignment(0)
+            .cloned()
+            .ok_or_else(|| io::Error::other("assigned fixture is empty"))?;
+        let world = SlotAssignment {
+            label: "World".into(),
+            command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::World)),
+        };
+        bar.assign(ACTION_BAR_SLOTS, Some(world.clone()))?;
+
+        bar.move_or_swap_from_drop(0, 1)?;
+        assert!(bar.assignment(0).is_none());
+        assert_eq!(bar.assignment(1), Some(&help));
+        bar.move_or_swap_from_drop(1, ACTION_BAR_SLOTS)?;
+        assert_eq!(bar.assignment(1), Some(&world));
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+        bar.move_or_swap_from_drop(ACTION_BAR_SLOTS, ACTION_BAR_SLOTS)?;
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+
+        let before = bar.assignments.clone();
+        assert_eq!(
+            bar.move_or_swap_from_drop(0, 2)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::InvalidInput)
+        );
+        assert_eq!(bar.assignments, before);
+        bar.set_assignments_locked(true);
+        assert_eq!(bar.take_assignments_lock_change(), Some(true));
+        assert_eq!(
+            bar.move_or_swap_from_drop(1, 2)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        assert_eq!(bar.assignments, before);
+        assert!(bar.activate(1).is_some());
+        bar.clear_row(0)?;
+        assert!((0..ACTION_BAR_SLOTS).all(|slot| bar.assignment(slot).is_none()));
+        assert_eq!(bar.assignment(ACTION_BAR_SLOTS), Some(&help));
+        assert!(bar.has_assignments());
+        bar.clear_row(1)?;
+        assert!(!bar.has_assignments());
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_per_row_locks_serialize_as_one_fail_safe_global_lock()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut json = serde_json::to_value(ActionBarPreferences::default())?;
+        json["locked"] = serde_json::Value::Bool(false);
+        json["extra_rows"][4]["locked"] = serde_json::Value::Bool(true);
+        let legacy: ActionBarPreferences = serde_json::from_value(json)?;
+        assert!(!legacy.locked);
+        assert!(legacy.assignments_locked());
+        assert!((0..ACTION_BAR_ROWS).all(|row| legacy.row(row).is_some_and(|row| row.locked)));
+
+        let migrated: ActionBarPreferences = serde_json::from_slice(&serde_json::to_vec(&legacy)?)?;
+        assert!(migrated.locked);
+        assert!(migrated.extra_rows.iter().all(|row| row.locked));
+        Ok(())
+    }
+
+    #[test]
+    fn rebind_quarantines_bound_and_unbound_held_keys_and_preserves_context()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(TOTAL_ACTION_BAR_SLOTS - 1, assignment)?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        let mut preferences = bar.preferences().clone();
+        preferences.shortcuts[0] = None;
+        preferences.extra_rows[7].shortcuts[ACTION_BAR_SLOTS - 1] = Some(SlotShortcut {
+            key: 58,
+            modifiers: 0,
+        });
+        bar.reconfigure(preferences, &[])?;
+        assert!(
+            bar.route(&[
+                event(ButtonState::Pressed, false)?,
+                event(ButtonState::Pressed, true)?
+            ])
+            .is_empty()
+        );
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        let key = |state| -> Result<_, InputError> {
+            Ok(NormalizedInputEvent::Key {
+                code: KeyCode::new(4)?,
+                state,
+                modifiers: Modifiers::NONE,
+                repeat: false,
+            })
+        };
+        bar.route(&[key(ButtonState::Pressed)?]); // Unbound key still has physical held state.
+        let mut preferences = bar.preferences().clone();
+        preferences.extra_rows[7].shortcuts[ACTION_BAR_SLOTS - 1] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 0,
+        });
+        bar.set_input_context(true, true)?;
+        bar.reconfigure(preferences, &[])?;
+        bar.set_input_context(false, false)?;
+        assert!(bar.route(&[key(ButtonState::Pressed)?]).is_empty());
+        bar.route(&[key(ButtonState::Released)?]);
+        bar.set_input_context(true, true)?;
+        bar.reconfigure(bar.preferences().clone(), &[])?;
+        assert!(bar.route(&[key(ButtonState::Pressed)?]).is_empty());
+        bar.route(&[key(ButtonState::Released)?]);
+        bar.set_input_context(false, false)?;
+        assert_eq!(bar.route(&[key(ButtonState::Pressed)?]).len(), 1);
+        let assignment = bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).cloned();
+        bar.reset_session()?;
+        bar.assign(TOTAL_ACTION_BAR_SLOTS - 1, assignment)?;
+        assert!(bar.route(&[key(ButtonState::Pressed)?]).is_empty());
+        bar.route(&[key(ButtonState::Released)?]);
+        assert_eq!(bar.route(&[key(ButtonState::Pressed)?]).len(), 1);
+        Ok(())
+    }
+}

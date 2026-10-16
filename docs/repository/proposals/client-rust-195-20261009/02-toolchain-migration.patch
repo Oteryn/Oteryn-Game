@@ -1,0 +1,739 @@
+diff --git a/.github/workflows/g4-canonical-worldproject-package-seed.yml b/.github/workflows/g4-canonical-worldproject-package-seed.yml
+index e7257830..38444684 100644
+--- a/.github/workflows/g4-canonical-worldproject-package-seed.yml
++++ b/.github/workflows/g4-canonical-worldproject-package-seed.yml
+@@ -40 +40 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -64,2 +64,2 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+@@ -110,5 +110,5 @@ jobs:
+-          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_repository
+-          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_v2
+-          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
+-          cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
+-          cargo +1.94.0 fmt --all -- --check
++          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_repository
++          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_v2
++          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
++          cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
++          cargo +1.95.0 fmt --all -- --check
+diff --git a/.github/workflows/g4-item-binding-pilot.yml b/.github/workflows/g4-item-binding-pilot.yml
+index 75ce2a94..d50d513c 100644
+--- a/.github/workflows/g4-item-binding-pilot.yml
++++ b/.github/workflows/g4-item-binding-pilot.yml
+@@ -77 +77 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -83 +83 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+diff --git a/.github/workflows/gameplay-server-seam.yml b/.github/workflows/gameplay-server-seam.yml
+index c8f28593..a3e6b0e9 100644
+--- a/.github/workflows/gameplay-server-seam.yml
++++ b/.github/workflows/gameplay-server-seam.yml
+@@ -60 +60 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+@@ -66,2 +66,2 @@ jobs:
+-          cargo +1.94.0 fmt --all --check
+-          cargo +1.94.0 test --locked -p oteryn-game-server --lib --no-run
++          cargo +1.95.0 fmt --all --check
++          cargo +1.95.0 test --locked -p oteryn-game-server --lib --no-run
+diff --git a/.github/workflows/item-content-continuity.yml b/.github/workflows/item-content-continuity.yml
+index 01e9b19e..c14dc333 100644
+--- a/.github/workflows/item-content-continuity.yml
++++ b/.github/workflows/item-content-continuity.yml
+@@ -60 +60 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -67 +67 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+diff --git a/.github/workflows/item-content-promotion.yml b/.github/workflows/item-content-promotion.yml
+index 1cdd0f0a..b42bc887 100644
+--- a/.github/workflows/item-content-promotion.yml
++++ b/.github/workflows/item-content-promotion.yml
+@@ -66 +66 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -73 +73 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+@@ -172 +172 @@ jobs:
+-          cargo +1.94.0 test --locked -p oteryn-game-server \
++          cargo +1.95.0 test --locked -p oteryn-game-server \
+@@ -176 +176 @@ jobs:
+-          cargo +1.94.0 test --locked -p oteryn-game-server \
++          cargo +1.95.0 test --locked -p oteryn-game-server \
+diff --git a/.github/workflows/item-content-verification.yml b/.github/workflows/item-content-verification.yml
+index eb67a6fa..761a4055 100644
+--- a/.github/workflows/item-content-verification.yml
++++ b/.github/workflows/item-content-verification.yml
+@@ -54 +54 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -61 +61 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
++          cargo +1.95.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+diff --git a/.github/workflows/merge-gate.yml b/.github/workflows/merge-gate.yml
+index 6ead5004..4abf4feb 100644
+--- a/.github/workflows/merge-gate.yml
++++ b/.github/workflows/merge-gate.yml
+@@ -220 +220 @@ jobs:
+-          if ! git fetch --no-tags --depth=1 origin "$EXPECTED_HEAD" || ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-metadata.json"; then
++          if ! git fetch --no-tags --depth=1 origin "$EXPECTED_HEAD" || ! rustup toolchain install 1.95.0 --profile minimal || ! cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-metadata.json"; then
+@@ -443 +443 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -446 +446 @@ jobs:
+-        run: cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
++        run: cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
+@@ -515 +515 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -518 +518 @@ jobs:
+-        run: cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
++        run: cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+@@ -548 +548 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -551 +551 @@ jobs:
+-        run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
++        run: cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
+@@ -554 +554 @@ jobs:
+-        run: cargo +1.94.0 fmt --all --check
++        run: cargo +1.95.0 fmt --all --check
+@@ -557 +557 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .
++        run: cargo +1.95.0 run --locked -p oteryn-architecture-check -- workspace .
+@@ -576 +576 @@ jobs:
+-            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
++            cargo +1.95.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+@@ -642 +642 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -652 +652 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -654,2 +654,2 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
+-            rust-linux-v2-1.94.0-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-
+@@ -665 +665 @@ jobs:
+-          cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/rust-fast-metadata.json"
++          cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/rust-fast-metadata.json"
+@@ -791 +791 @@ jobs:
+-          cargo +1.94.0 clippy --locked "${args[@]}" --all-targets -- -D warnings
++          cargo +1.95.0 clippy --locked "${args[@]}" --all-targets -- -D warnings
+@@ -802 +802 @@ jobs:
+-            cargo +1.94.0 test --locked -p "$package" "${target_flags[@]}" < /dev/null
++            cargo +1.95.0 test --locked -p "$package" "${target_flags[@]}" < /dev/null
+@@ -1023 +1023 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -1033 +1033 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -1035,2 +1035,2 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
+-            rust-linux-v2-1.94.0-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-
+@@ -1039 +1039 @@ jobs:
+-        run: cargo +1.94.0 build --locked --workspace --all-targets
++        run: cargo +1.95.0 build --locked --workspace --all-targets
+@@ -1042 +1042 @@ jobs:
+-        run: cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings
++        run: cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
+@@ -1045 +1045 @@ jobs:
+-        run: cargo +1.94.0 test --locked --workspace
++        run: cargo +1.95.0 test --locked --workspace
+@@ -1065 +1065 @@ jobs:
+-            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"
++            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"
+@@ -1122 +1122 @@ jobs:
+-                cargo +1.94.0 test --locked --workspace --test "$name"
++                cargo +1.95.0 test --locked --workspace --test "$name"
+@@ -1143 +1143 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
++        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness
+@@ -1146 +1146 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
++        run: cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
+@@ -1179 +1179 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -1191 +1191 @@ jobs:
+-          $metadata = cargo +1.94.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
++          $metadata = cargo +1.95.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
+@@ -1201 +1201 @@ jobs:
+-        run: cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+@@ -1205 +1205 @@ jobs:
+-        run: cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
++        run: cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+@@ -1269 +1269 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+@@ -1273 +1273 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
+@@ -1277 +1277 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+@@ -1297 +1297 @@ jobs:
+-          rust-version: '1.94.0'
++          rust-version: '1.95.0'
+@@ -1336 +1336 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -1400 +1400 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+diff --git a/.github/workflows/merge-group-gate.yml b/.github/workflows/merge-group-gate.yml
+index ed36f5b9..2fe13184 100644
+--- a/.github/workflows/merge-group-gate.yml
++++ b/.github/workflows/merge-group-gate.yml
+@@ -62 +62 @@ jobs:
+-          if ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
++          if ! rustup toolchain install 1.95.0 --profile minimal || ! cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
+@@ -338 +338 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -341 +341 @@ jobs:
+-        run: cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
++        run: cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+@@ -371 +371 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -381 +381 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -383 +383 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+@@ -389,3 +389,3 @@ jobs:
+-          cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
+-          cargo +1.94.0 fmt --all --check
+-          cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .
++          cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
++          cargo +1.95.0 fmt --all --check
++          cargo +1.95.0 run --locked -p oteryn-architecture-check -- workspace .
+@@ -408 +408 @@ jobs:
+-            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
++            cargo +1.95.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+@@ -456,5 +456,5 @@ jobs:
+-          cargo +1.94.0 build --locked --workspace --all-targets
+-          cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings
+-          cargo +1.94.0 test --locked --workspace
+-          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+-          cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
++          cargo +1.95.0 build --locked --workspace --all-targets
++          cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
++          cargo +1.95.0 test --locked --workspace
++          cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness
++          cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
+@@ -508 +508 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -518 +518 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -520 +520 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+@@ -523 +523 @@ jobs:
+-        run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
++        run: cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
+@@ -537 +537 @@ jobs:
+-            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"
++            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"
+@@ -608 +608 @@ jobs:
+-              cargo +1.94.0 test --locked --workspace --test "$name"
++              cargo +1.95.0 test --locked --workspace --test "$name"
+@@ -651 +651 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -658,2 +658,2 @@ jobs:
+-          cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+-          cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
++          cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
++          cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+@@ -668 +668 @@ jobs:
+-          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
++          cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+@@ -672 +672 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
+@@ -676 +676 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+@@ -696 +696 @@ jobs:
+-          rust-version: '1.94.0'
++          rust-version: '1.95.0'
+@@ -734 +734 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -794 +794 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+diff --git a/.github/workflows/native-entry-room-qualification.yml b/.github/workflows/native-entry-room-qualification.yml
+index 95f0d290..69fae1f0 100644
+--- a/.github/workflows/native-entry-room-qualification.yml
++++ b/.github/workflows/native-entry-room-qualification.yml
+@@ -49 +49 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+diff --git a/.github/workflows/node-boot-qualification.yml b/.github/workflows/node-boot-qualification.yml
+index cdbbc9fa..a838072c 100644
+--- a/.github/workflows/node-boot-qualification.yml
++++ b/.github/workflows/node-boot-qualification.yml
+@@ -43 +43 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+diff --git a/.github/workflows/rust-cache-pilot.yml b/.github/workflows/rust-cache-pilot.yml
+index b4a4320c..b52737c6 100644
+--- a/.github/workflows/rust-cache-pilot.yml
++++ b/.github/workflows/rust-cache-pilot.yml
+@@ -49 +49 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -61 +61 @@ jobs:
+-          RUSTUP_TOOLCHAIN: 1.94.0
++          RUSTUP_TOOLCHAIN: 1.95.0
+diff --git a/.github/workflows/rust.yml b/.github/workflows/rust.yml
+index 61c2efa6..6e359cf0 100644
+--- a/.github/workflows/rust.yml
++++ b/.github/workflows/rust.yml
+@@ -40 +40 @@ jobs:
+-          if ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/post-merge-metadata.json"; then
++          if ! rustup toolchain install 1.95.0 --profile minimal || ! cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/post-merge-metadata.json"; then
+@@ -80 +80 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -83 +83 @@ jobs:
+-        run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
++        run: cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
+@@ -86 +86 @@ jobs:
+-        run: cargo +1.94.0 fmt --all --check
++        run: cargo +1.95.0 fmt --all --check
+@@ -89 +89 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .
++        run: cargo +1.95.0 run --locked -p oteryn-architecture-check -- workspace .
+@@ -108 +108 @@ jobs:
+-            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
++            cargo +1.95.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+@@ -172 +172 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -182 +182 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -184 +184 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+@@ -187 +187 @@ jobs:
+-        run: cargo +1.94.0 build --locked --workspace --all-targets
++        run: cargo +1.95.0 build --locked --workspace --all-targets
+@@ -190 +190 @@ jobs:
+-        run: cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings
++        run: cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
+@@ -193 +193 @@ jobs:
+-        run: cargo +1.94.0 test --locked --workspace
++        run: cargo +1.95.0 test --locked --workspace
+@@ -196 +196 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
++        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness
+@@ -199 +199 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
++        run: cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke
+@@ -218 +218 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -255 +255 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal
++        run: rustup toolchain install 1.95.0 --profile minimal
+@@ -265 +265 @@ jobs:
+-          key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
++          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+@@ -267 +267 @@ jobs:
+-            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
++            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+@@ -270 +270 @@ jobs:
+-        run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
++        run: cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
+@@ -281 +281 @@ jobs:
+-            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"
++            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"
+@@ -322 +322 @@ jobs:
+-            cargo +1.94.0 test --locked --workspace --test durability_postgres
++            cargo +1.95.0 test --locked --workspace --test durability_postgres
+@@ -334 +334 @@ jobs:
+-              cargo +1.94.0 test --locked --workspace --test "$name"
++              cargo +1.95.0 test --locked --workspace --test "$name"
+@@ -371 +371 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+@@ -375 +375 @@ jobs:
+-        run: cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+@@ -379 +379 @@ jobs:
+-        run: cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
++        run: cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+@@ -397 +397 @@ jobs:
+-        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+@@ -401 +401 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
+@@ -405 +405 @@ jobs:
+-        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
++        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+@@ -427 +427 @@ jobs:
+-          rust-version: '1.94.0'
++          rust-version: '1.95.0'
+diff --git a/.github/workflows/synology-game-deploy.yml b/.github/workflows/synology-game-deploy.yml
+index 75813da3..98028e12 100644
+--- a/.github/workflows/synology-game-deploy.yml
++++ b/.github/workflows/synology-game-deploy.yml
+@@ -41,2 +41,2 @@ jobs:
+-          rustup toolchain install 1.94.0 --profile minimal
+-          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
++          rustup toolchain install 1.95.0 --profile minimal
++          cargo +1.95.0 build --release --locked -p oteryn-game-server --bins
+diff --git a/.github/workflows/worldproject-v2-full-cardinality-scale.yml b/.github/workflows/worldproject-v2-full-cardinality-scale.yml
+index 18663dc2..99f34875 100644
+--- a/.github/workflows/worldproject-v2-full-cardinality-scale.yml
++++ b/.github/workflows/worldproject-v2-full-cardinality-scale.yml
+@@ -63 +63 @@ jobs:
+-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
++          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
+@@ -68 +68 @@ jobs:
+-            cargo +1.94.0 test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
++            cargo +1.95.0 test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+@@ -73 +73 @@ jobs:
+-            /usr/bin/time -v -o "$time_report" cargo +1.94.0 run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke >"$raw" 2>>"$stderr"
++            /usr/bin/time -v -o "$time_report" cargo +1.95.0 run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke >"$raw" 2>>"$stderr"
+@@ -206 +206 @@ jobs:
+-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
++          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
+@@ -210 +210 @@ jobs:
+-            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
++            cargo +1.95.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+@@ -400 +400 @@ jobs:
+-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
++          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
+@@ -404 +404 @@ jobs:
+-            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
++            cargo +1.95.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+diff --git a/.github/workflows/wp5-s3a-real-interop.yml b/.github/workflows/wp5-s3a-real-interop.yml
+index db6d8c54..a0c3c210 100644
+--- a/.github/workflows/wp5-s3a-real-interop.yml
++++ b/.github/workflows/wp5-s3a-real-interop.yml
+@@ -81 +81 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+@@ -102,2 +102,2 @@ jobs:
+-          cargo +1.94.0 fmt --all --check
+-          cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop --no-run
++          cargo +1.95.0 fmt --all --check
++          cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop --no-run
+diff --git a/.github/workflows/wp5-s3b-composition.yml b/.github/workflows/wp5-s3b-composition.yml
+index 3a3e6025..62eb1956 100644
+--- a/.github/workflows/wp5-s3b-composition.yml
++++ b/.github/workflows/wp5-s3b-composition.yml
+@@ -72 +72 @@ jobs:
+-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
++        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+@@ -78,2 +78,2 @@ jobs:
+-          cargo +1.94.0 fmt --all --check
+-          cargo +1.94.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
++          cargo +1.95.0 fmt --all --check
++          cargo +1.95.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
+diff --git a/apps/client/installer/ci-installer.ps1 b/apps/client/installer/ci-installer.ps1
+index 416b831b..66e7cd1b 100644
+--- a/apps/client/installer/ci-installer.ps1
++++ b/apps/client/installer/ci-installer.ps1
+@@ -187 +187 @@ $env:OTERYN_RELEASE_ID = $FixtureId
+-& cargo +1.94.0 build --locked --release -p oteryn-client --target $Target
++& cargo +1.95.0 build --locked --release -p oteryn-client --target $Target
+diff --git a/tools/qualification/native_entry_room/run.sh b/tools/qualification/native_entry_room/run.sh
+index 10406be0..8e9f5610 100755
+--- a/tools/qualification/native_entry_room/run.sh
++++ b/tools/qualification/native_entry_room/run.sh
+@@ -40 +40 @@ cd "$REPO_ROOT"
+-OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo test --locked -p oteryn-game-server \
++OTERYN_NATIVE_ENTRY_TOPOLOGY_RECEIPT="$receipt" cargo +1.95.0 test --locked -p oteryn-game-server \
+diff --git a/tools/qualification/node_boot/run.sh b/tools/qualification/node_boot/run.sh
+index c15304d4..7e292b76 100755
+--- a/tools/qualification/node_boot/run.sh
++++ b/tools/qualification/node_boot/run.sh
+@@ -173,2 +173,2 @@ evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_on
+-cargo +1.94.0 build --locked -p oteryn-game-server --bins
+-cargo +1.94.0 test --locked -p oteryn-game-server --lib --no-run
++cargo +1.95.0 build --locked -p oteryn-game-server --bins
++cargo +1.95.0 test --locked -p oteryn-game-server --lib --no-run
+@@ -506 +506 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
+-    cargo +1.94.0 test --locked -p oteryn-game-server --lib \
++    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
+diff --git a/tools/qualification/spells/run.sh b/tools/qualification/spells/run.sh
+index 74477759..6cae2c88 100644
+--- a/tools/qualification/spells/run.sh
++++ b/tools/qualification/spells/run.sh
+@@ -16 +16 @@ case "$mode" in
+-    exec cargo test --locked -p oteryn-game-server --lib "${1:-spell::}" -- --nocapture
++    exec cargo +1.95.0 test --locked -p oteryn-game-server --lib "${1:-spell::}" -- --nocapture
+@@ -23 +23 @@ case "$mode" in
+-    cargo test --locked -p oteryn-game-server --lib \
++    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
+@@ -28 +28 @@ case "$mode" in
+-    exec cargo test --locked -p oteryn-synthetic-client-harness
++    exec cargo +1.95.0 test --locked -p oteryn-synthetic-client-harness
+@@ -31 +31 @@ case "$mode" in
+-    exec cargo run --locked -p oteryn-synthetic-client-harness -- --live "$@"
++    exec cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness -- --live "$@"
+diff --git a/tools/qualification/wp5_s3a/run.sh b/tools/qualification/wp5_s3a/run.sh
+index 1e136e23..f09e73b6 100755
+--- a/tools/qualification/wp5_s3a/run.sh
++++ b/tools/qualification/wp5_s3a/run.sh
+@@ -381 +381 @@ export WP5_S3A_RECOVERY_KEY_BYTE="$RECOVERY_KEY_BYTE"
+-cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
++cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
+@@ -388 +388 @@ sleep 0.2
+-cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_capacity_two_inflight_rejects_third -- --ignored --exact --nocapture
++cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_capacity_two_inflight_rejects_third -- --ignored --exact --nocapture
+@@ -590 +590 @@ trust_reconciled_revision="$(observed_revision "$WP5_SCRATCH/trust-reconciled-re
+-cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
++cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
+@@ -592 +592 @@ php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app-
+-WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
++WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
+diff --git a/tools/qualification/wp5_s3b/run.sh b/tools/qualification/wp5_s3b/run.sh
+index e7d62abe..49f37a3d 100755
+--- a/tools/qualification/wp5_s3b/run.sh
++++ b/tools/qualification/wp5_s3b/run.sh
+@@ -154 +154 @@ fi
+-cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
++cargo +1.95.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
+@@ -195 +195 @@ WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
+-  cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
++  cargo +1.95.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
+diff --git a/tools/repository/test_validate_merge_group_pg_sim.py b/tools/repository/test_validate_merge_group_pg_sim.py
+index 679b30d8..80a0886f 100644
+--- a/tools/repository/test_validate_merge_group_pg_sim.py
++++ b/tools/repository/test_validate_merge_group_pg_sim.py
+@@ -23 +23 @@ LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
+-APPROVED = "ed36f5b9dfc3c2126e7bbef450efeffec7336157"
++APPROVED = "2fe13184cae1982f7d9d605794bb98ecde760061"
+@@ -36,2 +36,2 @@ WINDOWS_REQUIRED_FRAGMENTS = (
+-    "cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
+-    "cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
++    "cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
++    "cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
+@@ -41,2 +41,2 @@ WINDOWS_REQUIRED_FRAGMENTS = (
+-    "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+-    "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
++    "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
++    "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+@@ -152,2 +152,2 @@ def _postgres_cache_consumer_regressions() -> None:
+-        assert "key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
+-        assert "            rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-\n" in block
++        assert "key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
++        assert "            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-\n" in block
+@@ -312 +312 @@ def main() -> int:
+-        "cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
++        "cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
+@@ -340 +340 @@ def main() -> int:
+-        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
++        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+@@ -350 +350 @@ def main() -> int:
+-        '              cargo +1.94.0 test --locked --workspace --test "$name"',
++        '              cargo +1.95.0 test --locked --workspace --test "$name"',
+@@ -413 +413 @@ def main() -> int:
+-    assert "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
++    assert "cargo +1.95.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
+@@ -442,3 +442,3 @@ def main() -> int:
+-        '              cargo +1.94.0 test --locked --workspace --test "$name"',
+-        "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+-        "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
++        '              cargo +1.95.0 test --locked --workspace --test "$name"',
++        "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
++        "        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+@@ -475 +475 @@ def main() -> int:
+-        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
++        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+diff --git a/tools/repository/test_validate_pr_gate_pg_sim.py b/tools/repository/test_validate_pr_gate_pg_sim.py
+index 802533ea..d221fd28 100644
+--- a/tools/repository/test_validate_pr_gate_pg_sim.py
++++ b/tools/repository/test_validate_pr_gate_pg_sim.py
+@@ -10,0 +11 @@ import os
++import re
+@@ -206 +207 @@ def test_input_platform_evidence_contract_is_mandatory() -> None:
+-    command = "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
++    command = "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
+@@ -905 +906 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
+-    invocation = '              cargo +1.94.0 test --locked --workspace --test "$name"\n'
++    invocation = '              cargo +1.95.0 test --locked --workspace --test "$name"\n'
+@@ -998,0 +1000,79 @@ def test_world_bundle_lane_is_a_fail_closed_validate_dependency() -> None:
++def assert_reachable_ci_helpers_select_installed_rust(read_text, workflows) -> set[str]:
++    """Trace repository-literal CI helper edges, including conditional modes."""
++    reference = re.compile(
++        r"(?:tools/qualification/[A-Za-z0-9_./-]+\.sh|"
++        r"apps/client/installer/[A-Za-z0-9_.-]+\.ps1)"
++    )
++    visited: set[str] = set()
++
++    def visit(path: str, caller: str) -> None:
++        if path in visited:
++            return
++        visited.add(path)
++        text = read_text(path)
++        for number, line in enumerate(text.splitlines(), 1):
++            if line.lstrip().startswith("#"):
++                continue
++            command = re.search(r"\bcargo\s+(\S+)", line)
++            if command is not None:
++                assert command.group(1) == "+1.95.0", (
++                    f"{caller} -> {path}:{number} selects {command.group(1)!r}, "
++                    "not the installed Rust 1.95.0"
++                )
++        for helper in reference.findall(text.replace("\\", "/")):
++            visit(helper, path)
++
++    for workflow in workflows:
++        for helper in reference.findall(read_text(workflow).replace("\\", "/")):
++            visit(helper, workflow)
++    return visited
++
++
++def test_active_ci_traces_helper_and_nested_helper_toolchains() -> None:
++    workflows = sorted(str(path.relative_to(ROOT))
++                       for path in (ROOT / ".github/workflows").glob("*.yml"))
++    read_text = lambda path: (ROOT / path).read_text(encoding="utf-8")
++    reached = assert_reachable_ci_helpers_select_installed_rust(read_text, workflows)
++    expected = {
++        "apps/client/installer/ci-installer.ps1",
++        "tools/qualification/native_entry_room/run.sh",
++        "tools/qualification/node_boot/run.sh",
++        "tools/qualification/spells/run.sh",
++        "tools/qualification/wp5_s3a/run.sh",
++        "tools/qualification/wp5_s3b/run.sh",
++    }
++    assert expected <= reached, f"active helper edges lost: {sorted(expected - reached)}"
++    assert "tools/qualification/login_local/run.sh" not in reached
++
++    # Mutate actual called helper bytes, rather than copying their implementation.
++    for helper in sorted(expected):
++        original = read_text(helper)
++        assert "+1.95.0" in original, helper
++        for replacement in ("+1.94.0", ""):
++            changed = original.replace("+1.95.0", replacement, 1)
++            def fixture(path: str) -> str:
++                return changed if path == helper else read_text(path)
++            try:
++                assert_reachable_ci_helpers_select_installed_rust(fixture, workflows)
++            except AssertionError as error:
++                assert helper in str(error), error
++            else:
++                raise AssertionError(f"accepted stale or implicit Rust in {helper}")
++
++    # A future nested helper must be checked even when it is not named by CI.
++    nested = "tools/qualification/toolchain-fixture/run.sh"
++    parent = "tools/qualification/spells/run.sh"
++    def nested_fixture(path: str) -> str:
++        if path == parent:
++            return read_text(path) + f"\nbash {nested}\n"
++        if path == nested:
++            return "cargo +1.94.0 test --locked -p fixture\n"
++        return read_text(path)
++    try:
++        assert_reachable_ci_helpers_select_installed_rust(nested_fixture, workflows)
++    except AssertionError as error:
++        assert parent in str(error) and nested in str(error), error
++    else:
++        raise AssertionError("accepted a stale Rust selection in a nested helper")
++
++
+@@ -1031,0 +1112 @@ def main() -> int:
++        test_active_ci_traces_helper_and_nested_helper_toolchains,
+diff --git a/tools/repository/validate_pr_gate_pg_sim.py b/tools/repository/validate_pr_gate_pg_sim.py
+index 869dc140..27f287db 100644
+--- a/tools/repository/validate_pr_gate_pg_sim.py
++++ b/tools/repository/validate_pr_gate_pg_sim.py
+@@ -23,2 +23,2 @@ EXPECTED_EVIDENCE_JOB_SHA256 = {
+-    "rust_linux": "53773732a35fc9a8948507c06e913d8c6ef6e51550be2edaa0ac4b9a1b859cb9",
+-    "rust_windows": "948119003ae6c085408376a5dbe391b071c1d0169a0362eb12bd678d580c7533",
++    "rust_linux": "1172ab6117f12a0948698d69c22d4af0accdde15ddeb820455112ea03484b570",
++    "rust_windows": "9d09c490c39d26abcc98e6953646149055142a36a700b31de43e2f418e4926bf",
+@@ -174 +174 @@ def validate() -> list[str]:
+-        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"\n',
++        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"\n',
+@@ -192 +192 @@ def validate() -> list[str]:
+-        '                cargo +1.94.0 test --locked --workspace --test "$name"\n',
++        '                cargo +1.95.0 test --locked --workspace --test "$name"\n',
+@@ -232,3 +232,3 @@ def validate() -> list[str]:
+-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+-                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+-                "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+@@ -245 +245 @@ def validate() -> list[str]:
+-                "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n",
++                "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n",
+@@ -256 +256 @@ def validate() -> list[str]:
+-                "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n",
++                "        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n",
+diff --git a/tools/repository/validate_repository_policy_core.py b/tools/repository/validate_repository_policy_core.py
+index eaca4e7b..2390487e 100644
+--- a/tools/repository/validate_repository_policy_core.py
++++ b/tools/repository/validate_repository_policy_core.py
+@@ -52,2 +52,2 @@ EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "1669ece37d96a830a756d13868428a38acd72ed7
+-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "ea55c7616536cbd1a51bbe88a952eecddd6da81976e11682ed6e04f8f927038c"
+-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
++EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a385601c7260b8ee2641e68d70e"
++EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
+@@ -56,5 +56,5 @@ EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "50d310601f3c790c871ecf3f785fe4
+-EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "3b99b013e3cd5be77b3b38d0e56e58a6b80ab540ea51060bc9d74c29bc11dc1d"
+-EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "100f9ddd5667fc70e80aa06a10023abde8f5ea8b01f165ec56250d45f0763d5b"
+-EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "74cff6521db83eb964d9e66a12bfa263d59d1a4b7ebf1619a066487abe50f43b"
+-EXPECTED_MERGE_GROUP_GATE_BLOB = "ed36f5b9dfc3c2126e7bbef450efeffec7336157"
+-EXPECTED_POST_MERGE_RUST_SHA256 = "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb"
++EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
++EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "c3bbddd196437066745b1c59731e45ded30ea906e013ca91a75665e4b65c759c"
++EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "3b5b47553a635cac8755b1d4f19fa934dd901faf9fb55a7f6ef31e1dacd819d3"
++EXPECTED_MERGE_GROUP_GATE_BLOB = "2fe13184cae1982f7d9d605794bb98ecde760061"
++EXPECTED_POST_MERGE_RUST_SHA256 = "942ddf0ec317633a20113e89a91139dc56aa75630ffce28d2203437b7443039b"
+@@ -540 +540 @@ def main() -> int:
+-                "cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
++                "cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
+@@ -545,5 +545,5 @@ def main() -> int:
+-                "cargo +1.94.0 build --locked --workspace --all-targets",
+-                "cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings",
+-                "cargo +1.94.0 test --locked --workspace",
+-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+-                "cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke",
++                "cargo +1.95.0 build --locked --workspace --all-targets",
++                "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
++                "cargo +1.95.0 test --locked --workspace",
++                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness",
++                "cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke",
+@@ -560 +560 @@ def main() -> int:
+-                'cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
++                'cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+@@ -570 +570 @@ def main() -> int:
+-                'cargo +1.94.0 test --locked --workspace --test "$name"',
++                'cargo +1.95.0 test --locked --workspace --test "$name"',
+@@ -581,2 +581,2 @@ def main() -> int:
+-                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+-                "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+@@ -587 +587 @@ def main() -> int:
+-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
++                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",

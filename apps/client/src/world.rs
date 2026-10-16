@@ -29,8 +29,9 @@ type Item = (u8, i32, Vec<DrawCell>);
 pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
 /// The sha256 of `imports/official/client-assets/15.30/manifest.json`. The manifest pins every
 /// asset file, so the client pins the manifest instead of trusting the one in the asset root.
-const MANIFEST_SHA256: &str = "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
-const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
+pub(crate) const MANIFEST_SHA256: &str =
+    "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
+pub(crate) const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
 /// The sha256 of `content/world/placements/index.json`, which pins every region file. A
 /// regenerated placement index must update it; a test compares it with the repository.
 const PLACEMENT_INDEX_SHA256: &str =
@@ -129,7 +130,7 @@ fn read_placement_index(root: &Path) -> Result<PlacementIndex, String> {
 impl World {
     /// Only the builtin cells: no map, and the player drawn as the marker glyph.
     pub fn builtin() -> Result<Self, BatchError> {
-        let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+        let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             atlas,
             tiles: HashMap::new(),
@@ -375,7 +376,7 @@ fn atlas_from_cells(cells: Vec<u8>, count: usize) -> Result<AtlasImage, BatchErr
 }
 
 /// The builtin cells, one after another: black, a yellow outline, a red square.
-fn builtin_rgba() -> Vec<u8> {
+pub(crate) fn builtin_rgba() -> Vec<u8> {
     let px = CELL_PX as usize;
     let mut rgba = Vec::with_capacity(BUILTIN_CELLS * px * px * 4);
     for cell in 0..BUILTIN_CELLS {
@@ -397,7 +398,7 @@ fn builtin_rgba() -> Vec<u8> {
 /// How far each item of a sorted stack is lifted, and the tile's elevation. An item is lifted by
 /// its own height (the appearance profile's displacement) on top of the heights below it; a top
 /// item does not stand on the stack.
-fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
+pub(crate) fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
     let mut below = 0;
     let lifts = items
         .into_iter()
@@ -415,7 +416,7 @@ fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
 
 /// An appearance's elevation as a stack height, capped like the stack itself so an oversized
 /// profile value can neither wrap negative nor overflow the sum below it.
-fn item_height(elevation: u32) -> i32 {
+pub(crate) fn item_height(elevation: u32) -> i32 {
     i32::try_from(elevation).map_or(MAX_ELEVATION, |height| height.min(MAX_ELEVATION))
 }
 
@@ -624,7 +625,14 @@ mod tests {
     #[test]
     fn a_crlf_checkout_of_the_manifest_still_matches_the_pin() -> Result<(), String> {
         let bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
-        let crlf: Vec<u8> = bytes
+        let lf: Vec<u8> = bytes
+            .iter()
+            .enumerate()
+            .filter_map(|(index, byte)| {
+                (!(*byte == b'\r' && bytes.get(index + 1) == Some(&b'\n'))).then_some(*byte)
+            })
+            .collect();
+        let crlf: Vec<u8> = lf
             .iter()
             .flat_map(|byte| match byte {
                 b'\n' => vec![b'\r', b'\n'],
