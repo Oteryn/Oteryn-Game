@@ -460,11 +460,14 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   (the first retry 1 s after the failure, doubling to at most 60 s, reset by a delivery), per
   family for the outbox families and per World for `world_online`, where a World backing off is
   retried between scans when due and is not sent by a scan before then (that scan fails, §5.1).
-  The outbox row stays queued. A watermark is not a retry: it keeps its own period (§5.1).
+  The outbox row stays queued. A watermark keeps its own period (§5.1) and is never sent sooner,
+  but after a failed one that family's next watermark also waits for the family's watermark
+  backoff (1 s doubling to 60 s, reset by a delivered watermark).
 - `400`, `401` and `409` are producer or configuration defects. The row stays queued, retries for
   that subject drop to at most once per 5 minutes, and an operator alarm counter is raised. A row
   is never dropped or rewritten to make it pass. The watermark stalls, so the family goes stale
-  and fails toward less disclosure.
+  and fails toward less disclosure. A watermark refused this way raises the alarm and that
+  family's watermarks are held for 5 minutes.
 - A snapshot that would exceed a §8 bound is refused before any exchange, and handled like `400`.
 - Publication failure never affects gameplay, admission, sessions or the change that caused it.
 
@@ -672,6 +675,9 @@ the owner decided (Q3) that the pages answer 503 until their families are fresh.
   it never holds it for long: each store pass starts at least `PUBPROJ-STORE-PASS-GAP` (50 ms)
   after the previous one ended, and a pass is skipped as "not now" while gameplay waits for the
   root. Profiles are read and cleared in batches of `PUBPROJ-PROFILE-BATCH` (32), one pass each.
+  Every subject held after a definite refusal (§6) is skipped by each read of its family. At most
+  1,024 subjects of one family are held: a family whose next read could exceed that waits until
+  enough holds end, so no held subject is sent again before its 5 minutes.
   A `world_online` watermark whose `complete_through` has not moved since the last one Platform
   accepted is not sent again.
 - **Highscores ids.** Filter 0 is all vocations and filters 1..5 are the base vocations by their

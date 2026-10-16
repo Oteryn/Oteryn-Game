@@ -71,7 +71,10 @@ pub const BACKOFF_MAX: Duration = Duration::from_secs(60);
 pub const IDLE: Duration = Duration::from_secs(1);
 /// A store call that found the database connection busy is retried after this.
 pub const STORE_RETRY: Duration = Duration::from_millis(100);
-/// Held subjects passed to one outbox read; more are simply not skipped.
+/// Held subjects of one outbox family, all passed to each of its reads. A
+/// family whose next read could leave it with more (its held subjects plus
+/// one batch) waits until enough holds end, so a held subject is never read
+/// again before its hold ends (§6).
 pub const MAX_HELD: usize = 1_024;
 /// `PUBPROJ-PROFILE-BATCH`: profiles read in one store pass, and cleared
 /// together in one more, so a backlog costs two short passes on the single
@@ -783,9 +786,20 @@ pub struct OutboxLoop {
     backoff: [Duration; 2],
     retry_at: [Duration; 2],
     held: Vec<Held>,
+    /// The `character_profile` and `highscores` watermarks' §6 state.
+    watermarks: [Gate; 2],
     turn: usize,
     highscores_source: bool,
     progress: Option<(String, u64, u64, u8)>,
+}
+
+/// §6 for one family's watermark: the earliest time it is sent again after
+/// a failure, and the backoff that set it (zero after a definite refusal,
+/// which holds it for `DEFINITE_HOLD` instead).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct Gate {
+    backoff: Duration,
+    at: Duration,
 }
 
 /// One World backing off after a transient `world_online` failure (§6).
@@ -848,9 +862,20 @@ impl OutboxLoop {
         self.held
             .iter()
             .filter(|h| h.family == family && h.until > now)
-            .take(MAX_HELD)
             .map(|h| h.subject.clone())
             .collect()
+    }
+
+    /// Whether one more read of `family`, which may refuse up to `batch`
+    /// subjects, keeps its held subjects within `MAX_HELD`, so each read
+    /// skips every one of them.
+    fn room(&self, family: Family, batch: usize, now: Duration) -> bool {
+        let held = self
+            .held
+            .iter()
+            .filter(|h| h.family == family && h.until > now)
+            .count();
+        held + batch <= MAX_HELD
     }
 }
 
@@ -961,6 +986,8 @@ pub struct Publisher<C, S, K, F> {
     /// answered `accepted` or `superseded`; an unchanged one is not sent
     /// again.
     pub last_online_watermark: Mutex<Option<(u64, i64)>>,
+    /// The `world_online` watermark's §6 state.
+    online_watermark_gate: Mutex<Gate>,
     /// When the last store pass ended (`STORE_PASS_GAP`).
     last_pass: Mutex<Option<Duration>>,
 }
@@ -998,6 +1025,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             alarms: AtomicU64::new(0),
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),
+            online_watermark_gate: Mutex::new(Gate::default()),
             last_pass: Mutex::new(None),
         }
     }
@@ -1093,6 +1121,37 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         true
     }
 
+    /// §6 for one watermark delivery result, as for its family's snapshots:
+    /// a delivery resets the backoff; `429`, `503`, a timeout or a transport
+    /// error backs the family's watermark off (1 s doubling to 60 s); a
+    /// definite refusal raises the alarm and holds it for `DEFINITE_HOLD`.
+    fn watermark_settled(
+        &self,
+        gate: &mut Gate,
+        family: Family,
+        result: &Result<Delivery, NotDelivered>,
+    ) {
+        let now = self.clock.elapsed();
+        match result {
+            Ok(_) => *gate = Gate::default(),
+            Err(not_delivered) if definite(*not_delivered) => {
+                let alarms = self.alarm();
+                eprintln!(
+                    "oteryn-game-server event=public_projections family={} operation=PublishPublicProjectionWatermarkV1 result=held alarms={alarms}",
+                    family.wire()
+                );
+                *gate = Gate {
+                    backoff: Duration::ZERO,
+                    at: now + DEFINITE_HOLD,
+                };
+            }
+            Err(_) => {
+                gate.backoff = next_backoff(gate.backoff);
+                gate.at = now + gate.backoff;
+            }
+        }
+    }
+
     /// Record one outbox delivery result: a definite refusal holds the
     /// subject for `DEFINITE_HOLD` and raises the alarm; a transient one
     /// backs the family off; a delivery resets its backoff.
@@ -1176,7 +1235,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             )?;
             Some((through, seconds(facts.now_ms)))
         };
-        let send = |family: Family, through: Option<(i64, i64)>| async move {
+        let now = self.clock.elapsed();
+        let open = state.watermarks.map(|gate| gate.at <= now);
+        let send = |family: Family, open: bool, through: Option<(i64, i64)>| async move {
+            if !open {
+                // §6: backing off or held after its last failure.
+                log(family, OPERATION, "backing_off", Duration::ZERO);
+                return None;
+            }
             let result = match through.map(|(through, observed)| {
                 encode_watermark(
                     &self.source_authority,
@@ -1199,13 +1265,24 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 class(&result),
                 self.clock.elapsed().saturating_sub(started),
             );
+            Some(result)
         };
-        let profile = send(Family::CharacterProfile, body(facts.profile_oldest_ms));
-        match facts.highscores {
-            Some(oldest) => {
-                join2(profile, send(Family::Highscores, body(oldest))).await;
+        let profile = send(
+            Family::CharacterProfile,
+            open[0],
+            body(facts.profile_oldest_ms),
+        );
+        let results = match facts.highscores {
+            Some(oldest) => join2(profile, send(Family::Highscores, open[1], body(oldest))).await,
+            None => (profile.await, None),
+        };
+        for (lane, family, result) in [
+            (0, Family::CharacterProfile, results.0),
+            (1, Family::Highscores, results.1),
+        ] {
+            if let Some(result) = result {
+                self.watermark_settled(&mut state.watermarks[lane], family, &result);
             }
-            None => profile.await,
         }
     }
 
@@ -1408,7 +1485,8 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     }
 
     /// The outbox watermarks when due, then at most one step of one family
-    /// (round robin over the families not backing off): a batch of profiles
+    /// (round robin over the families not backing off, nor waiting for a hold
+    /// to end because `MAX_HELD` of their subjects are held): a batch of profiles
     /// or one highscores subject. Returns whether the step was acknowledged
     /// and cleared whole.
     ///
@@ -1427,8 +1505,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         state.held.retain(|h| h.until > now);
         for offset in 0..2 {
             let lane = (state.turn + offset) % 2;
+            let (family, batch) = if lane == 0 {
+                (Family::CharacterProfile, PROFILE_BATCH)
+            } else {
+                (Family::Highscores, 1)
+            };
             if self.clock.elapsed() < state.retry_at[lane]
                 || (lane == 1 && !state.highscores_source)
+                || !state.room(family, batch, self.clock.elapsed())
             {
                 continue;
             }
@@ -1452,7 +1536,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
 
     /// One `world_online` scan (§5.1). Returns whether it completed in time:
     /// no World over its bound, and every changed World acknowledged within
-    /// `ONLINE_SCAN_DEADLINE` of the scan's start. Only then does its cut
+    /// `ONLINE_SCAN_DEADLINE` of the scan's cut. Only then does its cut
     /// become the watermark's `complete_through`. A World backing off (§6)
     /// is not sent before its retry is due, and fails the scan meanwhile.
     pub async fn scan(&self, state: &mut ScanLoop) -> bool {
@@ -1500,11 +1584,18 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     ) -> bool {
         const OPERATION: &str = "PublishWorldOnlineV1";
         let started = self.clock.elapsed();
-        let deadline = started + ONLINE_SCAN_DEADLINE;
-        // The cut is retried while the connection is busy, leaving the rest of
-        // the scan at least `max_transaction` for its sends.
-        let cut_until = deadline.saturating_sub(self.max_transaction);
-        let Ok(cut) = self.retrying(cut_until, || self.store.online_cut()).await else {
+        // The cut is retried while the connection is busy, until the scan
+        // could no longer finish within `ONLINE_SCAN_DEADLINE` of its start
+        // with `max_transaction` left for its sends.
+        let cut_until = (started + ONLINE_SCAN_DEADLINE).saturating_sub(self.max_transaction);
+        let cut = self
+            .retrying(cut_until, || {
+                let attempt = self.clock.elapsed();
+                let read = self.store.online_cut();
+                async move { read.await.map(|cut| (attempt, cut)) }
+            })
+            .await;
+        let Ok((attempt, cut)) = cut else {
             log(
                 Family::WorldOnline,
                 OPERATION,
@@ -1515,6 +1606,9 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         };
         let read_at = self.clock.elapsed();
         *due_at = read_at;
+        // §5.1, §8: the deadline runs from the cut, which the database took
+        // within the attempt that returned it, so never before `attempt`.
+        let deadline = attempt + ONLINE_SCAN_DEADLINE;
         if let Err(refused) = self.admit(cut.projection_epoch) {
             log(Family::WorldOnline, OPERATION, refused, Duration::ZERO);
             return false;
@@ -1725,6 +1819,21 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             log(Family::WorldOnline, OPERATION, "unchanged", Duration::ZERO);
             return;
         }
+        let gate = self
+            .online_watermark_gate
+            .lock()
+            .map(|gate| *gate)
+            .unwrap_or_default();
+        if started < gate.at {
+            // §6: backing off or held after its last failure.
+            log(
+                Family::WorldOnline,
+                OPERATION,
+                "backing_off",
+                Duration::ZERO,
+            );
+            return;
+        }
         let since =
             i64::try_from(started.saturating_sub(cut.read_at).as_millis()).unwrap_or(i64::MAX);
         let observed = seconds(cut.cut_ms.saturating_add(since));
@@ -1755,6 +1864,9 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             && let Ok(mut last) = self.last_online_watermark.lock()
         {
             *last = Some(through);
+        }
+        if let Ok(mut gate) = self.online_watermark_gate.lock() {
+            self.watermark_settled(&mut gate, Family::WorldOnline, &result);
         }
         log(
             Family::WorldOnline,

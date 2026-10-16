@@ -417,6 +417,8 @@ struct Store {
     online: Vec<OnlineState>,
     persisted: usize,
     cut_ms: i64,
+    /// `online_cut` calls that find the connection busy before one reads.
+    cut_busy: usize,
     /// Gameplay waits for the durability holder.
     demand: bool,
     /// Store passes run (every call but `gameplay_waiting`).
@@ -500,6 +502,10 @@ impl PublicStore for Shared {
     async fn online_cut(&self) -> Result<OnlineCut, ()> {
         let mut store = self.lock().unwrap();
         store.passes += 1;
+        if store.cut_busy > 0 {
+            store.cut_busy -= 1;
+            return Err(());
+        }
         let worlds = store
             .worlds
             .iter()
@@ -551,6 +557,8 @@ impl PublicStore for Shared {
 struct Sink {
     replies: Mutex<VecDeque<Option<Result<Delivery, NotDelivered>>>>,
     sent: Mutex<Vec<(Operation, String)>>,
+    /// Each exchange advances this clock by this much before it answers.
+    latency: Mutex<Option<(Clock, Duration)>>,
 }
 
 impl Sink {
@@ -558,6 +566,7 @@ impl Sink {
         Self {
             replies: Mutex::new(replies.into()),
             sent: Mutex::default(),
+            latency: Mutex::default(),
         }
     }
     fn sent(&self) -> Vec<(Operation, String)> {
@@ -571,6 +580,9 @@ impl Sink {
 impl PublicSink for Sink {
     async fn send(&self, operation: Operation, body: &str) -> Result<Delivery, NotDelivered> {
         self.sent.lock().unwrap().push((operation, body.into()));
+        if let Some((clock, latency)) = self.latency.lock().unwrap().clone() {
+            *clock.0.lock().unwrap() += latency;
+        }
         let reply = self
             .replies
             .lock()
@@ -699,6 +711,91 @@ fn a_definite_refusal_holds_the_subject_and_raises_the_alarm() {
     state.watermark_due = p.clock.elapsed() + Duration::from_secs(3_600);
     block_on(p.outbox_step(&mut state));
     assert_eq!(p.sink.operations().len(), 2);
+}
+
+#[test]
+fn a_full_hold_set_waits_for_a_hold_to_end_and_never_reselects_a_held_subject() {
+    let store = Shared::default();
+    store.lock().unwrap().profiles = (0..MAX_HELD + 40).map(numbered).collect();
+    let refused = Some(Err(NotDelivered::Malformed));
+    let p = publisher(&store, vec![refused; MAX_HELD + PROFILE_BATCH]);
+    let mut state = quiet();
+    for _ in 0..MAX_HELD / PROFILE_BATCH + 3 {
+        block_on(p.outbox_step(&mut state));
+    }
+    // Refused batches fill the hold set; every held subject is skipped by
+    // every read, so none is sent twice.
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), MAX_HELD);
+    assert_eq!(
+        sent.iter()
+            .map(|(_, body)| body)
+            .collect::<HashSet<_>>()
+            .len(),
+        MAX_HELD
+    );
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), MAX_HELD as u64);
+    assert_eq!(
+        store.lock().unwrap().held_seen.last().unwrap().len(),
+        MAX_HELD - PROFILE_BATCH
+    );
+    // Full: the family waits without reading the store.
+    let passes = store.lock().unwrap().passes;
+    assert!(!block_on(p.outbox_step(&mut state)));
+    assert_eq!(store.lock().unwrap().passes, passes);
+    // The first batch's holds end: those subjects are retried, once.
+    *p.clock.0.lock().unwrap() = DEFINITE_HOLD;
+    state.watermark_started = p.clock.elapsed();
+    state.watermark_due = p.clock.elapsed() + Duration::from_secs(3_600);
+    block_on(p.outbox_step(&mut state));
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), MAX_HELD + PROFILE_BATCH);
+    assert_eq!(sent[MAX_HELD..], sent[..PROFILE_BATCH]);
+    assert_eq!(
+        store.lock().unwrap().held_seen.last().unwrap().len(),
+        MAX_HELD - PROFILE_BATCH
+    );
+}
+
+#[test]
+fn a_failed_outbox_watermark_backs_off_or_is_held() {
+    let store = Shared::default();
+    let unavailable = Some(Err(NotDelivered::Unavailable));
+    let p = publisher(
+        &store,
+        vec![
+            unavailable,
+            unavailable,
+            unavailable,
+            OK,
+            Some(Err(NotDelivered::Conflict)),
+            OK,
+        ],
+    );
+    let mut state = OutboxLoop::default();
+    let at = |p: &TestPublisher, state: &mut OutboxLoop, seconds: u64| {
+        *p.clock.0.lock().unwrap() = Duration::from_secs(seconds);
+        block_on(p.outbox_step(state));
+        p.sink.operations().len()
+    };
+    // Backoff 1 s, then 2 s: the 3 s period still decides.
+    assert_eq!(at(&p, &mut state, 0), 1);
+    assert_eq!(state.watermarks[0].backoff, BACKOFF_MIN);
+    assert_eq!(at(&p, &mut state, 3), 2);
+    assert_eq!(at(&p, &mut state, 6), 3);
+    // Backoff 4 s from 6 s: the watermark due at 9 s waits until 10 s.
+    assert_eq!(state.watermarks[0].at, Duration::from_secs(10));
+    assert_eq!(at(&p, &mut state, 9), 3);
+    assert_eq!(at(&p, &mut state, 12), 4);
+    assert_eq!(state.watermarks[0], Gate::default());
+    // A definite refusal: the alarm, and no watermark for `DEFINITE_HOLD`.
+    assert_eq!(at(&p, &mut state, 15), 5);
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert_eq!(at(&p, &mut state, 18), 5);
+    assert_eq!(at(&p, &mut state, 15 + 297), 5);
+    assert_eq!(at(&p, &mut state, 15 + 300), 6);
+    assert_eq!(state.watermarks[0], Gate::default());
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
 }
 
 #[test]
@@ -1029,6 +1126,56 @@ fn a_scan_past_its_deadline_fails() {
     // The acknowledged World is recorded; the other is resent next scan.
     let online = store.lock().unwrap().online.clone();
     assert_eq!(online.iter().filter(|s| s.acked).count(), 1);
+}
+
+#[test]
+fn the_online_scan_deadline_runs_from_the_cut() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    // The connection is busy for the first ten cut reads (100 ms apart).
+    store.lock().unwrap().cut_busy = 10;
+    let p = publisher(&store, vec![OK]);
+    *p.sink.latency.lock().unwrap() = Some((p.clock.clone(), Duration::from_millis(4_500)));
+    assert!(block_on(p.scan(&mut ScanLoop::default())));
+    let cut = p.last_cut.lock().unwrap().unwrap();
+    assert_eq!(cut.read_at, Duration::from_secs(1));
+    // Acknowledged more than 5 s after the scan started, within 5 s of the cut.
+    assert!(p.clock.elapsed() > ONLINE_SCAN_DEADLINE);
+    assert!(p.clock.elapsed() <= cut.read_at + ONLINE_SCAN_DEADLINE);
+}
+
+#[test]
+fn a_failed_online_watermark_backs_off_or_is_held() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    let p = publisher(
+        &store,
+        vec![
+            OK,
+            Some(Err(NotDelivered::Unavailable)),
+            Some(Err(NotDelivered::Unauthenticated)),
+            OK,
+        ],
+    );
+    assert!(block_on(p.scan(&mut ScanLoop::default())));
+    let start = p.clock.elapsed();
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 2);
+    // Backing off for 1 s.
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 2);
+    *p.clock.0.lock().unwrap() = start + BACKOFF_MIN;
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 3);
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    // Held for `DEFINITE_HOLD` after the refusal.
+    *p.clock.0.lock().unwrap() = start + DEFINITE_HOLD;
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 3);
+    *p.clock.0.lock().unwrap() = start + BACKOFF_MIN + DEFINITE_HOLD;
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 4);
+    assert_eq!(*p.online_watermark_gate.lock().unwrap(), Gate::default());
 }
 
 #[test]
