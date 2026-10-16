@@ -364,3 +364,56 @@ Retained native output SHA256s: production `43a07b03b6371ee2aa71b48270f32609df5b
 Durable actual evidence: `reviews/pvp-pc/actual-proof-v7/actual-final-summary-v7.json`, SHA256 `f624e2f3b558d7f929de8274b69c398194394bd3b703dcb037a0c50f9bdb097a`; complete 140-file proof pack SHA256 `b9f647635b746f0760608244ce97fa641c1b4e8ba9807e4ac02ea1b2bbd50edc`. All failed intermediate attempts remain retained: unavailable `tokio::select!` in the test fixture was repaired with the existing borrowed-future timeout API; a generated dispatcher placement was repaired without changing owned source bodies; transitive library discovery was repaired with the detached canonical-name copy. Metadata/codegen successes were reused with their original provenance rather than relabelled as new executions.
 
 This is a qualified readmission deadline-restoration component. Actor/caller wiring, full PvP activation, fresh-harm writer composition, skull/ledger restoration and pending PVP1b integration remain separate owners and gates. No full workspace/Cargo-test or complete governance PASS is inferred from this selected native execution; the sparse native snapshot lacks the complete governance input set. The original aggression code and existing guarded reader remain unchanged.
+
+
+## Default library unit lint repair — qualification pending (2026-10-16)
+
+Actual CI job `116931881038` rejected three `clippy::expect_used` assertions in
+`readmission_explicit_owner_to_simulation_axis_and_elapsed_data` (`lock.rs` lines
+299, 302 and 304 at published `087f98040edbcfe8ff820e1fe2117a09e1ab416f`).
+The retained CI log reports the Rust 1.95 Clippy documentation URL and a library-test
+compile failure with three errors. The earlier selected-wrapper strict result did
+not qualify the default library unit lint context; its successful scope remains
+as recorded above.
+
+This repair replaces only those three assertions with equivalent Result matching:
+`Ok(Some(9000))`, `Ok(None)` and `Ok(Some(7000))`, with all error results still failing.
+No error trait, production helper, lint allowance, fixture or PostgreSQL body changes.
+The two existing pure overflow tests remain literal. The prior native PostgreSQL
+execution retains its original source and artifact provenance; this test-only repair
+does not claim another PostgreSQL execution.
+
+Ordinary Cargo native library-unit strict Clippy and the three existing conversion
+unit tests are pending actual execution on the explicitly recorded local toolchain.
+Local qualification will not itself establish a new CI Rust 1.95 result. The original
+40,286-byte task-card prefix is preserved exactly.
+
+## Default library unit lint repair — executed qualification (2026-10-16)
+
+The three `expect()` assertions reported by CI job `116931881038` are replaced by
+Result matching with the same required successful values and error rejection.
+Only those three assertion expressions changed in Rust. The entire production
+prefix, both overflow test bodies and the complete PostgreSQL wrapper remain
+byte-for-byte equal to published `087f98040edbcfe8ff820e1fe2117a09e1ab416f`.
+
+The local qualification uses ordinary Cargo and Rust/Clippy 1.94.0 against the full
+native 18,809-file task-head context plus the three frozen owned files. There are
+no module mounts, custom drivers, signature transforms or added lint allowances.
+The earlier selected-wrapper strict result did not cover this default library-unit
+lint context. The original CI Rust 1.95 `--all-targets` failure remains retained;
+this narrower local run does not establish a new CI 1.95 or all-targets result.
+
+Executed results on source checkpoint `ce5189b2011f38c140314aee87d77d2eac4b3d9b467209efd2ead25d5ff4d537`:
+
+- `cargo clippy --locked --offline -p oteryn-game-server --lib --profile test --no-deps --jobs 4 --message-format=json -vv -- -D warnings`: exit 0, zero compiler errors. The actual single primary invocation contains `--test` and the unchanged manifest denials, including `clippy::expect_used`; Cargo reports `profile.test=true`, `fresh=false` and debug info disabled. No configured fallback or lint suppression was added.
+- `cargo test --locked --offline -p oteryn-game-server --lib readmission_conversion_tests:: --jobs 4 --message-format=json -vv -- --test-threads=1`: native unit codegen and execution exit 0. **3 passed, 0 failed, 0 ignored; 3,179 filtered out.** The actual module is `combat_pvp::lock::readmission_conversion_tests`; all three existing test names are retained. This is focused execution, not a complete unit-suite run.
+- All 18,809 compiled-source hashes and all three owned source inputs remained equal before and after execution. Earlier qualified production, selected-wrapper and native-driver outputs retained their full hashes and inode metadata; their historical producers were not relabelled.
+
+The ordinary Cargo native unit ELF is 376,707,736 bytes, SHA256 `944a53933afebc3076203fe2c04cdcf050f472c004eac4f01716d06d5c63b8b9`. Its verified persistent lossless gzip is 59,296,557 bytes, SHA256 `5374706d57572bb9f4cba65cf25226e8eddeed3a1090b017fa4270c34ad880ca`; full decompression matched the original SHA and size. Raw RAM output remains retained. This execution used the explicitly activated RAM-target budget; earlier disk-floor stops remain distinct failures before Cargo, with no success inferred from them.
+
+Complete raw actual evidence: `reviews/pvp-ci3-pc/actual-native-unit-proof-v1.json.gz`, SHA256 `4282e19cb053b1ca43b867ffed165841bc4ef739dd5beecbedaafc6987e2ff0c`, containing 47 losslessly reconstructed proof files. Source equivalence review: `peer-reviews/pvp-ci3-source-equivalence-ground-review.json`, SHA256 `b5c0104b45735a9d1546dfb821e68f289209cae0ea938b97cc9c2327fb47e636`. The 41,643-byte source-checkpoint-1 card prefix remains exact; this final append changes documentation only.
+
+The previous 12-case readmission qualification retains its original source and
+artifact provenance. PostgreSQL was not rerun for this assertion-only repair; the
+production restoration code and all PostgreSQL bodies are literal. Actor/caller
+installation and the full PvP activation gates remain unchanged.

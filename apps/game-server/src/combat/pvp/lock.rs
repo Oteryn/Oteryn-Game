@@ -295,15 +295,15 @@ mod readmission_conversion_tests {
     #[test]
     fn readmission_explicit_owner_to_simulation_axis_and_elapsed_data() {
         let now = OwnerTimeMicros::from_micros(7_000);
-        assert_eq!(
-            readmission_deadline(now, Some(2)).expect("fits"),
-            Some(SemanticTimeMicros::from_micros(9_000))
-        );
-        assert_eq!(readmission_deadline(now, None).expect("unset"), None);
-        assert_eq!(
-            readmission_deadline(now, Some(0)).expect("elapsed"),
-            Some(SemanticTimeMicros::from_micros(7_000))
-        );
+        assert!(matches!(
+            readmission_deadline(now, Some(2)),
+            Ok(Some(until)) if until == SemanticTimeMicros::from_micros(9_000)
+        ));
+        assert!(matches!(readmission_deadline(now, None), Ok(None)));
+        assert!(matches!(
+            readmission_deadline(now, Some(0)),
+            Ok(Some(until)) if until == SemanticTimeMicros::from_micros(7_000)
+        ));
     }
 
     #[test]
