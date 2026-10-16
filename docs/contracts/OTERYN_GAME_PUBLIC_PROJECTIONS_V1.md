@@ -1,9 +1,15 @@
 # Oteryn Game Public Projections v1
 
-- Status: **CANDIDATE**, revision 1 (GAME-PUBLIC-PROJ-0), 2026-10-08. It authorizes no runtime,
-  migration, Platform, Atlas or production work. Acceptance needs exact-head validation,
-  independent review (protocol, privacy, persistence) and owner or architect acceptance relayed by
-  the control plane. Each implementing child needs its own #1622 allocation.
+- Status: **ACCEPTED** for `highscores`, `character_profile`, `world_online` and the
+  liveness watermark (§5.1), revision 2, 2026-10-15, for `testing` and `preproduction`: owner
+  decision Q1 "accept and build" (Oteryn/Oteryn-Platform#1645, relayed by the control plane
+  for GAME-PUBLIC-PROJ-PRODUCER-1), effective when the producer PR merges after its independent
+  architect review (protocol, privacy, persistence), which the control plane runs. Revision 2
+  fixes the vocation ids (§4.0), adds `guild_visible` with its shared wire fixtures
+  (§4.2) and its revision trigger (§5), and records the owner decisions
+  Q2 to Q4 (§12). `character_deaths`, `guild` and `house` stay **CANDIDATE** (revision 1,
+  GAME-PUBLIC-PROJ-0, 2026-10-08) and authorize no runtime work until their own acceptance.
+  Each implementing child needs its own #1622 allocation.
 - Contract ID: `oteryn-game-public-projections-v1`
 - Coordination: #1622 (P5); Oteryn/Oteryn-Platform#1476 (Platform mirror; P8 DECANARY-PUBLIC-1
   consumes this contract).
@@ -164,8 +170,22 @@ Encoding rules:
   form (no sign, no leading zero, no exponent), in the ranges given per family. Levels, ranks,
   values, gold amounts and times are canonical decimal uint64 strings, with `0` allowed only where
   stated.
-- **Vocation.** `vocation` is the build-state vocation id (A13, as stored in HIGHSCORES-0 rows),
-  0..255. Platform maps it for display. An id it does not know is shown as unknown and never
+- **Vocation.** `vocation` is Game's reference base-vocation id (`ReferenceBaseVocation`,
+  `apps/game-server/src/content/reference_playable.rs`), 1..6. A promoted vocation counts as its
+  base. Game maps the A13 build-state key (`game_character_build_state.vocation`; a character
+  without a build row is `none`) as follows, and publishes nothing it cannot map (§4.1, §4.2,
+  §4.6):
+
+  | Id | Base vocation | A13 keys |
+  |---|---|---|
+  | 1 | Druid | `druid`, `elder_druid` |
+  | 2 | Knight | `knight`, `elite_knight` |
+  | 3 | Monk | `monk`, `exalted_monk` |
+  | 4 | Paladin | `paladin`, `royal_paladin` |
+  | 5 | Sorcerer | `sorcerer`, `master_sorcerer` |
+  | 6 | None | `none` |
+
+  Platform maps the id for display. An id it does not know is shown as unknown and never
   refuses the snapshot.
 - **Content.** The content of a snapshot is its subject members plus its body. For
   `highscores`, `computed_at` is content as well, so an equal pair with a different
@@ -187,7 +207,8 @@ different content, `429` rate limited, `503` unavailable.
 
 - Subject: `world_id`, `category` 1..11 (the HIGHSCORES-0 §3 ids that have a Game source; 13
   Loyalty is Platform's and never published by Game), and `filter` 0..5 (0 = all, otherwise a base
-  vocation, HIGHSCORES-0 §5).
+  vocation by its §4.0 id 1..5, HIGHSCORES-0 §5). Every row of a base-vocation filter carries
+  that `vocation`; Game refuses a list that does not.
 - `computed_at` is the snapshot's `computed_at`. `rows` are the snapshot's rows for that filter in
   `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). `rank` is the competition rank (1, 2, 2,
   4). `character_id` is the row's character, at most once per snapshot. It is an internal join
@@ -211,9 +232,15 @@ different content, `429` rate limited, `503` unavailable.
 ### 4.2 `character_profile`
 
 ```json
-{"contract_version":1,"operation":"PublishCharacterProfileV1","source_authority":"oteryn:game:primary","character_id":"01934f10-7c04-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"9","source_observed_at":"1790000000","profile":[{"world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","guild":[{"guild_id":"01934f10-7c06-7001-805b-3b1122334401","rank_level":3}]}]}
+{"contract_version":1,"operation":"PublishCharacterProfileV1","source_authority":"oteryn:game:primary","character_id":"01934f10-7c04-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"9","source_observed_at":"1790000000","profile":[{"world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","guild_visible":true,"guild":[{"guild_id":"01934f10-7c06-7001-805b-3b1122334401","rank_level":3}]}]}
 ```
 
+- **Shared wire fixtures.** The exact request bodies, with no trailing newline, are
+  `docs/contracts/fixtures/public-projections/character_profile_v1.json` (the example above) and
+  `docs/contracts/fixtures/public-projections/character_profile_guild_hidden_v1.json` (the same
+  character after hiding its guild: `guild_visible` is `false`, the guild is still sent, and the
+  revision has advanced). The producer's tests encode both byte for byte; the Platform consumer
+  mirrors both files and parses them with its exact member set.
 - `profile` has 0 or 1 entries. It has 1 entry only for a live Character root (`lifecycle = 1`);
   a character without a vocation is published with its "none" vocation id. Every other state
   publishes `[]`: deleted, pending deletion,
@@ -221,6 +248,13 @@ different content, `429` rate limited, `503` unavailable.
   any state the publisher cannot classify.
 - `guild` has 0 or 1 entries: the GUILD-0 membership (`guild_id`, rank level 1..20). Guild and rank
   names come from the `guild` family, so a rename of either never touches profiles.
+- `guild_visible` is a required JSON boolean in every entry: the character's own setting for
+  showing its guild membership on its public profile. It fails closed: when Game cannot read the
+  setting, or no Game owner records one, it is `false`. The `guild` member is sent either way.
+  While `guild_visible` is `false`, the membership is not public: Platform stores it but never
+  shows it on the profile or derives anything public from it, and shows the profile as having no
+  guild. A change of the setting is a visibility decision and advances the profile revision
+  (§5). No Game owner records the setting yet, so revision 2 producers always send `false`.
 - **Deliberately absent:** `AccountId`, other characters of the account, account status,
   achievement points, last login or logout time, online state (only `world_online` carries
   presence), `ChannelId`, position, sex, comments, house (the `house` family names its owner),
@@ -331,7 +365,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 | Family | Revision advanced by |
 |---|---|
 | `highscores` | each committed HIGHSCORES-0 job run of (World, category): one revision for all six filters. A visibility removal does not touch it; the profile join removes the row (§4.1) |
-| `character_profile` | create; rename; lifecycle change; world transfer; level or vocation change; guild join, leave or rank change; any visibility decision |
+| `character_profile` | create; rename; lifecycle change; world transfer; level or vocation change; guild join, leave or rank change; a change of the character's `guild_visible` setting (§4.2); any other visibility decision |
 | `character_deaths` | each committed death of the character; any change that flips its profile between `[]` and present |
 | `guild` | any change to guild state, name, ranks, roster or a member's rank; a member's rename; any change that flips a member's profile between `[]` and present |
 | `house` | any property state or revision change; any bid placement, raise or lowering that changes `current_bid` or `auction_ends_at`; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
@@ -423,7 +457,9 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 
 - No privacy-preference contract exists yet. Until one is accepted, every online character of the
   World whose profile would be present (§4.6) qualifies for `world_online`. This is the baseline's maximum for non-contacts, and GUILD-0
-  §4.2 already shows a coarse online flag to the whole World. It is a candidate default (U-PP2).
+  §4.2 already shows a coarse online flag to the whole World. **Owner decision Q4 (U-PP2),
+  2026-10-15:** coarse online presence (name, level, vocation) is public by default for
+  `testing` and `preproduction`.
 - When a privacy-preference contract adds a presence setting, a character whose setting hides
   presence, or whose setting cannot be read, is left out of `world_online`.
 - **Revocation bound.** A revocation is any committed change that removes a character from
@@ -487,7 +523,7 @@ the implementation, as LCFA's were.
 | Limit | Value | Basis |
 |---|---|---|
 | `PUBPROJ-HS-REQUEST-BYTES` | 262,144 | 1,000 rows × at most 212 bytes + envelope |
-| `PUBPROJ-PROFILE-REQUEST-BYTES` | 2,048 | at most 650 bytes in total |
+| `PUBPROJ-PROFILE-REQUEST-BYTES` | 2,048 | at most 680 bytes in total |
 | `PUBPROJ-DEATHS` | 20 deaths | most recent first |
 | `PUBPROJ-KILLERS` | 16 names per death | final blow first |
 | `PUBPROJ-DEATHS-REQUEST-BYTES` | 32,768 | 20 deaths × at most 1,156 bytes + envelope |
@@ -540,8 +576,8 @@ the implementation, as LCFA's were.
   name reused by another character never shows the old row under it; a bid that changes
   `current_bid` or `auction_ends_at` advances the house revision; an online character whose
   profile is `[]` (for example after a sanction) is not listed in `world_online`; a scan with 16
-  changed Worlds whose exchanges all take 4 s is accepted within the deadline, because the
-  Worlds are published concurrently.
+  changed Worlds whose exchanges all take just under the 3 s exchange bound (§3) is accepted
+  within the deadline, because the Worlds are published concurrently.
 - Name handoff: a character renamed from `Aldric` while another character takes `Aldric` never
   has both profiles resolve; the new holder is not published before the rename is `accepted` or
   `superseded`, and if both reach Platform the name answers as unknown until one holder remains;
@@ -554,7 +590,7 @@ the implementation, as LCFA's were.
 | ID | Testing and preproduction (proposed) | Release entry |
 |---|---|---|
 | U-PP1 | S = 30 s; no stale display window (D607) | open: measured S |
-| U-PP2 | coarse online is public by default (§7.2) | open: the privacy-preference contract and its default |
+| U-PP2 | coarse online is public by default (§7.2; owner decision Q4, 2026-10-15) | open: the privacy-preference contract and its default |
 | U-PP3 | no creature or environment killers | open: a durable killer-cause field (DEATH-0 amendment), then a new `contract_version` |
 | U-PP4 | public-projection identity from the test stack's development CA, one per publisher host | open: Platform PKI and the production host list |
 | U-PP5 | the producer child chooses whether the epoch row is shared with LCFA; `F_pub` is separate | open: the production restore runbook |
@@ -563,11 +599,64 @@ the implementation, as LCFA's were.
 
 ## 11. Implementation status
 
-Nothing is implemented. Producer children (Game) and the Platform consumer (P8 DECANARY-PUBLIC-1,
-Oteryn/Oteryn-Platform#1476) each need their own allocation after acceptance. Until the consumer
-is enabled in a stack, Platform's current public pages are unchanged by this contract.
+GAME-PUBLIC-PROJ-PRODUCER-1 implements the Game producer of `highscores`, `character_profile`,
+`world_online` and the watermark. It is off unless `[platform.public_projections] enabled = true`.
+The Platform consumer is P8 DECANARY-PUBLIC-1 (Oteryn/Oteryn-Platform#1476, #1645). Until the
+consumer is enabled in a stack, Platform's current public pages are unchanged by this contract;
+the owner decided (Q3) that the pages answer 503 until their families are fresh.
+
+- **Store** (migration `0088_public_projections`): the public epoch row (separate from LCFA's,
+  U-PP5) with its own fence file `F_pub`; per-Character profile revisions and outbox; per-(World,
+  category) highscores revisions and outbox; the publisher's own `world_online` snapshot rows
+  (revision, content digest, acknowledgement). Definer triggers on the Character root,
+  `game_character_progression_state.level` and `game_character_build_state.vocation` advance the
+  profile revision in the writing transaction. Guards keep the epoch rising, revisions advancing
+  by one, and no projection table truncatable. Only the operator's resync function raises the
+  epoch.
+  The future owner of the `guild_visible` setting attaches a definer trigger on its own row
+  that touches the profile revision in the writing transaction, as the triggers above do (§5).
+- **Highscores interface for HS-1** (HIGHSCORES-0's snapshot job, on RANK-1). The producer reads
+  `game_world_highscore_heads(world_id, category, current_snapshot_id)`,
+  `game_world_highscore_snapshots(snapshot_id, world_id, category, computed_at_ms)` and
+  `game_world_highscore_rows(snapshot_id, filter, position, rank, character_id, name, vocation,
+  level, value_primary)`, where `vocation` holds the A13 key or its §4.0 id and each base-vocation
+  list holds only that vocation. HS-1 must, in its own migration: attach
+  `AFTER INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION
+  game_public_highscores_snapshot_trigger()`, so a job run and its revision commit together; and
+  grant `SELECT` on the three tables to the runtime role. Until those tables exist the producer
+  sends no `highscores` publication or watermark, so the family stays stale and its pages answer
+  503.
+- **Name handoff** (§7.3): a root deletion or rename records the vacated name key in the profile
+  outbox; the publisher holds any profile that now carries that key until the vacating row is
+  acknowledged.
+- **Transport.** A dedicated client certificate and key (`[platform.public_projections]`),
+  distinct from every other Game identity. Each exchange uses a new connection
+  (`Connection: close`), so every `world_online` exchange is the cold case of §3 and is bounded at
+  3 s; the other families use the same 3 s bound, inside the 5 s of §3.
+- **Publisher.** One outbox loop sends profiles and highscores (all six filters of a revision
+  encoded before the first exchange; each acknowledged filter is kept, and the outbox row clears
+  when all six are acknowledged). A scan loop reads one committed cut of every World every 10 s
+  and sends the changed Worlds in waves of 16. Watermarks go every 3 s, per family, only for
+  families with a source. The publisher checks its database privileges at start and refuses to
+  run without them; it logs only family, operation, result class and timings (§7.4).
+- **Operator resync:** `oteryn-game-ops public-projection resync --family
+  all|highscores|character_profile|world_online --raise-epoch true|false` with the
+  `[public_projection]` ops section; a raise is allowed only with `--family all`.
 
 ## 12. Acceptance
 
-Pending. Acceptance freezes revision 1 as the v1 wire for `testing` and `preproduction`. After
-acceptance, any change to a member, path, bound or response is a new `contract_version`.
+Owner decisions relayed by the control plane on 2026-10-15 (Oteryn/Oteryn-Platform#1645):
+
+- **Q1:** accept this contract and build the producer. Accepted families: `highscores`,
+  `character_profile`, `world_online` and the watermark, frozen as revision 2 for `testing` and
+  `preproduction`, effective when the producer PR merges after its independent architect review.
+- **Q2 (a):** `character_profile` is built in the same slice, and highscores rows join to it
+  (§4.1, D607).
+- **Q3:** the Platform pages answer 503 until their families are fresh.
+- **Q4 (U-PP2):** coarse online presence (name, level, vocation) is public by default (§7.2).
+- Control-plane rulings for revision 2: vocation ids follow Game's reference base-vocation enum
+  (§4.0), which the Platform consumer uses; `character_profile` carries the required, fail-closed
+  `guild_visible` (§4.2).
+
+`character_deaths`, `guild` and `house` remain candidates. After acceptance, any change to a
+member, path, bound or response of an accepted family is a new `contract_version`.

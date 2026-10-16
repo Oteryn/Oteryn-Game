@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-14T00:00:00+00:00",
+  "updated_at": "2026-10-15T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -11495,6 +11495,221 @@
         "apps/game-server/src/gameplay_transport/logout.rs the per-session outstanding logout guard"
       ],
       "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.6 and \u00a72.2. The oteryn-protocol-oteryn test logout::tests::the_registries_bind_the_logout_constants binds this row to the constant. Registered by OTV2-20261004-logout-wire-1."
+    },
+    {
+      "id": "PUBPROJ-HS-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishWorldHighscoresV1 request body (one filter)",
+      "unit": "bytes",
+      "hard_maximum": 262144,
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from grammar-checked fields (at most 1,000 rows, HIGHSCORES0-RL-02, of at most 212 bytes plus the envelope); the store reads at most 6,001 rows per snapshot (one more than six full filters) and every filter is encoded and length-checked before the first exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 1,000 worst-case rows encode within 262144 bytes",
+        "the same test: 1,001 rows are refused before any exchange"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-PROFILE-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishCharacterProfileV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one profile entry with one guild membership and a 64-byte name: at most 680 bytes in total; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case profile encodes within 2048 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Characters in one PublishWorldOnlineV1 snapshot",
+      "unit": "entries",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The scan reads at most 4,097 online rows per World (one more than the bound) in one statement; a World above 4,096 publishes nothing and its feed goes stale, never a truncated list. A wire bound, not a capacity.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 worst-case entries encode within PUBPROJ-ONLINE-REQUEST-BYTES; 4,097 are refused",
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a World over the bound is not published and the others are"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-REQUEST-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishWorldOnlineV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 524288,
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Encoded from at most 4,096 grammar-checked entries of at most 112 bytes plus the envelope; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 entries with 64-byte names encode within 524288 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-INTERVAL",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Fixed start interval of world_online scans",
+      "unit": "seconds",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One scan per interval reads one cut of every World; a scan never overlaps the next. No per-request allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: scans advance a World's revision only when its list changes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-WORLDS",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Changed Worlds published concurrently in one world_online scan",
+      "unit": "worlds",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most 16 exchanges in flight per scan, one per World; more changed Worlds are sent in further waves of 16 within the same scan deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: changed Worlds are sent one publication per World"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-ONLINE-SCAN-DEADLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "From a world_online scan's cut to the last changed World's acknowledgement",
+      "unit": "seconds",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 5,
+        "maximum": 5
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "A scan that does not finish within 5 s does not advance complete_through; each world_online exchange is bounded at 3 s on a cold connection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a scan past its deadline leaves the watermark at the last good cut"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-WATERMARK-BYTES",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Encoded PublishPublicProjectionWatermarkV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Fixed member set of bounded decimal strings, a family name and a source authority of at most 128 bytes; the length is checked before the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case watermark encodes within 512 bytes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-WATERMARK-GAP",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Maximum gap between watermarks of one family",
+      "unit": "seconds",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "The publisher sends each family's watermark every 3 s while it has a source; no per-request allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: watermarks are sent only for families with a source"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Publications in flight per family per publisher (world_online: per World, up to PUBPROJ-ONLINE-WORLDS)",
+      "unit": "publications",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The outbox loop sends one snapshot at a time per family; a held subject (definite refusal) waits 300 s before its next attempt.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: a definite refusal holds the subject and raises the alarm; a transient failure backs off from 1 s to 60 s"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs"
+      ],
+      "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
     }
   ]
 }
