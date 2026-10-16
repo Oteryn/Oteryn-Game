@@ -377,8 +377,16 @@ fn frozen_native_item_and_provenance_mutations_share_the_content_fence() -> Test
             "DELETE FROM game_item_house_reclaim_provenance",
         ] {
             let result = sqlx::query(statement).execute(&h.pool).await;
+            let observed = match &result {
+                Ok(done) => format!("accepted; rows_affected={}", done.rows_affected()),
+                Err(sqlx::Error::Database(error)) => {
+                    format!("SQLSTATE={:?}; message={}", error.code(), error.message())
+                }
+                Err(error) => format!("non-database SQLx error: {error}"),
+            };
             assert!(
-                matches!(result, Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("55P03"))
+                matches!(result, Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("55P03")),
+                "native mutation must refuse the held ownership anchor with55P03: {statement}; {observed}"
             );
         }
         owner.rollback().await?;
