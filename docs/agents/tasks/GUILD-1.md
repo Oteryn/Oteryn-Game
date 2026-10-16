@@ -979,3 +979,34 @@ grant. Production registration/scheduler/security/public events/retention,
 remaining Premium/rank decisions and real terminal composition qualification
 remain CP gates. D1098 resolves controller ownership; it does not complete
 the whole task or authorize ready/merge/production publication.
+
+### 2026-10-16 — exact native qualification after D1098 repairs
+
+Guild Rust candidate ea8690495ba0d52a305d8c8174c93d7dece70910
+passed98/98 selected bodies: all prior92 plus the six new terminal-boundary
+cases, exactly one body per invocation, zero failed/ignored. PostgreSQL cases
+used the genuine17.6 route (server_version_num170006). Evidence is retained
+separately in evidence/guild-terminal-sql-repair; independent execution review
+is D1102-execution-review.md. Retained native ELF SHA256:
+5c0f35c7e979023f5a8d6d8250a47e5da15b96af858d1a3b0da2bb0ad3f3b7aa;
+exact compiler-source archive SHA256:
+e91d07f37751afc1e1b72d529c795c36f08f7b64c136e9c6d6d8461dd34455f4.
+This supersedes the earlier authored-only qualification statements for these
+six bodies; earlier failing generations remain retained as separate evidence.
+
+The repairs use the existing concurrent native fixture join and parenthesize
+the two PL/pgSQL IF/CASE expressions without weakening their predicates.
+Qualified guild.rs SHA256 is
+33cfa4d52600ecbb4f08bc39b47d0c6f0a9754713b19090d110cfdff091d362b;
+the corrected guard SQL SHA256 is
+387ba1c48521bb09a738acd6505084b65a64ec719dc4098171af5c9fb9cbb596.
+Tables and node source hashes above remain unchanged. This documentation-only
+successor leaves all qualified Rust/compiler-input bytes unchanged.
+
+The98 passes qualify actual starts, fences, waits, financial boundaries and
+negative terminal guards; they do not prove successful C property/slot closure
+or end-to-end DISBANDED execution. That genuine C prerequisite remains open.
+Whole all-targets Clippy remains RED on uninstalled caller APIs/context;
+lead's final strict unit-context check is a separate disposition, not implied
+by these passes. Production installation, public events and whole-scope
+completion remain pending; no ready/merge/production claim is made.
