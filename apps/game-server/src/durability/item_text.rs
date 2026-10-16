@@ -29,6 +29,13 @@ use std::sync::Arc;
 /// MAIL-0 §4/WRITE-0 §5 name the first two tables. The private receipt also
 /// supplies a rolling rate window, serialized by the actual Character root.
 /// The migration owner must assign grants/retirement cleanup in the slot.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "MAIL-1 CP migration slot consumes this proposal; runtime must not execute schema DDL"
+    )
+)]
 pub(crate) const ITEM_TEXT_SCHEMA_PROPOSAL: &str = r#"
 CREATE TABLE game_item_text_revisions (
  item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances ON DELETE RESTRICT,
@@ -197,6 +204,10 @@ impl DurabilityRoot {
     /// Commit a bounded rewrite; exact terminal replay never reacquires item
     /// authority. Every new write independently proves the live content digest,
     /// recovery, node, session, admission, root and current direct custody.
+    #[expect(
+        dead_code,
+        reason = "MAIL-TEXT-1 awaits CP wire composition, admitted content, migration and real offered-trade exclusion"
+    )]
     pub(crate) async fn commit_item_text_rewrite(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,

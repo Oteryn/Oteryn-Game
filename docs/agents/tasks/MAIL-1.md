@@ -294,3 +294,52 @@ rustfmt 1.94 matching the repository toolchain; the owned source's formatting an
 `--check` passed, as did whitespace checks including the new file. No build, PG
 qualification, frozen-head CI or paid review is claimed. Existing eight-test
 evidence above covers only the earlier subset and does not qualify this writer.
+
+## Actual native qualification and targeted lint disposition — 2026-10-16
+
+The lead ran the ordinary native library pipeline on frozen local preparation
+`5f2fef3b0dbf371c7eb5ff13d0f3b846ae0e0fe0`, with only the independently reviewed
+private module-registration mount
+`c408b248c74f3bc66467f022cdd55ffe8e0ff9c78498782ec5abfe1503ca9ed0`.
+Actual source proof covered all 18,812 files and the runner reported unchanged
+source after execution. The actual PostgreSQL probe returned `170006`.
+
+- Native library `cargo check`, complete library unit-test compilation and
+  workspace formatting passed with the installed Rust 1.95.0 toolchain.
+- Exact ordinary source inventories listed and ran **14/14 passed, zero failed,
+  zero ignored**: five domain cases; three native recipient PostgreSQL cases;
+  three item-text pure cases and three item-text PostgreSQL storage cases.
+  These are **8 pure + 6 PostgreSQL** cases, not fourteen full-writer cases.
+- Strict library and all-target Clippy both exited **101**. Actual diagnostics
+  were eleven production dead-code errors, with five test-build dead-code
+  errors for the intentionally unwired item-text producer. The upstream Tokio
+  documentation warning remains unrelated. The runner therefore recorded
+  `NOT_QUALIFIED_GATE_FAILURE`; full-package tests were not run.
+
+Evidence is retained at `/workspace/oteryn-family-b/actual-mail-native-1/`:
+`summary.json`, `tests-0.log`, `tests-1.log`, `tests-2.log`, `clippy-lib.log` and
+`clippy-all-targets.log`. This evidence qualifies the exact old `5f2fef3b` native
+subset only; it does not qualify a later source head, full current-authority
+writer/replay/trade admission, production activation or full MAIL acceptance.
+
+The lead explicitly returned this checkout to AUTHORING for a narrow successor.
+`item_text.rs` adds only two item-level, self-enforcing `expect(dead_code)`
+dispositions, following the repository's existing pending-consumer entrypoint
+pattern with a tighter expectation:
+
+- The schema proposal expectation applies only outside tests; actual storage
+  tests use it, and production must not execute proposal DDL. The reason names
+  the actual CP migration slot.
+- The actual `commit_item_text_rewrite` entrypoint expectation names pending CP
+  wire composition, admitted content, migration and real offered-trade exclusion.
+  Its genuine private call graph is preserved; no fake caller, blanket module
+  allowance or public API widening is introduced. An admitted real caller must
+  remove the now-unfulfilled expectation during integration.
+
+Removing precisely those two new attributes reproduces the old source bytes,
+including schema, every function body, test body and authority check. No source
+behavior or test inventory changes. Focused official rustfmt and whitespace
+checks passed locally. No Cargo/compiler/PG run was performed by this author;
+the successor's native strict-Clippy result remains pending actual recheck and
+independent review. Existing frozen commit, PC snapshots, refs and publication
+state are unchanged by this authoring repair.
