@@ -3,8 +3,8 @@
 ```yaml
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP combat runtime (skeleton)"
-mode: REPORT_ONLY
-status: prepared
+mode: IMPLEMENTATION
+status: source_authored_unqualified
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-rt-1
@@ -15,12 +15,14 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "hard (combat), combat and security review"
 migration: no
 registry: no
-owner: boot_rat_policy_1
+owner: resource_resume
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/combat/pvp/lock.rs
+  - apps/game-server/tests/pvp_rt_readmission_postgres.rs
   - docs/agents/tasks/PVP-RT-1.md
 slot_only_paths:
   - mod.rs
@@ -35,12 +37,11 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Current allocation: card-only native integration packet. The original family sections below remain
-auditable historical implementation requirements; they do not grant source ownership now. The
-appended packet rechecks their residue and acceptance boundary. Worker must not commit, push,
-mark ready or merge. Root may publish this reviewed card to the existing draft; CP and architect
-control runtime allocation, exact-head review and final integration. Shared slot-only paths stay
-untouched until the CP queue turn and its then-current allocation/rebase.
+Current allocation (Root exclusive lease, 2026-10-16): implement only the existing native
+PVP-1 read → runtime logout/PZ/kill readmission restoration in the three paths above, on
+`8474c609f93f42ed806cfb5c63b51a48028a32fb`. Earlier card-only packets below are historical.
+No shared mod, legality, durability writer, transport, Cargo or migration change is authorized.
+Worker publication remains forbidden. The complete PvP activation dependencies remain open.
 
 ## Goal
 
@@ -298,3 +299,68 @@ PVP1b/full death delivery, admitted rulesets, real guild/current-PvP observers, 
 ledger/control integration, final source-bound native+PG+client matrix, independent combat/security/
 persistence/privacy/protocol and architect reviews, and CP shared integration slot. Root owns any
 publication to the existing draft; worker performed none.
+
+
+## Native deadline readmission component (2026-10-16)
+
+Actual source authored, runtime qualification **UNEXECUTED**. Accepted PARTY-PVP0 §8.1 admission
+and restart semantics apply to this three-deadline component. PVP-1a's actual read and tables
+are present; this increment consumes no pending PVP-1b/#2203 skull evaluator or fresh-harm writer.
+Early independent clock/native-Root design review: `reviews/pvp-rt-readmission-early-design-vip.json`
+(`0781d61326ec0431acad7248455a31aeef0e057413a4b82cb6f50e359496eef4`).
+
+`CombatLock::restore_pvp_readmission` awaits the actual public `DurabilityRoot::read_pvp_state`.
+That owner checks the real reconciled recovery capability and current session/node/lease/
+World/Channel/scope through the existing guards. This adapter duplicates no SQL or authority
+check. The existing `OwnerClock` is owner-axis DATA: sample it once after a successful row read,
+explicitly convert the Foundation microsecond axis to the simulation axis with checked
+milliseconds × 1000 and checked addition, calculate all three deadlines, then invoke the existing
+monotone `restore` once. Missing rows, read errors and any overflow leave the previous lock
+unchanged; elapsed values never clear it. A boolean return reports row presence, not a controller
+grant. A clock from another owner axis is not a valid installation input.
+
+The new ordinary native test wrapper uses unchanged physical Root/Foundation/durability and
+`tests/support/bestiary_postgres_harness.rs` source, following the existing
+`combat_bestiary_postgres.rs` composition. The existing `pvp_state_postgres_cases.rs` is a read-only
+reference. No private helper is widened and no guard body is copied. Administrative fixture
+consequence rows are test DATA; actual recovery, Root, node registration, scope assignment and
+session fixture APIs are retained. Missing canonical PG configuration is an error; actual
+PostgreSQL `170006` is mandatory. The top inactive wrapper attribute remains a CP routing slot.
+
+Nine new PG test families are written: each real stored deadline; missing/expired rows; repeated
+shorter data; independently changed Character/session/connection/zero or stale lease/World/
+Channel/scope generation; actual Node revocation with expected bindings unchanged; another actual
+Root receiving the first Root's authority; an actual database query failure; later-slot overflow proving no partial mutation; and
+an actual blocked native DB read while the existing virtual OwnerClock advances. The native
+read deliberately consumes `item_fence`, not CharacterRevision; its non-use is a positive control,
+not an invented rejection rule. Three pure tests cover explicit axes, multiplication overflow
+and addition overflow. These tests are **written, not executed**; cheap formatting is not a native
+pass. Full compiler, configured Clippy, actual PG, source/body/extern proof and final review remain
+pending a reviewed recipe and explicit Root heavy GO.
+
+This is an uninstalled native component in the original lock source. Actor/caller installation,
+white skull, aggression reconstruction, damage ledger and full admission orchestration remain
+with their accepted owners/CP. Fresh harm/write-ahead receipts, PVP-1b, PVP-DEATH, wire/client and
+all full PvP activation gates remain open. No `pvp_state.rs` lease or second writer is inferred.
+
+## Native readmission component — executed qualification (2026-10-16)
+
+This increment adds `CombatLock::restore_pvp_readmission` within the original PVP-RT-1 ownership. It awaits the existing fenced `Root::read_pvp_state`, samples the existing `OwnerClock` once after the successful database read, checks millisecond-to-microsecond multiplication and owner-axis addition for all three deadline slots, converts explicitly to the simulation time type, and invokes the existing monotone `CombatLock::restore` once. Missing/expired data, refused reads, database errors and overflow preserve existing locks. Persisted data does not confer authority; no second SQL writer or replacement authority provider was added.
+
+The original 35,194-byte task-card prefix is retained exactly (SHA256 `e5506c8d8509b703c1897690db593095c140e31472d0820c7b52c9e0742f7faf`). The qualified Rust source is checkpoint `58e1ad2d238ec24f9f07f3d59d008d3e44f5a903b8db6bbf5c09d92d79f4d79e` on native head `8474c609f93f42ed806cfb5c63b51a48028a32fb`: core `4d06e99885c65d91f5d547b52bd5dfab75eedb3e79a3be6bc3ce36e60417f88f`, test wrapper `cabf3a929b367aabe204e388eb8881fee5feccc0bb145251fda03e4afd956c67`.
+
+Actual PC qualification used Rust 1.94.0, a fresh own-head locked/offline Cargo preparation and actual Cargo compiler capture, the exact 1,959 immutable native inputs, explicit physical Root/Harness module composition, and authenticated canonical PostgreSQL 17.6 (`server_version_num=170006`). The ordinary wrapper is outside the original-library namespace; its production-server dependency is a real own-head compiled library. The selected test dispatcher preserves all 12 reviewed brace bodies and their original current-authority guards.
+
+Executed results:
+
+- Original production strict Clippy metadata: exit 0; own production library codegen: exit 0. These are retained actual checkpoint `0bd8e8979859c85bc2133eab0fb03804212dae6095dd2a6e1423d0ea25075832` results, reused only after complete unchanged production-input, compiler, dependency, generated-input and artifact checks. The later owned-test-only timeout repair does not enter production `lib.rs` inputs.
+- Original ordinary-wrapper metadata: strict exit 1 on unused items in this non-harness metadata context; configured exit 0. This remains a strict failure, separate from the selected strict result.
+- Current selected ordinary-wrapper strict Clippy metadata: exit 0. Selected native library codegen: exit 0. Driver link: exit 0. The successful link uses a detached, full-hash-verified canonical-name byte copy of the retained production output; that copy is not a new compiler producer.
+- Native execution: **12 passed, 0 failed, 0 ignored**, consisting of 3 pure conversion cases and 9 PostgreSQL families across **11 isolated actual PostgreSQL 17.6 fixtures**. Native driver invocation retained `--test-threads=1`. Families cover all three stored deadlines, absent/expired rows, monotone repeat restoration, actual current-session/lease/scope refusals, revoked Node, another Root's authority, actual database errors, all-or-nothing later-slot overflow, and owner-clock sampling after a real blocked database read.
+- Literal source/body inventories, compiled input maps, actual compiler/extern/generated input hashes, and all native artifacts were checked before consumption and after execution. Source guards remained equal. The original production byte-copy operation preserved its source inode metadata. The source-card bytes consumed by qualification are the retained prefix above; this final evidence append changes documentation only.
+
+Retained native output SHA256s: production `43a07b03b6371ee2aa71b48270f32609df5b3f980ba71e9c25127de61d642488` (399,283,878 bytes), selected wrapper `b53ded9cca31a28bff0e2d27f221c51da147da5d11e2841a208e207376d2f30a` (74,144,498 bytes), driver `3c9c1302e2e16f9285f0e362c4bd3113ca597a8d8972bbf0466628d03ca15c3d` (25,963,176 bytes).
+
+Durable actual evidence: `reviews/pvp-pc/actual-proof-v7/actual-final-summary-v7.json`, SHA256 `f624e2f3b558d7f929de8274b69c398194394bd3b703dcb037a0c50f9bdb097a`; complete 140-file proof pack SHA256 `b9f647635b746f0760608244ce97fa641c1b4e8ba9807e4ac02ea1b2bbd50edc`. All failed intermediate attempts remain retained: unavailable `tokio::select!` in the test fixture was repaired with the existing borrowed-future timeout API; a generated dispatcher placement was repaired without changing owned source bodies; transitive library discovery was repaired with the detached canonical-name copy. Metadata/codegen successes were reused with their original provenance rather than relabelled as new executions.
+
+This is a qualified readmission deadline-restoration component. Actor/caller wiring, full PvP activation, fresh-harm writer composition, skull/ledger restoration and pending PVP1b integration remain separate owners and gates. No full workspace/Cargo-test or complete governance PASS is inferred from this selected native execution; the sparse native snapshot lacks the complete governance input set. The original aggression code and existing guarded reader remain unchanged.
