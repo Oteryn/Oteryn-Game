@@ -184,7 +184,7 @@ protocol-owner sign-off. This authoring allocation does not grant it.
 - [x] D1111 rain/fog/snow map and explicit selector authored in owned source.
 - [x] Owned candidate codec and negative tests authored; no registration/sign-off claim.
 - [x] Residue checked against observed main and exact CP ruling before this batch.
-- [x] Actual native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
+- [x] Historical exact-source native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
 - [ ] Production head integration and normal all-target/package CI qualification after the caller slot.
 - [ ] Protocol-owner D1027 sign-off, accepted schema and slot registry bindings.
 - [ ] WEATHER-SEAM-1 actual World/private seed/clock/policy binding and canonical occurrence.
@@ -259,3 +259,26 @@ non-Debug GameplayDecisionRoot (E0277, duplicate diagnostics). Assertions now us
 boolean equality, preserving the secret type without printing its bytes. First
 compile exit101/runtime NOT_RUN retained; repaired source requires new native
 qualification. Production loader source is unchanged.
+
+
+### D1190 actual checked-loader qualification
+
+Qualified source: `026085f720c245c0434333710a6ccfddfafc57cf` (production loader
+unchanged from f32361ac; only the two secret-root test assertions repaired).
+The actual native Cargo lib-unit artifact compiled successfully, fresh=false,
+with exact Eventsded94838 and Reset0c745974 owned source in a private crate.
+Its three loader cases each passed1/failed0/ignored0: real checked Secret read,
+World mismatch/retention/redaction, invalid shape/mode/symlink and metadata.
+Actual dep-info includes the exact clock and test files once, and source-at-close
+matches. ELF SHA256 `89fb3206f720c42b168379022f37198e77b8b4785638ec6b0813e6589fe883d8`;
+retained gzip SHA256 `57aab3f9a153bbb5eea4fd333ca46bf261a9f76140e1cdf70c2b4854cc9558a6`.
+The first compile101/E0277 is preserved; it did not execute tests. No production
+Debug implementation was added to the secret root. Current strict/all-target,
+A2 caller/offer/occurrence and full runtime integration remain NOT_RUN.
+
+Fresh private A2 proposal v2 is based on026085f7 and contains only eight shared
+caller/config/qualification plus coherent DEFAULT-removal paths. It omits the
+already-owned loader/test hunks. Exact patch SHA256
+`f116b6430005f1f0f1eb68feac3718cd946edb26d4597b89fd7a6cd7da399f83`;
+all before/after hashes and exact apply roundtrip retained outside the product.
+The v1 proposal remains immutable historical evidence. No shared caller is pushed.
