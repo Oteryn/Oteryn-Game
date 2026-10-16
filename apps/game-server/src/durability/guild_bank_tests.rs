@@ -132,8 +132,10 @@ async fn install_snapshot(h: &Harness, state: i16, rank: Option<i16>, guards: bo
     if guards {
         h.pool.execute(sqlx::raw_sql(GUILD_GUARDS_PROPOSAL)).await?;
     }
-    // Qualification-only row-lock privileges; owner triggers still govern every mutation.
-    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_operations TO oteryn_game_runtime;GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;")).await?;
+    // Qualification-only row-lock/owner-guard read privileges. Guild UPDATE first reads
+    // job checkpoints before command operations; neither table is writable by this grant.
+    // Genuine owner triggers still govern every mutation.
+    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_operations,game_guild_job_checkpoints TO oteryn_game_runtime;GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;")).await?;
     Ok(())
 }
 
@@ -320,7 +322,12 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
             .expect_err("unbound mutation must fail the genuine Guild owner guard");
         assert_eq!(
             denied.as_database_error().and_then(|e| e.code()).as_deref(),
-            Some("23514")
+            Some("23514"),
+            "the genuine owner guard must run: {denied:?}"
+        );
+        assert_eq!(
+            denied.as_database_error().map(|error| error.message()),
+            Some("Guild mutation requires its same-transaction operation")
         );
         runtime_role.rollback().await?;
         let fp = footprint(&h).await?;

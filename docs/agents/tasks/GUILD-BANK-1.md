@@ -209,3 +209,14 @@ AUTHORING and replaced only rendering with per-u8 lowercase two-digit hex format
 SQL hash values and dependency source remain unchanged. This repairs an actual compiler
 failure, not an environmental failure. Rustfmt/diff checks rerun; native recompile remains
 with the lead. No native pass is claimed from the failed run or this formatting check.
+
+
+Actual PG17.6 qualification of frozen6108985d executed9 Bank bodies:8 passed and the runtime
+role guard case failed because it received42501 instead of23514. Source diagnosis: the
+updated genuine Guild UPDATE guard first reads `game_guild_job_checkpoints`, which the
+qualification role could not SELECT; the intended unbound-operation guard never ran.
+Returned to AUTHORING: added only fixture SELECT on that exact genuine checkpoint table,
+retained23514 and added exact guard-message assertion to prove the intended native guard
+executes. No production grant or mutation capability changed; no installed guard weakened.
+The genuine owner-writer/property tests remain unchanged. Failed candidate/log retained;
+focused native retry and independent exact-source review remain with the lead.
