@@ -202,3 +202,66 @@ fn historical_unqualified_or_malformed_bodies_never_prepare() {
         );
     }
 }
+
+#[test]
+fn query_preparation_preserves_command_actor_world_native_area_key_and_cursor() {
+    use oteryn_protocol_oteryn::house::{HouseQuery, encode_house_query};
+    let request = HouseQuery {
+        world_id: world(3),
+        catalogue_town: "oteryn:content.area.city.thais".into(),
+        cursor: Some(vec![0, 255]),
+    };
+    let value = prepare_house_query(
+        &encode_house_query(&request).unwrap(),
+        command(2),
+        actor(),
+        world(3),
+    )
+    .unwrap();
+    assert_eq!(value.command(), command(2));
+    assert_eq!(value.actor(), actor());
+    assert_eq!(value.world(), world(3));
+    assert_eq!(
+        value.catalogue_town(),
+        &crate::content::ProductionKey::new(&request.catalogue_town).unwrap()
+    );
+    assert_eq!(value.cursor(), Some(&[0, 255][..]));
+}
+#[test]
+fn query_preparation_refuses_cross_world_and_non_native_town_keys() {
+    use oteryn_protocol_oteryn::house::{HouseQuery, encode_house_query};
+    let request = HouseQuery {
+        world_id: world(3),
+        catalogue_town: "oteryn:content.area.city.thais".into(),
+        cursor: None,
+    };
+    assert_eq!(
+        prepare_house_query(
+            &encode_house_query(&request).unwrap(),
+            command(2),
+            actor(),
+            world(4)
+        ),
+        Err(HouseQueryPreparationError::WorldMismatch)
+    );
+    for key in [
+        "oteryn:content.area.city.",
+        "oteryn:content.house.thais",
+        "oteryn:content.area.city.bad key",
+        "oteryn:content.area.city.thais\0",
+    ] {
+        let bad = HouseQuery {
+            catalogue_town: key.into(),
+            ..request.clone()
+        };
+        assert_eq!(
+            prepare_house_query(
+                &encode_house_query(&bad).unwrap(),
+                command(2),
+                actor(),
+                world(3)
+            ),
+            Err(HouseQueryPreparationError::InvalidCatalogueTown)
+        );
+    }
+}

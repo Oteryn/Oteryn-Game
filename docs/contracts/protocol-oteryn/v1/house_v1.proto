@@ -57,3 +57,18 @@ message HouseIntentV1 {
     HouseEmptyV1 leave = 7;
   }
 }
+
+// HOUSE_QUERY request-only proposal; no response/projection/currentness/read grant.
+// Native town identity is FirstProductionArea.key: ProductionKey, catalogue reference prefix
+// oteryn:content.area.city.<slug>, never a numeric source-town ID. Native transport validates
+// production key syntax/prefix and current actor World; active-bundle membership stays unresolved.
+// PROPOSED technical bounds: town<=512 UTF8B (native ProductionKey cap), cursor1..512 opaque B
+// when present, body<=1056B (maximum encoded1048 +8B slack). Cursor absent means first request;
+// it is not authorization, a session selector or proof of an earlier authorized response.
+// World/town required exactly once, cursor optional exactly once; strict duplicate/unknown/
+// wrong wire/UTF8/UUIDv7 rejection. These bounds/tags require independent protocol review.
+message HouseQueryV1 {
+  bytes world_id = 1;
+  string catalogue_town = 2;
+  optional bytes cursor = 3;
+}

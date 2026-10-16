@@ -494,3 +494,93 @@ fn native_house_door_grid_rejects_outside_axes() {
         );
     }
 }
+
+fn query() -> HouseQuery {
+    HouseQuery {
+        world_id: WorldId::decode(id(7).as_bytes()).unwrap(),
+        catalogue_town: "oteryn:content.area.city.thais".into(),
+        cursor: Some(vec![0, 255, 128]),
+    }
+}
+#[test]
+fn query_round_trip_preserves_opaque_cursor_and_absence() {
+    for cursor in [None, Some(vec![0, 255, 128])] {
+        let value = HouseQuery { cursor, ..query() };
+        assert_eq!(
+            decode_house_query(&encode_house_query(&value).unwrap()),
+            Ok(value)
+        );
+    }
+}
+#[test]
+fn query_rejects_missing_duplicate_unknown_wrong_wire_and_invalid_identity() {
+    let valid = encode_house_query(&query()).unwrap();
+    assert!(decode_house_query(&[]).is_err());
+    let mut world_only = Vec::new();
+    push_message_field(&mut world_only, 1, query().world_id.as_bytes());
+    assert!(decode_house_query(&world_only).is_err());
+    let mut town_only = Vec::new();
+    push_message_field(&mut town_only, 2, b"town");
+    assert!(decode_house_query(&town_only).is_err());
+    let duplicate_world = query().world_id;
+    for tag in [1, 2, 3, 4] {
+        let mut bytes = valid.clone();
+        let body: &[u8] = if tag == 1 {
+            duplicate_world.as_bytes()
+        } else {
+            b"x"
+        };
+        push_message_field(&mut bytes, tag, body);
+        assert!(decode_house_query(&bytes).is_err());
+    }
+    let mut bad = Vec::new();
+    push_varint_field(&mut bad, 1, 7);
+    assert!(decode_house_query(&bad).is_err());
+    for world in [&[0_u8; 16][..], &[1_u8; 15][..]] {
+        let mut bad = Vec::new();
+        push_message_field(&mut bad, 1, world);
+        push_message_field(&mut bad, 2, b"town");
+        assert!(decode_house_query(&bad).is_err());
+    }
+    let mut bad = Vec::new();
+    push_message_field(&mut bad, 1, query().world_id.as_bytes());
+    push_message_field(&mut bad, 2, &[255]);
+    assert!(decode_house_query(&bad).is_err());
+    assert!(decode_house_query(&valid[..valid.len() - 1]).is_err());
+}
+#[test]
+fn query_proposed_byte_bound_is_exact_and_each_field_fails_closed() {
+    let value = HouseQuery {
+        catalogue_town: "x".repeat(MAX_HOUSE_QUERY_TOWN_BYTES),
+        cursor: Some(vec![255; MAX_HOUSE_QUERY_CURSOR_BYTES]),
+        ..query()
+    };
+    let bytes = encode_house_query(&value).unwrap();
+    assert_eq!(bytes.len(), 1048);
+    assert!(bytes.len() <= MAX_HOUSE_QUERY_BYTES);
+    assert_eq!(decode_house_query(&bytes), Ok(value));
+    for cursor in [
+        Some(vec![]),
+        Some(vec![0; MAX_HOUSE_QUERY_CURSOR_BYTES + 1]),
+    ] {
+        assert!(encode_house_query(&HouseQuery { cursor, ..query() }).is_err());
+    }
+    assert!(
+        encode_house_query(&HouseQuery {
+            catalogue_town: String::new(),
+            ..query()
+        })
+        .is_err()
+    );
+    assert!(
+        encode_house_query(&HouseQuery {
+            catalogue_town: "x".repeat(MAX_HOUSE_QUERY_TOWN_BYTES + 1),
+            ..query()
+        })
+        .is_err()
+    );
+    assert_eq!(
+        decode_house_query(&vec![0; MAX_HOUSE_QUERY_BYTES + 1]),
+        Err(HouseWireError::LimitExceeded)
+    );
+}

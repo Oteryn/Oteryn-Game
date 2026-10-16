@@ -121,6 +121,72 @@ pub fn prepare_house_intent(
     })
 }
 
+/// Inactive request data only. ProductionKey is the native FirstProductionArea.key type;
+/// its city prefix comes from the House catalogue contract. This does not prove that a
+/// town exists in the active bundle, or authorize a catalogue/owner/ACL read.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreparedHouseQuery {
+    command: CommandRef,
+    actor: CharacterId,
+    world: WorldId,
+    catalogue_town: crate::content::ProductionKey,
+    cursor: Option<Vec<u8>>,
+}
+impl PreparedHouseQuery {
+    pub const fn command(&self) -> CommandRef {
+        self.command
+    }
+    pub const fn actor(&self) -> CharacterId {
+        self.actor
+    }
+    pub const fn world(&self) -> WorldId {
+        self.world
+    }
+    pub const fn catalogue_town(&self) -> &crate::content::ProductionKey {
+        &self.catalogue_town
+    }
+    pub fn cursor(&self) -> Option<&[u8]> {
+        self.cursor.as_deref()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HouseQueryPreparationError {
+    Wire(HouseWireError),
+    WorldMismatch,
+    InvalidCatalogueTown,
+}
+
+pub fn prepare_house_query(
+    payload: &[u8],
+    command: CommandRef,
+    actor: CharacterId,
+    world: WorldId,
+) -> Result<PreparedHouseQuery, HouseQueryPreparationError> {
+    let query = oteryn_protocol_oteryn::house::decode_house_query(payload)
+        .map_err(HouseQueryPreparationError::Wire)?;
+    if query.world_id != world {
+        return Err(HouseQueryPreparationError::WorldMismatch);
+    }
+    let prefix = "oteryn:content.area.city.";
+    if !query
+        .catalogue_town
+        .strip_prefix(prefix)
+        .is_some_and(|slug| !slug.is_empty())
+    {
+        return Err(HouseQueryPreparationError::InvalidCatalogueTown);
+    }
+    let catalogue_town = crate::content::ProductionKey::new(&query.catalogue_town)
+        .map_err(|_| HouseQueryPreparationError::InvalidCatalogueTown)?;
+    Ok(PreparedHouseQuery {
+        command,
+        actor,
+        world,
+        catalogue_town,
+        cursor: query.cursor,
+    })
+}
+
 #[cfg(test)]
 #[path = "house_intent_tests.rs"]
 mod tests;

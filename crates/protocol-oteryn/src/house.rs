@@ -365,6 +365,93 @@ pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
     })
 }
 
+/// Protocol-review proposal: native production key cap512B, opaque cursor cap512B,
+/// flat body1056B (World18 + town515 + cursor515 =1048, plus8B slack).
+/// Cursor bytes carry no authority and are interpreted only by a future owning read port.
+pub const MAX_HOUSE_QUERY_TOWN_BYTES: usize = 512;
+pub const MAX_HOUSE_QUERY_CURSOR_BYTES: usize = 512;
+pub const MAX_HOUSE_QUERY_BYTES: usize = 1056;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseQuery {
+    pub world_id: WorldId,
+    pub catalogue_town: String,
+    pub cursor: Option<Vec<u8>>,
+}
+
+fn validate_query(value: &HouseQuery) -> Result<()> {
+    if value.catalogue_town.len() > MAX_HOUSE_QUERY_TOWN_BYTES
+        || value
+            .cursor
+            .as_ref()
+            .is_some_and(|v| v.len() > MAX_HOUSE_QUERY_CURSOR_BYTES)
+    {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    if value.catalogue_town.is_empty() || value.cursor.as_ref().is_some_and(Vec::is_empty) {
+        return malformed();
+    }
+    Ok(())
+}
+
+pub fn encode_house_query(value: &HouseQuery) -> Result<Vec<u8>> {
+    validate_query(value)?;
+    let mut output = Vec::new();
+    push_message_field(&mut output, 1, value.world_id.as_bytes());
+    push_message_field(&mut output, 2, value.catalogue_town.as_bytes());
+    if let Some(cursor) = &value.cursor {
+        push_message_field(&mut output, 3, cursor);
+    }
+    if output.len() > MAX_HOUSE_QUERY_BYTES {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    Ok(output)
+}
+
+pub fn decode_house_query(input: &[u8]) -> Result<HouseQuery> {
+    if input.len() > MAX_HOUSE_QUERY_BYTES {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    let (mut world_id, mut catalogue_town, mut opaque_cursor) = (None, None, None);
+    let mut offset = 0;
+    while offset < input.len() {
+        match read_varint(input, &mut offset)? {
+            10 => set_once(
+                &mut world_id,
+                WorldId::decode(read_bytes(input, &mut offset)?)
+                    .map_err(|_| HouseWireError::Malformed)?,
+            )?,
+            18 => {
+                let bytes = read_bytes(input, &mut offset)?;
+                if bytes.len() > MAX_HOUSE_QUERY_TOWN_BYTES {
+                    return Err(HouseWireError::LimitExceeded);
+                }
+                set_once(
+                    &mut catalogue_town,
+                    std::str::from_utf8(bytes)
+                        .map_err(|_| HouseWireError::Malformed)?
+                        .to_owned(),
+                )?;
+            }
+            26 => {
+                let bytes = read_bytes(input, &mut offset)?;
+                if bytes.len() > MAX_HOUSE_QUERY_CURSOR_BYTES {
+                    return Err(HouseWireError::LimitExceeded);
+                }
+                set_once(&mut opaque_cursor, bytes.to_vec())?;
+            }
+            _ => return malformed(),
+        }
+    }
+    let value = HouseQuery {
+        world_id: world_id.ok_or(HouseWireError::Malformed)?,
+        catalogue_town: catalogue_town.ok_or(HouseWireError::Malformed)?,
+        cursor: opaque_cursor,
+    };
+    validate_query(&value)?;
+    Ok(value)
+}
+
 #[cfg(test)]
 #[path = "house_tests.rs"]
 mod tests;

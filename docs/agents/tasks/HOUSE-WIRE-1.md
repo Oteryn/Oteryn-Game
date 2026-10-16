@@ -290,3 +290,26 @@ harness. All commands, raw logs, preserved RED baseline, exact regression-body b
 source compatibility and artifact hashes are in the corrective evidence directory. The old
 252/5 packet and original evidence are unchanged. Governance and124 governance tests pass;
 owned scope and whitespace checks pass. No publication, registration or authority is claimed.
+
+## D1170 HOUSE_QUERY request successor — LOCAL_CHECKPOINT, NOT_FULLY_QUALIFIED
+
+Adds an inactive strict request codec and native preparation for explicit WorldId, catalogueTown
+and an optional bounded opaque cursor. The actual catalogue town reference is the city Area key
+(`oteryn:content.area.city.<slug>`); the native type is `FirstProductionArea.key: ProductionKey`,
+not a newly invented TownId. Transport validates native production-key syntax/prefix and the
+current actor World while retaining the exact CommandRef/actor; this is immutable request data.
+Existing HOUSE_INTENT encoding/preparation remains unchanged.
+
+Field tags1/2/3 and technical caps town512B/cursor512B/body1056B are protocol-review proposals;
+encoded maximum1048B leaves8B slack. The town cap matches native ProductionKey's existing512B
+cap; the cursor/body caps are technical request bounds, not gameplay values. No response,
+projection, active-bundle membership, own-bid maximum or ACL/privacy read is implemented.
+The real native privacy/currentness read port, dispatcher, resource row and A2 wiring remain
+NOT_IMPLEMENTED. A cursor does not grant read access or establish DB currentness.
+
+Focused actual codec/native preparation cases are authored NOT_RUN. Current-generation
+compile/native/PG remain NOT_RUN; fmt/diffcheck alone do not qualify this successor.
+
+Independent source-only review and official fmt/diffcheck pass. Formal protocol approval and
+current-generation native qualification remain pending. This local recovery checkpoint is not
+a second D1122 publication; the existing draft remains at790c8a2e until an allowed batch.
