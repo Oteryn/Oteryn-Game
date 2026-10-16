@@ -351,3 +351,70 @@ CP's final protocol review, runtime Creature/name binding, visibility/reach
 checks, 10 requests/1 second/GameSession rate enforcement and actual dispatch
 remain pending / NOT_IMPLEMENTED / NOT_RUN. This source proposal does not
 establish complete ITEM-LOOK-1 or change the earlier server qualification.
+
+### D1240 capability28 selection — NOT_FULLY_QUALIFIED
+
+CP D1240 (comment6226466175, #2182 section) accepts the preceding payload layout
+and assigns capability28. This supersedes that proposal's pending layout review
+and unassigned-capability statements. Command assignment, shared registry/offer
+installation and runtime dispatch are not implemented by this owned increment.
+The earlier251/251 protocol result remains bound to the previous87d9 source,
+not to the changed codec described here.
+
+Following the existing ItemMoveSelection style, `ItemLookSelection` defaults to
+legacy (no cap28); selection-aware `_for` codecs require the actual negotiated
+selection from the runtime owner. A Creature request without cap28 is malformed,
+on encode and decode. The server encoder maps all extended refusals to the
+unchanged field2/empty `NotAvailable` for legacy clients. Legacy result decode
+rejects fields3–5; negotiated decode retains their typed meanings. Item request
+bytes, nonzero handles, the11-byte Item bound,31-byte Creature bound,512-byte
+UTF-8 text bound and strict oneof/malformed handling remain intact. The base
+intent encoder now returns a checked Result so it can reject an unnegotiated
+Creature request; all actual callers were owned codec tests and were adapted.
+
+Generation0 remains wire-representable and means unknown. The owned pure
+`known_creature_generation` helper returns `NotVisible` for0; it cannot substitute
+or compare a current generation. A nonzero return is only a generation value,
+not current visibility, reach, actor/profile or name authority. Runtime binding
+visibleActor→profile/name remains with its producer and is NOT_IMPLEMENTED here.
+No matching current actor or implicit fallback is invented.
+
+Three new native test functions cover legacy/negotiated Item and Creature
+selection, all four refusal mappings and gated decode, and wire-representable
+zero generation refused before runtime binding. Previous malformed, boundary,
+UTF-8 and strict oneof cases remain in the source-derived test inventory.
+Current native tests, strict Clippy and exact-head CI are **NOT_RUN**. Only direct
+changed-file rustfmt and scoped diff checks are claimed, with source hashes and
+actual test names in `/workspace/oteryn-family/look-d1143/d1240/AUTHORING.json`.
+The10requests/1second/GameSession rate owner, shared offer/registry integration
+and actual dispatch remain pending; this is not complete ITEM-LOOK-1 acceptance.
+
+### D1240a registry/closure allocation — NOT_FULLY_QUALIFIED
+
+CP D1240a (comment6226563247) allocates this PR's sole-writer hunks in the
+protocol registry and native capability list/closure. Capability28 is registered
+as ITEM_LOOK_V1 with no offered runtime, command or state domain. D1240 assigns
+no additional capability requirements; the registry and actual closure therefore
+both use an empty requirements set, without inferring cap4 or cap6 dependencies
+from shared ItemHandle/EntityRef types. The same registry allocation ledger now
+records next_unallocated capability29; prior reserved/leased IDs are not reused.
+
+One new owned test invokes the actual acceptance validator used by native
+ServerAccepted/ServerResumeAccepted codecs:28 is accepted without invented
+requirements,29 remains unallocated and is rejected, and the registry's sole
+entry/empty closure/not-offered state and next29 ledger are pinned. This adds no
+runtime offer, server dispatch, command assignment or visible-actor/name binding.
+The registered source now contains13 owned LOOK test functions. This allocation
+increment's native tests/Clippy/CI are **NOT_RUN**; passing checks of earlier
+D1240 source remain bound to their earlier input. Changed-file fmt/diff checks,
+source-derived inventory and exact hashes are retained in
+`/workspace/oteryn-family/look-d1143/d1240a/AUTHORING.json`.
+
+Final D1240a actual native package qualification:255passed,0failed/ignored/filtered,
+0doctests; strict package all-target Clippy PASS. All13 owned LOOK cases were
+registered in that native run. Current fmt/diff/governance and independent source
+review PASS; the final card update changes documentation only. Earlier254/251
+receipts remain attached to their exact older inputs. Current protocol payload
+review and cap28/next29 registry allocation are closed by D1240/D1240a. Actual
+command assignment, server negotiation/dispatch, rate owner and current native
+visibleActor/profile/name binding remain open; runtime is NOT_FULLY_QUALIFIED.

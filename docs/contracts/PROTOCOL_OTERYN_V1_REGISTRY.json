@@ -233,6 +233,17 @@
       "state_domains": [19, 20],
       "offered": false,
       "offer_gate": "PRESENT-WIRE-1 registers the codecs only: the server does not offer this capability before SPELL-PRESENT-1 or COMBAT-PRESENT-1 composes an emitter, and the B3 batch measurement of SPELL-PRESENT-0 §9 is recorded on #162 before activation. It requires 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name. With it selected, domain 19 carries at most one batch of presentation events per sync unit (SPELLPRES0-RL-01..03; overflow keeps the observer's own events, then the nearest by D87, ties by decision and emission ordinal; a batch is dropped whole while SPELLPRES0-RL-07 batches are undelivered or a snapshot is in flight), domain 20 carries the own actor's cooldowns (a snapshot at admission, reconnect and channel transfer; a delta at each PRIMARY COMMIT that starts or changes one, and one corrective delta at the first liveness ack), and the command type 3 result may carry field 2 detail. Without it selected, domains 19 and 20 and field 2 are never sent and the session keeps today's behaviour; it is not refused."
+    },
+    {
+      "id": 28,
+      "name": "ITEM_LOOK_V1",
+      "owner_decision": "CP D1240 comment6226466175 (#2182 payload and capability allocation); D1240a comment6226563247 (sole-writer registry/list/closure and next ledger29)",
+      "owner": "ITEM-LOOK-1; runtime visibleActor/profile/name producer remains pending",
+      "requires": [],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "Not offered: command assignment and runtime dispatch/negotiation composition are not installed. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
     }
   ],
   "command_types": [
@@ -896,7 +907,7 @@
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647]},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 29},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},

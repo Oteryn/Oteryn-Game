@@ -1,8 +1,8 @@
-//! Registered ITEM-LOOK-1 codec proposal; architect acceptance and CP-leased IDs are pending.
+//! CP D1240 ITEM-LOOK-1 codec with capability28 selection gating; no runtime offer.
 //!
 //! The Item branch retains ItemTargetV1 bytes; Creature carries the existing native
 //! spatial EntityRef. Results are UTF-8 text or one of four fact-free refusals.
-//! These local field choices remain subject to CP protocol review. No runtime offer is made.
+//! CP D1240 accepts these payload fields. Runtime visibility/name binding remains separate.
 
 use crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;
 use crate::charm_wire::push_varint;
@@ -10,13 +10,22 @@ use crate::charm_wire::{push_message_field, read_bytes, read_varint, set_once};
 pub use crate::item_view::ItemViewWireError as ItemLookWireError;
 use crate::item_view::{ItemHandle, decode_item_target, encode_item_target};
 use crate::world_spatial_entities::EntityRef;
+use std::num::NonZeroU64;
 
-/// Intentionally unassigned: these are not negotiated or dispatchable identifiers.
-pub const ITEM_LOOK_CAPABILITY_ID: Option<u32> = None;
+/// CP D1240 assigns capability28; no offer or dispatcher is installed here.
+pub const ITEM_LOOK_CAPABILITY_ID: Option<u32> = Some(28);
+/// Command assignment remains pending.
 pub const ITEM_LOOK_COMMAND_ID: Option<u32> = None;
 
 /// D1143's result text limit in UTF-8 bytes, excluding the existing wire envelope framing.
 pub const MAX_ITEM_LOOK_TEXT_BYTES: usize = 512;
+
+/// Actual session negotiation must supply this selection; default retains legacy bytes.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ItemLookSelection {
+    /// Capability28: Creature request branch and extended result refusals.
+    pub extended: bool,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ItemLookIntent {
@@ -48,9 +57,17 @@ pub enum ItemLookResult {
     Refused(ItemLookRefusal),
 }
 
-pub fn encode_item_look_intent(intent: ItemLookIntent) -> Vec<u8> {
+pub fn encode_item_look_intent(intent: ItemLookIntent) -> Result<Vec<u8>, ItemLookWireError> {
+    encode_item_look_intent_for(intent, ItemLookSelection::default())
+}
+
+pub fn encode_item_look_intent_for(
+    intent: ItemLookIntent,
+    selection: ItemLookSelection,
+) -> Result<Vec<u8>, ItemLookWireError> {
     match intent.target {
-        ItemLookTarget::Item(handle) => encode_item_target(handle),
+        ItemLookTarget::Item(handle) => Ok(encode_item_target(handle)),
+        ItemLookTarget::Creature(_) if !selection.extended => Err(ItemLookWireError::Malformed),
         ItemLookTarget::Creature(entity) => {
             // Same EntityRef field layout and zero-generation default as spatial snapshots.
             let mut reference = Vec::new();
@@ -61,12 +78,19 @@ pub fn encode_item_look_intent(intent: ItemLookIntent) -> Vec<u8> {
             }
             let mut output = Vec::new();
             push_message_field(&mut output, 2, &reference);
-            output
+            Ok(output)
         }
     }
 }
 
 pub fn decode_item_look_intent(payload: &[u8]) -> Result<ItemLookIntent, ItemLookWireError> {
+    decode_item_look_intent_for(payload, ItemLookSelection::default())
+}
+
+pub fn decode_item_look_intent_for(
+    payload: &[u8],
+    selection: ItemLookSelection,
+) -> Result<ItemLookIntent, ItemLookWireError> {
     if payload.len() > MAX_ITEM_LOOK_TARGET_BYTES {
         return Err(ItemLookWireError::LimitExceeded);
     }
@@ -79,7 +103,7 @@ pub fn decode_item_look_intent(payload: &[u8]) -> Result<ItemLookIntent, ItemLoo
             target: ItemLookTarget::Item(decode_item_target(payload)?),
         });
     }
-    if tag != 0x12 {
+    if tag != 0x12 || !selection.extended {
         return Err(ItemLookWireError::Malformed);
     }
     let reference = read_bytes(payload, &mut cursor)?;
@@ -107,7 +131,15 @@ pub fn decode_item_look_intent(payload: &[u8]) -> Result<ItemLookIntent, ItemLoo
     })
 }
 
+/// The server maps extended refusals to legacy NotAvailable without capability28.
 pub fn encode_item_look_result(result: &ItemLookResult) -> Result<Vec<u8>, ItemLookWireError> {
+    encode_item_look_result_for(result, ItemLookSelection::default())
+}
+
+pub fn encode_item_look_result_for(
+    result: &ItemLookResult,
+    selection: ItemLookSelection,
+) -> Result<Vec<u8>, ItemLookWireError> {
     if let ItemLookResult::Text(text) = result {
         if text.is_empty() {
             return Err(ItemLookWireError::Malformed);
@@ -124,6 +156,7 @@ pub fn encode_item_look_result(result: &ItemLookResult) -> Result<Vec<u8>, ItemL
         }
         ItemLookResult::Refused(refusal) => {
             let field = match refusal {
+                _ if !selection.extended => 2,
                 ItemLookRefusal::NotAvailable => 2,
                 ItemLookRefusal::NotVisible => 3,
                 ItemLookRefusal::NotReachable => 4,
@@ -139,6 +172,13 @@ pub fn encode_item_look_result(result: &ItemLookResult) -> Result<Vec<u8>, ItemL
 }
 
 pub fn decode_item_look_result(payload: &[u8]) -> Result<ItemLookResult, ItemLookWireError> {
+    decode_item_look_result_for(payload, ItemLookSelection::default())
+}
+
+pub fn decode_item_look_result_for(
+    payload: &[u8],
+    selection: ItemLookSelection,
+) -> Result<ItemLookResult, ItemLookWireError> {
     if payload.len() > MAX_COMMAND_RESULT_PAYLOAD_BYTES {
         return Err(ItemLookWireError::LimitExceeded);
     }
@@ -158,6 +198,9 @@ pub fn decode_item_look_result(payload: &[u8]) -> Result<ItemLookResult, ItemLoo
                 ItemLookResult::Text(text.to_owned())
             }
             tag @ (0x12 | 0x1a | 0x22 | 0x2a) => {
+                if tag != 0x12 && !selection.extended {
+                    return Err(ItemLookWireError::Malformed);
+                }
                 if !read_bytes(payload, &mut cursor)?.is_empty() {
                     return Err(ItemLookWireError::Malformed);
                 }
@@ -173,6 +216,13 @@ pub fn decode_item_look_result(payload: &[u8]) -> Result<ItemLookResult, ItemLoo
         set_once(&mut result, value)?;
     }
     result.ok_or(ItemLookWireError::Malformed)
+}
+
+/// D1240's mandatory unknown-generation refusal before runtime census lookup.
+/// A nonzero result is only a known generation value: it grants no current-actor,
+/// visibility, reach, profile or name binding. The runtime producer must prove those.
+pub fn known_creature_generation(reference: EntityRef) -> Result<NonZeroU64, ItemLookRefusal> {
+    NonZeroU64::new(reference.generation).ok_or(ItemLookRefusal::NotVisible)
 }
 
 #[cfg(test)]

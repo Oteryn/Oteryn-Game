@@ -371,9 +371,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // 22 RUNE_USE_V1 (RUNE-WIRE-1, not offered before RUNE-CAST-1) and 23 PRESENTATION_V1
 // (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
 // offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
+// 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
+// capability requirement was assigned. Next unallocated capability is29.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23,
+    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 28,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -708,6 +710,8 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
         presentation::CAPABILITY_PRESENTATION_V1,
         &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
     ),
+    // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
+    (28, &[]),
 ];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
