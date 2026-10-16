@@ -16,6 +16,56 @@ fn assets() -> Result<PinnedOutfitAssets, AppearanceRenderError> {
         MANIFEST_SHA256,
     )
 }
+
+#[test]
+fn native_variant_cache_separates_palette_direction_and_addons() -> TestResult {
+    use std::collections::HashMap;
+    let mut subject = assets()?;
+    let palette = [[255; 3]; 133];
+    let original = subject.compose(look(), &palette)?;
+    let mut changed_palette = palette;
+    changed_palette[0] = [0; 3];
+    let recoloured = subject.compose(look(), &changed_palette)?;
+    assert_ne!(original.atlas.rgba(), recoloured.atlas.rgba());
+    let turned = subject.compose(
+        OutfitPixels {
+            direction: OutfitDirection::East,
+            ..look()
+        },
+        &palette,
+    )?;
+    let addon = subject.compose(
+        OutfitPixels {
+            addons: 1,
+            ..look()
+        },
+        &palette,
+    )?;
+    let mut cache = HashMap::new();
+    for frame in [&original, &recoloured, &turned, &addon] {
+        assert!(
+            cache
+                .insert(frame.variant_key.clone(), frame.atlas.clone())
+                .is_none()
+        );
+    }
+    assert_eq!(cache.len(), 4);
+    assert_eq!(cache.get(&original.variant_key), Some(&original.atlas));
+    assert_eq!(cache.get(&recoloured.variant_key), Some(&recoloured.atlas));
+    // A second verified asset instance has the same identity; an unused palette entry does
+    // not change any selected RGB value or the composed pixels.
+    let mut reopened = assets()?;
+    assert_eq!(
+        reopened.compose(look(), &palette)?.variant_key,
+        original.variant_key
+    );
+    let mut unused_change = palette;
+    unused_change[3] = [3, 4, 5];
+    let unchanged = subject.compose(look(), &unused_change)?;
+    assert_eq!(unchanged.variant_key, original.variant_key);
+    assert_eq!(unchanged.atlas, original.atlas);
+    Ok(())
+}
 fn look() -> OutfitPixels {
     OutfitPixels {
         look_type: 128,

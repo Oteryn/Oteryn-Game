@@ -30,6 +30,22 @@ fn native_preview_is_the_actual_shared_compositor_consumer() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn native_preview_exposes_the_resolved_palette_variant_without_aliasing() -> TestResult {
+    let mut assets = assets()?;
+    let white = [[255; 3]; 133];
+    let black = [[0; 3]; 133];
+    let OutfitPreview::Resolved(first) = render_outfit_preview(&mut assets, look(), &white) else {
+        return Err("white preview unresolved".into());
+    };
+    let OutfitPreview::Resolved(second) = render_outfit_preview(&mut assets, look(), &black) else {
+        return Err("black preview unresolved".into());
+    };
+    assert_ne!(first.variant_key, second.variant_key);
+    assert_ne!(first.atlas.rgba(), second.atlas.rgba());
+    Ok(())
+}
 #[test]
 fn native_preview_failure_is_explicit_and_does_not_reuse_previous_frame() -> TestResult {
     let mut assets = assets()?;

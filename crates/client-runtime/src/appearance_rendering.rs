@@ -5,11 +5,12 @@ use oteryn_client_assets::{
 };
 use oteryn_renderer::{AtlasImage, BatchError};
 use std::path::Path;
+use std::sync::Arc;
 
 /// CONTENT_APPEARANCE §4.2: palette VALUES come from content, not this renderer.
 const PALETTE_LEN: usize = 133;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OutfitDirection {
     North,
     East,
@@ -30,7 +31,7 @@ impl OutfitDirection {
 }
 
 /// Already resolved presentation DATA; neither a server selection nor an unlock grant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct OutfitPixels {
     pub look_type: u32,
     pub direction: OutfitDirection,
@@ -65,8 +66,20 @@ impl std::fmt::Display for AppearanceRenderError {
 }
 impl std::error::Error for AppearanceRenderError {}
 
+/// Identity of this static first-group/phase0/z0 composition. The asset pin and resolved
+/// RGB values prevent equal look/colour indices from aliasing across source or palette changes.
+/// Scene adoption must namespace this key separately from raw sprite and builtin keys, and
+/// pair it with the cell coordinates. It does not authorize a selected or observed appearance.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OutfitVariantKey {
+    asset_manifest_sha256: Arc<str>,
+    look: OutfitPixels,
+    colours_rgb: [[u8; 3]; 4],
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposedOutfit {
+    pub variant_key: OutfitVariantKey,
     /// Native atlas, with source 32px cells and straight RGBA pixels.
     pub atlas: AtlasImage,
     /// Top-left relative to the native tile, retaining source displacement/anchoring.
@@ -78,6 +91,7 @@ pub struct ComposedOutfit {
 pub struct PinnedOutfitAssets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
+    asset_manifest_sha256: Arc<str>,
 }
 impl PinnedOutfitAssets {
     pub fn open(
@@ -91,6 +105,7 @@ impl PinnedOutfitAssets {
         Ok(Self {
             index,
             sheets: SpriteSheets::new(store, catalog),
+            asset_manifest_sha256: Arc::from(manifest_sha256),
         })
     }
 
@@ -201,6 +216,11 @@ impl PinnedOutfitAssets {
         let dy = i32::try_from(appearance.displacement_y)
             .map_err(|_| AppearanceRenderError::UnsupportedGrammar)?;
         Ok(ComposedOutfit {
+            variant_key: OutfitVariantKey {
+                asset_manifest_sha256: Arc::clone(&self.asset_manifest_sha256),
+                look,
+                colours_rgb: colours,
+            },
             atlas: AtlasImage::new(CELL_PX, columns, lines, rgba)?,
             offset: [
                 CELL_PX as i32 - width as i32 - dx,
