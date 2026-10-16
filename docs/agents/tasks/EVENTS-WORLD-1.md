@@ -159,5 +159,43 @@ all gameplay qualification remain **NOT_RUN**. Status remains
 NOT_FULLY_QUALIFIED; production acceptance **RED** pending the missing bindings
 and LAYER/ACT plus later RT/ANNOUNCE. No shared root registration, generator,
 shared schema, manifest, content pin, wire/RNG/activation or other owner's source
-is changed. This successor stays local for review; no immediate second push,
-freeze, external review trigger or CI restart is performed by this author.
+is changed. The source successor was first retained locally for review; later qualification
+and its metadata bridge are recorded below. No review trigger or CI restart is used.
+
+
+### Native selection-source component qualification
+
+Qualified Rust/JSON source: `a08f37a7bd474f230aab86fc9ceb25280c924979`.
+This record-only bridge preserves all three Rust and both JSON hashes. A private
+full actual crate adds only `#[cfg(test)] mod world_change;` to the real server
+root; canonical wiring remains absent and no source-copy harness is used.
+
+Actual command:
+`cargo test --offline --locked -p oteryn-game-server --lib world_change::content::tests:: --no-run --message-format=json`
+
+The real Cargo lib-unit artifact compiled successfully (fresh=false); its native
+inventory has 3,183 unique names and exactly four selected tests. Each literal
+`--exact` invocation passed one test, zero failed/ignored. Actual compiler dep-info
+resolves each of the six mounted source inputs once, including both JSON files.
+The retained gzip was decompressed and its ELF independently verified against SHA256
+`ffc4f60d054d2b8a9571d6ff204a249aa969f739126d509c2a618271588d1655`.
+Retained gzip bytes have SHA256 `f09282f5f2fa03b002c6adc638463e8cd0c604e9c0b63f1abfdbe746e85c9e98`.
+Independent source/plan and actual outcome review PASS; no own-source compiler
+warnings were emitted. Outcome receipt SHA256: `50d1b281ff8fbcbdd91a57e23a9261d78cb7ab67df66d0c09466ac3d73666071`.
+
+The first native compile ended with LLVM out-of-memory/SIGABRT under an imposed
+8GB virtual-address limit; runtime did not run in that attempt. One unchanged-
+source attempt used 16GB virtual address space, retaining the 8GB process-group
+RSS cap, disk/memory-availability guards and ten-minute timeout. It compiled
+and ran the four tests successfully; sampled RSS peaked at 6,784,978,944 bytes,
+with no guard abort. First-failure logs and the actual measured sampling cadence
+remain retained. An initial receipt check assumed absolute dep paths; normalizing
+actual relative/parent paths corrected the receipt without rebuilding or rerunning.
+
+These four PASS qualify the selection-source parser component only. They do not
+qualify complete W1 compiler admission, layers, House/property safety, activation,
+spawns, announcements or gameplay. Strict all-target Clippy, whole-package tests
+and integrated runtime remain NOT_RUN. Status stays NOT_FULLY_QUALIFIED.
+The earlier NOT_RUN entries describe the source-authoring stage, superseded only
+for this exact normal native compilation and these four tests. D1122 permits a
+coherent reviewed source checkpoint with these limits; the draft remains open.
