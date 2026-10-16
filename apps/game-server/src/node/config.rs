@@ -103,6 +103,8 @@ pub struct ReadinessConfig {
     pub content_revision: String,
     pub map_revision: String,
     pub world_policy_revision: String,
+    /// ADMIT0: explicit registered IDs, fixed with this policy and ownership generation.
+    pub required_gameplay_capabilities: Vec<u32>,
     pub offer_revision: String,
 }
 
@@ -397,6 +399,12 @@ impl NodeConfig {
             return reject("control.socket_path");
         }
         let readiness = &self.readiness;
+        crate::gameplay_transport::world_required_capabilities::validate_declared(
+            &readiness.required_gameplay_capabilities,
+        )
+        .map_err(|_| ConfigError {
+            key: "readiness.required_gameplay_capabilities",
+        })?;
         if !token(&readiness.source_authority, 128, b"/") {
             return reject("readiness.source_authority");
         }
@@ -675,6 +683,7 @@ ruleset_revision = "ruleset-1"
 content_revision = "content-1"
 map_revision = "map-1"
 world_policy_revision = "policy-1"
+required_gameplay_capabilities = []
 offer_revision = "offer-1"
 
 [platform]
@@ -707,6 +716,30 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         assert_eq!(
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
+        );
+    }
+
+    #[test]
+    fn required_gameplay_capabilities_are_explicit_registered_and_canonical() {
+        let field = "required_gameplay_capabilities = []";
+        for ids in [
+            "[0]",
+            "[999]",
+            "[18, 6]",
+            "[18, 18]",
+            "[\"WORLD_SPATIAL_FIELDS\"]",
+        ] {
+            let changed = NODE.replace(field, &format!("required_gameplay_capabilities = {ids}"));
+            assert!(NodeConfig::parse(changed.as_bytes()).is_err(), "{ids}");
+        }
+        assert!(NodeConfig::parse(NODE.replace(field, "").as_bytes()).is_err());
+        let declared = NODE.replace(field, "required_gameplay_capabilities = [11, 18]");
+        assert_eq!(
+            NodeConfig::parse(declared.as_bytes())
+                .expect("registered IDs; offer checked at boot")
+                .readiness
+                .required_gameplay_capabilities,
+            [11, 18]
         );
     }
 

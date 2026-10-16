@@ -339,3 +339,141 @@ fn session_selection_capacity_and_union_limit_fail_closed() {
         Err(SessionCapabilityError::RequiredLimitExceeded)
     );
 }
+
+fn channel_scope(world: u8, channel: u8) -> RuntimeScopeRefV1 {
+    fn id(last: u8) -> [u8; 16] {
+        let mut bytes = [0; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes[15] = last;
+        bytes
+    }
+    RuntimeScopeRefV1::channel(
+        crate::foundation::WorldId::decode(&id(world)).unwrap(),
+        crate::foundation::ChannelId::decode(&id(channel)).unwrap(),
+    )
+}
+
+#[test]
+fn real_scope_offer_enforces_the_registered_d1083_floor() {
+    use super::super::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, PRODUCTION_OFFERED_CAPABILITIES,
+    };
+    let scope = channel_scope(1, 2);
+    assert_eq!(
+        BoundRequiredCapabilities::for_channel_boot(
+            &[],
+            scope,
+            7,
+            "policy-7",
+            BUNDLE_WORLD_OFFERED_CAPABILITIES
+        )
+        .unwrap_err(),
+        BootCapabilityError::MissingFloor(vec![18]),
+    );
+    let required = BoundRequiredCapabilities::for_channel_boot(
+        &[18],
+        scope,
+        7,
+        "policy-7",
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+    )
+    .unwrap();
+    assert_eq!(required.required.as_slice(), &[4, 6, 18]);
+    // 11 is registered but its actual scope offer remains closed. 6 never aliases FIELD.
+    assert_eq!(
+        BoundRequiredCapabilities::for_channel_boot(
+            &[11, 18],
+            scope,
+            7,
+            "policy-7",
+            BUNDLE_WORLD_OFFERED_CAPABILITIES
+        )
+        .unwrap_err(),
+        BootCapabilityError::Unoffered(11)
+    );
+    assert!(
+        build_registry()
+            .unwrap()
+            .rows
+            .iter()
+            .all(|row| row.name != "WORLD_SPATIAL_FIELDS")
+    );
+    assert!(
+        BoundRequiredCapabilities::for_channel_boot(
+            &[],
+            scope,
+            7,
+            "policy-7",
+            PRODUCTION_OFFERED_CAPABILITIES
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn real_required_members_are_forced_and_each_missing_member_refuses() {
+    let required = BoundRequiredCapabilities::for_channel_boot(
+        &[18],
+        channel_scope(1, 2),
+        7,
+        "policy-7",
+        super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+    )
+    .unwrap();
+    for missing in [4, 6, 18] {
+        let support: Vec<_> = [4, 6, 18].into_iter().filter(|id| *id != missing).collect();
+        assert!(
+            matches!(required.authenticate_support(&support), Err(SessionCapabilityError::MissingSupport(ids)) if ids == [missing])
+        );
+        assert!(
+            matches!(required.authenticate_resume_support(&support, SelectedCapabilities::NONE), Err(SessionCapabilityError::MissingSupport(ids)) if ids == [missing])
+        );
+    }
+    assert_eq!(
+        required
+            .authenticate_support(&[4, 6, 18])
+            .unwrap()
+            .selected()
+            .as_slice(),
+        &[4, 6, 18]
+    );
+    // Required additions get a replacement baseline; optional negotiation never widens a resume.
+    assert_eq!(
+        required
+            .authenticate_resume_support(&[3, 4, 6, 7, 18], SelectedCapabilities::NONE)
+            .unwrap()
+            .selected()
+            .as_slice(),
+        &[4, 6, 18]
+    );
+}
+
+#[test]
+fn independently_current_binding_is_required_by_the_durable_callback() {
+    let scope = channel_scope(1, 2);
+    let required = BoundRequiredCapabilities::for_channel_boot(
+        &[18],
+        scope,
+        7,
+        "policy-7",
+        super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+    )
+    .unwrap();
+    let authenticated = required.authenticate_support(&[4, 6, 18]).unwrap();
+    let check = authenticated.current_check();
+    assert!(check(scope, 7, "policy-7"));
+    for (current, generation, policy) in [
+        (channel_scope(3, 2), 7, "policy-7"),
+        (channel_scope(1, 3), 7, "policy-7"),
+        (scope, 6, "policy-7"),
+        (scope, 8, "policy-7"),
+        (scope, 7, "policy-8"),
+    ] {
+        assert!(!check(current, generation, policy));
+        assert_eq!(
+            authenticated.revalidate(current, generation, policy),
+            Err(SessionCapabilityError::StaleScopeBinding)
+        );
+    }
+}

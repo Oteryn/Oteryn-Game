@@ -558,6 +558,7 @@ ruleset_revision = "rules-ll-1"
 content_revision = "content-ll-1"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
+required_gameplay_capabilities = []
 offer_revision = "offer-ll-1"
 [platform]
 source_authority = "platform"

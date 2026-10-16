@@ -14,6 +14,9 @@ use super::connection::{
     GraceExpiryResult, ResumeAttempt,
 };
 use super::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
+use super::world_required_capabilities::{
+    AuthenticatedSessionCapabilities, SessionCapabilityError,
+};
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
 use super::{ComposedFreshAdmission, canonical_uuid};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -365,6 +368,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .map_err(|_| Rejected)?;
         let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|_| Rejected)?;
+        // ADMIT0/D1084: only the authenticated and safely classified owner path may
+        // reveal a missing requirement. This precedes both PREPARE and the legacy
+        // capability-mismatch release: ADMIT0 refusal preserves all current claims.
+        if !self.required_capabilities.matches_current(
+            scope,
+            session.current_scope_generation().get(),
+            &recovery.world_policy_revision,
+        ) {
+            return Err(Rejected);
+        }
+        let capabilities = self
+            .required_capabilities
+            .authenticate_resume_support(
+                attempt.supported_capabilities,
+                lost.continuity.selected_capabilities,
+            )
+            .map_err(|error| match error {
+                SessionCapabilityError::MissingSupport(_) => {
+                    AdmissionRefusal::RecoveryCapabilityRequired
+                }
+                _ => Unavailable,
+            })?;
+        capabilities
+            .revalidate(
+                scope,
+                session.current_scope_generation().get(),
+                &recovery.world_policy_revision,
+            )
+            .map_err(|_| Rejected)?;
         // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
         // client that no longer supports a selected capability falls back to fresh admission.
         // D449: only a resume that passed every other check (the verified recovery credential,
@@ -390,6 +422,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         // The resumed session as the candidate connection would serve it.
         let mut resumed = lost;
+        resumed.continuity.selected_capabilities = capabilities.selected();
         resumed.controller = Some(ControllerBinding {
             transport: attempt.transport,
             account_id: controller.account_id,
@@ -399,7 +432,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // from the committed resume, never carried over.
         resumed.item_fence = None;
         let prepared = match self
-            .decide(&store, prepare, source.clone(), flow.operation())
+            .decide(
+                &store,
+                prepare,
+                source.clone(),
+                flow.operation(),
+                &capabilities,
+            )
             .await
         {
             Ok(outcome @ CompleteReconnectOutcomeV1::Prepared { .. }) => outcome,
@@ -435,14 +474,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 final_now,
             )
             .map_err(|_| Rejected)?;
+            // The deciding store will independently resolve and check the locked
+            // current runtime again; this immutable support never supplies authority.
             flow.resume_prepared(authorization, source.as_ref(), final_now)
                 .map_err(|_| Rejected)?;
             let commit = Arc::new(
                 flow.take_request(CompleteReconnectRequestKindV1::Commit)
                     .map_err(|_| Rejected)?,
             );
-            self.decide(&store, commit, source.clone(), flow.operation())
-                .await
+            self.decide(
+                &store,
+                commit,
+                source.clone(),
+                flow.operation(),
+                &capabilities,
+            )
+            .await
         }
         .await;
         match committed {
@@ -502,9 +549,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: Arc<crate::foundation::CompleteReconnectRequestV1>,
         source: Arc<ChannelResumeSource>,
         operation: &CompleteReconnectDurabilityOperationV1,
+        capabilities: &AuthenticatedSessionCapabilities,
     ) -> Result<CompleteReconnectOutcomeV1, AdmissionRefusal> {
         match store
-            .apply_registered_complete_reconnect(self.holder, request, source)
+            .apply_registered_complete_reconnect(
+                self.holder,
+                request,
+                source,
+                capabilities.current_check(),
+            )
             .await
         {
             Ok(CompleteReconnectOutcomeV1::Ambiguous) | Err(_) => {

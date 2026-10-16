@@ -1,14 +1,14 @@
-//! ADMIT0 §3–4 capability-set kernel, not an admission authority or a runtime adapter.
-//!
-//! CP must supply registered IDs, the offered graph and the build's mandatory floor
-//! from trusted build facts, not operator/client claims. No production floor, World
-//! profile or transport-profile adapter is chosen here. The owner must bind the boot
-//! result to the current Channel generation/policy revision and check it only after
-//! authentication, including final atomic revalidation. Support is not authority.
+//! ADMIT0 §3–4 capability sets bound to the booted Channel generation (D1081–D1084).
+//! The build registry and actual scope offer determine the floor; configuration and
+//! clients cannot weaken it. Authentication and independently current authority stay
+//! with the admission owners. An immutable boot result is never current authority.
 
 use super::capabilities::{OfferedCapability, SelectedCapabilities};
 use oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT;
 use std::collections::BTreeSet;
+use std::sync::{Arc, OnceLock};
+
+use crate::foundation::RuntimeScopeRefV1;
 
 /// ADMIT0-RL-01 (§3.1); registry/configuration integration remains slot-only.
 pub(crate) const MAX_DECLARED_REQUIRED_CAPABILITIES: usize = 16;
@@ -27,6 +27,9 @@ pub(crate) enum BootCapabilityError {
     MissingFloor(Vec<u32>),
     /// The existing negotiated-selection representation cannot hold the requirements.
     SelectionUnavailable,
+    InvalidBuildRegistry,
+    OfferRegistryMismatch(u32),
+    InvalidScopeBinding,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,6 +40,243 @@ pub(crate) enum SessionCapabilityError {
     RequiredLimitExceeded,
     MissingSupport(Vec<u32>),
     SelectionUnavailable,
+    StaleScopeBinding,
+}
+
+#[derive(serde::Deserialize)]
+struct RegistryCapability {
+    id: u32,
+    name: String,
+    #[serde(default)]
+    requires: Vec<u32>,
+}
+
+#[derive(serde::Deserialize)]
+struct RegistryDocument {
+    capabilities: Vec<RegistryCapability>,
+}
+
+struct BuildRegistry {
+    ids: Vec<u32>,
+    rows: Vec<RegistryCapability>,
+}
+
+fn build_registry() -> Result<&'static BuildRegistry, BootCapabilityError> {
+    static REGISTRY: OnceLock<Result<BuildRegistry, BootCapabilityError>> = OnceLock::new();
+    REGISTRY
+        .get_or_init(|| {
+            let document: RegistryDocument = serde_json::from_str(include_str!(
+                "../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
+            ))
+            .map_err(|_| BootCapabilityError::InvalidBuildRegistry)?;
+            let ids: Vec<_> = document.capabilities.iter().map(|row| row.id).collect();
+            let names: BTreeSet<_> = document.capabilities.iter().map(|row| &row.name).collect();
+            if !canonical(&ids)
+                || names.len() != ids.len()
+                || document.capabilities.iter().any(|row| {
+                    !canonical(&row.requires)
+                        || row.requires.iter().any(|id| ids.binary_search(id).is_err())
+                })
+            {
+                return Err(BootCapabilityError::InvalidBuildRegistry);
+            }
+            Ok(BuildRegistry {
+                ids,
+                rows: document.capabilities,
+            })
+        })
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+/// Shape/registration only; offer gates and the mandatory floor are checked at boot.
+pub(crate) fn validate_declared(ids: &[u32]) -> Result<(), BootCapabilityError> {
+    if ids.len() > MAX_DECLARED_REQUIRED_CAPABILITIES {
+        return Err(BootCapabilityError::DeclaredLimitExceeded);
+    }
+    if !canonical(ids) {
+        return Err(BootCapabilityError::InvalidDeclaredList);
+    }
+    let registry = build_registry()?;
+    for id in ids {
+        if registry.ids.binary_search(id).is_err() {
+            return Err(BootCapabilityError::Unregistered(*id));
+        }
+    }
+    Ok(())
+}
+
+/// Shared by boot and the session offer; neither reads the registry's descriptive
+/// `offered` flag as a substitute for the real bundle/Item offer gate.
+pub(crate) fn offered_for_scope(
+    bundle: bool,
+    active: Option<&crate::content::ActiveGeneration>,
+) -> &'static [OfferedCapability] {
+    if bundle {
+        super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+    } else {
+        super::item_ref_admission::offered_capabilities(active)
+    }
+}
+
+/// The immutable requirements actually validated before this generation publishes readiness.
+#[derive(Debug)]
+pub(crate) struct BoundRequiredCapabilities {
+    required: RequiredCapabilities<'static>,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    world_policy_revision: String,
+    native_profile: Vec<u32>,
+}
+
+impl BoundRequiredCapabilities {
+    pub(crate) fn matches_current(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        policy: &str,
+    ) -> bool {
+        self.scope == scope && self.generation == generation && self.world_policy_revision == policy
+    }
+
+    pub(crate) fn for_channel_boot(
+        declared: &[u32],
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        world_policy_revision: &str,
+        offered: &'static [OfferedCapability],
+    ) -> Result<Arc<Self>, BootCapabilityError> {
+        validate_declared(declared)?;
+        if !matches!(scope, RuntimeScopeRefV1::Channel { .. })
+            || generation == 0
+            || world_policy_revision.is_empty()
+        {
+            return Err(BootCapabilityError::InvalidScopeBinding);
+        }
+        let registry = build_registry()?;
+        for node in offered {
+            let Some(row) = registry.rows.iter().find(|row| row.id == node.id) else {
+                return Err(BootCapabilityError::Unregistered(node.id));
+            };
+            if row.requires != node.requires {
+                return Err(BootCapabilityError::OfferRegistryMismatch(node.id));
+            }
+        }
+        // D1083: 18 is the accepted map successor. FIELD-WIRE-1 has not registered
+        // WORLD_SPATIAL_FIELDS: it contributes nothing until registered AND offered.
+        let offered_named = |names: &[&str]| -> Vec<u32> {
+            registry
+                .rows
+                .iter()
+                .filter(|row| {
+                    names.contains(&row.name.as_str())
+                        && offered.iter().any(|node| node.id == row.id)
+                })
+                .map(|row| row.id)
+                .collect()
+        };
+        let floor = offered_named(&[
+            "WORLD_MAP_VIEW_V1",
+            "WORLD_SPATIAL_FIELDS",
+            "WORLD_INTERACTION_V1",
+        ]);
+        let native_profile = offered_named(&["CLIENT_INTEGRITY_V1", "INPUT_TELEMETRY_V1"]);
+        let required = RequiredCapabilities::for_boot(declared, &registry.ids, offered, &floor)?;
+        Ok(Arc::new(Self {
+            required,
+            scope,
+            generation,
+            world_policy_revision: world_policy_revision.into(),
+            native_profile,
+        }))
+    }
+
+    /// Call only after grant authentication and safe current ownership/world classification.
+    pub(crate) fn authenticate_support(
+        self: &Arc<Self>,
+        supported: &[u32],
+    ) -> Result<AuthenticatedSessionCapabilities, SessionCapabilityError> {
+        let selected = self
+            .required
+            .select_for_session(supported, &self.native_profile)?;
+        Ok(AuthenticatedSessionCapabilities {
+            requirements: self.clone(),
+            supported: supported.to_vec(),
+            selected,
+        })
+    }
+
+    /// A resume forces the current requirements but retains optional selection
+    /// semantics: newly advertised optional capabilities do not widen the session.
+    /// Missing predecessor support still follows the legacy owner path, separately.
+    pub(crate) fn authenticate_resume_support(
+        self: &Arc<Self>,
+        supported: &[u32],
+        predecessor: SelectedCapabilities,
+    ) -> Result<AuthenticatedSessionCapabilities, SessionCapabilityError> {
+        // Validate the full wire support before filtering it (duplicates/oversize
+        // evidence must not become valid merely because an optional ID is dropped).
+        self.required
+            .select_for_session(supported, &self.native_profile)?;
+        let profile = closure(
+            &self.native_profile,
+            self.required.registered,
+            self.required.offered,
+        )
+        .map_err(SessionCapabilityError::InvalidProfile)?;
+        let forced: BTreeSet<_> = self
+            .required
+            .effective
+            .iter()
+            .copied()
+            .chain(profile)
+            .collect();
+        let supported: Vec<_> = supported
+            .iter()
+            .copied()
+            .filter(|id| predecessor.contains(*id) || forced.contains(id))
+            .collect();
+        self.authenticate_support(&supported)
+    }
+}
+
+/// Support and selection are data. Every mutation must additionally match the
+/// independently resolved current scope/generation/policy through `revalidate`.
+#[derive(Clone)]
+pub(crate) struct AuthenticatedSessionCapabilities {
+    requirements: Arc<BoundRequiredCapabilities>,
+    supported: Vec<u32>,
+    selected: SelectedCapabilities,
+}
+
+impl AuthenticatedSessionCapabilities {
+    pub(crate) fn selected(&self) -> SelectedCapabilities {
+        self.selected
+    }
+
+    pub(crate) fn revalidate(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        world_policy_revision: &str,
+    ) -> Result<SelectedCapabilities, SessionCapabilityError> {
+        let bound = &self.requirements;
+        if !bound.matches_current(scope, generation, world_policy_revision) {
+            return Err(SessionCapabilityError::StaleScopeBinding);
+        }
+        bound
+            .required
+            .select_for_session(&self.supported, &bound.native_profile)
+    }
+
+    pub(crate) fn current_check(
+        &self,
+    ) -> crate::durability::fresh_admission::CurrentCapabilityCheck {
+        let support = self.clone();
+        Arc::new(move |scope, generation, policy| {
+            support.revalidate(scope, generation, policy).is_ok()
+        })
+    }
 }
 
 /// Immutable boot result, borrowing the same build catalogue for every session check.
@@ -161,6 +401,7 @@ impl<'a> RequiredCapabilities<'a> {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn as_slice(&self) -> &[u32] {
         &self.effective
     }

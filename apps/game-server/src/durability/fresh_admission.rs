@@ -183,6 +183,13 @@ pub(super) type OwnerRevalidation = Box<
         > + Send,
 >;
 
+/// Admission-owner predicate over independently read, locked CURRENT runtime facts.
+/// Prepared/receipt facts must never be substituted for these callback arguments.
+/// The callback carries immutable build requirements and authenticated support;
+/// it does not supply current scope authority and cannot grant a lease or session.
+pub type CurrentCapabilityCheck =
+    std::sync::Arc<dyn Fn(RuntimeScopeRefV1, u64, &str) -> bool + Send + Sync>;
+
 pub(super) fn envelope_size(length: usize, maximum_bytes: usize) -> Result<usize> {
     let groups = length
         .checked_div(3)
@@ -315,6 +322,33 @@ pub struct FreshAdmissionStore {
     final_position: Option<super::character_last_position::FinalLastPosition>,
 }
 impl FreshAdmissionStore {
+    /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
+    /// relation locks; read the current guard through its full mirror/history validator.
+    /// Neither the prepared operation nor a callback can supply current runtime facts.
+    pub(crate) async fn check_current_runtime_capabilities(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        check: &CurrentCapabilityCheck,
+    ) -> Result<bool> {
+        let runtime = self
+            .guards
+            .load_locked(tx, &AdmissionAuthorityGuardKeyV1::Runtime(scope))
+            .await?;
+        let Some(AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: true,
+            world_policy_revision,
+            ..
+        }) = runtime.as_ref().map(|row| &row.state)
+        else {
+            return Ok(false);
+        };
+        Ok(*ownership_generation == generation
+            && check(scope, *ownership_generation, world_policy_revision))
+    }
+
     #[cfg(test)]
     pub async fn connect_runtime(
         url: &str,
@@ -404,6 +438,9 @@ impl FreshAdmissionStore {
         ))?))
     }
 
+    /// Fixture-only raw write. Production enters through the composed owner,
+    /// which requires current capability revalidation in the deciding transaction.
+    #[cfg(test)]
     pub async fn commit(
         &self,
         request: &FreshAdmissionCommitRequestV1,
@@ -414,7 +451,7 @@ impl FreshAdmissionStore {
     /// Commit with an optional owner revalidation that runs inside the commit
     /// transaction, after relation locks and exact-replay reconciliation. A
     /// `false` result rejects the attempt as stale authority.
-    pub(super) async fn commit_revalidated(
+    pub(crate) async fn commit_revalidated(
         &self,
         request: &FreshAdmissionCommitRequestV1,
         revalidate: Option<OwnerRevalidation>,
@@ -2649,9 +2686,15 @@ impl FreshAdmissionStore {
         custody: &super::runtime_scope_assignment::NodeIncarnationProof,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: CurrentCapabilityCheck,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.apply_complete_reconnect_with(Some(custody.clone()), request, source)
-            .await
+        self.apply_complete_reconnect_with(
+            Some(custody.clone()),
+            request,
+            source,
+            Some(capabilities),
+        )
+        .await
     }
 
     /// Test seam: the same decision against the source's own recovery evidence.
@@ -2661,7 +2704,20 @@ impl FreshAdmissionStore {
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.apply_complete_reconnect_with(None, request, source)
+        self.apply_complete_reconnect_with(None, request, source, None)
+            .await
+    }
+
+    /// Independent signed-fixture qualification of the same locked ADMIT0 gate.
+    /// Production always uses registered custody and the mandatory callback above.
+    #[cfg(test)]
+    pub(crate) async fn apply_complete_reconnect_with_capabilities(
+        &self,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: CurrentCapabilityCheck,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(None, request, source, Some(capabilities))
             .await
     }
 
@@ -2670,6 +2726,7 @@ impl FreshAdmissionStore {
         custody: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: Option<CurrentCapabilityCheck>,
     ) -> Result<CompleteReconnectOutcomeV1> {
         let store = (*self).clone();
         let issued = store.guards.backend.try_issue_root()?;
@@ -2811,6 +2868,20 @@ impl FreshAdmissionStore {
         let Ok(effect) = decision else {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         };
+        // ADMIT0: PREPARE and COMMIT both require the independently locked current
+        // runtime binding before any reservation, nonce consumption or session switch.
+        // Exact historical receipts above retain their original outcome; replaying one
+        // is not a fresh authority grant. Only the cfg(test) seam may omit the check.
+        match (&custody, &capabilities) {
+            (_, Some(check)) if custody.is_some() || cfg!(test) => {
+                if !store.check_current_runtime_capabilities(&mut tx,
+                    current.current_runtime_scope(), current.current_scope_generation().get(), check).await? {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                }
+            }
+            (None, None) if cfg!(test) => {}
+            _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
+        }
         if commit {
             if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {
                 return Ok(CompleteReconnectOutcomeV1::Rejected);
