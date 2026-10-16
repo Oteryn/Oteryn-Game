@@ -22,6 +22,7 @@ updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/world_party.rs
+  - apps/game-server/src/durability/world_party_tests.rs # ROOT-HELP-D-PARTY-20261016: first-policy fixture only; sole author /root/party_owner
   - apps/game-server/src/foundation/runtime_actor_party.rs
   - apps/game-server/src/party/ (new)
   - crates/protocol-oteryn/src/party*.rs (new)
@@ -63,6 +64,7 @@ Party invite/join/leave, succession, shared-XP toggle, `PartyView` cache (member
 ## Owned paths (builder edits freely)
 
 - `apps/game-server/src/durability/world_party.rs`
+- `apps/game-server/src/durability/world_party_tests.rs` — ROOT-HELP-D-PARTY-20261016; only the first-policy fixture correction, sole author `/root/party_owner`.
 - `apps/game-server/src/foundation/runtime_actor_party.rs`
 - apps/game-server/src/party/ (new)
 - crates/protocol-oteryn/src/party*.rs (new)
@@ -504,3 +506,35 @@ helper to the real added snapshot field, retaining all test bodies. Separate old
 native qualification does not certify the final joint-source candidate. No main or
 other branch was merged and no cross-card path was silently written. Publication
 remains held on the inherited default-test constraint and final native/review gates.
+
+
+### ROOT-HELP-D-PARTY-20261016 — narrowly allocated fixture repair
+
+This current entry supersedes the earlier unresolved literal-test/path hold only.
+The user's explicit ROOT-HELP-D-PARTY-20261016 instruction allocates
+`apps/game-server/src/durability/world_party_tests.rs` on `skeleton/party-1` to sole
+source author `/root/party_owner` exclusively for this contract-fixture repair.
+The task returns to AUTHORING from local `1538cd2bcac320a64507d1a0fee579171189a72c`;
+remote draft #2201's expected predecessor remains `5b46fefaa424fabc754239c8d7dc987ba1766ed4`.
+
+The entire Rust delta changes the first policy tuple in
+`genuine_two_fresh_players_require_target_consent_and_block_policy_before_invite_accept`
+from `(1, None)` to `(1, Some(2))`, making its initial refusal case explicitly NOBODY.
+All original NOT_VISIBLE/zero-party assertions and authority/visibility guards remain
+unchanged. Accepted missing-row ANYONE/PARTY semantics remain covered by the existing
+owned `party_missing_settings_defaults_allow_invite_accept_and_current_channel_entry`
+in `tests/party_shared_xp_postgres.rs`: it verifies zero settings rows before actual
+Invite APPLIED, Accept APPLIED and CHANNEL entry. No duplicate test was added.
+
+The lead's retained pre-repair native result, 48 passed / 1 failed out of49, remains
+historical evidence of the obsolete absence/refusal fixture; it is not relabeled as
+a post-repair success. Worker validation covers format, exact delta, whitespace and
+governance only; no Cargo/PostgreSQL job ran for this repair. The lead must validate
+and independently review the new exact candidate before publication. The earlier
+assertion-rewrite proposal is superseded and must not be applied.
+
+This allocation adds no general permission to rewrite required assertions, touch
+other files, wire/register modules, allocate shared slots, mark ready, merge or
+operate production. Full PARTY runtime/CHAT/cleanup and other integration gates
+remain as recorded above. The lead retains commit/push authority; the worker makes
+no commit or push.
