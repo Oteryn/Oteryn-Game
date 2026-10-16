@@ -11,7 +11,7 @@ use crate::durability::item_transfer::{
     BackpackEntry, CharacterBackpack, ContainerEntryPosition, CurrentCharacterItemFence,
     InventoryItem,
 };
-use crate::durability::player_trade::{BackpackItemVersion, Trader};
+use crate::durability::player_trade::{BackpackItemVersion, LeafOffer, Trader};
 use crate::foundation::{
     ChannelId, CommandId, ConnectionGeneration, ScopeOwnershipGeneration, WorldId,
 };
@@ -1426,7 +1426,7 @@ fn native_mint_transfer_changes_current_inventory_and_cancels_accept_without_swa
                     digest
                 )
                 .await,
-            Err(OwnerError::NotTradeable)
+            Err(TradeReadError::NotTradeable)
         ));
         let backpack = h
             .root
@@ -1445,7 +1445,7 @@ fn native_mint_transfer_changes_current_inventory_and_cancels_accept_without_swa
                     digest
                 )
                 .await,
-            Err(OwnerError::NotTradeable)
+            Err(TradeReadError::NotTradeable)
         ));
         let context = TradeReadContext {
             runtime: &runtime,

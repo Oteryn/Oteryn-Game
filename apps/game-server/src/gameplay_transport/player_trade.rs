@@ -11,7 +11,7 @@
     reason = "private Trade component awaits physical reservations and atomic writer integration"
 )]
 
-use crate::durability::player_trade::{LeafOffer, TradeData, TradeReadError};
+use crate::durability::player_trade::{TradeData, TradeReadError};
 use crate::foundation::{CommandRef, GameSessionId, RuntimeScopeRefV1};
 
 const IDLE_MS: u64 = 120_000;
