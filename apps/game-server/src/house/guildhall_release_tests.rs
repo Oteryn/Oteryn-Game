@@ -438,7 +438,7 @@ fn guild_house_missing_actual_native_hook_refuses_before_freeze() -> TestResult 
     run("guild_house_capability", async |h| {
         setup(h, 1).await?;
         sqlx::raw_sql(
-            "ALTER TABLE game_item_instances DISABLE TRIGGER house_disposition_item_fence",
+            "ALTER TABLE game_item_instances DISABLE TRIGGER a_house_disposition_item_fence",
         )
         .execute(&h.pool)
         .await?;

@@ -33,6 +33,27 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## Trigger-order catalogue repair — local recovery candidate, NOT_FULLY_QUALIFIED
+
+Actual227 on #2141 identified the generic DUR-03 BEFORE trigger refusing23514
+before the House NOWAIT anchor could refuse55P03. #2141 now authors only four
+trigger-object renames to `a_house_disposition_{content,provenance,item,entry}_fence`;
+the underlying functions, event masks and native ABI1 remain unchanged.
+
+This #2137 successor changes only the exact enabled-hook catalogue names and the
+disabled-item-hook negative consumer. Its four expected tables, functions, masks,
+enabled-state requirements and fail-closed count remain unchanged. New producer
+with old consumer, or old producer with new consumer, still refuses before freeze.
+The D1162 #2141→#2137 order governs their coherent integration. No shared wiring,
+grant, migration number or ABI version/signature changes are added.
+
+Focused official Rustfmt1.94 and whitespace checks pass. Native12/PG qualification
+for this source generation remains NOT_RUN; prior checkpoint evidence remains
+historical. Independent review and a new actual executor allocation are required.
+Independent source review passed after exact hash and owned-path checks. This
+successor is preserved as a local commit and verified external recovery bundle;
+publication is separate and no PC execution, ready, merge or rebase is implied.
+
 ## Current checkpoint — real Guildhall release port, NOT_FULLY_QUALIFIED
 
 The product-source candidate is local commit

@@ -666,10 +666,10 @@ BEGIN
  IF r.census IS DISTINCT FROM game_house_guild_source(w,r.house_key) THEN
   RAISE EXCEPTION 'source census changed; rollback and reserve again' USING ERRCODE='OHG01';END IF;
  IF (SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled IN('O','A') AND
-  ((tgrelid='game_item_house_interior_locations'::regclass AND tgname='house_disposition_content_fence' AND tgfoid='game_house_disposition_content_fence()'::regprocedure AND tgtype=31)
-   OR(tgrelid='game_item_house_reclaim_provenance'::regclass AND tgname='house_disposition_provenance_fence' AND tgfoid='game_house_disposition_content_fence()'::regprocedure AND tgtype=31)
-   OR(tgrelid='game_item_instances'::regclass AND tgname='house_disposition_item_fence' AND tgfoid='game_house_disposition_item_fence()'::regprocedure AND tgtype=27)
-   OR(tgrelid='game_house_scope_handoffs'::regclass AND tgname='house_disposition_entry_fence' AND tgfoid='game_house_disposition_entry_fence()'::regprocedure AND tgtype=23)))<>4 THEN
+  ((tgrelid='game_item_house_interior_locations'::regclass AND tgname='a_house_disposition_content_fence' AND tgfoid='game_house_disposition_content_fence()'::regprocedure AND tgtype=31)
+   OR(tgrelid='game_item_house_reclaim_provenance'::regclass AND tgname='a_house_disposition_provenance_fence' AND tgfoid='game_house_disposition_content_fence()'::regprocedure AND tgtype=31)
+   OR(tgrelid='game_item_instances'::regclass AND tgname='a_house_disposition_item_fence' AND tgfoid='game_house_disposition_item_fence()'::regprocedure AND tgtype=27)
+   OR(tgrelid='game_house_scope_handoffs'::regclass AND tgname='a_house_disposition_entry_fence' AND tgfoid='game_house_disposition_entry_fence()'::regprocedure AND tgtype=23)))<>4 THEN
   RAISE EXCEPTION 'actual native item/entry hooks absent' USING ERRCODE='OHG05';END IF;
  IF EXISTS(SELECT 1 FROM game_house_dispositions WHERE world_id=w AND house_key=r.house_key AND state IN(2,3)) THEN
   RAISE EXCEPTION 'ordinary disposition retains its independent fence' USING ERRCODE='OHG05';END IF;
