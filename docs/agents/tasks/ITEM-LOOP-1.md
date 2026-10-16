@@ -376,3 +376,71 @@ RED from unused production helpers remains open; the current native build again
 reports unused-helper warnings. No lint/visibility weakening is applied.
 D1122 permits the disclosed checkpoint on the existing draft; runtime acceptance,
 full package/all-target qualification and final review remain open.
+
+### D1211 native weight admission — NOT_FULLY_QUALIFIED
+
+CP comment6225880755 assigns the weight producer, complete carried-definition
+closure and API callers to A under D1164. ItemDefinitionFacts now carries
+Option<u32> centi-ounces, surfaced only from nested Known physical/weight facts.
+NativeGameplayState implements the definition-keyed ItemWeightLookup port; its
+source digest binds the request and the lookup at both freeze and commit. No
+client total, extra unit conversion or missing-weight zero is accepted.
+
+The existing transfer TX reads actual progression/build and recursively weighs
+all equipment roots and backpack descendants while holding the native root and
+instance locks. Invalid custody/world/duplicate/cycle state refuses. Incoming full
+quantity is added once through the reviewed pure planner. WeightUnknown,
+WeightGenerationMismatch, WeightDefinitionMismatch and Overweight refuse before
+new item mutation; the transport maps them to existing Rejected, with no new IDs.
+Current level and custody are re-read at commit. No stored capacity or migration.
+
+TRANSFER-only intentv2 binds normalized weights and the source generation. Shared
+push_facts remains byte-identical for NPC/fee/reward consumers. Matching terminal
+v1 receipts replay their original result before current weights are consulted;
+outstanding v1 reservations conflict rather than silently adopting v2 semantics.
+Existing canonical Reference pickup receives a Content-source-bound compatibility
+adapter; that older seam still has no production caller. Other API callers receive
+minimal field/signature compatibility, without unrelated shared-writer changes.
+
+Six native PG cases are authored for exact fit/replay, one-centi over/unknown
+incoming, generation change, changed carried custody, unknown carried weight, and
+a real XP50→51/death51→1/respawn receipt sequence. The level case uses an explicitly
+finite test XP oracle, not a production XP curve. Approved test-only weight facts
+remain isolated in tests/support. PG execution is NOT_RUN: this cloud executor
+does not have the canonical PG route. Final native compile/unit check receipts,
+source hashes and independent review are retained outside the checkout under
+/workspace/oteryn-family/loop-global-d1163/native-weight-d1211/. Full package,
+strict all-target qualification, runtime acceptance and exact-head CI remain open.
+D1122 permits a disclosed checkpoint; no ready/merge or runner changes.
+
+Actual D1211 native qualification receipts: affected production and three real
+PG-wrapper targets compiled successfully (item_transfer_postgres, item_ref_production,
+character_authority_postgres). Native producer/admission tests passed8/8 with0failed/ignored
+(PG URLunset). Initial full all-target checks were RED (E0277 then six E0505 cleanup
+borrows); failed source bytes and logs remain retained. All reported compile defects
+were repaired; a later successful targeted check is not a full all-target PASS.
+Generation-only PG fixture correction preserves valid weights and terminal replay;
+its fresh targeted check and transport mapping test receipts are captured separately.
+
+CP D1230l6226522623 resolves the baseline: no-vocation cap(L)=600+20*(L-2)oz.
+Level2=600oz and level3=620oz are PARITY_GUI; level1=580oz is PARITY_DERIVED,
+including actual death delevel. The checked u64 centioz projection implements
+56000+2000*L without changing the Reference helper or profession rookie profiles.
+The six authored PG scenarios now use level50=156000 and level51=158000;
+exact/over/level51 fixture weights are155999/156000/157998centioz respectively.
+Independent source review and fmt/diff/governance PASS. New22pure qualification
+is recorded separately; actualPG remains NOT_RUN, and full package/all-target
+strict Clippy/runtime/exact-head gates remain open. The former baseline conflict
+is resolved; this does not replace those missing executable gates with a PASS.
+No new item-weight conversion or E progression participant is requested.
+
+Additional actual native evidence: item_move transport tests32/32 PASS,0failed/ignored;
+generation-only negative fixture target compiled PASS after its independent repair.
+The original affected-three-wrapper compile PASS and producer8/8 PASS retain their
+exact immutable source scope; D1230l projection qualification uses fresh22 tests.
+
+Final D1230l native projection target passed22/22,0failed/ignored. Current
+affected three real wrapper targets compiled PASS after that same projection
+change (exit0, logSHA85329ba3c28c03718c4ccdcdc0d78e96a2be7275b22e858ba54f79d9a1936554).
+The immutable producer8/8 and transport32/32 receipts remain valid for their
+unchanged source; they are not a claim of current full-package execution.

@@ -49,9 +49,8 @@ fn weighted<'a>(
 }
 
 #[test]
-fn global_profile_keeps_the_native_rookie_boundary_for_every_vocation() {
+fn global_profession_profiles_keep_the_native_rookie_boundary() {
     for (vocation, at_nine, at_twenty) in [
-        ("none", 68_000, 79_000),
         ("druid", 68_000, 79_000),
         ("elder_druid", 68_000, 79_000),
         ("sorcerer", 68_000, 79_000),
@@ -72,6 +71,30 @@ fn global_profile_keeps_the_native_rookie_boundary_for_every_vocation() {
             Ok(at_twenty)
         );
     }
+}
+
+#[test]
+fn global_no_vocation_uses_gui_level_two_anchor_and_derived_delevel_capacity() {
+    for (level, capacity) in [
+        (1, 58_000), // PARITY_DERIVED, including actual death delevel.
+        (2, 60_000), // PARITY_GUI.
+        (3, 62_000), // PARITY_GUI.
+        (7, 70_000),
+        (8, 72_000),
+        (9, 74_000),
+        (20, 96_000),
+        (50, 156_000),
+        (51, 158_000),
+    ] {
+        assert_eq!(
+            project_global_capacity_centi_oz(level, "none"),
+            Ok(capacity)
+        );
+    }
+    assert_eq!(
+        project_global_capacity_centi_oz(0, "none"),
+        Err(ReferenceCapacityRefusal::InvalidLevel)
+    );
 }
 
 #[test]
@@ -96,7 +119,7 @@ fn global_projection_stays_exact_above_u32_without_a_stored_capacity() {
     );
     assert_eq!(
         project_global_capacity_centi_oz(u32::MAX, "none"),
-        Ok(u64::from(u32::MAX) * 1_000 + 59_000)
+        Ok(u64::from(u32::MAX) * 2_000 + 56_000)
     );
 }
 
@@ -104,7 +127,7 @@ fn global_projection_stays_exact_above_u32_without_a_stored_capacity() {
 fn global_base_reaches_native_weight_consumer_without_another_unit_conversion() {
     let source = item(1, 1);
     let rows = [weighted(&source, &Known(1))];
-    let capacity = project_global_capacity_centi_oz(1, "none").unwrap();
+    let capacity = project_global_capacity_centi_oz(2, "none").unwrap();
     assert_eq!(
         incoming(Some(59_999), Some(capacity), &rows),
         Ok(CapacityPlan::Incoming {

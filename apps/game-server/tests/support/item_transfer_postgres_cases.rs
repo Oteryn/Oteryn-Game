@@ -7,6 +7,10 @@
 // equipment semantics are UNKNOWN), so the backpack below is a test-only
 // fixture definition, like the D1 CombatDeathFixture.
 
+#[path = "item_weight_lookup.rs"]
+mod capacity_weights;
+use capacity_weights::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -549,7 +553,7 @@ impl Harness {
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await?;
         self.root
             .commit_item_transfer(
@@ -558,6 +562,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
     }
@@ -664,6 +669,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -674,6 +680,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 pub(crate) fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -698,6 +705,7 @@ pub(crate) fn to_slot(
     facts: ItemDefinitionFacts,
 ) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::ContainerSlot,
@@ -859,6 +867,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                 &harness.node,
                 fence()?,
                 to_backpack(command(4)?, second, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -873,6 +882,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                 &harness.node,
                 fence()?,
                 &mut replay,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -906,6 +916,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                     &harness.node,
                     fence()?,
                     to_backpack(command(4)?, first, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::ConflictingCause)
@@ -1216,6 +1227,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         stale,
                         to_backpack(command(next)?, item, stone()),
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1234,6 +1246,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await
                 .map_err(debug)?;
@@ -1246,6 +1259,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         stale,
                         &mut candidate,
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1275,6 +1289,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &other_node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "assignment holder",
@@ -1287,6 +1302,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 fence()?,
                 to_backpack(command(next)?, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1301,6 +1317,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &other_node,
                     fence()?,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "assignment holder",
@@ -1348,6 +1365,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await
                 .map_err(debug)?;
@@ -1361,6 +1379,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         fence()?,
                         to_backpack(command(next)?, item, stone()),
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1376,6 +1395,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         fence()?,
                         &mut candidate,
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1396,6 +1416,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 fence()?,
                 to_backpack(pending, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1413,6 +1434,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "predecessor connection generation",
@@ -1427,6 +1449,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -1446,6 +1469,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 to_backpack(command(next)?, late, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1465,6 +1489,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "ended node incarnation",
@@ -1478,6 +1503,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(command(next)?, late, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "ended node incarnation",
@@ -1493,6 +1519,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 to_backpack(pending, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1522,6 +1549,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(pending, item, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::Unavailable(_))
@@ -1535,6 +1563,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(command(next)?, late, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::Unavailable(_))
@@ -2409,11 +2438,17 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
         let request = to_backpack(command(2)?, coin, facts(COIN, STACKABLE));
         let mut one = harness
             .root
-            .freeze_item_transfer(&first, &harness.node, fence()?, request.clone())
+            .freeze_item_transfer(
+                &first,
+                &harness.node,
+                fence()?,
+                request.clone(),
+                &TEST_WEIGHTS,
+            )
             .await
             .map_err(debug)?;
         let mut two = second_root
-            .freeze_item_transfer(&second, &harness.node, fence()?, request)
+            .freeze_item_transfer(&second, &harness.node, fence()?, request, &TEST_WEIGHTS)
             .await
             .map_err(debug)?;
         assert_eq!(one.transaction_id(), two.transaction_id());
@@ -2426,6 +2461,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut one,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_item_transfer(
                 &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
@@ -2435,6 +2471,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut two,
+                &TEST_WEIGHTS,
             ),
         )
         .await;
@@ -2462,6 +2499,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                     stone,
                     facts(STONE, ItemStackClass::NonStackable),
                 ),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -2489,6 +2527,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut candidate,
+                &TEST_WEIGHTS,
             ),
         )
         .await;
@@ -2864,4 +2903,494 @@ async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellL
     Ok(SpellLanePermit::of_fresh_scope(scope)
         .await
         .map_err(debug)?)
+}
+
+#[test]
+fn derived_capacity_exact_boundary_and_terminal_replay_ignore_current_lookup() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_exact").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        // Actual seeded level 50 / native default vocation none gives 156000 centi-oz.
+        // The carried backpack weighs 1; this real incoming instance weighs 155999.
+        let item = harness
+            .mint(&authority, "fixture:capacity.exact", 1)
+            .await?;
+        let mut item_facts = facts("fixture:capacity.exact", ItemStackClass::NonStackable);
+        item_facts.weight = Some(155999);
+        let request = to_backpack(command(2)?, item, item_facts);
+        let committed = harness.committed(&authority, request.clone()).await?;
+        // A terminal receipt retains its original result even when current Content cannot
+        // resolve that generation. It does not reacquire live item/session authority.
+        let mut replay = harness
+            .root
+            .freeze_item_transfer(
+                &authority,
+                &harness.node,
+                fence()?,
+                request,
+                &UnavailableWeights,
+            )
+            .await
+            .map_err(debug)?;
+        let outcome = harness
+            .root
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &authority,
+                &harness.node,
+                fence()?,
+                &mut replay,
+                &UnavailableWeights,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(outcome, ItemTransferOutcome::AlreadyCommitted(committed));
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+struct UnavailableWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for UnavailableWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xEE; 32]
+    }
+    fn weight_of(
+        &self,
+        _: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        Err(oteryn_game_server::durability::item_transfer::ItemWeightRefused::Unknown)
+    }
+}
+
+#[test]
+fn derived_capacity_one_centi_over_and_unknown_refuse_without_transfer_writes() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_refuse").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness.committed(&authority, to_slot(command(1)?, backpack, backpack_facts())).await?;
+        for (index, key, weight, refusal) in [
+            (2, "fixture:capacity.over", Some(156000), ItemTransferRefusal::Overweight),
+            (3, "fixture:capacity.unknown", None, ItemTransferRefusal::WeightUnknown),
+        ] {
+            let item = harness.mint(&authority, key, 1).await?;
+            let mut item_facts = facts(key, ItemStackClass::NonStackable);
+            item_facts.weight = weight;
+            let before = harness.footprint().await?;
+            refused(harness.transfer(&authority, fence()?, to_backpack(command(index)?, item, item_facts)).await, refusal)?;
+            assert_eq!(harness.footprint().await?, before);
+            let on_ground: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+                .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+            assert!(on_ground);
+        }
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+// Single-operator negative: only the admitted generation changes; weights stay valid.
+struct ShiftedGenerationWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for ShiftedGenerationWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xEE; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        oteryn_game_server::durability::item_transfer::ItemWeightLookup::weight_of(
+            &TEST_WEIGHTS,
+            definition,
+        )
+    }
+}
+
+#[test]
+fn derived_capacity_commit_rechecks_generation_after_freeze() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_generation").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        let request = to_slot(command(1)?, backpack, backpack_facts());
+        let mut candidate = harness
+            .root
+            .freeze_item_transfer(&authority, &harness.node, fence()?, request, &TEST_WEIGHTS)
+            .await
+            .map_err(debug)?;
+        refused(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &ShiftedGenerationWeights,
+                )
+                .await,
+            ItemTransferRefusal::WeightGenerationMismatch,
+        )?;
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 0);
+        // The same reservation remains usable with the genuinely matching generation.
+        assert!(matches!(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &TEST_WEIGHTS,
+                )
+                .await
+                .map_err(debug)?,
+            ItemTransferOutcome::Committed(_)
+        ));
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn derived_capacity_commit_reweighs_carried_items_added_after_freeze() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_current").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness.committed(&authority, to_slot(command(1)?, backpack, backpack_facts())).await?;
+        let exact = harness.mint(&authority, "fixture:capacity.exact", 1).await?;
+        let mut item_facts = facts("fixture:capacity.exact", ItemStackClass::NonStackable);
+        item_facts.weight = Some(155999);
+        let mut candidate = harness.root.freeze_item_transfer(
+            &authority, &harness.node, fence()?, to_backpack(command(2)?, exact, item_facts), &TEST_WEIGHTS,
+        ).await.map_err(debug)?;
+        // A different native TRANSFER changes actual custody after PREPARE, without
+        // changing Character revision or the admitted immutable Content generation.
+        let stone = harness.mint(&authority, STONE, 1).await?;
+        harness.committed(&authority, to_backpack(command(3)?, stone, facts(STONE, ItemStackClass::NonStackable))).await?;
+        refused(harness.root.commit_item_transfer(
+            &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await.map_err(debug)?,
+            &authority, &harness.node, fence()?, &mut candidate, &TEST_WEIGHTS,
+        ).await, ItemTransferRefusal::Overweight)?;
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 2);
+        let on_ground: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+            .bind(exact.as_slice()).fetch_one(&harness.pool).await?;
+        assert!(on_ground);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+struct MissingBackpackWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for MissingBackpackWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xD1; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        if definition.production_key == BACKPACK {
+            Err(oteryn_game_server::durability::item_transfer::ItemWeightRefused::Unknown)
+        } else {
+            oteryn_game_server::durability::item_transfer::ItemWeightLookup::weight_of(
+                &TEST_WEIGHTS,
+                definition,
+            )
+        }
+    }
+}
+
+#[test]
+fn derived_capacity_unknown_carried_weight_refuses_even_with_known_incoming() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_unknown_carried").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        let item = harness.mint(&authority, STONE, 1).await?;
+        let before = harness.footprint().await?;
+        refused(
+            harness
+                .root
+                .freeze_item_transfer(
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    to_backpack(
+                        command(2)?,
+                        item,
+                        facts(STONE, ItemStackClass::NonStackable),
+                    ),
+                    &MissingBackpackWeights,
+                )
+                .await,
+            ItemTransferRefusal::WeightUnknown,
+        )?;
+        assert_eq!(harness.footprint().await?, before);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+fn capacity_gameplay_fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
+    let item = fence()?;
+    Ok(CurrentCharacterGameplayFence {
+        character_id: item.character_id,
+        game_session_id: item.game_session_id,
+        connection_generation: item.connection_generation,
+        character_lease_generation: item.character_lease_generation,
+        runtime_scope: item.runtime_scope,
+        scope_ownership_generation: item.scope_ownership_generation,
+        expected_character_revision: crate::domain::CharacterRevision::new(revision)
+            .map_err(debug)?,
+    })
+}
+
+#[test]
+fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult {
+    use crate::durability::character_death::{
+        CharacterDeathOutcome, CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
+    };
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_levels").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        let item = harness
+            .mint(&authority, "fixture:capacity.level51", 1)
+            .await?;
+        let mut item_facts = facts("fixture:capacity.level51", ItemStackClass::NonStackable);
+        item_facts.weight = Some(157998);
+        let request = to_backpack(command(2)?, item, item_facts);
+        // Level 50: 157999 total is above the actual derived 156000 capacity.
+        refused(
+            harness
+                .transfer(&authority, fence()?, request.clone())
+                .await,
+            ItemTransferRefusal::Overweight,
+        )?;
+        let base = xp_request(71)?;
+        // This explicit finite test oracle supports the fixture's level50 seed and
+        // every possible level reached by the real native death calculator. It is
+        // not asserted to be the production XP curve.
+        let mut thresholds = [LevelThreshold {
+            level: 1,
+            minimum_experience: ExactI64::new(0),
+        }; 51];
+        for (index, threshold) in thresholds.iter_mut().enumerate() {
+            *threshold = LevelThreshold {
+                level: u32::try_from(index + 1)?,
+                minimum_experience: ExactI64::new(match index {
+                    49 => 1000,
+                    50 => 1100,
+                    _ => i64::try_from(index)? * 20,
+                }),
+            };
+        }
+        let award = ExperienceAwardRequest {
+            occurrence: base.occurrence,
+            amount: ExactI64::new(199),
+            context: base.context,
+            policy_revision: base.policy_revision,
+            reward_revision: base.reward_revision,
+            policy: FiniteProgressionPolicy {
+                context: base.policy.context,
+                policy_revision: base.policy.policy_revision,
+                reward_revision: base.policy.reward_revision,
+                death_policy_revision: base.policy.death_policy_revision,
+                declared_difference_revision: base.policy.declared_difference_revision,
+                thresholds,
+                terminal_exclusive_experience: base.policy.terminal_exclusive_experience,
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+        };
+        let death_policy = award.clone();
+        let gained = harness
+            .root
+            .commit_character_experience(
+                &authority,
+                &harness.node,
+                capacity_gameplay_fence(1)?,
+                award,
+            )
+            .await
+            .map_err(debug)?;
+        let ExperienceCommitOutcome::Committed(gained) = gained else {
+            return Err("XP receipt missing".into());
+        };
+        assert_eq!((gained.level_before, gained.level_after), (50, 51));
+        assert_eq!(gained.experience_after, ExactI64::new(1199));
+        let after_gain = harness
+            .root
+            .read_character_progression(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("post-XP progression")?;
+        assert_eq!(
+            (after_gain.level, after_gain.character_revision),
+            (51, gained.committed_character_revision)
+        );
+        // Same command/facts now pass through the actual native transfer writer at level51.
+        harness.committed(&authority, request).await?;
+        let stone = harness.mint(&authority, STONE, 1).await?;
+        let mut candidate = harness
+            .root
+            .freeze_item_transfer(
+                &authority,
+                &harness.node,
+                fence()?,
+                to_backpack(
+                    command(3)?,
+                    stone,
+                    facts(STONE, ItemStackClass::NonStackable),
+                ),
+                &TEST_WEIGHTS,
+            )
+            .await
+            .map_err(debug)?;
+        // The native level51 death loss is capped at the current1199 XP, leaving
+        // level1 under the finite test oracle; no direct progression SQL is written.
+        let occurrence = PlayerDeathOccurrence::from_bytes(id(72)).map_err(debug)?;
+        let died = harness
+            .root
+            .commit_character_death(
+                &authority,
+                &harness.node,
+                capacity_gameplay_fence(after_gain.character_revision.get())?,
+                CharacterDeathRequest {
+                    occurrence,
+                    context: death_policy.context,
+                    policy_revision: death_policy.policy_revision,
+                    reward_revision: death_policy.reward_revision,
+                    policy: death_policy.policy,
+                    held_blessings: Vec::new(),
+                    death_cell: DeathCell {
+                        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                        spatial_position: vec![1, 2, 3, 7],
+                        map_revision: "map-1".into(),
+                    },
+                    respawn_position: b"fixture:temple".to_vec(),
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let CharacterDeathOutcome::Committed(died) = died else {
+            return Err("death receipt missing".into());
+        };
+        assert_eq!((died.level_before, died.level_after), (51, 1));
+        assert_eq!(died.experience_after, ExactI64::new(0));
+        let after_loss = harness
+            .root
+            .read_character_progression(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("post-death progression")?;
+        assert_eq!(
+            (after_loss.level, after_loss.character_revision),
+            (1, died.committed_character_revision)
+        );
+        assert!(
+            harness
+                .root
+                .consume_pending_respawn(
+                    &authority,
+                    &harness.node,
+                    capacity_gameplay_fence(after_loss.character_revision.get())?,
+                    Some(occurrence),
+                )
+                .await
+                .map_err(debug)?
+                .is_some()
+        );
+        // The prepared item does not retain level51 capacity after the real level loss.
+        refused(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &TEST_WEIGHTS,
+                )
+                .await,
+            ItemTransferRefusal::Overweight,
+        )?;
+        assert!(harness.on_ground(stone).await?);
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 2);
+        assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
+        assert_eq!(harness.count("game_character_death_receipts").await?, 1);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
 }

@@ -12,6 +12,10 @@
 // set_materialized_ago, equip_backpack, take, ...) lets the D3-6 decay cases
 // (`corpse_decay_postgres_cases.rs`) reuse them; behavior is unchanged.
 
+#[path = "item_weight_lookup.rs"]
+mod capacity_weights;
+use capacity_weights::TEST_WEIGHTS;
+
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -53,6 +57,7 @@ pub(crate) fn typed(family: &str, key: &str, revision: &str) -> TypedDefinitionR
 
 fn corpse_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: None,
         definition: typed("ItemType", "fixture:corpse.rat", "corpse-r1"),
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
@@ -63,6 +68,7 @@ fn corpse_facts() -> ItemDefinitionFacts {
 /// The loot entry definition `put_loot` forges.
 pub(crate) fn loot_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: typed("ItemType", "fixture:corpse-loot", "rev-1"),
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
@@ -989,6 +995,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 owner_fence,
                 take(SESSION, 2, item)?,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -999,6 +1006,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                     &harness.node,
                     other_fence,
                     take(SECOND_SESSION, 2, item)?,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             ItemTransferRefusal::CorpseExclusiveWindow,
@@ -1012,6 +1020,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                     &harness.node,
                     other_fence,
                     take(SECOND_SESSION, 2, item)?,
+                    &TEST_WEIGHTS,
                 )
                 .await
             {
@@ -1037,6 +1046,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 owner_fence,
                 &mut owner_candidate,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_item_transfer(
                 &SpellLanePermit::of_fresh_scope((other_fence).runtime_scope)
@@ -1046,6 +1056,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 other_fence,
                 &mut other_candidate,
+                &TEST_WEIGHTS,
             ),
         )
         .await;

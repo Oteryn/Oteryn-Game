@@ -83,15 +83,25 @@ pub(crate) fn project_reference_capacity_centi_oz(
     whole_ounces.checked_mul(100).ok_or(ArithmeticOverflow)
 }
 
-/// Current Global/Newhaven capacity for every current Oteryn Character (CP D1199).
-/// The accepted Reference profile retains the rookie boundary and vocation coefficients;
-/// Newhaven raises its common base from 400 to 600 oz. This is a profile offset, not an
-/// imported-character migration or a stored award. Resolve current level and vocation under
-/// the native transfer transaction's existing locks, and apply only real admitted bonuses.
+/// Current Global/Newhaven capacity from native level/build, not stored awards.
+/// D1230l selects no-vocation600oz at level2 plus20oz per level: level2/3 are
+/// PARITY_GUI; extrapolated level1=580oz is PARITY_DERIVED (including delevel).
+/// Other vocations retain D1199's accepted Reference profile and200oz base offset.
+/// Resolve the actual current inputs under the transfer transaction's existing locks.
 pub(crate) fn project_global_capacity_centi_oz(
     level: u32,
     vocation: &str,
 ) -> Result<u64, ReferenceCapacityRefusal> {
+    if vocation == "none" {
+        if level == 0 {
+            return Err(ReferenceCapacityRefusal::InvalidLevel);
+        }
+        // 100 * (600 + 20*(L-2)) == 56000 + 2000*L, including L=1.
+        return u64::from(level)
+            .checked_mul(2_000)
+            .and_then(|gain| 56_000_u64.checked_add(gain))
+            .ok_or(ReferenceCapacityRefusal::ArithmeticOverflow);
+    }
     project_reference_capacity_centi_oz(level, vocation)?
         .checked_add(20_000)
         .ok_or(ReferenceCapacityRefusal::ArithmeticOverflow)

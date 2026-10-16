@@ -355,6 +355,7 @@ fn request(occurrence: u8, fee: u64) -> TestResult<FeeBurnRequest> {
             gold: definition(GOLD),
             crystal: definition(CRYSTAL),
             backpack: ItemDefinitionFacts {
+                weight: None,
                 definition: definition(BACKPACK_KEY),
                 stack: ItemStackClass::NonStackable,
                 container_capacity: Some(20),

@@ -210,6 +210,10 @@ fn not_supported_is_a_non_empty_container() {
 fn rejected_is_every_other_refusal_and_error() {
     maps(
         vec![
+            refused(ItemTransferRefusal::WeightUnknown),
+            refused(ItemTransferRefusal::WeightGenerationMismatch),
+            refused(ItemTransferRefusal::WeightDefinitionMismatch),
+            refused(ItemTransferRefusal::Overweight),
             refused(ItemTransferRefusal::DefinitionMismatch),
             refused(ItemTransferRefusal::UnknownStackClass),
             refused(ItemTransferRefusal::UnsupportedStackMaximum),

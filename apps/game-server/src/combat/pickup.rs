@@ -42,6 +42,7 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemSourceLocation, ItemStackClass,
     ItemTransferDestination, ItemTransferError, ItemTransferOutcome, ItemTransferRequest,
+    ItemWeightLookup, ItemWeightRefused,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::CommandRef;
@@ -146,12 +147,50 @@ pub(crate) fn resolve_item_definition_facts(
             )
     );
 
+    // D1211: native weights are already normalized centi-ounces. Unknown physical
+    // semantics or weight must remain unknown; never infer zero or convert again.
+    let weight = match &item.semantics.physical {
+        ReferenceItemField::Known(physical) => match physical.weight {
+            ReferenceItemField::Known(weight) => Some(weight),
+            _ => None,
+        },
+        _ => None,
+    };
+
     Ok(ItemDefinitionFacts {
         definition: definition.clone(),
+        weight,
         stack,
         container_capacity,
         container_slot_equip_pattern,
     })
+}
+
+/// Compatibility for the existing canonical Reference pickup seam (no production caller).
+/// The Content-owned source manifest pins the actual source, not a request-selected revision.
+/// Native production admission uses NativeGameplayState's admitted-generation implementation.
+impl ItemWeightLookup for CanonicalReferencePlayableContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        use sha2::{Digest, Sha256};
+        let mut hash = Sha256::new();
+        hash.update(b"OTERYN_REFERENCE_PICKUP_WEIGHT_SOURCE/v1\0");
+        hash.update(
+            self.package_manifest
+                .source_manifest_digest
+                .as_str()
+                .as_bytes(),
+        );
+        hash.finalize().into()
+    }
+
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        let facts = resolve_item_definition_facts(self, definition)
+            .map_err(|_| ItemWeightRefused::DefinitionMismatch)?;
+        if facts.stack == ItemStackClass::Unknown {
+            return Err(ItemWeightRefused::DefinitionMismatch);
+        }
+        facts.weight.ok_or(ItemWeightRefused::Unknown)
+    }
 }
 
 /// Ground-pickup intent as GAME-INTERACTION resolves it: which item, where to. Deliberately
@@ -305,6 +344,7 @@ async fn settle_pickup(
     let transfer_request = ItemTransferRequest {
         command: request.command,
         source_item_instance_id: request.source_item_instance_id,
+        weight_generation_digest: content.generation_digest(),
         destination: request.destination,
         item,
         backpack,
@@ -314,7 +354,13 @@ async fn settle_pickup(
     };
     let mut candidate = session
         .root
-        .freeze_item_transfer(session.authority, session.node, fence, transfer_request)
+        .freeze_item_transfer(
+            session.authority,
+            session.node,
+            fence,
+            transfer_request,
+            content,
+        )
         .await?;
     Ok(session
         .root
@@ -324,6 +370,7 @@ async fn settle_pickup(
             session.node,
             fence,
             &mut candidate,
+            content,
         )
         .await?)
 }
@@ -338,9 +385,10 @@ mod tests {
         ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
         REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, ReferenceEquipmentPattern,
         ReferenceEquipmentSlot, ReferenceItemContainer, ReferenceItemDefinition,
-        ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemPhysicalClass,
-        ReferenceItemSemantics, ReferenceItemStack, ReferencePlayableContentSource,
-        Sha256HexDigest, TypedDefinitionRef as ContentTypedDefinitionRef, link_reference_playable,
+        ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemPhysical,
+        ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
+        ReferencePlayableContentSource, Sha256HexDigest,
+        TypedDefinitionRef as ContentTypedDefinitionRef, link_reference_playable,
     };
     use crate::foundation::WorldId;
     use ReferenceItemField::{Known, Unknown};
@@ -410,6 +458,12 @@ mod tests {
             stack_class: ReferenceItemStackClass::StackCapable,
             legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
             semantics: ReferenceItemSemantics {
+                // Explicit test-only fixture weight; never a production Content fallback.
+                physical: Known(ReferenceItemPhysical {
+                    weight: Known(1),
+                    movable: Known(true),
+                    pickupable: Known(true),
+                }),
                 stack: Known(ReferenceItemStack {
                     stackable: Known(true),
                     stack_max: Known(30),
@@ -423,6 +477,12 @@ mod tests {
             stack_class: ReferenceItemStackClass::NonStackable,
             legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
             semantics: ReferenceItemSemantics {
+                // Explicit test-only fixture weight; never a production Content fallback.
+                physical: Known(ReferenceItemPhysical {
+                    weight: Known(1),
+                    movable: Known(true),
+                    pickupable: Known(true),
+                }),
                 container: Known(ReferenceItemContainer {
                     capacity: Known(20),
                 }),

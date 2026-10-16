@@ -90,7 +90,7 @@ pub use super::item_transfer_audit::TransferShape;
 
 type Result<T> = std::result::Result<T, ItemTransferError>;
 type Pass<T> = std::result::Result<std::result::Result<T, ItemTransferError>, DurabilityError>;
-const INTENT_BINDING_VERSION: u8 = 1;
+const INTENT_BINDING_VERSION: u8 = 2;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 
 /// GAMEITEM01-STACK-QUANTITY-MAX (D82).
@@ -149,9 +149,26 @@ pub enum ItemStackClass {
     Unknown,
 }
 
+/// Same admitted Content generation, resolved by the real producer, never a client revision.
+pub trait ItemWeightLookup: Send + Sync {
+    fn generation_digest(&self) -> [u8; 32];
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> std::result::Result<u32, ItemWeightRefused>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemWeightRefused {
+    Unknown,
+    DefinitionMismatch,
+}
+
 /// Current compatible Content facts for one item definition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemDefinitionFacts {
+    /// Known physical unit weight in centi-oz from the admitted Content generation.
+    pub weight: Option<u32>,
     pub definition: TypedDefinitionRef,
     pub stack: ItemStackClass,
     /// Declared container capacity (direct entries); `None` for a non-container.
@@ -181,6 +198,7 @@ impl ItemTransferDestination {
 /// Complete semantic intent of one player TRANSFER.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemTransferRequest {
+    pub weight_generation_digest: [u8; 32],
     /// The actual FND-02 CommandRef; the DUR-03 cause of this TRANSFER.
     pub command: CommandRef,
     pub source_item_instance_id: [u8; 16],
@@ -198,6 +216,10 @@ pub struct ItemTransferRequest {
 /// stays on Ground.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemTransferRefusal {
+    WeightUnknown,
+    WeightGenerationMismatch,
+    WeightDefinitionMismatch,
+    Overweight,
     /// The source is neither a live Ground item nor a direct entry of a live
     /// corpse container (for example already picked up).
     SourceNotOnGround,
@@ -608,35 +630,45 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: ItemTransferRequest,
+        weights: &dyn ItemWeightLookup,
     ) -> Result<ItemTransferCandidate> {
         validate_request(&request)?;
         let intent_binding = intent_binding(&request, fence.character_id)?;
+        let legacy_binding = legacy_intent_binding(&request, fence.character_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
         let node = node.clone();
-        let (request, reservation) = self
+        let mut context = weights;
+        let (request, reservation, intent_binding) = self
             .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, weights| {
                 Box::pin(async move {
+                    let weights = *weights;
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, request.command).await?;
                     if let Some(row) = load_reservation(&mut tx, request.command).await? {
                         let stored: Vec<u8> = row.try_get("intent_binding")?;
-                        if stored != intent_binding {
+                        let terminal = load_receipt(&mut tx, request.command).await?.is_some();
+                        let replay_legacy = terminal && stored == legacy_binding;
+                        if stored != intent_binding && !replay_legacy {
                             return Ok(Err(ItemTransferError::ConflictingCause));
                         }
+                        let binding: [u8; 33] = stored
+                            .try_into()
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
                         let reservation = decode_reservation(&row)?;
-                        if load_receipt(&mut tx, request.command).await?.is_none()
+                        if !terminal
                             && let Err(error) =
-                                admit(&mut tx, &node, &fence, &request, &reservation).await?
+                                admit(&mut tx, &node, &fence, &request, &reservation, weights)
+                                    .await?
                         {
                             return Ok(Err(error));
                         }
                         commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok((request, reservation)));
+                        return Ok(Ok((request, reservation, binding)));
                     }
                     let (world_id, channel_id) = match scope_of(&fence) {
                         Ok(scope) => scope,
@@ -660,13 +692,13 @@ impl DurabilityRoot {
                         work_units_used: 0,
                     };
                     if let Err(error) =
-                        admit(&mut tx, &node, &fence, &request, &reservation).await?
+                        admit(&mut tx, &node, &fence, &request, &reservation, weights).await?
                     {
                         return Ok(Err(error));
                     }
                     insert_reservation(&mut tx, &request, &intent_binding, &reservation).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok((request, reservation)))
+                    Ok(Ok((request, reservation, intent_binding)))
                 })
             })
             .await??;
@@ -767,6 +799,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &mut ItemTransferCandidate,
+        weights: &dyn ItemWeightLookup,
     ) -> Result<ItemTransferOutcome> {
         // A non-Channel scope owns no Ground, so its fence is refused as stale authority
         // before the lane check, as the transaction refused it before SPELL-LOCK-2.
@@ -784,12 +817,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenTransfer::of(candidate);
         let node = node.clone();
-        let mut context = permit;
+        let mut context = (permit, weights);
 
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, permit| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
-                    let permit: &SpellLanePermit = permit;
+                    let (permit, weights) = *context;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -837,11 +870,19 @@ impl DurabilityRoot {
                         return Ok(Err(ItemTransferError::ConflictingCandidate));
                     }
 
-                    let admitted =
-                        match admit(&mut tx, &node, &fence, &frozen.request, &reservation).await? {
-                            Ok(admitted) => admitted,
-                            Err(error) => return Ok(Err(error)),
-                        };
+                    let admitted = match admit(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        &frozen.request,
+                        &reservation,
+                        weights,
+                    )
+                    .await?
+                    {
+                        Ok(admitted) => admitted,
+                        Err(error) => return Ok(Err(error)),
+                    };
                     let message = transfer_message(&frozen.request, &fence, &admitted);
                     let tuple = tx.tuple();
                     let envelope = match audit::encode_transfer_event(
@@ -1271,6 +1312,7 @@ async fn admit(
     fence: &CurrentCharacterItemFence,
     request: &ItemTransferRequest,
     reservation: &Reservation,
+    weights: &dyn ItemWeightLookup,
 ) -> Pass<Admitted> {
     let (world_id, channel_id) = match scope_of(fence) {
         Ok(scope) => scope,
@@ -1377,6 +1419,18 @@ async fn admit(
         Ok(plan) => plan,
         Err(refusal) => return Ok(Err(ItemTransferError::Refused(refusal))),
     };
+    if let Err(refusal) = check_transfer_capacity(
+        tx,
+        fence.character_id,
+        world_id.as_bytes(),
+        request,
+        &source.item,
+        weights,
+    )
+    .await?
+    {
+        return Ok(Err(ItemTransferError::Refused(refusal)));
+    }
     if let TransferPlan::FullMerge { receiver, .. } | TransferPlan::TopUp { receiver, .. } = plan {
         let locked = sqlx::query(
             "SELECT 1 FROM game_item_instances \
@@ -1395,6 +1449,154 @@ async fn admit(
         return Ok(Err(error.into()));
     }
     Ok(Ok(Admitted { plan, source }))
+}
+
+/// Weigh the actual custody graph while the native Character root is locked.
+/// No client total, persisted capacity, or separately cached inventory participates.
+async fn check_transfer_capacity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    world: &[u8; 16],
+    request: &ItemTransferRequest,
+    source: &InventoryItem,
+    weights: &dyn ItemWeightLookup,
+) -> std::result::Result<std::result::Result<(), ItemTransferRefusal>, DurabilityError> {
+    if weights.generation_digest() != request.weight_generation_digest {
+        return Ok(Err(ItemTransferRefusal::WeightGenerationMismatch));
+    }
+    let incoming = match weights.weight_of(&source.definition) {
+        Ok(weight) => weight,
+        Err(error) => return Ok(Err(weight_refusal(error))),
+    };
+    if request.item.weight != Some(incoming) {
+        return Ok(Err(if request.item.weight.is_none() {
+            ItemTransferRefusal::WeightUnknown
+        } else {
+            ItemTransferRefusal::WeightDefinitionMismatch
+        }));
+    }
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, character).await?;
+    // UNION ALL with an explicit path reports corrupt cycles instead of hiding them.
+    // Every location is retained for duplicate/world validation; every actual instance
+    // is locked, including non-container equipment and all backpack descendants.
+    let rows = sqlx::query(
+        "WITH RECURSIVE roots AS ( \
+           SELECT item_instance_id, world_id FROM game_item_container_slots \
+            WHERE character_id=encode($1,'hex')::uuid \
+           UNION ALL \
+           SELECT item_instance_id, world_id FROM game_character_equipment_slots \
+            WHERE character_id=encode($1,'hex')::uuid \
+         ), carried(item_instance_id,world_id,path,cycle) AS ( \
+           SELECT item_instance_id,world_id,ARRAY[item_instance_id],false FROM roots \
+           UNION ALL \
+           SELECT e.item_instance_id,e.world_id,c.path||e.item_instance_id, \
+                  e.item_instance_id=ANY(c.path) \
+             FROM carried c JOIN game_item_container_entries e \
+               ON e.parent_item_instance_id=c.item_instance_id WHERE NOT c.cycle \
+         ) \
+         SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key, \
+                i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS item_world, \
+                c.world_id::text AS custody_world,c.cycle \
+           FROM carried c JOIN game_item_instances i USING(item_instance_id) \
+          ORDER BY i.item_instance_id FOR UPDATE OF i",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut seen = std::collections::BTreeSet::new();
+    let mut total = 0_u64;
+    for row in rows {
+        let item = uuid_text(row.try_get("item_instance_id")?)?;
+        if row.try_get::<bool, _>("cycle")?
+            || row.try_get::<i16, _>("lifecycle")? != 1
+            || uuid_text(row.try_get("item_world")?)? != *world
+            || uuid_text(row.try_get("custody_world")?)? != *world
+            || item == source.item_instance_id
+            || !seen.insert(item)
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let definition = decode_definition(&row)?;
+        let unit = match weights.weight_of(&definition) {
+            Ok(weight) => weight,
+            Err(error) => return Ok(Err(weight_refusal(error))),
+        };
+        let quantity = decode_quantity(&row)?;
+        if quantity == 0 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        total = total
+            .checked_add(u64::from(unit) * u64::from(quantity))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+    }
+    use super::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
+    let incoming = [IncomingWeight {
+        item: source,
+        weight_definition: &request.item.definition,
+        unit_weight: Some(incoming),
+    }];
+    match plan_capacity(CapacityMove::IntoCharacter {
+        carried_weight: Some(total),
+        capacity: Some(capacity),
+        incoming: &incoming,
+    }) {
+        Ok(_) => Ok(Ok(())),
+        Err(CapacityRefusal::Overweight { .. }) => Ok(Err(ItemTransferRefusal::Overweight)),
+        Err(_) => Err(DurabilityError::InvalidStoredState),
+    }
+}
+
+fn weight_refusal(error: ItemWeightRefused) -> ItemTransferRefusal {
+    match error {
+        ItemWeightRefused::Unknown => ItemTransferRefusal::WeightUnknown,
+        ItemWeightRefused::DefinitionMismatch => ItemTransferRefusal::WeightDefinitionMismatch,
+    }
+}
+
+/// D1199 base capacity from the actual locked progression/build, never a client capacity.
+/// Called only after the native current item fence in admit.
+async fn read_derived_transfer_capacity_centi_oz(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> std::result::Result<u64, DurabilityError> {
+    // The native transfer fence already holds this live root. Reacquire that same row before
+    // taking progression/build locks, retaining the native per-Character serialization order.
+    let live: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM game_character_roots \
+         WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    if live.is_none() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let level: Option<i64> = sqlx::query_scalar(
+        "SELECT level FROM game_character_progression_state \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    // Bootstrap-only roots are permitted by 0009 but have no admitted capacity level. Missing
+    // progression must not become level one merely to make a pickup pass.
+    let level = level
+        .and_then(|value| u32::try_from(value).ok())
+        .filter(|value| *value > 0)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let vocation: Option<String> = sqlx::query_scalar(
+        "SELECT vocation FROM game_character_build_state \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    // Native DurableBuildState::default is exactly `none`; this is not a capacity default.
+    let vocation = vocation
+        .as_deref()
+        .unwrap_or(super::character_build::NO_VOCATION);
+    super::item_capacity::project_global_capacity_centi_oz(level, vocation)
+        .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(
@@ -2113,7 +2315,10 @@ pub(crate) fn push_facts(out: &mut Vec<u8>, value: &ItemDefinitionFacts) -> Resu
 /// fenced Character, the source item, the destination kind, the definition
 /// facts and the interpretation revisions. The connection generation is not
 /// part of the intent (DUR-03 §31).
-fn intent_binding(request: &ItemTransferRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+fn legacy_intent_binding(
+    request: &ItemTransferRequest,
+    character_id: CharacterId,
+) -> Result<[u8; 33]> {
     let mut canonical = Vec::new();
     canonical.extend_from_slice(request.command.game_session_id().as_bytes());
     canonical.extend_from_slice(&request.command.command_id().get().to_be_bytes());
@@ -2134,6 +2339,24 @@ fn intent_binding(request: &ItemTransferRequest, character_id: CharacterId) -> R
         &request.sim_revision,
     ] {
         push_text(&mut canonical, revision.as_bytes())?;
+    }
+    let mut out = [0_u8; 33];
+    out[0] = 1;
+    out[1..].copy_from_slice(&Sha256::digest(&canonical));
+    Ok(out)
+}
+
+/// V2 binds the admitted generation and normalized weights without changing other writers'
+/// shared v1 facts encoding. Only terminal v1 history is replayable.
+fn intent_binding(request: &ItemTransferRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+    let mut canonical = legacy_intent_binding(request, character_id)?.to_vec();
+    canonical.extend_from_slice(&request.weight_generation_digest);
+    for facts in [Some(&request.item), request.backpack.as_ref()] {
+        canonical.push(u8::from(facts.is_some()));
+        if let Some(facts) = facts {
+            canonical.push(u8::from(facts.weight.is_some()));
+            canonical.extend_from_slice(&facts.weight.unwrap_or(0).to_be_bytes());
+        }
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -2163,6 +2386,7 @@ mod tests {
 
     fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: Some(1),
             definition: definition(key),
             stack,
             container_capacity: None,
@@ -2172,6 +2396,7 @@ mod tests {
 
     fn backpack_facts(capacity: u32) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: Some(1),
             definition: definition("fixture:b3.backpack"),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(capacity),
@@ -2453,6 +2678,7 @@ mod tests {
 
     fn request() -> ItemTransferRequest {
         ItemTransferRequest {
+            weight_generation_digest: [0xD1; 32],
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
                 CommandId::new(7).expect("command"),
@@ -2472,7 +2698,7 @@ mod tests {
         let character = CharacterId::from_bytes(id(41)).expect("character");
         let base = intent_binding(&request(), character).expect("binding");
         assert_eq!(base[0], INTENT_BINDING_VERSION);
-        let mutations: [fn(&mut ItemTransferRequest); 7] = [
+        let mutations: [fn(&mut ItemTransferRequest); 10] = [
             |r| {
                 r.command = CommandRef::new(
                     r.command.game_session_id(),
@@ -2488,6 +2714,9 @@ mod tests {
             |r| {
                 r.backpack = Some(backpack_facts(19));
             },
+            |r| r.weight_generation_digest = [0xD2; 32],
+            |r| r.item.weight = Some(2),
+            |r| r.backpack.as_mut().expect("backpack").weight = None,
             |r| r.sim_revision = "sim-2".into(),
             |r| r.item.definition.revision_ref = "definition-r2".into(),
         ];

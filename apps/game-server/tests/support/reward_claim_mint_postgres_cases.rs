@@ -4,6 +4,10 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+#[path = "item_weight_lookup.rs"]
+mod capacity_weights;
+use capacity_weights::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -534,7 +538,7 @@ impl Harness {
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await?;
         self.root
             .commit_item_transfer(
@@ -543,6 +547,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
     }
@@ -717,6 +722,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -727,6 +733,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -747,6 +754,7 @@ fn command(value: u64) -> TestResult<CommandRef> {
 
 fn to_slot(command: CommandRef, item: [u8; 16], facts: ItemDefinitionFacts) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::ContainerSlot,
@@ -2062,6 +2070,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                     stone,
                     facts(STONE, ItemStackClass::NonStackable),
                 ),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -2083,6 +2092,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                 &harness.node,
                 fence()?,
                 &mut pickup,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_reward_claim_mint(&second, &harness.node, fence()?, &mut claim),
         )

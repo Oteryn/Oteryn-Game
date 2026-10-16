@@ -93,6 +93,7 @@ impl EquipmentMoveContent for Profile {
 
 fn plain(key: &str) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: typed("Item", key, "definition-r1"),
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
