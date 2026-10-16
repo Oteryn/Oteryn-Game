@@ -9,7 +9,10 @@ use oteryn_game_server::{content, durability};
 #[path = "../src/durability/item_capacity.rs"]
 mod item_capacity;
 
-use item_capacity::{CapacityMove, CapacityPlan, CapacityRefusal, IncomingWeight, plan_capacity};
+use item_capacity::{
+    CapacityMove, CapacityPlan, CapacityRefusal, IncomingWeight, ReferenceCapacityRefusal,
+    plan_capacity, project_reference_capacity_centi_oz,
+};
 
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
@@ -268,4 +271,97 @@ fn a_second_request_must_be_replanned_against_the_updated_carried_total() {
         })
     );
     // Pure inputs only: the future transaction lock/reread must actually serialize requests.
+}
+
+#[test]
+fn reference_capacity_rookie_boundary_and_promotions_use_exact_centi_ounces() {
+    for vocation in [
+        "none",
+        "sorcerer",
+        "master_sorcerer",
+        "druid",
+        "elder_druid",
+        "paladin",
+        "royal_paladin",
+        "knight",
+        "elite_knight",
+        "monk",
+        "exalted_monk",
+    ] {
+        assert_eq!(project_reference_capacity_centi_oz(1, vocation), Ok(40_000));
+        assert_eq!(project_reference_capacity_centi_oz(7, vocation), Ok(46_000));
+        assert_eq!(project_reference_capacity_centi_oz(8, vocation), Ok(47_000));
+    }
+    for (base, promoted, level_9, level_20) in [
+        ("sorcerer", "master_sorcerer", 48_000, 59_000),
+        ("druid", "elder_druid", 48_000, 59_000),
+        ("paladin", "royal_paladin", 49_000, 71_000),
+        ("knight", "elite_knight", 49_500, 77_000),
+        ("monk", "exalted_monk", 49_500, 77_000),
+    ] {
+        for vocation in [base, promoted] {
+            assert_eq!(
+                project_reference_capacity_centi_oz(9, vocation),
+                Ok(level_9)
+            );
+            assert_eq!(
+                project_reference_capacity_centi_oz(20, vocation),
+                Ok(level_20)
+            );
+        }
+    }
+    assert_eq!(project_reference_capacity_centi_oz(20, "none"), Ok(59_000));
+}
+
+#[test]
+fn reference_capacity_rejects_invalid_inputs_without_a_fallback_profile() {
+    assert_eq!(
+        project_reference_capacity_centi_oz(0, "knight"),
+        Err(ReferenceCapacityRefusal::InvalidLevel)
+    );
+    for vocation in ["unknown", "", "Knight", "elite knight"] {
+        assert_eq!(
+            project_reference_capacity_centi_oz(1, vocation),
+            Err(ReferenceCapacityRefusal::UnknownVocation)
+        );
+    }
+}
+
+#[test]
+fn reference_capacity_high_level_stays_exact_above_u32_without_clamping() {
+    assert_eq!(
+        project_reference_capacity_centi_oz(u32::MAX, "elite_knight"),
+        Ok(10_737_418_264_500)
+    );
+    assert_eq!(
+        project_reference_capacity_centi_oz(u32::MAX, "none"),
+        Ok(4_294_967_334_000)
+    );
+}
+
+#[test]
+fn reference_centi_ounces_match_item_weights_without_a_second_conversion() {
+    // Reference data only: this is not a current Character capacity admission.
+    let capacity = project_reference_capacity_centi_oz(1, "none").unwrap();
+    let exact = item(1, 1);
+    assert_eq!(
+        incoming(Some(39_999), Some(capacity), &[weighted(&exact, &Known(1))]),
+        Ok(CapacityPlan::Incoming {
+            weight_before: 39_999,
+            added_weight: 1,
+            weight_after: 40_000,
+            remaining_capacity: 0,
+        })
+    );
+    assert_eq!(
+        incoming(
+            Some(capacity),
+            Some(capacity),
+            &[weighted(&exact, &Known(1))]
+        ),
+        Err(CapacityRefusal::Overweight {
+            required: 40_001,
+            capacity: 40_000
+        })
+    );
 }

@@ -261,3 +261,84 @@ Final Rust SHA-256:
 
 - `item_capacity.rs`: `861b1645a804bc31d2b1eba2a66104d9b38e2a9d3cc528b8fe4fae2673535c70`.
 - `item_loop_capacity.rs`: `c8e8d9deb9e983279d3de0c9861c55fd60edbffb4289dd798056afcfcca95619`.
+
+
+## CP D1104 bounded Reference-capacity follow-up (2026-10-16)
+
+Allocation: A owns Capacity + ItemDefinitionFacts; E retains progression. This
+follow-up changes only `durability/item_capacity.rs`, `tests/item_loop_capacity.rs`
+and this taskcard. It introduces no shared wiring, writer, persisted field, profile
+selection or transaction integration. Parent executor owns all Cargo/PostgreSQL
+validation and publication; this worker performs neither.
+
+The earlier preparation's statements that no capacity formula/unit conversion is
+supplied describe that historical generation. They are superseded only for the
+new detached `project_reference_capacity_centi_oz(level, vocation)` helper:
+
+- **PROVEN (source inspection):** the helper loads the same accepted SPELL-D5
+  packet as `spell_character_facts::maxima`, including Formulae revision 1205374:
+  `tools/content-schema/spell-authoring/samples/vocation-vitals-candidate-2026-09-28.json`,
+  SHA-256 `78c7a01e329757251a63f0ffa1cb65fdb3682a163e88b2e4dc615a3e74798864`.
+  Rookie boundary and capacity coefficients come from that packet, without
+  duplicating guessed coefficients. Checked whole-ounce formula evaluation is
+  followed by exactly one checked multiplication by 100 into u64 centi-ounces,
+  the item-weight unit accepted under #1336/D207. The existing planner's u32/u64
+  arithmetic performs no additional conversion.
+- **CONFLICT / still open:** Reference DATA ONLY is neither current Character
+  authority nor an admitted Character baseline. Newhaven gives 600 oz at level 1
+  while Formulae gives 400 oz; the existing Character conditional 200 oz remains
+  an unresolved CP profile/provenance choice recorded in
+  `docs/architecture/GAME-CHAR-01_STAGE_B_REFERENCE_EVIDENCE_RECONCILIATION.md` §9.
+  No universal 200 oz adjustment, new state or profile
+  decision is introduced. Production capacity admission and transaction integration
+  remain gated.
+- **DERIVED (test cases authored, execution delegated):** all eleven base/promoted
+  and no-vocation keys at levels 1, 7 and 8; differentiated post-boundary levels 9
+  and 20; unknown vocation, level zero, exact centi-ounce fit/one-centi-ounce
+  overweight, and u32::MAX levels without u32 truncation or clamping. These are
+  pure reference-data cases, not live Character or transaction-authority evidence.
+
+No Cargo, PostgreSQL, rustc or Clippy was run by this worker. `rustfmt` was absent
+from the worker PATH; targeted formatting and executable checks are delegated to
+the parent executor. Earlier validation/hashes above belong to the earlier
+planner generation and do not qualify this follow-up.
+
+
+### Parent executor qualification of the Reference follow-up
+
+Actual Rust/Cargo 1.94.0 native execution, original parent
+`c088872471ebb68f77674857878718455dbf99c5`, with unchanged reviewed Rust bytes:
+
+- `cargo test --locked -p oteryn-game-server --test item_loop_capacity --quiet`:
+  **16/16 PASS**, including the four new Reference groups.
+- Focused strict Clippy and required
+  `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`:
+  **PASS**. `cargo fmt --all --check`: **PASS**.
+- Required `cargo test --locked -p oteryn-game-server --quiet`: **PASS**,
+  58 result groups, **9801 passed / 0 failed / 37 ignored**, including doctests.
+  `OTERYN_TEST_POSTGRES_ADMIN_URL` was explicitly unset: this is normal package
+  qualification, not actual PostgreSQL or current-authority qualification.
+- Governance validator: **PASS** (22 documents /9 lanes). This branch's distinct
+  `tools/agents` tree `8fd789afc6d9e9cbcf7f0e112b1d08f97ca97310`
+  was tested directly: **124/124 governance unit tests PASS**.
+- Independent bounded review of the exact two Rust source hashes: **PASS**,
+  no actionable findings. `git diff --check`: **PASS**.
+
+The first package build with two build jobs hit the actual 8 GiB memory ceiling
+(no OOM). The executor stopped only its second compiler, retained the completed
+first compiler, preserved the interrupted build log, then completed the package
+with `CARGO_BUILD_JOBS=1`. This was a resource interruption, not a test assertion
+failure. Incremental compilation remained disabled; dev/test debug remained zero.
+No source, deadline, assertion, PostgreSQL guard or lint was weakened.
+
+Final reviewed Rust SHA-256:
+- capacity: `49bb8059764637343b9ca9f3d3c3610285c9ac8c9ebc9201874e4b19765b9090`;
+- tests: `1d67fe590d6312ab3dba844bf81bc955978f90c00aef86202867ab9e2bcafb8e`.
+
+Evidence, native ELF, commands and qualification limits are preserved under
+`/workspace/oteryn-family/validation/loop-reference-evidence/` and
+`/workspace/oteryn-family/LOOP_REFERENCE_QUALIFICATION.json`.
+These results qualify the isolated planner/Reference-data change; they do not
+select the outstanding Character baseline or qualify production transaction
+wiring, durable concurrency, shared equipment paths or the complete ITEM-LOOP-1.
+The PR remains a draft; shared-slot and final integration gates remain binding.
