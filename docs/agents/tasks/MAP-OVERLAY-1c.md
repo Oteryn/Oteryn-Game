@@ -582,3 +582,37 @@ with Events/Weather components (ELF89fb3206f720c42b168379022f37198e77b8b4785638e
 Dep-info/source-at-close prove that helper file once. This is compile evidence
 only, not reset/PG runtime qualification. D1215's newer local port was not part
 of that frozen compile and remains compile/runtime NOT_RUN.
+
+
+### D1218 caller-TX House preflight source checkpoint
+
+The local House port now requests explicit Active/Target catalogues and retains
+one canonical definition_digest per House from the native source owner. The
+owned preflight locks 0025 custody,0038 ownership and0047 Instance relations in
+SHARE mode through the caller TX. It compares every live World custody key and
+opaque native position against Target; removed/rekeyed/reassigned positions
+refuse. Only keys with ownership or0047 rows compare Active/Target per-House
+definition digests and return HouseCatalogueChanged{house_key} on mismatch or
+absence. Unowned/unallocated definition changes alone are accepted; no whole
+bundle digest comparison or blanket catalogue refusal is used.
+
+Source validation enforces actual House key/position bounds, consistent per-House
+digests and unambiguous tile membership. Three authored unit cases cover scoped
+catalogue changes, exact custody membership, and malformed/ambiguous source.
+All new compilation/unit/PostgreSQL checks remain NOT_RUN; this is
+NOT_FULLY_QUALIFIED. The native C2163 encoder/source impl and sealed I drain
+implementation remain pending; no encoder copy or production proof is invented.
+The caller must run this preflight before RETIRING and repeat under its locked
+job in final activation; no activation/history/0096 integration is claimed here.
+
+The review repair streams both SQLx result sets and checks each row immediately;
+no live custody/protected-key result Vec is retained. Client indexes retain only
+qualified source catalogues, bounded by the native source's1024 Houses and4096
+cells per House. Unit success setup propagates Result with ? rather than unwrap.
+No added dependency or manifest change; native compile/runtime remains NOT_RUN.
+
+Lead source review PASS after repairs: native-source catalogue bounds remain
+1024 Houses/4096 tiles each; SQLx database rows stream one at a time with no
+new dependency or collected live-row set. Positive unit tests return Result
+without unwrap/allow. New preflight compilation/three tests/PG remain NOT_RUN
+until actual native qualification; no current-authority token is minted.

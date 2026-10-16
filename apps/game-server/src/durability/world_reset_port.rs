@@ -9,6 +9,8 @@ use oteryn_game_server::foundation::RuntimeScopeRefV1;
 
 pub(crate) struct HouseResetFact {
     pub house_key: String,
+    /// Canonical qualified House definition digest from its native source owner.
+    pub definition_digest: [u8; 32],
     /// Exact native House-position bytes from C/#2163, never a copied encoder.
     /// The consuming preflight must enforce D0025's 1..=128-byte bound.
     pub spatial_position: Vec<u8>,
@@ -16,8 +18,18 @@ pub(crate) struct HouseResetFact {
 
 pub(crate) struct WorldResetSourceRefused;
 
+#[derive(Clone, Copy)]
+pub(crate) enum CatalogueSide {
+    Active,
+    Target,
+}
+
 pub(crate) trait WorldResetHouseSource {
-    fn reset_houses(&self, world: WorldId) -> Result<Vec<HouseResetFact>, WorldResetSourceRefused>;
+    fn reset_houses(
+        &self,
+        world: WorldId,
+        side: CatalogueSide,
+    ) -> Result<Vec<HouseResetFact>, WorldResetSourceRefused>;
 }
 
 pub(crate) trait WorldDrainWitness {

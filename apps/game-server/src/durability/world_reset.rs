@@ -26,6 +26,9 @@ pub enum WorldResetError {
     ConflictingCause,
     CapacityExceeded,
     InvalidStoredState,
+    HouseSourceRefused,
+    HouseTargetMembershipChanged { house_key: String },
+    HouseCatalogueChanged { house_key: String },
     Unavailable(DurabilityError),
 }
 impl From<DurabilityError> for WorldResetError {
@@ -175,6 +178,126 @@ pub async fn census_retiring_world_reset(
         ground_root_count: count(1)?,
         ground_corpse_entry_count: count(2)?,
     }))
+}
+
+// A source catalogue keeps opaque native position bytes; this owner never decodes or
+// recreates C's position encoder. One House definition digest must agree across its tiles.
+type ResetHouseCatalogue =
+    std::collections::BTreeMap<String, ([u8; 32], std::collections::BTreeSet<Vec<u8>>)>;
+
+fn reset_house_catalogue(
+    facts: Vec<super::world_reset_port::HouseResetFact>,
+) -> Result<ResetHouseCatalogue, WorldResetError> {
+    // Bounds from the actual qualified native House source (1024 Houses,4096 cells each).
+    if facts.len() > 1024 * 4096 {
+        return Err(WorldResetError::HouseSourceRefused);
+    }
+    let mut catalogue = ResetHouseCatalogue::new();
+    let mut positions = std::collections::BTreeSet::new();
+    for fact in facts {
+        let suffix = fact.house_key.strip_prefix("oteryn:content.house.");
+        if fact.house_key.len() > 512
+            || suffix.is_none_or(|value| {
+                value.is_empty()
+                    || !value
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            })
+            || !(1..=128).contains(&fact.spatial_position.len())
+            || !positions.insert(fact.spatial_position.clone())
+        {
+            return Err(WorldResetError::HouseSourceRefused);
+        }
+        let entry = catalogue
+            .entry(fact.house_key)
+            .or_insert_with(|| (fact.definition_digest, std::collections::BTreeSet::new()));
+        if entry.0 != fact.definition_digest
+            || entry.1.len() >= 4096
+            || !entry.1.insert(fact.spatial_position)
+        {
+            return Err(WorldResetError::HouseSourceRefused);
+        }
+    }
+    if catalogue.len() > 1024 {
+        return Err(WorldResetError::HouseSourceRefused);
+    }
+    Ok(catalogue)
+}
+
+fn check_reset_house_membership(
+    target: &ResetHouseCatalogue,
+    house_key: &str,
+    position: &[u8],
+) -> Result<(), WorldResetError> {
+    if !target
+        .get(house_key)
+        .is_some_and(|(_, positions)| positions.contains(position))
+    {
+        return Err(WorldResetError::HouseTargetMembershipChanged {
+            house_key: house_key.to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn check_reset_house_definition(
+    active: &ResetHouseCatalogue,
+    target: &ResetHouseCatalogue,
+    house_key: &str,
+) -> Result<(), WorldResetError> {
+    match (active.get(house_key), target.get(house_key)) {
+        (Some((before, _)), Some((after, _))) if before == after => Ok(()),
+        _ => Err(WorldResetError::HouseCatalogueChanged {
+            house_key: house_key.to_owned(),
+        }),
+    }
+}
+
+/// D1189/D1215/D1218 read-only House preflight in the caller's transaction.
+/// Run before RETIRING; repeat after locking the reset job in the final activation TX.
+/// The three SHARE relation locks prevent concurrent custody/ownership/Instance inserts,
+/// updates and deletes until that TX ends. Success is not a retained authority token.
+/// The source implementation must bind both catalogues to this World and call C's
+/// genuine native encoder; no such production implementation is supplied here.
+pub(crate) async fn preflight_world_reset_houses(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+    source: &dyn super::world_reset_port::WorldResetHouseSource,
+) -> Result<(), WorldResetError> {
+    use super::world_reset_port::CatalogueSide;
+    sqlx::query("LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE")
+        .execute(&mut **tx).await.map_err(DurabilityError::from)?;
+    let active = reset_house_catalogue(
+        source
+            .reset_houses(world, CatalogueSide::Active)
+            .map_err(|_| WorldResetError::HouseSourceRefused)?,
+    )?;
+    let target = reset_house_catalogue(
+        source
+            .reset_houses(world, CatalogueSide::Target)
+            .map_err(|_| WorldResetError::HouseSourceRefused)?,
+    )?;
+    {
+        let query = sqlx::query("SELECT DISTINCT house_key,spatial_position FROM game_item_house_interior_locations WHERE world_id=encode($1,'hex')::uuid ORDER BY house_key,spatial_position")
+            .bind(world.as_bytes().as_slice());
+        let mut rows = query.fetch(&mut **tx);
+        while let Some(row) = std::future::poll_fn(|cx| rows.as_mut().poll_next(cx)).await {
+            let row = row.map_err(DurabilityError::from)?;
+            let house_key: String = row.try_get(0).map_err(DurabilityError::from)?;
+            let position: Vec<u8> = row.try_get(1).map_err(DurabilityError::from)?;
+            check_reset_house_membership(&target, &house_key, &position)?;
+        }
+    }
+    {
+        let query = sqlx::query_scalar::<_, String>("SELECT house_key FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid UNION SELECT house_key FROM game_world_house_instances WHERE world_id=encode($1,'hex')::uuid ORDER BY house_key")
+            .bind(world.as_bytes().as_slice());
+        let mut rows = query.fetch(&mut **tx);
+        while let Some(row) = std::future::poll_fn(|cx| rows.as_mut().poll_next(cx)).await {
+            let house_key = row.map_err(DurabilityError::from)?;
+            check_reset_house_definition(&active, &target, &house_key)?;
+        }
+    }
+    Ok(())
 }
 
 impl DurabilityRoot {
@@ -526,3 +649,68 @@ DO $$ DECLARE f TEXT; BEGIN
  END LOOP;
 END $$;
 "#;
+
+#[cfg(test)]
+mod reset_house_preflight_tests {
+    use super::super::world_reset_port::HouseResetFact;
+    use super::*;
+    fn fact(key: &str, position: u8, digest: u8) -> HouseResetFact {
+        HouseResetFact {
+            house_key: format!("oteryn:content.house.{key}"),
+            spatial_position: vec![position],
+            definition_digest: [digest; 32],
+        }
+    }
+    #[test]
+    fn only_owned_or_instance_house_definition_changes_refuse() -> Result<(), WorldResetError> {
+        let active = reset_house_catalogue(vec![fact("owned", 1, 1), fact("unowned", 2, 2)])?;
+        let target = reset_house_catalogue(vec![fact("owned", 1, 1), fact("unowned", 3, 9)])?;
+        assert!(
+            check_reset_house_definition(&active, &target, "oteryn:content.house.owned").is_ok()
+        );
+        assert!(
+            matches!(check_reset_house_definition(&active, &target, "oteryn:content.house.unowned"), Err(WorldResetError::HouseCatalogueChanged { house_key }) if house_key == "oteryn:content.house.unowned")
+        );
+        let target = reset_house_catalogue(vec![fact("unowned", 2, 2)])?;
+        assert!(matches!(
+            check_reset_house_definition(&active, &target, "oteryn:content.house.owned"),
+            Err(WorldResetError::HouseCatalogueChanged { .. })
+        ));
+        Ok(())
+    }
+    #[test]
+    fn live_custody_requires_exact_target_key_and_opaque_position() -> Result<(), WorldResetError> {
+        let active = reset_house_catalogue(vec![fact("a", 1, 1)])?;
+        let key = "oteryn:content.house.a";
+        let position = [1];
+        assert!(check_reset_house_membership(&active, key, &position).is_ok());
+        for target in [vec![], vec![fact("a", 2, 1)], vec![fact("b", 1, 1)]] {
+            let target = reset_house_catalogue(target)?;
+            assert!(matches!(
+                check_reset_house_membership(&target, key, &position),
+                Err(WorldResetError::HouseTargetMembershipChanged { .. })
+            ));
+        }
+        Ok(())
+    }
+    #[test]
+    fn malformed_or_ambiguous_native_source_refuses() {
+        for facts in [
+            vec![fact("a", 1, 1), fact("a", 1, 1)],
+            vec![fact("a", 1, 1), fact("b", 1, 2)],
+            vec![fact("a", 1, 1), fact("a", 2, 2)],
+            vec![fact("INVALID", 1, 1)],
+        ] {
+            assert!(matches!(
+                reset_house_catalogue(facts),
+                Err(WorldResetError::HouseSourceRefused)
+            ));
+        }
+        for len in [0, 129] {
+            let mut malformed = fact("a", 1, 1);
+            malformed.spatial_position = vec![0; len];
+            assert!(reset_house_catalogue(vec![malformed]).is_err());
+        }
+        assert!(reset_house_catalogue(vec![fact("a", 1, 1), fact("a", 2, 1)]).is_ok());
+    }
+}
