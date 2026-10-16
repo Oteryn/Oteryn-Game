@@ -158,3 +158,128 @@ impl GuildRankAuditProposal {
         (bytes.len() <= 4_096).then_some(bytes)
     }
 }
+
+/// Closed private Resign event: fixed actor1→2 and target2→1; never an admitted wire codec.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GuildResignAuditProposal {
+    #[serde(flatten)]
+    pub operation: GuildAuditProposal,
+    pub expected_revision: u64,
+}
+impl GuildResignAuditProposal {
+    pub(crate) fn checked_bytes(&self) -> Option<Vec<u8>> {
+        let op = &self.operation;
+        if op.version != 1
+            || op.action != 10
+            || op.previous_revision == 0
+            || self.expected_revision != op.previous_revision
+            || op.previous_revision.checked_add(1) != Some(op.revision)
+            || op.actor == op.target
+            || op.rank_before != Some(2)
+            || op.rank_after != Some(1)
+            || op.removed_invitations != 0
+            || op.occurred_at_unix_ms <= 0
+        {
+            return None;
+        }
+        for id in [
+            &op.occurrence,
+            &op.transaction_id,
+            &op.event_id,
+            &op.guild_id,
+            &op.world_id,
+            &op.actor,
+            &op.target,
+        ] {
+            check_uuid_v7(id).ok()?;
+        }
+        let bytes = serde_json::to_vec(self).ok()?;
+        (bytes.len() <= 4096).then_some(bytes)
+    }
+}
+
+/// Exact ordered EditRanks DATA; not an admitted wire codec or naming-policy allocation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GuildEditRanksAuditProposal {
+    #[serde(flatten)]
+    pub operation: GuildAuditProposal,
+    pub expected_revision: u64,
+    pub names: Vec<String>,
+}
+impl GuildEditRanksAuditProposal {
+    pub(crate) fn checked_bytes(&self) -> Option<Vec<u8>> {
+        let op = &self.operation;
+        if op.version != 1
+            || op.action != 11
+            || op.previous_revision == 0
+            || self.expected_revision != op.previous_revision
+            || op.previous_revision.checked_add(1) != Some(op.revision)
+            || op.actor != op.target
+            || op.rank_before.is_some()
+            || op.rank_after.is_some()
+            || op.removed_invitations != 0
+            || op.occurred_at_unix_ms <= 0
+            || crate::domain::guild::validate_rank_count(self.names.len()).is_err()
+            || self
+                .names
+                .iter()
+                .any(|name| name.is_empty() || name.contains('\0'))
+        {
+            return None;
+        }
+        for id in [
+            &op.occurrence,
+            &op.transaction_id,
+            &op.event_id,
+            &op.guild_id,
+            &op.world_id,
+            &op.actor,
+            &op.target,
+        ] {
+            check_uuid_v7(id).ok()?;
+        }
+        // Existing bounded event envelope; not a new per-rank lexical or length policy.
+        let bytes = serde_json::to_vec(self).ok()?;
+        (bytes.len() <= 4096).then_some(bytes)
+    }
+}
+
+/// Decline event DATA only. Original codecs/encodings remain literal and closed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GuildDeclineAuditProposal {
+    #[serde(flatten)]
+    pub operation: GuildAuditProposal,
+}
+impl GuildDeclineAuditProposal {
+    pub(crate) fn checked_bytes(&self) -> Option<Vec<u8>> {
+        let op = &self.operation;
+        if op.version != 1
+            || op.action != 12
+            || op.actor != op.target
+            || op.previous_revision == 0
+            || op.previous_revision.checked_add(1) != Some(op.revision)
+            || op.rank_before.is_some()
+            || op.rank_after.is_some()
+            || op.removed_invitations != 1
+            || op.occurred_at_unix_ms <= 0
+        {
+            return None;
+        }
+        for id in [
+            &op.occurrence,
+            &op.transaction_id,
+            &op.event_id,
+            &op.guild_id,
+            &op.world_id,
+            &op.actor,
+            &op.target,
+        ] {
+            check_uuid_v7(id).ok()?;
+        }
+        let bytes = serde_json::to_vec(self).ok()?;
+        (bytes.len() <= 4_096).then_some(bytes)
+    }
+}

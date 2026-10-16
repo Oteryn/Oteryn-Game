@@ -670,3 +670,187 @@ the reviewed successor to existing draft PR2136; no ready, merge or queue action
 
 Current strict-unit Clippy proof: `f205-unit-clippy-strict-original-fixture-scope-GREEN-actual.json` (`f8d8afa9`);
 independent binding: `guild48-current-clippy-native-resource-review.json` (`c75cc304`).
+
+
+### Resign increment on published6128 — authored, UNVERIFIED
+
+GUILD0 §3.2 lines155–159 requires the current leader to choose a current vice of the same
+Guild, check the successor through the real native BANK junior decision, and immediately
+swap levels1 and2. Both actual Accounts consume the existing native batch Premium gate:
+§3.2 lines131–133 requires Premium after delivery for every move into a new level1 or2.
+Both exact Account/Guild/Character leadership positions already exist and stay byte-identical;
+the table stores no rank. The writer locks them by AccountId after current Guild/member
+locks and demotes the old leader before promoting the successor, preserving the immediate
+unique-leader index and final deferred snapshot proof. Expected revision is this private
+proposal's precondition, reusing existing CAS; no Resign wire field/codec is allocated.
+
+The real Root recovery/session/Node/current-role/target-selector checks run again at the
+writer boundary. Historical immutable outcomes replay before fresh roles/Premium, after
+recovery. Genuine NotActivated shares the batch gate's physical transaction and a savepoint;
+delivered Current decisions use the existing Root transaction. One immutable receipt/event
+binds all16 closed Resign audit fields to the same operation/outbox; old1..9 event encodings
+remain unchanged. A swap keeps vice count, lifecycle, formation/deficit times, names/titles,
+positions and CharacterRevisions unchanged. No property, bank, shared SQL writer or job is added.
+
+The current native BANK port is `fee_payer_is_junior`; its actual starter-island source
+returns NoStarterIsland for every Character until DAWNPORT. No invented Junior flag/provider
+or fabricated positive Junior PG case is used. GUILD0 §7.3 resolves a Guildhall OWNER from
+the current level1 member; the actual current House ACL still reads Character ownership,
+so its Guildhall adoption is CP/GUILDHALL work. No fake Hall binding or no-Hall eligibility
+guard is added, and no live Guildhall access/ACL behavior is claimed by this owner increment.
+
+The authored12 new bodies (one pure/11 PG) cover both-account Premium/current roles,
+legacy-entry rejection, state/CAS/overflow/refusal/replay, real formation and follow-on leader
+text authority, both physical transaction paths/ordered-swap rollback, all16 missing/mutated
+Resign audit fields plus unknown-field rejection with matching forged NEW-row hashes,
+current fences/actual assignment revocation/recovery-first, two-root races and batch-latch
+ordering. The complete141302-byte inherited owner/helper prefix and all48 old bodies remain
+literal. Candidate total is60 (13 pure/47 PG); all12 new bodies are UNCOMPILED/UNEXECUTED here.
+
+Early core71399 passed ordinary native unit Cargo CHECK, not codegen or runtime. Independent
+early transaction review6dbf5592 found legacy payloadless-entry and full audit-field binding
+gaps; repaired core2b6e90bb0 passed exact-delta review6648b3ab. The immutable early source1
+and actual compiler receipt remain separate from this full candidate. Integrated source,
+ordinary Cargo/Clippy/native60 and final publication qualification remain UNVERIFIED.
+Private SQL/module/runtime/wire/event-retention installation remains CP-owned; Root alone
+publishes a reviewed successor to existing draft PR2136. No ready/merge/queue action.
+
+
+### 2026-10-16 — authored native EditRanks batch (qualification pending)
+
+This versioned five-path candidate retains the repaired Resign source2b and adds
+EditRanks to the same native Guild owner. The prior Resign checkpoint/run remains
+frozen. No current Resign60 or combined72 execution result is inferred here.
+
+Accepted GUILD0 §§3.1–3.2 and GUILDS_V1 GI04/GI05 govern 3..20 contiguous levels,
+current own-Guild leader authority, expected revision, distinct canonical name
+keys and removed-level membership remapping to the new lowest level. The owner
+uses the actual database game_character_name_key function. The cited contract
+supplies no rank-specific lexical/length grammar; no CharacterName parser,
+29-character rule or alternate normalizer is introduced. Nonempty/NUL checks
+protect the existing SQL storage; the existing bounded audit envelope remains a
+private structural limit rather than a per-name policy.
+
+The real Root recovery/admission/session/node spine resolves current authority
+and checks the locked Guild/leader/CAS. One complete CharacterId-ordered roster
+lock precedes mutations. Rank-name uniqueness is named, DEFERRABLE INITIALLY
+IMMEDIATE, and deferred only by the new operation so valid name cycles work.
+Retained levels stay present; removed-tail members move before definitions are
+deleted, preserving the immediate membership FK. Levels1/2, global leadership
+positions, titles/join times, Character revisions, lifecycle and deficit times
+remain unchanged. No Premium, junior or property writer is required for this
+rank-definition edit. Numeric House ACL rows are not rewritten.
+
+A private action11 binds the exact ordered name vector and expected revision to
+one immutable receipt, one revision increment and one closed audit event in the
+same physical transaction. Closed SQL guards enforce the exact final contiguous
+rank set and full event binding; the payloadless legacy route refuses before
+lookup. Old action1..10 identities and audit proposals retain their meaning.
+
+All 188,289 bytes of the repaired inherited owner/test-helper source remain
+literal, including all60 prior bodies. Twelve additional meaningful test bodies
+(1 pure/11 PostgreSQL) cover names/cycles/grow/shrink/remap, real authority and
+Revoke/current leader after Resign, CAS/replay/two-Root races, state/deadlines,
+closed SQL/event tampering and rollback. Current totals are72 (14 pure/58 PG),
+with126 source-derived expected PostgreSQL17.6 fixture markers; all new combined
+qualification is UNVERIFIED pending actual ordinary native Cargo execution.
+
+Resource's implementation and VIP's test proposals were read by the sole final
+writer before application. Independent proposal/full-source/native/exact-C
+reviews remain required. Production module/schema installation, privileges,
+wire/events, public projections/relay/runtime adoption, jobs and Guildhall
+integration remain CP gates; no ready/merge request is made.
+
+
+### 2026-10-16 — native Decline authored; combined78 unverified
+
+Accepted GUILDS_V1 §5 Decline permits the genuinely invited current actor to
+remove only its own selected Guild invitation; absence returns NotInvited.
+Existence is sufficient even when expired. The same Root/current-session/node,
+World, locked Guild state and occurrence/replay spine applies. No Revoke
+leadership gate, Accept cleanup of other invitations, Premium/Bank/Hall authority
+or new wire allocation is introduced. One exact deletion, Guild revision and
+closed immutable receipt/event commit in the same physical transaction. No rank,
+leadership position, Character revision, lifecycle or deficit time is changed.
+
+Six new meaningful bodies (1 pure/5 PostgreSQL;7 fixture calls) cover actual
+selected/foreign invitations, expiry, current authority at both boundaries and
+actual Revoke, replay/races, closed state, direct SQL23514 and rollback/event
+forgery. The whole repaired226,597-byte72-body/helper prefix remains literal;
+inside it the entire188,289-byte predecessor60 source remains literal. The one
+new EditRanks session-negative repair aligns CommandRef with the changed test
+fence session, retaining the same CommandId, so it reaches current authority
+instead of an input-binding error. The actual strict72 nonminimal_bool RED is
+retained; its one predicate was replaced by the equivalent is_none_or expression
+without a lint exemption. Decline proposal parse RED and both fixture repairs
+are preserved in versioned evidence.
+
+Separately, repaired Resign source2b actually passed all60 tests, including all47
+PostgreSQL families and111 actual server_version_num170006 markers; current
+strict native-unit Clippy passed0. Independent actual review efabfca9 binds its
+raw proof6b1925c3 and losslessly retained ELF82f0675e/gzipbbdc72b5. This earlier
+qualification does not qualify the new combined78 source. Current authored totals
+are78 (15 pure/63 PG), with133 expected markers derived from source only. Final
+ordinary native Cargo/strict Clippy/PG execution and independent actual review
+remain UNVERIFIED for this candidate. Genuine Disband remains blocked on absent
+GuildBank/Hall release/closure ports; no fake partial implementation is claimed.
+
+
+### 2026-10-16 — final native Resign/EditRanks/Decline qualification
+
+Source4 `f894316d` actually passed current strict native-unit Clippy with
+-D warnings, ordinary Cargo --lib test compilation and exact native --list78.
+All78 selected bodies passed exactly once (15 pure/63 PostgreSQL families),
+with133 actual GUILD-NATIVE-PG server_version_num170006 markers. Execution was78
+exact one-body invocations of the Cargo-emitted native ELF, at most2 concurrent;
+each has its own actual 1-passed footer. Their exhaustive disjoint union is78;
+no aggregate78 libtest footer or sum of filtered counts is invented. The real
+global list has3,272 names;3,194 distinct other names were excluded. This is
+focused native unit-context qualification, not a full global suite run.
+
+Actual proof: reviews/guild-resign-pc/batch78-final-native-actual.json
+(`d8dac9df`); compiler independent review `dc015dcc`; final composed-source review
+`33693550`; final independent actual review `c957fc41`.
+All18,813 physical source-file hashes stayed equal before/after (this does not
+claim every file was consumed), as did54 actual compiler extern paths and the
+native ELF. The four real cfg(test) Guild/audit/shared-fixture registrations
+reside in three validation-only roots; the shared fixture retains its exact
+inherited lint scope. No product registration, copied owner/decoder, API shim,
+new lint suppression or test-body substitution was used. Rust/Cargo/Clippy1.94
+producer versions, real --test/profile.test=true and argv are retained.
+
+The qualified native ELF is389,983,952 bytes, SHA256
+`f83b02d2cafef2227bcb1fe2e1b05aee5d1730ca26de6a5c3fe1c33e92d6aa03`.
+Its persistent61,594,453-byte gzip has SHA256
+`d8d5bf124d638caceba3b094a53cf01e842264d1969ea273125bfa8207c0d3dc`;
+whole decompression reproduces the exact qualified bytes. Prospective activated
+V3 RAM budget `93fcbbab` and retention addendum `c8cd5e2b` govern this run;
+all144 runtime resource observations passed with no new OOM events. Actual
+PostgreSQL memory observations and both fresh17.6 endpoint checks are retained.
+The earlier C-floor stop is a separate failed resource attempt, not relabeled.
+
+History remains explicit: original Resign0449 returned59/60 because a fixture
+seeded historical91 before90. Its corrected source2b independently passed60
+(`6b1925c3`/review `efabfca9`,111 markers, strict0, retained82f0675e ELF).
+Combined72 source5dfd stopped strict Clippy101 on one nonminimal_bool finding,
+before ELF/runtime72; source3ca0 and repaired intermediate72f635 were never
+executed separately. The final78 includes the equivalent predicate and the
+current-session negative-case repair. Decline proposal V2 parse RED and its
+corrected V3 remain retained. Transport/collector sampling failures happened
+outside native tests; no hidden native-test rerun is claimed.
+
+This append preserves the entire54,904-byte authored card and all four Rust
+files from source4. The complete226,597-byte repaired72/helper prefix and its
+entire188,289-byte inherited60 prefix remain literal. The native inventory is
+Found, Invite, Revoke, Accept, Leave, Exclude, SetTitle, SetMessage, SetRank,
+Resign, EditRanks and Decline. Independent final doc/exact-C binding
+remains a publication prerequisite and is recorded separately by the control
+plane; this card does not grant publication or readiness authority.
+
+Production module/schema installation, privileges, wire/events, public
+projections/relay/runtime adoption, jobs and Guildhall integration remain CP
+gates. Rank-specific lexical/length policy is unallocated; no CharacterName or
+29-character rank grammar is invented. The BANK junior port currently reports
+NoStarterIsland until DAWNPORT. Disband remains blocked on genuine GuildBank/
+Hall release and closure ports. No non-test production graph, all-targets/full
+workspace, live Guildhall transition, draft-ready or merge claim is made.

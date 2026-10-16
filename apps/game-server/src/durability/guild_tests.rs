@@ -3088,3 +3088,2481 @@ fn guild_rank_native_shared_gate_commits_before_activation_latch() -> TestResult
         Ok(())
     })
 }
+
+// Proposed append only; author integrates after the COMPLETE old48 owner/helper prefix.
+// Uses actual native Root/Premium consumer/PG fixture. No runtime authority is constructed here.
+fn resign_request(n: u32, target: u32, expected: u64) -> GuildResignRequest {
+    GuildResignRequest::new(
+        request(n, 1, GuildCommand::Resign(character(target))),
+        expected,
+    )
+    .expect("bounded native request fixture")
+}
+async fn resign_apply(
+    h: &Harness,
+    req: GuildResignRequest,
+    premium: &SpellPremiumCoordinator,
+) -> TestResult<GuildOutcome> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .commit_guild_resign(&authority, &h.node, fence()?, req, premium)
+        .await
+        .map_err(|e| debug(e).into())
+}
+/// Historical setup happens before guard; the returned session is the original native fixture.
+async fn resign_fixture(h: &Harness) -> TestResult<CurrentCharacterItemFence> {
+    initial_guild(h, 1, 0).await?;
+    historical_character(h, 91, id(WORLD)).await?;
+    initial_member(h, 1, 91, 2).await?;
+    historical_session(h, 91).await
+}
+async fn resign_resource_seed_current(
+    h: &Harness,
+    consumer: &Arc<PremiumConsumer>,
+    who: [u8; 16],
+) -> TestResult {
+    use crate::premium::test_producer::{ProducerRequest, snapshot};
+    let nonce = "0123456789abcdef0123456789abcdef";
+    let response = snapshot(
+        &ProducerRequest {
+            account_id: uuid(who),
+            nonce: nonce.into(),
+        },
+        1,
+        &[],
+    );
+    assert!(matches!(
+        consumer.ingest(&h.root, who, nonce, &response).await,
+        crate::premium::IngestOutcome::Accepted
+    ));
+    Ok(())
+}
+/// Both real Account snapshots enter the SAME actual consumer/registered-clock coordinator.
+async fn resign_current(
+    h: &Harness,
+) -> TestResult<(SpellPremiumCoordinator, Arc<PremiumConsumer>)> {
+    let (coordinator, consumer) = current_coordinator(h, account(0), true).await?;
+    resign_resource_seed_current(h, &consumer, account(91)).await?;
+    Ok((coordinator, consumer))
+}
+async fn resign_resource_character_revisions(h: &Harness) -> TestResult<Vec<(String, String)>> {
+    Ok(sqlx::query_as(
+        "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
+    )
+    .fetch_all(&h.pool)
+    .await?)
+}
+/// A successful role swap owns only rank_level and one Guild revision; all other rows stay exact.
+async fn resign_resource_unchanged_fields(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT COALESCE(jsonb_agg(x ORDER BY x::text),'[]'::jsonb)::text FROM (SELECT jsonb_build_array('guild',to_jsonb(t)-'revision') x FROM game_guilds t UNION ALL SELECT jsonb_build_array('member',to_jsonb(t)-'rank_level') FROM game_guild_members t UNION ALL SELECT jsonb_build_array('rank',to_jsonb(t)) FROM game_guild_ranks t UNION ALL SELECT jsonb_build_array('invite',to_jsonb(t)) FROM game_guild_invitations t UNION ALL SELECT jsonb_build_array('position',to_jsonb(t)) FROM game_account_guild_leadership t) r")
+        .fetch_one(&h.pool).await?)
+}
+
+#[test]
+fn guild_resign_native_request_binding_and_closed_audit() -> TestResult {
+    assert!(
+        GuildResignRequest::new(request(1, 1, GuildCommand::Resign(character(91))), 0).is_err()
+    );
+    assert!(
+        GuildResignRequest::new(request(1, 1, GuildCommand::SetRank(character(91))), 1).is_err()
+    );
+    let original = resign_request(1, 91, 1);
+    let binding = resign_binding(&fence()?, &original).map_err(debug)?;
+    let mut changes = vec![resign_request(1, 92, 1), resign_request(1, 91, 2)];
+    let mut changed = original.clone();
+    changed.common.guild_id = gid(2);
+    changes.push(changed);
+    let mut changed = original.clone();
+    changed.common.operation = GuildCommand::SetRank(character(91));
+    changes.push(changed);
+    let mut changed = original.clone();
+    changed.common.command = request(2, 1, GuildCommand::Resign(character(91))).command;
+    changes.push(changed);
+    let mut changed = original.clone();
+    changed.common.identity.transaction_id = sid(9, 11);
+    changes.push(changed);
+    for changed in changes {
+        assert_ne!(resign_binding(&fence()?, &changed).map_err(debug)?, binding);
+    }
+    let mut actor_data = fence()?;
+    actor_data.character_id = character(92);
+    assert_ne!(
+        resign_binding(&actor_data, &original).map_err(debug)?,
+        binding
+    );
+    let audit = GuildResignAuditProposal {
+        operation: GuildAuditProposal {
+            version: 1,
+            occurrence: sid(1, 10),
+            transaction_id: sid(1, 11),
+            event_id: sid(1, 12),
+            guild_id: *gid(1).as_bytes(),
+            world_id: id(WORLD),
+            actor: id(CHARACTER),
+            target: *character(91).as_bytes(),
+            action: 10,
+            previous_revision: 1,
+            revision: 2,
+            rank_before: Some(2),
+            rank_after: Some(1),
+            removed_invitations: 0,
+            occurred_at_unix_ms: 1,
+        },
+        expected_revision: 1,
+    };
+    let bytes = audit.checked_bytes().ok_or("valid Resign audit refused")?;
+    assert_eq!(
+        serde_json::from_slice::<GuildResignAuditProposal>(&bytes)?,
+        audit
+    );
+    for field in 0..6 {
+        let mut wrong = audit.clone();
+        match field {
+            0 => wrong.expected_revision = 2,
+            1 => wrong.operation.rank_before = Some(1),
+            2 => wrong.operation.rank_after = Some(2),
+            3 => wrong.operation.actor = wrong.operation.target,
+            4 => wrong.operation.action = 9,
+            _ => wrong.operation.revision = 3,
+        }
+        assert!(wrong.checked_bytes().is_none());
+    }
+    let mut json: serde_json::Value = serde_json::from_slice(&bytes)?;
+    json["caller_target_premium"] = true.into();
+    assert!(serde_json::from_value::<GuildResignAuditProposal>(json).is_err());
+    Ok(())
+}
+
+#[test]
+fn guild_resign_native_legacy_payloadless_entry_refuses_before_guild_lookup() -> TestResult {
+    text_run("guild_resign_legacy", async |h| {
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let before = text_snapshot(h).await?;
+        assert!(matches!(
+            h.root
+                .commit_guild_membership(
+                    &authority,
+                    &h.node,
+                    fence()?,
+                    request(1, 999, GuildCommand::Resign(character(91)))
+                )
+                .await,
+            Err(GuildError::InvalidInput)
+        ));
+        assert_eq!(text_snapshot(h).await?, before);
+        assert_eq!(h.count("game_guild_operations").await?, 0);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_resign_native_both_actual_account_premium_matrix() -> TestResult {
+    // 0 bothCurrent; 1 onlyactor; 2 onlytarget; 3 bothNotCurrent; 4 noClock;
+    // 5 actorPullFailed; 6 targetPullFailed; 7 missinggate; 8 genuineNotActivated.
+    for case in 0..9 {
+        text_run("guild_resign_premium", async |h| {
+            resign_fixture(h).await?;
+            guard(h).await?;
+            let (premium, consumer) = match case {
+                0 | 5 | 6 => resign_current(h).await?,
+                1 | 3 => current_coordinator(h, account(0), true).await?,
+                2 => current_coordinator(h, account(91), true).await?,
+                4 => {
+                    let pair = current_coordinator(h, account(0), false).await?;
+                    resign_resource_seed_current(h, &pair.1, account(91)).await?;
+                    pair
+                }
+                7 => {
+                    let coordinator =
+                        SpellPremiumCoordinator::new(Arc::default(), None, None, None);
+                    let consumer = coordinator.consumer();
+                    (coordinator, consumer)
+                }
+                _ => {
+                    let coordinator = pre_delivery(&h.root);
+                    let consumer = coordinator.consumer();
+                    (coordinator, consumer)
+                }
+            };
+            if case == 3 || case == 5 {
+                consumer.pull_failed(account(0), consumer.ticket());
+            }
+            if case == 6 {
+                consumer.pull_failed(account(91), consumer.ticket());
+            }
+            let before = rank_mutation_snapshot(h).await?;
+            let unchanged = resign_resource_unchanged_fields(h).await?;
+            let revisions = resign_resource_character_revisions(h).await?;
+            let outcome = result(resign_apply(h, resign_request(1, 91, 1), &premium).await?);
+            let success = case == 0 || case == 8;
+            assert_eq!(
+                outcome.result,
+                if success {
+                    GuildResult::Ok
+                } else {
+                    GuildResult::NotPremium
+                }
+            );
+            assert_eq!(h.count("game_guild_operations").await?, 1);
+            assert_eq!(
+                h.count("game_guild_event_outbox").await?,
+                i64::from(success)
+            );
+            assert_eq!(h.count("game_account_guild_leadership").await?, 2);
+            assert_eq!(resign_resource_character_revisions(h).await?, revisions);
+            if success {
+                assert_eq!(rank_level(h, 0).await?, 2);
+                assert_eq!(rank_level(h, 91).await?, 1);
+                assert_eq!(revision(h, 1).await?, "2");
+                assert_eq!(resign_resource_unchanged_fields(h).await?, unchanged);
+                if case == 8 {
+                    assert_eq!(h.count("game_premium_activation_latch").await?, 0);
+                }
+            } else {
+                assert_eq!(rank_mutation_snapshot(h).await?, before);
+                assert_eq!(revision(h, 1).await?, "1");
+            }
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_resign_native_current_roles_target_and_world_refusals() -> TestResult {
+    for (actor_rank, target_rank, expected_revision) in
+        [(2, 2, 1), (3, 2, 1), (1, 3, 1), (2, 2, 99)]
+    {
+        text_run("guild_resign_roles", async |h| {
+            historical_character(h, 90, id(WORLD)).await?;
+            historical_character(h, 91, id(WORLD)).await?;
+            initial_guild(h, 1, if actor_rank == 1 { 0 } else { 90 }).await?;
+            if actor_rank != 1 {
+                initial_member(h, 1, 0, actor_rank).await?;
+            }
+            initial_member(h, 1, 91, target_rank).await?;
+            guard(h).await?;
+            let before = rank_mutation_snapshot(h).await?;
+            assert_eq!(
+                result(
+                    resign_apply(
+                        h,
+                        resign_request(1, 91, expected_revision),
+                        &pre_delivery(&h.root)
+                    )
+                    .await?
+                )
+                .result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, before);
+            assert_eq!(h.count("game_guild_operations").await?, 1);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+            Ok(())
+        })?;
+    }
+    text_run("guild_resign_target_scope", async |h| {
+        historical_character(h, 90, id(WORLD)).await?;
+        resign_fixture(h).await?;
+        initial_guild(h, 2, 90).await?;
+        historical_character(h, 92, id(WORLD)).await?;
+        initial_member(h, 2, 92, 2).await?;
+        historical_character(h, 93, sid(900, 40)).await?;
+        guard(h).await?;
+        let before = rank_mutation_snapshot(h).await?;
+        for (n, target) in [(1, 0), (2, 92), (3, 93), (4, 999)] {
+            assert_eq!(
+                result(
+                    resign_apply(h, resign_request(n, target, 1), &pre_delivery(&h.root)).await?
+                )
+                .result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, before);
+            assert_eq!(h.count("game_guild_operations").await?, i64::from(n));
+            assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_resign_native_keeps_lifecycle_and_refuses_terminal_states() -> TestResult {
+    for state in [1_i16, 2, 3, 4] {
+        text_run("guild_resign_lifecycle", async |h| {
+            resign_fixture(h).await?;
+            sqlx::query("UPDATE game_guilds SET state=$1,formation_deadline=1,vice_deficit_since=$2,premium_deficit_since=$3")
+                .bind(state).bind(if state == 1 { None } else { Some(1_i64) })
+                .bind(if state == 1 { None } else { Some(7_i64) }).execute(&h.pool).await?;
+            if state == 4 {
+                // A terminal historical fixture has no remaining members/leadership rows.
+                h.pool
+                    .execute(
+                        "DELETE FROM game_account_guild_leadership;DELETE FROM game_guild_members;",
+                    )
+                    .await?;
+            }
+            guard(h).await?;
+            let before = rank_mutation_snapshot(h).await?;
+            let unchanged = resign_resource_unchanged_fields(h).await?;
+            let revisions = resign_resource_character_revisions(h).await?;
+            let outcome =
+                result(resign_apply(h, resign_request(1, 91, 1), &pre_delivery(&h.root)).await?);
+            assert_eq!(
+                outcome.result,
+                if state <= 2 {
+                    GuildResult::Ok
+                } else {
+                    GuildResult::GuildDisbanding
+                }
+            );
+            assert_eq!(h.count("game_guild_operations").await?, 1);
+            assert_eq!(
+                h.count("game_guild_event_outbox").await?,
+                i64::from(state <= 2)
+            );
+            assert_eq!(resign_resource_character_revisions(h).await?, revisions);
+            if state <= 2 {
+                assert_eq!(resign_resource_unchanged_fields(h).await?, unchanged);
+                assert_eq!(rank_level(h, 0).await?, 2);
+                assert_eq!(rank_level(h, 91).await?, 1);
+            } else {
+                assert_eq!(rank_mutation_snapshot(h).await?, before);
+            }
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_resign_native_cas_and_overflow_leave_no_partial_swap() -> TestResult {
+    text_run("guild_resign_stale", async |h| {
+        resign_fixture(h).await?;
+        guard(h).await?;
+        let before = rank_mutation_snapshot(h).await?;
+        assert_eq!(
+            result(resign_apply(h, resign_request(1, 91, 2), &pre_delivery(&h.root)).await?).result,
+            GuildResult::StaleRevision
+        );
+        assert_eq!(rank_mutation_snapshot(h).await?, before);
+        assert_eq!(h.count("game_guild_operations").await?, 1);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+        Ok(())
+    })?;
+    text_run("guild_resign_overflow", async |h| {
+        resign_fixture(h).await?;
+        h.pool
+            .execute("UPDATE game_guilds SET revision=18446744073709551615")
+            .await?;
+        guard(h).await?;
+        let before = text_snapshot(h).await?;
+        assert!(
+            resign_apply(h, resign_request(1, 91, u64::MAX), &pre_delivery(&h.root))
+                .await
+                .is_err()
+        );
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_resign_native_committed_and_refusal_replay_survive_role_changes() -> TestResult {
+    text_run("guild_resign_replay", async |h| {
+        let target_fence = resign_fixture(h).await?;
+        guard(h).await?;
+        let premium = pre_delivery(&h.root);
+        let first_req = resign_request(1, 91, 1);
+        let first = result(resign_apply(h, first_req.clone(), &premium).await?);
+        assert_eq!(first.result, GuildResult::Ok);
+        let refused_req = resign_request(2, 91, 2);
+        let refused = result(resign_apply(h, refused_req.clone(), &premium).await?);
+        assert_eq!(refused.result, GuildResult::NotAllowed);
+        let mut reverse =
+            GuildResignRequest::new(request(3, 1, GuildCommand::Resign(character(0))), 2)
+                .map_err(debug)?;
+        reverse.common.command = CommandRef::new(target_fence.game_session_id, CommandId::new(3)?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            result(
+                h.root
+                    .commit_guild_resign(&authority, &h.node, target_fence, reverse, &premium)
+                    .await
+                    .map_err(debug)?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        drop(authority);
+        assert_eq!(rank_level(h, 0).await?, 1);
+        assert_eq!(rank_level(h, 91).await?, 2);
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = other.open_character_authority(&seal).await.map_err(debug)?;
+        let closed = SpellPremiumCoordinator::new(Arc::default(), None, None, None);
+        let mut stale = fence()?;
+        stale.connection_generation = ConnectionGeneration::new(999)?;
+        let before = text_snapshot(h).await?;
+        for (req, receipt) in [(first_req.clone(), first), (refused_req.clone(), refused)] {
+            let replay = other
+                .commit_guild_resign(&authority, &h.node, stale, req, &closed)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(&replay, GuildOutcome::Replayed(_)));
+            assert_eq!(result(replay), receipt);
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        for field in 0..6 {
+            let mut changed = first_req.clone();
+            match field {
+                0 => changed.expected_revision = 2,
+                1 => changed.common.operation = GuildCommand::Resign(character(92)),
+                2 => changed.common.guild_id = gid(2),
+                3 => changed.common.operation = GuildCommand::SetRank(character(91)),
+                4 => changed.common.identity.transaction_id = sid(99, 11),
+                _ => {
+                    changed.common.command =
+                        request(99, 1, GuildCommand::Resign(character(91))).command
+                }
+            }
+            assert!(matches!(
+                other
+                    .commit_guild_resign(&authority, &h.node, fence()?, changed, &closed)
+                    .await,
+                Err(GuildError::ConflictingOccurrence)
+            ));
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        let mut reused = resign_request(4, 91, 3);
+        reused.common.command = first_req.common.command;
+        assert!(matches!(
+            other
+                .commit_guild_resign(&authority, &h.node, fence()?, reused, &closed)
+                .await,
+            Err(GuildError::ConflictingOccurrence)
+        ));
+        assert_eq!(text_snapshot(h).await?, before);
+        assert_eq!(h.count("game_guild_operations").await?, 3);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_resign_native_real_formation_and_follow_on_leader_authority() -> TestResult {
+    text_run("guild_resign_real_formation", async |h| {
+        historical_character(h, 91, id(WORLD)).await?;
+        let target_fence = historical_session(h, 91).await?;
+        guard(h).await?;
+        let pre = pre_delivery(&h.root);
+        assert_eq!(
+            result(
+                found(
+                    h,
+                    found_request(1, 1, "Resign Native Guild"),
+                    fence()?,
+                    &pre
+                )
+                .await?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        assert_eq!(
+            result(
+                apply(
+                    h,
+                    request(2, 1, GuildCommand::Invite(character(91))),
+                    fence()?
+                )
+                .await?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        let mut accept = request(3, 1, GuildCommand::Accept);
+        accept.command = CommandRef::new(target_fence.game_session_id, CommandId::new(3)?);
+        assert_eq!(
+            result(apply(h, accept, target_fence).await?).result,
+            GuildResult::Ok
+        );
+        let (premium, _) = resign_current(h).await?;
+        assert_eq!(
+            result(rank_apply(h, rank_request(4, 91, 3, 2), &premium).await?).result,
+            GuildResult::Ok
+        );
+        assert_eq!(
+            result(resign_apply(h, resign_request(5, 91, 4), &premium).await?).result,
+            GuildResult::Ok
+        );
+        assert_eq!(rank_level(h, 0).await?, 2);
+        assert_eq!(rank_level(h, 91).await?, 1);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut title = text_request(6, GuildCommand::SetTitle(character(0)), 5, "Resigned");
+        title.common.command = CommandRef::new(target_fence.game_session_id, CommandId::new(6)?);
+        assert_eq!(
+            result(
+                h.root
+                    .commit_guild_text(&authority, &h.node, target_fence, title)
+                    .await
+                    .map_err(debug)?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        assert_eq!(
+            result(
+                text_apply(
+                    h,
+                    text_request(7, GuildCommand::SetTitle(character(91)), 6, "Blocked")
+                )
+                .await?
+            )
+            .result,
+            GuildResult::NotAllowed
+        );
+        assert_eq!(
+            result(
+                text_apply(
+                    h,
+                    text_request(8, GuildCommand::SetMessage, 6, "New leader; retained vice")
+                )
+                .await?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        assert_eq!(revision(h, 1).await?, "7");
+        assert_eq!(h.count("game_guild_operations").await?, 8);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 7);
+        assert_eq!(h.count("game_account_guild_leadership").await?, 2);
+        assert_eq!(h.count("game_guild_invitations").await?, 0);
+        let leaders: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_guild_members WHERE rank_level=1")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(leaders, 1);
+        let unchanged_revisions: bool =
+            sqlx::query_scalar("SELECT bool_and(character_revision=1) FROM game_character_roots")
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(unchanged_revisions);
+        Ok(())
+    })
+}
+
+// Native writer/SQL/race families authored independently of the Premium/role proposal.
+// Audit DATA below is only the expected producer payload, never current authority evidence.
+fn resign_test_audit(req: &GuildResignRequest) -> TestResult<serde_json::Value> {
+    let data = GuildResignAuditProposal {
+        operation: GuildAuditProposal {
+            version: 1,
+            occurrence: req.common.identity.occurrence,
+            transaction_id: req.common.identity.transaction_id,
+            event_id: req.common.identity.event_id,
+            guild_id: *req.common.guild_id.as_bytes(),
+            world_id: id(WORLD),
+            actor: *character(0).as_bytes(),
+            target: *req.common.operation.target(character(0)).as_bytes(),
+            action: 10,
+            previous_revision: req.expected_revision,
+            revision: req
+                .expected_revision
+                .checked_add(1)
+                .ok_or("audit overflow")?,
+            rank_before: Some(2),
+            rank_after: Some(1),
+            removed_invitations: 0,
+            occurred_at_unix_ms: req.common.identity.occurred_at_unix_ms,
+        },
+        expected_revision: req.expected_revision,
+    };
+    Ok(serde_json::from_slice(
+        &data.checked_bytes().ok_or("invalid fixture audit DATA")?,
+    )?)
+}
+
+#[test]
+fn guild_resign_native_ordered_swap_sql_binding_and_both_transaction_rollbacks() -> TestResult {
+    for delivered in [false, true] {
+        text_run("guild_resign_rollback", async |h| {
+            let _ = resign_fixture(h).await?;
+            guard(h).await?;
+            let (current, _) = resign_current(h).await?;
+            let before = text_snapshot(h).await?;
+            // delivered=false still needs a genuinely empty activation latch. Creating Current
+            // snapshots alone does not decide the gate until that coordinator is actually used.
+            let pre = pre_delivery(&h.root);
+            let premium = if delivered { &current } else { &pre };
+            let req = resign_request(1, 91, 1);
+            for (setup, cleanup) in [
+                (
+                    "CREATE FUNCTION guild_resign_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN IF OLD.rank_level=1 THEN NEW.title='corrupt';END IF;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_fault BEFORE UPDATE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION guild_resign_test_fault();",
+                    "DROP TRIGGER aaa_guild_resign_test_fault ON game_guild_members;DROP FUNCTION guild_resign_test_fault();",
+                ),
+                (
+                    "CREATE FUNCTION guild_resign_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN IF OLD.rank_level=2 AND NEW.rank_level=1 THEN RETURN NULL;END IF;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_fault BEFORE UPDATE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION guild_resign_test_fault();",
+                    "DROP TRIGGER aaa_guild_resign_test_fault ON game_guild_members;DROP FUNCTION guild_resign_test_fault();",
+                ),
+                (
+                    "CREATE FUNCTION guild_resign_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN NEW.vice_deficit_since=NULL;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_fault BEFORE UPDATE ON game_guilds FOR EACH ROW EXECUTE FUNCTION guild_resign_test_fault();",
+                    "DROP TRIGGER aaa_guild_resign_test_fault ON game_guilds;DROP FUNCTION guild_resign_test_fault();",
+                ),
+            ] {
+                h.pool.execute(setup).await?;
+                assert!(resign_apply(h, req.clone(), premium).await.is_err());
+                assert_eq!(text_snapshot(h).await?, before);
+                assert_eq!(rank_level(h, 0).await?, 1);
+                assert_eq!(rank_level(h, 91).await?, 2);
+                h.pool.execute(cleanup).await?;
+            }
+            if !delivered {
+                // BEFORE INSERT fixtures corrupt NEW rows before retention. They NEVER mutate
+                // immutable receipts/events. Both hashes agree, and all roles/positions swap
+                // correctly, so only exact closed action10 payload binding can refuse these.
+                h.pool.execute("CREATE TABLE guild_resign_test_payload(payload BYTEA NOT NULL);CREATE FUNCTION guild_resign_test_payload_op() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT sha256(payload) INTO NEW.audit_sha256 FROM guild_resign_test_payload;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_payload_op BEFORE INSERT ON game_guild_operations FOR EACH ROW EXECUTE FUNCTION guild_resign_test_payload_op();CREATE FUNCTION guild_resign_test_payload_event() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT payload INTO NEW.payload FROM guild_resign_test_payload;NEW.payload_sha256=sha256(NEW.payload);RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_payload_event BEFORE INSERT ON game_guild_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_resign_test_payload_event();").await?;
+                let valid = resign_test_audit(&req)?;
+                let keys = valid
+                    .as_object()
+                    .ok_or("audit not object")?
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<_>>();
+                assert_eq!(keys.len(), 16);
+                for key in &keys {
+                    for remove in [false, true] {
+                        let mut altered = valid.clone();
+                        if remove {
+                            altered
+                                .as_object_mut()
+                                .ok_or("audit not object")?
+                                .remove(key);
+                        } else {
+                            // Change exactly one field; all IDs retain genuine UUIDv7 byte shape.
+                            altered[key] = match key.as_str() {
+                                "actor" | "target" => {
+                                    serde_json::to_value(character(999).as_bytes())?
+                                }
+                                "guild_id" => serde_json::to_value(gid(999).as_bytes())?,
+                                "world_id" | "occurrence" | "transaction_id" | "event_id" => {
+                                    serde_json::to_value(sid(999, 90))?
+                                }
+                                _ => serde_json::json!(99),
+                            };
+                        }
+                        sqlx::query("DELETE FROM guild_resign_test_payload")
+                            .execute(&h.pool)
+                            .await?;
+                        sqlx::query("INSERT INTO guild_resign_test_payload VALUES($1)")
+                            .bind(serde_json::to_vec(&altered)?)
+                            .execute(&h.pool)
+                            .await?;
+                        assert!(
+                            resign_apply(h, req.clone(), premium).await.is_err(),
+                            "unbound audit field {key}, remove={remove}"
+                        );
+                        assert_eq!(text_snapshot(h).await?, before);
+                    }
+                }
+                let mut extra = valid;
+                extra["caller_premium"] = true.into();
+                sqlx::query("DELETE FROM guild_resign_test_payload")
+                    .execute(&h.pool)
+                    .await?;
+                sqlx::query("INSERT INTO guild_resign_test_payload VALUES($1)")
+                    .bind(serde_json::to_vec(&extra)?)
+                    .execute(&h.pool)
+                    .await?;
+                assert!(resign_apply(h, req.clone(), premium).await.is_err());
+                assert_eq!(text_snapshot(h).await?, before);
+                h.pool.execute("DROP TRIGGER aaa_guild_resign_test_payload_op ON game_guild_operations;DROP TRIGGER aaa_guild_resign_test_payload_event ON game_guild_event_outbox;DROP FUNCTION guild_resign_test_payload_op();DROP FUNCTION guild_resign_test_payload_event();DROP TABLE guild_resign_test_payload;").await?;
+            }
+            let outcome = resign_apply(h, req, premium).await?;
+            assert!(matches!(&outcome, GuildOutcome::Committed(_)));
+            assert_eq!(result(outcome).result, GuildResult::Ok);
+            assert_eq!(rank_level(h, 0).await?, 2);
+            assert_eq!(rank_level(h, 91).await?, 1);
+            assert_eq!(h.count("game_guild_operations").await?, 1);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            let before = text_snapshot(h).await?;
+            for sql in [
+                "UPDATE game_guild_members SET rank_level=1 WHERE rank_level=2",
+                "DELETE FROM game_account_guild_leadership",
+                "UPDATE game_guild_operations SET edit_rank=2",
+                "UPDATE game_guild_event_outbox SET occurred_at=occurred_at+1",
+            ] {
+                assert!(h.pool.execute(sql).await.is_err());
+                assert_eq!(text_snapshot(h).await?, before);
+            }
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_resign_native_two_root_occurrence_successor_and_demotion_races() -> TestResult {
+    for case in 0..3 {
+        text_run("guild_resign_race", async |h| {
+            let _ = resign_fixture(h).await?;
+            historical_character(h, 92, id(WORLD)).await?;
+            initial_member(h, 1, 92, 2).await?;
+            guard(h).await?;
+            let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+            assert!(other.maintain_ready_once().await?);
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let b = other.open_character_authority(&seal).await.map_err(debug)?;
+            let pa = pre_delivery(&h.root);
+            let pb = pre_delivery(&other);
+            let req = resign_request(1, 91, 1);
+            let (x, y) = if case < 2 {
+                fixture::join_two(
+                    h.root
+                        .commit_guild_resign(&a, &h.node, fence()?, req.clone(), &pa),
+                    other.commit_guild_resign(
+                        &b,
+                        &h.node,
+                        fence()?,
+                        if case == 0 {
+                            req
+                        } else {
+                            resign_request(2, 92, 1)
+                        },
+                        &pb,
+                    ),
+                )
+                .await
+            } else {
+                fixture::join_two(
+                    h.root.commit_guild_resign(&a, &h.node, fence()?, req, &pa),
+                    other.commit_guild_rank(&b, &h.node, fence()?, rank_request(2, 91, 1, 3), &pb),
+                )
+                .await
+            };
+            let x = x.map_err(debug)?;
+            let y = y.map_err(debug)?;
+            if case == 0 {
+                assert_eq!(
+                    usize::from(matches!(&x, GuildOutcome::Committed(_)))
+                        + usize::from(matches!(&y, GuildOutcome::Committed(_))),
+                    1
+                );
+                assert_eq!(result(x), result(y));
+                assert_eq!(h.count("game_guild_operations").await?, 1);
+            } else {
+                let outcomes = [result(x).result, result(y).result];
+                assert_eq!(
+                    outcomes.iter().filter(|x| **x == GuildResult::Ok).count(),
+                    1
+                );
+                assert_eq!(
+                    outcomes
+                        .iter()
+                        .filter(|x| **x == GuildResult::NotAllowed)
+                        .count(),
+                    1
+                );
+                assert_eq!(h.count("game_guild_operations").await?, 2);
+            }
+            let leaders: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_guild_members WHERE rank_level=1")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(leaders, 1);
+            assert_eq!(revision(h, 1).await?, "2");
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            let incoherent:i64=sqlx::query_scalar("SELECT count(*) FROM game_guild_members m JOIN game_character_roots c USING(character_id) WHERE (m.rank_level<=2) <> EXISTS(SELECT 1 FROM game_account_guild_leadership l WHERE l.account_id=c.account_id AND l.character_id=m.character_id AND l.guild_id=m.guild_id)").fetch_one(&h.pool).await?;
+            assert_eq!(incoherent, 0);
+            assert_eq!(text_character_revision(h).await?, "1");
+            // Native admission locking also serializes whole passes; no isolated throughput claim.
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_resign_native_both_fence_boundaries_actual_revoke_and_recovery_first() -> TestResult {
+    text_run("guild_resign_fences", async |h| {
+        let _ = resign_fixture(h).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let recovery = authority.record_for(&h.root).map_err(debug)?;
+        let req = resign_request(1, 91, 1);
+        let premium = pre_delivery(&h.root);
+        let before = text_snapshot(h).await?;
+        let wrong = fixture::register(&h.root, 2).await?;
+        for field in 0..5 {
+            let mut f = fence()?;
+            match field {
+                0 => f.connection_generation = ConnectionGeneration::new(2)?,
+                1 => f.character_lease_generation = 2,
+                2 => f.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+                3 => f.character_id = character(999),
+                _ => {}
+            }
+            let node = if field == 4 { &wrong } else { &h.node };
+            assert!(matches!(
+                h.root
+                    .commit_guild_resign(&authority, node, f, req.clone(), &premium)
+                    .await,
+                Err(GuildError::NotCurrent)
+            ));
+            let write = ResignWrite {
+                node: node.clone(),
+                fence: f,
+                resign: req.clone(),
+                binding: resign_binding(&f, &req).map_err(debug)?,
+                accounts: Some([account(0), account(91)]),
+            };
+            let mut tx = h.pool.begin().await?;
+            assert!(matches!(
+                write.execute(&mut tx, &recovery, None).await,
+                Err(GuildError::NotCurrent)
+            ));
+            tx.rollback().await?;
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        let write = ResignWrite {
+            node: h.node.clone(),
+            fence: fence()?,
+            resign: req.clone(),
+            binding: resign_binding(&fence()?, &req).map_err(debug)?,
+            accounts: Some([account(0), account(92)]),
+        };
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            write.execute(&mut tx, &recovery, None).await,
+            Err(GuildError::NotCurrent)
+        ));
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        assert!(matches!(
+            other
+                .commit_guild_resign(&authority, &h.node, fence()?, req.clone(), &premium)
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        drop(other);
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState, ControlActor,
+            OperationKey, RuntimeScopeAssignmentWriter,
+        };
+        let actor: String = sqlx::query_scalar("SELECT session_user")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(actor, "oteryn_test_admin");
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,3)").bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).execute(&h.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "item-transfer-writer")
+            .await
+            .map_err(debug)?;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing assignment")?;
+        assert!(matches!(
+            writer
+                .submit(&AssignmentRequest {
+                    operation_key: OperationKey::from_bytes([89; 32]),
+                    actor: ControlActor::new(&actor).map_err(debug)?,
+                    command: AssignmentCommand::Revoke {
+                        scope: fence()?.runtime_scope,
+                        predecessor
+                    }
+                })
+                .await
+                .map_err(debug)?,
+            AssignmentOutcome::Committed(_)
+        ));
+        let actual = h
+            .root
+            .read_runtime_scope_assignment(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing revoked assignment")?;
+        assert_eq!(actual.state, AssignmentState::Revoked);
+        assert_eq!(actual.ownership_generation, 2);
+        assert!(matches!(
+            h.root
+                .commit_guild_resign(&authority, &h.node, fence()?, req.clone(), &premium)
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        let write = ResignWrite {
+            node: h.node.clone(),
+            fence: fence()?,
+            resign: req.clone(),
+            binding: resign_binding(&fence()?, &req).map_err(debug)?,
+            accounts: Some([account(0), account(91)]),
+        };
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            write.execute(&mut tx, &recovery, None).await,
+            Err(GuildError::NotCurrent)
+        ));
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        assert_eq!(rank_level(h, 0).await?, 1);
+        assert_eq!(rank_level(h, 91).await?, 2);
+        Ok(())
+    })?;
+    text_run("guild_resign_recovery", async |h| {
+        let _ = resign_fixture(h).await?;
+        guard(h).await?;
+        let req = resign_request(1, 91, 1);
+        assert_eq!(
+            result(resign_apply(h, req.clone(), &pre_delivery(&h.root)).await?).result,
+            GuildResult::Ok
+        );
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut recovery = authority.record_for(&h.root).map_err(debug)?;
+        recovery.recovery_generation += 1;
+        let write = ResignWrite {
+            node: h.node.clone(),
+            fence: fence()?,
+            resign: req.clone(),
+            binding: resign_binding(&fence()?, &req).map_err(debug)?,
+            accounts: None,
+        };
+        let before = text_snapshot(h).await?;
+        let mut tx = h.pool.begin().await?;
+        assert!(write.execute(&mut tx, &recovery, None).await.is_err());
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_resign_native_batch_gate_commit_precedes_activation_latch() -> TestResult {
+    text_run("guild_resign_batch_latch", async |h| {
+        let target_fence = resign_fixture(h).await?;
+        guard(h).await?;
+        h.pool.execute("CREATE FUNCTION guild_resign_test_barrier() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN IF OLD.rank_level=1 THEN PERFORM pg_advisory_xact_lock(901124);END IF;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_resign_test_barrier BEFORE UPDATE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION guild_resign_test_barrier();").await?;
+        let mut barrier = h.pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock(901124)")
+            .execute(&mut *barrier)
+            .await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let premium = pre_delivery(&h.root);
+        let req = resign_request(1, 91, 1);
+        let (swapped, latched) = fixture::join_two(
+            h.root
+                .commit_guild_resign(&authority, &h.node, fence()?, req.clone(), &premium),
+            async {
+                wait_advisory(&h.pool, 901124, false).await?;
+                let latch_key = super::super::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
+                wait_advisory(&h.pool, latch_key, true).await?;
+                let (latched, released) = fixture::join_two(
+                    other.latch_premium_activation("guild-resign-racing-activation", 1, 2),
+                    async {
+                        wait_advisory(&h.pool, latch_key, false).await?;
+                        barrier.rollback().await?;
+                        Ok::<_, Box<dyn std::error::Error>>(())
+                    },
+                )
+                .await;
+                released?;
+                latched.map_err(|e| -> Box<dyn std::error::Error> { debug(e).into() })
+            },
+        )
+        .await;
+        assert_eq!(result(swapped.map_err(debug)?).result, GuildResult::Ok);
+        assert_eq!(latched?.activation_id, "guild-resign-racing-activation");
+        assert_eq!(rank_level(h, 0).await?, 2);
+        assert_eq!(rank_level(h, 91).await?, 1);
+        h.pool.execute("DROP TRIGGER aaa_guild_resign_test_barrier ON game_guild_members;DROP FUNCTION guild_resign_test_barrier();").await?;
+        // Current newly elected leader attempts the reverse swap after delivery, with no Current
+        // snapshot for either Account. Both real decisions are required; persisted positions grant none.
+        let mut reverse =
+            GuildResignRequest::new(request(2, 1, GuildCommand::Resign(character(0))), 2)
+                .map_err(debug)?;
+        reverse.common.command = CommandRef::new(target_fence.game_session_id, CommandId::new(2)?);
+        let before = rank_mutation_snapshot(h).await?;
+        assert_eq!(
+            result(
+                h.root
+                    .commit_guild_resign(
+                        &authority,
+                        &h.node,
+                        target_fence,
+                        reverse,
+                        &pre_delivery(&h.root)
+                    )
+                    .await
+                    .map_err(debug)?
+            )
+            .result,
+            GuildResult::NotPremium
+        );
+        assert_eq!(rank_mutation_snapshot(h).await?, before);
+        assert!(matches!(
+            h.root
+                .commit_guild_resign(&authority, &h.node, fence()?, req, &pre_delivery(&h.root))
+                .await
+                .map_err(debug)?,
+            GuildOutcome::Replayed(_)
+        ));
+        assert_eq!(h.count("game_guild_operations").await?, 2);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+        Ok(())
+    })
+}
+
+// PROPOSAL ONLY: append to the eventual published Resign guild_tests.rs after exact-base refresh.
+// Existing helpers above remain literal; every native case requires configured_admin via text_run.
+// Rank-name lexical/length policy remains unallocated; these examples use ordinary ASCII names.
+
+fn edit_ranks_request(n: u32, expected: u64, names: &[&str]) -> GuildEditRanksRequest {
+    GuildEditRanksRequest::new(
+        request(n, 1, GuildCommand::EditRanks),
+        expected,
+        names.iter().map(|name| (*name).to_owned()).collect(),
+    )
+    .expect("bounded native rank-set DATA")
+}
+
+async fn edit_ranks_apply(h: &Harness, req: GuildEditRanksRequest) -> TestResult<GuildOutcome> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .commit_guild_edit_ranks(&authority, &h.node, fence()?, req)
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+async fn edit_ranks_rows(h: &Harness, guild: u32) -> TestResult<Vec<(i16, String)>> {
+    Ok(sqlx::query_as(
+        "SELECT level,name FROM game_guild_ranks WHERE guild_id=encode($1,'hex')::uuid ORDER BY level",
+    )
+    .bind(gid(guild).as_bytes().as_slice())
+    .fetch_all(&h.pool)
+    .await?)
+}
+
+async fn edit_ranks_expect(h: &Harness, names: &[String]) -> TestResult {
+    let expected = names
+        .iter()
+        .enumerate()
+        .map(|(index, name)| (i16::try_from(index + 1).unwrap(), name.clone()))
+        .collect::<Vec<_>>();
+    assert_eq!(edit_ranks_rows(h, 1).await?, expected);
+    Ok(())
+}
+
+/// Historical setup precedes all Guild guards. Offline lower ranks have no fabricated sessions.
+async fn edit_ranks_fixture(h: &Harness) -> TestResult {
+    initial_guild(h, 1, 0).await?;
+    for (who, rank) in [(91, 2), (92, 3), (93, 4)] {
+        historical_character(h, who, id(WORLD)).await?;
+        initial_member(h, 1, who, rank).await?;
+    }
+    historical_character(h, 94, id(WORLD)).await?;
+    initial_guild(h, 2, 94).await?;
+    historical_character(h, 95, id(WORLD)).await?;
+    initial_member(h, 2, 95, 4).await?;
+    Ok(())
+}
+
+/// Rank definitions and remapped rank_level are the only mutable snapshot fields owned here.
+async fn edit_ranks_other_fields(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT COALESCE(jsonb_agg(x ORDER BY x::text),'[]'::jsonb)::text FROM (SELECT jsonb_build_array('guild',to_jsonb(t)-'revision') x FROM game_guilds t UNION ALL SELECT jsonb_build_array('member',to_jsonb(t)-'rank_level') FROM game_guild_members t UNION ALL SELECT jsonb_build_array('invite',to_jsonb(t)) FROM game_guild_invitations t UNION ALL SELECT jsonb_build_array('position',to_jsonb(t)) FROM game_account_guild_leadership t) r")
+        .fetch_one(&h.pool).await?)
+}
+
+fn edit_ranks_large_names() -> Vec<String> {
+    (b'A'..=b'T')
+        .map(|letter| format!("Rank {}", char::from(letter)))
+        .collect()
+}
+
+#[test]
+fn guild_edit_ranks_native_data_bounds_and_ordered_binding() -> TestResult {
+    let common = request(1, 1, GuildCommand::EditRanks);
+    for names in [vec!["Alpha".into(); 2], vec!["Alpha".into(); 21]] {
+        assert!(matches!(
+            GuildEditRanksRequest::new(common.clone(), 1, names),
+            Err(GuildError::InvalidInput)
+        ));
+    }
+    for invalid in ["", "Al\0pha"] {
+        assert!(matches!(
+            GuildEditRanksRequest::new(
+                common.clone(),
+                1,
+                vec![invalid.into(), "Beta".into(), "Gamma".into()]
+            ),
+            Err(GuildError::InvalidInput)
+        ));
+    }
+    assert!(
+        GuildEditRanksRequest::new(
+            common.clone(),
+            0,
+            vec!["Alpha".into(), "Beta".into(), "Gamma".into()]
+        )
+        .is_err()
+    );
+    assert!(
+        GuildEditRanksRequest::new(
+            request(1, 1, GuildCommand::Leave),
+            1,
+            vec!["Alpha".into(), "Beta".into(), "Gamma".into()]
+        )
+        .is_err()
+    );
+    let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+    let first = edit_ranks_binding(&fence()?, &req).map_err(debug)?;
+    for field in 0..5 {
+        let mut changed = req.clone();
+        match field {
+            0 => changed.names.swap(0, 1),
+            1 => changed.names.push("Delta".into()),
+            2 => changed.names[2] = "Delta".into(),
+            3 => changed.expected_revision = 2,
+            _ => changed.common.guild_id = gid(2),
+        }
+        assert_ne!(
+            edit_ranks_binding(&fence()?, &changed).map_err(debug)?,
+            first
+        );
+    }
+    let max = GuildEditRanksRequest::new(common, 1, edit_ranks_large_names()).map_err(debug)?;
+    assert_eq!(max.names.len(), 20);
+    // Canonical uniqueness is an actual DB refusal, not an alternate Rust name normalizer.
+    assert!(
+        GuildEditRanksRequest::new(
+            request(2, 1, GuildCommand::EditRanks),
+            1,
+            vec!["Al Dric".into(), "ALDRIC".into(), "Gamma".into()]
+        )
+        .is_ok()
+    );
+    Ok(())
+}
+
+#[test]
+fn guild_edit_ranks_native_rename_cycles_and_exact_contiguous_set() -> TestResult {
+    text_run("guild_edit_cycle", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let untouched = edit_ranks_other_fields(h).await?;
+        let foreign = edit_ranks_rows(h, 2).await?;
+        let characters = resign_resource_character_revisions(h).await?;
+        let req = edit_ranks_request(1, 1, &["Vice Leader", "Member", "Visitor", "Leader"]);
+        assert_eq!(
+            result(edit_ranks_apply(h, req.clone()).await?).result,
+            GuildResult::Ok
+        );
+        edit_ranks_expect(h, &req.names).await?;
+        assert_eq!(revision(h, 1).await?, "2");
+        assert_eq!(revision(h, 2).await?, "1");
+        assert_eq!(edit_ranks_rows(h, 2).await?, foreign);
+        for (who, rank) in [(0, 1), (91, 2), (92, 3), (93, 4), (94, 1), (95, 4)] {
+            assert_eq!(rank_level(h, who).await?, rank);
+        }
+        assert_eq!(edit_ranks_other_fields(h).await?, untouched);
+        assert_eq!(resign_resource_character_revisions(h).await?, characters);
+        assert_eq!(h.count("game_guild_operations").await?, 1);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_twenty_to_three_remaps_only_removed_levels() -> TestResult {
+    text_run("guild_edit_remap", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let grow = GuildEditRanksRequest::new(
+            request(1, 1, GuildCommand::EditRanks),
+            1,
+            edit_ranks_large_names(),
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            result(edit_ranks_apply(h, grow.clone()).await?).result,
+            GuildResult::Ok
+        );
+        edit_ranks_expect(h, &grow.names).await?;
+        assert_eq!(rank_level(h, 93).await?, 4);
+        // Feed the created level20 through the existing genuine SetRank writer, not raw SQL.
+        assert_eq!(
+            result(rank_apply(h, rank_request(2, 93, 2, 20), &pre_delivery(&h.root)).await?).result,
+            GuildResult::Ok
+        );
+        let untouched = edit_ranks_other_fields(h).await?;
+        let characters = resign_resource_character_revisions(h).await?;
+        let foreign = edit_ranks_rows(h, 2).await?;
+        let shrink = edit_ranks_request(3, 3, &["Rank T", "Rank A", "Rank B"]);
+        assert_eq!(
+            result(edit_ranks_apply(h, shrink.clone()).await?).result,
+            GuildResult::Ok
+        );
+        edit_ranks_expect(h, &shrink.names).await?;
+        for (who, rank) in [(0, 1), (91, 2), (92, 3), (93, 3), (94, 1), (95, 4)] {
+            assert_eq!(rank_level(h, who).await?, rank);
+        }
+        assert_eq!(edit_ranks_other_fields(h).await?, untouched);
+        assert_eq!(resign_resource_character_revisions(h).await?, characters);
+        assert_eq!(edit_ranks_rows(h, 2).await?, foreign);
+        assert_eq!(revision(h, 1).await?, "4");
+        // Grow the genuine minimum3 snapshot again: removed historical level20 is not restored.
+        let regrow = GuildEditRanksRequest::new(
+            request(4, 1, GuildCommand::EditRanks),
+            4,
+            edit_ranks_large_names(),
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            result(edit_ranks_apply(h, regrow.clone()).await?).result,
+            GuildResult::Ok
+        );
+        edit_ranks_expect(h, &regrow.names).await?;
+        assert_eq!(rank_level(h, 93).await?, 3);
+        assert_eq!(rank_level(h, 0).await?, 1);
+        assert_eq!(rank_level(h, 91).await?, 2);
+        assert_eq!(edit_ranks_other_fields(h).await?, untouched);
+        assert_eq!(resign_resource_character_revisions(h).await?, characters);
+        assert_eq!(edit_ranks_rows(h, 2).await?, foreign);
+        assert_eq!(revision(h, 1).await?, "5");
+        assert_eq!(h.count("game_guild_operations").await?, 4);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 4);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_canonical_duplicates_and_stale_cas_are_atomic() -> TestResult {
+    text_run("guild_edit_refusals", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let no_payload_before = text_snapshot(h).await?;
+        assert!(matches!(
+            h.root
+                .commit_guild_membership(
+                    &authority,
+                    &h.node,
+                    fence()?,
+                    request(99, 1, GuildCommand::EditRanks)
+                )
+                .await,
+            Err(GuildError::InvalidInput)
+        ));
+        assert_eq!(text_snapshot(h).await?, no_payload_before);
+        for sql in [
+            "SELECT game_guild_rank_names_valid(ARRAY['Alpha','Beta']::text[])",
+            "SELECT game_guild_rank_names_valid(ARRAY(SELECT 'Rank '||chr(65+g) FROM generate_series(0,20) g))",
+            "SELECT game_guild_rank_names_valid(ARRAY['Alpha',NULL,'Gamma']::text[])",
+            "SELECT game_guild_rank_names_valid(ARRAY['Alpha','','Gamma']::text[])",
+            "SELECT game_guild_rank_names_valid(ARRAY['Al Dric','ALDRIC','Gamma']::text[])",
+            "SELECT game_guild_rank_names_valid(ARRAY[['Alpha'],['Beta'],['Gamma']]::text[])",
+            "SELECT game_guild_rank_names_valid('[0:2]={Alpha,Beta,Gamma}'::text[])",
+        ] {
+            let valid: bool = sqlx::query_scalar(sql).fetch_one(&h.pool).await?;
+            assert!(!valid, "accepted malformed rank vector: {sql}");
+        }
+        let unchanged = rank_mutation_snapshot(h).await?;
+        for (n, names) in [
+            (1, ["Al Dric", "ALDRIC", "Gamma"]),
+            (2, ["Alpha", "Alpha", "Gamma"]),
+        ] {
+            assert_eq!(
+                result(edit_ranks_apply(h, edit_ranks_request(n, 1, &names)).await?).result,
+                GuildResult::NameTaken
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, unchanged);
+        }
+        assert_eq!(
+            result(
+                edit_ranks_apply(h, edit_ranks_request(3, 2, &["Alpha", "Beta", "Gamma"])).await?
+            )
+            .result,
+            GuildResult::StaleRevision
+        );
+        assert_eq!(rank_mutation_snapshot(h).await?, unchanged);
+        assert_eq!(h.count("game_guild_operations").await?, 3);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+        assert_eq!(revision(h, 1).await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_current_guild_leader_and_actual_resign_roles() -> TestResult {
+    text_run("guild_edit_roles", async |h| {
+        edit_ranks_fixture(h).await?;
+        let actors = [
+            historical_session(h, 91).await?,
+            historical_session(h, 92).await?,
+            historical_session(h, 94).await?,
+        ];
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let unchanged = rank_mutation_snapshot(h).await?;
+        for (index, actor) in actors.iter().enumerate() {
+            let mut req =
+                edit_ranks_request(u32::try_from(index + 1)?, 1, &["Alpha", "Beta", "Gamma"]);
+            req.common.command = CommandRef::new(
+                actor.game_session_id,
+                CommandId::new(u64::try_from(index + 1)?)?,
+            );
+            assert_eq!(
+                result(
+                    h.root
+                        .commit_guild_edit_ranks(&authority, &h.node, *actor, req)
+                        .await
+                        .map_err(debug)?
+                )
+                .result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, unchanged);
+        }
+        assert_eq!(
+            result(resign_apply(h, resign_request(4, 91, 1), &pre_delivery(&h.root)).await?).result,
+            GuildResult::Ok
+        );
+        let unchanged = rank_mutation_snapshot(h).await?;
+        assert_eq!(
+            result(
+                edit_ranks_apply(h, edit_ranks_request(5, 2, &["Alpha", "Beta", "Gamma"])).await?
+            )
+            .result,
+            GuildResult::NotAllowed
+        );
+        assert_eq!(rank_mutation_snapshot(h).await?, unchanged);
+        let mut new_leader = edit_ranks_request(6, 2, &["Alpha", "Beta", "Gamma"]);
+        new_leader.common.command = CommandRef::new(actors[0].game_session_id, CommandId::new(6)?);
+        assert_eq!(
+            result(
+                h.root
+                    .commit_guild_edit_ranks(&authority, &h.node, actors[0], new_leader)
+                    .await
+                    .map_err(debug)?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        assert_eq!(rank_level(h, 91).await?, 1);
+        assert_eq!(rank_level(h, 0).await?, 2);
+        assert_eq!(revision(h, 1).await?, "3");
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_history_binds_name_order_count_and_revision() -> TestResult {
+    text_run("guild_edit_replay", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma", "Delta"]);
+        let first = result(edit_ranks_apply(h, req.clone()).await?);
+        assert_eq!(first.result, GuildResult::Ok);
+        assert_eq!(
+            result(
+                edit_ranks_apply(h, edit_ranks_request(2, 2, &["Gamma", "Beta", "Alpha"])).await?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        let before = text_snapshot(h).await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = other.open_character_authority(&seal).await.map_err(debug)?;
+        let mut stale = fence()?;
+        stale.connection_generation = ConnectionGeneration::new(999)?;
+        let replay = other
+            .commit_guild_edit_ranks(&authority, &h.node, stale, req.clone())
+            .await
+            .map_err(debug)?;
+        assert!(matches!(&replay, GuildOutcome::Replayed(_)));
+        assert_eq!(result(replay), first);
+        assert_eq!(text_snapshot(h).await?, before);
+        for field in 0..6 {
+            let mut changed = req.clone();
+            match field {
+                0 => changed.names.swap(0, 1),
+                1 => {
+                    changed.names.pop();
+                }
+                2 => changed.names[0] = "Epsilon".into(),
+                3 => changed.expected_revision = 2,
+                4 => changed.common.guild_id = gid(2),
+                _ => changed.common.operation = GuildCommand::SetMessage,
+            }
+            assert!(matches!(
+                other
+                    .commit_guild_edit_ranks(&authority, &h.node, fence()?, changed)
+                    .await,
+                Err(GuildError::ConflictingOccurrence)
+            ));
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        assert_eq!(revision(h, 1).await?, "3");
+        assert_eq!(h.count("game_guild_operations").await?, 2);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_lifecycle_does_not_cure_or_extend_deadlines() -> TestResult {
+    for state in [1_i16, 2, 3, 4] {
+        text_run("guild_edit_lifecycle", async |h| {
+            initial_guild(h, 1, 0).await?;
+            sqlx::query("UPDATE game_guilds SET state=$1,formation_deadline=1,vice_deficit_since=$2,premium_deficit_since=$3")
+                .bind(state).bind(if state == 1 { None } else { Some(1_i64) })
+                .bind(if state == 1 { None } else { Some(7_i64) }).execute(&h.pool).await?;
+            if state == 4 {
+                h.pool
+                    .execute(
+                        "DELETE FROM game_account_guild_leadership;DELETE FROM game_guild_members;",
+                    )
+                    .await?;
+            }
+            guard(h).await?;
+            let unchanged = edit_ranks_other_fields(h).await?;
+            let before = rank_mutation_snapshot(h).await?;
+            let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+            assert_eq!(
+                result(edit_ranks_apply(h, req.clone()).await?).result,
+                if state <= 2 {
+                    GuildResult::Ok
+                } else {
+                    GuildResult::GuildDisbanding
+                }
+            );
+            assert_eq!(edit_ranks_other_fields(h).await?, unchanged);
+            if state <= 2 {
+                edit_ranks_expect(h, &req.names).await?;
+            } else {
+                assert_eq!(rank_mutation_snapshot(h).await?, before);
+            }
+            assert_eq!(h.count("game_guild_operations").await?, 1);
+            assert_eq!(
+                h.count("game_guild_event_outbox").await?,
+                i64::from(state <= 2)
+            );
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_edit_ranks_native_two_root_cas_and_occurrence_serialization() -> TestResult {
+    text_run("guild_edit_races", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let b = other.open_character_authority(&seal).await.map_err(debug)?;
+        let left = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+        let right = edit_ranks_request(2, 1, &["Delta", "Epsilon", "Zeta"]);
+        let (x, y) = fixture::join_two(
+            h.root
+                .commit_guild_edit_ranks(&a, &h.node, fence()?, left.clone()),
+            other.commit_guild_edit_ranks(&b, &h.node, fence()?, right.clone()),
+        )
+        .await;
+        let (x, y) = (result(x.map_err(debug)?), result(y.map_err(debug)?));
+        assert_eq!(
+            usize::from(x.result == GuildResult::Ok) + usize::from(y.result == GuildResult::Ok),
+            1
+        );
+        assert_eq!(
+            usize::from(x.result == GuildResult::StaleRevision)
+                + usize::from(y.result == GuildResult::StaleRevision),
+            1
+        );
+        edit_ranks_expect(
+            h,
+            if x.result == GuildResult::Ok {
+                &left.names
+            } else {
+                &right.names
+            },
+        )
+        .await?;
+        let same = edit_ranks_request(3, 2, &["Eta", "Theta", "Iota", "Kappa"]);
+        let (x, y) = fixture::join_two(
+            h.root
+                .commit_guild_edit_ranks(&a, &h.node, fence()?, same.clone()),
+            other.commit_guild_edit_ranks(&b, &h.node, fence()?, same.clone()),
+        )
+        .await;
+        let (x, y) = (x.map_err(debug)?, y.map_err(debug)?);
+        assert_eq!(
+            usize::from(matches!(&x, GuildOutcome::Committed(_)))
+                + usize::from(matches!(&y, GuildOutcome::Committed(_))),
+            1
+        );
+        assert_eq!(result(x), result(y));
+        edit_ranks_expect(h, &same.names).await?;
+        assert_eq!(revision(h, 1).await?, "3");
+        assert_eq!(h.count("game_guild_operations").await?, 3);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_closed_sql_and_after_remap_rollback() -> TestResult {
+    text_run("guild_edit_atomic", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+        let before = text_snapshot(h).await?;
+        for sql in [
+            "UPDATE game_guild_ranks SET name='Forged' WHERE level=3",
+            "DELETE FROM game_guild_ranks WHERE level=4",
+            "INSERT INTO game_guild_ranks(guild_id,level,name) SELECT guild_id,5,'Forged' FROM game_guilds",
+            "UPDATE game_guild_members SET rank_level=3 WHERE rank_level=4",
+        ] {
+            let error = h
+                .pool
+                .execute(sql)
+                .await
+                .expect_err("unbound raw mutation accepted");
+            assert_eq!(
+                error
+                    .as_database_error()
+                    .and_then(|error| error.code())
+                    .as_deref(),
+                Some("23514")
+            );
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        for (setup, cleanup) in [
+            (
+                "CREATE FUNCTION guild_edit_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN NEW.title='forged';RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_fault BEFORE UPDATE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION guild_edit_test_fault();",
+                "DROP TRIGGER aaa_guild_edit_test_fault ON game_guild_members;DROP FUNCTION guild_edit_test_fault();",
+            ),
+            (
+                "CREATE FUNCTION guild_edit_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN IF NEW.level=2 THEN NEW.name='Unbound';END IF;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_fault BEFORE UPDATE ON game_guild_ranks FOR EACH ROW EXECUTE FUNCTION guild_edit_test_fault();",
+                "DROP TRIGGER aaa_guild_edit_test_fault ON game_guild_ranks;DROP FUNCTION guild_edit_test_fault();",
+            ),
+            (
+                "CREATE FUNCTION guild_edit_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN NEW.level=5;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_fault BEFORE UPDATE ON game_guild_ranks FOR EACH ROW EXECUTE FUNCTION guild_edit_test_fault();",
+                "DROP TRIGGER aaa_guild_edit_test_fault ON game_guild_ranks;DROP FUNCTION guild_edit_test_fault();",
+            ),
+            (
+                "CREATE FUNCTION guild_edit_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'native post-remap event failure' USING ERRCODE='23514';END$$;CREATE CONSTRAINT TRIGGER guild_edit_test_fault AFTER INSERT ON game_guild_event_outbox DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION guild_edit_test_fault();",
+                "DROP TRIGGER guild_edit_test_fault ON game_guild_event_outbox;DROP FUNCTION guild_edit_test_fault();",
+            ),
+        ] {
+            h.pool.execute(setup).await?;
+            assert!(edit_ranks_apply(h, req.clone()).await.is_err());
+            assert_eq!(text_snapshot(h).await?, before);
+            assert_eq!(rank_level(h, 93).await?, 4);
+            h.pool.execute(cleanup).await?;
+        }
+        let outcome = edit_ranks_apply(h, req.clone()).await?;
+        assert!(matches!(&outcome, GuildOutcome::Committed(_)));
+        assert_eq!(result(outcome).result, GuildResult::Ok);
+        edit_ranks_expect(h, &req.names).await?;
+        assert_eq!(rank_level(h, 93).await?, 3);
+        assert_eq!(h.count("game_guild_operations").await?, 1);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+        Ok(())
+    })?;
+    text_run("guild_edit_overflow", async |h| {
+        edit_ranks_fixture(h).await?;
+        sqlx::query("UPDATE game_guilds SET revision=18446744073709551615 WHERE guild_id=encode($1,'hex')::uuid").bind(gid(1).as_bytes().as_slice()).execute(&h.pool).await?;
+        guard(h).await?;
+        let before = text_snapshot(h).await?;
+        assert!(
+            edit_ranks_apply(
+                h,
+                edit_ranks_request(1, u64::MAX, &["Alpha", "Beta", "Gamma"])
+            )
+            .await
+            .is_err()
+        );
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_real_actor_fences_and_cross_root_authority() -> TestResult {
+    text_run("guild_edit_fences", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+        let before = text_snapshot(h).await?;
+        let wrong = fixture::register(&h.root, 2).await?;
+        let recovery = authority.record_for(&h.root).map_err(debug)?;
+        for field in 0..8 {
+            let mut stale = fence()?;
+            match field {
+                0 => stale.connection_generation = ConnectionGeneration::new(2)?,
+                1 => stale.character_lease_generation = 2,
+                2 => stale.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+                3 => stale.character_id = character(999),
+                4 => stale.game_session_id = GameSessionId::decode(&sid(999, 20))?,
+                5 => {
+                    if let crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } =
+                        stale.runtime_scope
+                    {
+                        stale.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                            crate::foundation::WorldId::decode(&sid(999, 70))?,
+                            channel_id,
+                        );
+                    }
+                }
+                6 => {
+                    if let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
+                        stale.runtime_scope
+                    {
+                        stale.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                            world_id,
+                            crate::foundation::ChannelId::decode(&sid(999, 71))?,
+                        );
+                    }
+                }
+                _ => {}
+            }
+            let node = if field == 7 { &wrong } else { &h.node };
+            let mut case_req = req.clone();
+            if field == 4 {
+                case_req.common.command =
+                    CommandRef::new(stale.game_session_id, req.common.command.command_id());
+            }
+            assert!(matches!(
+                h.root
+                    .commit_guild_edit_ranks(&authority, node, stale, case_req.clone())
+                    .await,
+                Err(GuildError::NotCurrent)
+            ));
+            let write = EditRanksWrite {
+                node: node.clone(),
+                fence: stale,
+                edit_ranks: case_req.clone(),
+                binding: edit_ranks_binding(&stale, &case_req).map_err(debug)?,
+            };
+            let mut tx = h.pool.begin().await?;
+            assert!(matches!(
+                write.execute(&mut tx, &recovery).await,
+                Err(GuildError::NotCurrent)
+            ));
+            tx.rollback().await?;
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        assert!(matches!(
+            other
+                .commit_guild_edit_ranks(&authority, &h.node, fence()?, req.clone())
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        assert_eq!(text_snapshot(h).await?, before);
+        // The same real capability works before actual revocation, ruling out a broken fixture.
+        assert_eq!(
+            result(
+                h.root
+                    .commit_guild_edit_ranks(&authority, &h.node, fence()?, req)
+                    .await
+                    .map_err(debug)?
+            )
+            .result,
+            GuildResult::Ok
+        );
+        let before = text_snapshot(h).await?;
+        let req = edit_ranks_request(2, 2, &["Alpha", "Beta", "Gamma", "Delta"]);
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState, ControlActor,
+            OperationKey, RuntimeScopeAssignmentWriter,
+        };
+        let actor: String = sqlx::query_scalar("SELECT session_user")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(actor, "oteryn_test_admin");
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,3)").bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).execute(&h.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "item-transfer-writer")
+            .await
+            .map_err(debug)?;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing assignment")?;
+        assert!(matches!(
+            writer
+                .submit(&AssignmentRequest {
+                    operation_key: OperationKey::from_bytes([90; 32]),
+                    actor: ControlActor::new(&actor).map_err(debug)?,
+                    command: AssignmentCommand::Revoke {
+                        scope: fence()?.runtime_scope,
+                        predecessor
+                    },
+                })
+                .await
+                .map_err(debug)?,
+            AssignmentOutcome::Committed(_)
+        ));
+        let actual = h
+            .root
+            .read_runtime_scope_assignment(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing revoked assignment")?;
+        assert_eq!(actual.state, AssignmentState::Revoked);
+        assert_eq!(actual.ownership_generation, 2);
+        assert!(matches!(
+            h.root
+                .commit_guild_edit_ranks(&authority, &h.node, fence()?, req.clone())
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        let write = EditRanksWrite {
+            node: h.node.clone(),
+            fence: fence()?,
+            edit_ranks: req.clone(),
+            binding: edit_ranks_binding(&fence()?, &req).map_err(debug)?,
+        };
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            write.execute(&mut tx, &recovery).await,
+            Err(GuildError::NotCurrent)
+        ));
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_edit_ranks_native_recovery_precedes_fresh_write_and_historical_replay() -> TestResult {
+    text_run("guild_edit_recovery", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut stale = authority.record_for(&h.root).map_err(debug)?;
+        stale.recovery_generation += 1;
+        let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+        let write = EditRanksWrite {
+            node: h.node.clone(),
+            fence: fence()?,
+            edit_ranks: req.clone(),
+            binding: edit_ranks_binding(&fence()?, &req).map_err(debug)?,
+        };
+        let before = text_snapshot(h).await?;
+        let mut tx = h.pool.begin().await?;
+        assert!(write.execute(&mut tx, &stale).await.is_err());
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        assert_eq!(
+            result(edit_ranks_apply(h, req).await?).result,
+            GuildResult::Ok
+        );
+        let before = text_snapshot(h).await?;
+        let mut tx = h.pool.begin().await?;
+        assert!(write.execute(&mut tx, &stale).await.is_err());
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+fn edit_ranks_test_audit(req: &GuildEditRanksRequest) -> TestResult<serde_json::Value> {
+    let audit = GuildEditRanksAuditProposal {
+        operation: GuildAuditProposal {
+            version: 1,
+            occurrence: req.common.identity.occurrence,
+            transaction_id: req.common.identity.transaction_id,
+            event_id: req.common.identity.event_id,
+            guild_id: *req.common.guild_id.as_bytes(),
+            world_id: id(WORLD),
+            actor: *character(0).as_bytes(),
+            target: *character(0).as_bytes(),
+            action: 11,
+            previous_revision: req.expected_revision,
+            revision: req
+                .expected_revision
+                .checked_add(1)
+                .ok_or("audit overflow")?,
+            rank_before: None,
+            rank_after: None,
+            removed_invitations: 0,
+            occurred_at_unix_ms: req.common.identity.occurred_at_unix_ms,
+        },
+        expected_revision: req.expected_revision,
+        names: req.names.clone(),
+    };
+    Ok(serde_json::from_slice(
+        &audit.checked_bytes().ok_or("invalid native audit DATA")?,
+    )?)
+}
+
+#[test]
+fn guild_edit_ranks_native_forged_rank_set_and_closed_event_proofs_rollback() -> TestResult {
+    text_run("guild_edit_proofs", async |h| {
+        edit_ranks_fixture(h).await?;
+        guard(h).await?;
+        let req = edit_ranks_request(1, 1, &["Alpha", "Beta", "Gamma"]);
+        let before = text_snapshot(h).await?;
+        // Corrupt only newly proposed rows, never overwrite an immutable committed receipt.
+        h.pool.execute("CREATE TABLE guild_edit_test_payload(payload BYTEA NOT NULL);CREATE FUNCTION guild_edit_test_payload_op() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT sha256(payload) INTO NEW.audit_sha256 FROM guild_edit_test_payload;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_payload_op BEFORE INSERT ON game_guild_operations FOR EACH ROW EXECUTE FUNCTION guild_edit_test_payload_op();CREATE FUNCTION guild_edit_test_payload_event() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT payload INTO NEW.payload FROM guild_edit_test_payload;NEW.payload_sha256=sha256(NEW.payload);RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_payload_event BEFORE INSERT ON game_guild_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_edit_test_payload_event();").await?;
+        let valid = edit_ranks_test_audit(&req)?;
+        let mut altered_values = Vec::new();
+        let mut reordered = valid.clone();
+        reordered["names"] = serde_json::json!(["Beta", "Alpha", "Gamma"]);
+        altered_values.push(reordered);
+        let mut truncated = valid.clone();
+        truncated["names"] = serde_json::json!(["Alpha", "Beta"]);
+        altered_values.push(truncated);
+        let mut replaced = valid.clone();
+        replaced["names"] = serde_json::json!(["Alpha", "Beta", "Delta"]);
+        altered_values.push(replaced);
+        let mut wrong_cas = valid.clone();
+        wrong_cas["expected_revision"] = serde_json::json!(2);
+        altered_values.push(wrong_cas);
+        let mut missing = valid.clone();
+        missing
+            .as_object_mut()
+            .ok_or("audit not object")?
+            .remove("names");
+        altered_values.push(missing);
+        let mut extra = valid;
+        extra["caller_is_leader"] = serde_json::json!(true);
+        altered_values.push(extra);
+        for altered in altered_values {
+            sqlx::query("DELETE FROM guild_edit_test_payload")
+                .execute(&h.pool)
+                .await?;
+            sqlx::query("INSERT INTO guild_edit_test_payload VALUES($1)")
+                .bind(serde_json::to_vec(&altered)?)
+                .execute(&h.pool)
+                .await?;
+            assert!(edit_ranks_apply(h, req.clone()).await.is_err());
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        h.pool.execute("DROP TRIGGER aaa_guild_edit_test_payload_op ON game_guild_operations;DROP TRIGGER aaa_guild_edit_test_payload_event ON game_guild_event_outbox;DROP FUNCTION guild_edit_test_payload_op();DROP FUNCTION guild_edit_test_payload_event();DROP TABLE guild_edit_test_payload;").await?;
+        // Same expected revision and actual final rows must still bind the exact ordered vector.
+        h.pool.execute("CREATE FUNCTION guild_edit_test_names() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN NEW.edit_rank_names=ARRAY['Beta','Alpha','Gamma'];RETURN NEW;END$$;CREATE TRIGGER aaa_guild_edit_test_names BEFORE INSERT ON game_guild_operations FOR EACH ROW EXECUTE FUNCTION guild_edit_test_names();").await?;
+        assert!(edit_ranks_apply(h, req.clone()).await.is_err());
+        assert_eq!(text_snapshot(h).await?, before);
+        h.pool.execute("DROP TRIGGER aaa_guild_edit_test_names ON game_guild_operations;DROP FUNCTION guild_edit_test_names();").await?;
+        assert_eq!(
+            result(edit_ranks_apply(h, req).await?).result,
+            GuildResult::Ok
+        );
+        assert_eq!(h.count("game_guild_operations").await?, 1);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+        Ok(())
+    })
+}
+
+// Proposal only. Append after the eventual unchanged Resign60 + accepted EditRanks12.
+// Decline uses the real membership owner, not a new authority constructor or Hall/Bank port.
+
+async fn decline_fixture(h: &Harness, expired: bool) -> TestResult {
+    historical_character(h, 91, id(WORLD)).await?;
+    historical_character(h, 92, id(WORLD)).await?;
+    initial_guild(h, 1, 91).await?;
+    initial_guild(h, 2, 0).await?;
+    historical_character(h, 94, id(WORLD)).await?;
+    initial_guild(h, 3, 94).await?;
+    historical_character(h, 96, id(WORLD)).await?;
+    initial_guild(h, 4, 96).await?;
+    initial_invitation(h, 1, 0, 91, expired).await?;
+    initial_invitation(h, 1, 92, 91, false).await?;
+    initial_invitation(h, 3, 0, 94, false).await?;
+    initial_invitation(h, 4, 0, 96, false).await?;
+    Ok(())
+}
+
+async fn decline_invitation_rows(h: &Harness) -> TestResult<Vec<(String, String, String, i64)>> {
+    Ok(sqlx::query_as("SELECT guild_id::text,character_id::text,inviter::text,expires_at FROM game_guild_invitations ORDER BY guild_id,character_id")
+        .fetch_all(&h.pool).await?)
+}
+
+async fn decline_non_invitation_fields(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT COALESCE(jsonb_agg(x ORDER BY x::text),'[]'::jsonb)::text FROM (SELECT jsonb_build_array('guild',to_jsonb(t)-'revision') x FROM game_guilds t UNION ALL SELECT jsonb_build_array('member',to_jsonb(t)) FROM game_guild_members t UNION ALL SELECT jsonb_build_array('rank',to_jsonb(t)) FROM game_guild_ranks t UNION ALL SELECT jsonb_build_array('position',to_jsonb(t)) FROM game_account_guild_leadership t) r")
+        .fetch_one(&h.pool).await?)
+}
+
+fn decline_test_audit(req: &GuildRequest) -> GuildDeclineAuditProposal {
+    GuildDeclineAuditProposal {
+        operation: GuildAuditProposal {
+            version: 1,
+            occurrence: req.identity.occurrence,
+            transaction_id: req.identity.transaction_id,
+            event_id: req.identity.event_id,
+            guild_id: *req.guild_id.as_bytes(),
+            world_id: id(WORLD),
+            actor: *character(0).as_bytes(),
+            target: *character(0).as_bytes(),
+            action: 12,
+            previous_revision: 1,
+            revision: 2,
+            rank_before: None,
+            rank_after: None,
+            removed_invitations: 1,
+            occurred_at_unix_ms: req.identity.occurred_at_unix_ms,
+        },
+    }
+}
+
+#[test]
+fn guild_decline_native_actor_target_binding_and_closed_codec() -> TestResult {
+    let req = request(1, 1, GuildCommand::Decline);
+    assert_eq!(req.operation.target(character(0)), character(0));
+    for op in [
+        GuildCommand::Accept,
+        GuildCommand::Revoke(character(0)),
+        GuildCommand::Leave,
+    ] {
+        assert_ne!(
+            binding(&fence()?, &req).map_err(debug)?,
+            binding(&fence()?, &request(1, 1, op)).map_err(debug)?
+        );
+    }
+    let valid = decline_test_audit(&req);
+    let bytes = valid
+        .checked_bytes()
+        .ok_or("valid Decline audit rejected")?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+    assert_eq!(value["removed_invitations"], 1);
+    assert_eq!(value["action"], 12);
+    assert!(
+        valid.operation.checked_bytes().is_none(),
+        "old codec must remain closed"
+    );
+    for field in 0..5 {
+        let mut changed = valid.clone();
+        match field {
+            0 => changed.operation.target = *character(92).as_bytes(),
+            1 => changed.operation.removed_invitations = 0,
+            2 => changed.operation.rank_before = Some(1),
+            3 => changed.operation.revision = 3,
+            _ => changed.operation.action = 2,
+        }
+        assert!(changed.checked_bytes().is_none());
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_decline_native_only_own_selected_invitation_even_expired_and_other_guild_member()
+-> TestResult {
+    for expired in [false, true] {
+        text_run("guild_decline_own", async |h| {
+            decline_fixture(h, expired).await?;
+            guard(h).await?;
+            let original = decline_non_invitation_fields(h).await?;
+            let characters = resign_resource_character_revisions(h).await?;
+            let mut expected = decline_invitation_rows(h).await?;
+            expected.retain(|(g, c, _, _)| {
+                *g != uuid(*gid(1).as_bytes()) || *c != uuid(*character(0).as_bytes())
+            });
+            // Actor leads a DIFFERENT Guild: that never grants this Guild's Revoke permission.
+            assert_eq!(
+                result(
+                    apply(
+                        h,
+                        request(1, 1, GuildCommand::Revoke(character(0))),
+                        fence()?
+                    )
+                    .await?
+                )
+                .result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(
+                result(apply(h, request(2, 1, GuildCommand::Decline), fence()?).await?).result,
+                GuildResult::Ok
+            );
+            assert_eq!(decline_invitation_rows(h).await?, expected);
+            assert_eq!(decline_non_invitation_fields(h).await?, original);
+            assert_eq!(resign_resource_character_revisions(h).await?, characters);
+            assert_eq!(revision(h, 1).await?, "2");
+            for guild in [2, 3, 4] {
+                assert_eq!(revision(h, guild).await?, "1");
+            }
+            let unchanged = rank_mutation_snapshot(h).await?;
+            assert_eq!(
+                result(apply(h, request(3, 1, GuildCommand::Decline), fence()?).await?).result,
+                GuildResult::NotInvited
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, unchanged);
+            assert_eq!(h.count("game_guild_operations").await?, 3);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_decline_native_replay_binding_and_two_root_single_effect() -> TestResult {
+    text_run("guild_decline_history", async |h| {
+        decline_fixture(h, false).await?;
+        guard(h).await?;
+        let req = request(1, 1, GuildCommand::Decline);
+        let first = result(apply(h, req.clone(), fence()?).await?);
+        assert_eq!(first.result, GuildResult::Ok);
+        let before = text_snapshot(h).await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let b = other.open_character_authority(&seal).await.map_err(debug)?;
+        let mut stale_fence = fence()?;
+        stale_fence.connection_generation = ConnectionGeneration::new(999)?;
+        let replay = other
+            .commit_guild_membership(&b, &h.node, stale_fence, req.clone())
+            .await
+            .map_err(debug)?;
+        assert!(matches!(&replay, GuildOutcome::Replayed(_)));
+        assert_eq!(result(replay), first);
+        for field in 0..3 {
+            let mut changed = req.clone();
+            match field {
+                0 => changed.guild_id = gid(3),
+                1 => changed.operation = GuildCommand::Revoke(character(0)),
+                _ => changed.command = request(10, 1, GuildCommand::Decline).command,
+            }
+            assert!(matches!(
+                other
+                    .commit_guild_membership(&b, &h.node, fence()?, changed)
+                    .await,
+                Err(GuildError::ConflictingOccurrence)
+            ));
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        let mut recovery = a.record_for(&h.root).map_err(debug)?;
+        recovery.recovery_generation += 1;
+        let mut tx = h.pool.begin().await?;
+        assert!(
+            lock_fenced_guild_operation(&mut tx, &recovery, &req)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        let same = request(2, 3, GuildCommand::Decline);
+        let (x, y) = fixture::join_two(
+            h.root
+                .commit_guild_membership(&a, &h.node, fence()?, same.clone()),
+            other.commit_guild_membership(&b, &h.node, fence()?, same),
+        )
+        .await;
+        let (x, y) = (x.map_err(debug)?, y.map_err(debug)?);
+        assert_eq!(
+            usize::from(matches!(&x, GuildOutcome::Committed(_)))
+                + usize::from(matches!(&y, GuildOutcome::Committed(_))),
+            1
+        );
+        assert_eq!(result(x), result(y));
+        let (x, y) = fixture::join_two(
+            h.root.commit_guild_membership(
+                &a,
+                &h.node,
+                fence()?,
+                request(3, 4, GuildCommand::Decline),
+            ),
+            other.commit_guild_membership(
+                &b,
+                &h.node,
+                fence()?,
+                request(4, 4, GuildCommand::Decline),
+            ),
+        )
+        .await;
+        let answers = [
+            result(x.map_err(debug)?).result,
+            result(y.map_err(debug)?).result,
+        ];
+        assert_eq!(
+            answers
+                .iter()
+                .filter(|value| **value == GuildResult::Ok)
+                .count(),
+            1
+        );
+        assert_eq!(
+            answers
+                .iter()
+                .filter(|value| **value == GuildResult::NotInvited)
+                .count(),
+            1
+        );
+        assert_eq!(h.count("game_guild_operations").await?, 4);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 3);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_decline_native_current_session_node_and_physical_tx_guards() -> TestResult {
+    text_run("guild_decline_fences", async |h| {
+        decline_fixture(h, false).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let recovery = authority.record_for(&h.root).map_err(debug)?;
+        let req = request(1, 1, GuildCommand::Decline);
+        let before = text_snapshot(h).await?;
+        let wrong = fixture::register(&h.root, 2).await?;
+        for field in 0..8 {
+            let mut stale = fence()?;
+            match field {
+                0 => stale.connection_generation = ConnectionGeneration::new(2)?,
+                1 => stale.character_lease_generation = 2,
+                2 => stale.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+                3 => stale.character_id = character(999),
+                4 => stale.game_session_id = GameSessionId::decode(&sid(999, 20))?,
+                5 => {
+                    if let crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } =
+                        stale.runtime_scope
+                    {
+                        stale.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                            crate::foundation::WorldId::decode(&sid(999, 70))?,
+                            channel_id,
+                        );
+                    }
+                }
+                6 => {
+                    if let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
+                        stale.runtime_scope
+                    {
+                        stale.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                            world_id,
+                            crate::foundation::ChannelId::decode(&sid(999, 71))?,
+                        );
+                    }
+                }
+                _ => {}
+            }
+            let node = if field == 7 { &wrong } else { &h.node };
+            let mut case_req = req.clone();
+            if field == 4 {
+                // Keep DATA binding internally consistent to reach the real current-session guard.
+                case_req.command = CommandRef::new(stale.game_session_id, req.command.command_id());
+            }
+            assert!(matches!(
+                h.root
+                    .commit_guild_membership(&authority, node, stale, case_req.clone())
+                    .await,
+                Err(GuildError::NotCurrent)
+            ));
+            let mut tx = h.pool.begin().await?;
+            lock_fenced_guild_operation(&mut tx, &recovery, &case_req)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(
+                execute(
+                    &mut tx,
+                    node,
+                    &stale,
+                    &case_req,
+                    &binding(&stale, &case_req).map_err(debug)?,
+                    None,
+                    None
+                )
+                .await,
+                Err(GuildError::NotCurrent)
+            ));
+            tx.rollback().await?;
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        assert!(matches!(
+            other
+                .commit_guild_membership(&authority, &h.node, fence()?, req.clone())
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        assert_eq!(text_snapshot(h).await?, before);
+        assert_eq!(
+            result(apply(h, req, fence()?).await?).result,
+            GuildResult::Ok
+        );
+        let before = text_snapshot(h).await?;
+        let fresh = request(2, 3, GuildCommand::Decline);
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState, ControlActor,
+            OperationKey, RuntimeScopeAssignmentWriter,
+        };
+        let actor: String = sqlx::query_scalar("SELECT session_user")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(actor, "oteryn_test_admin");
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,3)").bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).execute(&h.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "item-transfer-writer")
+            .await
+            .map_err(debug)?;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing assignment")?;
+        assert!(matches!(
+            writer
+                .submit(&AssignmentRequest {
+                    operation_key: OperationKey::from_bytes([91; 32]),
+                    actor: ControlActor::new(&actor).map_err(debug)?,
+                    command: AssignmentCommand::Revoke {
+                        scope: fence()?.runtime_scope,
+                        predecessor
+                    },
+                })
+                .await
+                .map_err(debug)?,
+            AssignmentOutcome::Committed(_)
+        ));
+        let actual = h
+            .root
+            .read_runtime_scope_assignment(fence()?.runtime_scope)
+            .await
+            .map_err(debug)?
+            .ok_or("missing revoked assignment")?;
+        assert_eq!(actual.state, AssignmentState::Revoked);
+        assert_eq!(actual.ownership_generation, 2);
+        assert!(matches!(
+            h.root
+                .commit_guild_membership(&authority, &h.node, fence()?, fresh.clone())
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        let mut tx = h.pool.begin().await?;
+        lock_fenced_guild_operation(&mut tx, &recovery, &fresh)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            execute(
+                &mut tx,
+                &h.node,
+                &fence()?,
+                &fresh,
+                &binding(&fence()?, &fresh).map_err(debug)?,
+                None,
+                None
+            )
+            .await,
+            Err(GuildError::NotCurrent)
+        ));
+        tx.rollback().await?;
+        assert_eq!(text_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_decline_native_terminal_guild_state_never_cleans_invitation() -> TestResult {
+    for state in [3_i16, 4] {
+        text_run("guild_decline_state", async |h| {
+            decline_fixture(h, false).await?;
+            sqlx::query("UPDATE game_guilds SET state=$1 WHERE guild_id=encode($2,'hex')::uuid")
+                .bind(state)
+                .bind(gid(1).as_bytes().as_slice())
+                .execute(&h.pool)
+                .await?;
+            if state == 4 {
+                // Valid terminal Guild has no membership or invitation left; no fake Hall/Bank fact.
+                sqlx::query("DELETE FROM game_account_guild_leadership WHERE guild_id=encode($1,'hex')::uuid").bind(gid(1).as_bytes().as_slice()).execute(&h.pool).await?;
+                sqlx::query("DELETE FROM game_guild_members WHERE guild_id=encode($1,'hex')::uuid")
+                    .bind(gid(1).as_bytes().as_slice())
+                    .execute(&h.pool)
+                    .await?;
+                sqlx::query(
+                    "DELETE FROM game_guild_invitations WHERE guild_id=encode($1,'hex')::uuid",
+                )
+                .bind(gid(1).as_bytes().as_slice())
+                .execute(&h.pool)
+                .await?;
+            }
+            guard(h).await?;
+            let before = rank_mutation_snapshot(h).await?;
+            assert_eq!(
+                result(apply(h, request(1, 1, GuildCommand::Decline), fence()?).await?).result,
+                GuildResult::GuildDisbanding
+            );
+            assert_eq!(rank_mutation_snapshot(h).await?, before);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_decline_native_sql_delete_and_event_failure_are_atomic() -> TestResult {
+    text_run("guild_decline_atomic", async |h| {
+        decline_fixture(h, false).await?;
+        guard(h).await?;
+        let before = text_snapshot(h).await?;
+        let raw = sqlx::query("DELETE FROM game_guild_invitations WHERE guild_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+            .bind(gid(1).as_bytes().as_slice()).bind(character(0).as_bytes().as_slice()).execute(&h.pool).await.expect_err("unbound invitation delete accepted");
+        assert_eq!(
+            raw.as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23514")
+        );
+        for (setup, cleanup) in [
+            (
+                "CREATE FUNCTION guild_decline_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN RETURN NULL;END$$;CREATE TRIGGER aaa_guild_decline_test_fault BEFORE DELETE ON game_guild_invitations FOR EACH ROW EXECUTE FUNCTION guild_decline_test_fault();",
+                "DROP TRIGGER aaa_guild_decline_test_fault ON game_guild_invitations;DROP FUNCTION guild_decline_test_fault();",
+            ),
+            (
+                "CREATE FUNCTION guild_decline_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'native deferred event failure' USING ERRCODE='23514';END$$;CREATE CONSTRAINT TRIGGER guild_decline_test_fault AFTER INSERT ON game_guild_event_outbox DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION guild_decline_test_fault();",
+                "DROP TRIGGER guild_decline_test_fault ON game_guild_event_outbox;DROP FUNCTION guild_decline_test_fault();",
+            ),
+            (
+                "CREATE FUNCTION guild_decline_test_fault() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN NEW.vice_deficit_since=99;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_decline_test_fault BEFORE UPDATE ON game_guilds FOR EACH ROW EXECUTE FUNCTION guild_decline_test_fault();",
+                "DROP TRIGGER aaa_guild_decline_test_fault ON game_guilds;DROP FUNCTION guild_decline_test_fault();",
+            ),
+        ] {
+            h.pool.execute(setup).await?;
+            assert!(
+                apply(h, request(1, 1, GuildCommand::Decline), fence()?)
+                    .await
+                    .is_err()
+            );
+            assert_eq!(text_snapshot(h).await?, before);
+            h.pool.execute(cleanup).await?;
+        }
+        h.pool.execute("CREATE TABLE guild_decline_test_payload(payload BYTEA NOT NULL);CREATE FUNCTION guild_decline_test_op() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT sha256(payload) INTO NEW.audit_sha256 FROM guild_decline_test_payload;RETURN NEW;END$$;CREATE TRIGGER aaa_guild_decline_test_op BEFORE INSERT ON game_guild_operations FOR EACH ROW EXECUTE FUNCTION guild_decline_test_op();CREATE FUNCTION guild_decline_test_event() RETURNS TRIGGER LANGUAGE plpgsql AS $$BEGIN SELECT payload INTO NEW.payload FROM guild_decline_test_payload;NEW.payload_sha256=sha256(NEW.payload);RETURN NEW;END$$;CREATE TRIGGER aaa_guild_decline_test_event BEFORE INSERT ON game_guild_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_decline_test_event();").await?;
+        let valid =
+            serde_json::to_value(decline_test_audit(&request(1, 1, GuildCommand::Decline)))?;
+        for field in 0..5 {
+            let mut changed = valid.clone();
+            match field {
+                0 => changed["target"] = serde_json::to_value(character(92).as_bytes())?,
+                1 => changed["removed_invitations"] = serde_json::json!(0),
+                2 => changed["action"] = serde_json::json!(2),
+                3 => changed["occurred_at_unix_ms"] = serde_json::json!(1),
+                _ => changed["caller_is_invited"] = serde_json::json!(true),
+            }
+            sqlx::query("DELETE FROM guild_decline_test_payload")
+                .execute(&h.pool)
+                .await?;
+            sqlx::query("INSERT INTO guild_decline_test_payload VALUES($1)")
+                .bind(serde_json::to_vec(&changed)?)
+                .execute(&h.pool)
+                .await?;
+            assert!(
+                apply(h, request(1, 1, GuildCommand::Decline), fence()?)
+                    .await
+                    .is_err()
+            );
+            assert_eq!(text_snapshot(h).await?, before);
+        }
+        h.pool.execute("DROP TRIGGER aaa_guild_decline_test_op ON game_guild_operations;DROP TRIGGER aaa_guild_decline_test_event ON game_guild_event_outbox;DROP FUNCTION guild_decline_test_op();DROP FUNCTION guild_decline_test_event();DROP TABLE guild_decline_test_payload;").await?;
+        assert_eq!(
+            result(apply(h, request(1, 1, GuildCommand::Decline), fence()?).await?).result,
+            GuildResult::Ok
+        );
+        let committed = text_snapshot(h).await?;
+        assert!(
+            sqlx::query("UPDATE game_guild_operations SET target=actor WHERE action=12")
+                .execute(&h.pool)
+                .await
+                .is_err()
+        );
+        assert!(sqlx::query("UPDATE game_guild_event_outbox SET payload=convert_to('{}','UTF8'),payload_sha256=sha256(convert_to('{}','UTF8'))").execute(&h.pool).await.is_err());
+        assert_eq!(text_snapshot(h).await?, committed);
+        assert_eq!(h.count("game_guild_operations").await?, 1);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+        Ok(())
+    })
+}
