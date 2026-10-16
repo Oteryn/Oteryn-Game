@@ -661,3 +661,31 @@ outcome review is retained with the external evidence packet. PG,strict,full
 package,canonical wiring and final activation remain NOT_RUN. I2187 alone supplies
 the sealed production drain proof. CP6226416344 requests the actual Cencoder/
 canonical House key mapping/fullbundle owned hunks; no ENTRY substitution.
+
+
+## D1241 canonical position encoder and exact bundle-carrier gap
+
+The owned map/boot.rs helper encode_spatial_position extracts death_reward's exact
+x i32BE | y i32BE | floor i16BE encoding. The single granted death_reward caller
+now uses it. checked_movement_position converts actual LogicalCell x/y unchanged
+and checks z fits the real MovementLocalPosition i16 floor; overflow refuses,
+with no clamp, sign flip or guessed native-frame conversion. One authored unit
+case covers exact signed bytes, floor boundaries and overflow. New D1241
+compilation/tests are NOT_RUN, distinct from earlier Reset component results.
+
+The full-bundle House producer is blocked at an actual carrier boundary:
+world-bundle::bundle::Manifest is deny_unknown_fields and has no native House
+document field; Bundle carries manifest,sectors,spawns,npcs,digest only.
+map::boot receives bytes/pins/item resolver, not WorldProject declarations or
+OTERYN_NATIVE_HOUSE_TILES/v1. Existing QualifiedHouseTiles::qualify requires that
+WorldProject plus FirstProductionCell data and qualified source scope. No source
+can honestly read the named document out of the current binary bundle. Neither
+QualifiedHouseTiles nor QualifiedHousePlacement stores qualified_placement_digest;
+0047's durable read validates an existing32byte nonzero value but supplies no
+canonical producer algorithm here. No digest accessor/value is invented.
+
+Thus no ENTRY substitution, numeric tile.house→House-key mapping, fake full-bundle
+catalogue or new hash is introduced. Actual House metadata/declaration carrier and
+0047 placement-digest provenance are still needed before the D1241 producer can
+qualify tile.house nonzero/same-within/distinct-between checks and reset source
+binding. The source remains NOT_FULLY_QUALIFIED pending that genuine composition.
