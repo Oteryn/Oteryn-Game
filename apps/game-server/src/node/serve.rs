@@ -1857,14 +1857,14 @@ async fn bootstrap_one(
     {
         Ok(Some(_)) => return "committed",
         Ok(None) => {}
-        Err(_) => return "unavailable",
+        Err(_) => return bootstrap_unavailable("reconcile", "durability"),
     }
     let intent = {
         let Ok(mut permit) = capacity.try_queue() else {
-            return "unavailable";
+            return bootstrap_unavailable("intent_queue", "capacity");
         };
         if permit.try_activate().is_err() {
-            return "unavailable";
+            return bootstrap_unavailable("intent_activation", "capacity");
         }
         match crate::character_bootstrap_intent::read_authenticated_intent(
             intents,
@@ -1874,17 +1874,22 @@ async fn bootstrap_one(
         .await
         {
             Ok(intent) => intent,
-            Err(_) => return "unavailable",
+            Err(crate::character_bootstrap_intent::IntentReadError::Source(_)) => {
+                return bootstrap_unavailable("intent_read", "source");
+            }
+            Err(crate::character_bootstrap_intent::IntentReadError::Invalid(_)) => {
+                return bootstrap_unavailable("intent_read", "invalid_intent");
+            }
         }
     };
     let account = uuid_text(intent.account_id().as_bytes());
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
-    if evidence
-        .refresh_account(root, proof, &account)
-        .await
-        .is_err()
-    {
+    // The refresh failure renders as fixed step/cause tokens only.
+    if let Err(unavailable) = evidence.refresh_account(root, proof, &account).await {
+        event(&format!(
+            "event=character_bootstrap_failure stage=account_security reason=evidence {unavailable}"
+        ));
         return "unavailable";
     }
     match root.bootstrap_character(authority, proof, &intent).await {
@@ -1894,8 +1899,17 @@ async fn bootstrap_one(
             | crate::durability::character_authority::CharacterAuthorityError::Conflict
             | crate::durability::character_authority::CharacterAuthorityError::NameUnavailable,
         ) => "rejected",
-        Err(_) => "unavailable",
+        Err(_) => bootstrap_unavailable("commit", "durability"),
     }
+}
+
+// Only static stage/reason classes reach diagnostics. Never format the intent,
+// account, operation or underlying database/TLS error into a bootstrap log.
+fn bootstrap_unavailable(stage: &'static str, reason: &'static str) -> &'static str {
+    event(&format!(
+        "event=character_bootstrap_failure stage={stage} reason={reason}"
+    ));
+    "unavailable"
 }
 
 fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
