@@ -130,6 +130,14 @@ pub(crate) struct BoundRequiredCapabilities {
 }
 
 impl BoundRequiredCapabilities {
+    /// The boot-validated, sorted dependency closure for this Channel binding.
+    /// This excludes optional session selection and client-profile additions.
+    /// Callers must independently resolve current scope/generation/policy and use
+    /// `matches_current`; this immutable snapshot grants no current authority.
+    pub(crate) fn effective(&self) -> &[u32] {
+        &self.required.effective
+    }
+
     pub(crate) fn matches_current(
         &self,
         scope: RuntimeScopeRefV1,
@@ -225,8 +233,7 @@ impl BoundRequiredCapabilities {
         )
         .map_err(SessionCapabilityError::InvalidProfile)?;
         let forced: BTreeSet<_> = self
-            .required
-            .effective
+            .effective()
             .iter()
             .copied()
             .chain(profile)

@@ -421,6 +421,7 @@ fn real_required_members_are_forced_and_each_missing_member_refuses() {
         super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .unwrap();
+    assert_eq!(required.effective(), &[4, 6, 18]);
     for missing in [4, 6, 18] {
         let support: Vec<_> = [4, 6, 18].into_iter().filter(|id| *id != missing).collect();
         assert!(
