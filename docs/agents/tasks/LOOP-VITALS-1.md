@@ -15,15 +15,16 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "hard (Character state)"
 migration: yes
 registry: no
-owner: unassigned (builder)
+owner: /root/vitals (family E; D1107 source authoring)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/character_vitals_stamina.rs (new)
-  - apps/game-server/tests/loop_vitals_stamina.rs (new)
-  - docs/agents/tasks/LOOP-VITALS-1.md (own packet/notes)
+  - apps/game-server/src/durability/character_vitals_stamina.rs
+  - apps/game-server/src/durability/character_vitals_stamina_math.rs
+  - apps/game-server/tests/loop_vitals_stamina.rs
+  - docs/agents/tasks/LOOP-VITALS-1.md
 slot_only_paths:
   - migration number
   - mod.rs (`tick_vitals` composition)
@@ -60,9 +61,10 @@ Durable regeneration accumulator, food-time ingress, soul regen and soul orb, st
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/durability/character_vitals_stamina.rs (new)
-- apps/game-server/tests/loop_vitals_stamina.rs (new)
-- docs/agents/tasks/LOOP-VITALS-1.md (own packet/notes)
+- apps/game-server/src/durability/character_vitals_stamina.rs
+- apps/game-server/src/durability/character_vitals_stamina_math.rs
+- apps/game-server/tests/loop_vitals_stamina.rs
+- docs/agents/tasks/LOOP-VITALS-1.md
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -206,3 +208,47 @@ No authority-consuming mutation exists in this subset: stale/mismatched leases,
 marker provenance, reconnect/recovery and concurrent marker replay must be tested
 at the future owning boundary; arithmetic fixtures cannot qualify them. No full
 task completion, freeze, architect acceptance or publication is claimed.
+
+
+## D1107 source authoring — 2026-10-16 (PARTIAL)
+
+CP [D1107](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346)
+allocates typed food/HPMP residuals with a receipt in the existing stamina leaf;
+0094 is reserved after #2163. This supersedes the earlier pure-arithmetic-only
+allocation/storage hold above; historical validation reports above retain their
+original scope and do not qualify this material addition.
+
+Exact active authoring paths are the four YAML paths. The additional
+`character_vitals_stamina_math.rs` pure leaf was allocated by the family lead to
+keep the existing eight standalone arithmetic tests compatible. The real native
+owner re-exports that one arithmetic definition; no test crate includes an
+inherent implementation of the foreign DurabilityRoot type. No shared
+registration, migration, registry, admission/death caller or manifest was edited.
+
+The real typed owner now provides actor-end residual save/read/reconcile,
+current recovery/session/lease/scope/root checks, one CharacterRevision and
+immutable v1 receipt in one transaction, exact/conflicting replay, all-three-field
+storage and recovery-history verification. Remaining food time, HP fractional
+regeneration time and mana fractional regeneration time restore together. The
+native production module remains unregistered until its assigned composition
+slot, so source authoring is not runtime delivery or proof of restart behavior.
+
+D1108 owns the single physical build/marker/stamina writer and calls this leaf's
+existing arithmetic inside that same fenced transaction, with independently
+qualified FND clocks/predecessor facts. No second stamina table/receipt/clock
+witness is introduced. Soul rate evidence is already available; soul/orb runtime
+delivery remains open and is not falsely reclassified as a missing rate decision.
+
+Prepared outside the repository: full 0094 DDL/guard union, exact authority
+receipt UNION/history hook, death triple-reset hunk and private native PG test
+proposal. 0094/source/shared hooks must form one reviewed integration bundle;
+the authority writer coordinates with H/D1092, death reset follows #2193,
+admission restore/capture follows ADMIT-CAP-1. The shared hooks are not installed.
+
+Validation of this material candidate: Rust1.94 rustfmt and patch syntax only.
+Native compile, Clippy, PG17.6, independent material review, CI and production
+integration are pending. The earlier eight arithmetic PASS results do not count
+as validation of the new durable owner. External evidence and exact frozen
+working-tree manifest: `/workspace/oteryn-family/evidence/d1107-vitals/canonical-generation-2/`.
+
+No commit, push, ready, merge, migration installation or complete-task claim.

@@ -1,6 +1,6 @@
-//! Tests the exact detached arithmetic source; no server/writer facade is supplied.
+//! Tests the one pure stamina arithmetic leaf used by the native durability owner.
 
-#[path = "../src/durability/character_vitals_stamina.rs"]
+#[path = "../src/durability/character_vitals_stamina_math.rs"]
 mod character_vitals_stamina;
 
 use character_vitals_stamina::{
