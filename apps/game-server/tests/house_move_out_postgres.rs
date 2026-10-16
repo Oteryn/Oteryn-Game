@@ -311,6 +311,37 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     ))
 }
 
+async fn reconstruct_root(h: &mut Harness) -> TestResult {
+    use crate::durability::runtime_scope_assignment::RuntimeScopeAssignmentWriter;
+
+    // Reconstruct both holders of the old Root. Readiness/assignment-slot restoration may
+    // overlap; no resumed disposition pass runs until every old Root clone is gone.
+    let old_liveness = h.root.root_liveness();
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(&h.database.url)?;
+    assert_ne!(root.root_identity(), h.root.root_identity());
+    assert!(root.maintain_ready_once().await?);
+    let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "bestiary-writer")
+        .await
+        .map_err(debug)?;
+    assert!(writer.unreconciled().is_none());
+    drop(std::mem::replace(&mut h.writer, writer));
+    drop(std::mem::replace(&mut h.root, root));
+    assert!(old_liveness.upgrade().is_none());
+    // apply() opens a new reconciled authority from the actual retained recovery seal.
+    // PostgreSQL, the recovery store and Node incarnation are not restarted or replaced.
+    Ok(())
+}
+
+async fn retained_notice_identity(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar(
+        "SELECT (to_jsonb(o)-ARRAY['state','frozen_count','frozen_digest','next_step'])::text \
+         FROM game_house_dispositions o WHERE operation_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(OP).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
 #[test]
 fn notice_is_current_fenced_bounded_and_idempotent() -> TestResult {
     run("hm_notice", async |h| {
@@ -493,6 +524,123 @@ fn unloaded_house_101_items_return_to_real_reclaim_subjects_once() -> TestResult
                 .is_ok()
         );
         Ok(())
+    })
+}
+
+#[test]
+fn reconstructed_roots_resume_frozen_and_partial_custody_without_redelivery() -> TestResult {
+    let admin =
+        configured_admin().ok_or("PostgreSQL17.6 admin route required; no skipped success")?;
+    runtime()?.block_on(async {
+        let mut h = Harness::create(admin, "hm_reopen", false).await?;
+        let result: TestResult = async {
+            setup(&h, 101).await?;
+            // Retained earlier-day NOTICE fixture, not a substitute for a current admission.
+            past_notice(&h).await?;
+            let identity = retained_notice_identity(&h).await?;
+            let frozen = apply(&h, freeze()?).await.map_err(debug)?;
+            let Outcome::Frozen(manifest) = &frozen else {
+                return Err("freeze".into());
+            };
+            assert_eq!(manifest.operation, id(OP));
+            assert_eq!(manifest.frozen_count, Some(101));
+
+            reconstruct_root(&mut h).await?;
+            assert_eq!(apply(&h, freeze()?).await.map_err(debug)?, frozen);
+            assert_eq!(retained_notice_identity(&h).await?, identity);
+            // A retained operation is not current World-job authority for a new step.
+            let Pass::Step {
+                operation, house, execution_scope, step: next, ..
+            } = step(0)? else {
+                return Err("step".into());
+            };
+            assert!(matches!(
+                apply(&h, Pass::Step {
+                    operation, house, execution_scope, scope_generation: 99, step: next,
+                }).await,
+                Err(Error::AuthorityRejected)
+            ));
+            assert_eq!(counts(&h).await?, (101, 101, 0, 0));
+            let Outcome::Step { items: first, view, replayed } =
+                apply(&h, step(0)?).await.map_err(debug)? else {
+                    return Err("first step".into());
+                };
+            assert!(!replayed);
+            assert_eq!(first.len(), 100);
+            assert_eq!(view.next_step, 1);
+            assert!(!view.drained);
+            assert_eq!(counts(&h).await?, (1, 1, 100, 1));
+
+            reconstruct_root(&mut h).await?;
+            let Outcome::Step { items, view: resumed, replayed } =
+                apply(&h, step(0)?).await.map_err(debug)? else {
+                    return Err("partial replay".into());
+                };
+            assert!(replayed);
+            assert_eq!(items, first);
+            assert_eq!(resumed, view);
+            assert_eq!(counts(&h).await?, (1, 1, 100, 1));
+            let Outcome::Step { items: last, view: drained, replayed } =
+                apply(&h, step(1)?).await.map_err(debug)? else {
+                    return Err("last step".into());
+                };
+            assert!(!replayed);
+            assert_eq!(last.len(), 1);
+            assert!(drained.drained);
+            assert_eq!(drained.next_step, 2);
+            assert_eq!(drained.frozen_count, manifest.frozen_count);
+            assert_eq!(drained.frozen_digest, manifest.frozen_digest);
+
+            reconstruct_root(&mut h).await?;
+            for (index, expected) in [(0, first), (1, last)] {
+                let Outcome::Step { items, view, replayed } =
+                    apply(&h, step(index)?).await.map_err(debug)? else {
+                        return Err("terminal replay".into());
+                    };
+                assert!(replayed);
+                assert_eq!(items, expected);
+                assert_eq!(view, drained);
+            }
+            assert!(matches!(apply(&h, step(2)?).await, Err(Error::UnexpectedStep)));
+            assert_eq!(retained_notice_identity(&h).await?, identity);
+            assert_eq!(counts(&h).await?, (0, 0, 101, 2));
+            assert_eq!(h.count("game_character_inbox_deliveries").await?, 101);
+            let mismatched: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_house_disposition_items c \
+                 LEFT JOIN game_item_character_inbox_locations l USING(item_instance_id) \
+                 WHERE c.operation_id=encode($1,'hex')::uuid AND \
+                 (l.character_id IS DISTINCT FROM (c.source_provenance->>'reclaim_subject_character_id')::uuid \
+                  OR l.ordinal IS DISTINCT FROM c.ordinal)",
+            ).bind(id(OP).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(mismatched, 0);
+            let recipients: (i64, i64, i64) = sqlx::query_as(
+                "SELECT count(*),min(n),max(n) FROM \
+                 (SELECT count(*) AS n FROM game_item_character_inbox_locations GROUP BY character_id) subjects",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(recipients, (2, 50, 51));
+            let total: String = sqlx::query_scalar(
+                "SELECT sum(committed)::text FROM game_character_inbox_counters",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(total, "101");
+            // Custody completion retains the actual0038 owner/revision and content fence.
+            // This is not the unmerged HOUSE-1a property/Account-slot release transaction.
+            let owner: (Vec<u8>, String) = sqlx::query_as(
+                "SELECT uuid_send(owner_character_id),ownership_revision::text \
+                 FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
+            ).bind(id(WORLD).as_slice()).bind(HOUSE).fetch_one(&h.pool).await?;
+            assert_eq!(owner, (id(CHARACTER).to_vec(), "1".into()));
+            let refusal = sqlx::query(
+                "SELECT game_house_disposition_fence_check(encode($1,'hex')::uuid,$2,NULL,false)",
+            ).bind(id(WORLD).as_slice()).bind(HOUSE).execute(&h.pool).await;
+            let Err(sqlx::Error::Database(refusal)) = refusal else {
+                return Err("drained content fence must remain active".into());
+            };
+            assert_eq!(refusal.code().as_deref(), Some("23514"));
+            assert!(refusal.message().contains("house disposition content fence"));
+            Ok(())
+        }.await;
+        h.cleanup().await?;
+        result
     })
 }
 

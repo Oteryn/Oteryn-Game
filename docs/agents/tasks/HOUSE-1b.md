@@ -264,3 +264,44 @@ to this bounded component only, with every production integration gate below ret
    remain additional accepted lifecycle work. Bank-only house burns use the shared registered
    HouseOperation cause; current FeeBurnCause::CharmUnassign is not reused or invented.
    No direct resale, guildhall, ACL/wire hold bypass, reset/overlay writer or Inbox callback.
+
+## Root reconstruction regression candidate (2026-10-16, not executed)
+
+The owner confirmed exclusive authorship for the House/Bed family; a separate lease ID is
+not required. This batch changes only `tests/house_move_out_postgres.rs` and this card on
+the existing `skeleton/house-1b` candidate based on
+`37c1879f3e431e5b23a64700bd3285d2bc01c1cd`. No production implementation, shared harness,
+registration, schema, permission, migration, event registry or protocol source is changed.
+
+`reconstructed_roots_resume_frozen_and_partial_custody_without_redelivery` adds a native
+Root reconstruction scenario at three durable cuts: after freeze, after the first100 of101
+mixed-reclaim deliveries, and after DRAINED. Each reconstruction connects a distinct native
+Root and restores the real assignment-writer slot, replaces both fixture holders, and asserts
+the old Root's actual liveness weak reference has expired before any resumed disposition
+command. Readiness restoration can overlap the old Root; no old Root survives resumed work.
+Every subsequent pass opens a fresh reconciled Character authority from the retained native
+recovery seal. The PostgreSQL server, local recovery store and Node incarnation remain live;
+this does not qualify an OS/process crash, PostgreSQL restart or Node-incarnation replacement.
+
+The scenario retains the earlier-day NOTICE fixture's original operation, cause, command
+binding, owner/revision and DB times, rather than fabricating a current grant from them. It
+checks unchanged freeze replay, rejects a stale execution generation before a new step,
+replays the committed100-item step after reconstruction, delivers the last item once, and
+replays both completed steps after another reconstruction. It verifies the frozen count/digest,
+all101 native Inbox delivery records and exact reclaim-recipient/ordinal matches, the50/51
+recipient split and committed counters, and the original owner/revision plus typed native
+content-fence refusal after DRAINED. A new step beyond the terminal cursor is rejected.
+
+Validation status: official Rust1.94 rustfmt parsing/formatting and `git diff --check` passed.
+The new case has **not been compiled or run**; no Cargo/heavy build was authorized for this
+batch. Existing14-case results above remain historical exact-source evidence and do not
+cover this added case. The original target still has `#![cfg(any())]`, so its disabled Cargo
+target cannot qualify the new scenario. Required next validation is an enabled, source-bound
+native private-root test registration and execution on PostgreSQL17.6, including this case
+and the prior14 cases, with independent exact-candidate review before freeze/publication.
+
+This remains a regression candidate over current0038 ownership and uninstalled private
+custody. It cannot satisfy restart against the unmerged HOUSE-1a acquisition/property and
+Account-slot writer or final owner release. Actual tenancy/rent/eviction, canonical ownership
+reconciliation, registered HouseOperation event, BED same-transaction freeing, runtime exit
+and content revision, installation/grants and the CP slot remain the production gates above.
