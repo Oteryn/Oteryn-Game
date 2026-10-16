@@ -305,3 +305,49 @@ Exact source/commands/log hashes are in `/workspace/oteryn-family/look-d1143/`.
 Earlier server qualification remains bound to its original source and context;
 new server runtime/Creature/rate/dispatch and exact-head CI remain NOT_RUN.
 This checkpoint is NOT_FULLY_QUALIFIED and does not establish complete ITEM-LOOK-1.
+
+### D1143 Creature/refusal codec proposal — NOT_FULLY_QUALIFIED
+
+This authoring increment extends only the owned protocol codec and its tests.
+It preserves the Item branch's existing ItemTargetV1 bytes, handle bounds and
+strict decoder. It adds `Creature(EntityRef)` using the actual native
+`world_spatial_entities::EntityRef` carrier: opaque 16-byte identity plus u64
+actor generation. The native spatial codec permits zero generation, so this
+proposal preserves the full 0..u64::MAX domain; no LOOK-specific Creature ID,
+Creature kind, name or visibility truth is created. Runtime admission must still
+bind the reference to the admitted Channel's current visible creature census.
+
+Proposed request payload layout (local fields only, pending CP protocol review):
+
+- Item: field 1 varint = existing nonzero ItemHandle, byte-for-byte unchanged.
+- Creature: field 2 length-delimited EntityRef; inside, field 1 is exactly 16
+  identity bytes and field 2 is u64 generation (omitted means zero), matching
+  the existing native spatial reference layout. Maximum encoded request: 31
+  bytes; the Item branch retains its original 11-byte ceiling.
+- Exactly one target is permitted. Unknown, duplicate, mixed, truncated or
+  trailing fields, invalid identity lengths and overflowing generations refuse.
+
+Proposed result payload retains field 1 nonempty UTF-8 text, at most 512 bytes,
+and the existing result-envelope ceiling. The former empty unavailable marker
+at field 2 remains the same bytes, now typed `NotAvailable`. Empty marker fields
+3, 4 and 5 represent `NotVisible`, `NotReachable` and `RateLimited`. Every refusal
+is fact-free and mutually exclusive with text and every other refusal. These are
+proposed local payload fields, not assigned command/capability IDs; both IDs
+remain None and no capability offer or runtime dispatch is added.
+
+Native unit cases are authored for Item byte compatibility; native EntityRef
+zero/one/maximum generation; exact identity width, truncated/overflowing fields,
+strict target/result oneofs, all four refusal bytes and fact-free failures. The
+previous ASCII/multibyte 512-byte tests remain. Actual native full protocol
+package tests passed **251/251,0failed,0ignored,0filtered**, including all three new
+parameterized cases; doctests0/0. Strict native package all-target Clippy with
+-D warnings passed. Changed-file fmt, diff and governance passed. Exact-head CI
+and server/runtime tests for this increment are **NOT_RUN**. These results bind
+the current codec bytes; earlier248/0 evidence remains historical. Exact logs,
+commands, source hashes and independent review are retained in
+`/workspace/oteryn-family/look-d1143/codec-next/`.
+
+CP's final protocol review, runtime Creature/name binding, visibility/reach
+checks, 10 requests/1 second/GameSession rate enforcement and actual dispatch
+remain pending / NOT_IMPLEMENTED / NOT_RUN. This source proposal does not
+establish complete ITEM-LOOK-1 or change the earlier server qualification.
