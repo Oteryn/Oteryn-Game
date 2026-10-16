@@ -4,7 +4,7 @@
 task_id: PARTY-XP-1
 title: "PARTY-XP-1: party shared experience and party spells"
 mode: IMPLEMENT
-status: skeleton
+status: partial
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -233,3 +233,115 @@ PASS. Exact six-path ownership, unchanged shared registrations/push deny, no sta
 changes or commits, and whitespace checks PASS. The exported patch is verified against
 the exact authoring base; this packet stays a draft preparation pending CP/architect
 review and the integration gates above.
+
+
+## Family native qualification increment — 2026-10-16
+
+AUTHORING on existing draft #2172, `skeleton/party-xp-1`, exact starting head
+`7bae3d2067ae7380abf809edef4609950c73159c`. Sole author `/root/party_owner`,
+also sole family author of the PARTY-1 World owner; no concurrent World writer exists.
+The lead refreshed the live task/CP lane and supplied bound META3.1.0 policy. PARTY_PVP0
+is ACCEPTED on protected main24fc332f256638e3b784bff1b3c85b18e2665a76; CHAT-2B
+#2128 is closed unmerged and needs an owning successor, rather than being open.
+
+Initial exact file plan before edits: append native cases to owned
+`durability/world_party_tests.rs`, add meaningful boundary properties in owned
+`gameplay_transport/party_xp_tests.rs`, and update this status/notes record.
+No production XP source, shared registration, external owner, content, registry or
+migration was changed. The original contents of both test files remain literal
+prefixes of the new files, including all 13 original Party PostgreSQL bodies, two
+prior XP strong-read bodies and 13 planner bodies.
+
+### New native cases
+
+Four appended native PG bodies use the already registered real library module at
+`src/lib.rs:145`. They exercise the previously compile-only autonomous scope-actor
+XP read with genuine current recovery/Node/scope proofs and actual Fresh-derived
+Channel actors. Character facts, progression, vocation/build and monk state come
+from existing native writers. No synthetic SourcePartyWorld, widened helper,
+substitute authority or copied crate wrapper is introduced.
+
+- Autonomous solo, disabled and enabled reads and the command read are compared
+  against committed membership/revision/toggle rows in the same native transaction.
+  The actual physical source resolves both current member Character/session pairs,
+  levels and runtime positions, and its XP predecessor validation succeeds. Reads
+  leave all receipt/audit/membership row counts unchanged.
+- Current eligibility is revoked independently for the acting Character and then,
+  in a separate fresh fixture, its colocated participant. The actor scope read refuses;
+  a durable roster observation alone does not attest a participant, and the actual
+  participant resolver separately refuses the invalid current claim. Immutable Fresh
+  history, runtime actors and unrelated current facts remain valid.
+- The scope-actor reader refuses both a different physical SQL transaction and the
+  unrelated member's current session substituted for the actor's session.
+- A genuine projection refuses missing player state and a retired actual runtime;
+  retained membership/player DATA does not restore owner currentness.
+
+Membership and toggle rows are explicit constraint fixtures, not a claim to implement
+PARTY-1's toggle command, the XP award transaction or activity/PZ producers. Every
+Character creation/history/session/actor is native. Existing ordinary PG fixture routing
+is retained: only an actual configured PostgreSQL17.6 run counts as execution evidence;
+a unit lane without the routed service supplies no PostgreSQL qualification.
+
+Two appended pure rule bodies cover equal rounded-up sharing for every participant
+count1..50 and boundary pools through i64::MAX with an independent wide-integer oracle,
+and the exact level ratio at u32::MAX plus opposite integer-limit coordinates. These
+are DATA rule tests, not current-authority or event producers. No new lint suppression
+was added.
+
+### Source validation and exact native context
+
+Direct pinned Rust1.94 rustfmt/whitespace checks pass. Governance validation and
+124 agent tests are the required cheap documentation checks. No worker Cargo/PG job
+ran; the lead owns the single native cloud executor slot. Source totals are now
+19 PostgreSQL bodies in the registered World module (13 original + 2 priorXP + 4 new)
+and 15 planner bodies (13 original + 2 new). Runtime counts must be recorded from
+actual configured native execution, not from these declarations.
+
+For native PG regression execution, the existing library mount needs no registration
+change: select `party_xp_native_` for the four new bodies, or the existing World module
+for all19. Planner/production consumption still requires the actual CP-owned
+`mod party_xp;` line in `gameplay_transport/mod.rs`; a disclosed validation-only native
+copy may add that line. No copied large `party_xp_postgres.rs` wrapper was created:
+the native cases already run in the real library context, and a dedicated wrapper
+would need shared Cargo `test=false`/duplicate-source routing rather than solving the
+private-owner context. Dedicated-target composition remains a CP slot item, not a
+silently disabled test or a new allowance.
+
+### Combined family owner and exact integration dependency
+
+Under the lead's explicit combined-family instruction, PARTY-1's own
+`durability/world_party.rs` now also contains the existing accepted `WorldPartyXp`
+and its command/autonomous strong-reader functions, while preserving PARTY-1's
+current toggle/consent/default/cache source behavior. Its union source SHA256 is
+`99d3c9eaf8843cc7897e9c2ab32ab62c59ba893ff249db58d95a2b38413c65a0`.
+The PARTY branch's `foundation/runtime_actor_party.rs` supplies its current PartyAction
+variants and shared-XP snapshot field.
+
+The XP card does **not** allocate that foundation file. The lead explicitly forbids
+carrying it across this card, so the XP production owner/projection/planner remain
+unchanged at their canonical starting bytes. CP composition must reconcile the exact
+two-file provider (`durability/world_party.rs` plus `foundation/runtime_actor_party.rs`)
+after upstream PARTY and required main. At that point the XP-owned pure fixture helper
+needs the added `shared_xp_enabled` field; its unchanged test bodies must remain literal.
+Independent qualification of the old XP layout is not qualification of the final
+combined provider. No hidden cross-card write or invented compatibility interface
+was used. PARTY publication also remains held on its separate literal-test/default
+semantics clarification; this increment does not resolve that constraint.
+
+### Remaining full XP scope and real owner triggers
+
+The real `kill_reward.rs` transaction and `combat/death_reward.rs` still admit one
+principal, not a native atomic50-principal party settlement. Those files and actual
+committed attack/heal event owners are outside this card. Looping singleton settlements
+would violate exactly-once party accounting. A production leader PZ accessor is absent;
+a cfg(test) CombatLock export is not authority. These are exact cross-domain source/
+allocation dependencies, not a reason to skip these native owned read tests.
+
+Required before full completion: accepted party bonus and summon accounting before
+this split; each Character's sequenced receipt with Prey/stamina after it; original
+semantic-time attack/heal producers; actual leader PZ source; concurrent kill/retry/
+rollback/restart exactly-once qualification; immunity/loot-right owners and party spell
+feedback through the actual CHAT successor; shared activation/registries/content
+regeneration at CP slot. No full XP gameplay, reward mutation, live feedback or task
+completion is claimed. No commit/push, new PR, ready/merge, production change or paid
+review was performed.

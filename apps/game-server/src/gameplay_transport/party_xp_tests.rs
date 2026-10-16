@@ -508,3 +508,86 @@ fn party_xp_cell_cannot_rebind_world_channel_or_session_and_duplicates_refuse() 
         Err(PartyXpError::InvalidRoster)
     );
 }
+
+#[test]
+fn party_xp_equal_split_property_all_principal_counts_and_wide_pools() {
+    // Pure accepted split invariants only; these DATA fixtures grant no native authority.
+    for count in 1_u8..=50 {
+        let members: Vec<_> = (10..10 + count)
+            .map(|seed| member(seed, 100, 0, 0, 0))
+            .collect();
+        let source = source(&members);
+        let activity = active(&members, 0);
+        for pool in [
+            0,
+            1,
+            i64::from(count) - 1,
+            i64::from(count),
+            i64::from(count) + 1,
+            i64::MAX,
+        ] {
+            let PartyXpDecision::Shares(shares) = evaluate(
+                &source,
+                channel(),
+                &members,
+                true,
+                &activity,
+                Some(pz(members[0], 0, None)),
+                time(0),
+                ExactI64::new(pool),
+            )
+            .expect("valid accepted split") else {
+                panic!("eligible participants")
+            };
+            // Independent wide-integer oracle also exercises the production overflow boundary.
+            let expected = (i128::from(pool) + i128::from(count) - 1) / i128::from(count);
+            assert_eq!(shares.len(), usize::from(count));
+            assert!(
+                shares
+                    .iter()
+                    .all(|share| i128::from(share.amount.get()) == expected)
+            );
+            let total: i128 = shares
+                .iter()
+                .map(|share| i128::from(share.amount.get()))
+                .sum();
+            assert!(total >= i128::from(pool));
+            assert!(total < i128::from(pool) + i128::from(count));
+            assert!(members.iter().all(|member| {
+                shares
+                    .iter()
+                    .filter(|share| {
+                        share.character == member.character && share.session == member.session
+                    })
+                    .count()
+                    == 1
+            }));
+        }
+    }
+}
+
+#[test]
+fn party_xp_level_ratio_and_distance_do_not_overflow_at_integer_limits() {
+    for highest in [3_u32, 100, u32::MAX] {
+        let threshold = (u64::from(highest) * 2).div_ceil(3) as u32;
+        let mut members = [member(10, highest, 0, 0, 0), member(11, threshold, 0, 0, 0)];
+        let activity = active(&members, 0);
+        assert!(matches!(
+            decide(&source(&members), &members, &activity, 0),
+            Ok(PartyXpDecision::Shares(_))
+        ));
+        members[1].level -= 1;
+        off(
+            decide(&source(&members), &members, &activity, 0),
+            SharingOff::Level,
+        );
+    }
+    let members = [
+        member(10, 100, i32::MIN, i32::MIN, i16::MIN),
+        member(11, 100, i32::MAX, i32::MAX, i16::MAX),
+    ];
+    off(
+        decide(&source(&members), &members, &active(&members, 0), 0),
+        SharingOff::Range,
+    );
+}

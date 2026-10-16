@@ -1846,3 +1846,495 @@ fn party_xp_read_rejects_a_different_transaction_without_mutation() -> TestResul
         Ok(())
     })
 }
+
+// PARTY-XP native qualification uses this file's existing real-library fixture routing.
+// As with the inherited PG cases, only configured PostgreSQL17.6 execution qualifies;
+// an ordinary unit lane without the routed service does not provide PG evidence.
+type XpNativeCurrent =
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>;
+struct XpNativeFixture {
+    leader: XpNativeCurrent,
+    member: XpNativeCurrent,
+    runtime: crate::foundation::ChannelRuntimeV1,
+    states: crate::gameplay_transport::ChannelSpellStates,
+    leader_actor: crate::foundation::ExactActorRef,
+    member_actor: crate::foundation::ExactActorRef,
+}
+
+async fn xp_native_fixture(h: &Harness) -> TestResult<XpNativeFixture> {
+    use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, WorldId};
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let leader = committed_fresh_player(h, 60, 62, 70, now).await?;
+    let member = committed_fresh_player(h, 61, 63, 71, now).await?;
+    let (leader_facts, leader_build, leader_monk) =
+        initialize_official_party_build(h, &leader, "monk", 90).await?;
+    let (member_facts, member_build, member_monk) =
+        initialize_official_party_build(h, &member, "knight", 91).await?;
+    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        h.node.fact().node_id(),
+        h.node.fact().registration_revision(),
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        ChannelContentPin::test(world),
+    )
+    .map_err(debug)?;
+    let leader_reservation = runtime
+        .reserve_fresh_session(leader.current_game_session_id())
+        .map_err(debug)?;
+    let leader_actor = runtime
+        .commit_fresh_session(leader_reservation)
+        .map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(leader_actor)
+        .map_err(debug)?;
+    let member_reservation = runtime
+        .reserve_fresh_session(member.current_game_session_id())
+        .map_err(debug)?;
+    let member_actor = runtime
+        .commit_fresh_session(member_reservation)
+        .map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(member_actor)
+        .map_err(debug)?;
+    let mut states = crate::gameplay_transport::ChannelSpellStates::default();
+    for (actor, current, facts, build, monk) in [
+        (
+            leader_actor,
+            &leader,
+            leader_facts,
+            &leader_build,
+            &leader_monk,
+        ),
+        (
+            member_actor,
+            &member,
+            member_facts,
+            &member_build,
+            &member_monk,
+        ),
+    ] {
+        states
+            .initialize(
+                &runtime,
+                actor,
+                current.current_game_session_id(),
+                facts,
+                (monk.harmony(), monk.serene_forced_remaining_micros()),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("actual Character facts failed runtime initialization")?;
+        assert!(states.load_owned_build(&runtime, actor, current.current_game_session_id(), build));
+    }
+    Ok(XpNativeFixture {
+        leader,
+        member,
+        runtime,
+        states,
+        leader_actor,
+        member_actor,
+    })
+}
+
+async fn xp_native_membership(h: &Harness, source: &XpNativeFixture) -> TestResult {
+    // Membership/toggle DATA are explicit schema fixtures. Both Characters, their
+    // creation history, current sessions and runtime actors came from the real owners.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
+        .bind(id(80).as_slice()).bind(id(WORLD).as_slice())
+        .bind(source.leader.current_character_lease().character_id().as_bytes().as_slice()).execute(&mut *tx).await?;
+    for (seq, current) in [(1_i64, &source.leader), (2, &source.member)] {
+        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,1,encode($4,'hex')::uuid)")
+            .bind(current.current_character_lease().character_id().as_bytes().as_slice())
+            .bind(id(80).as_slice()).bind(seq).bind(id(CHANNEL).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+fn xp_native_fence(current: &XpNativeCurrent) -> TestResult<CurrentCharacterItemFence> {
+    Ok(CurrentCharacterItemFence {
+        character_id: crate::domain::CharacterId::from_bytes(
+            *current.current_character_lease().character_id().as_bytes(),
+        )
+        .map_err(debug)?,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+    })
+}
+
+#[test]
+fn party_xp_native_autonomous_reader_and_current_actor_projection_match_committed_rows()
+-> TestResult {
+    run("party_xp_native_projection", async |h| {
+        use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
+        use crate::durability::world_party::read_world_party_xp_for_scope_actor_in_transaction;
+        let source = xp_native_fixture(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let permit = lane_permit().await?;
+        let before = footprint(h).await?;
+        let mut tx = h.pool.begin().await?;
+        let scope = assert_spell_item_scope_in_transaction(
+            &mut tx,
+            &permit,
+            &h.root,
+            &recovery,
+            &h.node,
+            source.leader.current_runtime_scope(),
+            1,
+        )
+        .await
+        .map_err(debug)?;
+        let solo = read_world_party_xp_for_scope_actor_in_transaction(
+            &mut tx,
+            &h.root,
+            &scope,
+            &source.runtime,
+            source.leader_actor,
+            source.leader.current_game_session_id(),
+        )
+        .await
+        .map_err(debug)?;
+        assert_eq!(
+            solo.source.character,
+            *source
+                .leader
+                .current_character_lease()
+                .character_id()
+                .as_bytes()
+        );
+        assert_eq!(solo.source.party_id, None);
+        assert!(!solo.enabled);
+        tx.commit().await?;
+        assert_eq!(footprint(h).await?, before);
+        xp_native_membership(h, &source).await?;
+        for (command_id, enabled, revision) in [(1, false, 1), (2, true, 2)] {
+            if enabled {
+                // Existing PARTY-1 toggle column only; this is not a toggle-command claim.
+                sqlx::query("UPDATE game_parties SET shared_xp_enabled=true,revision=revision+1 WHERE party_id=encode($1,'hex')::uuid")
+                    .bind(id(80).as_slice()).execute(&h.pool).await?;
+            }
+            let before = footprint(h).await?;
+            let mut tx = h.pool.begin().await?;
+            let scope = assert_spell_item_scope_in_transaction(
+                &mut tx,
+                &permit,
+                &h.root,
+                &recovery,
+                &h.node,
+                source.leader.current_runtime_scope(),
+                1,
+            )
+            .await
+            .map_err(debug)?;
+            let autonomous = read_world_party_xp_for_scope_actor_in_transaction(
+                &mut tx,
+                &h.root,
+                &scope,
+                &source.runtime,
+                source.leader_actor,
+                source.leader.current_game_session_id(),
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(autonomous.enabled, enabled);
+            assert_eq!(autonomous.source.party_id, Some(id(80)));
+            assert_eq!(autonomous.source.revision, Some(revision));
+            let command = CommandRef::new(
+                source.leader.current_game_session_id(),
+                CommandId::new(command_id).map_err(debug)?,
+            );
+            let authority = assert_spell_item_authority_in_transaction(
+                &mut tx,
+                &permit,
+                &h.root,
+                &recovery,
+                &h.node,
+                &xp_native_fence(&source.leader)?,
+                command,
+                [1; 32],
+            )
+            .await
+            .map_err(debug)?;
+            let commanded = crate::durability::world_party::read_world_party_xp_in_transaction(
+                &mut tx, &authority,
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(commanded.enabled, autonomous.enabled);
+            assert_eq!(commanded.source.members, autonomous.source.members);
+            let physical = crate::gameplay_transport::read_source_party_world_in_transaction(
+                &mut tx,
+                &h.root,
+                &authority,
+                &source.runtime,
+                &source.states,
+                source.leader_actor,
+                source.leader.current_game_session_id(),
+            )
+            .await
+            .map_err(debug)?;
+            assert!(physical.matches_current_world(&autonomous.source));
+            physical
+                .validate_xp_physical(&source.runtime, &source.states)
+                .map_err(debug)?;
+            let members = physical.xp_members();
+            assert_eq!(members.len(), 2);
+            for (current, actor) in [
+                (&source.leader, source.leader_actor),
+                (&source.member, source.member_actor),
+            ] {
+                let projected = members
+                    .iter()
+                    .find(|member| {
+                        member.character
+                            == *current.current_character_lease().character_id().as_bytes()
+                    })
+                    .ok_or("canonical XP member missing")?;
+                assert_eq!(projected.session, current.current_game_session_id());
+                assert_eq!(projected.level, 1);
+                assert_eq!(
+                    projected.position,
+                    source
+                        .runtime
+                        .read_actor_position(actor)
+                        .map_err(debug)?
+                        .position()
+                );
+            }
+            tx.commit().await?;
+            assert_eq!(footprint(h).await?, before);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn party_xp_native_current_actor_and_member_claims_are_independently_required() -> TestResult {
+    for actor_claim in [true, false] {
+        run("party_xp_native_current_claim", async |h| {
+            use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
+            use crate::durability::world_party::read_world_party_xp_for_scope_actor_in_transaction;
+            let source = xp_native_fixture(h).await?;
+            xp_native_membership(h, &source).await?;
+            let before = footprint(h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let affected = if actor_claim {
+                &source.leader
+            } else {
+                &source.member
+            };
+            // One current liveness/eligibility fact changes; immutable Fresh receipts,
+            // actor slots, Node, scope and the unrelated Character remain valid.
+            sqlx::query("UPDATE game_durability_admission_character_guards SET eligible=false WHERE character_id=encode($1,'hex')::uuid")
+                .bind(affected.current_character_lease().character_id().as_bytes().as_slice()).execute(&h.pool).await?;
+            let permit = lane_permit().await?;
+            let mut tx = h.pool.begin().await?;
+            let scope = assert_spell_item_scope_in_transaction(
+                &mut tx,
+                &permit,
+                &h.root,
+                &recovery,
+                &h.node,
+                source.leader.current_runtime_scope(),
+                1,
+            )
+            .await
+            .map_err(debug)?;
+            let observed = read_world_party_xp_for_scope_actor_in_transaction(
+                &mut tx,
+                &h.root,
+                &scope,
+                &source.runtime,
+                source.leader_actor,
+                source.leader.current_game_session_id(),
+            )
+            .await;
+            if actor_claim {
+                assert!(observed.is_err());
+            } else {
+                // A durable roster observation does not attest every participant's current
+                // authority; the physical source resolver must independently resolve it.
+                assert_eq!(observed.map_err(debug)?.source.members.len(), 2);
+                let command = CommandRef::new(
+                    source.leader.current_game_session_id(),
+                    CommandId::new(1).map_err(debug)?,
+                );
+                let authority = assert_spell_item_authority_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &h.root,
+                    &recovery,
+                    &h.node,
+                    &xp_native_fence(&source.leader)?,
+                    command,
+                    [1; 32],
+                )
+                .await
+                .map_err(debug)?;
+                assert!(
+                    crate::gameplay_transport::read_source_party_world_in_transaction(
+                        &mut tx,
+                        &h.root,
+                        &authority,
+                        &source.runtime,
+                        &source.states,
+                        source.leader_actor,
+                        source.leader.current_game_session_id()
+                    )
+                    .await
+                    .is_err()
+                );
+            }
+            tx.rollback().await?;
+            assert_eq!(footprint(h).await?, before);
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn party_xp_native_scope_read_rejects_transaction_substitution_and_wrong_current_session()
+-> TestResult {
+    run("party_xp_native_scope_binding", async |h| {
+        use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
+        use crate::durability::world_party::read_world_party_xp_for_scope_actor_in_transaction;
+        let source = xp_native_fixture(h).await?;
+        xp_native_membership(h, &source).await?;
+        let before = footprint(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let permit = lane_permit().await?;
+        let mut tx = h.pool.begin().await?;
+        let scope = assert_spell_item_scope_in_transaction(
+            &mut tx,
+            &permit,
+            &h.root,
+            &recovery,
+            &h.node,
+            source.leader.current_runtime_scope(),
+            1,
+        )
+        .await
+        .map_err(debug)?;
+        // Same SQL transaction and actor, but the unrelated current member's session.
+        assert!(
+            read_world_party_xp_for_scope_actor_in_transaction(
+                &mut tx,
+                &h.root,
+                &scope,
+                &source.runtime,
+                source.leader_actor,
+                source.member.current_game_session_id()
+            )
+            .await
+            .is_err()
+        );
+        let mut other = h.pool.begin().await?;
+        assert!(
+            read_world_party_xp_for_scope_actor_in_transaction(
+                &mut other,
+                &h.root,
+                &scope,
+                &source.runtime,
+                source.leader_actor,
+                source.leader.current_game_session_id()
+            )
+            .await
+            .is_err()
+        );
+        other.rollback().await?;
+        tx.rollback().await?;
+        assert_eq!(footprint(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn party_xp_native_retired_runtime_and_missing_player_state_refuse_projection_reuse() -> TestResult
+{
+    run("party_xp_native_projection_reuse", async |h| {
+        let mut source = xp_native_fixture(h).await?;
+        xp_native_membership(h, &source).await?;
+        let before = footprint(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let permit = lane_permit().await?;
+        let mut tx = h.pool.begin().await?;
+        let command = CommandRef::new(
+            source.leader.current_game_session_id(),
+            CommandId::new(1).map_err(debug)?,
+        );
+        let authority = assert_spell_item_authority_in_transaction(
+            &mut tx,
+            &permit,
+            &h.root,
+            &recovery,
+            &h.node,
+            &xp_native_fence(&source.leader)?,
+            command,
+            [1; 32],
+        )
+        .await
+        .map_err(debug)?;
+        let physical = crate::gameplay_transport::read_source_party_world_in_transaction(
+            &mut tx,
+            &h.root,
+            &authority,
+            &source.runtime,
+            &source.states,
+            source.leader_actor,
+            source.leader.current_game_session_id(),
+        )
+        .await
+        .map_err(debug)?;
+        physical
+            .validate_xp_physical(&source.runtime, &source.states)
+            .map_err(debug)?;
+        let missing_states = crate::gameplay_transport::ChannelSpellStates::default();
+        assert!(
+            physical
+                .validate_xp_physical(&source.runtime, &missing_states)
+                .is_err()
+        );
+        // Restore the unchanged actual state input; only the real owner incarnation retires.
+        source.runtime.retire_owner_cycle();
+        assert!(
+            physical
+                .validate_xp_physical(&source.runtime, &source.states)
+                .is_err()
+        );
+        tx.rollback().await?;
+        assert_eq!(footprint(h).await?, before);
+        Ok(())
+    })
+}
