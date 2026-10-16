@@ -75,11 +75,15 @@ To compile on the branch the builder may add only module registration lines in s
 
 ## Acceptance criteria
 
-- [ ] world change activation deterministic per epoch and reverted cleanly
-- [ ] map overlay state restart-safe
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
-- [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
+D1206 narrows this PR to selection-source. Activation, restart/epoch persistence,
+full W1 bindings and concurrent runtime transitions belong to the future
+LAYER/ACT mechanics and are NOT_APPLICABLE here.
+
+- [x] Retain Fury Gates/Nightmare Isles source facts and provenance without fake W1 bindings.
+- [x] Compile validated inputs into typed WorldChangeSelection.
+- [x] Refuse unavailable W1 bindings with WorldChangeBindingsUnavailable.
+- [x] Five actual native component cases (four original plus refusal), independently reviewed.
+- [ ] Required final exact-head repository gates and CP lifecycle before leaving draft.
 
 ## Validation commands
 
@@ -216,3 +220,29 @@ compilation succeeds without requesting gameplay bindings. A fifth test covers
 that refusal and prevents malformed input becoming typed selection. New test
 execution remains NOT_RUN at this source checkpoint; the previous four native
 PASS remain exact to a08f37a7. Current source review/qualification is pending.
+
+
+### D1206 native refusal qualification
+
+Qualified source commit: `ded94838925731cf504804912d1d70845481d273`.
+One actual private native crate compiled this exact source with the two-line
+cfg(test) root mount. It also mounted exact Weather026085f7 and Reset0c745974
+owned inputs; no A2 proposal or fake source harness was used. Actual Cargo command:
+`cargo test --offline --locked -p oteryn-game-server --lib --no-run --message-format=json`.
+
+Compile exit0/fresh=false; actual unique inventory3,187. Five literal Events
+`--exact` invocations each passed1/failed0/ignored0, including the typed W1
+refusal. Actual dep-info resolves all nine mounted Rust/JSON inputs exactly once;
+source-at-close hashes match the freeze. ELF SHA256
+`89fb3206f720c42b168379022f37198e77b8b4785638ec6b0813e6589fe883d8`,
+retained gzip SHA256
+`57aab3f9a153bbb5eea4fd333ca46bf261a9f76140e1cdf70c2b4854cc9558a6`.
+The same artifact's three Weather loader tests passed separately. A first compile
+failed on two Weather test Debug assertions; those logs remain retained, and
+only the corrected Weather test source changed for the successful attempt.
+
+Resource guards observed peak own-groupRSS6,775,611,392B, minimum disk
+2,386,309,120B and MemAvailable2,534,297,600B, with no abort. No PG job ran.
+This record bridge changes no qualified Rust/JSON. New strict all-target/whole-
+package gates remain NOT_RUN; full W1/runtime integration is NOT_APPLICABLE to
+#2178 by D1206. Draft/NOT_FULLY_QUALIFIED is retained for CP's final gates.
