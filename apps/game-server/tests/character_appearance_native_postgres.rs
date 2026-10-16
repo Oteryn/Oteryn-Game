@@ -143,6 +143,15 @@ fn appearance_native_commit_replay_reconnect_and_restarted_reload() -> TestResul
                 .map_err(debug)?,
             None
         );
+        let unchanged = snapshot(h).await?;
+        assert_eq!(
+            h.root
+                .read_current_character_appearance(&authority, &h.node, fence(1)?)
+                .await
+                .map_err(debug)?,
+            None
+        );
+        assert_eq!(snapshot(h).await?, unchanged);
         let first = request(80, None, "starter-a")?;
         let outcome = h
             .root
@@ -164,6 +173,15 @@ fn appearance_native_commit_replay_reconnect_and_restarted_reload() -> TestResul
         assert_eq!(h.root_revision().await?, "2");
         assert_eq!(h.count("game_character_appearance_receipts").await?, 1);
         let committed = snapshot(h).await?;
+        let selected = h
+            .root
+            .read_current_character_appearance(&authority, &h.node, fence(2)?)
+            .await
+            .map_err(debug)?
+            .ok_or("missing current selection")?;
+        assert_eq!(selected.selection, first.after);
+        assert_eq!(selected.committed_character_revision.get(), 2);
+        assert_eq!(snapshot(h).await?, committed);
         // Current independently persisted connection generation changes; no fact is inferred
         // from the retained appearance receipt. Historical retry is still disposition only.
         sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=2 WHERE game_session_id=encode($1,'hex')::uuid")
@@ -213,6 +231,20 @@ fn appearance_native_commit_replay_reconnect_and_restarted_reload() -> TestResul
             "{stale:?}"
         );
         assert_eq!(snapshot(h).await?, committed);
+        let stale_read = h
+            .root
+            .read_current_character_appearance(&authority, &h.node, fence(2)?)
+            .await;
+        assert!(
+            matches!(
+                stale_read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::AuthorityRejected
+                ))
+            ),
+            "stale connection read: {stale_read:?}"
+        );
+        assert_eq!(snapshot(h).await?, committed);
         // A separate native root/pool reopens recovery and reads persisted state. This is a
         // genuine storage/recovery restart, not proof of the still-unwired client login flow.
         let restarted = durability::DurabilityRoot::connect_test_runtime(&h.database.url)?;
@@ -230,6 +262,14 @@ fn appearance_native_commit_replay_reconnect_and_restarted_reload() -> TestResul
         );
         let mut current = fence(2)?;
         current.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        assert_eq!(
+            restarted
+                .read_current_character_appearance(&reopened, &h.node, current)
+                .await
+                .map_err(debug)?,
+            before
+        );
+        assert_eq!(snapshot(h).await?, committed);
         let outcome = restarted
             .commit_character_appearance(
                 &reopened,
@@ -262,6 +302,19 @@ fn appearance_native_commit_replay_reconnect_and_restarted_reload() -> TestResul
         ));
         let mut closed = fence(3)?;
         closed.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+        let closed_read = restarted
+            .read_current_character_appearance(&reopened, &h.node, closed)
+            .await;
+        assert!(
+            matches!(
+                closed_read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::AuthorityRejected
+                ))
+            ),
+            "closed session read: {closed_read:?}"
+        );
+        assert_eq!(snapshot(h).await?, committed);
         let result = restarted
             .commit_character_appearance(
                 &reopened,
@@ -312,6 +365,20 @@ fn appearance_native_stale_fences_and_current_context_write_nothing() -> TestRes
             (93, scope, "scope"),
             (94, character, "character"),
         ] {
+            let read = h
+                .root
+                .read_current_character_appearance(&authority, &h.node, changed)
+                .await;
+            assert!(
+                matches!(
+                    read,
+                    Err(AppearanceWriteError::Fence(
+                        CharacterProgressionError::AuthorityRejected
+                    ))
+                ),
+                "{label} current read: {read:?}"
+            );
+            assert_eq!(snapshot(h).await?, initial, "{label} current read");
             let result = h
                 .root
                 .commit_character_appearance(
@@ -334,6 +401,20 @@ fn appearance_native_stale_fences_and_current_context_write_nothing() -> TestRes
             assert_eq!(snapshot(h).await?, initial, "{label}");
         }
         let other_node = bestiary_postgres_harness::register(&h.root, 2).await?;
+        let read = h
+            .root
+            .read_current_character_appearance(&authority, &other_node, fence(1)?)
+            .await;
+        assert!(
+            matches!(
+                read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::AuthorityRejected
+                ))
+            ),
+            "foreign node read: {read:?}"
+        );
+        assert_eq!(snapshot(h).await?, initial);
         let result = h
             .root
             .commit_character_appearance(
@@ -374,6 +455,20 @@ fn appearance_native_stale_fences_and_current_context_write_nothing() -> TestRes
             "revision: {result:?}"
         );
         assert_eq!(snapshot(h).await?, initial);
+        let read = h
+            .root
+            .read_current_character_appearance(&authority, &h.node, fence(2)?)
+            .await;
+        assert!(
+            matches!(
+                read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::CharacterRevisionMismatch
+                ))
+            ),
+            "revision read: {read:?}"
+        );
+        assert_eq!(snapshot(h).await?, initial);
         // A separately supplied active interpretation must match the independently locked root,
         // even when the request itself names the expected original content revision.
         let mut wrong_content = validation();
@@ -396,6 +491,24 @@ fn appearance_native_stale_fences_and_current_context_write_nothing() -> TestRes
                 ))
             ),
             "content: {result:?}"
+        );
+        assert_eq!(snapshot(h).await?, initial);
+        // A genuine independently persisted active interpretation supersedes the original;
+        // the stored root/selection cannot authenticate that newly current content revision.
+        sqlx::query("INSERT INTO game_character_interpretations SELECT interpretation_revision+1,profile_revision,ruleset_revision,'content-2',starter_template_revision,configured_at FROM game_character_interpretations ORDER BY interpretation_revision DESC LIMIT 1")
+            .execute(&h.pool).await?;
+        let read = h
+            .root
+            .read_current_character_appearance(&authority, &h.node, fence(1)?)
+            .await;
+        assert!(
+            matches!(
+                read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::ProgressionContextMismatch
+                ))
+            ),
+            "active interpretation read: {read:?}"
         );
         assert_eq!(snapshot(h).await?, initial);
         Ok(())
@@ -676,6 +789,19 @@ fn appearance_native_foreign_root_and_real_scope_replacement_cannot_write() -> T
         let initial = snapshot(h).await?;
         let foreign = durability::DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(foreign.maintain_ready_once().await?);
+        let read = foreign
+            .read_current_character_appearance(&authority, &h.node, fence(1)?)
+            .await;
+        assert!(
+            matches!(
+                read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::AuthorityRejected
+                ))
+            ),
+            "foreign root read: {read:?}"
+        );
+        assert_eq!(snapshot(h).await?, initial);
         let result = foreign
             .commit_character_appearance(
                 &authority,
@@ -719,6 +845,20 @@ fn appearance_native_foreign_root_and_real_scope_replacement_cannot_write() -> T
             .await
             .map_err(debug)?;
         assert!(matches!(replacement, AssignmentOutcome::Committed(_)));
+        let read = h
+            .root
+            .read_current_character_appearance(&authority, &h.node, fence(1)?)
+            .await;
+        assert!(
+            matches!(
+                read,
+                Err(AppearanceWriteError::Fence(
+                    CharacterProgressionError::AuthorityRejected
+                ))
+            ),
+            "replaced scope read: {read:?}"
+        );
+        assert_eq!(snapshot(h).await?, initial);
         let result = h
             .root
             .commit_character_appearance(
@@ -877,7 +1017,13 @@ fn appearance_native_current_recovery_provenance_corruption_rejects_all_consumer
         fault.commit().await?;
         let admissions:Vec<String> = sqlx::query_scalar("SELECT row_to_json(a)::text FROM game_character_recovery_admissions a ORDER BY recovery_generation")
             .fetch_all(&h.pool).await?;
-        for boundary in ["new commit", "exact replay", "load", "reconcile"] {
+        for boundary in [
+            "new commit",
+            "exact replay",
+            "load",
+            "current read",
+            "reconcile",
+        ] {
             let outcome = match boundary {
                 "new commit" => h
                     .root
@@ -904,6 +1050,11 @@ fn appearance_native_current_recovery_provenance_corruption_rejects_all_consumer
                 "load" => h
                     .root
                     .read_character_appearance(&authority, character)
+                    .await
+                    .map(|_| ()),
+                "current read" => h
+                    .root
+                    .read_current_character_appearance(&authority, &h.node, fence(2)?)
                     .await
                     .map(|_| ()),
                 "reconcile" => h

@@ -223,6 +223,18 @@ revision +1, immutable receipt, projection, historical replay/reconcile and reco
 The earned/Store/mount path remains unavailable; no authorizing callback or grant token is added.
 The existing pure `AppearanceContent` and `Sex` inputs are not proofs of admitted content or sex.
 
+`read_current_character_appearance(authority, node, fence)` additionally provides one actual
+semantic transaction for recovery, admission locks, current gameplay/root revision, locked
+progression context and stored selection. It rejects selected revisions ahead of the root and
+pending respawn. This returns durable data only; APP-3 must still independently bind its loaded
+content view, runtime owner/session/connection/scope and conditions immediately before publication.
+An incompatible historical selection is preserved rather than reinterpreted as a current default.
+The existing nine native cases now exercise this read for absent/committed selection, current
+connection after restart, independently changed request fences, real connection/session/scope
+replacement, foreign root/node, independently advanced interpretation and DB issuance corruption.
+Typed fence rejection and unresolved `Unavailable` remain distinct. These source additions require
+fresh successor-head qualification; the earlier a392 qualification cannot qualify this method.
+
 Within the exact allocated filenames, `character_appearance_tests.rs` now holds the **single**
 production SQLx reader/recovery implementation plus its original three focused tests in a nested
 `#[cfg(test)]` module. The writer loads this source as `stored`; the standalone PG target loads
