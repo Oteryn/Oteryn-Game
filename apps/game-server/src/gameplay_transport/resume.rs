@@ -258,6 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 lost.continuity.spatial_revision,
             )
             .map_err(|_| Unavailable)?,
+            // Inert for a session with capability 18: it is never sent domain 2, so this is 0.
             StateDomainRevisionV1::new(
                 STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
                 lost.continuity.overlay_revision,

@@ -2057,6 +2057,30 @@ impl FreshAdmissionStore {
         self.release_current_claims(current, now, account_id).await
     }
 
+    /// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): terminal release of an ACTIVE session's
+    /// own logout, on its exact current controller transport, with or without a control-loss
+    /// epoch. A session on another transport, or one that is not ACTIVE, is not this logout's to
+    /// release. A replay after the commit returns `Terminal`, never a second commit. No
+    /// protection marker is written: a TERMINAL session is never resumed, and PvE re-entry
+    /// protection is granted only on a resume.
+    pub async fn release_logout_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        transport: AuthenticatedTransportRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Active
+            || current.current_transport() != Some(transport)
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        self.release_current_claims(current, now, account_id).await
+    }
+
     /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): terminal release, with no successor, of a
     /// RECONNECTABLE session whose resume passed every check but the capability check. The
     /// client gave up the same-session path by changing its supported set, so its fresh
