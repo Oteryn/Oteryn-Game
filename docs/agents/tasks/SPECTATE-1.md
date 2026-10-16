@@ -4,7 +4,7 @@
 task_id: SPECTATE-1
 title: "SPECTATE-1: spectating"
 mode: IMPLEMENT
-status: implementing
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/spectate-1
@@ -134,3 +134,29 @@ Fifteen focused unit cases use actual native session snapshot/ID types, with cur
 O3/O5/O9 integration is unfinished: the actual native lifecycle hooks, admitted transport dispatch and registered ANL-01 event adapter are not wired. The bounded `AuditFact` producer reserves space for every active terminal event and emits no code/position/account identity, but these facts are not registered/persisted Game EventEnvelopes; no event type, payload codec or retention profile is invented. CONTACTS admissions remain uniformly unavailable until the real consent owner supplies its accepted native consumer. Account-session caps here are node-local; O2 owns authenticated cross-node admission/cap enforcement. Node capacity is an explicit measured composition input, with no activation default.
 
 Shared module/transport registration and event/resource registry integration require their concrete CP slot. WIRE-1 and O2 Gateway remain unallocated until green GRANT/SESSION. Activation, ready, queue and merge remain CP actions. These code and tests advance the owned mechanic; they do not claim full GRANT/SESSION acceptance, live admission, durable audit or player-facing E2E.
+
+
+## D1118 / D1160 audit leaf checkpoint
+
+[CP D1118](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+authorizes the new `spectate.proto` and `spectate/audit.rs`. D1160 authorizes the
+single `mod spectate;` registration in `lib.rs`; no dispatch or production admission
+is activated. The native core is now compiled directly, without a private mount.
+The payload has kind=1, optional observer_session_id=2, end_reason=3; target session
+is envelope-only. Golden bytes cover all four event kinds, all six terminal reasons,
+observer presence and malformed facts. The sink contract defines success as durable
+commit before acknowledging the copied ordinal; storage I/O must not borrow the
+mutable runtime owner. No durable adapter, event ID factory or durable PASS is claimed.
+
+Reserved registry values: type 4 SPECTATE_OBSERVATION, DURABLE_AUDIT,
+SECURITY_SENSITIVE, SPECTATE_AUDIT_RETENTION_V1, O9/GM-1, P30D, staff/security only,
+atomic_mutation_evidence=false. Registry slot follows #2163. Writer/migration belong
+to separate SPECTATE-AUDIT-1 after green GRANT/SESSION. TARGET_GONE/TARGET_MOVED
+hooks belong to A2 after #2187; refresh handles other current-target changes.
+CONTACTS remains closed. Gateway/WIRE allocation follows green GRANT/SESSION.
+
+At source freeze: native tests/Clippy and exact-head CI NOT_RUN; full durable audit,
+Gateway/WIRE/lifecycle integration NOT_RUN. Earlier 15 mounted PASS belong only to
+their recorded source and do not qualify this head. D1122 permits this coherent
+NOT_FULLY_QUALIFIED draft checkpoint after fmt/diff checks; subsequent execution
+results are recorded outside the frozen source and in the PR status comment.

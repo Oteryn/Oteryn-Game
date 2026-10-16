@@ -6,6 +6,12 @@
 //! This module does not authenticate Gateway admission or offer a protocol capability.
 //! CONTACTS is closed until its native consent owner supplies the accepted consumer.
 
+#![allow(
+    dead_code,
+    reason = "D1118 GRANT/SESSION awaits separately allocated audit outbox, A2 and Gateway consumers"
+)]
+
+mod audit;
 mod projection;
 pub(crate) use projection::{Projection, WorldFrame};
 #[cfg(test)]
