@@ -420,3 +420,39 @@ category. The original nine-category concurrency fixture remains unchanged.
 There are now 15 PostgreSQL case bodies plus 11 inherited ranking cases, without
 new execution claims. Rust/PG qualification and all recorded shared integration,
 role, concrete wire-layout and real analyser commit-point blockers remain open.
+
+
+## Native hsextra fixture repair — 2026-10-16
+
+The frozen `963c6ae8b181bfedaa91bb420c4d1e29bc28110d` native run passed
+cases 00–06 and failed case 07
+`account_representatives_and_earned_charm_points_use_native_sources` on
+PostgreSQL 17.6 with `Unavailable(Unavailable)` (retained native case-07 failure log). This
+repair explicitly returns the local candidate to AUTHORING; qualification of
+the predecessor is not carried forward.
+
+Source inspection identifies a fixture-ordering defect: `dataset` inserted two
+administrative ranking roots without creation receipts before
+`open_character_authority`. The latter runs the global
+`verify_character_integrity` check, whose missing-creation-receipt predicate
+returns exactly `CharacterAuthorityError::Unavailable(DurabilityError::Unavailable)`.
+These source fixtures were never intended to prove admission or gameplay
+authority. The repair completes the genuinely fenced Bestiary and Charm writes
+before adding these administrative rows. Production code and integrity guards
+are unchanged.
+
+The same existing native case retains all eleven-category, common-cut, account
+representative/filter/own-row and earned-Charm highscore assertions. It adds a
+native `read_character_charm_progression` read at revision six asserting 25
+points earned, five spent and 20 available; committed Bestiary receipt count
+three and root revision six; and the exact authority rejection after projection
+reads, proving the synthetic roots still cannot acquire authority. Moving the
+source dataset later remains coherent: kill/Charm writes leave level and XP
+unchanged, while the dataset explicitly restores each clone's root/progression
+revision two and copies the unchanged native build state/receipt at revision
+two. No artificial creation receipt or guard bypass is introduced.
+
+Validation at authoring was source review and `git diff --check` only. No Cargo, build,
+PostgreSQL run, PC operation, commit or publication was performed in this worker;
+all added assertions remain unexecuted pending a new frozen candidate and fresh
+native qualification. The root control plane owns independent review and gates.

@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::bestiary_postgres_harness as harness;
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildFormula, BuildOccurrence,
 };
@@ -527,15 +528,6 @@ fn complete_catalogues() -> TestResult<SnapshotCatalogues> {
 #[test]
 fn account_representatives_and_earned_charm_points_use_native_sources() -> TestResult {
     run("hsextra", async |h| {
-        dataset(h, 100, 2, "paladin", 1000, world()).await?;
-        // Genuine append-only owner tables and their deferred request/fact guard, with no
-        // projection-fed account points. Every fixture Character belongs to the same account.
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/a_friend_in_need','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
-            .bind(vec![1_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
-            .execute(&mut *tx).await?;
-        tx.commit().await?;
         // Three real current-fenced kill commits, completing the owning Bestiary definition.
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -553,9 +545,11 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
                 },
             ).await.map_err(debug)?;
         }
-        use crate::domain::charm::{CharmCatalogue, CharmCategory, CharmDefinition, CharmKey};
+        use crate::domain::charm::{
+            CharmCatalogue, CharmCategory, CharmCurrency, CharmDefinition, CharmKey,
+        };
         use crate::durability::charm_state::{
-            CharmCommand, CharmCommandOccurrence, CharmCommandRequest,
+            CharmCommand, CharmCommandOccurrence, CharmCommandRequest, CharmProgressionReadRequest,
         };
         let charm = CharmKey::new("oteryn:charm.wound").map_err(debug)?;
         let catalogue = CharmCatalogue::new([CharmDefinition {
@@ -574,7 +568,7 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
                     occurrence: CharmCommandOccurrence::from_bytes(id(85)).map_err(debug)?,
                     command: CharmCommand::UnlockNextStage { charm },
                     catalogue_revision: "content-1".into(),
-                    catalogue,
+                    catalogue: catalogue.clone(),
                 },
                 BestiaryCharmFacts::new(complete_catalogues()?.bestiary.into_values())
                     .map_err(debug)?,
@@ -593,10 +587,42 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
                 }
             )
         ));
+        let progression = h
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &h.node,
+                harness::fence(6)?,
+                CharmProgressionReadRequest {
+                    catalogue_revision: "content-1".into(),
+                    catalogue,
+                    races: Vec::new(),
+                },
+                BestiaryCharmFacts::new(complete_catalogues()?.bestiary.into_values())
+                    .map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(progression.balance.points_earned, 25);
+        assert_eq!(progression.balance.points_spent, 5);
+        assert_eq!(progression.balance.available(CharmCurrency::CharmPoints), 20);
         // Five points were durably spent, but the highscore below still reports 25 earned.
         assert_eq!(h.count("game_character_charm_unlocks").await?, 1);
         drop(authority);
         drop(seal);
+        assert_eq!(h.root_revision().await?, "6");
+        assert_eq!(h.count("game_character_bestiary_kill_receipts").await?, 3);
+        // Reconciliation checks every root's creation provenance. Complete the native
+        // gameplay writes before adding admin-only ranking rows, which lack that provenance.
+        dataset(h, 100, 2, "paladin", 1000, world()).await?;
+        // Genuine append-only owner tables and their deferred request/fact guard, with no
+        // projection-fed account points. Every fixture Character belongs to the same account.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/a_friend_in_need','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+            .bind(vec![1_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
         let ids = h
             .root
             .refresh_highscore_world(world(), complete_catalogues()?, true)
@@ -618,6 +644,15 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         assert_eq!(charms.rows[0].value, (25, 0));
         assert!(charms.rows[1..].iter().all(|r| r.value == (0, 0)));
         assert!(page(h, 12, None, 1, 0).await.is_err());
+        // Projection readability does not make the synthetic roots eligible for authority.
+        // Preserve the exact guard that rejected the original fixture ordering.
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        assert!(matches!(
+            h.root.open_character_authority(&seal).await,
+            Err(CharacterAuthorityError::Unavailable(
+                DurabilityError::Unavailable
+            ))
+        ));
         Ok(())
     })
 }
