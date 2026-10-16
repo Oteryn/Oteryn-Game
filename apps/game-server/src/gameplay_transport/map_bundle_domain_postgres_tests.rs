@@ -67,7 +67,7 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
             current.scope_ownership_generation,
             &current.world_policy_revision,
         ));
-        assert_eq!(fixture.required_capabilities.effective(), &[]);
+        assert!(fixture.required_capabilities.effective().is_empty());
         drop(fixture);
 
         // The same owner on a bundle World's movement cells.
