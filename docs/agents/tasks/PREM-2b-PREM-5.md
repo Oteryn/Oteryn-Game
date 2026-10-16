@@ -4,7 +4,7 @@
 task_id: PREM-2b+PREM-5
 title: "PREM-2b+PREM-5: promotion state and promotion/Premium blessing NPC services (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/prem-2b-prem-5
@@ -23,12 +23,22 @@ execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
   - apps/game-server/src/premium/promotion.rs (new)
+  - apps/game-server/src/premium/blessing_purchase.rs (sole leaf author /root/vitals)
+  - apps/game-server/src/durability/item_fee_burn.rs (D1106 source-specific causes only)
+  - apps/game-server/src/durability/item_fee_burn_audit.rs (matching D1106 audit causes only)
+  - apps/game-server/src/durability/premium_activation_latch.rs (promotion-specific composition only)
+  - apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs (D1106 native facts/gate composition only)
   - apps/game-server/src/interaction/npc_promotion.rs (new)
+  - apps/game-server/src/premium/mod.rs (D1160 own-module registration lines only)
+  - apps/game-server/src/interaction/mod.rs (D1160 own-module registration line only)
   - apps/game-server/tests/promotion_*.rs (new)
 slot_only_paths:
+  - apps/game-server/src/lib.rs (premium module registration after #2197)
   - migration number
   - mod.rs
   - content NPC service pins
+  - apps/game-server/src/durability/bank.rs (cause arm after #2197)
+  - apps/game-server/src/interaction/npc_talk.rs (dispatch after #2197)
 public_contracts: []
 depends_on:
   - "PREM-WIRE-1 (PREMIUM-1): MERGED #2110"
@@ -40,6 +50,8 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+D1160 exception: only single own-new-module registration lines in `lib.rs`/`mod.rs`/PG root may be authored now; all other shared integration below remains slot-only.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -114,11 +126,11 @@ PREMIUM_ACTIVATION0 §2-§4.3; WHEEL0 §6.2. Plan: `docs/architecture/reviews/OT
 ## Context checkpoint
 
 ```yaml
-last_progress: accepted promotion pre-delivery exception retained in native status policy
-status: waiting
+last_progress: D1106 native promotion TX, fee audit, gate composition and NPC consumer authored
+status: NOT_FULLY_QUALIFIED
 branch: skeleton/prem-2b-prem-5
-blocker: shared durable promotion/coin transaction and runtime seams require CP slot
-next_action: native RED/GREEN qualification and independent review; CP allocates durable bundle
+blocker: ordered sequencer handoff; installed schema/registration slot; qualified blessing catalogue
+next_action: native typecheck/RED-GREEN and independent review; integrate D1106 native dependencies at their slot
 ```
 
 ## Historical local preparation (2026-10-15; exception superseded below)
@@ -245,3 +257,205 @@ repository at `/workspace/oteryn-prep/prem-2b-prem-5-evidence/` for handoff/rota
   qualified NPC/login/death/Wheel consumers and PostgreSQL qualification still
   require their CP allocations. Re-entry is an actual allocation/integration event;
   no background continuation, ready, merge or deployment authority is asserted.
+
+## D1106 native source authoring (2026-10-16)
+
+CP [6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346)
+and the direct family handoff expand authoring at head
+`226b1f7ab1ef239922ba6a96504969160ef292d5`: durable promotion/provenance,
+coins-only fee/audit, sequencer admission/cause, blessing purchase and NPC consumer.
+This supersedes the historical instruction to wait for a promotion writer allocation.
+The existing-file author changes promotion/NPC files, tests and this card, plus
+the exact Promotion cause/audit hunks in `durability/item_fee_burn{,_audit}.rs`
+and source-specific native gate composition in
+`durability/premium_activation_latch.rs` and
+`gameplay_transport/spell_premium_coordinator.rs`.
+The separately allocated blessing leaf has sole author `/root/vitals`; no same-file
+writers overlap. No `bank.rs`, shared registration, registry or migration file is changed.
+
+- The promotion SQL source stages the native coins-only 20,000-gold fee,
+  Character receipt and permanent flag/provenance in one Type2 transaction.
+  It resolves historical replay first; a fresh purchase independently checks
+  native recovery/session/lease/scope/node/root/current-content and locked level
+  and promotion state. The actual outer Type2 owner rolls the whole transaction
+  back on a typed source refusal; no subtransaction changes native xmin provenance.
+  A fee without its source receipt is refused, never converted into another grant.
+- The promotion-only gate opens the actual Type2 transaction before taking
+  the Premium latch, preserving the same transaction and borrowed witness.
+  The existing ordinary Premium gate path is unchanged. The source consumer
+  holds the Character slot through replay, actual actor/NPC/conversation/range
+  checks, the single Premium gate operation and COMMIT; only then does it adopt
+  the source receipt. Stable CommandRef/target-derived identities survive retry.
+  Historical replay precedes live NPC/catalogue lookup and grants no new authority.
+- Fee cause-kind 2 and protobuf oneof tag 2 are **proposals**, coupled to the
+  source and audit implementation; they are not a registry/slot activation.
+  Existing Charm request-binding bytes and fee tuple selection are preserved.
+  Promotion cannot open the bank under either actual Type2 tuple.
+- A typed source catalogue port supplies server-resolved NPC/service and
+  blessing key/level-price data; the command accepts no client fee or blessing
+  key. No qualified implementation or live blessing offer is claimed while
+  the target-date price evidence conflicts and the canonical surface is empty.
+  Blessing payment must retain DEATH_COMPLETE0 §4.7's shared bank fallback;
+  promotion's coins-only rule must not be copied to blessings.
+- The sequencer's current physical author remains LOOP-PROGRESS-1. Its native
+  recovery/admission, delivered transaction and post-gate cursor-adoption hunk
+  is prepared outside source for an explicit ordered handoff. Proposed state,
+  receipt, guard and privilege DDL is unnumbered and uninstalled. CP must assign
+  its migration/guard-union slot; no private schema substitutes for that event.
+- The nine existing policy cases are preserved in the source's native unit
+  context; the standalone target no longer path-compiles the production writer
+  into a different native type graph. Two source-binding tests and three native
+  fee/audit cases cover mismatched identities, replay-local fences, wrong price,
+  bank exclusion, bad occurrence and typed audit round-trip. Native execution
+  and PostgreSQL rollback/restart/concurrency qualification are pending; no
+  native test pass is claimed by authoring. Owned rustfmt and diff checks pass.
+
+Validation dependency/registration manifests and proposed DDL are retained at
+`/workspace/oteryn-family/evidence/pr2194/d1106/`. They authorize no tracked shared
+registration or premature slot edit. This child still needs native qualification,
+ordered dependency integration, installed schema/guards and the qualified blessing
+source. Login/ADMIT, death after #2193 and Wheel reads are later children, not
+blockers for implementing this D1106 source. Full PREM-2b+PREM-5 remains PARTIAL.
+
+
+### Native PG generation2 finding — repaired authoring generation3
+
+Actual native PG COMMIT rejected the promotion source: a source SAVEPOINT gave
+root writes a subtransaction xmin, while the unchanged native fee guard proves
+root xmin equals the top-level transaction ID. The repair preserves that native
+guard, removes the source savepoint, and makes only the promotion-specific latch
+callback typed-fallible: Ok commits its actual Type2 TX; Err rolls that same TX
+back. Ordinary Premium gates remain unchanged. The pre-delivery witness stays
+borrowed inside the gate. The native delivered owner already rolls back Err.
+
+The external negative test now also prepares all source writes and then returns
+a typed error, requiring no coins/fee/audit/promotion/receipt/revision persistence.
+Generation2 real ELF, source postimages and execution logs are retained. No new
+native/PG pass is claimed before root schedules the repaired generation. CP/arch
+comment6221184326 also adds lib.rs to deferred slot-only registration; blessing
+source authoring continues as a separate allocated leaf, not a policy-only close.
+
+
+### Coherent blessing integration — generation4 preparation
+
+CP/architect [6221184326](https://github.com/Oteryn/Oteryn-Game/pull/2194#issuecomment-6221184326)
+requires the actual blessing writer alongside promotion, and defers bank cause,
+migration, premium module/lib registration and npc_talk dispatch after #2197.
+The new typed blessing participant and native retry/transaction wrappers now
+retain the selected service/key, whole held sets, qualified source price band,
+fee/audit/provenance and optional native BANK debit in one outer Type2 TX. The
+source chooses its price at the locked Character level, disregarding any quoted
+fee. Exact replay resolves before current Premium/fences and grants no authority;
+new purchases are strictly Current-only, with no promotion PreDelivery exception.
+
+The actual distinct blessing NPC consumer rechecks current physical actor/NPC
+conversation facts, requires the pinned NPC declaration to offer that selected
+blessing service, resolves its stored receipt first, and keeps its Character
+slot through one ordinary Premium gate and real source COMMIT. No client fee/key
+or reusable permit is accepted. Production catalogue entries remain unpopulated
+until the source owner qualifies the conflicting price/key evidence. This is an
+explicit integration limitation, not permission to invent source facts.
+
+Proposed fee cause/tag3 binds a distinct native blessing_key; existing Charm
+request bytes, SQL path, fee/bank guards and promotion coins-only behavior stay
+compatible. Blessings use the accepted DEATH_COMPLETE0 §4.7 coins-then-BANK fallback
+under the actual V2/nonjunior native rule. No bank.rs edit occurs. The source and
+SQL proposals retain both directions of receipt/fee/held-grant proof, the complete
+latest0073+promotion+blessing chain and recovery history. All DDL remains external,
+unnumbered/uninstalled, with final cause/tag/migration/registration slots reserved
+for CP. The independent blessing leaf review and independent xmin repair review
+approve their exact source slices only.
+
+Actual generation2 native unit compilation passed; five focused pure tests
+passed, but the first PG case rejected COMMIT in the preserved native xmin guard.
+The repaired generation3 source removes the savepoint and rolls the actual outer
+TX back on typed Err; it has source approval but no PG PASS yet. Generation4
+combines that repair with blessing writer/consumer, native fee/audit negatives,
+locked-price/replay/concurrency/Current-only/real PreDelivery refusals and rollback
+proposals, plus a V2 bank-backed/one-gold-shortfall case. No generation4 build or
+PG test has run; root serializes qualification. A native root/pool reopen is not
+a process/server restart or full task completion. Full scope remains PARTIAL.
+
+
+### 2026-10-16 — actual generation5 evidence; generation6 lint repair proposal
+
+The generation2/3/4 preparation statements above are historical. Actual native
+generation5 compilation and all 25 focused tests passed, including all 7 native
+PostgreSQL tests. This result belongs only to the preserved generation5 ELF
+(`28e5aad231058e501686eec0e67c08f8dd491b17fcd566fc564166265ea87e5a`)
+and exact native source/composition manifest
+(`be979b65d6046b4d7c4ace41bba61ecd943a57f3ce61e89a9757b610ee161fcb`),
+as recorded in `native-validation/generation-5-prepared/EXECUTED-GEN5-RESULT.json`.
+The private schema/registration overlay and explicit catalogue policy fixtures
+remain the execution scope; production source/content/CP slots remain separate.
+
+Actual generation5 strict all-target Clippy found five errors: the pending login
+projection caller, three retained error payloads, and the borrowed promotion
+bypass signature's type complexity. Actual fmt found the private native include
+needed wrapping. The generation6 proposal addresses those findings with five
+reasoned function/variant/method-scoped allowances and rustfmt include layout.
+It preserves API/visibility/error payloads, runtime bodies, native guards and the
+25-test/7-PG inventory. The generation5 blessing permission repair remains intact.
+No generation6 native/strict/full PASS is claimed here. Exact generation6 head,
+native, strict and full-check results will be recorded in the PR after execution.
+Full scope remains PARTIAL, including deferred CP-owned integration.
+
+
+### 2026-10-16 — D1122/D1160 existing-draft checkpoint proposal
+
+Checkpoint status: **NOT_FULLY_QUALIFIED**. This checkpoint retains all eight Rust
+source/test files from frozen source-generation-8 byte for byte and adds only
+three own-module registration lines: premium::promotion,
+premium::blessing_purchase, and interaction::npc_promotion. Existing durability
+fee/audit/latch and gameplay spell_premium_coordinator modules were already
+registered. Native module registration is now allowed by CP D1160; it does not
+release any foreign context, API re-export, transaction, schema or NPC caller slot.
+CP authority: https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224912485.
+
+Actual private generation8 native composition passed all 25 focused tests,
+including all 7 PostgreSQL 17.6 tests; retained ELF SHA256
+`ae8a61a947ed5f200a786cf9a3bc5bf5a423f2c9d92a2c8a1f4e4b3d0096473b`,
+private source/composition manifest SHA256
+`11c3e097d318983f025231317a493789121690979374c7443a5087a79a003081`.
+The same private native library passed strict `cargo +1.94.0 clippy --locked -p
+oteryn-game-server --lib --quiet -- -D warnings`. These are PRIVATE composition
+results with the captured uninstalled schema/foreign context/test overlay. They
+are not qualification of the canonical source9 graph or this newly registered graph.
+
+Canonical source9 strict qualification completed RED: E0005 in foreign
+`tests/support/item_fee_burn_postgres_cases.rs:333` and
+`tests/support/gold_fee_bank_postgres_cases.rs:421`: formerly irrefutable
+CharmUnassign destructuring is now refutable with the new PromotionPurchase and
+BlessingPurchase variants. Evidence: native-validation/canonical-owner-generation-8-gates-attempt1/FINAL-RESULT.json,
+SHA256 `30368fa5197eee888ff988658e22acd8bde10aaa0334ce56bee9716a15824122`.
+CP6225267177 assigns the two thin caller fixes to #2194 in its final slot after
+#2197; actual raw paths corrected in CP6225385170. No foreign test edit included.
+This result covers only its original source9 inputs and unchanged module graph. The checkpoint's newly registered canonical graph, full-package tests
+and full feature are NOT_RUN / NOT_FULLY_QUALIFIED. No prior PASS transfers to them.
+
+The newly visible native writers and NPC consumer import
+`durability::character_revision_sequencer::NpcPurchaseWriteContext`, absent from the
+canonical source at preparation. That foreign context remains a held integration
+input, not a local substitute or a guessed fix. Other foreign visibility/re-export
+and physical-transaction/XID work, BANK cause integration, installed schema,
+qualified blessing catalogue and real NPC dispatch/callers retain their assigned
+final shared slots. No such foreign changes are included here. The existing
+`tests/interaction_workflow.rs` path-loads `interaction/mod.rs` as another crate:
+its new native-module dependency closure needs explicit qualification and may expose
+missing native imports. No cfg, alternate module, hidden tests or copied authority
+context is introduced to suppress this boundary.
+
+Next qualification: independently review this exact checkpoint and source/preimage
+hashes; root may author it to the existing draft under D1122 while preserving the
+explicit NOT_FULLY_QUALIFIED status. Resolve missing native context and foreign
+transaction/schema/caller dependencies with their allocated owners at their slots.
+Then qualify the actual canonical registered graph and alternate test root, run
+required canonical strict/full-package checks, and native PostgreSQL cases against
+the installed schema. Private overlay proof remains separately scoped. This is no
+ready/merge request and no whole kill-transaction publication.
+
+CP D1176 (6225337534) requires the final DurabilityRoot transaction port to use
+only durability-tree types; premium/interaction consume that port. The private
+generation8 sequencer extension names upper-layer types and requires a separate
+source repair and fresh qualification. It is not installed or approved as the
+final shared context by this checkpoint.

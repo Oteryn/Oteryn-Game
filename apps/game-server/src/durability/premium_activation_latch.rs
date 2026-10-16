@@ -7,7 +7,9 @@
 //! it, so a latch commit waits for every bypass that read an empty table, and every read after
 //! the latch commit sees the row.
 
+use super::db::begin_type2_transaction;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::item_mint_audit::Type2Transaction;
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::Row;
 use std::future::Future;
@@ -71,7 +73,88 @@ pub trait PreDeliveryBypass: Send {
         Self: 'a;
 }
 
+/// D1106 promotion purchase: its fee audit and durable promotion share the
+/// native Type2 transaction, opened BEFORE the Premium latch is examined.
+/// Other Premium operations retain their existing transaction path.
+#[allow(
+    dead_code,
+    reason = "Pending CP NPC source registration consumes this typed pre-delivery bypass."
+)]
+pub(crate) trait PromotionPreDeliveryBypass: Send {
+    type Output: Send;
+    type Error: Send;
+    #[allow(
+        clippy::type_complexity,
+        reason = "Native borrowed transaction and associated result lifetimes stay explicit."
+    )]
+    fn apply<'a, 't>(
+        self,
+        held: &'a EmptyLatchHeld,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>>
+    where
+        Self: 'a;
+}
+
+/// Source-specific fallible operation selected once by the native coordinator.
+/// Its borrowed empty-latch witness remains inside this invocation. The outer
+/// owner rolls back the actual Type2 transaction on every typed source refusal.
+#[allow(
+    dead_code,
+    reason = "Pending CP NPC source registration consumes this fallible gate operation."
+)]
+pub(crate) trait PromotionPremiumGateOperation<T, E>: Send {
+    fn run<'g, 't>(
+        self,
+        status: crate::domain::premium::PremiumStatus<'g>,
+        tx: Option<&'g mut Type2Transaction<'t>>,
+    ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'g>>
+    where
+        Self: 'g;
+}
+
 impl DurabilityRoot {
+    /// Promotion-only companion to `read_premium_activation_with`. No
+    /// already-started Premium transaction is adopted as a Type2 transaction.
+    /// A typed source refusal rolls back this whole transaction. No source
+    /// savepoint may change the native fee/root xmin provenance.
+    #[allow(
+        dead_code,
+        reason = "Pending CP NPC registration calls this source-specific Type2 latch owner."
+    )]
+    pub(crate) async fn read_premium_promotion_with<B: PromotionPreDeliveryBypass>(
+        &self,
+        bypass: &mut Option<B>,
+    ) -> Result<PremiumActivationRead<Result<B::Output, B::Error>>, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run_with_context(bypass, |holder, deadline, bypass| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    lock_shared(&mut tx).await?;
+                    if let Some(latch) = read_latch(&mut tx).await? {
+                        tx.into_inner().rollback().await?;
+                        return Ok(PremiumActivationRead::Latched(latch));
+                    }
+                    let Some(bypass) = bypass.take() else {
+                        tx.into_inner().rollback().await?;
+                        return Ok(PremiumActivationRead::Empty);
+                    };
+                    let held = EmptyLatchHeld { _private: () };
+                    match bypass.apply(&held, &mut tx).await {
+                        Ok(applied) => {
+                            tx.commit(deadline).await?;
+                            Ok(PremiumActivationRead::PreDelivery(Ok(applied)))
+                        }
+                        Err(error) => {
+                            tx.into_inner().rollback().await?;
+                            Ok(PremiumActivationRead::PreDelivery(Err(error)))
+                        }
+                    }
+                })
+            })
+            .await
+    }
+
     /// Take the shared lock, then read the latch, and end the transaction unwritten: `Latched`
     /// or `Empty`.
     pub async fn read_premium_activation<T: Send>(

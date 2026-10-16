@@ -33,8 +33,9 @@ use super::character_progression::{CurrentCharacterGameplayFence, numeric_u64, u
 use super::charm_state::CharmCommandOccurrence;
 use super::item_fee_burn_audit::{
     FEE_GOLD_UNITS_MAX, FEE_WITH_BANK_GOLD_UNITS_MAX, FeeBurnCauseV1, FeeBurnEventIdentity,
-    LEDGER_FEE_DEBIT, LINE_CLASS_BURN, OneItemCharmUnassignV1, OneItemFeeBankDebitV1,
-    OneItemFeeBurnCauseV1, OneItemFeeBurnLineV1, OneItemFeeBurnV1, OneItemFeeChangeMintV1,
+    LEDGER_FEE_DEBIT, LINE_CLASS_BURN, OneItemBlessingPurchaseV1, OneItemCharmUnassignV1,
+    OneItemFeeBankDebitV1, OneItemFeeBurnCauseV1, OneItemFeeBurnLineV1, OneItemFeeBurnV1,
+    OneItemFeeChangeMintV1, OneItemPromotionPurchaseV1, check_blessing_fee_key,
     encode_fee_burn_event_with,
 };
 use super::item_mint::TypedDefinitionRef;
@@ -57,6 +58,9 @@ use sqlx::postgres::PgConnection;
 
 const REQUEST_BINDING_VERSION: u8 = 1;
 const CAUSE_CHARM_UNASSIGN: i16 = 1;
+const CAUSE_PROMOTION_PURCHASE: i16 = 2;
+// Proposed source/audit discriminator; final CP registry allocation is deferred.
+const CAUSE_BLESSING_PURCHASE: i16 = 3;
 
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,6 +69,63 @@ pub enum FeeBurnCause {
         charm: CharmKey,
         occurrence: CharmCommandOccurrence,
     },
+    /// The promotion source grants its durable state and provenance in this
+    /// physical transaction. Its fee never uses the bank, including under V2.
+    PromotionPurchase { occurrence: [u8; 16] },
+    /// A qualified blessing source, using native coins-then-BANK under V2.
+    /// The source receipt retains the exact key, price, provenance and grant.
+    BlessingPurchase {
+        occurrence: [u8; 16],
+        blessing: String,
+    },
+}
+
+impl FeeBurnCause {
+    fn storage_parts(&self) -> (i16, &[u8; 16], Option<&str>, Option<&str>) {
+        match self {
+            Self::CharmUnassign { charm, occurrence } => (
+                CAUSE_CHARM_UNASSIGN,
+                occurrence.as_bytes(),
+                Some(charm.as_str()),
+                None,
+            ),
+            Self::PromotionPurchase { occurrence } => {
+                (CAUSE_PROMOTION_PURCHASE, occurrence, None, None)
+            }
+            Self::BlessingPurchase {
+                occurrence,
+                blessing,
+            } => (
+                CAUSE_BLESSING_PURCHASE,
+                occurrence,
+                None,
+                Some(blessing.as_str()),
+            ),
+        }
+    }
+
+    fn audit_cause(&self) -> FeeBurnCauseV1 {
+        match self {
+            Self::CharmUnassign { charm, occurrence } => {
+                FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
+                    charm_key: charm.as_str().into(),
+                    occurrence: occurrence.as_bytes().to_vec(),
+                })
+            }
+            Self::PromotionPurchase { occurrence } => {
+                FeeBurnCauseV1::PromotionPurchase(OneItemPromotionPurchaseV1 {
+                    occurrence: occurrence.to_vec(),
+                })
+            }
+            Self::BlessingPurchase {
+                occurrence,
+                blessing,
+            } => FeeBurnCauseV1::BlessingPurchase(OneItemBlessingPurchaseV1 {
+                blessing_key: blessing.clone(),
+                occurrence: occurrence.to_vec(),
+            }),
+        }
+    }
 }
 
 /// One fee. The TransactionId and EventId are fixed by the source before its first attempt and
@@ -223,6 +284,26 @@ fn bank_part(fee: u64, eligible: u64, tuple: Type2EventTuple, junior: bool) -> R
     }
 }
 
+fn bank_part_for_cause(
+    cause: &FeeBurnCause,
+    fee: u64,
+    eligible: u64,
+    tuple: Type2EventTuple,
+    junior: bool,
+) -> Result<u64> {
+    if matches!(cause, FeeBurnCause::PromotionPurchase { .. }) {
+        if fee != 20_000 {
+            return Err(FeeBurnError::InvalidInput);
+        }
+        return if eligible < fee {
+            Err(FeeBurnError::InsufficientFunds)
+        } else {
+            Ok(0)
+        };
+    }
+    bank_part(fee, eligible, tuple, junior)
+}
+
 /// The largest fee a tuple admits: the coin part alone under `(1, V1)`, plus `BANK0-RL-01` under
 /// `(2, V2)`.
 fn fee_gold_units_max(tuple: Type2EventTuple) -> u64 {
@@ -245,7 +326,7 @@ async fn burn_fee(
     else {
         return Err(FeeBurnError::InvalidInput);
     };
-    let FeeBurnCause::CharmUnassign { charm, occurrence } = &request.cause;
+    let (cause_kind, occurrence, charm_key, blessing_key) = request.cause.storage_parts();
     let committed = fence
         .expected_character_revision
         .get()
@@ -253,6 +334,9 @@ async fn burn_fee(
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
     if !(1..=fee_gold_units_max(tuple)).contains(&request.fee_gold_units)
+        || check_uuid_v7(occurrence).is_err()
+        || (cause_kind == CAUSE_PROMOTION_PURCHASE && request.fee_gold_units != 20_000)
+        || blessing_key.is_some_and(|key| check_blessing_fee_key(key).is_err())
         || request.occurred_at_unix_ms <= 0
         || check_uuid_v7(&request.transaction_id).is_err()
         || check_uuid_v7(&request.event_id).is_err()
@@ -272,8 +356,8 @@ async fn burn_fee(
            FROM game_item_fee_burns \
           WHERE cause_kind = $1 AND cause_occurrence_id = encode($2,'hex')::uuid",
     )
-    .bind(CAUSE_CHARM_UNASSIGN)
-    .bind(occurrence.as_bytes().as_slice())
+    .bind(cause_kind)
+    .bind(occurrence.as_slice())
     .fetch_optional(&mut *connection)
     .await?;
     if let Some(row) = stored {
@@ -366,7 +450,8 @@ async fn burn_fee(
                 DurabilityError::InvalidStoredState,
             ))
     })?;
-    let bank_debit_gold_units = bank_part(
+    let bank_debit_gold_units = bank_part_for_cause(
+        &request.cause,
         request.fee_gold_units,
         eligible,
         tuple,
@@ -509,10 +594,7 @@ async fn burn_fee(
         },
         OneItemFeeBurnV1 {
             cause: Some(OneItemFeeBurnCauseV1 {
-                cause: Some(FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
-                    charm_key: charm.as_str().into(),
-                    occurrence: occurrence.as_bytes().to_vec(),
-                })),
+                cause: Some(request.cause.audit_cause()),
             }),
             fee_gold_units: request.fee_gold_units,
             burned_gold_units,
@@ -543,8 +625,25 @@ async fn burn_fee(
 
     let fee = i64::try_from(request.fee_gold_units).map_err(|_| FeeBurnError::InvalidInput)?;
     let gold_units = |value: u64| i64::try_from(value).map_err(|_| FeeBurnError::InvalidInput);
-    sqlx::query(
-        "INSERT INTO game_item_fee_burns(transaction_id, event_id, cause_kind, \
+    let insert = if blessing_key.is_some() {
+        sqlx::query(
+            "INSERT INTO game_item_fee_burns(transaction_id, event_id, cause_kind, \
+           cause_occurrence_id, charm_key, request_binding, character_id, world_id, channel_id, \
+           runtime_scope_ownership_generation, committed_character_revision, \
+           backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
+           line_count, occurred_at, envelope_sha256, committed_at, \
+           change_platinum_item_instance_id, change_gold_item_instance_id, \
+           change_placement_ordinal, bank_debit_gold_units, blessing_key) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
+           $5, $6, encode($7,'hex')::uuid, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
+           $10::text::numeric(20,0), $11::text::numeric(20,0), encode($12,'hex')::uuid, \
+           $13, $17, $18, $14, $15, sha256($16), \
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
+           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23)",
+        )
+    } else {
+        sqlx::query(
+            "INSERT INTO game_item_fee_burns(transaction_id, event_id, cause_kind, \
            cause_occurrence_id, charm_key, request_binding, character_id, world_id, channel_id, \
            runtime_scope_ownership_generation, committed_character_revision, \
            backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
@@ -557,35 +656,39 @@ async fn burn_fee(
            $13, $17, $18, $14, $15, sha256($16), \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
            encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22)",
-    )
-    .bind(request.transaction_id.as_slice())
-    .bind(request.event_id.as_slice())
-    .bind(CAUSE_CHARM_UNASSIGN)
-    .bind(occurrence.as_bytes().as_slice())
-    .bind(charm.as_str())
-    .bind(binding.as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .bind(committed.get().to_string())
-    .bind(backpack.map(|item| item.to_vec()))
-    .bind(fee)
-    .bind(i16::try_from(lines.len()).map_err(|_| FeeBurnError::CapacityExceeded)?)
-    .bind(request.occurred_at_unix_ms)
-    .bind(envelope.as_slice())
-    .bind(gold_units(burned_gold_units)?)
-    .bind(gold_units(plan.change)?)
-    .bind(request.change.item_instance_ids[0].as_slice())
-    .bind(request.change.item_instance_ids[1].as_slice())
-    .bind(
-        change
-            .first()
-            .map(|output| output.placement_ordinal.to_string()),
-    )
-    .bind(gold_units(bank_debit_gold_units)?)
-    .execute(&mut *connection)
-    .await?;
+        )
+    };
+    let mut insert = insert
+        .bind(request.transaction_id.as_slice())
+        .bind(request.event_id.as_slice())
+        .bind(cause_kind)
+        .bind(occurrence.as_slice())
+        .bind(charm_key)
+        .bind(binding.as_slice())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(fence.scope_ownership_generation.get().to_string())
+        .bind(committed.get().to_string())
+        .bind(backpack.map(|item| item.to_vec()))
+        .bind(fee)
+        .bind(i16::try_from(lines.len()).map_err(|_| FeeBurnError::CapacityExceeded)?)
+        .bind(request.occurred_at_unix_ms)
+        .bind(envelope.as_slice())
+        .bind(gold_units(burned_gold_units)?)
+        .bind(gold_units(plan.change)?)
+        .bind(request.change.item_instance_ids[0].as_slice())
+        .bind(request.change.item_instance_ids[1].as_slice())
+        .bind(
+            change
+                .first()
+                .map(|output| output.placement_ordinal.to_string()),
+        )
+        .bind(gold_units(bank_debit_gold_units)?);
+    if let Some(key) = blessing_key {
+        insert = insert.bind(key);
+    }
+    insert.execute(&mut *connection).await?;
 
     for (ordinal, line) in (1_i16..).zip(&lines) {
         sqlx::query(
@@ -627,7 +730,11 @@ async fn burn_fee(
             )
             .bind(line.item_instance_id.as_slice())
             // A line exists only with a backpack.
-            .bind(backpack.ok_or(DurabilityError::InvalidStoredState)?.to_vec())
+            .bind(
+                backpack
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .to_vec(),
+            )
             .bind(line.placement_ordinal.to_string())
             .execute(&mut *connection)
             .await?;
@@ -668,7 +775,11 @@ async fn burn_fee(
         .bind(world_id.as_bytes().as_slice())
         .bind(fence.character_id.as_bytes().as_slice())
         // Change exists only with a line, so with a backpack.
-        .bind(backpack.ok_or(DurabilityError::InvalidStoredState)?.to_vec())
+        .bind(
+            backpack
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .to_vec(),
+        )
         .bind(output.placement_ordinal.to_string())
         .bind(request.transaction_id.as_slice())
         .execute(&mut *connection)
@@ -847,17 +958,19 @@ fn valid_change_facts(request: &FeeBurnRequest) -> bool {
 /// SHA-256 over the semantic request: the cause, the Character, its World and the fee. The
 /// TransactionId, EventId, time and build are retry-local and excluded.
 fn request_binding(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRequest) -> Vec<u8> {
-    let FeeBurnCause::CharmUnassign { charm, occurrence } = &request.cause;
+    let (cause_kind, occurrence, charm_key, blessing_key) = request.cause.storage_parts();
+    // Existing kind1/2 binding bytes are unchanged; kind3 owns its distinct key.
+    let source_key = charm_key.or(blessing_key).unwrap_or("");
     let mut digest = Sha256::new();
     digest.update([REQUEST_BINDING_VERSION]);
-    digest.update(CAUSE_CHARM_UNASSIGN.to_be_bytes());
-    digest.update(occurrence.as_bytes());
+    digest.update(cause_kind.to_be_bytes());
+    digest.update(occurrence);
     digest.update(
-        u32::try_from(charm.as_str().len())
+        u32::try_from(source_key.len())
             .unwrap_or(u32::MAX)
             .to_be_bytes(),
     );
-    digest.update(charm.as_str().as_bytes());
+    digest.update(source_key.as_bytes());
     digest.update(fence.character_id.as_bytes());
     digest.update(fence.runtime_scope.world_id().as_bytes());
     digest.update(request.fee_gold_units.to_be_bytes());
@@ -935,6 +1048,77 @@ mod tests {
     use crate::foundation::{
         ChannelId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
     };
+
+    #[test]
+    fn promotion_never_opens_the_bank_even_after_type2_activation() {
+        let cause = FeeBurnCause::PromotionPurchase { occurrence: id(55) };
+        for tuple in [Type2EventTuple::V1, Type2EventTuple::V2] {
+            for junior in [false, true] {
+                for eligible in [0, 19_999] {
+                    assert!(matches!(
+                        bank_part_for_cause(&cause, 20_000, eligible, tuple, junior),
+                        Err(FeeBurnError::InsufficientFunds)
+                    ));
+                }
+                for eligible in [20_000, 20_001] {
+                    assert_eq!(
+                        bank_part_for_cause(&cause, 20_000, eligible, tuple, junior).unwrap(),
+                        0
+                    );
+                }
+            }
+        }
+        assert!(matches!(
+            bank_part_for_cause(&cause, 19_999, 20_000, Type2EventTuple::V2, false),
+            Err(FeeBurnError::InvalidInput)
+        ));
+    }
+
+    #[test]
+    fn promotion_fee_binding_is_distinct_from_charm_and_binds_its_occurrence() {
+        let original = request();
+        let mut promotion = original.clone();
+        promotion.cause = FeeBurnCause::PromotionPurchase { occurrence: id(5) };
+        promotion.fee_gold_units = 20_000;
+        assert_ne!(
+            request_binding(&fence(), &original),
+            request_binding(&fence(), &promotion)
+        );
+        let binding = request_binding(&fence(), &promotion);
+        promotion.cause = FeeBurnCause::PromotionPurchase { occurrence: id(6) };
+        assert_ne!(binding, request_binding(&fence(), &promotion));
+        assert_eq!(promotion.cause.storage_parts().2, None);
+    }
+
+    #[test]
+    fn blessing_fee_binds_its_key_and_keeps_native_bank_tuple_and_junior_rules() {
+        let mut blessing = request();
+        blessing.cause = FeeBurnCause::BlessingPurchase {
+            occurrence: id(5),
+            blessing: "fixture.blessing.a".into(),
+        };
+        let before = request_binding(&fence(), &blessing);
+        let cause = blessing.cause.clone();
+        assert!(matches!(
+            bank_part_for_cause(&cause, 20000, 10000, Type2EventTuple::V1, false),
+            Err(FeeBurnError::InsufficientFunds)
+        ));
+        assert!(matches!(
+            bank_part_for_cause(&cause, 20000, 10000, Type2EventTuple::V2, true),
+            Err(FeeBurnError::InsufficientFunds)
+        ));
+        assert_eq!(
+            bank_part_for_cause(&cause, 20000, 10000, Type2EventTuple::V2, false).unwrap(),
+            10000
+        );
+        blessing.cause = FeeBurnCause::BlessingPurchase {
+            occurrence: id(5),
+            blessing: "fixture.blessing.b".into(),
+        };
+        assert_ne!(before, request_binding(&fence(), &blessing));
+        assert_eq!(blessing.cause.storage_parts().2, None);
+        assert_eq!(blessing.cause.storage_parts().3, Some("fixture.blessing.b"));
+    }
 
     fn id(seed: u8) -> [u8; 16] {
         [
