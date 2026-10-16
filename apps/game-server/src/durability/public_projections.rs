@@ -20,6 +20,16 @@ use std::collections::BTreeMap;
 
 type Result<T> = std::result::Result<T, CharacterAuthorityError>;
 
+/// `PUBPROJ-RESYNC-DEADLINE`: the pass deadline of `oteryn-game-ops
+/// public-projection resync`, its PostgreSQL transaction, statement and lock
+/// timeouts included. The resync touches every Character and every highscores
+/// pair in one transaction, so a whole store does not fit the ordinary
+/// `DB_PASS_DEADLINE`; it runs with the node stopped, so no gameplay pass waits
+/// behind it.
+pub(crate) const RESYNC_DEADLINE: std::time::Duration = std::time::Duration::from_secs(60);
+const _: () =
+    assert!(RESYNC_DEADLINE.as_secs() <= DurabilityRoot::MAX_BOOT_PASS_DEADLINE.as_secs());
+
 // The Characters with the oldest undelivered changes ($3 at most, oldest
 // first), skipping held Characters and any Character holding a name whose
 // vacating publication is still undelivered (§7.3: a reused name never joins

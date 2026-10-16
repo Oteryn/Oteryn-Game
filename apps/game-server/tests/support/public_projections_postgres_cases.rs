@@ -5,7 +5,7 @@
 
 use super::durability::DurabilityRoot;
 use super::durability::character_authority::ReconciledCharacterAuthority;
-use super::durability::public_projections::{ONLINE, PROFILE};
+use super::durability::public_projections::{ONLINE, PROFILE, RESYNC_DEADLINE};
 use oteryn_game_server::native_admission_source::public_projections::{
     FILTERS, MAX_ONLINE, NAME_HANDOFF_HOLD, OnlineState, PROFILE_BATCH, VOCATION_IDS, VOCATIONS,
     encode_highscores, encode_profile, online_digest,
@@ -660,6 +660,116 @@ async fn projection_cases(database: &Database) -> TestResult {
 
     handoff_cases(&pool).await?;
     online_cases(&pool).await?;
+    pool.close().await;
+    Ok(())
+}
+
+/// A store recovery (§5 Resync) at scale: a full resync with an epoch raise of 10,000
+/// Characters and 704 highscores pairs is one transaction of set-based statements under the
+/// ops command's pass deadline (`PUBPROJ-RESYNC-DEADLINE`), PostgreSQL transaction, statement
+/// and lock timeouts included, and it queues every subject at the new epoch.
+#[test]
+fn public_projections_full_resync_fits_the_recovery_deadline() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin).await?;
+            let result = large_resync(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn large_resync(database: &Database) -> TestResult {
+    const CHARACTERS: i64 = 10_000;
+    const PAIRS: i64 = 64 * 11;
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    attempt(
+        &pool,
+        &format!(
+            "INSERT INTO game_character_account_guards \
+               SELECT (lpad(to_hex(a), 8, '0') || '-0000-7000-8000-0000000000aa')::uuid \
+               FROM generate_series(1, 200) a; \
+             INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle, \
+               character_revision, profile_revision, ruleset_revision, content_revision, \
+               starter_template_revision, name) \
+             SELECT (lpad(to_hex(i), 8, '0') || '-0000-7000-8000-000000000000')::uuid, \
+               (lpad(to_hex(1 + i % 200), 8, '0') || '-0000-7000-8000-0000000000aa')::uuid, \
+               {world}, 1, 1, 'profile-1', 'ruleset-1', 'content-1', 'starter-1', \
+               'Hero ' || translate(lpad(i::text, 6, '0'), '0123456789', 'abcdefghij') \
+             FROM generate_series(1, {CHARACTERS}) i; \
+             CREATE TABLE game_world_highscore_snapshots (snapshot_id BIGINT PRIMARY KEY, \
+               world_id UUID NOT NULL, category SMALLINT NOT NULL, \
+               computed_at_ms BIGINT NOT NULL); \
+             CREATE TRIGGER game_public_highscores_snapshot AFTER INSERT \
+               ON game_world_highscore_snapshots FOR EACH ROW \
+               EXECUTE FUNCTION game_public_highscores_snapshot_trigger(); \
+             INSERT INTO game_world_highscore_snapshots \
+             SELECT w * 11 + c, (lpad(to_hex(w), 8, '0') || '-0000-7000-8000-0000000000ff')::uuid, \
+               c, 0 FROM generate_series(1, 64) w, generate_series(1, 11) c;",
+            world = uuid(90),
+        ),
+    )
+    .await?;
+
+    let root = DurabilityRoot::connect_test_runtime(&database.url).map_err(|e| format!("{e:?}"))?;
+    assert!(
+        root.maintain_ready_once()
+            .await
+            .map_err(|e| format!("{e:?}"))?
+    );
+    let _recovery = root.boot_pass_deadline(RESYNC_DEADLINE);
+    let started = std::time::Instant::now();
+    let raised = root
+        .try_issue_semantic_pass()
+        .map_err(|e| format!("{e:?}"))?
+        .run(|holder, deadline| {
+            Box::pin(async move {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                let mut tx = sqlx::Connection::begin(&mut **holder).await?;
+                sqlx::query(
+                    "SELECT set_config('transaction_timeout', $1, true), \
+                       set_config('statement_timeout', $1, true), \
+                       set_config('lock_timeout', $1, true)",
+                )
+                .bind(format!("{}ms", remaining.as_millis().max(1)))
+                .execute(&mut *tx)
+                .await?;
+                let epoch: i64 =
+                    sqlx::query_scalar("SELECT game_public_projection_resync('all', true)")
+                        .fetch_one(&mut *tx)
+                        .await?;
+                tx.commit()
+                    .await
+                    .map_err(super::durability::DurabilityError::from_commit_error)?;
+                Ok(epoch)
+            })
+        })
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let took = started.elapsed();
+    eprintln!("full resync of {CHARACTERS} Characters and {PAIRS} pairs took {took:?}");
+    assert!(took < RESYNC_DEADLINE, "{took:?}");
+
+    let counts: (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_public_character_profile_outbox \
+                  WHERE projection_epoch = $1 AND projection_revision = 2), \
+                (SELECT count(*) FROM game_public_character_profiles \
+                  WHERE projection_revision = 2), \
+                (SELECT count(*) FROM game_public_highscore_outbox \
+                  WHERE projection_epoch = $1 AND projection_revision = 2), \
+                (SELECT count(*) FROM game_public_highscores WHERE projection_revision = 2)",
+    )
+    .bind(raised)
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(counts, (CHARACTERS, CHARACTERS, PAIRS, PAIRS));
+    assert_eq!(epoch(&pool).await?, raised);
     pool.close().await;
     Ok(())
 }

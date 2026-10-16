@@ -818,14 +818,16 @@ pub async fn resync(
 
 /// `oteryn-game-ops public-projection resync` (migration 0091): re-enqueue
 /// one family (`all`, `highscores`, `character_profile` or `world_online`)
-/// in one transaction. An epoch raise covers every family and follows the
-/// same fence rules against `F_pub`. Returns the epoch.
+/// in one transaction, under `PUBPROJ-RESYNC-DEADLINE` rather than the
+/// ordinary pass deadline (the node is stopped). An epoch raise covers every
+/// family and follows the same fence rules against `F_pub`. Returns the epoch.
 pub async fn public_resync(
     root: &DurabilityRoot,
     family: &str,
     raise_epoch: bool,
     fence: &mut impl EpochFence,
 ) -> Result<u64, ResyncError> {
+    let _recovery = root.boot_pass_deadline(crate::durability::public_projections::RESYNC_DEADLINE);
     resync_projection(
         root,
         raise_epoch,

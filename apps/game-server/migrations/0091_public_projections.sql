@@ -195,16 +195,15 @@ END; $$;
 -- revision when the epoch changed). A profile resync also clears every recorded
 -- `vacated_name_key`: the operator's re-publication of every profile supersedes the handoff
 -- order. SECURITY INVOKER: it has no grant, so only the owner login runs it, with the owner's
--- own privileges.
+-- own privileges. Each family is one set-based statement (no per-subject loop), in key order
+-- as before, so the operator's recovery of a whole store fits its pass deadline
+-- (`PUBPROJ-RESYNC-DEADLINE`, contract §5 Resync).
 CREATE FUNCTION game_public_projection_resync(p_family TEXT, p_raise_epoch BOOLEAN)
 RETURNS BIGINT
 LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE
     v_now BIGINT := floor(extract(epoch FROM transaction_timestamp()) * 1000)::BIGINT;
     v_epoch BIGINT;
-    v_character UUID;
-    v_world UUID;
-    v_category SMALLINT;
     v_pairs TEXT := 'SELECT world_id, category FROM game_public_highscores';
 BEGIN
     IF p_family IS NULL OR p_raise_epoch IS NULL THEN
@@ -226,22 +225,36 @@ BEGIN
     IF p_family IN ('all', 'character_profile') THEN
         UPDATE game_public_character_profile_outbox SET vacated_name_key = NULL
             WHERE vacated_name_key IS NOT NULL;
-        FOR v_character IN
-            SELECT character_id FROM game_character_roots
-            UNION SELECT character_id FROM game_public_character_profiles
-            ORDER BY 1
-        LOOP
-            PERFORM game_public_profile_touch(v_character, NULL);
-        END LOOP;
+        WITH touched AS (
+            INSERT INTO game_public_character_profiles(character_id, projection_revision,
+                revised_at)
+            SELECT character_id, 1, v_now FROM (
+                SELECT character_id FROM game_character_roots
+                UNION SELECT character_id FROM game_public_character_profiles) subjects
+            ORDER BY character_id
+            ON CONFLICT (character_id) DO UPDATE
+                SET projection_revision = game_public_character_profiles.projection_revision + 1,
+                    revised_at = v_now
+            RETURNING character_id, projection_revision)
+        INSERT INTO game_public_character_profile_outbox(character_id, projection_epoch,
+            projection_revision, created_at)
+        SELECT character_id, v_epoch, projection_revision, v_now FROM touched;
     END IF;
     IF p_family IN ('all', 'highscores') THEN
         IF to_regclass('game_world_highscore_snapshots') IS NOT NULL THEN
             v_pairs := v_pairs || ' UNION SELECT world_id, category::SMALLINT'
                 || ' FROM game_world_highscore_snapshots';
         END IF;
-        FOR v_world, v_category IN EXECUTE v_pairs || ' ORDER BY 1, 2' LOOP
-            PERFORM game_public_highscores_touch(v_world, v_category);
-        END LOOP;
+        EXECUTE 'WITH touched AS ('
+            || ' INSERT INTO game_public_highscores(world_id, category, projection_revision,'
+            || ' revised_at) SELECT world_id, category, 1, $1 FROM (' || v_pairs || ') pairs'
+            || ' ORDER BY world_id, category ON CONFLICT (world_id, category) DO UPDATE'
+            || ' SET projection_revision = game_public_highscores.projection_revision + 1,'
+            || ' revised_at = $1 RETURNING world_id, category, projection_revision)'
+            || ' INSERT INTO game_public_highscore_outbox(world_id, category, projection_epoch,'
+            || ' projection_revision, created_at)'
+            || ' SELECT world_id, category, $2, projection_revision, $1 FROM touched'
+            USING v_now, v_epoch;
     END IF;
     IF p_family IN ('all', 'world_online') THEN
         UPDATE game_public_world_online SET acked = false WHERE acked;

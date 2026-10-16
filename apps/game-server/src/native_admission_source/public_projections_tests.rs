@@ -1121,27 +1121,75 @@ fn a_scan_past_its_deadline_fails() {
     scanned(&store, vec![(WORLD, Some(vec![])), (WORLD_2, Some(vec![]))]);
     let p = publisher(&store, vec![OK, None]);
     assert!(!block_on(p.scan(&mut ScanLoop::default())));
-    assert!(p.clock.elapsed() >= ONLINE_SCAN_DEADLINE);
+    // The unanswered exchange is cut at its own bound.
+    assert!(p.clock.elapsed() >= EXCHANGE_BOUND);
     assert!(p.last_cut.lock().unwrap().is_none());
     // The acknowledged World is recorded; the other is resent next scan.
     let online = store.lock().unwrap().online.clone();
     assert_eq!(online.iter().filter(|s| s.acked).count(), 1);
+
+    // Both accepted, each within the exchange bound, but the last after the
+    // deadline (this fake's exchanges run one after the other): the scan fails
+    // and its cut is not a good one, though both acknowledgements are kept.
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![])), (WORLD_2, Some(vec![]))]);
+    let p = publisher(&store, vec![OK, OK]);
+    *p.sink.latency.lock().unwrap() = Some((p.clock.clone(), Duration::from_millis(2_600)));
+    assert!(!block_on(p.scan(&mut ScanLoop::default())));
+    assert!(p.clock.elapsed() > ONLINE_SCAN_DEADLINE);
+    assert!(p.last_cut.lock().unwrap().is_none());
+    let online = store.lock().unwrap().online.clone();
+    assert_eq!(online.iter().filter(|s| s.acked).count(), 2);
 }
 
 #[test]
 fn the_online_scan_deadline_runs_from_the_cut() {
     let store = Shared::default();
     scanned(&store, vec![(WORLD, Some(vec![]))]);
-    // The connection is busy for the first ten cut reads (100 ms apart).
-    store.lock().unwrap().cut_busy = 10;
-    let p = publisher(&store, vec![OK]);
-    *p.sink.latency.lock().unwrap() = Some((p.clock.clone(), Duration::from_millis(4_500)));
+    // The connection is busy for the first 25 cut reads (100 ms apart); a
+    // 1 s maximum transaction leaves the cut until 4 s after the start.
+    store.lock().unwrap().cut_busy = 25;
+    let mut p = publisher(&store, vec![OK]);
+    p.max_transaction = Duration::from_secs(1);
+    *p.sink.latency.lock().unwrap() = Some((p.clock.clone(), Duration::from_millis(2_900)));
     assert!(block_on(p.scan(&mut ScanLoop::default())));
     let cut = p.last_cut.lock().unwrap().unwrap();
-    assert_eq!(cut.read_at, Duration::from_secs(1));
+    assert_eq!(cut.read_at, Duration::from_millis(2_500));
     // Acknowledged more than 5 s after the scan started, within 5 s of the cut.
     assert!(p.clock.elapsed() > ONLINE_SCAN_DEADLINE);
     assert!(p.clock.elapsed() <= cut.read_at + ONLINE_SCAN_DEADLINE);
+}
+
+#[test]
+fn an_exchange_is_cut_at_the_exchange_bound() {
+    // world_online: the scan leaves 5 s, but an exchange that has not answered
+    // after 3 s is a timeout; the World is not acknowledged and backs off.
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    let p = publisher(&store, vec![None]);
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    let cut_at = p.clock.elapsed();
+    assert!(
+        cut_at >= EXCHANGE_BOUND && cut_at < ONLINE_SCAN_DEADLINE,
+        "{cut_at:?}"
+    );
+    assert_eq!(state.next_retry(), Some(cut_at + BACKOFF_MIN));
+    assert!(store.lock().unwrap().online.iter().all(|s| !s.acked));
+    assert!(p.last_cut.lock().unwrap().is_none());
+
+    // A profile's phase leaves far more, but its exchange is cut at 3 s too:
+    // it stays queued and the family backs off.
+    let store = Shared::default();
+    store.lock().unwrap().profiles.push(profile(None));
+    let p = publisher(&store, vec![None]);
+    let mut state = quiet();
+    assert!(!block_on(p.outbox_step(&mut state)));
+    assert_eq!(p.clock.elapsed(), EXCHANGE_BOUND);
+    assert_eq!(store.lock().unwrap().profiles.len(), 1);
+    assert!(store.lock().unwrap().cleared.is_empty());
+    assert!(!block_on(p.outbox_step(&mut state)));
+    assert_eq!(p.sink.operations().len(), 1, "backing off");
 }
 
 #[test]

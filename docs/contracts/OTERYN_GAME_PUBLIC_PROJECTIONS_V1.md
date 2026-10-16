@@ -405,6 +405,9 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   (U-PP5).
 - **Resync.** An operator command republishes every subject of one family or of all families
   (initial fill, Platform read-model loss, epoch raise). Platform cannot request a resync in v1.
+  It runs with the node stopped, as one transaction of set-based statements (one per family),
+  within `PUBPROJ-RESYNC-DEADLINE` (60 s), PostgreSQL timeouts included; one that does not finish
+  in time rolls back whole and is re-run.
 
 ### 5.1 Liveness watermark
 
@@ -579,6 +582,7 @@ the implementation, as LCFA's were.
 | `PUBPROJ-PROFILE-BATCH` | 32 profiles | profiles read in one store pass and cleared in one; sent one at a time (`PUBPROJ-INFLIGHT`) |
 | `PUBPROJ-NAME-HANDOFF-HOLD` | 60 s | longest hold of a name's new holder behind a vacating publication (§7.3) |
 | `PUBPROJ-STORE-PASS-GAP` | 50 ms | minimum gap between two publisher passes over the durability root (§11) |
+| `PUBPROJ-RESYNC-DEADLINE` | 60 s | pass deadline of the operator resync (§5), PostgreSQL transaction, statement and lock timeouts included; the node is stopped |
 
 ## 9. Required tests
 
@@ -699,7 +703,9 @@ the owner decided (Q3) that the pages answer 503 until their families are fresh.
 - **Operator resync:** `oteryn-game-ops public-projection resync --family
   all|highscores|character_profile|world_online --raise-epoch true|false` with the
   `[public_projection]` ops section; a raise is allowed only with `--family all`. The function
-  runs as its caller (`SECURITY INVOKER`): only the owner login may execute it.
+  runs as its caller (`SECURITY INVOKER`): only the owner login may execute it. It touches every
+  subject of a family in one set-based statement, under `PUBPROJ-RESYNC-DEADLINE` instead of the
+  2 s pass deadline of a running node.
 
 ## 12. Acceptance
 

@@ -58,6 +58,9 @@ pub const ONLINE_WORLDS: usize = 16;
 pub const ONLINE_INTERVAL: Duration = Duration::from_secs(10);
 /// `PUBPROJ-ONLINE-SCAN-DEADLINE`.
 pub const ONLINE_SCAN_DEADLINE: Duration = Duration::from_secs(5);
+/// §3 and §11: every exchange, connection setup included, is bounded at 3 s
+/// (inside the transport's 5 s); a slower one is a timeout, never a delivery.
+pub const EXCHANGE_BOUND: Duration = Duration::from_secs(3);
 /// A watermark is due this long after the previous attempt.
 pub const WATERMARK_PERIOD: Duration = Duration::from_secs(3);
 /// `PUBPROJ-WATERMARK-GAP`.
@@ -1189,8 +1192,9 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         }
     }
 
-    /// One send of `operation` within `budget`; a cut exchange is not
-    /// delivered, and its retry carries the same body.
+    /// One send of `operation` within `budget`, and never longer than
+    /// `EXCHANGE_BOUND`; a cut exchange is a timeout, not a delivery, and its
+    /// retry carries the same body.
     async fn deliver(
         &self,
         operation: Operation,
@@ -1200,6 +1204,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         if budget.is_zero() {
             return Err(NotDelivered::Unavailable);
         }
+        let budget = budget.min(EXCHANGE_BOUND);
         within(&self.clock, budget, self.sink.send(operation, body))
             .await
             .unwrap_or(Err(NotDelivered::Unavailable))

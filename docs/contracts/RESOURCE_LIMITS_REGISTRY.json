@@ -11777,6 +11777,29 @@
         "apps/game-server/src/durability/public_projections.rs"
       ],
       "notes": "Contract sections 8 and 11. A floor, not a ceiling: the hard maximum is the fixed gap; gameplay demand only lengthens it. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-RESYNC-DEADLINE",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Pass deadline of the operator public projection resync (oteryn-game-ops public-projection resync), PostgreSQL transaction, statement and lock timeouts included",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation in the Game process. The resync is one transaction of set-based statements (one per family): it touches every Character and every highscores pair and queues one outbox row each, server-side. A resync that does not finish within 60 s rolls back whole; the epoch and every revision stay as they were and the operator re-runs it.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a full resync with an epoch raise of 10,000 Characters and 704 highscores pairs commits within the deadline and queues every subject at the new epoch"
+      ],
+      "consumers": [
+        "apps/game-server/src/node/serve.rs",
+        "apps/game-server/src/durability/public_projections.rs",
+        "apps/game-server/migrations/0091_public_projections.sql"
+      ],
+      "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
     }
   ]
 }
