@@ -816,7 +816,7 @@ pub async fn resync(
     .await
 }
 
-/// `oteryn-game-ops public-projection resync` (migration 0088): re-enqueue
+/// `oteryn-game-ops public-projection resync` (migration 0091): re-enqueue
 /// one family (`all`, `highscores`, `character_profile` or `world_online`)
 /// in one transaction. An epoch raise covers every family and follows the
 /// same fence rules against `F_pub`. Returns the epoch.

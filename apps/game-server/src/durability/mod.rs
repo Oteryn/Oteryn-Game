@@ -598,8 +598,8 @@ mod public_projections_linkage {
     #[test]
     fn public_projections_api_is_linked() {
         let _ = std::mem::size_of::<PublicProjectionsStore<'_, '_, '_, '_>>();
-        let _ = DurabilityRoot::next_public_profile;
-        let _ = DurabilityRoot::clear_public_profile;
+        let _ = DurabilityRoot::next_public_profiles;
+        let _ = DurabilityRoot::clear_public_profiles;
         let _ = DurabilityRoot::public_outbox_facts;
         let _ = DurabilityRoot::next_public_highscores;
         let _ = DurabilityRoot::clear_public_highscores;

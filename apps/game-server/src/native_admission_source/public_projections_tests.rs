@@ -417,13 +417,22 @@ struct Store {
     online: Vec<OnlineState>,
     persisted: usize,
     cut_ms: i64,
+    /// Gameplay waits for the durability holder.
+    demand: bool,
+    /// Store passes run (every call but `gameplay_waiting`).
+    passes: usize,
+    clear_passes: usize,
 }
 
 type Shared = Arc<Mutex<Store>>;
 
 impl PublicStore for Shared {
+    fn gameplay_waiting(&self) -> bool {
+        self.lock().unwrap().demand
+    }
     async fn outbox_facts(&self) -> Result<OutboxFacts, ()> {
-        let store = self.lock().unwrap();
+        let mut store = self.lock().unwrap();
+        store.passes += 1;
         Ok(OutboxFacts {
             projection_epoch: store.epoch,
             profile_oldest_ms: store.profiles.first().map(|_| 1_790_000_001_000),
@@ -431,27 +440,39 @@ impl PublicStore for Shared {
             now_ms: 1_790_000_010_000,
         })
     }
-    async fn next_profile(&self, held: &[String]) -> Result<Option<ProfileSnapshot>, ()> {
+    async fn next_profiles(
+        &self,
+        held: &[String],
+        limit: usize,
+    ) -> Result<Vec<ProfileSnapshot>, ()> {
         let mut store = self.lock().unwrap();
+        store.passes += 1;
         store.held_seen.push(held.to_vec());
         Ok(store
             .profiles
             .iter()
-            .find(|p| !held.contains(&p.character_id))
-            .cloned())
+            .filter(|p| !held.contains(&p.character_id))
+            .take(limit)
+            .cloned()
+            .collect())
     }
-    async fn clear_profile(&self, id: &str, epoch: u64, revision: u64) -> Result<(), ()> {
+    async fn clear_profiles(&self, acknowledged: &[(String, u64, u64)]) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
-        store.profiles.retain(|p| {
-            !(p.character_id == id
-                && p.projection_epoch <= epoch
-                && p.projection_revision <= revision)
-        });
-        store.cleared.push(id.into());
+        store.passes += 1;
+        store.clear_passes += 1;
+        for (id, epoch, revision) in acknowledged {
+            store.profiles.retain(|p| {
+                !(p.character_id == *id
+                    && p.projection_epoch <= *epoch
+                    && p.projection_revision <= *revision)
+            });
+            store.cleared.push(id.clone());
+        }
         Ok(())
     }
     async fn next_highscores(&self, held: &[String]) -> Result<Option<HighscoresBatch>, ()> {
-        let store = self.lock().unwrap();
+        let mut store = self.lock().unwrap();
+        store.passes += 1;
         Ok(store
             .batches
             .iter()
@@ -466,6 +487,7 @@ impl PublicStore for Shared {
         revision: u64,
     ) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
+        store.passes += 1;
         store.batches.retain(|b| {
             !(b.world_id == world
                 && b.category == category
@@ -476,7 +498,8 @@ impl PublicStore for Shared {
         Ok(())
     }
     async fn online_cut(&self) -> Result<OnlineCut, ()> {
-        let store = self.lock().unwrap();
+        let mut store = self.lock().unwrap();
+        store.passes += 1;
         let worlds = store
             .worlds
             .iter()
@@ -498,6 +521,7 @@ impl PublicStore for Shared {
     }
     async fn persist_online(&self, states: &[OnlineState]) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
+        store.passes += 1;
         for state in states {
             store.online.retain(|s| s.world_id != state.world_id);
             store.online.push(state.clone());
@@ -507,6 +531,7 @@ impl PublicStore for Shared {
     }
     async fn ack_online(&self, states: &[OnlineState]) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
+        store.passes += 1;
         for state in states {
             for stored in &mut store.online {
                 if stored.world_id == state.world_id
@@ -695,7 +720,42 @@ fn a_transient_failure_backs_the_family_off() {
 }
 
 #[test]
-fn an_unclassifiable_snapshot_is_held_not_sent() {
+fn an_unclassifiable_entry_publishes_an_empty_profile() {
+    // A name outside the wire grammar, a level of 0 or an unknown vocation:
+    // published as `profile: []` and cleared, never held (§4.2).
+    for bad in [
+        ProfileEntry {
+            name: "Al\u{2028}dric".into(),
+            ..entry(None)
+        },
+        ProfileEntry {
+            level: 0,
+            ..entry(None)
+        },
+        ProfileEntry {
+            vocation: 0,
+            ..entry(None)
+        },
+    ] {
+        let store = Shared::default();
+        store.lock().unwrap().profiles.push(profile(Some(bad)));
+        let p = publisher(&store, vec![OK]);
+        let mut state = quiet();
+        assert!(block_on(p.outbox_step(&mut state)));
+        let sent = p.sink.sent();
+        assert_eq!(sent.len(), 1);
+        assert_eq!(
+            sent[0].1,
+            encode_profile(AUTHORITY, &profile(None)).unwrap()
+        );
+        assert!(sent[0].1.ends_with(r#""profile":[]}"#));
+        assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 0);
+        assert_eq!(store.lock().unwrap().cleared, [CHARACTER]);
+    }
+}
+
+#[test]
+fn an_invalid_envelope_is_held_not_sent() {
     let store = Shared::default();
     let mut bad = profile(Some(entry(None)));
     bad.character_id = "not-a-uuid".into();
@@ -705,6 +765,83 @@ fn an_unclassifiable_snapshot_is_held_not_sent() {
     block_on(p.outbox_step(&mut state));
     assert!(p.sink.operations().is_empty());
     assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert!(store.lock().unwrap().cleared.is_empty());
+}
+
+fn numbered(index: usize) -> ProfileSnapshot {
+    ProfileSnapshot {
+        character_id: format!("01934f10-7c04-7001-805b-3b11223{index:05x}"),
+        ..profile(None)
+    }
+}
+
+#[test]
+fn profiles_are_read_and_cleared_in_batches() {
+    let store = Shared::default();
+    store.lock().unwrap().profiles = (0..PROFILE_BATCH + 3).map(numbered).collect();
+    let p = publisher(&store, vec![OK; PROFILE_BATCH + 3]);
+    let mut state = quiet();
+    assert!(block_on(p.outbox_step(&mut state)));
+    {
+        let s = store.lock().unwrap();
+        // One read pass and one clear pass for the whole batch.
+        assert_eq!(s.passes, 2);
+        assert_eq!(s.clear_passes, 1);
+        assert_eq!(s.cleared.len(), PROFILE_BATCH);
+        assert_eq!(s.profiles.len(), 3);
+    }
+    assert_eq!(p.sink.operations().len(), PROFILE_BATCH);
+    assert!(block_on(p.outbox_step(&mut state)));
+    assert!(store.lock().unwrap().profiles.is_empty());
+    assert_eq!(store.lock().unwrap().clear_passes, 2);
+}
+
+#[test]
+fn a_transient_failure_stops_the_batch_and_clears_what_was_acknowledged() {
+    let store = Shared::default();
+    store.lock().unwrap().profiles = (0..4).map(numbered).collect();
+    let p = publisher(
+        &store,
+        vec![
+            OK,
+            Some(Err(NotDelivered::Conflict)),
+            OK,
+            Some(Err(NotDelivered::Unavailable)),
+        ],
+    );
+    let mut state = quiet();
+    assert!(!block_on(p.outbox_step(&mut state)));
+    let s = store.lock().unwrap();
+    // The refused one is held, the batch went on; the transient failure
+    // stopped it; both acknowledged ones cleared in one pass.
+    assert_eq!(
+        s.cleared,
+        [numbered(0).character_id, numbered(2).character_id]
+    );
+    assert_eq!(s.clear_passes, 1);
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert!(state.retry_at[0] > p.clock.elapsed());
+}
+
+#[test]
+fn the_publisher_yields_to_waiting_gameplay_and_paces_its_passes() {
+    let store = Shared::default();
+    store.lock().unwrap().profiles.push(profile(None));
+    store.lock().unwrap().demand = true;
+    let p = publisher(&store, vec![OK, OK]);
+    let mut state = quiet();
+    // Gameplay waits: no store pass runs and nothing is sent.
+    assert!(!block_on(p.outbox_step(&mut state)));
+    assert!(!block_on(p.scan(&mut ScanLoop::default())));
+    assert_eq!(store.lock().unwrap().passes, 0);
+    assert!(p.sink.operations().is_empty());
+    // Once it is served, the publisher goes on, each pass at least
+    // `STORE_PASS_GAP` after the previous one ended.
+    store.lock().unwrap().demand = false;
+    let before = p.clock.elapsed();
+    assert!(block_on(p.outbox_step(&mut state)));
+    assert_eq!(store.lock().unwrap().passes, 2);
+    assert!(p.clock.elapsed() >= before + STORE_PASS_GAP);
 }
 
 fn batch() -> HighscoresBatch {
@@ -890,4 +1027,93 @@ fn a_definite_refusal_holds_the_world() {
     *p.clock.0.lock().unwrap() += DEFINITE_HOLD;
     assert!(block_on(p.scan(&mut state)));
     assert_eq!(p.sink.operations().len(), 2);
+}
+
+#[test]
+fn an_unchanged_online_watermark_is_not_resent() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    let p = publisher(&store, vec![OK; 4]);
+    let mut state = ScanLoop::default();
+    assert!(block_on(p.scan(&mut state)));
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 2);
+    // Same cut: nothing is sent.
+    block_on(p.online_watermark());
+    assert_eq!(p.sink.operations().len(), 2);
+    // A later good scan moves `complete_through`: sent again.
+    store.lock().unwrap().cut_ms = CUT_MS + ONLINE_INTERVAL_MS;
+    assert!(block_on(p.scan(&mut state)));
+    block_on(p.online_watermark());
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), 3);
+    assert!(sent[2].1.contains(r#""complete_through":"1790000010""#));
+}
+
+const ONLINE_INTERVAL_MS: i64 = 10_000;
+
+#[test]
+fn line_and_paragraph_separators_are_outside_the_name_grammar() {
+    for name in [
+        "Al\u{2028}dric",
+        "Al\u{2029}dric",
+        "Al\u{85}dric",
+        "Ald\u{e9}ric",
+    ] {
+        assert!(!name_valid(name), "{name:?}");
+        assert!(
+            encode_profile(
+                AUTHORITY,
+                &profile(Some(ProfileEntry {
+                    name: name.into(),
+                    ..entry(None)
+                }))
+            )
+            .is_err()
+        );
+        assert!(encode_online(AUTHORITY, &online(vec![online_entry(name)])).is_err());
+        assert!(encode_highscores(AUTHORITY, &highscores(vec![row(1, 1, name)])).is_err());
+    }
+}
+
+#[test]
+fn highscores_filters_and_categories_match_the_platform_consumer() {
+    // Filter 0 is all; 1..5 are the base vocations by their wire vocation id
+    // (Platform `highscoreVocationFilter`: Druid 1, Knight 2, Monk 3,
+    // Paladin 4, Sorcerer 5).
+    for (index, (name, id)) in HIGHSCORE_FILTERS.iter().enumerate() {
+        assert_eq!(usize::from(*id), index);
+        if *id == 0 {
+            assert_eq!(*name, "all");
+        } else {
+            assert_eq!(vocation_id(name), Some(*id), "{name}");
+        }
+    }
+    // Platform `CommunityDataPolicy` category ids 1..9, then 10 and 11.
+    let platform = [
+        ("experience", 1),
+        ("magic", 2),
+        ("fist", 3),
+        ("club", 4),
+        ("sword", 5),
+        ("axe", 6),
+        ("distance", 7),
+        ("shielding", 8),
+        ("fishing", 9),
+    ];
+    for (name, id) in platform {
+        assert!(HIGHSCORE_CATEGORIES.contains(&(name, id)), "{name}");
+    }
+    for (index, (_, id)) in HIGHSCORE_CATEGORIES.iter().enumerate() {
+        assert_eq!(usize::from(*id), index + 1);
+        let mut snapshot = highscores(vec![]);
+        snapshot.category = *id;
+        assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    }
+    for filter in 1..u8::try_from(FILTERS).unwrap() {
+        let mut snapshot = highscores(vec![row(1, 1, "Aa")]);
+        snapshot.filter = filter;
+        snapshot.rows[0].vocation = Some(filter);
+        assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    }
 }

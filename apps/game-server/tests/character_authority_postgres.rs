@@ -2323,7 +2323,7 @@ mod account_achievement_postgres_cases;
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
 
-// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0088): outboxes, epoch, guards,
+// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
 // resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
 #[path = "support/public_projections_postgres_cases.rs"]
 mod public_projections_postgres_cases;

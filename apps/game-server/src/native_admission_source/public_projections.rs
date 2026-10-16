@@ -73,9 +73,49 @@ pub const IDLE: Duration = Duration::from_secs(1);
 pub const STORE_RETRY: Duration = Duration::from_millis(100);
 /// Held subjects passed to one outbox read; more are simply not skipped.
 pub const MAX_HELD: usize = 1_024;
+/// `PUBPROJ-PROFILE-BATCH`: profiles read in one store pass, and cleared
+/// together in one more, so a backlog costs two short passes on the single
+/// durability holder per batch rather than two per Character.
+pub const PROFILE_BATCH: usize = 32;
+/// `PUBPROJ-NAME-HANDOFF-HOLD`: the longest a new holder of a vacated name
+/// waits for the vacating publication (§7.3). It bounds a rename cycle, in
+/// which each holder would wait on the other's vacating row forever; Platform
+/// answers a name held by two profiles as unknown meanwhile.
+pub const NAME_HANDOFF_HOLD: Duration = Duration::from_secs(60);
+/// `PUBPROJ-STORE-PASS-GAP`: the shortest gap between two publisher store
+/// passes. With the yield to waiting gameplay it keeps publication from
+/// monopolising the single durability holder.
+pub const STORE_PASS_GAP: Duration = Duration::from_millis(50);
 /// Highscores filters: 0 (all) and the five base vocations, numbered by
 /// their wire vocation ids 1..5 (§4.1).
 pub const FILTERS: usize = 6;
+/// The highscores filters by name (§4.1, §11): 0 is all, 1..5 a base
+/// vocation by its wire vocation id, as the Platform consumer's
+/// `CommunityDataPolicy::highscoreVocationFilter` reads them.
+pub const HIGHSCORE_FILTERS: [(&str, u8); FILTERS] = [
+    ("all", 0),
+    ("druid", 1),
+    ("knight", 2),
+    ("monk", 3),
+    ("paladin", 4),
+    ("sorcerer", 5),
+];
+/// The highscores category ids (§4.1, HIGHSCORES-0 §3), pinned to the
+/// Platform consumer's `CommunityDataPolicy` ids 1..9 (its `level` page reads
+/// category 1); 10 and 11 have no Platform page yet.
+pub const HIGHSCORE_CATEGORIES: [(&str, u8); 11] = [
+    ("experience", 1),
+    ("magic", 2),
+    ("fist", 3),
+    ("club", 4),
+    ("sword", 5),
+    ("axe", 6),
+    ("distance", 7),
+    ("shielding", 8),
+    ("fishing", 9),
+    ("achievement", 10),
+    ("charm", 11),
+];
 /// Compiled namespace of the public-projection descriptor; never a
 /// configured source authority, so no other purpose's descriptor matches it.
 pub const PURPOSE: &str = "OTERYN_GAME_PUBLIC_PROJECTIONS";
@@ -202,8 +242,10 @@ pub struct ProfileEntry {
     pub name: String,
     pub vocation: u8,
     pub level: u64,
-    /// The Character's own guild-visibility setting (§4.2); `false` when it
-    /// is unknown. The guild fields are sent either way.
+    /// Whether the guild membership is public (§4.2): `true` by default
+    /// (public, the Tibia reference); only a Game-side setting may lower it,
+    /// and Platform's per-character preference is an opt-out applied on top.
+    /// The guild fields are sent either way.
     pub guild_visible: bool,
     pub guild: Option<ProfileGuild>,
 }
@@ -581,7 +623,10 @@ pub trait PublicSink: Send + Sync {
 }
 
 /// The production sink: each exchange on its own connection and capacity;
-/// the publisher bounds how many run at once (`PUBPROJ-INFLIGHT`).
+/// the publisher bounds how many run at once (`PUBPROJ-INFLIGHT`). The
+/// shared mTLS client closes each connection after its exchange
+/// (`Connection: close`); the publisher batches its store passes instead of
+/// reusing connections (contract §11).
 pub struct MtlsPublicSink {
     descriptor: PublicProjectionDescriptor,
 }
@@ -659,19 +704,26 @@ pub struct OnlineCut {
 /// The Game side of the public projections (§5). Every call is one database
 /// transaction; an `Err` is "not now".
 pub trait PublicStore: Send + Sync {
+    /// Whether gameplay is waiting for the durability holder: the publisher
+    /// then yields its next store pass (contract §11).
+    fn gameplay_waiting(&self) -> bool {
+        false
+    }
     fn outbox_facts(&self) -> impl Future<Output = Result<OutboxFacts, ()>> + Send;
-    /// The current profile of the Character with the oldest undelivered
-    /// change, skipping `held` Characters and any new holder of a name whose
-    /// vacating publication is still undelivered (§7.3).
-    fn next_profile(
+    /// The current profiles of up to `limit` Characters with the oldest
+    /// undelivered changes, oldest first, skipping `held` Characters and any
+    /// new holder of a name whose vacating publication is still undelivered
+    /// and younger than `NAME_HANDOFF_HOLD` (§7.3).
+    fn next_profiles(
         &self,
         held: &[String],
-    ) -> impl Future<Output = Result<Option<ProfileSnapshot>, ()>> + Send;
-    fn clear_profile(
+        limit: usize,
+    ) -> impl Future<Output = Result<Vec<ProfileSnapshot>, ()>> + Send;
+    /// Clear the outbox rows at or below each acknowledged
+    /// (`character_id`, epoch, revision).
+    fn clear_profiles(
         &self,
-        character_id: &str,
-        projection_epoch: u64,
-        projection_revision: u64,
+        acknowledged: &[(String, u64, u64)],
     ) -> impl Future<Output = Result<(), ()>> + Send;
     /// The current HIGHSCORES-0 snapshot of the (World, category) with the
     /// oldest undelivered revision, skipping `held` subjects.
@@ -845,6 +897,12 @@ pub struct Publisher<C, S, K, F> {
     /// §6 operator alarm: definite refusals (`400`, `401`, `409`, unencodable).
     pub alarms: AtomicU64,
     pub last_cut: Mutex<Option<GoodCut>>,
+    /// The (epoch, `complete_through`) of the last `world_online` watermark
+    /// answered `accepted` or `superseded`; an unchanged one is not sent
+    /// again.
+    pub last_online_watermark: Mutex<Option<(u64, i64)>>,
+    /// When the last store pass ended (`STORE_PASS_GAP`).
+    last_pass: Mutex<Option<Duration>>,
 }
 
 fn log(family: Family, operation: &str, class: &str, elapsed: Duration) {
@@ -879,6 +937,8 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             max_transaction,
             alarms: AtomicU64::new(0),
             last_cut: Mutex::new(None),
+            last_online_watermark: Mutex::new(None),
+            last_pass: Mutex::new(None),
         }
     }
 
@@ -899,15 +959,41 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         }
     }
 
+    /// One store pass, at least `STORE_PASS_GAP` after the previous one
+    /// ended; while gameplay waits for the durability holder the pass yields
+    /// and is "not now" (contract §11).
+    async fn pass<T, R: Future<Output = Result<T, ()>>>(
+        &self,
+        call: impl FnOnce() -> R,
+    ) -> Result<T, ()> {
+        let last = self.last_pass.lock().ok().and_then(|last| *last);
+        if let Some(last) = last {
+            let wait = (last + STORE_PASS_GAP).saturating_sub(self.clock.elapsed());
+            if !wait.is_zero() {
+                self.clock.sleep(wait).await;
+            }
+        }
+        let result = if self.store.gameplay_waiting() {
+            Err(())
+        } else {
+            call().await
+        };
+        if let Ok(mut last) = self.last_pass.lock() {
+            *last = Some(self.clock.elapsed());
+        }
+        result
+    }
+
     /// `call` until it succeeds or the next retry would start after `until`:
-    /// a busy or re-establishing database connection is only "not now".
+    /// a busy or re-establishing database connection, or gameplay waiting for
+    /// it, is only "not now".
     async fn retrying<T, R: Future<Output = Result<T, ()>>>(
         &self,
         until: Duration,
         mut call: impl FnMut() -> R,
     ) -> Result<T, ()> {
         loop {
-            let result = call().await;
+            let result = self.pass(&mut call).await;
             if result.is_ok() || self.clock.elapsed() + STORE_RETRY >= until {
                 return result;
             }
@@ -976,7 +1062,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     /// within `MAX_WATERMARK_GAP` of `started`.
     async fn outbox_watermarks(&self, state: &mut OutboxLoop, started: Duration) {
         const OPERATION: &str = "PublishPublicProjectionWatermarkV1";
-        let facts = match self.store.outbox_facts().await {
+        let facts = match self.pass(|| self.store.outbox_facts()).await {
             Ok(facts) => facts,
             Err(()) => {
                 let elapsed = self.clock.elapsed().saturating_sub(started);
@@ -1035,52 +1121,103 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         }
     }
 
+    /// The profile body, or `profile: []` when the entry is outside the
+    /// wire grammar: unclassifiable data publishes as absent, never held
+    /// (§4.2). Only an invalid envelope is unencodable.
+    fn profile_body(&self, snapshot: &ProfileSnapshot) -> Result<String, SourceError> {
+        encode_profile(&self.source_authority, snapshot).or_else(|error| {
+            if snapshot.profile.is_none() {
+                return Err(error);
+            }
+            log(
+                Family::CharacterProfile,
+                "PublishCharacterProfileV1",
+                "unclassifiable",
+                Duration::ZERO,
+            );
+            encode_profile(
+                &self.source_authority,
+                &ProfileSnapshot {
+                    profile: None,
+                    ..snapshot.clone()
+                },
+            )
+        })
+    }
+
+    /// One batch of up to `PROFILE_BATCH` profiles, oldest first, in one
+    /// store pass; the acknowledged ones clear together in one more. A
+    /// transient failure stops the batch (the family backs off); a definite
+    /// one holds that Character and the batch goes on.
     async fn profile_step(&self, state: &mut OutboxLoop, phase_end: Duration) -> Step {
         const OPERATION: &str = "PublishCharacterProfileV1";
         let held = state.held(Family::CharacterProfile, self.clock.elapsed());
-        let Ok(Some(snapshot)) = self.store.next_profile(&held).await else {
+        let Ok(snapshots) = self
+            .pass(|| self.store.next_profiles(&held, PROFILE_BATCH))
+            .await
+        else {
             return Step::Idle;
         };
-        let started = self.clock.elapsed();
-        let budget = phase_end.saturating_sub(started + self.max_transaction);
-        let result = match encode_profile(&self.source_authority, &snapshot) {
-            Err(_) => Err(NotDelivered::InvalidReport),
-            Ok(body) => match self.admit(snapshot.projection_epoch) {
-                // A fenced snapshot stays queued.
-                Err(refused) => {
-                    log(Family::CharacterProfile, OPERATION, refused, Duration::ZERO);
-                    return Step::Failed;
+        if snapshots.is_empty() {
+            return Step::Idle;
+        }
+        let mut acknowledged = Vec::new();
+        let mut stopped = false;
+        for snapshot in &snapshots {
+            let started = self.clock.elapsed();
+            let budget = phase_end.saturating_sub(started + self.max_transaction);
+            if budget.is_zero() {
+                stopped = true;
+                break;
+            }
+            let result = match self.profile_body(snapshot) {
+                Err(_) => Err(NotDelivered::InvalidReport),
+                Ok(body) => match self.admit(snapshot.projection_epoch) {
+                    // A fenced snapshot stays queued.
+                    Err(refused) => {
+                        log(Family::CharacterProfile, OPERATION, refused, Duration::ZERO);
+                        stopped = true;
+                        break;
+                    }
+                    Ok(()) => {
+                        self.deliver(Operation::PublishCharacterProfileV1, &body, budget)
+                            .await
+                    }
+                },
+            };
+            log(
+                Family::CharacterProfile,
+                OPERATION,
+                class(&result),
+                self.clock.elapsed().saturating_sub(started),
+            );
+            self.settle(
+                state,
+                Family::CharacterProfile,
+                &snapshot.character_id,
+                &result,
+            );
+            match result {
+                Ok(_) => acknowledged.push((
+                    snapshot.character_id.clone(),
+                    snapshot.projection_epoch,
+                    snapshot.projection_revision,
+                )),
+                Err(not_delivered) if definite(not_delivered) => {}
+                Err(_) => {
+                    stopped = true;
+                    break;
                 }
-                Ok(()) => {
-                    self.deliver(Operation::PublishCharacterProfileV1, &body, budget)
-                        .await
-                }
-            },
-        };
-        log(
-            Family::CharacterProfile,
-            OPERATION,
-            class(&result),
-            self.clock.elapsed().saturating_sub(started),
-        );
-        self.settle(
-            state,
-            Family::CharacterProfile,
-            &snapshot.character_id,
-            &result,
-        );
-        if result.is_ok()
-            && self
-                .retrying(phase_end, || {
-                    self.store.clear_profile(
-                        &snapshot.character_id,
-                        snapshot.projection_epoch,
-                        snapshot.projection_revision,
-                    )
-                })
-                .await
-                .is_ok()
-        {
+            }
+        }
+        if acknowledged.is_empty() {
+            return Step::Failed;
+        }
+        let cleared = self
+            .retrying(phase_end, || self.store.clear_profiles(&acknowledged))
+            .await
+            .is_ok();
+        if cleared && !stopped {
             Step::Delivered
         } else {
             Step::Failed
@@ -1093,7 +1230,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     async fn highscores_step(&self, state: &mut OutboxLoop, phase_end: Duration) -> Step {
         const OPERATION: &str = "PublishWorldHighscoresV1";
         let held = state.held(Family::Highscores, self.clock.elapsed());
-        let Ok(Some(batch)) = self.store.next_highscores(&held).await else {
+        let Ok(Some(batch)) = self.pass(|| self.store.next_highscores(&held)).await else {
             return Step::Idle;
         };
         let subject = batch.subject();
@@ -1182,9 +1319,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         Step::Failed
     }
 
-    /// The outbox watermarks when due, then at most one subject of one
-    /// family (round robin over the families not backing off). Returns
-    /// whether a subject was acknowledged and cleared.
+    /// The outbox watermarks when due, then at most one step of one family
+    /// (round robin over the families not backing off): a batch of profiles
+    /// or one highscores subject. Returns whether the step was acknowledged
+    /// and cleared whole.
     ///
     /// As in LCFA, a watermark attempt and the publication phase after it end
     /// by `MAX_WATERMARK_GAP` after that attempt started, so the next
@@ -1420,6 +1558,19 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             log(Family::WorldOnline, OPERATION, "no_scan", Duration::ZERO);
             return;
         };
+        let through = (cut.projection_epoch, seconds(cut.cut_ms));
+        if self
+            .last_online_watermark
+            .lock()
+            .ok()
+            .and_then(|last| *last)
+            == Some(through)
+        {
+            // Platform's staleness reads only `complete_through` (§5.1), so
+            // resending an accepted one carries nothing.
+            log(Family::WorldOnline, OPERATION, "unchanged", Duration::ZERO);
+            return;
+        }
         let since =
             i64::try_from(started.saturating_sub(cut.read_at).as_millis()).unwrap_or(i64::MAX);
         let observed = seconds(cut.cut_ms.saturating_add(since));
@@ -1446,6 +1597,11 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 }
             },
         };
+        if result.is_ok()
+            && let Ok(mut last) = self.last_online_watermark.lock()
+        {
+            *last = Some(through);
+        }
         log(
             Family::WorldOnline,
             OPERATION,

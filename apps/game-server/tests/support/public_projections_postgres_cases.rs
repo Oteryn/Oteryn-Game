@@ -1,14 +1,16 @@
-// GAME-PUBLIC-PROJ-PRODUCER-1 (migration 0088): the public projections' profile and
+// GAME-PUBLIC-PROJ-PRODUCER-1 (migration 0091): the public projections' profile and
 // highscores outboxes, epoch, guards, operator resync and least privilege (SQL cases on
 // their own database), and the producer's store reads over a real bootstrap
 // (`bootstrap_reads`, called from `bootstrap_audit_flow` with its reconciled authority).
 
 use super::durability::DurabilityRoot;
 use super::durability::character_authority::ReconciledCharacterAuthority;
+use super::durability::public_projections::{ONLINE, PROFILE};
 use oteryn_game_server::native_admission_source::public_projections::{
-    FILTERS, OnlineState, VOCATION_IDS, encode_highscores, encode_profile, online_digest,
+    FILTERS, MAX_ONLINE, NAME_HANDOFF_HOLD, OnlineState, PROFILE_BATCH, VOCATION_IDS, VOCATIONS,
+    encode_highscores, encode_profile, online_digest,
 };
-use sqlx::{Connection, Executor};
+use sqlx::{Connection, Executor, Row};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -166,6 +168,77 @@ async fn resync(pool: &sqlx::PgPool, family: &str, raise: bool) -> TestResult<i6
             .bind(raise)
             .fetch_one(pool)
             .await?,
+    )
+}
+
+/// The Characters the producer's profile read returns now, in its order.
+async fn profile_heads(pool: &sqlx::PgPool) -> TestResult<Vec<String>> {
+    let hold = i64::try_from(NAME_HANDOFF_HOLD.as_millis())?;
+    let rows = sqlx::query(PROFILE)
+        .bind(Vec::<String>::new())
+        .bind(hold)
+        .bind(i64::try_from(PROFILE_BATCH)?)
+        .fetch_all(pool)
+        .await?;
+    Ok(rows
+        .iter()
+        .map(|row| row.get::<String, _>("character_id"))
+        .collect())
+}
+
+/// The names the producer's online read lists now.
+async fn online_names(pool: &sqlx::PgPool) -> TestResult<Vec<String>> {
+    let vocations: Vec<String> = VOCATIONS.iter().map(|(key, _)| (*key).to_owned()).collect();
+    let rows = sqlx::query(ONLINE)
+        .bind(i64::try_from(MAX_ONLINE + 1)?)
+        .bind(vocations)
+        .fetch_all(pool)
+        .await?;
+    Ok(rows
+        .iter()
+        .filter(|row| row.get::<i32, _>("kind") == 1)
+        .map(|row| row.get::<String, _>("name"))
+        .collect())
+}
+
+fn bare(seed: u8) -> String {
+    format!("{seed:02x}020304-0506-7008-800a-0b0c0d0e0f{seed:02x}")
+}
+
+/// A game session of `character` (on World `world`) in `state`, with or without a transport
+/// and a control loss. Foreign keys are off for the insert (a fresh session's admission
+/// receipt is not this test's subject); every CHECK still holds.
+fn session(
+    character: u8,
+    account: u8,
+    world: u8,
+    state: u8,
+    transport: bool,
+    loss: bool,
+) -> String {
+    let continuity = if loss {
+        "1,999999,1,NULL"
+    } else {
+        "NULL,NULL,NULL,'\\x01'::bytea"
+    };
+    let transport = if transport {
+        format!("'\\x{}'::bytea", format!("{character:02x}").repeat(16))
+    } else {
+        "NULL".into()
+    };
+    format!(
+        "SET LOCAL session_replication_role = replica; \
+         INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,\
+           world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,\
+           control_loss_epoch,original_grace_deadline,predecessor_generation,fresh_replay_key,\
+           character_lease_generation,scope_ownership_generation,current_generation,\
+           current_transport_ref,session_state) \
+         VALUES ({},{},{},{world},1,{world},{},{continuity},1,1,1,{transport},{state});",
+        uuid(character.wrapping_add(0x40)),
+        uuid(account),
+        uuid(character),
+        uuid(0x80),
+        world = uuid(world),
     )
 }
 
@@ -548,7 +621,175 @@ async fn projection_cases(database: &Database) -> TestResult {
     // trigger.
     attempt(&pool, &runtime(&root(0x14, 0xa2, "Dara"))).await?;
     assert!(profiles(&pool).await?.1.contains(&(0x14, 1)));
+    // The resync runs as its caller (only the owner login, which holds no grant beyond it).
+    let definer: bool = sqlx::query_scalar(
+        "SELECT prosecdef FROM pg_proc WHERE proname = 'game_public_projection_resync'",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert!(!definer, "the resync is SECURITY INVOKER");
+
+    handoff_cases(&pool).await?;
+    online_cases(&pool).await?;
     pool.close().await;
+    Ok(())
+}
+
+/// §7.3 name handoff. A root's name is immutable today, so the vacating rows a future rename
+/// or deletion writes (`game_public_profile_root_trigger`) are inserted directly: 0x12 Bera,
+/// 0x13 Cato.
+async fn handoff_cases(pool: &sqlx::PgPool) -> TestResult {
+    let epoch = epoch(pool).await?;
+    let vacating = |character: u8, revision: u32, key: &str| {
+        format!(
+            "INSERT INTO game_public_character_profile_outbox VALUES ({},{epoch},{revision},\
+               floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint,{key});",
+            uuid(character)
+        )
+    };
+    attempt(pool, "DELETE FROM game_public_character_profile_outbox").await?;
+    assert_eq!(profile_heads(pool).await?, Vec::<String>::new());
+    // Simple handoff: 0x12 vacated "Cato", which 0x13 now holds. 0x13 waits until 0x12's
+    // vacating publication is delivered (cleared), then goes.
+    attempt(
+        pool,
+        &format!(
+            "{}{}",
+            vacating(0x12, 1000, "'cato'"),
+            vacating(0x13, 1000, "NULL")
+        ),
+    )
+    .await?;
+    assert_eq!(profile_heads(pool).await?, vec![bare(0x12)]);
+    attempt(
+        pool,
+        &format!(
+            "DELETE FROM game_public_character_profile_outbox WHERE character_id = {}",
+            uuid(0x12)
+        ),
+    )
+    .await?;
+    assert_eq!(profile_heads(pool).await?, vec![bare(0x13)]);
+    // A cycle (each holds the name the other vacated): both wait, but only for the bounded
+    // hold; a vacating row older than `PUBPROJ-NAME-HANDOFF-HOLD` no longer holds anyone.
+    attempt(
+        pool,
+        &format!(
+            "{}{}",
+            vacating(0x12, 1001, "'cato'"),
+            vacating(0x13, 1001, "'bera'")
+        ),
+    )
+    .await?;
+    assert_eq!(profile_heads(pool).await?, Vec::<String>::new());
+    let hold = i64::try_from(NAME_HANDOFF_HOLD.as_millis())?;
+    attempt(
+        pool,
+        &format!(
+            "UPDATE game_public_character_profile_outbox SET created_at = created_at - {}",
+            hold + 1
+        ),
+    )
+    .await?;
+    let mut heads = profile_heads(pool).await?;
+    heads.sort();
+    assert_eq!(heads, vec![bare(0x12), bare(0x13)]);
+    // A resync re-publishes every profile and clears every recorded key.
+    attempt(pool, &vacating(0x12, 1002, "'dara'")).await?;
+    assert_eq!(resync(pool, "character_profile", false).await?, epoch);
+    let (outbox, _) = profiles(pool).await?;
+    assert!(!outbox.is_empty());
+    assert!(outbox.iter().all(|row| row.3.is_none()), "{outbox:?}");
+    Ok(())
+}
+
+/// §4.6: a Character is online only with a live session on its own World: state 2, a
+/// current transport and no control loss.
+async fn online_cases(pool: &sqlx::PgPool) -> TestResult {
+    attempt(
+        pool,
+        &format!(
+            "{}{}{}",
+            root(0x15, 0xa3, "Elo"),
+            root(0x16, 0xa4, "Fen"),
+            root(0x17, 0xa5, "Gil")
+        ),
+    )
+    .await?;
+    assert_eq!(online_names(pool).await?, Vec::<String>::new());
+    for (character, account, world, state, transport, loss) in [
+        (0x11, 0xa0, 90, 2, true, false),
+        (0x12, 0xa1, 90, 1, true, true),
+        (0x14, 0xa2, 90, 3, true, false),
+        (0x15, 0xa3, 90, 2, false, false),
+        (0x16, 0xa4, 90, 2, true, true),
+        (0x17, 0xa5, 91, 2, true, false),
+    ] {
+        attempt(
+            pool,
+            &session(character, account, world, state, transport, loss),
+        )
+        .await?;
+    }
+    assert_eq!(online_names(pool).await?, vec!["Aldric".to_owned()]);
+    // The session ends: no longer listed.
+    attempt(
+        pool,
+        &format!(
+            "SET LOCAL session_replication_role = replica; \
+             UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE character_id = {}",
+            uuid(0x11)
+        ),
+    )
+    .await?;
+    assert_eq!(online_names(pool).await?, Vec::<String>::new());
+    unclassifiable_online_case(pool).await
+}
+
+/// §4.6: an online Character the producer cannot classify (a name outside the wire grammar,
+/// an unmappable vocation) is left out, so it never withholds its World's list. The name
+/// policy CHECK forbids such a name today, so it is dropped inside a transaction that is
+/// rolled back; triggers are off for the inserts.
+async fn unclassifiable_online_case(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    let setup = format!(
+        "SET LOCAL session_replication_role = replica; \
+         DO $$ DECLARE c TEXT; BEGIN \
+           SELECT conname INTO STRICT c FROM pg_constraint \
+            WHERE conrelid = 'game_character_roots'::regclass \
+              AND pg_get_constraintdef(oid) LIKE '%game_character_is_name%'; \
+           EXECUTE format('ALTER TABLE game_character_roots DROP CONSTRAINT %I', c); \
+         END $$; \
+         {}{}{}\
+         INSERT INTO game_character_build_state VALUES ({},'warlock',0,0,10,0,10,0,10,0,10,0,\
+           10,0,10,0,10,0,2,{}); \
+         {}{}{}",
+        root(0x18, 0xa6, "Bad\"Name"),
+        root(0x19, 0xa7, "Hal"),
+        root(0x1a, 0xa8, "Ivo"),
+        uuid(0x19),
+        uuid(0x19),
+        session(0x18, 0xa6, 90, 2, true, false),
+        session(0x19, 0xa7, 90, 2, true, false),
+        session(0x1a, 0xa8, 90, 2, true, false),
+    );
+    sqlx::raw_sql(sqlx::AssertSqlSafe(setup))
+        .execute(&mut *tx)
+        .await?;
+    let vocations: Vec<String> = VOCATIONS.iter().map(|(key, _)| (*key).to_owned()).collect();
+    let rows = sqlx::query(ONLINE)
+        .bind(i64::try_from(MAX_ONLINE + 1)?)
+        .bind(vocations)
+        .fetch_all(&mut *tx)
+        .await?;
+    let names: Vec<String> = rows
+        .iter()
+        .filter(|row| row.get::<i32, _>("kind") == 1)
+        .map(|row| row.get::<String, _>("name"))
+        .collect();
+    assert_eq!(names, vec!["Ivo".to_owned()]);
+    tx.rollback().await?;
     Ok(())
 }
 
@@ -583,11 +824,12 @@ pub(crate) async fn bootstrap_reads(
     );
 
     // The bootstrap queued the Character's profile in its own transaction.
-    let profile = root
-        .next_public_profile(authority, &[])
+    let batch = root
+        .next_public_profiles(authority, &[], PROFILE_BATCH)
         .await
-        .map_err(error)?
-        .ok_or("bootstrap queued no public profile")?;
+        .map_err(error)?;
+    assert_eq!(batch.len(), 1, "bootstrap queued one public profile");
+    let profile = batch[0].clone();
     assert_eq!(profile.character_id, character_id);
     assert_eq!(profile.projection_epoch, 1);
     let entry = profile
@@ -596,35 +838,41 @@ pub(crate) async fn bootstrap_reads(
         .ok_or("an active Character has a profile")?;
     assert_eq!(entry.world_id, world_id);
     assert!(VOCATION_IDS.contains(&entry.vocation) && entry.level >= 1);
-    assert!(!entry.guild_visible, "no setting owner: fails closed");
+    assert!(entry.guild_visible, "defaults to public (§4.2)");
     assert_eq!(entry.guild, None);
     let body = encode_profile(SOURCE, &profile)?;
     // A held Character is skipped; a retry is byte-identical.
     assert!(
-        root.next_public_profile(authority, std::slice::from_ref(&profile.character_id))
-            .await
-            .map_err(error)?
-            .is_none()
-    );
-    let retry = root
-        .next_public_profile(authority, &[])
+        root.next_public_profiles(
+            authority,
+            std::slice::from_ref(&profile.character_id),
+            PROFILE_BATCH
+        )
         .await
         .map_err(error)?
-        .ok_or("the unacknowledged profile is still queued")?;
-    assert_eq!(encode_profile(SOURCE, &retry)?, body);
-    root.clear_public_profile(
+        .is_empty()
+    );
+    let retry = root
+        .next_public_profiles(authority, &[], PROFILE_BATCH)
+        .await
+        .map_err(error)?;
+    assert_eq!(retry.len(), 1, "the unacknowledged profile is still queued");
+    assert_eq!(encode_profile(SOURCE, &retry[0])?, body);
+    root.clear_public_profiles(
         authority,
-        &profile.character_id,
-        profile.projection_epoch,
-        profile.projection_revision,
+        &[(
+            profile.character_id.clone(),
+            profile.projection_epoch,
+            profile.projection_revision,
+        )],
     )
     .await
     .map_err(error)?;
     assert!(
-        root.next_public_profile(authority, &[])
+        root.next_public_profiles(authority, &[], PROFILE_BATCH)
             .await
             .map_err(error)?
-            .is_none()
+            .is_empty()
     );
     let facts = root.public_outbox_facts(authority).await.map_err(error)?;
     assert_eq!(facts.profile_oldest_ms, None);

@@ -1,4 +1,4 @@
-//! Game side of the public projections (migration 0088): `character_profile`
+//! Game side of the public projections (migration 0091): `character_profile`
 //! and `highscores` outboxes, the `world_online` scan and its stored
 //! snapshots.
 //!
@@ -10,31 +10,39 @@ use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use oteryn_game_server::native_admission_source::account_characters::name_valid;
 use oteryn_game_server::native_admission_source::public_projections::{
-    FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, OnlineCut, OnlineEntry,
-    OnlineState, OnlineWorld, OutboxFacts, ProfileEntry, ProfileSnapshot, PublicStore,
-    VOCATION_IDS, VOCATIONS, vocation_id,
+    FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, NAME_HANDOFF_HOLD,
+    OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry, ProfileSnapshot,
+    PublicStore, VOCATION_IDS, VOCATIONS, vocation_id,
 };
 use sqlx::Row;
 use std::collections::BTreeMap;
 
 type Result<T> = std::result::Result<T, CharacterAuthorityError>;
 
-// The Character with the oldest undelivered change, skipping held Characters
-// and any Character holding a name whose vacating publication is still
-// undelivered (§7.3: a reused name never joins the new holder before the old
-// one's `[]`). One statement reads the epoch, the revision and the state.
-// `observed_at` is when the revision was assigned, never the read time, so a
-// retry of the same (epoch, revision) is byte-identical.
-const PROFILE: &str = "\
-WITH head AS (SELECT o.character_id FROM game_public_character_profile_outbox o \
+// The Characters with the oldest undelivered changes ($3 at most, oldest
+// first), skipping held Characters and any Character holding a name whose
+// vacating publication is still undelivered (§7.3: a reused name never joins
+// the new holder before the old one's `[]`). The hold ends once the vacating
+// row is $2 ms old (`PUBPROJ-NAME-HANDOFF-HOLD`), so a rename cycle, where
+// each holder waits on the other's vacating row, cannot hold delivery forever.
+// One statement reads the epoch, the revisions and the state. `observed_at` is
+// when the revision was assigned, never the read time, so a retry of the same
+// (epoch, revision) is byte-identical.
+pub(crate) const PROFILE: &str = "\
+WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
+                FROM game_public_character_profile_outbox o \
                WHERE NOT (o.character_id::text = ANY($1::text[])) \
                  AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
                                    JOIN game_public_character_profile_outbox v \
                                      ON v.vacated_name_key = n.name_key \
                                     AND v.character_id <> n.character_id \
-                                  WHERE n.character_id = o.character_id) \
-               ORDER BY o.created_at, o.character_id LIMIT 1) \
+                                  WHERE n.character_id = o.character_id \
+                                    AND v.created_at > floor(extract(epoch FROM \
+                                        statement_timestamp()) * 1000)::bigint - $2) \
+               GROUP BY o.character_id \
+               ORDER BY oldest, o.character_id LIMIT $3) \
 SELECT h.character_id::text AS character_id, e.projection_epoch, p.projection_revision, \
        p.revised_at / 1000 AS observed_at, r.world_id::text AS world_id, r.name, r.lifecycle, \
        coalesce(g.level, 1)::text AS level, coalesce(b.vocation, 'none') AS vocation \
@@ -44,10 +52,13 @@ SELECT h.character_id::text AS character_id, e.projection_epoch, p.projection_re
   LEFT JOIN game_character_roots r ON r.character_id = h.character_id \
   LEFT JOIN game_character_progression_state g ON g.character_id = h.character_id \
   LEFT JOIN game_character_build_state b ON b.character_id = h.character_id \
- WHERE e.epoch_scope = 1";
+ WHERE e.epoch_scope = 1 \
+ ORDER BY h.oldest, h.character_id";
 
-const CLEAR_PROFILE: &str = "DELETE FROM game_public_character_profile_outbox \
-     WHERE character_id = $1::uuid AND projection_epoch <= $2 AND projection_revision <= $3";
+pub(crate) const CLEAR_PROFILES: &str = "DELETE FROM game_public_character_profile_outbox o \
+     USING unnest($1::text[], $2::bigint[], $3::bigint[]) AS t(c, e, r) \
+     WHERE o.character_id = t.c::uuid AND o.projection_epoch <= t.e \
+       AND o.projection_revision <= t.r";
 
 const SOURCE: &str = "SELECT to_regclass('game_world_highscore_heads') IS NOT NULL \
      AND to_regclass('game_world_highscore_snapshots') IS NOT NULL \
@@ -89,12 +100,17 @@ const CLEAR_HIGHSCORES: &str = "DELETE FROM game_public_highscore_outbox \
      WHERE world_id = $1::uuid AND category = $2 \
        AND projection_epoch <= $3 AND projection_revision <= $4";
 
-// One statement: the epoch, the cut (its statement time on the database clock)
-// and every qualifying online Character at that snapshot. A Character is online
-// while it has a non-terminal reconnect session on its own World; one with an
-// unclassifiable vocation is not listed. One entry more than the bound is read
-// per World, so an oversized World refuses instead of being truncated.
-const ONLINE: &str = "\
+// One statement, so one snapshot: the epoch and the cut (kind 0, the cut is
+// its statement time on the database clock), every qualifying online
+// Character (kind 1) and every World with a Character or a stored snapshot,
+// with that snapshot (kind 2). A Character is online while it holds a live
+// game session on its own World: `session_state = 2` with a current transport
+// and no control loss, the predicate of the Game's own presence lookups
+// (`spell_character_lookup`). One with an unclassifiable vocation, a level
+// below 1 or a name outside the wire grammar is not listed (§4.6). One entry
+// more than the bound is read per World, so an oversized World refuses
+// instead of being truncated.
+pub(crate) const ONLINE: &str = "\
 WITH cut AS (SELECT e.projection_epoch, \
                     floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint AS cut_ms \
                FROM game_public_projection_epoch e WHERE e.epoch_scope = 1), \
@@ -102,27 +118,37 @@ WITH cut AS (SELECT e.projection_epoch, \
                        coalesce(g.level, 1) AS level, \
                        row_number() OVER (PARTITION BY r.world_id \
                                           ORDER BY r.name COLLATE \"C\") AS n \
-                  FROM game_durability_reconnect_sessions s \
-                  JOIN game_character_roots r \
-                    ON r.character_id = s.character_id AND r.world_id = s.world_id \
-                   AND r.lifecycle = 1 \
+                  FROM game_character_roots r \
                   LEFT JOIN game_character_progression_state g \
                     ON g.character_id = r.character_id \
                   LEFT JOIN game_character_build_state b ON b.character_id = r.character_id \
-                 WHERE s.session_state IN (1, 2) \
-                   AND coalesce(b.vocation, 'none') = ANY($2::text[])) \
-SELECT c.projection_epoch, c.cut_ms, o.world_id::text AS world_id, o.name, o.vocation, \
-       o.level::text AS level \
-  FROM cut c LEFT JOIN online o ON o.n <= $1 \
- ORDER BY o.world_id, o.name COLLATE \"C\"";
-
-// Every World with a Character or a stored snapshot, and that snapshot.
-const ONLINE_WORLDS: &str = "\
-SELECT w.world_id::text AS world_id, s.projection_epoch, s.projection_revision, \
+                 WHERE r.lifecycle = 1 \
+                   AND EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s \
+                                WHERE s.character_id = r.character_id \
+                                  AND s.world_id = r.world_id \
+                                  AND s.session_state = 2 \
+                                  AND s.current_transport_ref IS NOT NULL \
+                                  AND s.control_loss_epoch IS NULL) \
+                   AND coalesce(b.vocation, 'none') = ANY($2::text[]) \
+                   AND coalesce(g.level, 1) >= 1 \
+                   AND octet_length(r.name) BETWEEN 1 AND 64 \
+                   AND r.name COLLATE \"C\" ~ '^[ -~]+$' \
+                   AND strpos(r.name, chr(34)) = 0 AND strpos(r.name, chr(92)) = 0), \
+     worlds AS (SELECT world_id FROM game_character_roots \
+                UNION SELECT world_id FROM game_public_world_online) \
+SELECT 0 AS kind, c.projection_epoch, c.cut_ms, NULL::text AS world_id, NULL::text AS name, \
+       NULL::text AS vocation, NULL::text AS level, NULL::bigint AS projection_revision, \
+       NULL::bytea AS characters_digest, NULL::bigint AS source_observed_at, \
+       NULL::boolean AS acked \
+  FROM cut c \
+UNION ALL \
+SELECT 1, NULL, NULL, o.world_id::text, o.name, o.vocation, o.level::text, NULL, NULL, NULL, \
+       NULL \
+  FROM online o WHERE o.n <= $1 \
+UNION ALL \
+SELECT 2, s.projection_epoch, NULL, w.world_id::text, NULL, NULL, NULL, s.projection_revision, \
        s.characters_digest, s.source_observed_at, s.acked \
-  FROM (SELECT world_id FROM game_character_roots \
-        UNION SELECT world_id FROM game_public_world_online) w \
-  LEFT JOIN game_public_world_online s USING (world_id)";
+  FROM worlds w LEFT JOIN game_public_world_online s USING (world_id)";
 
 const PERSIST_ONLINE: &str = "\
 INSERT INTO game_public_world_online \
@@ -169,54 +195,68 @@ fn known_vocations() -> Vec<String> {
 }
 
 impl DurabilityRoot {
-    /// The current profile of the Character with the oldest undelivered
-    /// change. A Character without a root, or with an unclassifiable
-    /// vocation or a name outside the wire grammar, publishes `profile: []`.
-    pub async fn next_public_profile(
+    /// The current profiles of up to `limit` Characters with the oldest
+    /// undelivered changes, oldest first. A Character without a root, or
+    /// with an unclassifiable vocation, a level below 1 or a name outside the
+    /// wire grammar, publishes `profile: []` (§4.2).
+    pub async fn next_public_profiles(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         held: &[String],
-    ) -> Result<Option<ProfileSnapshot>> {
+        limit: usize,
+    ) -> Result<Vec<ProfileSnapshot>> {
         let recovery = authority.record_for(self)?;
         let held = held.to_vec();
+        let hold = i64::try_from(NAME_HANDOFF_HOLD.as_millis()).unwrap_or(i64::MAX);
+        let limit = i64::try_from(limit).unwrap_or(i64::MAX);
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let row = sqlx::query(PROFILE)
+                    let rows = sqlx::query(PROFILE)
                         .bind(held)
-                        .fetch_optional(&mut *tx)
+                        .bind(hold)
+                        .bind(limit)
+                        .fetch_all(&mut *tx)
                         .await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    let Some(row) = row else {
-                        return Ok(Ok(None));
-                    };
-                    profile_snapshot(&row)
+                    let mut snapshots = Vec::with_capacity(rows.len());
+                    for row in &rows {
+                        match profile_snapshot(row)? {
+                            Ok(snapshot) => snapshots.push(snapshot),
+                            Err(error) => return Ok(Err(error)),
+                        }
+                    }
+                    Ok(Ok(snapshots))
                 })
             })
             .await?
     }
 
-    pub async fn clear_public_profile(
+    /// Clear the outbox rows at or below each acknowledged
+    /// (`character_id`, epoch, revision), in one statement.
+    pub async fn clear_public_profiles(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
-        character_id: &str,
-        projection_epoch: u64,
-        projection_revision: u64,
+        acknowledged: &[(String, u64, u64)],
     ) -> Result<()> {
         let recovery = authority.record_for(self)?;
-        let (epoch, revision) = (wide(projection_epoch)?, wide(projection_revision)?);
-        let character = character_id.to_owned();
+        let mut columns = (vec![], vec![], vec![]);
+        for (character, epoch, revision) in acknowledged {
+            columns.0.push(character.clone());
+            columns.1.push(wide(*epoch)?);
+            columns.2.push(wide(*revision)?);
+        }
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    sqlx::query(CLEAR_PROFILE)
-                        .bind(character)
-                        .bind(epoch)
-                        .bind(revision)
+                    sqlx::query(CLEAR_PROFILES)
+                        .bind(columns.0)
+                        .bind(columns.1)
+                        .bind(columns.2)
                         .execute(&mut *tx)
                         .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -335,8 +375,9 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// One `world_online` cut: every World's qualifying online list at one
-    /// database snapshot, with the publisher's stored snapshot of it.
+    /// One `world_online` cut: every World's qualifying online list and the
+    /// publisher's stored snapshot of it, read by one statement, so at one
+    /// database snapshot.
     pub async fn public_online_cut(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -348,14 +389,13 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let online = sqlx::query(ONLINE)
+                    let rows = sqlx::query(ONLINE)
                         .bind(limit)
                         .bind(known_vocations())
                         .fetch_all(&mut *tx)
                         .await?;
-                    let worlds = sqlx::query(ONLINE_WORLDS).fetch_all(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    online_cut(&online, &worlds)
+                    online_cut(&rows)
                 })
             })
             .await?
@@ -428,7 +468,7 @@ impl DurabilityRoot {
 
 type Decoded<T> = std::result::Result<Result<T>, super::DurabilityError>;
 
-fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<Option<ProfileSnapshot>> {
+fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<ProfileSnapshot> {
     let (Ok(projection_epoch), Ok(projection_revision)) = (
         positive(row.try_get("projection_epoch")?),
         positive(row.try_get("projection_revision")?),
@@ -442,28 +482,29 @@ fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<Option<ProfileSnapsh
     let vocation: String = row.try_get("vocation")?;
     let profile = match (world_id, name, lifecycle) {
         (Some(world_id), Some(name), Some(1)) => match (vocation_id(&vocation), decimal(&level)) {
-            (Some(vocation), Ok(level)) => Some(ProfileEntry {
+            (Some(vocation), Ok(level)) if level != 0 && name_valid(&name) => Some(ProfileEntry {
                 world_id,
                 name,
                 vocation,
                 level,
-                // No Game owner records a guild-visibility setting yet, so it
-                // is unknown and fails closed (§4.2).
-                guild_visible: false,
+                // Guild membership defaults to public (§4.2, the Tibia
+                // reference); no Game-side setting lowers it yet.
+                guild_visible: true,
                 // No guild exists natively yet (§4.2): always `[]`.
                 guild: None,
             }),
+            // Unclassifiable: published as absent, never held (§4.2).
             _ => None,
         },
         _ => None,
     };
-    Ok(Ok(Some(ProfileSnapshot {
+    Ok(Ok(ProfileSnapshot {
         character_id: row.try_get("character_id")?,
         projection_epoch,
         projection_revision,
         source_observed_at: row.try_get("observed_at")?,
         profile,
-    })))
+    }))
 }
 
 fn highscores_batch(
@@ -526,69 +567,86 @@ fn highscores_batch(
     })))
 }
 
-fn online_cut(
-    online: &[sqlx::postgres::PgRow],
-    worlds: &[sqlx::postgres::PgRow],
-) -> Decoded<OnlineCut> {
-    let Some(first) = online.first() else {
+fn online_state(world_id: &str, row: &sqlx::postgres::PgRow) -> Decoded<Option<OnlineState>> {
+    let Some(epoch) = row.try_get::<Option<i64>, _>("projection_epoch")? else {
+        return Ok(Ok(None));
+    };
+    let digest: Vec<u8> = row.try_get("characters_digest")?;
+    let (Ok(projection_epoch), Ok(projection_revision), Ok(characters_digest)) = (
+        positive(epoch),
+        positive(row.try_get("projection_revision")?),
+        <[u8; 32]>::try_from(digest),
+    ) else {
         return Ok(Err(CharacterAuthorityError::Rejected));
     };
-    let Ok(projection_epoch) = positive(first.try_get("projection_epoch")?) else {
-        return Ok(Err(CharacterAuthorityError::Rejected));
-    };
-    let cut_ms: i64 = first.try_get("cut_ms")?;
+    Ok(Ok(Some(OnlineState {
+        world_id: world_id.to_owned(),
+        projection_epoch,
+        projection_revision,
+        characters_digest,
+        source_observed_at: row.try_get("source_observed_at")?,
+        acked: row.try_get("acked")?,
+    })))
+}
+
+fn online_cut(rows: &[sqlx::postgres::PgRow]) -> Decoded<OnlineCut> {
+    let mut cut = None;
+    let mut read: BTreeMap<String, usize> = BTreeMap::new();
     let mut lists: BTreeMap<String, Vec<OnlineEntry>> = BTreeMap::new();
-    for row in online {
-        let Some(world_id) = row.try_get::<Option<String>, _>("world_id")? else {
-            continue;
-        };
-        let name: String = row.try_get("name")?;
-        let vocation: String = row.try_get("vocation")?;
-        let level: String = row.try_get("level")?;
-        let (Some(vocation), Ok(level)) = (vocation_id(&vocation), decimal(&level)) else {
-            return Ok(Err(CharacterAuthorityError::Rejected));
-        };
-        lists.entry(world_id).or_default().push(OnlineEntry {
-            name,
-            vocation,
-            level,
-        });
-    }
     let mut states: BTreeMap<String, Option<OnlineState>> = BTreeMap::new();
-    for row in worlds {
-        let world_id: String = row.try_get("world_id")?;
-        let state = match row.try_get::<Option<i64>, _>("projection_epoch")? {
-            None => None,
-            Some(epoch) => {
-                let digest: Vec<u8> = row.try_get("characters_digest")?;
-                let (Ok(projection_epoch), Ok(projection_revision), Ok(characters_digest)) = (
-                    positive(epoch),
-                    positive(row.try_get("projection_revision")?),
-                    <[u8; 32]>::try_from(digest),
-                ) else {
+    for row in rows {
+        match row.try_get::<i32, _>("kind")? {
+            0 => {
+                let Ok(projection_epoch) = positive(row.try_get("projection_epoch")?) else {
                     return Ok(Err(CharacterAuthorityError::Rejected));
                 };
-                Some(OnlineState {
-                    world_id: world_id.clone(),
-                    projection_epoch,
-                    projection_revision,
-                    characters_digest,
-                    source_observed_at: row.try_get("source_observed_at")?,
-                    acked: row.try_get("acked")?,
-                })
+                cut = Some((projection_epoch, row.try_get::<i64, _>("cut_ms")?));
             }
-        };
-        states.insert(world_id, state);
+            1 => {
+                let world_id: String = row.try_get("world_id")?;
+                *read.entry(world_id.clone()).or_default() += 1;
+                let name: String = row.try_get("name")?;
+                let vocation: String = row.try_get("vocation")?;
+                let level: String = row.try_get("level")?;
+                // The query lists only classifiable entries; anything else is
+                // left out, never a reason to withhold the World (§4.6).
+                let (Some(vocation), Ok(level)) = (vocation_id(&vocation), decimal(&level)) else {
+                    continue;
+                };
+                if level == 0 || !name_valid(&name) {
+                    continue;
+                }
+                lists.entry(world_id).or_default().push(OnlineEntry {
+                    name,
+                    vocation,
+                    level,
+                });
+            }
+            2 => {
+                let world_id: String = row.try_get("world_id")?;
+                let state = match online_state(&world_id, row)? {
+                    Ok(state) => state,
+                    Err(error) => return Ok(Err(error)),
+                };
+                states.insert(world_id, state);
+            }
+            _ => return Ok(Err(CharacterAuthorityError::Rejected)),
+        }
     }
-    for world_id in lists.keys() {
+    let Some((projection_epoch, cut_ms)) = cut else {
+        return Ok(Err(CharacterAuthorityError::Rejected));
+    };
+    for world_id in read.keys() {
         states.entry(world_id.clone()).or_insert(None);
     }
     let worlds = states
         .into_iter()
         .map(|(world_id, state)| {
-            let characters = lists.remove(&world_id).unwrap_or_default();
+            let mut characters = lists.remove(&world_id).unwrap_or_default();
+            characters.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
+            let over = read.get(&world_id).copied().unwrap_or_default() > MAX_ONLINE;
             OnlineWorld {
-                characters: (characters.len() <= MAX_ONLINE).then_some(characters),
+                characters: (!over).then_some(characters),
                 world_id,
                 state,
             }
@@ -608,34 +666,34 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 }
 
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
+    /// A failed checkout of the single holder (gameplay or the publisher
+    /// itself) records a demand until maintenance serves it; the publisher
+    /// yields meanwhile.
+    fn gameplay_waiting(&self) -> bool {
+        self.root.has_ready_demand()
+    }
     async fn outbox_facts(&self) -> std::result::Result<OutboxFacts, ()> {
         self.root
             .public_outbox_facts(self.authority)
             .await
             .map_err(|_| ())
     }
-    async fn next_profile(
+    async fn next_profiles(
         &self,
         held: &[String],
-    ) -> std::result::Result<Option<ProfileSnapshot>, ()> {
+        limit: usize,
+    ) -> std::result::Result<Vec<ProfileSnapshot>, ()> {
         self.root
-            .next_public_profile(self.authority, held)
+            .next_public_profiles(self.authority, held, limit)
             .await
             .map_err(|_| ())
     }
-    async fn clear_profile(
+    async fn clear_profiles(
         &self,
-        character_id: &str,
-        projection_epoch: u64,
-        projection_revision: u64,
+        acknowledged: &[(String, u64, u64)],
     ) -> std::result::Result<(), ()> {
         self.root
-            .clear_public_profile(
-                self.authority,
-                character_id,
-                projection_epoch,
-                projection_revision,
-            )
+            .clear_public_profiles(self.authority, acknowledged)
             .await
             .map_err(|_| ())
     }

@@ -10,8 +10,9 @@
 --     on the Character root, progression and build state advance it in the writing transaction.
 --     There is no foreign key to the root, so a deleted Character keeps its revision and
 --     publishes `profile: []`. `vacated_name_key` records the name key a root deletion or rename
---     gave up; the publisher holds a new holder of that key until the row is acknowledged
---     (contract §7.3 name handoff).
+--     gave up; the publisher holds a new holder of that key until the row is acknowledged or
+--     is older than the bounded handoff hold, so a rename cycle cannot hold delivery forever
+--     (contract §7.3 name handoff). A resync clears every recorded key.
 --   * `game_public_highscores` and `game_public_highscore_outbox`: the per-(World, category)
 --     revision. HS-1 advances it by attaching `game_public_highscores_snapshot_trigger()` to its
 --     snapshot table (one revision per committed job run, for all six filters).
@@ -191,10 +192,13 @@ END; $$;
 -- Profiles and highscores are touched at a new revision, so the queued rows carry the resync
 -- start and the §5.1 watermark stays below it until every subject is acknowledged; every
 -- `world_online` snapshot is marked unacknowledged, so the next scan sends it again (a new
--- revision when the epoch changed). Returns the current epoch.
+-- revision when the epoch changed). A profile resync also clears every recorded
+-- `vacated_name_key`: the operator's re-publication of every profile supersedes the handoff
+-- order. SECURITY INVOKER: it has no grant, so only the owner login runs it, with the owner's
+-- own privileges.
 CREATE FUNCTION game_public_projection_resync(p_family TEXT, p_raise_epoch BOOLEAN)
 RETURNS BIGINT
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE
     v_now BIGINT := floor(extract(epoch FROM transaction_timestamp()) * 1000)::BIGINT;
     v_epoch BIGINT;
@@ -220,6 +224,8 @@ BEGIN
            SET projection_epoch = v_epoch, raised_at = v_now WHERE epoch_scope = 1;
     END IF;
     IF p_family IN ('all', 'character_profile') THEN
+        UPDATE game_public_character_profile_outbox SET vacated_name_key = NULL
+            WHERE vacated_name_key IS NOT NULL;
         FOR v_character IN
             SELECT character_id FROM game_character_roots
             UNION SELECT character_id FROM game_public_character_profiles
@@ -350,7 +356,7 @@ REVOKE ALL ON FUNCTION
     game_public_world_online_guard()
 FROM PUBLIC;
 -- Runtime publisher: read the projection state, clear acknowledged outbox rows and keep its own
--- `world_online` snapshots. The resync has no grant: only the owner login runs it.
+-- `world_online` snapshots. The resync has no grant: only the owner login runs it, as invoker.
 GRANT SELECT ON game_public_projection_epoch, game_public_character_profiles,
     game_public_highscores TO oteryn_game_runtime, oteryn_game_control;
 GRANT SELECT, DELETE ON game_public_character_profile_outbox, game_public_highscore_outbox

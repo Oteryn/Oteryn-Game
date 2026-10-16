@@ -9,18 +9,18 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/public-projections-producer
 issue: 1622
-pr: null
+pr: 2224
 base_sha: b02196916
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: wave builder GAME-PUBLIC-PROJ-PRODUCER-1 (Claude Code)
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
-migration_lease: "0088"
+migration_lease: "0091"
 owned_paths:
-  - apps/game-server/migrations/0088_public_projections.sql
+  - apps/game-server/migrations/0091_public_projections.sql
   - apps/game-server/src/native_admission_source/public_projections.rs
   - apps/game-server/src/native_admission_source/public_projections_tests.rs
   - apps/game-server/src/native_admission_source/descriptor.rs
@@ -62,8 +62,12 @@ operator command `oteryn-game-ops public-projection resync`. The publisher runs 
   Platform fixtures), §5 (ordering, outbox, epoch, resync), §5.1 (watermark, scan deadline), §6
   (backoff 1 to 60 s, definite hold 300 s with alarm), §7.3 name handoff, §7.4 logging, §8 bounds.
 - DERIVED: vocation ids follow Game's `ReferenceBaseVocation` (control-plane ruling, matches the
-  Platform consumer); `guild_visible` fails closed to `false` because no Game owner records the
-  setting yet.
+  Platform consumer); `guild_visible` defaults to `true` (public, Tibia reference) because no
+  Game owner records the setting yet; only a Game-side setting may lower it (architect review B1).
+- DERIVED (architect review of #2224): the publisher shares the single durability root, so it
+  paces its passes (`PUBPROJ-STORE-PASS-GAP`), yields while gameplay waits and batches profiles
+  (`PUBPROJ-PROFILE-BATCH`); the name handoff hold is bounded (`PUBPROJ-NAME-HANDOFF-HOLD`);
+  "online" is a live session with a transport and no control loss (§4.6).
 - DERIVED: highscores reads the RANK-1 draft (#2168) table interface; HS-1 attaches
   `game_public_highscores_snapshot_trigger()` and grants SELECT (contract §11). Until then the
   highscores family sends nothing and stays stale.
@@ -100,6 +104,11 @@ independent_current_fact_sources: [Character root, progression, build state, com
       and the HS-1 trigger interface; store reads over a real bootstrap
       (`tests/support/public_projections_postgres_cases.rs`).
 - [x] Limits registered as `PUBPROJ-*`.
+- [x] Architect review of #2224 (B1, B2, S1 to S5, N1 to N4): default-public `guild_visible`,
+      migration 0091, pacing, yield and batching, bounded name handoff, unclassifiable entries
+      published as `[]`, the online session predicate, filter and category ids pinned to the
+      Platform consumer, one-statement online read, ASCII names, invoker resync, no resend of an
+      unchanged `world_online` watermark.
 
 ## Excluded scope
 
@@ -108,12 +117,15 @@ and the `character_deaths`, `guild` and `house` families.
 
 ## Validation
 
+Architect-review fix head (2026-10-16):
+
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server --lib`: 3200 passed, 0 failed (29 ignored)
-- `cargo test --bin oteryn-game-ops`: 7 passed
-- PostgreSQL 17.6: `character_authority_postgres` 1514 passed, `durability_postgres` 1229 passed,
-  `native_admission_source_postgres` 1119 passed; `native_admission_source_transport` 78 passed
+- `cargo test --locked -p oteryn-game-server --lib --bins`: 3207 passed, 0 failed (29 ignored);
+  `oteryn-game-ops` 7 passed
+- PostgreSQL 17.6: `character_authority_postgres` 1521 passed (public projections cases,
+  bootstrap reads, name handoff and cycle, online session states, unclassifiable online
+  entries, invoker resync)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: 124 passed
 - `git diff --check`: pass
@@ -134,10 +146,10 @@ and the `character_deaths`, `guild` and `house` families.
 ## Context checkpoint
 
 ```yaml
-last_progress: producer, contract revision 2 and registry rows pushed
+last_progress: architect review findings of #2224 fixed in one push
 status: waiting
 branch: feat/public-projections-producer
-pr: null
+pr: 2224
 owner_action_required: null
 blocker: null
 next_action: exact-head CI, Codex and architect review, then the slot commit at queue turn

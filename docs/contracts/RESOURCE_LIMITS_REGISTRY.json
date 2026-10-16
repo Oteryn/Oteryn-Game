@@ -11710,6 +11710,73 @@
         "apps/game-server/src/native_admission_source/public_projections.rs"
       ],
       "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-PROFILE-BATCH",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Character profiles read from the outbox in one store pass and cleared in one",
+      "unit": "profiles",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One read pass returns at most 32 profile snapshots (each at most PUBPROJ-PROFILE-REQUEST-BYTES encoded); the rest wait for the next batch. Sends stay one at a time (PUBPROJ-INFLIGHT).",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: profiles are read and cleared in batches; a transient failure stops the batch and clears what was acknowledged"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 8 and 11. Bounds the publisher's passes over the shared durability root. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-NAME-HANDOFF-HOLD",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Longest hold of a character name's new holder behind an undelivered vacating publication",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation. A held profile stays queued; after the hold it is sent, so a rename cycle cannot hold delivery forever, and Platform answers a name with two holders as unknown (section 7.3).",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a simple name handoff waits for the vacating row; a rename cycle waits only for the bounded hold; a resync clears every vacated name key"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs",
+        "apps/game-server/migrations/0091_public_projections.sql"
+      ],
+      "notes": "Contract sections 7.3, 8 and 11. Measured from the vacating outbox row's created_at on the database clock. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "PUBPROJ-STORE-PASS-GAP",
+      "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "resource": "Minimum gap between two public projection publisher passes over the durability root",
+      "unit": "milliseconds",
+      "hard_maximum": 50,
+      "configurable_range": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "No allocation. The publisher waits at least 50 ms after a pass before the next and skips a pass as 'not now' while gameplay waits for the single durability holder.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs: the publisher yields to waiting gameplay and paces its passes"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/public_projections.rs",
+        "apps/game-server/src/durability/public_projections.rs"
+      ],
+      "notes": "Contract sections 8 and 11. A floor, not a ceiling: the hard maximum is the fixed gap; gameplay demand only lengthens it. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
     }
   ]
 }
