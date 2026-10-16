@@ -220,3 +220,71 @@ retained23514 and added exact guard-message assertion to prove the intended nati
 executes. No production grant or mutation capability changed; no installed guard weakened.
 The genuine owner-writer/property tests remain unchanged. Failed candidate/log retained;
 focused native retry and independent exact-source review remain with the lead.
+
+
+## CP D1098–D1100 implementation increment — AUTHORING
+
+Source: exact CP comment6219643346 (2026-10-16), current main24fc332f. Lead refreshed
+PR#2139/local35e7c722 unchanged open draft and returned this worker to sole AUTHORING.
+GUILD-1 owns the real terminal controller; Hall owns its real bid release participant;
+C owns actual property/auction/Inbox ports. No new lease requirement applies.
+
+Added actual Bank in-transaction participant API:
+`lock_guild_disband_payout_occurrence`, `payout_guild_disband_in_transaction`, and
+`read_guild_disband_payout_in_transaction`. They consume the genuine Guild-owned
+`GuildDisbandTransaction` produced only after current native Root recovery/admission,
+node/World assignment, ordered occurrence/Guild/member locks and actual pending start.
+The consumer rechecks actual physical transaction/current Guild and all seven fields
+of the genuinely prelocked Bank identity before the legacy writer can take a lock.
+No copied xid/currentness Boolean or House closure token is accepted. The old financial
+implementation is module-private and remains reachable by unchanged inherited tests.
+
+The new port performs real payout/ledger writes; fresh payout stamps must match current
+PostgreSQL xid. Retained retries load actual immutable payout and current custody, zero
+current Guild balance and absence of every HELD bid row (including zero-value custody).
+Outcome carries immutable original payout receipt, ex-leader Account, original Guild
+debit and current claim remainder. Original receipt custody and current retained claim
+are distinct; claims can only decrease and retain immutable Account/World ownership.
+The new SQL `game_guild_bank_assert_disband_paid(UUID,UUID,UUID)` is a genuine financial
+integrity participant for Guild's deferred cleanup/final guard, not a House release proof.
+It checks original payout conservation and real corresponding ledger/audit rows, retained
+claim binding, zero Guild balance and no HELD custody. Its proposed exact-signature runtime
+EXECUTE grant stays uninstalled with the owned SQL; no live privilege change was made.
+
+Two added native bodies use the genuine production Guild factory and actual confirmed
+Disband writer, never a constructed context. They cover rollback with same-identity retry,
+new-Root retained replay, actual conservation, every prelocked identity field mismatch,
+and rejection of a genuine context reused in another physical transaction. Existing nine
+Bank bodies remain. These new bodies are drafted, not yet executed or reported PASS.
+
+D1099 shared Bank source is prepared outside slot as
+`/workspace/oteryn-family/bank-D1099-shared-slot.patch`, with exact pre/post hashes and
+full proposed source in its manifest. It adds symbolic closed ledger kinds/cause/reference
+read arms and a genuine payout-read consumer; no new numeric ledger/event IDs. Old native
+numeric event paths reject symbolic variants rather than fabricate an encoding. The
+canonical `durability/bank.rs` remains unchanged: #2197 is still open, so final shared
+hunks wait for its merge and the CP turn/main merge. One precise further integration note:
+`bank_audit.rs` native value-line soft ceiling needs an allocated compatible event/audit
+change before ordinary Bank operations against above-soft retained balances can activate;
+that source/registry is not edited under D1099.
+
+D1100 resolves the previous top-up question: V1 refuses additional Account funding after
+leader Account change; original-contributor refunds remain fixed. This is now ACCEPTED,
+not a pending product decision. Full House/C completion proof must precede payout in the
+actual Guild composer; a bid-only financial release never implies property/Inbox closure.
+No terminal feature completion is claimed while the actual C owner port is unavailable.
+
+Only owned files changed; no shared module/migration/registry changes, build, commit or
+push by worker. New source parses/formats with pinned Rust1.94; native compilation and
+actual PG17.6 qualification belong to lead. Genuine Guild raw SQL source assertions were rebound once after the coupled controller
+source-stable event, before any new runtime execution.
+
+
+D1098 stable coupled dependency pin (separate from historical qualification above): Guild
+candidate source based on7229b682 has durability/guild.rs SHA256
+`6ad77f920264238af348819dd5a4d3facf401bd247939afb51fcdc8b77fa2034`;
+raw TABLES SQL `6d91fc5e5dbe597c72633f46dc328f30525a17498be1acbeabcc75829247343e`,
+raw GUARDS SQL `343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a`.
+Actual immutable source bytes were independently checked at the owner's stable event;
+Bank test assertions now bind these values. Previous source hashes/native evidence remain
+historical facts, not qualification of this materially changed terminal candidate.

@@ -430,12 +430,153 @@ async fn held(
     Ok(numeric_u64(&row, "amount")?)
 }
 
+/// Current financial DATA for the Guild-owned terminal controller. This is neither a
+/// House release/Inbox proof nor authority to clean up Guild rows. The immutable receipt
+/// retains the original claim credit; `retained_claim_remaining` is the current locked claim.
+#[derive(Debug)]
+pub(super) struct GuildBankDisbandPayout {
+    pub(super) receipt: GuildBankReceipt,
+    pub(super) exleader_account_id: [u8; 16],
+    pub(super) guild_debit: u64,
+    pub(super) retained_claim_remaining: u64,
+}
+
+/// Called by Guild's genuine context producer before Guild/member/property locks. Re-taking
+/// this exact occurrence inside the participant is reentrant, never a new later-order lock.
+pub(super) async fn lock_guild_disband_payout_occurrence(
+    tx: &mut Transaction<'_, Postgres>,
+    identity: &GuildBankIdentity,
+) -> Result<()> {
+    identity.validate()?;
+    occurrence_lock(tx, &identity.occurrence).await
+}
+
+fn disband_context_error(error: super::guild::GuildError) -> GuildBankError {
+    match error {
+        super::guild::GuildError::Unavailable(error) => GuildBankError::Unavailable(error),
+        _ => GuildBankError::NotCurrent,
+    }
+}
+
+/// Actual same-transaction Bank participant. Guild resolves current Root recovery, node,
+/// World assignment and pending disband under its production factory; this boundary rechecks
+/// that capability against this physical PostgreSQL transaction and actual locked Guild.
+/// Guild must first compose genuine Hall/property/Inbox release. A zero HELD sum is not a
+/// substitute for that proof. This function grants only financial state, never Hall closure.
+pub(super) async fn payout_guild_disband_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &super::guild::GuildDisbandTransaction,
+    identity: &GuildBankIdentity,
+) -> Result<GuildBankDisbandPayout> {
+    context
+        .assert_current(tx)
+        .await
+        .map_err(disband_context_error)?;
+    context
+        .assert_payout_identity(identity)
+        .map_err(disband_context_error)?;
+    identity.validate()?;
+    let guild = GuildBankGuildId::from_bytes(*context.guild_id().as_bytes())?;
+    let world = context.world_id();
+    // Even zero-value HELD custody must be terminalized by the actual Hall participant.
+    if sqlx::query("SELECT 1 FROM game_guildhall_bids WHERE guild_id=encode($1,'hex')::uuid AND state='HELD' LIMIT 1")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.is_some() {
+        return Err(GuildBankError::NotCurrent);
+    }
+    let receipt = payout_in_disband_transaction(tx, identity, guild, world).await?;
+    if !receipt.replayed {
+        let same_transaction: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_bank_operations WHERE transaction_id=encode($1,'hex')::uuid AND guild_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid AND cause='GUILD_DISBAND_PAYOUT' AND created_xact_id=pg_current_xact_id())")
+            .bind(receipt.transaction_id.as_slice()).bind(guild.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if !same_transaction {
+            return Err(GuildBankError::NotCurrent);
+        }
+    }
+    let mut state = read_guild_disband_payout_in_transaction(tx, context)
+        .await?
+        .ok_or(GuildBankError::NotCurrent)?;
+    if state.receipt.transaction_id != receipt.transaction_id {
+        return Err(GuildBankError::NotCurrent);
+    }
+    state.receipt.replayed = receipt.replayed;
+    Ok(state)
+}
+
+/// Durable financial recheck on every real cleanup retry. Retained evidence supplies outcome
+/// DATA only: current authority still comes from Guild's independently checked transaction.
+/// No caller-provided balance, Account, claim amount, transaction xid or closure Boolean.
+pub(super) async fn read_guild_disband_payout_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &super::guild::GuildDisbandTransaction,
+) -> Result<Option<GuildBankDisbandPayout>> {
+    context
+        .assert_current(tx)
+        .await
+        .map_err(disband_context_error)?;
+    let guild = context.guild_id();
+    let world = context.world_id();
+    let Some(operation) = sqlx::query("SELECT transaction_id::text,world_id::text,account_id::text,guild_before,guild_after,account_before,account_after,claim_before,claim_after,credited,claim_remaining FROM game_guild_bank_operations WHERE guild_id=encode($1,'hex')::uuid AND cause='GUILD_DISBAND_PAYOUT' FOR SHARE")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await? else {
+        return Ok(None);
+    };
+    let account = uuid_text(&operation.try_get::<String, _>("account_id")?)?;
+    let transaction = uuid_text(&operation.try_get::<String, _>("transaction_id")?)?;
+    sqlx::query("SELECT game_guild_bank_assert_disband_paid(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+        .bind(guild.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(transaction.as_slice())
+        .execute(&mut **tx).await?;
+    let debit = value(&operation, "guild_before")?;
+    let credited = value(&operation, "credited")?;
+    let original_claim = value(&operation, "claim_after")?;
+    if uuid_text(&operation.try_get::<String, _>("world_id")?)? != *world.as_bytes()
+        || debit > BANK_MAX
+        || original_claim > HARD_CEILING
+        || value(&operation, "guild_after")? != 0
+        || value(&operation, "claim_before")? != 0
+        || credited.checked_add(original_claim) != Some(debit)
+        || value(&operation, "account_before")?.checked_add(credited)
+            != Some(value(&operation, "account_after")?)
+        || value(&operation, "claim_remaining")? != original_claim
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    // Position7 of GUILD0-LO-01: lock actual Guild balance then retained custody; Account
+    // balance changes/claim delivery remain governed by the native Bank/claim writers.
+    let balance: Option<i64> = sqlx::query_scalar("SELECT balance FROM game_guild_bank_balances WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if balance != Some(0) {
+        return Err(GuildBankError::NotCurrent);
+    }
+    let claim = sqlx::query("SELECT exleader_account_id::text,world_id::text,amount FROM game_guild_disband_claims WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(GuildBankError::NotCurrent)?;
+    let remaining = value(&claim, "amount")?;
+    if uuid_text(&claim.try_get::<String, _>("exleader_account_id")?)? != account
+        || uuid_text(&claim.try_get::<String, _>("world_id")?)? != *world.as_bytes()
+        || remaining > original_claim
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    if sqlx::query("SELECT 1 FROM game_guildhall_bids WHERE guild_id=encode($1,'hex')::uuid AND state='HELD' LIMIT 1")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.is_some() {
+        return Err(GuildBankError::NotCurrent);
+    }
+    Ok(Some(GuildBankDisbandPayout {
+        receipt: GuildBankReceipt {
+            transaction_id: transaction,
+            credited,
+            claim_remaining: original_claim,
+            replayed: true,
+        },
+        exleader_account_id: account,
+        guild_debit: debit,
+        retained_claim_remaining: remaining,
+    }))
+}
+
 /// GUILD1 disband-transaction participant, not an independently callable payout job.
 /// Caller must already hold recovery/admission, occurrence then the actual guild/member locks
 /// in GUILD0-LO-01 order; no Character root/session is acquired by this World-job path.
 /// The candidate verifies actual DISBANDING state, same World and the current leader Account.
 /// Actual property/bid release and transition orchestration remain mandatory GUILD1 CP seams.
-pub(super) async fn payout_in_disband_transaction(
+async fn payout_in_disband_transaction(
     tx: &mut Transaction<'_, Postgres>,
     identity: &GuildBankIdentity,
     guild: GuildBankGuildId,
@@ -802,6 +943,48 @@ CREATE CONSTRAINT TRIGGER game_guild_bank_account_headroom AFTER INSERT OR UPDAT
 CREATE CONSTRAINT TRIGGER game_guild_bank_escrow_headroom AFTER INSERT OR UPDATE ON game_guildhall_bids DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_bank_headroom_guard();
 
 -- Latest native 0072 guard body retained verbatim after the new closed guild arm.
+-- D1098: a native financial integrity check consumed by Guild's deferred cleanup/terminal
+-- guard. This does not attest House/property/Inbox completion or current runtime authority.
+CREATE FUNCTION game_guild_bank_assert_disband_paid(p_guild UUID,p_world UUID,p_payout UUID)
+RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE o game_guild_bank_operations%ROWTYPE;c game_guild_disband_claims%ROWTYPE;b BIGINT;
+BEGIN
+ SELECT * INTO o FROM game_guild_bank_operations WHERE transaction_id=p_payout
+   AND guild_id=p_guild AND world_id=p_world AND cause='GUILD_DISBAND_PAYOUT' FOR SHARE;
+ IF NOT FOUND OR o.guild_after<>0 OR o.claim_before<>0
+   OR o.guild_before<>o.credited+o.claim_after OR o.claim_remaining<>o.claim_after
+   OR o.account_after<>o.account_before+o.credited THEN
+  RAISE EXCEPTION 'Guild cleanup requires its conserved retained Bank payout' USING ERRCODE='23514';END IF;
+ SELECT balance INTO b FROM game_guild_bank_balances WHERE guild_id=p_guild FOR UPDATE;
+ IF NOT FOUND OR b<>0 THEN
+  RAISE EXCEPTION 'Guild cleanup requires zero current Guild balance' USING ERRCODE='23514';END IF;
+ SELECT * INTO c FROM game_guild_disband_claims WHERE guild_id=p_guild FOR UPDATE;
+ IF NOT FOUND OR c.exleader_account_id<>o.account_id OR c.world_id<>p_world
+   OR c.amount<0 OR c.amount>o.claim_after THEN
+  RAISE EXCEPTION 'Guild cleanup requires its retained original Account/World claim' USING ERRCODE='23514';END IF;
+ IF EXISTS(SELECT 1 FROM game_guildhall_bids WHERE guild_id=p_guild AND state='HELD') THEN
+  RAISE EXCEPTION 'Guild cleanup cannot leave held Guildhall custody' USING ERRCODE='23514';END IF;
+ IF (SELECT count(*) FROM game_guild_bank_entries WHERE transaction_id=p_payout)
+      <>(CASE WHEN o.guild_before=0 THEN 0 ELSE 1 END)
+   OR (o.guild_before>0 AND NOT EXISTS(SELECT 1 FROM game_guild_bank_entries e
+      WHERE e.transaction_id=p_payout AND e.guild_id=p_guild AND e.amount=-o.guild_before
+        AND e.balance_before=o.guild_before AND e.balance_after=0 AND e.created_xact_id=o.created_xact_id))
+   OR (SELECT count(*) FROM game_account_bank_entries WHERE guild_transaction_id=p_payout)
+      <>(CASE WHEN o.credited=0 THEN 0 ELSE 1 END)
+   OR (o.credited>0 AND NOT EXISTS(SELECT 1 FROM game_account_bank_entries e
+      WHERE e.guild_transaction_id=p_payout AND e.account_id=o.account_id AND e.world_id=p_world
+        AND e.guild_kind='GUILD_DISBAND_PAYOUT' AND e.kind IS NULL AND e.acting_character_id IS NULL
+        AND e.amount=o.credited AND e.balance_before=o.account_before AND e.balance_after=o.account_after
+        AND e.created_xact_id=o.created_xact_id))
+   OR (SELECT count(*) FROM game_guild_bank_audit_proposals a WHERE a.transaction_id=p_payout
+      AND a.created_xact_id=o.created_xact_id AND a.payload_sha256=sha256(a.payload)
+      AND a.purpose IN('BANK_OPERATION','GUILD_OPERATION'))<>2 THEN
+  RAISE EXCEPTION 'Guild cleanup requires actual payout ledger chains and both audit rows' USING ERRCODE='23514';END IF;
+END;$$;
+DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_guild_bank_assert_disband_paid(UUID,UUID,UUID) SET search_path=%I,pg_temp',current_schema());END $$;
+REVOKE ALL ON FUNCTION game_guild_bank_assert_disband_paid(UUID,UUID,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_guild_bank_assert_disband_paid(UUID,UUID,UUID) TO oteryn_game_runtime;
+
 CREATE OR REPLACE FUNCTION game_account_bank_entry_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN

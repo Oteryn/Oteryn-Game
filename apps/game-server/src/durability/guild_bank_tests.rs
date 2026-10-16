@@ -19,8 +19,8 @@ use crate::item_transfer_postgres_cases::{
 };
 use sqlx::Executor;
 
-// Exact unmerged GUILD1 owner candidate, base 92a5a965db23771d12697c0be9fee25f30d05f86.
-// Source durability/guild.rs SHA256 57935341f8d2d19ef000c0d7c9294035533102698e980adf0078e38e9079f1f1.
+// Exact unmerged GUILD1 owner candidate, base 7229b68227a65d22bc2427545b81b61deee754a7.
+// Source durability/guild.rs SHA256 6ad77f920264238af348819dd5a4d3facf401bd247939afb51fcdc8b77fa2034.
 // This is a disclosed validation-overlay dependency, not a schema installed on main.
 fn assert_guild_source() {
     assert_eq!(
@@ -28,14 +28,14 @@ fn assert_guild_source() {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "5ae70c7540915ef2368cab887fcaf0a66b0123f71535bb82bc8e71f750cbb3a1"
+        "6d91fc5e5dbe597c72633f46dc328f30525a17498be1acbeabcc75829247343e"
     );
     assert_eq!(
         Sha256::digest(GUILD_GUARDS_PROPOSAL.as_bytes())
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "1c74f22edc18db2d54b39330038b2c61a5b2cb1d90aab71965c26d08a8dd4a2e"
+        "343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a"
     );
 }
 
@@ -924,6 +924,275 @@ fn generated_funded_sequences_conserve_gold_with_refusal_replay_and_conflict() -
             result?;
         }
         Ok(())
+    })
+}
+
+// D1098 native participant tests obtain context from the genuine production Guild factory.
+// This proves financial participation/currentness, never absent C property/Inbox completion.
+async fn start_real_bank_disband(
+    h: &Harness,
+    a: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let i = identity(120);
+    let common = GuildRequest {
+        identity: GuildOperationIdentity {
+            occurrence: i.occurrence,
+            transaction_id: i.transaction_id,
+            event_id: i.guild_event_id,
+            occurred_at_unix_ms: i.occurred_at_unix_ms,
+        },
+        command: CommandRef::new(
+            GameSessionId::decode(&id(fixture::SESSION)).map_err(debug)?,
+            CommandId::new(120).map_err(debug)?,
+        ),
+        guild_id: crate::domain::guild::GuildId::from_bytes(*guild().as_bytes()).map_err(debug)?,
+        operation: GuildCommand::Disband,
+    };
+    let request = crate::durability::guild::GuildDisbandRequest::new(common, "Guild Bank Fixture")
+        .map_err(debug)?;
+    let outcome = h
+        .root
+        .commit_guild_disband(a, &h.node, fence()?, request)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome,GuildOutcome::Committed(r) if r.result==GuildResult::Ok));
+    Ok(())
+}
+fn bank_disband_job(n: u8) -> TestResult<crate::durability::guild::GuildDisbandJobRequest> {
+    let hall = identity(n + 1);
+    Ok(crate::durability::guild::GuildDisbandJobRequest {
+        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+        guild_id: crate::domain::guild::GuildId::from_bytes(*guild().as_bytes()).map_err(debug)?,
+        hall_identity: crate::durability::guildhall::GuildhallEscrowIdentity {
+            occurrence_id: hall.occurrence,
+            transaction_id: hall.transaction_id,
+            guild_entry_id: hall.guild_entry_id,
+            account_entry_id: hall.bank_entry_id,
+        },
+        bank_identity: identity(n),
+    })
+}
+async fn native_controller_payout(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    request: crate::durability::guild::GuildDisbandJobRequest,
+    rollback: bool,
+) -> TestResult<GuildBankDisbandPayout> {
+    root.try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let context = crate::durability::guild::lock_guild_disband_transaction(
+                    &mut tx, root, authority, node, &request,
+                )
+                .await
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                .ok_or(DurabilityError::InvalidStoredState)?;
+                // Every prepared identity component must equal the actual prelocked tuple.
+                // No substitute class1 occurrence may be acquired after Guild/member locks.
+                let before_operations: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_guild_bank_operations")
+                        .fetch_one(&mut *tx)
+                        .await?;
+                for field in 0..7 {
+                    let mut changed = request.bank_identity.clone();
+                    match field {
+                        0 => changed.occurrence[2] ^= 1,
+                        1 => changed.transaction_id[2] ^= 1,
+                        2 => changed.guild_event_id[2] ^= 1,
+                        3 => changed.bank_event_id[2] ^= 1,
+                        4 => changed.guild_entry_id[2] ^= 1,
+                        5 => changed.bank_entry_id[2] ^= 1,
+                        _ => changed.occurred_at_unix_ms += 1,
+                    }
+                    assert!(
+                        matches!(
+                            payout_guild_disband_in_transaction(&mut tx, &context, &changed).await,
+                            Err(GuildBankError::NotCurrent)
+                        ),
+                        "identity field {field}"
+                    );
+                    assert_eq!(
+                        sqlx::query_scalar::<_, i64>(
+                            "SELECT count(*) FROM game_guild_bank_operations"
+                        )
+                        .fetch_one(&mut *tx)
+                        .await?,
+                        before_operations
+                    );
+                }
+                let payout =
+                    payout_guild_disband_in_transaction(&mut tx, &context, &request.bank_identity)
+                        .await
+                        .map_err(|e| match e {
+                            GuildBankError::Unavailable(e) => e,
+                            _ => DurabilityError::InvalidStoredState,
+                        })?;
+                let current = read_guild_disband_payout_in_transaction(&mut tx, &context)
+                    .await
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                assert_eq!(
+                    current.receipt.transaction_id,
+                    payout.receipt.transaction_id
+                );
+                assert_eq!(
+                    current.retained_claim_remaining,
+                    payout.retained_claim_remaining
+                );
+                if rollback {
+                    tx.rollback().await?;
+                } else {
+                    commit_semantic_transaction(tx, deadline).await?;
+                }
+                Ok(payout)
+            })
+        })
+        .await
+        .map_err(Into::into)
+}
+
+#[test]
+fn native_controller_payout_port_rolls_back_and_replays_actual_retained_state() -> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "guild_bank_controller_payout").await?;
+        let result: TestResult = async {
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            fund(&h, &a).await?;
+            h.root
+                .guild_bank_command(
+                    &a,
+                    &h.node,
+                    fence()?,
+                    request(20, GuildBankCommand::Deposit, 70),
+                )
+                .await
+                .map_err(debug)?;
+            start_real_bank_disband(&h, &a).await?;
+            let before = footprint(&h).await?;
+            let rolled_back =
+                native_controller_payout(&h.root, &a, &h.node, bank_disband_job(140)?, true)
+                    .await?;
+            assert!(!rolled_back.receipt.replayed);
+            assert_eq!(footprint(&h).await?, before);
+            assert_eq!(totals(&h).await?, (30, 70, 0));
+            let paid =
+                native_controller_payout(&h.root, &a, &h.node, bank_disband_job(140)?, false)
+                    .await?;
+            assert!(!paid.receipt.replayed);
+            assert_eq!(paid.guild_debit, 70);
+            assert_eq!(paid.exleader_account_id, id(40));
+            assert_eq!(paid.retained_claim_remaining, 0);
+            assert_eq!(totals(&h).await?, (100, 0, 0));
+            let after = footprint(&h).await?;
+            let reopened = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+            assert!(reopened.maintain_ready_once().await?);
+            let current = reopened
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let replay = native_controller_payout(
+                &reopened,
+                &current,
+                &h.node,
+                bank_disband_job(142)?,
+                false,
+            )
+            .await?;
+            assert!(replay.receipt.replayed);
+            assert_eq!(replay.receipt.transaction_id, paid.receipt.transaction_id);
+            assert_eq!(replay.guild_debit, 70);
+            assert_eq!(footprint(&h).await?, after);
+            assert_eq!(h.count("game_guild_disband_claims").await?, 1);
+            // This does not execute House/C closure or Guild cleanup: both retained members
+            // and DISBANDING remain under the genuine owner, pending the real composer.
+            assert_eq!(h.count("game_guild_members").await?, 1);
+            Ok(())
+        }
+        .await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+#[test]
+fn native_disband_context_cannot_reauthorize_payout_in_another_physical_transaction() -> TestResult
+{
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "guild_bank_wrong_xid").await?;
+        let result: TestResult = async {
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            fund(&h, &a).await?;
+            h.root
+                .guild_bank_command(
+                    &a,
+                    &h.node,
+                    fence()?,
+                    request(20, GuildBankCommand::Deposit, 70),
+                )
+                .await
+                .map_err(debug)?;
+            start_real_bank_disband(&h, &a).await?;
+            let before = footprint(&h).await?;
+            let root = &h.root;
+            let authority = &a;
+            let node = &h.node;
+            let job = bank_disband_job(144)?;
+            let context = root
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        let context = crate::durability::guild::lock_guild_disband_transaction(
+                            &mut tx, root, authority, node, &job,
+                        )
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                        tx.rollback().await?;
+                        Ok(context)
+                    })
+                })
+                .await?;
+            h.root
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert!(matches!(
+                            payout_guild_disband_in_transaction(&mut tx, &context, &identity(144))
+                                .await,
+                            Err(GuildBankError::NotCurrent)
+                        ));
+                        tx.rollback().await?;
+                        Ok(())
+                    })
+                })
+                .await?;
+            assert_eq!(footprint(&h).await?, before);
+            assert_eq!(totals(&h).await?, (30, 70, 0));
+            Ok(())
+        }
+        .await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
     })
 }
 
