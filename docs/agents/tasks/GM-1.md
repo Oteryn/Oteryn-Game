@@ -495,3 +495,641 @@ event, verifies retained operation evidence, then changes only its SQL operation
 UUID while retaining signed request/outcome bytes and original transaction stamp;
 verification must refuse. Additional negative matrices cover eleven event mirrors
 and signed link-kind substitution. Native execution remains pending.
+
+
+## Recoverable frozen source backup — 2026-10-17
+
+User-requested code backup in this existing draft. This section contains the exact frozen private source bundle and readable integration patch; it is material source recovery data, not a new runtime/ready claim. The published task-branch runtime files keep their allocated integration order. Unified diffs below are encoded as JSON arrays of exact lines (including newlines); concatenate `patch_lines` to recover the byte-identical patch without Markdown trailing-whitespace changes.
+
+Prepared composition: all-target compilation PASS ata4a446f; registered-ID5 PG target compile/link --no-run PASS atfaa906ca. Final715 changes onlya proto comment; Rust/registry/migration bytes unchanged. RuntimePG NOT_RUN; prior11pure and3JCS PASS were not rerun. Full integrated qualification remains separate.
+
+```json
+{
+  "private_candidate": "715041517515314e4e10c63a405281cd37e72d14",
+  "bundle_file": "gm-private-71504151-current-1942.bundle",
+  "bundle_bytes": 9525,
+  "bundle_sha256": "ceb722363a511d774f139bfded6274790c8dc3608dfef0ad048741f18c37d40b",
+  "integration_patch_sha256": "e88e277ddada0acb0e01873b7b3825e608e79de1339f8a11e548464ddca55045",
+  "source_manifest_sha256": "b70cc19999436311166d018e8b105e6464400a17c8f1b37c8b0ee9ff627dce1a",
+  "restoration": "Base64-decode the bundle block, verify SHA256, then git bundle verify against the published prerequisites below; fetch its HEAD into an isolated checkout. The bundle preserves private commits and merge resolutions.",
+  "shared_runtime_integration": "Private source backup only; the allocated runtime/shared-file slot still applies.",
+  "status": "NOT_FULLY_QUALIFIED",
+  "published_prerequisites": [
+    "bbdbb689dad872074fb12befccc3b47e5eb2ce4b",
+    "fdc20be476e6d38913d254209ccfa710743d6c59"
+  ]
+}
+```
+
+<details><summary>GM D1086 — exact Git bundle (base64)</summary>
+
+```text
+IyB2MiBnaXQgYnVuZGxlCi1mZGMyMGJlNDc2ZTZkMzg5MTNkMjU0MjA5Y2NmYTcxMDc0M2Q2YzU5
+IGZpeChjbGllbnQpOiBiaW5kIEhVRCBhbmQgc2V0dGluZ3MgdG8gYWN0dWFsIHJ1bnRpbWUgc3Rh
+dGUKLWJiZGJiNjg5ZGFkODcyMDc0ZmIxMmJlZmNjYzNiNDdlNWViMmNlNGIgY2hvcmUoZ20pOiBy
+ZWdpc3RlciBhdWRpdCBtb2R1bGVzIGFuZCByZWNvcmQgcXVhbGlmaWNhdGlvbiBsaW1pdHMKNzE1
+MDQxNTE3NTE1MzE0ZTRlMTBjNjNhNDA1MjgxY2QzN2U3MmQxNCBIRUFECgpQQUNLAAAAAgAAAC6T
+EnicpY9NTsMwEIX3PsXskao48U+CKtQCqsQGkNo9mrEn1DSOkeP0ANyNe+Gegbf7vic96ZXMDMY4
+75HYjqgYUVUidIPx2hKOPLaN7ho0LL4x81xgRBwa41B15KRizVZKj0oT9sYYIqc6S51GgWs5pwyP
+mMvvT4qBv+AIW6rIl6Ukd57CvFzC7jNimDYuxQeQdmhl3+u+hbumRlQbQyn8zxnxnsMVC8OzrP4e
+fHJrvJ2ZGBf2cDztD4eP/dPp5e0V+Hpr5jUSZ/EHHi9em5YSeJylj0FuwjAQRfc+xewrkJ2MY6eq
+qlIqpG4oEuyrcTIGQ0KQMyB1y916r4Yz9O/eWzzpS2YGF6yzusTWRvSBsI6BdemYvA6mjL7xum6R
+UV0o81mAkBCrWGAbOaIlG2xdoqaoval85TxFis6RoqschgzvlOX3PvSJj7CFlzAhn0YZmkOXzuMp
+ve17St28GfpXMK4ujPdYGHjS09Rk+yTC/8yoTU43EoYPM/lnyLxP46O63Mw6ppFb2O4Wq9X3Yrn7
+/FoD3x5P5efCYNUf/Mxcz5UTeJylj01OwzAQhfc+xeyRkGfyY1sgRAuqxAaQ2j2aOJPGbRwjx+EA
+3I17EXEFnt7me4tPeiWLgEXn0feEhFpXXdNz3RunB916rqtWm6bDrqm8+uQscwHmFq0hGmoyJORc
+raUf3MDoxQppR77TxKh4LWPKsOdcfr5TDHKBI9x3G8p1KcmPU5iXa3g8Rw7TrU/xAdA4QmvRNHCj
+t6htjaEU+adGvefwxUXgGbVtIcxFzplLSDNs9Wv+e4aupjsY09TD8bQ7HD52T6eXt1eY1yg5eJiE
+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
+IiV+/KN8
+```
+</details>
+
+<details><summary>GM D1086 — exact frozen integration patch lines (JSON)</summary>
+
+```json
+{
+  "patch_lines": [
+    "diff --git a/Cargo.lock b/Cargo.lock\n",
+    "index 68194af2..bd6fb7d6 100644\n",
+    "--- a/Cargo.lock\n",
+    "+++ b/Cargo.lock\n",
+    "@@ -2723,6 +2723,15 @@ dependencies = [\n",
+    "  \"serde_json\",\n",
+    " ]\n",
+    " \n",
+    "+[[package]]\n",
+    "+name = \"oteryn-release-manifest\"\n",
+    "+version = \"0.1.0\"\n",
+    "+dependencies = [\n",
+    "+ \"serde\",\n",
+    "+ \"serde_json\",\n",
+    "+ \"serde_json_canonicalizer\",\n",
+    "+]\n",
+    "+\n",
+    " [[package]]\n",
+    " name = \"oteryn-client\"\n",
+    " version = \"0.1.0\"\n",
+    "@@ -2847,6 +2856,7 @@ dependencies = [\n",
+    "  \"oteryn-foundation\",\n",
+    "  \"oteryn-ntp-clock\",\n",
+    "  \"oteryn-protocol-oteryn\",\n",
+    "+ \"oteryn-release-manifest\",\n",
+    "  \"oteryn-simulation-determinism\",\n",
+    "  \"oteryn-world-bundle\",\n",
+    "  \"oteryn-world-bundle-compiler\",\n",
+    "@@ -3697,6 +3707,12 @@ version = \"1.0.23\"\n",
+    " source = \"registry+https://github.com/rust-lang/crates.io-index\"\n",
+    " checksum = \"9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f\"\n",
+    " \n",
+    "+[[package]]\n",
+    "+name = \"ryu-js\"\n",
+    "+version = \"1.0.3\"\n",
+    "+source = \"registry+https://github.com/rust-lang/crates.io-index\"\n",
+    "+checksum = \"04d056b875a9d2e6cb9a61d127afee9ac5999b9f87bcb32079d1318e505be714\"\n",
+    "+\n",
+    " [[package]]\n",
+    " name = \"same-file\"\n",
+    " version = \"1.0.6\"\n",
+    "@@ -3824,6 +3840,17 @@ dependencies = [\n",
+    "  \"zmij\",\n",
+    " ]\n",
+    " \n",
+    "+[[package]]\n",
+    "+name = \"serde_json_canonicalizer\"\n",
+    "+version = \"0.4.1\"\n",
+    "+source = \"registry+https://github.com/rust-lang/crates.io-index\"\n",
+    "+checksum = \"87f7bb64f8c7e9f783fdfe883b5fe93a90bee1597c63705baa91842c5f698620\"\n",
+    "+dependencies = [\n",
+    "+ \"ryu-js\",\n",
+    "+ \"serde\",\n",
+    "+ \"serde_json\",\n",
+    "+]\n",
+    "+\n",
+    " [[package]]\n",
+    " name = \"serde_repr\"\n",
+    " version = \"0.1.21\"\n",
+    "diff --git a/Cargo.toml b/Cargo.toml\n",
+    "index 1af3eed0..967c484d 100644\n",
+    "--- a/Cargo.toml\n",
+    "+++ b/Cargo.toml\n",
+    "@@ -7,6 +7,7 @@ members = [\n",
+    "     \"crates/diagnostics\",\n",
+    "     \"crates/error-codes\",\n",
+    "     \"crates/ntp-clock\",\n",
+    "+    \"crates/release-manifest\",\n",
+    "     \"crates/client-runtime\",\n",
+    "     \"crates/platform-contracts\",\n",
+    "     \"crates/platform-client\",\n",
+    "diff --git a/apps/game-server/Cargo.toml b/apps/game-server/Cargo.toml\n",
+    "index 959727d0..028940c6 100644\n",
+    "--- a/apps/game-server/Cargo.toml\n",
+    "+++ b/apps/game-server/Cargo.toml\n",
+    "@@ -19,6 +19,7 @@ ed25519-dalek.workspace = true\n",
+    " oteryn-error-codes = { version = \"=0.1.0\", path = \"../../crates/error-codes\" }\n",
+    " oteryn-foundation = { version = \"=0.1.0\", path = \"../../crates/foundation\" }\n",
+    " oteryn-ntp-clock = { version = \"=0.1.0\", path = \"../../crates/ntp-clock\" }\n",
+    "+oteryn-release-manifest = { version = \"=0.1.0\", path = \"../../crates/release-manifest\" }\n",
+    " oteryn-protocol-oteryn = { version = \"=0.1.0\", path = \"../../crates/protocol-oteryn\" }\n",
+    " oteryn-simulation-determinism = { version = \"=0.1.0\", path = \"../../crates/simulation-determinism\" }\n",
+    " oteryn-world-bundle = { version = \"=0.1.0\", path = \"../../crates/world-bundle\" }\n",
+    "@@ -166,3 +167,7 @@ test = false\n",
+    " \n",
+    " [lints]\n",
+    " workspace = true\n",
+    "+\n",
+    "+[[test]]\n",
+    "+name = \"staff_audit_postgres\"\n",
+    "+test = false\n",
+    "diff --git a/apps/game-server/migrations/0092_staff_audit.sql b/apps/game-server/migrations/0092_staff_audit.sql\n",
+    "new file mode 100644\n",
+    "index 00000000..28db4ab1\n",
+    "--- /dev/null\n",
+    "+++ b/apps/game-server/migrations/0092_staff_audit.sql\n",
+    "@@ -0,0 +1,118 @@\n",
+    "+\n",
+    "+CREATE TABLE game_staff_control_links (\n",
+    "+ environment text NOT NULL CHECK(length(environment) BETWEEN 1 AND 128),\n",
+    "+ control_seq numeric(20,0) NOT NULL CHECK(control_seq BETWEEN 1 AND 18446744073709551615),\n",
+    "+ link_sha256 text NOT NULL CHECK(link_sha256 ~ '^[0-9a-f]{64}$'),\n",
+    "+ previous_link_sha256 text NOT NULL CHECK(previous_link_sha256 ~ '^[0-9a-f]{64}$'),\n",
+    "+ roster_sha256 text NOT NULL CHECK(roster_sha256 ~ '^[0-9a-f]{64}$'),\n",
+    "+ link_kind text NOT NULL CHECK(link_kind IN ('REQUEST','RECEIPT','ACTIVATION')),\n",
+    "+ signed_bytes bytea NOT NULL CHECK(octet_length(signed_bytes) BETWEEN 1 AND 32768 AND encode(sha256(signed_bytes),'hex')=link_sha256),\n",
+    "+ principal text NOT NULL CHECK(length(principal) BETWEEN 1 AND 128),\n",
+    "+ key_fingerprint text NOT NULL CHECK(length(key_fingerprint) BETWEEN 1 AND 128),\n",
+    "+ signature text NOT NULL CHECK(octet_length(signature) BETWEEN 1 AND 8192),\n",
+    "+ created_xact_id bigint NOT NULL CHECK(created_xact_id=txid_current()),\n",
+    "+ PRIMARY KEY(environment,control_seq), UNIQUE(environment,link_sha256), UNIQUE(environment,control_seq,link_sha256));\n",
+    "+CREATE TABLE game_staff_control_heads (\n",
+    "+ environment text PRIMARY KEY, control_seq numeric(20,0) NOT NULL,\n",
+    "+ link_sha256 text NOT NULL, activation_sha256 text NOT NULL CHECK(activation_sha256 ~ '^[0-9a-f]{64}$'),\n",
+    "+ FOREIGN KEY(environment,control_seq,link_sha256) REFERENCES game_staff_control_links(environment,control_seq,link_sha256));\n",
+    "+CREATE TABLE game_staff_operations (\n",
+    "+ environment text NOT NULL, operation_id uuid NOT NULL CHECK(game_character_is_uuid_v7(operation_id)),\n",
+    "+ request_sha256 text NOT NULL, request_bytes bytea NOT NULL CHECK(octet_length(request_bytes) BETWEEN 1 AND 32768 AND encode(sha256(request_bytes),'hex')=request_sha256),\n",
+    "+ outcome_bytes bytea NOT NULL CHECK(octet_length(outcome_bytes) BETWEEN 1 AND 4096),\n",
+    "+ outcome_sha256 text NOT NULL CHECK(encode(sha256(outcome_bytes),'hex')=outcome_sha256),\n",
+    "+ principal text NOT NULL, key_fingerprint text NOT NULL,\n",
+    "+ action_id uuid NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(action_id)), transaction_id uuid NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(transaction_id)),\n",
+    "+ control_seq numeric(20,0) NOT NULL, requires_receipt boolean NOT NULL,\n",
+    "+ occurred_at bigint NOT NULL CHECK(occurred_at>0),\n",
+    "+ created_xact_id bigint NOT NULL CHECK(created_xact_id=txid_current()),\n",
+    "+ PRIMARY KEY(environment,operation_id), UNIQUE(environment,request_sha256),\n",
+    "+ FOREIGN KEY(environment,control_seq) REFERENCES game_staff_control_links(environment,control_seq));\n",
+    "+CREATE TABLE game_staff_action_outbox (\n",
+    "+ environment text NOT NULL, operation_id uuid NOT NULL,\n",
+    "+ event_id uuid PRIMARY KEY CHECK(game_character_is_uuid_v7(event_id)), transaction_id uuid NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(transaction_id)),\n",
+    "+ event_type_id bigint NOT NULL CHECK(event_type_id>0), schema_revision bigint NOT NULL CHECK(schema_revision>0),\n",
+    "+ retention_profile_id text NOT NULL CHECK(retention_profile_id='STAFF_ACTION_AUDIT_RETENTION_V1'),\n",
+    "+ occurred_at bigint NOT NULL CHECK(occurred_at>0), expires_at bigint NOT NULL CHECK(expires_at=occurred_at+31536000000),\n",
+    "+ envelope bytea NOT NULL CHECK(octet_length(envelope) BETWEEN 1 AND 50176),\n",
+    "+ envelope_sha256 text NOT NULL CHECK(encode(sha256(envelope),'hex')=envelope_sha256),\n",
+    "+ publication_state smallint NOT NULL CHECK(publication_state IN (1,2)),\n",
+    "+ created_xact_id bigint NOT NULL,\n",
+    "+ FOREIGN KEY(environment,operation_id) REFERENCES game_staff_operations(environment,operation_id),\n",
+    "+ FOREIGN KEY(event_id) REFERENCES game_staff_operations(action_id),\n",
+    "+ FOREIGN KEY(transaction_id) REFERENCES game_staff_operations(transaction_id));\n",
+    "+CREATE TABLE game_staff_action_receipts (\n",
+    "+ environment text NOT NULL, operation_id uuid NOT NULL,\n",
+    "+ receipt_bytes bytea NOT NULL CHECK(octet_length(receipt_bytes) BETWEEN 1 AND 32768),\n",
+    "+ principal text NOT NULL, key_fingerprint text NOT NULL,\n",
+    "+ signature text NOT NULL CHECK(octet_length(signature) BETWEEN 1 AND 8192),\n",
+    "+ control_seq numeric(20,0) NOT NULL,\n",
+    "+ created_xact_id bigint NOT NULL CHECK(created_xact_id=txid_current()),\n",
+    "+ PRIMARY KEY(environment,operation_id),\n",
+    "+ FOREIGN KEY(environment,operation_id) REFERENCES game_staff_operations(environment,operation_id),\n",
+    "+ FOREIGN KEY(environment,control_seq) REFERENCES game_staff_control_links(environment,control_seq));\n",
+    "+CREATE FUNCTION game_staff_outbox_insert_stamp() RETURNS trigger LANGUAGE plpgsql AS $$\n",
+    "+BEGIN\n",
+    "+ IF NEW.created_xact_id<>txid_current() THEN RAISE EXCEPTION 'staff insert transaction mismatch' USING ERRCODE='23514'; END IF;\n",
+    "+ RETURN NEW;\n",
+    "+END $$;\n",
+    "+CREATE TRIGGER game_staff_outbox_insert_stamp BEFORE INSERT ON game_staff_action_outbox\n",
+    "+ FOR EACH ROW EXECUTE FUNCTION game_staff_outbox_insert_stamp();\n",
+    "+CREATE FUNCTION game_staff_immutable() RETURNS trigger LANGUAGE plpgsql AS $$\n",
+    "+BEGIN RAISE EXCEPTION 'immutable staff evidence' USING ERRCODE='23514'; END $$;\n",
+    "+CREATE FUNCTION game_staff_operation_has_audit() RETURNS trigger LANGUAGE plpgsql AS $$\n",
+    "+BEGIN\n",
+    "+ IF NOT EXISTS(SELECT 1 FROM game_staff_action_outbox a WHERE a.environment=NEW.environment AND a.operation_id=NEW.operation_id\n",
+    "+ AND a.event_id=NEW.action_id AND a.transaction_id=NEW.transaction_id AND a.created_xact_id=NEW.created_xact_id)\n",
+    "+ THEN RAISE EXCEPTION 'missing same-transaction staff audit' USING ERRCODE='23514'; END IF;\n",
+    "+ IF NOT EXISTS(SELECT 1 FROM game_staff_control_links l WHERE l.environment=NEW.environment AND l.control_seq=NEW.control_seq\n",
+    "+ AND l.link_kind='REQUEST' AND l.signed_bytes=NEW.request_bytes AND l.link_sha256=NEW.request_sha256\n",
+    "+ AND l.principal=NEW.principal AND l.key_fingerprint=NEW.key_fingerprint AND l.created_xact_id=NEW.created_xact_id)\n",
+    "+ THEN RAISE EXCEPTION 'missing same-transaction staff link' USING ERRCODE='23514'; END IF;\n",
+    "+ RETURN NULL;\n",
+    "+END $$;\n",
+    "+CREATE FUNCTION game_staff_link_extends_head() RETURNS trigger LANGUAGE plpgsql AS $$\n",
+    "+DECLARE h game_staff_control_heads%ROWTYPE;\n",
+    "+BEGIN\n",
+    "+ IF NEW.link_kind='ACTIVATION' THEN\n",
+    "+   IF current_user IN ('oteryn_game_runtime','oteryn_game_control') THEN\n",
+    "+     RAISE EXCEPTION 'runtime activation forbidden' USING ERRCODE='23514';\n",
+    "+   END IF;\n",
+    "+   RETURN NEW;\n",
+    "+ END IF;\n",
+    "+ SELECT * INTO h FROM game_staff_control_heads WHERE environment=NEW.environment FOR UPDATE;\n",
+    "+ IF NOT FOUND OR NEW.control_seq<>h.control_seq+1 OR NEW.previous_link_sha256<>h.link_sha256 THEN\n",
+    "+   RAISE EXCEPTION 'staff predecessor conflict' USING ERRCODE='23514';\n",
+    "+ END IF;\n",
+    "+ RETURN NEW;\n",
+    "+END $$;\n",
+    "+CREATE FUNCTION game_staff_link_has_outcome() RETURNS trigger LANGUAGE plpgsql AS $$\n",
+    "+BEGIN\n",
+    "+ IF NEW.link_kind='REQUEST' AND NOT EXISTS(SELECT 1 FROM game_staff_operations o WHERE o.environment=NEW.environment\n",
+    "+ AND o.control_seq=NEW.control_seq AND o.request_bytes=NEW.signed_bytes AND o.created_xact_id=NEW.created_xact_id)\n",
+    "+ THEN RAISE EXCEPTION 'staff link has no outcome' USING ERRCODE='23514'; END IF;\n",
+    "+ IF NEW.link_kind='RECEIPT' AND NOT EXISTS(SELECT 1 FROM game_staff_action_receipts r WHERE r.environment=NEW.environment\n",
+    "+ AND r.control_seq=NEW.control_seq AND r.receipt_bytes=NEW.signed_bytes AND r.principal=NEW.principal\n",
+    "+ AND r.key_fingerprint=NEW.key_fingerprint AND r.signature=NEW.signature AND r.created_xact_id=NEW.created_xact_id)\n",
+    "+ THEN RAISE EXCEPTION 'staff receipt link has no receipt' USING ERRCODE='23514'; END IF;\n",
+    "+ IF NOT EXISTS(SELECT 1 FROM game_staff_control_heads h WHERE h.environment=NEW.environment AND h.control_seq>=NEW.control_seq)\n",
+    "+ THEN RAISE EXCEPTION 'staff head not advanced' USING ERRCODE='23514'; END IF;\n",
+    "+ RETURN NULL;\n",
+    "+END $$;\n",
+    "+CREATE TRIGGER game_staff_link_predecessor BEFORE INSERT ON game_staff_control_links\n",
+    "+ FOR EACH ROW EXECUTE FUNCTION game_staff_link_extends_head();\n",
+    "+CREATE CONSTRAINT TRIGGER game_staff_link_outcome AFTER INSERT ON game_staff_control_links\n",
+    "+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_link_has_outcome();\n",
+    "+CREATE CONSTRAINT TRIGGER game_staff_operation_audit AFTER INSERT ON game_staff_operations\n",
+    "+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_operation_has_audit();\n",
+    "+CREATE TRIGGER game_staff_link_immutable BEFORE UPDATE OR DELETE ON game_staff_control_links FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();\n",
+    "+CREATE TRIGGER game_staff_link_no_truncate BEFORE TRUNCATE ON game_staff_control_links FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();\n",
+    "+CREATE TRIGGER game_staff_operation_immutable BEFORE UPDATE OR DELETE ON game_staff_operations FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();\n",
+    "+CREATE TRIGGER game_staff_operation_no_truncate BEFORE TRUNCATE ON game_staff_operations FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();\n",
+    "+CREATE TRIGGER game_staff_receipt_immutable BEFORE UPDATE OR DELETE ON game_staff_action_receipts FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();\n",
+    "+CREATE TRIGGER game_staff_receipt_no_truncate BEFORE TRUNCATE ON game_staff_action_receipts FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();\n",
+    "+REVOKE ALL ON game_staff_control_links,game_staff_control_heads,game_staff_operations,game_staff_action_outbox,game_staff_action_receipts FROM PUBLIC;\n",
+    "+GRANT SELECT,INSERT ON game_staff_control_links,game_staff_operations,game_staff_action_outbox,game_staff_action_receipts TO oteryn_game_runtime,oteryn_game_control;\n",
+    "+GRANT SELECT ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;\n",
+    "+GRANT UPDATE(control_seq,link_sha256) ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;\n",
+    "+REVOKE ALL ON FUNCTION game_staff_immutable(),game_staff_operation_has_audit(),game_staff_link_extends_head(),game_staff_link_has_outcome() FROM PUBLIC;\n",
+    "diff --git a/apps/game-server/src/node/config.rs b/apps/game-server/src/node/config.rs\n",
+    "index b944b6ec..ca67a7df 100644\n",
+    "--- a/apps/game-server/src/node/config.rs\n",
+    "+++ b/apps/game-server/src/node/config.rs\n",
+    "@@ -246,6 +246,8 @@ pub struct BootConfig {\n",
+    " #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]\n",
+    " #[serde(deny_unknown_fields)]\n",
+    " pub struct NodeConfig {\n",
+    "+    /// D1041 restart-only reviewed independent staff trust; absent disables staff control.\n",
+    "+    pub staff: Option<crate::staff::signature::TrustConfig>,\n",
+    "     pub listener: ListenerConfig,\n",
+    "     pub scope: ScopeConfig,\n",
+    "     pub database: DatabaseConfig,\n",
+    "diff --git a/apps/game-server/src/node/serve.rs b/apps/game-server/src/node/serve.rs\n",
+    "index 150ab680..46843748 100644\n",
+    "--- a/apps/game-server/src/node/serve.rs\n",
+    "+++ b/apps/game-server/src/node/serve.rs\n",
+    "@@ -85,7 +85,7 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);\n",
+    " const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);\n",
+    " const AUDIT_BATCH: u16 = 64;\n",
+    " const AUDIT_RUN_CAP: u32 = 64;\n",
+    "-const CONTROL_REQUEST_BYTES: usize = 64;\n",
+    "+const CONTROL_REQUEST_BYTES: usize = crate::staff::signature::MAX_CONTROL_BYTES;\n",
+    " const CONTROL_DEADLINE: Duration = Duration::from_secs(30);\n",
+    " const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;\n",
+    " \n",
+    "@@ -1904,14 +1904,26 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {\n",
+    "     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)\n",
+    " }\n",
+    " \n",
+    "-async fn handle_control(stream: &mut UnixStream) -> Option<[u8; 16]> {\n",
+    "-    let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);\n",
+    "+enum ControlInput {\n",
+    "+    Bootstrap([u8; 16]),\n",
+    "+    Staff(crate::staff::signature::ControlMessage),\n",
+    "+}\n",
+    "+async fn handle_control(stream: &mut UnixStream) -> Option<ControlInput> {\n",
+    "+    let mut request = Vec::with_capacity(64);\n",
+    "     let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);\n",
+    "     limited.read_to_end(&mut request).await.ok()?;\n",
+    "     if request.len() > CONTROL_REQUEST_BYTES {\n",
+    "         return None;\n",
+    "     }\n",
+    "-    parse_operation_id(&request)\n",
+    "+    if let Some(bytes) = request.strip_prefix(crate::staff::signature::CONTROL_PREFIX) {\n",
+    "+        let message =\n",
+    "+            oteryn_release_manifest::jcs::decode(bytes, crate::staff::signature::MAX_CONTROL_BYTES)\n",
+    "+                .ok()?;\n",
+    "+        // Only the bounded transport envelope is decoded here. The executable\n",
+    "+        // inner request remains opaque until OpenSSH verifies its exact bytes.\n",
+    "+        return Some(ControlInput::Staff(message));\n",
+    "+    }\n",
+    "+    parse_operation_id(&request).map(ControlInput::Bootstrap)\n",
+    " }\n",
+    " \n",
+    " /// One request at a time, bounded size and deadline; only uid 0 is served.\n",
+    "@@ -1923,6 +1935,7 @@ async fn control_loop(\n",
+    "     proof: &NodeIncarnationProof,\n",
+    "     evidence: &FreshEvidenceSource,\n",
+    "     intents: &ProducerDescriptor,\n",
+    "+    staff_trust: Option<&std::sync::Arc<crate::staff::signature::VerifierTrust>>,\n",
+    "     stop: &CancellationToken,\n",
+    " ) {\n",
+    "     let capacity = TransientCapacity::new();\n",
+    "@@ -1942,14 +1955,46 @@ async fn control_loop(\n",
+    "         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));\n",
+    "         let connection = connection.as_deref();\n",
+    "         let served = tokio::time::timeout(CONTROL_DEADLINE, async {\n",
+    "-            let answer = match handle_control(&mut stream).await {\n",
+    "-                Some(operation) => {\n",
+    "+            let input = handle_control(&mut stream).await;\n",
+    "+            if let Some(ControlInput::Staff(message)) = input {\n",
+    "+                let answer = if let Some(trust) = staff_trust {\n",
+    "+                    match message {\n",
+    "+                        crate::staff::signature::ControlMessage::Request(signed) => root\n",
+    "+                            .audit_staff_read(std::sync::Arc::clone(trust), signed)\n",
+    "+                            .await\n",
+    "+                            .ok()\n",
+    "+                            .map(|outcome| outcome.bytes),\n",
+    "+                        crate::staff::signature::ControlMessage::Receipt(signed) => root\n",
+    "+                            .store_staff_receipt(std::sync::Arc::clone(trust), signed)\n",
+    "+                            .await\n",
+    "+                            .ok()\n",
+    "+                            .map(|()| b\"receipt-stored\".to_vec()),\n",
+    "+                    }\n",
+    "+                } else {\n",
+    "+                    None\n",
+    "+                };\n",
+    "+                event_traced(\n",
+    "+                    if answer.is_some() {\n",
+    "+                        \"event=staff_audit result=recorded\"\n",
+    "+                    } else {\n",
+    "+                        \"event=staff_audit result=rejected\"\n",
+    "+                    },\n",
+    "+                    connection,\n",
+    "+                );\n",
+    "+                let _ = stream\n",
+    "+                    .write_all(answer.as_deref().unwrap_or(b\"rejected\"))\n",
+    "+                    .await;\n",
+    "+                let _ = stream.shutdown().await;\n",
+    "+                return;\n",
+    "+            }\n",
+    "+            let answer = match input {\n",
+    "+                Some(ControlInput::Bootstrap(operation)) => {\n",
+    "                     bootstrap_one(\n",
+    "                         root, authority, proof, evidence, intents, &capacity, operation,\n",
+    "                     )\n",
+    "                     .await\n",
+    "                 }\n",
+    "-                None => \"rejected\",\n",
+    "+                _ => \"rejected\",\n",
+    "             };\n",
+    "             event_traced(\n",
+    "                 &format!(\"event=character_bootstrap result={answer}\"),\n",
+    "@@ -2396,6 +2441,13 @@ async fn boot_and_serve(\n",
+    "     signalled: &CancellationToken,\n",
+    " ) -> Result<(), BootError> {\n",
+    "     let config = &material.config;\n",
+    "+    let staff_trust = config\n",
+    "+        .staff\n",
+    "+        .as_ref()\n",
+    "+        .map(|staff| staff.load())\n",
+    "+        .transpose()\n",
+    "+        .map_err(|_| BootError::Startup(StartupError::Invalid { key: \"staff\" }))?\n",
+    "+        .map(std::sync::Arc::new);\n",
+    "     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);\n",
+    "     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {\n",
+    "         stopped_before_ready();\n",
+    "@@ -2712,6 +2764,7 @@ async fn boot_and_serve(\n",
+    "         &proof,\n",
+    "         evidence,\n",
+    "         &material.intents,\n",
+    "+        staff_trust.as_ref(),\n",
+    "         &shutdown,\n",
+    "     ));\n",
+    "     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));\n",
+    "diff --git a/docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json b/docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json\n",
+    "index 41465e49..f282609c 100644\n",
+    "--- a/docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json\n",
+    "+++ b/docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json\n",
+    "@@ -132,6 +132,20 @@\n",
+    "       \"deletion_or_anonymization_policy\": \"Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative guild, membership and guild bank tables, which this profile never deletes.\",\n",
+    "       \"legal_hold_policy\": \"Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.\",\n",
+    "       \"policy_revision\": 1\n",
+    "+    },\n",
+    "+    {\n",
+    "+      \"id\": \"STAFF_ACTION_AUDIT_RETENTION_V1\",\n",
+    "+      \"purpose\": \"Prove every staff, operator and Platform-security action on players\",\n",
+    "+      \"privacy_class\": \"RESTRICTED_PLAYER_LINKED\",\n",
+    "+      \"finite_retention_duration_or_ceiling\": \"P1Y (owner ruling 2026-10-06, \u00a71 Q3 a)\",\n",
+    "+      \"permitted_roles\": [\n",
+    "+        \"owner\",\n",
+    "+        \"authorized security\"\n",
+    "+      ],\n",
+    "+      \"export_redaction_policy\": \"Case-scoped authorized export redacts unrelated player-linked fields.\",\n",
+    "+      \"deletion_or_anonymization_policy\": \"Delete the retained player-linked event, envelope, and payload at ordinary expiry; do not convert it into an indefinite pseudonymous analytics record.\",\n",
+    "+      \"legal_hold_policy\": \"Explicit case/legal authorization must record reason, authorizing actor, start time, affected records or scope, and audited access; release returns the record to ordinary expiry and deletion.\",\n",
+    "+      \"policy_revision\": 1\n",
+    "     }\n",
+    "   ],\n",
+    "   \"event_type_rules\": {\n",
+    "@@ -183,6 +197,18 @@\n",
+    "       \"privacy_class_floor\": \"RESTRICTED_PLAYER_LINKED\",\n",
+    "       \"retention_profile_id\": \"ECONOMY_LEDGER_RETENTION_V1\",\n",
+    "       \"atomic_mutation_evidence\": true\n",
+    "+    },\n",
+    "+    {\n",
+    "+      \"id\": 5,\n",
+    "+      \"name\": \"STAFF_ACTION\",\n",
+    "+      \"owner_gate\": \"OPS_GM_01_STAFF_ACTIONS\",\n",
+    "+      \"payload_schema\": \"docs/contracts/game-events/v2/staff_action.proto\",\n",
+    "+      \"payload_message\": \"oteryn.events.v2.StaffActionV1\",\n",
+    "+      \"current_schema_revision\": 1,\n",
+    "+      \"durability_class\": \"DURABLE_AUDIT\",\n",
+    "+      \"privacy_class_floor\": \"RESTRICTED_PLAYER_LINKED\",\n",
+    "+      \"retention_profile_id\": \"STAFF_ACTION_AUDIT_RETENTION_V1\",\n",
+    "+      \"atomic_mutation_evidence\": true\n",
+    "     }\n",
+    "   ],\n",
+    "   \"notes\": [\n",
+    "diff --git a/docs/contracts/game-events/v2/staff_action.proto b/docs/contracts/game-events/v2/staff_action.proto\n",
+    "new file mode 100644\n",
+    "index 00000000..d55b4823\n",
+    "--- /dev/null\n",
+    "+++ b/docs/contracts/game-events/v2/staff_action.proto\n",
+    "@@ -0,0 +1,28 @@\n",
+    "+syntax = \"proto3\";\n",
+    "+\n",
+    "+package oteryn.events.v2;\n",
+    "+\n",
+    "+// OPS-GM-AUDIT-1 / ARCH-LIVE-READINESS-0 \u00a71 ruling 11.\n",
+    "+// Schema revision 1; CP D1188 leases STAFF_ACTION event_type_id = 5.\n",
+    "+// Exact signed JCS and outcome bytes are retained; protobuf is not semantic JCS.\n",
+    "+// Payload <= 49152 bytes; the ANL envelope <= 50176 bytes.\n",
+    "+// Fields mirror apps/game-server/src/staff/audit.rs::StaffActionV1.\n",
+    "+message StaffActionV1 {\n",
+    "+  bytes action_id = 1;\n",
+    "+  string actor_kind = 2;\n",
+    "+  string action_kind = 3;\n",
+    "+  bytes target_jcs = 4;\n",
+    "+  string reason = 5;\n",
+    "+  string result = 6;\n",
+    "+  bytes signed_request = 7;\n",
+    "+  string principal = 8;\n",
+    "+  string key_fingerprint = 9;\n",
+    "+  string signature = 10;\n",
+    "+  string roster_sha256 = 11;\n",
+    "+  string request_sha256 = 12;\n",
+    "+  bytes parameters_jcs = 13;\n",
+    "+  string trace_id = 14;\n",
+    "+  bytes basis_refs_jcs = 15;\n",
+    "+  bytes outcome_jcs = 16;\n",
+    "+  string environment = 17;\n",
+    "+}\n"
+  ]
+}
+```
+</details>
