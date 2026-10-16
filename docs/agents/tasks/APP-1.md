@@ -1,10 +1,10 @@
-# APP-1 — durable selected appearance and AccountUnlock set (skeleton task record)
+# APP-1 — durable selected appearance and AccountUnlock set (partial implementation)
 
 ```yaml
 task_id: APP-1
 title: "APP-1: durable selected appearance and AccountUnlock set"
 mode: IMPLEMENT
-status: skeleton
+status: partial
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -153,8 +153,8 @@ existing runtime role and event owner must be qualified in the slot, not granted
    appearance-specific projection/receipt replay verification). The root revision guard in
    `0022_character_name.sql` only enforces exact +1; it is the deferred chain guard, not that
    root guard, that currently lacks an appearance receipt family. Preserve every existing arm.
-   The complete guarded native writer is retained as a proposal outside the author checkout;
-   no substitute receipt or uncommittable production writer is installed here.
+   The native writer is now authored in its owned source; shared integrity integration is
+   carried separately in the explicit private CP mount packet.
 2. First selection writes must use the actual `begin_semantic_transaction` / semantic deadline,
    `assert_recovery_fence`, `lock_admission_relations`, and
    `character_progression::assert_gameplay_fence` (including current node incarnation,
@@ -180,13 +180,14 @@ existing runtime role and event owner must be qualified in the slot, not granted
    owner. Store remains unavailable until gap §32; it never becomes an earned AccountUnlock.
 5. Module registration, migration numbering, shared integrity/guard integration, audit/event family
    registration, runtime admission/command publication and protocol wiring require the CP slot.
-   APP-1 owns the production DDL/permissions content and native writer; their prepared proposals
-   are not classified as completed or delegated slot mechanics.
+   APP-1 owns the production DDL/permissions content and native writer. Those mechanics are
+   authored here; runtime integration and unavailable entitlement paths are not claimed complete.
    Native independent exact-head review is required before the eventual persistence integration.
 
-### Qualification and limits
+### Historical e07 qualification and limits
 
-The owned standalone test wrapper loads the actual new source and uses the existing native
+The following describes the published e07 read/schema increment, not exact-head evidence for
+the new owned source split below. That standalone test wrapper loads the actual source and uses the existing native
 server rlib for all domain IDs, revisions and the unmodified appearance validator. No duplicate
 native types or validator are compiled. An isolated PostgreSQL **17.6** database qualifies
 private projection reads, per-Character/per-account isolation, reconnection/reload, write-once
@@ -200,31 +201,49 @@ Fixture-only earned mapping/compatibility is explicit; revision equality there i
 policy. No production granting authority, runtime session, real relog, complete fenced writer,
 Character deletion flow, role/grant compatibility, complete event chain or E2E is qualified.
 The acceptance checkboxes above intentionally remain unchecked. In particular “stale fence writes
-nothing” awaits an actual writer and independent missing/stale/mismatched/expired/replayed
-boundary cases; it cannot be claimed from this read-only subset.
+nothing” was not qualified by that read-only subset; fresh native qualification of the current
+writer and its independently supplied authority is required for the new candidate.
 
 Evidence, exact commands, checks and source hashes are retained outside the repository in
 `/workspace/oteryn-prep/app-1-evidence/` (historical index, validation, scope and source manifest).
 That preparation made no worker commit/push/ready/merge/review trigger, shared source edit,
 production DDL or content change.
 
-### Current bounded packet — 2026-10-16
+### Current owned implementation — 2026-10-16
 
-The CI reader wrapper remains `#[path]` and compiles actual owned reader/recovery code. A native
-writer cannot share that standalone wrapper: its real fence and semantic-transaction helpers are
-private to the existing native durability owner. No cfg shim, duplicate fence or public token
-constructor is introduced. The guarded writer plus complete unnumbered migration and recovery
-integration patch are preserved for the exact CP registration/integration slot. The writer is
-not installed, tested or claimed complete by this schema-only candidate.
+The native fenced starter-selection writer now lives unconditionally in
+`character_appearance.rs`: semantic pass/transaction, exact root-object recovery authority,
+recovery fence, admission relation locks, occurrence serialization, complete gameplay/root fence,
+progression/current-content context, exact prior selection, pending-respawn refusal, root/state
+revision +1, immutable receipt, projection, historical replay/reconcile and recovery-gated load.
+The earned/Store/mount path remains unavailable; no authorizing callback or grant token is added.
+The existing pure `AppearanceContent` and `Sex` inputs are not proofs of admitted content or sex.
 
-Resume triggers: CP authorizes native module registration and shared guard/recovery integration;
-the granting owner exposes the accepted transaction-bound cosmetic consumer on
-`FencedGrantingCharacter`; APP-2 supplies the real content key/provenance resolver; the Character
-creation owner supplies sex. Stale-fence-no-write and actual relog remain unqualified until the
-native writer and runtime admission are integrated. No acceptance checkbox is advanced.
+Within the exact allocated filenames, `character_appearance_tests.rs` now holds the **single**
+production SQLx reader/recovery implementation plus its original three focused tests in a nested
+`#[cfg(test)]` module. The writer loads this source as `stored`; the standalone PG target loads
+the same source directly. This filename tradeoff avoids duplicate implementations, private fence
+facades, cfg suppression of the writer or a shared production module-registration edit. The
+standalone target still qualifies only the historical reader/schema boundary, not native writing.
 
-Current evidence and the uninstalled native integration packet are retained outside the
-repository at `/workspace/scratch/app1-packet/` (exact source manifest, SQL and source patches,
-validation logs). The owned PostgreSQL 17.6 target passes 4 tests; focused target clippy,
-workspace format, governance validation and 124 governance tests pass. These checks do not
-qualify production integration or the uninstalled native writer.
+`APP1_MIGRATION_CONTENT` in the owned PG target contains the executable complete unnumbered
+DDL, immutable selection/grant receipts and facts, exact projection/receipt FK and deferred
+selection chain, every existing 0073 guard clause plus its appearance initial-state/global-union/
+state-successor arms, fixed function search paths and least-privilege grants. Number assignment
+and installing this content remain the CP migration slot; authoring its content is APP-1 work.
+
+The separate private native overlay contains shared `mod.rs` registration, the semantic
+`character_authority.rs` global receipt-union/verifier call, native nine-case target and its
+unchanged authority harness except installation of SQL extracted from the owned constant. None
+of those shared/new paths is in this owned publication candidate. Native mount qualification must
+bind the new owned SHA, exact overlay and extracted SQL hash; prior private `e32ba60a` evidence
+is historical and is not exact-head evidence for this new split. Lead orchestrates fresh native
+validation and independent review before publication. No new 9+4 proof is claimed here.
+
+Remaining external owners: the granting owner must expose its accepted transaction-bound
+cosmetic consumer on `FencedGrantingCharacter`; APP-2 must provide admitted content/key/provenance
+mapping; Character creation must provide sex. CP must integrate current shared guards/recovery,
+module registration, migration number and actual runtime admission/caller. Exact replay, load
+and reconciliation describe history only; APP-3 must independently recheck current actor/session/
+connection/scope/interpretation/conditions before publication. Native storage reload is not a full
+client relog. No acceptance checkbox is advanced and the task remains PARTIAL.
