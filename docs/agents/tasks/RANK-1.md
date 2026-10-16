@@ -319,3 +319,69 @@ passed. Only five of the six leased paths change; the inherited ranking test
 source is byte-identical to the base and actual execution manifest. Completed
 private native rlib/driver evidence is retained losslessly as gzip with raw and
 stream SHA-256 plus exact restore arguments; shared dependencies are untouched.
+
+## Owned HS-1 completion preparation (2026-10-16; unpublished)
+
+This authoring allocation starts at existing draft #2168 head
+`8aaac7410d0fa53c5e2a0dd564b22a55e1e3cb8b`. It adds the following owned native
+consumer work without changing shared registrations, manifests, registries,
+migrations, grants or capability activation:
+
+- Full eleven-category publication reads account facts and the owning Achievement
+  catalogue (including retired/unknown-key behavior); one representative per
+  account is the highest-level live World Character, then lowest CharacterId,
+  selected before the vocation filter. All account facts count regardless of
+  earning Character or World. Missing representative progression fails closed.
+- Earned Charm Points read the actual Bestiary counters in one set-based World
+  read, use the owning BestiaryRace completion predicate and content points, and
+  ignore spent currency. The actual Charm source owner validates the catalogue
+  keys, duplicates and bounds. Both additional categories share the original
+  repeatable-read source cut and atomic all-category publication.
+- The owned World job invokes actual Root publication every 30 minutes and after
+  composition-root reset notifications. Publication locks serialize the durable
+  due check; a restart consults committed timestamps. Failed passes retain the
+  previous generation. No caller-provided score, raw administrative pool or
+  gameplay authority is introduced. The existing nine-category entry point is
+  retained for the original private native fixtures; production uses the full
+  catalogue-bound refresh method.
+- The exact `AFTER INSERT` public producer trigger attachment is an executable
+  separate SQL proposal requiring the real owning migration
+  `0091_public_projections.sql` from protected main@24fc332f256638e3b784bff1b3c85b18e2665a76.
+  The CP must append it after installing that migration and the private snapshot
+  schema. It fails installation when its owner is absent; no stub or silent
+  attachment skip is supplied. Snapshot, public revision and outbox share the
+  same transaction, including rollback after a later category fails.
+
+Three additional genuine PostgreSQL case bodies cover account representative
+selection/points, real fenced Bestiary completion, durable due checks with a
+second Root and planned reset, plus exact public-trigger/outbox rollback. The
+public case reads the actual migration at runtime and fails explicitly when
+that executor prerequisite is absent. There are now ten PostgreSQL bodies and
+11 inherited ranking cases; **none of the new bodies has executed**. The original
+standalone gate remains honest: enabling `cfg(any())` without the shared native
+module registration would run zero highscore cases.
+
+Validation in this allocation: owned-file rustfmt and diff whitespace checks
+passed; governance validation passed (22 documents, nine lanes), and all 124
+Python governance tests passed. Rust/SQL execution remains blocked by the lead's
+shared heavy-resource slot. Historical generation-2 runtime evidence above does
+not qualify these new source bytes or the added categories/job/trigger.
+
+Remaining REPORT_ONLY integration dependencies: dedicated projection-role Root
+credentials and grants (SELECT native roots/progression/build/account facts and
+Bestiary counters; projection DML and identity sequence access; runtime snapshot
+SELECT only), durability module registration, canonical PostgreSQL target/Cargo
+registration, actual per-World node task/reset notifications and content-generation
+catalogue binding. The migration slot must install both schema and public-trigger
+attachment after 0091. Qualification requires PostgreSQL 17.6 and the unchanged
+Root budget; representative full-World performance is unqualified.
+
+HS-WIRE-1 remains blocked on an accepted concrete `.proto` layout, error allocation
+and the shared registry/capability/connection slot: the accepted prose does not
+assign field numbers/types or the vocation representation. No wire schema was
+invented. ANALYSER-EMIT-1 remains blocked outside owned paths: existing death loot
+errors retain the corpse but discard the already committed entry list, successful
+loot collapses `Committed` and `AlreadyCommitted`, and actual combat/item/session
+commit hooks live in unallocated owners. A standalone emitter could not repair
+those real consumers, so none is presented as completed emission. No commit,
+push, ready transition, review trigger, merge or shared-path write was performed.

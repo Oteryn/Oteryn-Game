@@ -424,7 +424,7 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
                 Err(SnapshotError::SnapshotExpired)
             ));
         }
-        for category in [0, 10, 11, 255] {
+        for category in [0, 12, 13, 255] {
             assert!(matches!(
                 h.root
                     .read_highscore_page(world(), category, None, 1, 0, asking())
@@ -504,6 +504,159 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
         );
         assert_eq!(h.count("game_world_highscore_snapshots").await?, 18);
         assert_eq!(h.root_revision().await?, "2");
+        Ok(())
+    })
+}
+
+fn complete_catalogues() -> TestResult<SnapshotCatalogues> {
+    SnapshotCatalogues::new(
+        AchievementCatalogue::embedded().map_err(debug)?,
+        [BestiaryCharmEntry {
+            race: crate::domain::bestiary::BestiaryRace::new(
+                "oteryn:creature.rat",
+                "definition-r1",
+                vec![1, 2, 3],
+            )
+            .map_err(debug)?,
+            charm_points: 25,
+        }],
+    )
+    .map_err(|e| debug(e).into())
+}
+
+#[test]
+fn account_representatives_and_earned_charm_points_use_native_sources() -> TestResult {
+    run("hsextra", async |h| {
+        dataset(h, 100, 2, "paladin", 1000, world()).await?;
+        // Genuine append-only owner tables and their deferred request/fact guard, with no
+        // projection-fed account points. Every fixture Character belongs to the same account.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/a_friend_in_need','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+            .bind(vec![1_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        // Three real current-fenced kill commits, completing the owning Bestiary definition.
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        for index in 0..3_u8 {
+            h.root.commit_bestiary_kill(
+                &authority, &h.node, harness::fence(u64::from(index) + 2)?,
+                crate::durability::bestiary_progress::BestiaryKillRequest {
+                    occurrence: crate::durability::bestiary_progress::BestiaryKillOccurrence::from_bytes(id(80 + index)).map_err(debug)?,
+                    race: complete_catalogues()?.bestiary.values().next().ok_or("missing race")?.race.clone(),
+                    context: harness::context(), policy_revision: "policy-1".into(), reward_revision: "reward-1".into(),
+                },
+            ).await.map_err(debug)?;
+        }
+        drop(authority);
+        drop(seal);
+        let ids = h
+            .root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        assert_eq!(ids.len(), 11);
+        assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
+        let accounts = page(h, 10, None, 1, 0).await?;
+        assert_eq!(accounts.rows.len(), 1);
+        assert_eq!(accounts.rows[0].character_id.as_bytes(), &generated(100));
+        assert_eq!(accounts.rows[0].value, (2, 0));
+        // The account's representative is selected before a vocation filter; the asking
+        // knight does not become a second representative of the same account.
+        assert!(page(h, 10, Some("knight"), 1, 0).await?.rows.is_empty());
+        assert!(accounts.own_row.is_none());
+        let charms = page(h, 11, None, 1, 0).await?;
+        assert_eq!(charms.rows.len(), 3);
+        assert_eq!(charms.rows[0].character_id, asking());
+        assert_eq!(charms.rows[0].value, (25, 0));
+        assert!(charms.rows[1..].iter().all(|r| r.value == (0, 0)));
+        assert!(page(h, 12, None, 1, 0).await.is_err());
+        Ok(())
+    })
+}
+
+#[test]
+fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestResult {
+    run("hsdue", async |h| {
+        let first = h
+            .root
+            .refresh_highscore_world(world(), complete_catalogues()?, false)
+            .await
+            .map_err(debug)?;
+        assert_eq!(first.len(), 11);
+        // A separately connected genuine Root supplies no process-local schedule cache.
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let job = job::HighscoreWorldJob::new(
+            std::sync::Arc::new(other),
+            world(),
+            complete_catalogues()?,
+        );
+        let next = job.periodic_tick().await.map_err(debug)?;
+        assert!(next.is_empty());
+        let reset = job.after_planned_reset().await.map_err(debug)?;
+        assert_eq!(reset.len(), 11);
+        assert!(
+            reset
+                .iter()
+                .zip(&first)
+                .all(|(a, b)| a.snapshot_id > b.snapshot_id)
+        );
+        assert_eq!(
+            page(h, 10, None, 1, first[9].snapshot_id)
+                .await?
+                .snapshot
+                .snapshot_id,
+            first[9].snapshot_id
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> TestResult {
+    // This branch predates 0091. The CP executor must first stage that exact owning migration
+    // from protected main; missing setup fails explicitly instead of skipping this case.
+    let migration_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("migrations/0091_public_projections.sql");
+    let migration = std::fs::read_to_string(&migration_path).map_err(|error| {
+        format!(
+            "required owning 0091 public producer migration absent at {}: {error}",
+            migration_path.display()
+        )
+    })?;
+    run("hsoutbox", async |h| {
+        // The native harness may already apply 0091 after the slot merges main.
+        let installed: bool = sqlx::query_scalar(
+            "SELECT to_regprocedure('game_public_highscores_snapshot_trigger()') IS NOT NULL",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        if !installed {
+            h.pool.execute(migration.as_str()).await?;
+        }
+        h.pool
+            .execute(PUBLIC_PROJECTION_ATTACHMENT_PROPOSAL)
+            .await?;
+        h.root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        assert_eq!(h.count("game_public_highscore_outbox").await?, 11);
+        h.pool.execute("CREATE FUNCTION highscore_test_fail_category() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.category=2 THEN RAISE EXCEPTION 'fixture publication failure'; END IF; RETURN NEW; END;$$; CREATE TRIGGER highscore_test_fail_category BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_test_fail_category();").await?;
+        assert!(
+            h.root
+                .refresh_highscore_world(world(), complete_catalogues()?, true)
+                .await
+                .is_err()
+        );
+        assert_eq!(h.count("game_public_highscore_outbox").await?, 11);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
         Ok(())
     })
 }

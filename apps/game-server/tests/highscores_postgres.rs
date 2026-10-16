@@ -3,6 +3,10 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
+pub use production_server::content;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/achievement_catalogue.rs"]
+mod achievement_catalogue;
 pub use production_server::domain;
 #[allow(dead_code, unused_imports)]
 #[path = "support/bestiary_postgres_harness.rs"]
