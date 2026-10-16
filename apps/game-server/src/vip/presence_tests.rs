@@ -1017,3 +1017,558 @@ fn withdrawal_replaces_offline_work_while_last_sent_online_without_duplicate_unc
         );
     }
 }
+
+#[test]
+fn incremental_index_preserves_shared_targets_and_other_watchers() {
+    let mut s = state();
+    let first = item_fence().expect("synthetic binding");
+    let mut second = first;
+    second.game_session_id = GameSessionId::decode(&id(94)).expect("synthetic session");
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    let mut other = read(data(Visibility::Unconfirmed, true));
+    other.fence = second;
+    install(&mut s, other, 100, Refresh::Reconcile);
+    assert_eq!(s.index[&character(61)].len(), 2);
+    let mut changed = read(data(Visibility::Shown, false));
+    changed.entries[0].target = character(62);
+    install(&mut s, changed, 101, Refresh::Reconcile);
+    assert_eq!(
+        s.index[&character(61)],
+        BTreeSet::from([second.game_session_id])
+    );
+    assert_eq!(
+        s.index[&character(62)],
+        BTreeSet::from([first.game_session_id])
+    );
+    s.replace_watcher(first.game_session_id, None);
+    assert!(!s.index.contains_key(&character(62)));
+    assert_eq!(
+        s.index[&character(61)],
+        BTreeSet::from([second.game_session_id])
+    );
+    s.replace_watcher(second.game_session_id, None);
+    assert!(s.index.is_empty());
+}
+#[test]
+fn batch_preparation_is_atomic_and_cancelled_tickets_cannot_complete() {
+    let mut s = state();
+    let first = item_fence().expect("synthetic binding");
+    let mut second = first;
+    second.game_session_id = GameSessionId::decode(&id(94)).expect("synthetic session");
+    let mut other = read(data(Visibility::Shown, true));
+    other.fence = second;
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    install(&mut s, other, 100, Refresh::Reconcile);
+    let mut tickets = Vec::new();
+    for fence in [first, second] {
+        let (t, e, _) = s.reserve(fence, 0, 101).expect("reserve");
+        tickets.push((fence.game_session_id, t, e));
+    }
+    let mut bad = read(data(Visibility::Hidden, true));
+    bad.fence = second;
+    bad.entries.push(bad.entries[0].clone());
+    assert!(
+        s.finish_batch(
+            &tickets,
+            vec![read(data(Visibility::Hidden, true)), bad],
+            101,
+            102
+        )
+        .is_err()
+    );
+    assert_eq!(
+        s.sessions[&first.game_session_id].entries[&1].desired,
+        Status::Online
+    );
+    assert_eq!(
+        s.sessions[&second.game_session_id].entries[&1].desired,
+        Status::Online
+    );
+    assert_eq!(s.index[&character(61)].len(), 2);
+    s.abort_batch(&tickets, 103);
+    assert!(s.sessions.values().all(|w| !w.reading && w.ticket == 0));
+    let mut other = read(data(Visibility::Shown, true));
+    other.fence = second;
+    assert!(matches!(
+        s.finish_batch(
+            &tickets,
+            vec![read(data(Visibility::Shown, true)), other],
+            101,
+            104
+        ),
+        Err(PresenceError::StaleWork)
+    ));
+    assert!(
+        s.sessions
+            .values()
+            .all(|w| w.entries[&1].desired != Status::Online)
+    );
+}
+
+// A second independent watcher uses the same historical native fixture format as Harness.
+// These session/guard rows are explicit DATA; no predicate or cached fence bypasses native
+// recovery/session/lease/node/scope/guard SQL at the reader boundary.
+async fn second_watcher(h: &Harness) -> TestResult<CurrentCharacterItemFence> {
+    fixture_character(h, 64, 80).await?;
+    sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($4,'hex')::uuid")
+        .bind(id(93).as_slice()).bind(id(80).as_slice()).bind(id(64).as_slice()).bind(id(native::SESSION).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_durability_admission_account_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,'test',1,'account-current',1,0,'{}')")
+        .bind(id(80).as_slice()).bind(id(64).as_slice()).bind(id(93).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_durability_admission_character_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')")
+        .bind(id(64).as_slice()).bind(id(80).as_slice()).bind(id(WORLD).as_slice()).bind(id(93).as_slice()).execute(&h.pool).await?;
+    sqlx::query(
+        "INSERT INTO game_vip_lists VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,7,2,20,0)",
+    )
+    .bind(id(80).as_slice())
+    .bind(id(WORLD).as_slice())
+    .execute(&h.pool)
+    .await?;
+    sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no,notify) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,TRUE)").bind(id(80).as_slice()).bind(id(WORLD).as_slice()).bind(id(61).as_slice()).execute(&h.pool).await?;
+    let mut fence = item_fence()?;
+    fence.character_id = character(64);
+    fence.game_session_id = GameSessionId::decode(&id(93)).map_err(debug)?;
+    Ok(fence)
+}
+#[test]
+fn native_batch_resolves_each_inviter_and_revision_with_shared_target_facts() -> TestResult {
+    run("vip2batchprivacy", async |h| {
+        fixture(h).await?;
+        let second = second_watcher(h).await?;
+        // Native SMALLINT missing-row default must also work on the bulk path.
+        sqlx::query(
+            "DELETE FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(61).as_slice())
+        .execute(&h.pool)
+        .await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = PresenceOwner::new(h.root.clone(), world(), 2).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        let watchers = [
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: item_fence()?,
+                last_seen_revision: 0,
+            },
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: second,
+                last_seen_revision: 0,
+            },
+        ];
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        {
+            let state = owner.state.lock().map_err(debug)?;
+            assert_eq!(
+                state.sessions[&item_fence()?.game_session_id].entries[&1].desired,
+                Status::Online
+            );
+            assert_eq!(
+                state.sessions[&second.game_session_id].entries[&1].desired,
+                Status::Unconfirmed
+            );
+            assert_eq!(state.sessions[&second.game_session_id].list_revision, 7);
+            assert_eq!(state.index[&character(61)].len(), 2);
+        }
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy,vip_status) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1',2)").bind(id(61).as_slice()).execute(&h.pool).await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        {
+            let state = owner.state.lock().map_err(debug)?;
+            assert_eq!(
+                state.sessions[&item_fence()?.game_session_id].entries[&1].desired,
+                Status::Offline
+            );
+            assert_eq!(
+                state.sessions[&second.game_session_id].entries[&1].desired,
+                Status::Unconfirmed
+            );
+            assert!(
+                state
+                    .sessions
+                    .values()
+                    .all(|w| w.pending.values().all(|p| !p.announce))
+            );
+        }
+        sqlx::query("UPDATE game_character_social_settings SET vip_status=1 WHERE character_id=encode($1,'hex')::uuid").bind(id(61).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy,vip_consent_revision) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1',3)").bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            owner.state.lock().map_err(debug)?.sessions[&item_fence()?.game_session_id]
+                .consent_revision,
+            3
+        );
+        // Accepted consent for a different Character of the first Account grants it nothing.
+        sqlx::query("UPDATE game_vip_consents SET inviter_character_id=encode($1,'hex')::uuid WHERE account_id=encode($2,'hex')::uuid").bind(id(63).as_slice()).bind(id(40).as_slice()).execute(&h.pool).await?;
+        sqlx::query(
+            "UPDATE game_vip_lists SET revision=revision+1 WHERE account_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(40).as_slice())
+        .execute(&h.pool)
+        .await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        {
+            let state = owner.state.lock().map_err(debug)?;
+            assert_eq!(
+                state.sessions[&item_fence()?.game_session_id].entries[&1].desired,
+                Status::Unconfirmed
+            );
+            assert_eq!(
+                state.sessions[&item_fence()?.game_session_id].list_revision,
+                2
+            );
+            assert!(
+                state
+                    .sessions
+                    .values()
+                    .all(|w| w.pending.values().all(|p| !p.announce))
+            );
+        }
+        sqlx::query("DELETE FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid")
+            .bind(id(80).as_slice())
+            .execute(&h.pool)
+            .await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        let state = owner.state.lock().map_err(debug)?;
+        assert!(state.sessions[&second.game_session_id].entries.is_empty());
+        assert_eq!(
+            state.index[&character(61)],
+            BTreeSet::from([item_fence()?.game_session_id])
+        );
+        Ok(())
+    })
+}
+#[test]
+fn native_batch_one_bad_watcher_rejects_every_positive_completion_and_releases_tickets()
+-> TestResult {
+    run("vip2batchfence", async |h| {
+        fixture(h).await?;
+        let second = second_watcher(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = PresenceOwner::new(h.root.clone(), world(), 2).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        for mutation in 0..5 {
+            let mut wrong = second;
+            match mutation {
+                0 => wrong.character_lease_generation += 1,
+                1 => {
+                    wrong.connection_generation =
+                        crate::foundation::ConnectionGeneration::new(2).map_err(debug)?
+                }
+                2 => {
+                    wrong.scope_ownership_generation =
+                        crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?
+                }
+                3 => wrong.character_id = character(63),
+                _ => wrong.game_session_id = GameSessionId::decode(&id(99)).map_err(debug)?,
+            }
+            let bad = [
+                BatchWatcher {
+                    authority: &authority,
+                    node: &h.node,
+                    fence: item_fence()?,
+                    last_seen_revision: 0,
+                },
+                BatchWatcher {
+                    authority: &authority,
+                    node: &h.node,
+                    fence: wrong,
+                    last_seen_revision: 0,
+                },
+            ];
+            assert!(matches!(
+                owner.refresh_batch_current(&bad).await,
+                Err(PresenceError::AuthorityRejected)
+            ));
+            assert!(owner.state.lock().map_err(debug)?.sessions.is_empty());
+        }
+        let bad_node = NodeIncarnationProof::new(
+            h.node.fact(),
+            super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([77; 32]),
+        );
+        let bad = [
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: item_fence()?,
+                last_seen_revision: 0,
+            },
+            BatchWatcher {
+                authority: &authority,
+                node: &bad_node,
+                fence: second,
+                last_seen_revision: 0,
+            },
+        ];
+        assert!(matches!(
+            owner.refresh_batch_current(&bad).await,
+            Err(PresenceError::AuthorityRejected)
+        ));
+        assert!(owner.state.lock().map_err(debug)?.sessions.is_empty());
+        // Direct transaction-core stale-recovery control; not a fabricated entrypoint seal.
+        let recovery = authority.record_for(&h.root).map_err(debug)?;
+        let mut stale_recovery = recovery.clone();
+        stale_recovery.recovery_generation += 1;
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            read_batch_in_transaction(
+                &mut tx,
+                vec![
+                    BatchReadInput {
+                        recovery,
+                        node: h.node.clone(),
+                        fence: item_fence()?
+                    },
+                    BatchReadInput {
+                        recovery: stale_recovery,
+                        node: h.node.clone(),
+                        fence: second
+                    }
+                ]
+            )
+            .await,
+            Err(PresenceError::Unavailable(_))
+        ));
+        tx.rollback().await?;
+        let good = [
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: item_fence()?,
+                last_seen_revision: 0,
+            },
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: second,
+                last_seen_revision: 0,
+            },
+        ];
+        owner.refresh_batch_current(&good).await.map_err(debug)?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid").bind(second.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        assert!(matches!(
+            owner.refresh_batch_current(&good).await,
+            Err(PresenceError::AuthorityRejected)
+        ));
+        let state = owner.state.lock().map_err(debug)?;
+        assert!(state.sessions.values().all(|w| {
+            !w.reading
+                && w.entries.values().all(|e| e.desired != Status::Online)
+                && w.pending
+                    .values()
+                    .all(|p| p.status == Status::Unconfirmed && !p.announce)
+        }));
+        Ok(())
+    })
+}
+#[test]
+fn native_batch_drop_cancels_all_reservations_and_listener_replacement_rejects_old_work()
+-> TestResult {
+    run("vip2batchcancel", async |h| {
+        fixture(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = PresenceOwner::new(h.root.clone(), world(), 1).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        let watchers = [BatchWatcher {
+            authority: &authority,
+            node: &h.node,
+            fence: item_fence()?,
+            last_seen_revision: 0,
+        }];
+        // Poll until the real native query blocks behind the fixture's relation lock, then
+        // drop the future. This tests the public future's cancellation guard, not a callback.
+        let mut blocked = h.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_vip_lists IN ACCESS EXCLUSIVE MODE")
+            .execute(&mut *blocked)
+            .await?;
+        let mut future = Box::pin(owner.refresh_batch_current(&watchers));
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(500), future.as_mut())
+                .await
+                .is_err()
+        );
+        let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%WITH watchers AS%')").fetch_one(&h.pool).await?;
+        assert!(
+            waiting,
+            "real bulk query must reach the locked fixture relation"
+        );
+        assert!(
+            owner
+                .state
+                .lock()
+                .map_err(debug)?
+                .sessions
+                .values()
+                .any(|w| w.reading)
+        );
+        drop(future);
+        assert!(owner.state.lock().map_err(debug)?.sessions.is_empty());
+        blocked.rollback().await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        let (ticket, epoch, _) = {
+            owner
+                .state
+                .lock()
+                .map_err(debug)?
+                .reserve(item_fence()?, 0, clock().map_err(debug)?)
+                .map_err(debug)?
+        };
+        owner.listener_down().map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        let observation = h
+            .root
+            .read_current_vip_presence(&authority, &h.node, item_fence()?, Selection::Full)
+            .await
+            .map_err(debug)?;
+        let now = clock().map_err(debug)?;
+        assert!(matches!(
+            owner.state.lock().map_err(debug)?.finish_batch(
+                &[(item_fence()?.game_session_id, ticket, epoch)],
+                vec![observation],
+                now,
+                now
+            ),
+            Err(PresenceError::StaleWork)
+        ));
+        assert!(
+            owner
+                .state
+                .lock()
+                .map_err(debug)?
+                .sessions
+                .values()
+                .all(|w| w.entries.values().all(|e| e.desired != Status::Online))
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn native_batch_bounds_and_schema_failure_never_preserve_online() -> TestResult {
+    run("vip2batchbounds", async |h| {
+        fixture(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = PresenceOwner::new(h.root.clone(), world(), 1).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        let watchers = [BatchWatcher {
+            authority: &authority,
+            node: &h.node,
+            fence: item_fence()?,
+            last_seen_revision: 0,
+        }];
+        let oversized = [
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: item_fence()?,
+                last_seen_revision: 0,
+            },
+            BatchWatcher {
+                authority: &authority,
+                node: &h.node,
+                fence: item_fence()?,
+                last_seen_revision: 0,
+            },
+        ];
+        assert!(matches!(
+            owner.refresh_batch_current(&oversized).await,
+            Err(PresenceError::Capacity)
+        ));
+        assert!(owner.state.lock().map_err(debug)?.sessions.is_empty());
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        h.pool
+            .execute("ALTER TABLE game_character_social_settings DROP COLUMN vip_status")
+            .await?;
+        assert!(matches!(
+            owner.refresh_batch_current(&watchers).await,
+            Err(PresenceError::Unavailable(_))
+        ));
+        assert!(
+            owner
+                .state
+                .lock()
+                .map_err(debug)?
+                .sessions
+                .values()
+                .all(|w| !w.reading && w.entries.values().all(|e| e.desired != Status::Online))
+        );
+        h.pool.execute("ALTER TABLE game_character_social_settings ADD COLUMN vip_status SMALLINT NOT NULL DEFAULT 1 CHECK(vip_status IN(1,2))").await?;
+        owner
+            .refresh_batch_current(&watchers)
+            .await
+            .map_err(debug)?;
+        // Historical DATA carries complete native creation receipts. The query must refuse
+        // list101, even though every entry has a valid target and absent consent stays private.
+        for seed in 100_u8..199 {
+            fixture_character(h, seed, 70).await?;
+            sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)")
+                .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).bind(id(seed).as_slice()).bind(i64::from(seed)).execute(&h.pool).await?;
+        }
+        assert!(matches!(
+            owner.refresh_batch_current(&watchers).await,
+            Err(PresenceError::Capacity)
+        ));
+        assert!(
+            owner
+                .state
+                .lock()
+                .map_err(debug)?
+                .sessions
+                .values()
+                .all(|w| !w.reading && w.entries.values().all(|e| e.desired != Status::Online))
+        );
+        Ok(())
+    })
+}

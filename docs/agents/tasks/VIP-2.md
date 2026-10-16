@@ -406,3 +406,64 @@ and after a fresh reservation. Never-qualified empty reservations are removed on
 timeout; a bad session cannot consume the only slot and deny the real admitted session.
 Qualified watchers retain their withdrawal data. The native capacity1 regression exercises
 wrong session→actual session through the public owner, not a supplied current predicate.
+
+## Family continuation: indexed native batch — 2026-10-16
+
+Local AUTHORING starts at `273564ad575be249126eb2c90e9caf7423f558f9`, existing
+`skeleton/vip-2` / draft PR #2164. The single allocated author changes only
+`vip/presence.rs`, its existing `presence_tests.rs`, and this task's notes. Shared
+registration/placement remains the intentional durability-child CP seam. Accepted
+VIP0 is effective; historical CANDIDATE wording does not block owned preparation.
+No commit/push, public IDs, codec, shared wiring, migration or production change.
+
+The native owner now offers `refresh_batch_current`, bounded by the actual configured
+local-session capacity and accepted 100-entry/list limit. Every watcher supplies its
+root-bound recovery capability, node possession and complete current native fence
+for this call. The reader validates each through unchanged native functions in one
+semantic transaction/admission-lock domain; a bad watcher refuses the whole batch.
+Stored watcher fences and prior observations never replace those current facts.
+
+After native validation, exactly two bulk VIP statements read all selected list and
+Character consent-view revisions, then all bounded entries/relationships/settings/
+coarse presence. The target CTE materializes distinct target+World pairs before
+reading session/settings facts; the consent join still names each exact inviter
+Character. Sharing a target or Account list confers no invitation authority. Each
+list has an independent LIMIT101/cap100 check. Missing settings use the actual
+SMALLINT SHOWN default; missing schema fails unavailable. No target Account or
+placement leaves the reader. The native current-authority checks remain per watcher;
+this is not a claim that those independent checks cost a constant number of queries.
+
+The reverse target index now updates only the replaced/forgotten watcher's bounded
+target-set differences. It retains other watchers of a shared target and scans no
+unrelated watcher's entries. Batch completion stages only selected watcher copies
+and applies their projections/index changes after every result passes validation.
+A cancellation guard invalidates all reserved tickets and frees never-qualified
+capacity immediately; failed qualified batches cancel positive candidates and
+withdraw toward UNCONFIRMED. Listener epochs and the existing ten-second deadline
+reject late results. Full batch refreshes never announce login/logout notices.
+
+Six appended tests (two pure, four real PostgreSQL) cover shared-target index
+replacement/removal; atomic malformed completion and cancelled-ticket rejection;
+actual distinct watcher sessions/Accounts with exact-inviter isolation, list/consent
+revision changes, HIDDEN and no-notice fanout, missing-settings native type default,
+and disappeared entries; independently wrong second-watcher connection/lease/scope/
+Character/session/node plus direct-core stale recovery; actual ended watcher session;
+a public async batch cancelled while pg_stat_activity proves its bulk query waits
+on the fixture's relation lock; listener epoch replacement; configured capacity,
+101 genuine native-history target entries and missing-column failure. Historical
+fixture DATA is not a gameplay admission or consent producer. All inherited test
+bytes remain literally preserved as the file prefix. These are authored tests;
+execution/Clippy evidence is recorded only after the lead's exact-source native run.
+
+**Still partial / precise unblock:** native House watcher support needs the real
+shared House-session/node/scope fence, which the current Channel-only native checker
+does not provide. VIP-1 production schema/definers/producers and wire remain pending.
+CHAT-2B is closed unmerged, not an open implementation dependency; its World relay
+successor/architect disposition must supply accepted sealed VIP kinds, listener and
+readiness, and actual post-commit sources. Real CHAT0-RL-09 budget ownership must
+precede hint rate limiting; RL-10/RL-11 need integrated runtime measurement. Shared
+connection/client custody must enforce the ten-second queued/inflight ONLINE bound.
+No callback, local delivered acknowledgement, synthetic codec or arbitrary measured
+number resolves those gates. CP slot owns registration, scheduler/listener/socket/
+wire/registry/migration work. Recheck on lead native validation results, shared House
+fence, approved relay/custody contract and exact CP slot. Full VIP-2 remains pending.

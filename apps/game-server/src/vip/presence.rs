@@ -196,51 +196,11 @@ async fn read_in_transaction(
     if rows.len() > LIST_MAX {
         return Err(PresenceError::Capacity);
     }
-    let mut entries = Vec::with_capacity(rows.len());
     let mut seen = BTreeSet::new();
-    for row in rows {
-        let entry = parse(row.try_get("entry_no")?)?;
-        if entry == 0 || !seen.insert(entry) || !row.try_get::<bool, _>("target_valid")? {
-            return Err(corrupt());
-        }
-        let target = CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
-            .map_err(|_| corrupt())?;
-        let invitation = row
-            .try_get::<Option<String>, _>("invitation_id")?
-            .map(parse)
-            .transpose()?;
-        let accepted = match row.try_get::<Option<i16>, _>("consent")? {
-            None => false,
-            Some(1) => false,
-            Some(2) if invitation.is_some_and(|id| id > 0) => true,
-            _ => return Err(corrupt()),
-        };
-        if row
-            .try_get::<Option<String>, _>("source_policy")?
-            .is_some_and(|p| p != "PARTYPVP0-PARTIES-AND-PVP-V1")
-        {
-            return Err(corrupt());
-        }
-        let shown = match row.try_get::<i16, _>("vip_status")? {
-            1 => true,
-            2 => false,
-            _ => return Err(corrupt()),
-        };
-        entries.push(EntryRead {
-            target,
-            entry,
-            invitation,
-            visibility: if !accepted {
-                Visibility::Unconfirmed
-            } else if shown {
-                Visibility::Shown
-            } else {
-                Visibility::Hidden
-            },
-            online: row.try_get("online")?,
-            notify: row.try_get("notify")?,
-        });
-    }
+    let entries = rows
+        .iter()
+        .map(|row| decode_entry(row, &mut seen))
+        .collect::<Result<Vec<_>>>()?;
     Ok(WatcherRead {
         fence,
         account,
@@ -250,6 +210,49 @@ async fn read_in_transaction(
         complete,
         requested,
         entries,
+    })
+}
+fn decode_entry(row: &sqlx::postgres::PgRow, seen: &mut BTreeSet<u64>) -> Result<EntryRead> {
+    let entry = parse(row.try_get("entry_no")?)?;
+    if entry == 0 || !seen.insert(entry) || !row.try_get::<bool, _>("target_valid")? {
+        return Err(corrupt());
+    }
+    let target =
+        CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?).map_err(|_| corrupt())?;
+    let invitation = row
+        .try_get::<Option<String>, _>("invitation_id")?
+        .map(parse)
+        .transpose()?;
+    let accepted = match row.try_get::<Option<i16>, _>("consent")? {
+        None => false,
+        Some(1) => false,
+        Some(2) if invitation.is_some_and(|id| id > 0) => true,
+        _ => return Err(corrupt()),
+    };
+    if row
+        .try_get::<Option<String>, _>("source_policy")?
+        .is_some_and(|p| p != "PARTYPVP0-PARTIES-AND-PVP-V1")
+    {
+        return Err(corrupt());
+    }
+    let shown = match row.try_get::<i16, _>("vip_status")? {
+        1 => true,
+        2 => false,
+        _ => return Err(corrupt()),
+    };
+    Ok(EntryRead {
+        target,
+        entry,
+        invitation,
+        visibility: if !accepted {
+            Visibility::Unconfirmed
+        } else if shown {
+            Visibility::Shown
+        } else {
+            Visibility::Hidden
+        },
+        online: row.try_get("online")?,
+        notify: row.try_get("notify")?,
     })
 }
 fn parse(value: String) -> Result<u64> {
@@ -317,6 +320,15 @@ struct Watcher {
     reading: bool,
     retry_at: u64,
 }
+struct Completion {
+    session: GameSessionId,
+    ticket: u64,
+    epoch: u64,
+    started: u64,
+    now: u64,
+    reason: Refresh,
+    serial: u64,
+}
 struct State {
     world: WorldId,
     capacity: usize,
@@ -364,6 +376,14 @@ impl State {
         now: u64,
     ) -> Result<(u64, u64, Selection)> {
         self.expire(now)?;
+        self.reserve_at(fence, floor, now)
+    }
+    fn reserve_at(
+        &mut self,
+        fence: CurrentCharacterItemFence,
+        floor: u64,
+        now: u64,
+    ) -> Result<(u64, u64, Selection)> {
         if !self.listener {
             return Err(PresenceError::Unavailable(DurabilityError::Unavailable));
         }
@@ -424,14 +444,43 @@ impl State {
             },
         ))
     }
-    fn rebuild_index(&mut self) {
-        self.index.clear();
-        for (session, watcher) in &self.sessions {
-            for entry in watcher.entries.values() {
-                self.index
-                    .entry(entry.read.target)
-                    .or_default()
-                    .insert(*session);
+    fn replace_watcher(&mut self, session: GameSessionId, next: Option<Watcher>) {
+        let before = self
+            .sessions
+            .get(&session)
+            .map(|w| {
+                w.entries
+                    .values()
+                    .map(|e| e.read.target)
+                    .collect::<BTreeSet<_>>()
+            })
+            .unwrap_or_default();
+        let after = next
+            .as_ref()
+            .map(|w| {
+                w.entries
+                    .values()
+                    .map(|e| e.read.target)
+                    .collect::<BTreeSet<_>>()
+            })
+            .unwrap_or_default();
+        for target in before.difference(&after) {
+            if let Some(sessions) = self.index.get_mut(target) {
+                sessions.remove(&session);
+                if sessions.is_empty() {
+                    self.index.remove(target);
+                }
+            }
+        }
+        for target in after.difference(&before) {
+            self.index.entry(*target).or_default().insert(session);
+        }
+        match next {
+            Some(next) => {
+                self.sessions.insert(session, next);
+            }
+            None => {
+                self.sessions.remove(&session);
             }
         }
     }
@@ -484,6 +533,32 @@ impl State {
         reason: Refresh,
     ) -> Result<()> {
         self.expire(now)?;
+        let serial = self.next_serial()?;
+        let next = self.prepare_finish(
+            Completion {
+                session,
+                ticket,
+                epoch,
+                started,
+                now,
+                reason,
+                serial,
+            },
+            read,
+        )?;
+        self.replace_watcher(session, Some(next));
+        Ok(())
+    }
+    fn prepare_finish(&self, work: Completion, read: WatcherRead) -> Result<Watcher> {
+        let Completion {
+            session,
+            ticket,
+            epoch,
+            started,
+            now,
+            reason,
+            serial,
+        } = work;
         if !self.listener
             || epoch != self.epoch
             || read.world != self.world
@@ -491,7 +566,6 @@ impl State {
         {
             return Err(PresenceError::StaleWork);
         }
-        let serial = self.next_serial()?;
         // Work on one bounded watcher copy; malformed input/overflow cannot partially
         // replace its authoritative-read projection or reverse index.
         let mut next = self
@@ -632,9 +706,7 @@ impl State {
                 w.pending.remove(&entry);
             }
         }
-        self.sessions.insert(session, next);
-        self.rebuild_index();
-        Ok(())
+        Ok(next)
     }
     fn failed(&mut self, session: GameSessionId, ticket: u64, epoch: u64, now: u64) -> Result<()> {
         self.expire(now)?;
@@ -1108,8 +1180,7 @@ impl PresenceOwner {
     }
     pub(crate) fn forget(&self, session: GameSessionId) -> Result<()> {
         let mut s = self.state.lock().map_err(|_| corrupt())?;
-        s.sessions.remove(&session);
-        s.rebuild_index();
+        s.replace_watcher(session, None);
         Ok(())
     }
     pub(crate) fn due_sessions(&self, budget: usize) -> Result<Vec<GameSessionId>> {
@@ -1123,3 +1194,296 @@ impl PresenceOwner {
 #[cfg(test)]
 #[path = "presence_tests.rs"]
 mod tests;
+
+/// Fresh native inputs for one batch. These references are consumed for this call only;
+/// the owner caches neither a recovery capability nor a node/session fence as authority.
+pub(crate) struct BatchWatcher<'a, 'f, 's> {
+    pub(crate) authority: &'a ReconciledCharacterAuthority<'f, 's>,
+    pub(crate) node: &'a NodeIncarnationProof,
+    pub(crate) fence: CurrentCharacterItemFence,
+    pub(crate) last_seen_revision: u64,
+}
+struct BatchReadInput {
+    recovery: CharacterRecoveryFenceV1,
+    node: NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+}
+impl DurabilityRoot {
+    async fn read_current_vip_batch(
+        &self,
+        inputs: Vec<BatchReadInput>,
+    ) -> Result<Vec<WatcherRead>> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    match read_batch_in_transaction(&mut tx, inputs).await {
+                        Ok(reads) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(reads))
+                        }
+                        Err(PresenceError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+
+/// The only per-watcher SQL is unchanged native authority validation. VIP list/view
+/// revisions and all target/consent facts are read in two bulk statements after validation.
+/// The admission relation lock domain is the same one used by the native VIP1 preparation.
+async fn read_batch_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    inputs: Vec<BatchReadInput>,
+) -> Result<Vec<WatcherRead>> {
+    for input in &inputs {
+        assert_recovery_fence(tx, &input.recovery).await?;
+    }
+    lock_admission_relations(tx).await?;
+    let mut reads = Vec::with_capacity(inputs.len());
+    for input in inputs {
+        let account = assert_session_fence(tx, &input.fence, &input.node)
+            .await?
+            .map_err(|_| PresenceError::AuthorityRejected)?;
+        let account = AccountId::from_bytes(uuid_text(&account)?).map_err(|_| corrupt())?;
+        let RuntimeScopeRefV1::Channel {
+            world_id: world, ..
+        } = input.fence.runtime_scope
+        else {
+            return Err(PresenceError::AuthorityRejected);
+        };
+        reads.push(WatcherRead {
+            fence: input.fence,
+            account,
+            world,
+            list_revision: 0,
+            consent_revision: 0,
+            complete: true,
+            requested: BTreeSet::new(),
+            entries: Vec::new(),
+        });
+    }
+    let accounts = reads
+        .iter()
+        .map(|r| r.account.as_bytes().to_vec())
+        .collect::<Vec<_>>();
+    let worlds = reads
+        .iter()
+        .map(|r| r.world.as_bytes().to_vec())
+        .collect::<Vec<_>>();
+    let characters = reads
+        .iter()
+        .map(|r| r.fence.character_id.as_bytes().to_vec())
+        .collect::<Vec<_>>();
+    let revisions = sqlx::query(r"
+WITH watchers AS (
+ SELECT encode(a,'hex')::uuid AS account,encode(w,'hex')::uuid AS world,encode(c,'hex')::uuid AS actor,slot
+ FROM unnest($1::bytea[],$2::bytea[],$3::bytea[]) WITH ORDINALITY AS x(a,w,c,slot)
+)
+SELECT w.slot,l.revision::text,p.vip_consent_revision::text,p.source_policy
+FROM watchers w LEFT JOIN game_vip_lists l ON l.account_id=w.account AND l.world_id=w.world
+LEFT JOIN game_character_social_settings p ON p.character_id=w.actor ORDER BY w.slot
+").bind(&accounts).bind(&worlds).bind(&characters).fetch_all(&mut **tx).await?;
+    if revisions.len() != reads.len() {
+        return Err(corrupt());
+    }
+    for (index, row) in revisions.iter().enumerate() {
+        if usize::try_from(row.try_get::<i64, _>("slot")?).ok() != index.checked_add(1) {
+            return Err(corrupt());
+        }
+        if row
+            .try_get::<Option<String>, _>("source_policy")?
+            .is_some_and(|p| p != "PARTYPVP0-PARTIES-AND-PVP-V1")
+        {
+            return Err(corrupt());
+        }
+        reads[index].list_revision = row
+            .try_get::<Option<String>, _>("revision")?
+            .map(parse)
+            .transpose()?
+            .unwrap_or(0);
+        reads[index].consent_revision = row
+            .try_get::<Option<String>, _>("vip_consent_revision")?
+            .map(parse)
+            .transpose()?
+            .unwrap_or(0);
+    }
+    // MATERIALIZED targets deduplicates session/settings reads across lists/inviters. The
+    // inviter-specific consent join happens only afterwards; target sharing grants no consent.
+    // LIMIT101 is independently applied to each verified Account+World list (accepted cap100).
+    let rows = sqlx::query(r"
+WITH watchers AS (
+ SELECT encode(a,'hex')::uuid AS account,encode(w,'hex')::uuid AS world,encode(c,'hex')::uuid AS actor,slot
+ FROM unnest($1::bytea[],$2::bytea[],$3::bytea[]) WITH ORDINALITY AS x(a,w,c,slot)
+), entries AS MATERIALIZED (
+ SELECT w.slot,w.actor,e.* FROM watchers w JOIN LATERAL (
+ SELECT e.* FROM game_vip_entries e WHERE e.account_id=w.account AND e.world_id=w.world ORDER BY e.entry_no LIMIT 101
+ ) e ON TRUE
+), targets AS MATERIALIZED (
+ SELECT DISTINCT character_id,world_id FROM entries
+), facts AS MATERIALIZED (
+ SELECT t.character_id,t.world_id,COALESCE(p.vip_status,1::smallint) AS vip_status,p.source_policy,
+ r.world_id=t.world_id AND r.lifecycle=1 AS target_valid,
+ EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.character_id=t.character_id AND s.world_id=t.world_id AND s.session_state IN(1,2)) AS online
+ FROM targets t JOIN game_character_roots r ON r.character_id=t.character_id
+ LEFT JOIN game_character_social_settings p ON p.character_id=t.character_id
+)
+SELECT e.slot,e.entry_no::text,e.character_id::text,e.notify,c.invitation_id::text,c.consent,
+ f.vip_status,f.source_policy,f.target_valid,f.online FROM entries e
+ JOIN facts f ON f.character_id=e.character_id AND f.world_id=e.world_id
+ LEFT JOIN game_vip_consents c ON c.account_id=e.account_id AND c.world_id=e.world_id AND c.character_id=e.character_id AND c.inviter_character_id=e.actor
+ ORDER BY e.slot,e.entry_no
+").bind(&accounts).bind(&worlds).bind(&characters).fetch_all(&mut **tx).await?;
+    let mut seen = vec![BTreeSet::new(); reads.len()];
+    for row in rows {
+        let index = usize::try_from(row.try_get::<i64, _>("slot")?)
+            .ok()
+            .and_then(|n| n.checked_sub(1))
+            .filter(|n| *n < reads.len())
+            .ok_or_else(corrupt)?;
+        if reads[index].entries.len() >= LIST_MAX {
+            return Err(PresenceError::Capacity);
+        }
+        reads[index]
+            .entries
+            .push(decode_entry(&row, &mut seen[index])?);
+    }
+    Ok(reads)
+}
+
+type Reservation = (GameSessionId, u64, u64);
+struct BatchReservations<'a> {
+    owner: &'a PresenceOwner,
+    tickets: Vec<Reservation>,
+    armed: bool,
+}
+impl Drop for BatchReservations<'_> {
+    fn drop(&mut self) {
+        if self.armed
+            && let Ok(mut state) = self.owner.state.lock()
+        {
+            let now = clock().unwrap_or(state.last_clock).max(state.last_clock);
+            state.abort_batch(&self.tickets, now);
+        }
+    }
+}
+impl State {
+    fn abort_batch(&mut self, tickets: &[Reservation], now: u64) {
+        for &(session, ticket, epoch) in tickets {
+            let failed = self.failed(session, ticket, epoch, now).is_err();
+            if let Some(w) = self
+                .sessions
+                .get_mut(&session)
+                .filter(|w| w.ticket == ticket)
+            {
+                // Invalidate even cancelled tickets immediately, without requiring another read.
+                w.ticket = 0;
+                w.reading = false;
+                w.dirty = true;
+                if failed {
+                    w.pending.clear();
+                    w.inflight = None;
+                    for entry in w.entries.values_mut() {
+                        entry.desired = Status::Unconfirmed;
+                    }
+                }
+            }
+        }
+    }
+    fn finish_batch(
+        &mut self,
+        tickets: &[Reservation],
+        reads: Vec<WatcherRead>,
+        started: u64,
+        now: u64,
+    ) -> Result<()> {
+        self.expire(now)?;
+        if reads.len() != tickets.len() {
+            return Err(corrupt());
+        }
+        let mut staged = Vec::with_capacity(reads.len());
+        for ((session, ticket, epoch), read) in tickets.iter().copied().zip(reads) {
+            let serial = self.next_serial()?;
+            let next = self.prepare_finish(
+                Completion {
+                    session,
+                    ticket,
+                    epoch,
+                    started,
+                    now,
+                    reason: Refresh::Reconcile,
+                    serial,
+                },
+                read,
+            )?;
+            staged.push((session, next));
+        }
+        // No watcher or reverse-index replacement occurs until every observation is valid.
+        for (session, next) in staged {
+            self.replace_watcher(session, Some(next));
+        }
+        Ok(())
+    }
+}
+impl PresenceOwner {
+    /// Bounded full node batch for reconcile, listener recovery or visibility work. Every
+    /// watcher supplies fresh independent authority; this returns observations, never grants.
+    pub(crate) async fn refresh_batch_current(
+        &self,
+        watchers: &[BatchWatcher<'_, '_, '_>],
+    ) -> Result<()> {
+        let started = clock()?;
+        if watchers.len() > self.state.lock().map_err(|_| corrupt())?.capacity {
+            return Err(PresenceError::Capacity);
+        }
+        let mut seen = BTreeSet::new();
+        let mut inputs = Vec::with_capacity(watchers.len());
+        for watcher in watchers {
+            if !seen.insert(watcher.fence.game_session_id) {
+                return Err(PresenceError::StaleWork);
+            }
+            inputs.push(BatchReadInput {
+                recovery: watcher
+                    .authority
+                    .record_for(&self.root)
+                    .map_err(|_| PresenceError::AuthorityRejected)?,
+                node: watcher.node.clone(),
+                fence: watcher.fence,
+            });
+        }
+        let mut reservations = BatchReservations {
+            owner: self,
+            tickets: Vec::new(),
+            armed: true,
+        };
+        {
+            let mut state = self.state.lock().map_err(|_| corrupt())?;
+            if watchers.len() > state.capacity {
+                return Err(PresenceError::Capacity);
+            }
+            state.expire(started)?;
+            for watcher in watchers {
+                let (ticket, epoch, _) =
+                    state.reserve_at(watcher.fence, watcher.last_seen_revision, started)?;
+                reservations
+                    .tickets
+                    .push((watcher.fence.game_session_id, ticket, epoch));
+            }
+        }
+        if inputs.is_empty() {
+            reservations.armed = false;
+            return Ok(());
+        }
+        let reads = self.root.read_current_vip_batch(inputs).await?;
+        self.state.lock().map_err(|_| corrupt())?.finish_batch(
+            &reservations.tickets,
+            reads,
+            started,
+            clock()?,
+        )?;
+        reservations.armed = false;
+        Ok(())
+    }
+}
