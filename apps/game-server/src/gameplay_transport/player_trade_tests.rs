@@ -8,8 +8,10 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_mint_audit::{OneItemStateV1, OneItemTypedDefinitionRevisionV1};
 use crate::durability::item_timed_state::StoredTimedState;
 use crate::durability::item_transfer::{
-    BackpackEntry, ContainerEntryPosition, CurrentCharacterItemFence, InventoryItem,
+    BackpackEntry, CharacterBackpack, ContainerEntryPosition, CurrentCharacterItemFence,
+    InventoryItem,
 };
+use crate::durability::player_trade::{BackpackItemVersion, Trader};
 use crate::foundation::{
     ChannelId, CommandId, ConnectionGeneration, ScopeOwnershipGeneration, WorldId,
 };
@@ -1197,7 +1199,7 @@ fn native_root_rejects_each_changed_current_fact_with_immutable_expected_inputs(
                             digest
                         )
                         .await,
-                    Err(OwnerError::Authority)
+                    Err(TradeReadError::Authority)
                 ));
                 let refused = match stage {
                     0 => {
@@ -1268,7 +1270,7 @@ fn native_root_rejects_each_changed_current_fact_with_immutable_expected_inputs(
                     digest
                 )
                 .await,
-            Err(OwnerError::Authority)
+            Err(TradeReadError::Authority)
         ));
         assert_eq!(
             h.root
@@ -1324,7 +1326,7 @@ fn native_root_rejects_each_changed_current_fact_with_immutable_expected_inputs(
                         digest
                     )
                     .await,
-                Err(OwnerError::Authority)
+                Err(TradeReadError::Authority)
             ));
             assert_eq!(runtime_key(&foreign_runtime), expected);
             assert_eq!(

@@ -34,6 +34,7 @@ mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
 mod npc_trade_command;
+pub(crate) mod player_trade;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
