@@ -229,3 +229,35 @@ The alternative no-global-harness build's 2,304 baseline unused-helper warnings 
 hidden as clean full-test lint evidence. No behavioral RED/all-target/server/E2E/physical arrival
 or full atomic fee-writer qualification is claimed. Exact final source/hash/patch binding and
 remaining seams: `/workspace/oteryn-prep/npc-world-1-evidence/index.md` and `scope.json`.
+
+## Local authoring — native voice preparation (2026-10-16)
+
+The owner confirmed this family's exclusive authoring assignment in the active chat. This
+preparation changes only `gameplay_transport/npc_voice.rs` and this record; it does not grant a
+shared-path slot or mark a candidate frozen/qualified.
+
+- Added a candidate voice book from the existing `NpcDataCatalogue` and `NpcServiceModel`,
+  requiring matching source digests/revisions and exact NPC Dialogue references. Held/missing
+  NPCs contribute no profile; invalid native `ChatText` and unresolved placeholder lines are
+  excluded. This consumes existing typed source fields and does not replace NPC-CONTENT-2's
+  missing voice admission/active-bundle producer.
+- Added ephemeral per-exact-actor cadence using the native current owner fence, actor lookup,
+  pinned movement context and player perception geometry. Idle thinks add no time; retries
+  neither advance cadence nor produce another line; stale sequences and retired owners refuse.
+  Native think occurrences and `NPC_VOICE` draws select chance and a uniform source line.
+- The output prepares native `ChatLine::Local` say/yell values with original NPC text, as
+  NPC-BEHAVIOUR0 §6 requires. It writes no egress and applies no player-only yell/spam rules.
+  CP must assign CHAT_V1 listener selection/egress and budgeted think wiring. The native
+  source-catalogue-to-active-runtime-pin binding producer is absent: same-source catalogue/model
+  comparisons and runtime context fencing do not establish that binding or admit raw voices.
+- Seven tests were authored for a real native catalogue/model path with exact referenced
+  Dialogue and source-mismatch rejection, invalid/placeholder text, cadence/retries, idle/resume,
+  absent profiles and actor/owner rejection, deterministic/zero-chance selection, and original-case
+  say/yell projection. They have **not run**. No module registration, Rust compilation, server test,
+  admitted-content qualification, egress or playable voice claim is made. The lead-provided
+  isolated official `rustfmt` 1.94 formatted the owned module and its focused `--check` passed;
+  `git diff --check` also passed. Native compilation/test validation remains pending the approved
+  execution path; syntax formatting is not type checking or behavioral evidence.
+
+All original acceptance boxes remain open. Travel fee/cause, eligibility, actual relocation,
+death/admission/position integration, actor movement/content and CP slot blockers above remain.
