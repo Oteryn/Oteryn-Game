@@ -213,11 +213,12 @@ those require a separate ARENA-RT-1 allocation after merge. Migration/protocol
 splits and exact-head review/gates remain in force.
 
 D1163's current Tibia Global price rule supersedes historical donor/engineering
-prices as present-value claims. No current Global price Reference or new numeric
-value was supplied: the four tier fee fields and resource row now explicitly
-read UNKNOWN / PARITY_PENDING. Historical numbers retain their historical
-provenance, including the earlier Paragon default; no price is invented or
-activated. This does not alter the accepted non-price rules.
+prices as present-value claims. [CP D1230](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153)
+supplies current Halvar Greenhorn 1,000 gp, Scrapper 5,000 gp and Warlord 10,000 gp,
+classified PARITY_WIKI with Reference W12, not GUI. The first three tier fields and
+resource row retain those values and provenance. Paragon remains UNKNOWN /
+PARITY_PENDING; its older 25,000 gp engineering default remains historical and is
+not promoted to a current price. No runtime/CONTENT value is activated.
 
 The existing 40-reference catalog remains byte-for-byte unchanged and remains an
 offline inventory. No runtime, CONTENT, schema, migration, protocol, asset or
@@ -227,5 +228,19 @@ gates; prior inventory validation keeps its original source provenance. No ready
 CI restart, full qualification or merge authority is claimed.
 
 Lead independent review of the three-document transfer PASS; governance validation,
-all124 governance tests and diff whitespace PASS. Current-price Reference/architecture
-exact-head review and protected merge remain pending; no content/runtime qualification.
+all124 governance tests and diff whitespace PASS. D1230 now supplies W12 Wiki price evidence for the first three tiers; current
+architecture exact-head review and protected merge remain pending. Paragon price and
+all content/runtime qualification remain pending.
+
+
+## D1230 price-evidence continuation (2026-10-16)
+
+AUTHORING, documentation only at 2e21af6b. Only the existing brief, this task card
+and the assigned ARENA-1 mechanics-plan row change. CP D1230 supplies the three
+current Halvar prices and PARITY_WIKI / W12 classification; no GUI claim or new
+Paragon price is made. Historical donor/default context stays labeled as history.
+D1051/D1129 protected-merge acceptance is still pending, with runtime/CONTENT in
+separate ARENA-RT-1 after merge. Catalog40 remains unchanged inventory. No main
+integration, registry, content, protocol, runtime or other plan row is changed.
+Diff whitespace and governance validation PASS (22 policy documents, 9 lanes); no
+build/tests/native/full qualification, commit or push.

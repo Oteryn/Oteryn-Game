@@ -30,21 +30,25 @@ and current-authority proof remain work for the separately allocated children.
 
 **D1163 price precedence:** [the later owner/CP rule](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225136278)
 is parity with **current Tibia Global**; arena prices must come from Global.
-No new accepted price numbers or current-Global price References accompany that
-ruling. Therefore current arena-price fields are **UNKNOWN / PARITY_PENDING**
-until a dated current-Global Reference qualifies the value and its arena/tier
-scope. This applies to every price claim, including a proposed zero fee. Earlier
-Canary/Halvar values, older external extracts and the Paragon engineering default
-remain historical evidence only; none establishes a current Global price or
-permits a guessed fallback. The child must retain the Reference with the eventual
-price, and cannot activate an unresolved price. This supersedes pricing defaults,
-not the accepted non-price A1–A11 rules or the existing inventory.
+[CP D1230](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153)
+now supplies current Halvar fees for Greenhorn **1,000 gp**, Scrapper **5,000 gp**
+and Warlord **10,000 gp**, classified **PARITY_WIKI**, Reference **W12**. This is
+Wiki parity evidence, not GUI qualification. The values apply per participant per
+run to these first three PvE tiers only. Paragon remains **UNKNOWN / PARITY_PENDING**:
+D1230 supplies no new Paragon price. Other unresolved price claims, including a
+proposed zero fee, still require their own current-Global Reference; no fallback
+is inferred. Earlier Canary/Halvar extracts and the Paragon engineering default
+remain historical evidence. The child must retain W12 and its classification with
+the allocated values and cannot activate unresolved prices. This updates pricing
+provenance, not the accepted non-price A1–A11 rules or the existing inventory.
 
 ## 1. Scope
 
-Three arena kinds: the **Tibiadrome** (a group PvE wave battle with rotations, leaderboards and rewards), the **PvE arena** (the Svargrond arena, rebuilt for the Oteryn roster and level range: four level-banded tiers of ten pits, solo or as a duo, repeatable with a weekly time ranking) and the **PvP arena** (a lever-started match between characters). This brief decides their common instance model, entry, death outcome, rewards, durable state, the Tibiadrome's wave scaling, monsters, modifiers, potions and rotation anchor, and the PvE arena's bands, opponents, fees, weekly ranking and duo mode, and the PvP arena's match shapes. Non-price values retain their cited sources or accepted engineering rationale (§2, §5). Current-price parity remains UNKNOWN / PARITY_PENDING under §0; architecture acceptance does not qualify those values.
+Three arena kinds: the **Tibiadrome** (a group PvE wave battle with rotations, leaderboards and rewards), the **PvE arena** (the Svargrond arena, rebuilt for the Oteryn roster and level range: four level-banded tiers of ten pits, solo or as a duo, repeatable with a weekly time ranking) and the **PvP arena** (a lever-started match between characters). This brief decides their common instance model, entry, death outcome, rewards, durable state, the Tibiadrome's wave scaling, monsters, modifiers, potions and rotation anchor, and the PvE arena's bands, opponents, fees, weekly ranking and duo mode, and the PvP arena's match shapes. Non-price values retain their cited sources or accepted engineering rationale (§2, §5). First-three PvE tier prices have PARITY_WIKI / W12 evidence under §0; Paragon and other unresolved prices remain UNKNOWN / PARITY_PENDING. Architecture acceptance does not imply GUI or runtime qualification.
 
 ## 2. Reference grounding
+
+- **W12 (current Halvar fees, PARITY_WIKI):** [CP D1230, 2026-10-16](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153) supplies Greenhorn 1,000 gp, Scrapper 5,000 gp and Warlord 10,000 gp. This allocated Wiki classification is not GUI evidence and supplies no Paragon price.
 
 Sources, by short name:
 - **Manual**: `docs/reference/tibia-manual/combat.md` §5.3.14 (the CipSoft game guide, tibia.com/gameguides, manual section Combat).
@@ -170,12 +174,12 @@ This is a DEATH-0 §3.1 and PARTY-PVP-0 §10 amendment, pending on acceptance of
 
 | Tier | Level band | Current Global fee (`ARENA1-RL-16`, §0) | Upper bound |
 |---|---|---|---|
-| Greenhorn | 20 to 99 | UNKNOWN / PARITY_PENDING | enforced |
-| Scrapper | 100 to 299 | UNKNOWN / PARITY_PENDING | enforced |
-| Warlord | 300 to 599 | UNKNOWN / PARITY_PENDING | enforced |
+| Greenhorn | 20 to 99 | 1,000 gp — PARITY_WIKI / W12 (D1230) | enforced |
+| Scrapper | 100 to 299 | 5,000 gp — PARITY_WIKI / W12 (D1230) | enforced |
+| Warlord | 300 to 599 | 10,000 gp — PARITY_WIKI / W12 (D1230) | enforced |
 | Paragon (top tier, aimed at level 1000) | 600 and above | UNKNOWN / PARITY_PENDING | none |
 
-  Historical proposal: Greenhorn 1,000 gp, Scrapper 5,000 gp and Warlord 10,000 gp came from Canary/Halvar; Paragon 25,000 gp was the earlier accepted engineering default. These numbers are not current Global prices (§0). The first three tier names remain the reference's; Paragon is the new top tier (the name is content, changeable in ARENA-CONTENT-1). The upper bounds keep the weekly ranking (A8b) fair: a high-level character cannot take the lowest board. A character that levels past a band keeps the rows it earned there and cannot enter that tier again.
+  Historical proposal: Greenhorn 1,000 gp, Scrapper 5,000 gp and Warlord 10,000 gp came from Canary/Halvar; Paragon 25,000 gp was the earlier accepted engineering default. Those donor/default sources do not establish current Global prices; D1230 independently supplies the first three numeric fees as PARITY_WIKI / W12 (§0), while Paragon remains unresolved. The first three tier names remain the reference's; Paragon is the new top tier (the name is content, changeable in ARENA-CONTENT-1). The upper bounds keep the weekly ranking (A8b) fair: a high-level character cannot take the lowest board. A character that levels past a band keeps the rows it earned there and cannot enter that tier again.
 - **Opponent selection** (`ARENA1-RL-23`, reproducible). Each tier's ten pits are existing Oteryn creatures, chosen so difficulty rises with the pit:
   1. The tier's experience window is `[ (xp(Lmin+1) - xp(Lmin)) / 300 , (xp(Lmax+1) - xp(Lmax)) / 300 ]` creature base experience, where `xp(L)` is `minimum_experience` of level L in the Oteryn-curve and 300 is the assumed kills per level (decided default; Lmax is 99, 299, 599 and 1000). Windows: Greenhorn 57 to 1,585; Scrapper 1,617 to 14,751; Warlord 14,851 to 59,501; Paragon 59,701 to 166,167.
   2. Pit `k` (1 to 10) targets experience `window_low x (window_high / window_low)^((k-1)/9)` and health `1.5 x` that experience (the median health to experience ratio of the Oteryn-roster is 1.3 to 1.6 in the first three windows); the creature closest in log distance to both targets, not used in another tier or pit, is taken.
@@ -296,7 +300,7 @@ This is a DEATH-0 §3.1 and PARTY-PVP-0 §10 amendment, pending on acceptance of
 | `ARENA1-RL-13` raffle potions per rotation per World | 50 | TibiaGoals, TibiaXplorer |
 | `ARENA1-RL-14` raffle share of the remaining participants | 20%, rounded down | Manual, rounding decided |
 | `ARENA1-RL-15` PvE arena pit time limit | 600 s (kept) | Canary `kickTime` |
-| `ARENA1-RL-16` PvE arena fees, per participant per run | UNKNOWN / PARITY_PENDING for all four tiers | D1163: current Global Reference required (§0); historical donor/default values do not qualify pricing |
+| `ARENA1-RL-16` PvE arena fees, per participant per run | Greenhorn 1,000 gp; Scrapper 5,000 gp; Warlord 10,000 gp; Paragon UNKNOWN / PARITY_PENDING | D1230: first three PARITY_WIKI / W12 (§0), not GUI; no sourced Paragon value |
 | `ARENA1-RL-17` PvP arena match time limit | 30 minutes | OTLand model of the real arena, decided |
 | `ARENA1-RL-18` modifiers per rotation | 2 of 9 | TibiaWiki-Drome |
 | `ARENA1-RL-19` seed period by group size | 20, 17, 14, 11, 8 s; seed step-on window 6 s | Manual |
@@ -335,7 +339,7 @@ Order: ARENA-CONTENT-1, ARENA-INSTANCE-1, then DROME-RT-1, ARENA-PVE-1 and ARENA
 
 ## 5. Sourced notes and declared differences
 
-Non-price design points are resolved; current price qualification remains UNKNOWN / PARITY_PENDING under §0. Notes, each with its source:
+Non-price design points are resolved. D1230 supplies first-three PvE tier prices as PARITY_WIKI / W12; Paragon and other unresolved prices remain UNKNOWN / PARITY_PENDING under §0. Notes, each with its source:
 - **Real-Tibia versus OT.** Canary and Crystal implement only the Svargrond arena and the lever PvP arenas; the Tibiadrome (waves, rotation, modifiers, leaderboards) is real-Tibia-only, taken from the Manual, TibiaWiki-Drome, TibiaQA-HP and TibiaGoals. Where an OT value differs from real Tibia, real Tibia is used (Global parity): Duelling Arena death rule (no penalty, home temple) over the OT standard death; one instance per run over Canary's shared pits and queue.
 - **Engineering defaults, no source anywhere.** Damage curve and wave-0 max hits (A4, `ARENA1-RL-20`), Domestikion buff size, hazard radii and percentages not stated by TibiaGoals, Murmillion paralyze and Scissorion invisibility durations, raffle rounding (down), the uniform potion kind draw, the PvP match time limit (30 minutes), the tie fallback by CharacterId, `ARENA1-RL-08` and `ARENA1-RL-10`. Each is registered as an `ARENA1-RL` row, so a change is a registry change.
 - **PvE arena rebuild (owner decision 2026-10-15).** The Tibia opponent roster, the three-tier sequence predicate and the once-only tier are replaced by four level-banded tiers built from the Oteryn-curve and Oteryn-roster, repeatable runs with a weekly ranking (option b) and a duo mode (option c). The 600 s pit timer, the fee per try and the `STANDARD` death rule are kept. Tier bands, the 300-kills-per-level window, the 1.5 health ratio, the Paragon ramp, the duo factors, the Paragon fee and the title reward are engineering defaults with no external source, registered as `ARENA1-RL-22` to `ARENA1-RL-28` and `ARENA1-RL-16`. The time to kill at level 1000 is unverified (no per-level damage data in the repository).
@@ -360,7 +364,7 @@ resource_values_changed: false
 production_authority_changed: false
 implementation_may_resume: false
 runtime_content_next: "ARENA-RT-1, fresh allocation only after merge #2179"
-current_price_parity: "UNKNOWN / PARITY_PENDING; current Global Reference required (D1163)"
+current_price_parity: "Greenhorn/Scrapper/Warlord PARITY_WIKI / W12 (D1230); Paragon UNKNOWN / PARITY_PENDING"
 required_fresh_allocation: true
 required_independent_review: "security, concurrency, persistence, economy, combat, protocol"
 amends_pending_acceptance: "DEATH-0 §3.1 and PARTY-PVP-0 §7.2, §10 (A3, A5, A9); ITEM-USE and RUNE-USE consumption (A5)"
