@@ -126,6 +126,72 @@ fn end_code(e: EndState) -> i16 {
 }
 
 #[test]
+fn market_own_open_offers_are_scoped_ordered_and_include_expiry_backlog() -> TestResult {
+    run("marketown", async |h| {
+        let mut older = offer(60, Side::Buy, 40, 100);
+        older.anonymous = true;
+        let newer = offer(61, Side::Sell, 40, 200);
+        let tied = offer(62, Side::Buy, 40, 200);
+        let mut ended = offer(63, Side::Sell, 40, 300);
+        ended.state = OfferState::Ended(EndState::Cancelled);
+        let mut held = offer(64, Side::Buy, 40, 300);
+        held.state = OfferState::CreditHeld(EndState::Cancelled);
+        held.escrow_gold = 0;
+        held.held_credit_gold = 1000;
+        let other_character = offer(65, Side::Sell, 70, 400);
+        for o in [&older, &newer, &tied, &ended, &held, &other_character] {
+            seed(h, o).await?;
+        }
+        assert!(now(h).await? > tied.expires_at_us);
+        let mut connection = h.pool.acquire().await?;
+        assert_eq!(
+            open_character_offers(&mut connection, world(), older.character).await?,
+            vec![tied, newer, older.clone()]
+        );
+        assert!(
+            open_character_offers(
+                &mut connection,
+                WorldId::from_bytes(id(90))?,
+                older.character,
+            )
+            .await?
+            .is_empty()
+        );
+        assert_eq!(
+            open_character_offers(&mut connection, world(), other_character.character).await?,
+            vec![other_character]
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn market_own_open_offers_reject_overflow_instead_of_truncating() -> TestResult {
+    run("marketownbound", async |h| {
+        for seed_id in 100..200 {
+            seed(h, &offer(seed_id, Side::Sell, 40, 100)).await?;
+        }
+        let character = CharacterId::from_bytes(id(41))?;
+        {
+            let mut connection = h.pool.acquire().await?;
+            assert_eq!(
+                open_character_offers(&mut connection, world(), character)
+                    .await?
+                    .len(),
+                100
+            );
+        }
+        seed(h, &offer(200, Side::Sell, 40, 100)).await?;
+        let mut connection = h.pool.acquire().await?;
+        assert!(matches!(
+            open_character_offers(&mut connection, world(), character).await,
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    })
+}
+
+#[test]
 fn market_checked_total_and_fee_limits() {
     assert_eq!(offer_total(1, MAX_TOTAL), Ok(MAX_TOTAL));
     for (amount, price) in [

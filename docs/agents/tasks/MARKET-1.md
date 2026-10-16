@@ -224,3 +224,27 @@ The current native `ReferenceItemTradeRestrictions` exposes typed `marketable` b
 `market_category`; MARKET-CONTENT-1 must provide/admit both accepted ware facts, not infer a
 category from stored offer keys or test fixture definitions.
 Full MARKET-1, every acceptance checkbox, wire and architect qualification remain pending.
+
+### ROOT-CAŁA-RODZINA: owned My Offers read (2026-10-16)
+
+Returned only MARKET to AUTHORING from `98be1ad4b879fcae341917572143cac76e753ecb`.
+Added `open_character_offers` in the allocated durability leaf: one snapshot scoped by
+World and Character, newest-created first with deterministic offer-id ties, at most 100
+OPEN offers plus one overflow sentinel. It decodes and validates every returned row, retains
+anonymous own offers and expired OPEN rows awaiting the expiry job, and rejects overflow
+instead of hiding it. This is private read data; caller-owned recovery/session/depot-view
+admission remains required. No shared registration, schema, writer, event or wire changed.
+
+Two native PostgreSQL tests cover owner/World isolation, ordering, anonymous and expired
+OPEN visibility, exclusion of ended/held-credit rows, and the exact 100/101 boundary.
+Rustfmt and whitespace checks run locally. Cargo compilation and both new PG bodies are
+**NOT_RUN**: this workspace has no Cargo executable; no alternate harness or new PC runner
+was used. This candidate does not inherit the old component qualification for changed files.
+MAIL c8ade87f PASS and the untouched NPC 8196b1e7 job retain their existing evidence.
+
+This completes the OPEN slice, not the last-600-ended slice. The proposed offer schema has
+no end-time/sequence field; ordering endings by creation would invent history semantics.
+History retention/order therefore needs the CP Market schema decision alongside its
+numbered migration. Existing Market Bank/Inbox/custody/Content/wire gates remain open.
+Preserve this candidate locally and in a verified bundle outside the checkout until required
+checks/publication policy allow its existing-draft push (CP question #2131 comment6224104932).

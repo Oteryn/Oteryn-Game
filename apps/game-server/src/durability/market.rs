@@ -69,6 +69,31 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<Offer> {
     Ok(offer)
 }
 
+/// Private My Offers data, not depot admission or permission to see another character's
+/// offers. The eventual adapter must independently resolve the requesting character and
+/// World under the native recovery/session/depot-view gates before calling this reader.
+/// Expired OPEN rows remain visible until the expiry writer actually ends them. Anonymous
+/// offers also remain visible to their owner. No custody, reservation or write is performed.
+pub(crate) async fn open_character_offers(
+    connection: &mut PgConnection,
+    world: WorldId,
+    character: CharacterId,
+) -> Result<Vec<Offer>> {
+    // One statement gives one snapshot. Read one sentinel beyond MARKET0's 100-open-offer
+    // ceiling so corrupt storage is rejected rather than silently hiding an owner's offer.
+    let rows = sqlx::query(
+        "SELECT offer_id::text,world_id::text,definition_key,definition_revision,side,account_id::text,character_id::text,piece_price::text,amount,remaining,anonymous,created_at_us,expires_at_us,state,ended_as,escrow_gold::text,held_credit_gold::text,matching_pending FROM game_market_offers WHERE world_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND state=1 ORDER BY created_at_us DESC,offer_id DESC LIMIT 101",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(connection)
+    .await?;
+    if rows.len() > 100 {
+        return Err(invalid());
+    }
+    rows.iter().map(decode).collect()
+}
+
 /// The borrow prevents reuse of this transaction through the component while the book is held.
 /// PostgreSQL holds the actual row lock to transaction end; callers may not commit a selection
 /// as a Market mutation without all bank/item/Inbox/event effects in that same transaction.
