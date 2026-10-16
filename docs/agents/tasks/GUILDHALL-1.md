@@ -4,7 +4,7 @@
 task_id: GUILDHALL-1
 title: "GUILDHALL-1: guildhall bid, guild rent, ban, GUILD_DISBAND, guild ACL (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/guildhall-1
@@ -429,3 +429,32 @@ slot, ACL and fence closure remain missing, so no end-to-end Hall release, Bank
 payout or Guild terminal success is claimed. Whole all-targets Clippy remains
 RED on uninstalled APIs; final strict unit validation is separate lead evidence.
 Full feature remains PARTIAL and final CP integration gates remain open.
+
+### 2026-10-16 — D1167 terminal-delegate-only checkpoint
+
+AUTHORING reopened from published `498e44e7ed20b91d121bc4d531cc7d3e49dce6de`.
+CP D1167 comment6225337534 explicitly assigns #2153 only consumption of
+`game_house_guild_disband_released_proven`; #2136 owns the real C caller,
+reservation/cursor/events and genuine Guild context getters. Exact C owner
+source #2137@`50bc410809bdb0f909160134b487fa7ed76e0c8e` supplies that delegate.
+
+Both Hall Rust and the deferred SQL terminal guard now require that actual C
+delegate to return strictly TRUE, alongside their existing current Guild/World
+binding and no-HELD-bid checks. Missing installation, FALSE and NULL fail closed;
+DB errors propagate for whole-transaction rollback. Rust reasserts the genuine
+Guild context after reading the delegate. No C reservation/advance calls, copied
+C store, fabricated success witness or secret/native-fence accessor is added
+here. D must run C's actual native release before this financial participant,
+and obtains a fresh physical-TX release proof on every later transaction.
+
+NOT_FULLY_QUALIFIED under D1122: owned pinned1.94 rustfmt and whitespace PASS;
+governance22/9 and124 governance tests PASS. Native compile/Clippy/PG are NOTRUN
+for this successor, and the previous11-body result is retained historical
+evidence only. Actual #2137/native fence/#2163 composition, C12/House17 PG
+matrices, independent exact-source review and all full-scope feature gates
+remain required. No positive fake delegate fixture is used as C evidence.
+
+Local stable source SHA256 for independent review:
+`guildhall.rs`594742dee704d707608b19fcdab3446529fc680d8e98142321560b8a6a9679fa.
+Only durability/guildhall.rs and this task record change. No commit/push,
+rebase/merge, foreign edit, @codex trigger, ready or CI restart is performed.

@@ -142,15 +142,20 @@ DO $$ DECLARE t TEXT; BEGIN
 END $$;
 -- Terminal no-orphan gate consumed by the Guild controller/guard. Zero financial
 -- custody alone does not prove HOUSE-1b Inbox + Guild property/slot final release.
--- This private proposal deliberately fails closed until the genuine C owner binds it.
+-- D1167: Hall consumes only C's current physical-TX terminal delegate; no C work ports.
 CREATE FUNCTION game_guildhall_assert_disband_released(p_guild UUID,p_world UUID) RETURNS VOID
 LANGUAGE plpgsql AS $$
+DECLARE released BOOLEAN;
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=p_guild AND world_id=p_world AND state IN(3,4))
  OR EXISTS(SELECT 1 FROM game_guildhall_bids WHERE guild_id=p_guild AND state='HELD') THEN
   RAISE EXCEPTION 'Guild disband has current binding or HELD Hall custody' USING ERRCODE='23514';
  END IF;
- RAISE EXCEPTION 'genuine C Guild property/slot final-release binding unavailable' USING ERRCODE='0A000';
+ IF to_regprocedure('game_house_guild_disband_released_proven(uuid,uuid)') IS NULL THEN
+  RAISE EXCEPTION 'genuine C Guild terminal delegate unavailable' USING ERRCODE='0A000';END IF;
+ EXECUTE 'SELECT game_house_guild_disband_released_proven($1,$2)' INTO released USING p_guild,p_world;
+ IF released IS DISTINCT FROM TRUE THEN
+  RAISE EXCEPTION 'current physical-TX C Guild release not proven' USING ERRCODE='0A000';END IF;
 END $$;
 DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_guildhall_assert_disband_released(UUID,UUID) SET search_path=%I,pg_temp',current_schema());END $$;
 REVOKE ALL ON FUNCTION game_guildhall_assert_disband_released(UUID,UUID) FROM PUBLIC;
@@ -338,7 +343,7 @@ pub(super) async fn lock_guild_disband_release_in_transaction(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum GuildhallDisbandReleaseOutcome {
     WaitingForHouseDisposition,
-    /// Reserved for a genuine C closure; the current participant never constructs this.
+    /// The actual C same-physical-TX terminal delegate and no HELD custody both hold.
     Released,
 }
 
@@ -458,9 +463,9 @@ pub(super) async fn advance_guild_disband_release_in_transaction(
     }
 }
 
-/// This is an explicit unmet C prerequisite, not a negative boolean closure witness.
-/// HOUSE-1b#2141 has bounded native Inbox disposition but `drained` retains ownership,
-/// content fence and slot. Its Character ownership port does not bind Guild final release.
+/// D1167 consumes only C's terminal delegate; D owns reservation/advance and its opaque proof.
+/// No retained receipt, drained snapshot or Hall predicate substitutes for C's independently
+/// current physical-TX marker, authority stamp, terminal journal and actual absence checks.
 pub(super) async fn assert_guild_disband_released_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     context: &super::guild::GuildDisbandTransaction,
@@ -471,10 +476,25 @@ pub(super) async fn assert_guild_disband_released_in_transaction(
     if held {
         return Err(GuildhallEscrowError::GuildIneligible);
     }
-    // Do not execute the SQL exception predicate here: catching an SQL exception would
-    // poison this transaction and roll back the genuine bid refund. The deferred terminal
-    // guard calls it only at a proposed terminal write, which must roll back without C.
-    Err(GuildhallEscrowError::HouseDispositionUnavailable)
+    // A missing installation or negative/NULL delegate is typed unavailable, never release.
+    // Errors propagate and require the caller's whole physical transaction to roll back.
+    let installed: bool = sqlx::query_scalar(
+        "SELECT to_regprocedure('game_house_guild_disband_released_proven(uuid,uuid)') IS NOT NULL",
+    )
+    .fetch_one(&mut **tx)
+    .await?;
+    if !installed {
+        return Err(GuildhallEscrowError::HouseDispositionUnavailable);
+    }
+    let released: Option<bool> = sqlx::query_scalar("SELECT game_house_guild_disband_released_proven(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+        .bind(context.guild_id().as_bytes().as_slice()).bind(context.world_id().as_bytes().as_slice())
+        .fetch_one(&mut **tx).await?;
+    assert_disband_context(tx, context).await?;
+    if released == Some(true) {
+        Ok(())
+    } else {
+        Err(GuildhallEscrowError::HouseDispositionUnavailable)
+    }
 }
 
 impl DurabilityRoot {
