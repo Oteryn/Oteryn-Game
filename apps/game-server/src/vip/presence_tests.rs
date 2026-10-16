@@ -1445,10 +1445,33 @@ fn native_batch_drop_cancels_all_reservations_and_listener_replacement_rejects_o
         drop(future);
         assert!(owner.state.lock().map_err(debug)?.sessions.is_empty());
         blocked.rollback().await?;
+        // Cancellation drops the native max-one holder; SQLx returns or retires it
+        // asynchronously. Active work must not open a holder or assume immediate reuse.
+        // This genuine cancellation event permits one bounded maintenance window, then a
+        // fresh root-bound reconciliation. No retry loop, deadline extension or guard bypass.
+        h.root.request_ready();
+        assert!(h.root.maintain_ready_once().await.map_err(|error| format!(
+            "native holder maintenance after cancelled batch: {error:?}"
+        ))?);
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(|error| {
+                format!("fresh native reconciliation after cancelled batch: {error:?}")
+            })?;
+        let watchers = [BatchWatcher {
+            authority: &authority,
+            node: &h.node,
+            fence: item_fence()?,
+            last_seen_revision: 0,
+        }];
         owner
             .refresh_batch_current(&watchers)
             .await
-            .map_err(debug)?;
+            .map_err(|error| {
+                format!("fresh native batch after bounded holder maintenance: {error:?}")
+            })?;
         let (ticket, epoch, _) = {
             owner
                 .state

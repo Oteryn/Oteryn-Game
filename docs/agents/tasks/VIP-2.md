@@ -467,3 +467,25 @@ No callback, local delivered acknowledgement, synthetic codec or arbitrary measu
 number resolves those gates. CP slot owns registration, scheduler/listener/socket/
 wire/registry/migration work. Recheck on lead native validation results, shared House
 fence, approved relay/custody contract and exact CP slot. Full VIP-2 remains pending.
+
+### Native cancellation fixture RED and bounded repair — 2026-10-16
+
+The frozen local candidate `3848fce156410ac271f501fb8af9869f1ab6e862` compiled in
+the lead's real Rust 1.94 native library-test context. Its actual PostgreSQL 170006
+run passed 21/22 cases; the public cancellation case returned
+`Unavailable(RootUnavailable)` after its cancellation assertions. The original
+source/binary and RED log `evidence/family/vip-presence-runtime.log` remain retained;
+no full-family PASS follows from that run. The production presence source is unchanged.
+
+The test immediately reused the native max-one Root after dropping a blocked semantic
+pass. `try_issue_semantic_pass` admits only an already-idle holder; cancelled SQLx
+transaction/holder return is asynchronous. Immediate new work can correctly refuse
+RootUnavailable. Cancellation is a genuine event permitting the existing bounded
+maintenance API, not authority to open a holder in an active read. The fixture now
+releases its lock, records request_ready, runs exactly one maintain_ready_once, opens
+a fresh root-bound reconciled capability and rebuilds batch inputs before continuing.
+There is no retry loop, sleep, clock/deadline change, new authority, relaxed guard or
+production-source edit. Phase-specific errors distinguish maintenance, reconciliation
+and the subsequent batch. Fresh native focused execution and independent review are
+pending; source formatting and whitespace checks pass. All original 16 inherited tests
+remain unchanged. This record does not upgrade the original failed run to PASS.
