@@ -113,6 +113,14 @@ pub(crate) fn evaluate_skull(
     let until_ms = days
         .map(|days| now_ms.checked_add(days * DAY_MS).ok_or(E::DeadlineOverflow))
         .transpose()?;
+    // The installed state guard also forbids shortening an unexpired skull, including
+    // during an upgrade. Check the reset arithmetic before preserving a later deadline.
+    let until_ms = until_ms.map(|reset| {
+        current
+            .until_ms
+            .filter(|&until| until > now_ms)
+            .map_or(reset, |until| reset.max(until))
+    });
     Ok(SkullEvaluation {
         state: SkullState { skull, until_ms },
         points_milli,

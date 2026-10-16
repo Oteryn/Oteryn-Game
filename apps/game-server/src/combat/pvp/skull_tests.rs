@@ -108,6 +108,38 @@ fn new_points_refresh_an_active_red_or_black_even_below_all_thresholds()
 }
 
 #[test]
+fn new_points_never_shorten_a_longer_unexpired_skull_deadline() -> Result<(), SkullEvaluationError>
+{
+    for (skull, days) in [(PvpSkull::Red, 30), (PvpSkull::Black, 45)] {
+        let current = SkullState {
+            skull,
+            until_ms: Some(NOW + (days + 1) * DAY_MS),
+        };
+        let result = evaluate_skull(NOW, current, &[], 1)?;
+        assert_eq!(result.state, current);
+    }
+    Ok(())
+}
+
+#[test]
+fn upgrading_red_to_black_preserves_a_later_existing_deadline() -> Result<(), SkullEvaluationError>
+{
+    let current = SkullState {
+        skull: PvpSkull::Red,
+        until_ms: Some(NOW + 46 * DAY_MS),
+    };
+    let result = evaluate_skull(NOW, current, &rows(5_999, NOW), 1)?;
+    assert_eq!(
+        result.state,
+        SkullState {
+            skull: PvpSkull::Black,
+            until_ms: current.until_ms,
+        }
+    );
+    Ok(())
+}
+
+#[test]
 fn an_active_black_never_downgrades_to_red_and_uses_the_black_duration()
 -> Result<(), SkullEvaluationError> {
     let current = SkullState {
