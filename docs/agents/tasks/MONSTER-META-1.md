@@ -259,3 +259,98 @@ it before any clock write. Its runtime EXECUTE/SELECT/lock permissions already e
 production-rlib constructor and the later invalid fixture DB-tag failures were setup failures,
 not behavioral RED. Native Clippy/format/governance outcomes are bound by the retained validation
 manifest; no runtime readiness/actor installation or whole-family acceptance is claimed.
+
+## Owned cooldown/eligibility source batch — 2026-10-16
+
+Author: family worker `/root/boss_raids`, sole writer of this packet on
+`skeleton/monster-meta-1`, starting from `8e2391e938f2dfcdab5b1579811925680c88b904`.
+The direct family allocation and CP review `6216368031` authorize owned-source completion;
+the newer ROOT-AJ-F instruction confirms that the migration slot blocks its installation,
+not preparation of the accepted logical storage behavior. This is AUTHORING, not a frozen
+candidate. The earlier report above describes only its original clock subset.
+
+Source manifest: `apps/game-server/src/durability/boss_encounter.rs`,
+`apps/game-server/src/durability/boss_encounter_tests.rs`, and this record. No other source,
+migration, module registration, content, registry or runtime wiring is changed.
+EVENTS-RAID-1 remains the sole raid scheduler/content owner; no second raid core is added here.
+
+### Implemented source boundaries
+
+- BOSS_RAID0 §9's private in-transaction respawn eligibility preparation validates the retained
+  recovery record against current DB admission, holds the admission locks, validates native
+  assignment history/high-water, and invokes the native `assert_item_only_fence`. This checks
+  the admitted Channel session, Character lease, owner generation/node possession, admission
+  guards and locked live Character root/current interpretation. This proves only contributor
+  currentness, not a qualified death or admitted boss content. The function, error and outcome
+  are private; no production entry/caller is exposed. It neither compares nor advances
+  CharacterRevision (§12). DB wall-clock milliseconds are sampled after those locks.
+- The singleton is keyed by `(CharacterId, boss key)`, without Channel or derived window IDs.
+  Missing rows are initialized under the Character root lock; `FOR UPDATE` serializes the
+  exact `now >= next_eligible_at` decision and `now + spawn min_s` update. A committed claim
+  is never a reward, Bosstiary, actor realization or death capability.
+- Raid/admission reference eligibility, at-reset eligibility, group cooldowns and conditional
+  compensation are private SQL **data** helpers. There is no exported entry accepting raw
+  reset epochs, boosted booleans or admission IDs as current authority. Their behavior follows
+  §6.3/§9: one reference claim, strictly newer credited epoch, exact cooldown boundary, prior
+  epoch boosted exception without rewriting a read, and refund only the matching admission.
+- Group cooldown storage validates at most 15 distinct participants for one encounter, takes
+  Character roots and rows in deterministic order and preflights every row before any write.
+  An ON_COOLDOWN refusal can safely be committed without a partial group write. Exact replay
+  preserves the stored admission binding; changed or partial admission replay fails closed.
+  Even an expired cooldown cannot be rewritten with an older proposed reset epoch.
+- Native post-grace/Instance sessions remain rejected. §7 explicitly requires post-grace to
+  fail closed until the actor's own accepted death writer supports it. These helpers do not
+  extend Channel authority to an activity instance or certify a current WorldReset.
+
+### Pending production migration and consumer contract
+
+The owned PG test DDL is the proposed private physical encoding of these accepted logical rows:
+
+| Table | Key | Remaining fields |
+|---|---|---|
+| `game_character_boss_cooldowns` | Character UUID + encounter ProductionKey text | nonnegative Unix-ms BIGINT `available_at`, existing admission UUIDv7, unsigned-u64 NUMERIC `reset_epoch` |
+| `game_character_boss_eligibility` | Character UUID + boss ProductionKey text + existing firing/admission UUIDv7 | none; successful reference claims are retained |
+| `game_character_boss_open_world_eligibility` | Character UUID + boss ProductionKey text | nonnegative Unix-ms BIGINT `next_eligible_at`, nullable unsigned-u64 NUMERIC `last_credited_epoch` |
+
+Character UUIDs reference native roots; keys use the native ProductionKey bound (512 bytes).
+Unsigned epochs allow zero and end at 18446744073709551615. NULL `last_credited_epoch` means no
+credit yet, so epoch zero's first credit works without a sentinel or invented epoch. Cooldowns
+are checked against the accepted 30-day cap; time arithmetic is checked before any row write.
+No table grants, mutation/immutability guards or production DDL are installed by this batch.
+The numbered migration/role compatibility and final guards remain CP slot work, alongside the
+existing clock-table migration contract above.
+
+The real death owner must lock its existing occurrence and check its immutable receipt before
+calling, compose eligibility + reward draw + Bosstiary receipt in that **same** semantic
+transaction, retain its native recovery seal, and own semantic deadline/commit/reconciliation.
+A timeout/unknown commit must reconcile the death receipt; a fresh eligibility call is not
+receipt replay. The real lever owner must independently prove current reset/boosted facts,
+level/quest/busy gates and group fences, then compose ADMITTING allocation + cooldown writes.
+Compensation requires its independently locked no-arrival/ABANDONED predicate. Those native
+callers and current fact producers remain outside this source packet and are not fabricated.
+
+Compile-only qualification patch, permitted by this card's module-registration rule, for a
+private disposable full-crate copy of `durability/mod.rs` (not installed on the draft):
+
+```rust
+#[allow(dead_code, reason = "BOSS-1 source qualification before CP runtime wiring")]
+pub(crate) mod boss_encounter;
+```
+
+### Validation status
+
+Owned-file rustfmt, `git diff --check` and `validate_governance.py` passed during authoring;
+`tools/agents/tests` passed 124 tests (0 failures). The new PostgreSQL17.6 cases use the
+existing unchanged `bestiary_postgres_harness`, real native node/assignment,
+session and recovery fixtures. They cover rollback after a later SQL failure, concurrent claim
+serialization/reload, changed native fences, exact time/epoch boundaries, group refusal/replay,
+and admission-matching compensation. Raw-reset/cooldown cases qualify data behavior only.
+The concurrency case uses one native Channel fence twice and qualifies singleton serialization,
+not an actual cross-channel death or transfer integration. Independent review found and the
+author repaired two material boundaries: the initially exported wrapper proved contributor
+currentness without a qualified death/content binding, so it is now private preparation; an
+expired cooldown could accept a lower supplied epoch, so epoch regression now rejects before
+any write. These new cases have **not yet been compiled or run**: the family lead schedules the single
+Rust build slot. The earlier 5+1 results do not qualify this changed candidate. Full reward,
+room, reset, runtime and production-role integration remain unqualified; no acceptance box
+is completed, and no commit, push or paid-review trigger has been performed by this worker.

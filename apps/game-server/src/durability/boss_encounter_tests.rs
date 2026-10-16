@@ -543,3 +543,584 @@ fn boss_clock_native_owner_cas_and_restart_storage_postgres() -> TestResult {
         result
     })
 }
+
+// Proposed private physical encoding of the accepted §6.3/§9 logical rows. These
+// tables are installed only after real native migrations in a disposable PG17.6 DB.
+// Production migration number/grants/guards and actual death/admission composition
+// remain CP work. No fixture row certifies a current reset, boost or admission.
+const REWARD_STATE_SCHEMA: &str = r#"
+CREATE TABLE game_character_boss_cooldowns (
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
+ available_at BIGINT NOT NULL CHECK(available_at>=0),
+ admission UUID NOT NULL CHECK(game_character_is_uuid_v7(admission)),
+ reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551615),
+ PRIMARY KEY(character_id,boss_key));
+CREATE TABLE game_character_boss_eligibility (
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
+ eligibility_ref UUID NOT NULL CHECK(game_character_is_uuid_v7(eligibility_ref)),
+ PRIMARY KEY(character_id,boss_key,eligibility_ref));
+CREATE TABLE game_character_boss_open_world_eligibility (
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
+ next_eligible_at BIGINT NOT NULL CHECK(next_eligible_at>=0),
+ last_credited_epoch NUMERIC(20,0) NULL CHECK(last_credited_epoch BETWEEN 0 AND 18446744073709551615),
+ PRIMARY KEY(character_id,boss_key));
+"#;
+
+fn reward_key(boss: &str) -> BossRewardKey {
+    BossRewardKey::new(
+        CharacterId::from_bytes(id(native_fixture::CHARACTER)).expect("character"),
+        boss,
+    )
+    .expect("qualified boss key")
+}
+
+#[test]
+fn boss_reward_storage_rejects_unqualified_keys_and_time_overflow() {
+    for name in [
+        "",
+        "boss_without_namespace",
+        "oteryn:boss with spaces",
+        "oteryn:test-only",
+    ] {
+        assert!(BossRewardKey::new(reward_key("oteryn:boss.alpha").character, name).is_err());
+    }
+    assert_eq!(reward_deadline(1000, 0).expect("zero interval"), 1000);
+    assert_eq!(
+        reward_deadline(1000, 30 * 24 * 60 * 60).expect("30 days"),
+        2_592_001_000
+    );
+    for (now, seconds) in [(-1, 0), (i64::MAX, 1), (0, u64::MAX)] {
+        assert!(matches!(
+            reward_deadline(now, seconds),
+            Err(BossRewardStateError::InvalidInput)
+        ));
+    }
+}
+
+async fn qualify_reward_claims(fixture: &native_fixture::Harness) -> TestResult {
+    use sqlx::Executor;
+    fixture
+        .pool
+        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
+        .await?;
+    let seal = fixture
+        .recovery
+        .seal_current()
+        .map_err(native_fixture::debug)?;
+    let recovery = seal.record().clone();
+    let fence = native_fixture::item_fence()?;
+    let boss = "oteryn:boss.reward_claim";
+    let key = reward_key(boss);
+
+    // A failure later in the SAME transaction must release both kinds of claim.
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        claim_respawn_eligibility_in_transaction(
+            &mut tx,
+            &recovery,
+            &fixture.node,
+            &fence,
+            boss,
+            3600
+        )
+        .await?,
+        BossEligibilityClaim::Claimed
+    );
+    assert_eq!(
+        claim_reference_eligibility_data(&mut tx, &key, id(90)).await?,
+        BossEligibilityClaim::Claimed
+    );
+    assert!(sqlx::query("SELECT 1/0").execute(&mut *tx).await.is_err());
+    tx.rollback().await?;
+    assert_eq!(
+        fixture
+            .count("game_character_boss_open_world_eligibility")
+            .await?,
+        0
+    );
+    assert_eq!(fixture.count("game_character_boss_eligibility").await?, 0);
+
+    // Genuine independent native fences: exactly one changed fact per negative.
+    for bad in 0..5 {
+        let mut changed = fence;
+        match bad {
+            0 => {
+                changed.connection_generation = crate::foundation::ConnectionGeneration::new(2)
+                    .map_err(native_fixture::debug)?
+            }
+            1 => changed.character_lease_generation = 2,
+            2 => changed.scope_ownership_generation = generation(2),
+            3 => {
+                changed.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                    WorldId::decode(&id(46)).map_err(native_fixture::debug)?,
+                    ChannelId::decode(&id(native_fixture::CHANNEL))
+                        .map_err(native_fixture::debug)?,
+                )
+            }
+            _ => {
+                changed.runtime_scope = crate::foundation::RuntimeScopeRefV1::instance(
+                    WorldId::decode(&id(native_fixture::WORLD)).map_err(native_fixture::debug)?,
+                    id(46),
+                )
+                .map_err(native_fixture::debug)?
+            }
+        }
+        let mut tx = fixture.pool.begin().await?;
+        assert!(matches!(
+            claim_respawn_eligibility_in_transaction(
+                &mut tx,
+                &recovery,
+                &fixture.node,
+                &changed,
+                boss,
+                3600
+            )
+            .await,
+            Err(BossRewardStateError::AuthorityRejected)
+        ));
+        tx.rollback().await?;
+        assert_eq!(
+            fixture
+                .count("game_character_boss_open_world_eligibility")
+                .await?,
+            0
+        );
+    }
+    let mut wrong_recovery = recovery.clone();
+    wrong_recovery.authority_scope_id.push_str("-stale");
+    let mut tx = fixture.pool.begin().await?;
+    assert!(matches!(
+        claim_respawn_eligibility_in_transaction(
+            &mut tx,
+            &wrong_recovery,
+            &fixture.node,
+            &fence,
+            boss,
+            3600
+        )
+        .await,
+        Err(BossRewardStateError::Unavailable(_))
+    ));
+    tx.rollback().await?;
+    let mut tx = fixture.pool.begin().await?;
+    sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water=source_revision_high_water+1 WHERE writer_id=1")
+        .execute(&mut *tx).await?;
+    assert!(matches!(
+        claim_respawn_eligibility_in_transaction(
+            &mut tx,
+            &recovery,
+            &fixture.node,
+            &fence,
+            boss,
+            3600
+        )
+        .await,
+        Err(BossRewardStateError::InvalidStoredState)
+    ));
+    tx.rollback().await?;
+
+    // The native admitted-session fence is the accepted boundary: terminal rows,
+    // withdrawn admission and a wrong node secret each reject independently.
+    for mutation in [
+        "UPDATE game_durability_reconnect_sessions SET session_state=3",
+        "UPDATE game_durability_admission_character_guards SET eligible=false",
+    ] {
+        let mut tx = fixture.pool.begin().await?;
+        sqlx::query(sqlx::AssertSqlSafe(mutation.to_owned()))
+            .execute(&mut *tx)
+            .await?;
+        assert!(matches!(
+            claim_respawn_eligibility_in_transaction(
+                &mut tx,
+                &recovery,
+                &fixture.node,
+                &fence,
+                boss,
+                3600
+            )
+            .await,
+            Err(BossRewardStateError::AuthorityRejected)
+        ));
+        tx.rollback().await?;
+    }
+    let fact = fixture.node.fact();
+    let wrong_secret = NodeIncarnationProof::new(
+        super::super::runtime_scope_assignment::NodeRegistrationFact::new(
+            fact.node_id(),
+            fact.registration_revision(),
+            fact.registration_revision(),
+        ),
+        super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([2; 32]),
+    );
+    let mut tx = fixture.pool.begin().await?;
+    assert!(matches!(
+        claim_respawn_eligibility_in_transaction(
+            &mut tx,
+            &recovery,
+            &wrong_secret,
+            &fence,
+            boss,
+            3600
+        )
+        .await,
+        Err(BossRewardStateError::AuthorityRejected)
+    ));
+    tx.rollback().await?;
+    assert_eq!(
+        fixture
+            .count("game_character_boss_open_world_eligibility")
+            .await?,
+        0
+    );
+
+    // Singleton concurrency using the same native Channel fence twice: one pending
+    // claim wins, the other observes next_eligible_at. This is NOT qualification of
+    // an actual cross-channel death/transfer caller. The key intentionally omits Channel.
+    let mut tasks = Vec::new();
+    for _ in 0..2 {
+        let (pool, recovery, node) = (fixture.pool.clone(), recovery.clone(), fixture.node.clone());
+        tasks.push(tokio::spawn(async move {
+            let mut tx = pool.begin().await?;
+            let outcome = claim_respawn_eligibility_in_transaction(
+                &mut tx, &recovery, &node, &fence, boss, 3600,
+            )
+            .await?;
+            tx.commit().await?;
+            Ok::<_, BossRewardStateError>(outcome)
+        }));
+    }
+    let a = tasks.remove(0).await??;
+    let b = tasks.remove(0).await??;
+    assert_eq!(
+        [a, b]
+            .iter()
+            .filter(|&&v| v == BossEligibilityClaim::Claimed)
+            .count(),
+        1
+    );
+    assert_eq!(
+        [a, b]
+            .iter()
+            .filter(|&&v| v == BossEligibilityClaim::Ineligible)
+            .count(),
+        1
+    );
+    assert_eq!(
+        fixture
+            .count("game_character_boss_open_world_eligibility")
+            .await?,
+        1
+    );
+    assert_eq!(fixture.root_revision().await?, "1");
+
+    // Drop the connection, reopen from the durable store, and verify that a new
+    // transaction cannot bypass the window or repeat a firing's reference credit.
+    let pool = sqlx::PgPool::connect(&fixture.database.url).await?;
+    let mut tx = pool.begin().await?;
+    assert_eq!(
+        claim_respawn_eligibility_in_transaction(
+            &mut tx,
+            &recovery,
+            &fixture.node,
+            &fence,
+            boss,
+            3600
+        )
+        .await?,
+        BossEligibilityClaim::Ineligible
+    );
+    assert_eq!(
+        claim_reference_eligibility_data(&mut tx, &key, id(90)).await?,
+        BossEligibilityClaim::Claimed
+    );
+    tx.commit().await?;
+    let mut tx = pool.begin().await?;
+    assert_eq!(
+        claim_reference_eligibility_data(&mut tx, &key, id(90)).await?,
+        BossEligibilityClaim::Ineligible
+    );
+    assert_eq!(
+        claim_reference_eligibility_data(&mut tx, &key, id(91)).await?,
+        BossEligibilityClaim::Claimed
+    );
+    tx.commit().await?;
+    pool.close().await;
+    Ok(())
+}
+
+async fn qualify_reward_boundaries(fixture: &native_fixture::Harness) -> TestResult {
+    use sqlx::Executor;
+    fixture
+        .pool
+        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
+        .await?;
+    let key = reward_key("oteryn:boss.respawn_boundary");
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        claim_open_world_eligibility_data(
+            &mut tx,
+            &key,
+            1000,
+            OpenWorldEligibilityData::Respawn { min_s: 5 }
+        )
+        .await?,
+        BossEligibilityClaim::Claimed
+    );
+    tx.commit().await?;
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        claim_open_world_eligibility_data(
+            &mut tx,
+            &key,
+            5999,
+            OpenWorldEligibilityData::Respawn { min_s: 5 }
+        )
+        .await?,
+        BossEligibilityClaim::Ineligible
+    );
+    assert_eq!(
+        claim_open_world_eligibility_data(
+            &mut tx,
+            &key,
+            6000,
+            OpenWorldEligibilityData::Respawn { min_s: 5 }
+        )
+        .await?,
+        BossEligibilityClaim::Claimed
+    );
+    // This is a DATA test of supplied reset epochs, never a current-reset entry.
+    let at_reset = reward_key("oteryn:boss.reset_boundary");
+    for (epoch, want) in [
+        (0, BossEligibilityClaim::Claimed),
+        (0, BossEligibilityClaim::Ineligible),
+        (1, BossEligibilityClaim::Claimed),
+        (0, BossEligibilityClaim::Ineligible),
+        (u64::MAX, BossEligibilityClaim::Claimed),
+        (u64::MAX, BossEligibilityClaim::Ineligible),
+    ] {
+        assert_eq!(
+            claim_open_world_eligibility_data(
+                &mut tx,
+                &at_reset,
+                6000,
+                OpenWorldEligibilityData::AtReset { epoch }
+            )
+            .await?,
+            want
+        );
+    }
+    tx.commit().await?;
+    let (next, epoch): (i64, Option<String>) = sqlx::query_as(
+        "SELECT next_eligible_at,last_credited_epoch::text FROM game_character_boss_open_world_eligibility WHERE boss_key=$1")
+        .bind(at_reset.boss.as_str()).fetch_one(&fixture.pool).await?;
+    assert_eq!((next, epoch), (0, Some(u64::MAX.to_string())));
+    let next: i64 = sqlx::query_scalar(
+        "SELECT next_eligible_at FROM game_character_boss_open_world_eligibility WHERE boss_key=$1",
+    )
+    .bind(key.boss.as_str())
+    .fetch_one(&fixture.pool)
+    .await?;
+    assert_eq!(
+        next, 11000,
+        "interval starts at the newly credited death, not a bucket boundary"
+    );
+    assert_eq!(fixture.root_revision().await?, "1");
+    Ok(())
+}
+
+async fn qualify_boss_cooldowns(fixture: &native_fixture::Harness) -> TestResult {
+    use sqlx::Executor;
+    fixture
+        .pool
+        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
+        .await?;
+    // A second genuine Character root, still at bootstrap revision one. It is only
+    // a row-lock participant in these PRIVATE DATA tests, never a fabricated session.
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) \
+        SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Fixture Other' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+        .bind(id(45).as_slice()).bind(id(native_fixture::CHARACTER).as_slice()).execute(&fixture.pool).await?;
+    let key = reward_key("oteryn:boss.cooldown");
+    let other = BossRewardKey::new(
+        CharacterId::from_bytes(id(45)).map_err(native_fixture::debug)?,
+        key.boss.as_str(),
+    )?;
+    let facts = BossCooldownAdmissionData {
+        admission: id(90),
+        now: 1000,
+        reset_epoch: 10,
+        cooldown_s: 5,
+        boosted: false,
+    };
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), &facts).await?,
+        BossCooldownChange::Applied
+    );
+    tx.commit().await?;
+    let later = BossCooldownAdmissionData {
+        admission: id(91),
+        now: 2000,
+        ..facts
+    };
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        set_boss_cooldowns_data(&mut tx, &[other.clone(), key.clone()], &later).await?,
+        BossCooldownChange::OnCooldown
+    );
+    assert_eq!(
+        read_boss_cooldown_data(&mut tx, &key).await?,
+        None,
+        "preflight prevents a partial group write even if caller commits refusal"
+    );
+    tx.commit().await?;
+    assert_eq!(fixture.count("game_character_boss_cooldowns").await?, 1);
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), &facts).await?,
+        BossCooldownChange::Replayed
+    );
+    assert!(matches!(
+        set_boss_cooldowns_data(&mut tx, &[other.clone(), key.clone()], &facts).await,
+        Err(BossRewardStateError::InvalidStoredState)
+    ));
+    assert_eq!(read_boss_cooldown_data(&mut tx, &key).await?, None);
+    let changed = BossCooldownAdmissionData {
+        cooldown_s: 6,
+        ..facts
+    };
+    assert!(matches!(
+        set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), &changed).await,
+        Err(BossRewardStateError::ConflictingAdmission)
+    ));
+    tx.rollback().await?;
+
+    // Exact time boundary and prior-epoch boosted exception are distinct. Testing
+    // proposed booleans does not install a producer of current boosted/reset facts.
+    for (now, epoch, boosted, want) in [
+        (5999, 10, false, BossCooldownChange::OnCooldown),
+        (6000, 10, false, BossCooldownChange::Applied),
+        (2000, 10, true, BossCooldownChange::OnCooldown),
+        (2000, 11, false, BossCooldownChange::OnCooldown),
+        (2000, 11, true, BossCooldownChange::Applied),
+    ] {
+        let mut tx = fixture.pool.begin().await?;
+        let change = BossCooldownAdmissionData {
+            now,
+            reset_epoch: epoch,
+            boosted,
+            ..later
+        };
+        assert_eq!(
+            set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), &change).await?,
+            want
+        );
+        tx.rollback().await?;
+    }
+    // An expired cooldown is not permission to move its recorded epoch backwards.
+    for boosted in [false, true] {
+        let mut tx = fixture.pool.begin().await?;
+        let stale_epoch = BossCooldownAdmissionData {
+            now: 6000,
+            reset_epoch: 9,
+            boosted,
+            ..later
+        };
+        assert!(matches!(
+            set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), &stale_epoch).await,
+            Err(BossRewardStateError::InvalidInput)
+        ));
+        tx.rollback().await?;
+    }
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        compensate_boss_cooldowns_data(&mut tx, &[other.clone(), key.clone()], id(91)).await?,
+        0
+    );
+    assert_eq!(
+        compensate_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), id(90)).await?,
+        1
+    );
+    tx.rollback().await?;
+    assert_eq!(
+        fixture.count("game_character_boss_cooldowns").await?,
+        1,
+        "compensation is transactional"
+    );
+    let replacement = BossCooldownAdmissionData { now: 6000, ..later };
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        set_boss_cooldowns_data(&mut tx, &[other.clone(), key.clone()], &replacement).await?,
+        BossCooldownChange::Applied
+    );
+    tx.commit().await?;
+    let mut tx = fixture.pool.begin().await?;
+    assert_eq!(
+        compensate_boss_cooldowns_data(&mut tx, std::slice::from_ref(&other), id(90)).await?,
+        0,
+        "old abandoned admission cannot refund a newer spent cooldown"
+    );
+    assert_eq!(
+        compensate_boss_cooldowns_data(&mut tx, &[other.clone(), key.clone()], id(91)).await?,
+        2
+    );
+    tx.commit().await?;
+    let invalid = BossCooldownAdmissionData {
+        cooldown_s: 30 * 24 * 60 * 60 + 1,
+        ..replacement
+    };
+    let mut tx = fixture.pool.begin().await?;
+    assert!(matches!(
+        set_boss_cooldowns_data(&mut tx, std::slice::from_ref(&key), &invalid).await,
+        Err(BossRewardStateError::InvalidInput)
+    ));
+    assert!(matches!(
+        set_boss_cooldowns_data(&mut tx, &[key.clone(), key.clone()], &replacement).await,
+        Err(BossRewardStateError::InvalidInput)
+    ));
+    tx.rollback().await?;
+    assert_eq!(fixture.count("game_character_boss_cooldowns").await?, 0);
+    assert_eq!(fixture.root_revision().await?, "1");
+    Ok(())
+}
+
+#[test]
+fn boss_reward_native_fences_atomic_claim_and_reload_postgres() -> TestResult {
+    let Some(admin) = native_fixture::configured_admin() else {
+        return Ok(());
+    };
+    native_fixture::runtime()?.block_on(async move {
+        let fixture = native_fixture::Harness::create(admin, "boss_rewards", false).await?;
+        let result = qualify_reward_claims(&fixture).await;
+        fixture.cleanup().await?;
+        result
+    })
+}
+
+#[test]
+fn boss_reward_time_and_epoch_boundaries_postgres() -> TestResult {
+    let Some(admin) = native_fixture::configured_admin() else {
+        return Ok(());
+    };
+    native_fixture::runtime()?.block_on(async move {
+        let fixture = native_fixture::Harness::create(admin, "boss_boundaries", false).await?;
+        let result = qualify_reward_boundaries(&fixture).await;
+        fixture.cleanup().await?;
+        result
+    })
+}
+
+#[test]
+fn boss_cooldown_atomic_group_replay_and_compensation_postgres() -> TestResult {
+    let Some(admin) = native_fixture::configured_admin() else {
+        return Ok(());
+    };
+    native_fixture::runtime()?.block_on(async move {
+        let fixture = native_fixture::Harness::create(admin, "boss_cooldowns", false).await?;
+        let result = qualify_boss_cooldowns(&fixture).await;
+        fixture.cleanup().await?;
+        result
+    })
+}
