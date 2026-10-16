@@ -1,10 +1,10 @@
-# BED-1 — house beds: sleeper, bed USE, owner wake, settlement (skeleton task record)
+# BED-1 — house beds: sleeper, bed USE, owner wake, settlement
 
 ```yaml
 task_id: BED-1
-title: "BED-1: house beds: sleeper, bed USE, owner wake, settlement (skeleton)"
+title: "BED-1: house beds: sleeper, bed USE, owner wake, settlement"
 mode: IMPLEMENT
-status: authoring
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-1
@@ -30,6 +30,59 @@ slot_only_paths:
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (if Reg confirmed)"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+
+This checkpoint retains source head
+`1a9faa28b046a674c5da5a56c9ace6cd6c54267a` on existing draft #2147.
+The implemented component is private sleeper storage/read primitives: native
+House/Character identity and uniqueness constraints, immutable occupied-to-freed
+state, first wake time/cause preservation, ownership-change fallback, transactional
+occupancy revisions and caller-transaction row locking. The authored reconnect and
+rollback cases check storage persistence and atomicity; they do not supply a
+production restart, logout marker or offline-settlement integration.
+
+| Check | Current-source disposition |
+|---|---|
+| Authored native cases | Nine: one pure and eight PostgreSQL17.6 cases, including competing free/reconnect and insert commit/rollback coverage. Authorship is not execution. |
+| Native compilation and selected native Clippy | NOT_RUN; no current-generation successful compiler evidence is claimed. |
+| Native test discovery and all nine case executions | NOT_RUN; the source-only native recipe and mount proposal are not execution evidence. |
+| PostgreSQL17.6 qualification | NOT_RUN for this source generation; historical old-unit results and portable/facsimile checks cannot qualify these cases. Missing/non-Unicode URL errors in source rather than reporting skipped success. |
+| Production bed USE, wake, logout/settlement and restart | NOT_RUN / incomplete; no production writer or runtime authority is delivered by these raw storage primitives. |
+
+The exact source recipe is
+`/workspace/house-family-handoff/2147-validation/manifest.json`
+(SHA-256 `acd28e3a8b7c534bd34f5269dc304105a35ac158157f1a44f5759096c0d610e4`).
+Its three owned Rust hashes match the current files; it explicitly records
+`no_jobs_executed` and does not establish native PASS. No current-generation native
+test RED or PASS is inferred from earlier results.
+
+CP D1171 assigns OFFLINE/logout-marker/activation to #2174, durable food/soul to
+#2196, and the caller-TX sleeper step and BED-CONTENT-1 head/foot leaf to #2147.
+The native call in training/offline.rs follows #2174, and any map/facts.rs accessor
+follows #2156. Those unimplemented integrations remain incomplete; the initial
+interface request is at
+[CP2131 comment6224909931](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224909931).
+[CP D1171](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225337534)
+resolves the allocation, not the missing implementation or evidence.
+The specific-cause free must still precede ownership UPDATE in the same owning
+transaction. No caller boolean, raw admin SQL, stored coordinate or separate bed
+training backend replaces those native seams. D1162's registration order remains
+#2163 → #2141 → #2137 → #2147; no registration or shared wiring is added here.
+
+Fresh focused formatter check on all three current owned Rust files passed:
+`rustfmt --edition 2024 --config skip_children=true --check`, official Rust1.94.0.
+The exact hash-bound receipt is
+`/workspace/house-family-handoff/checkpoint-publication-policy/2147-exact-fmt.json`
+(SHA-256 `e0817b37ce1c34d15303eaffad2a8ae6598cc1d3152a1c484882eecd5a655016`). Package fmt remains NOT_RUN.
+
+[CP D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+allows one coherent checkpoint push on the existing draft with explicit
+NOT_FULLY_QUALIFIED / RED / NOT_RUN accounting and passing fmt/whitespace checks;
+the lead verified the current three source hashes and formatter result.
+The PR remains draft, with no ready action, `@codex review` request or manual CI
+restart. Full checks remain required before a frozen review candidate. All
+original acceptance items remain open.
 
 ## Goal
 
