@@ -1,9 +1,11 @@
 //! Proposed owner schema + real PostgreSQL reads/locks. Fixtures do not admit marketable
 //! content, create current authority, or qualify the missing production item/money guards.
 #![allow(clippy::expect_used)]
-use super::*;
 use crate::bestiary_postgres_harness as harness;
-use crate::foundation::{CommandId, GameSessionId};
+use crate::domain::{AccountId, CharacterId, WorldId};
+use crate::durability::DurabilityError;
+use crate::durability::market::*;
+use crate::foundation::{CommandId, CommandRef, GameSessionId};
 use harness::{CHARACTER, Harness, TestResult, WORLD, id};
 use sqlx::Executor;
 
@@ -16,6 +18,8 @@ CREATE TABLE game_market_offers(
  anonymous BOOLEAN NOT NULL DEFAULT FALSE,created_at_us BIGINT NOT NULL CHECK(created_at_us>=0),expires_at_us BIGINT NOT NULL CHECK(expires_at_us=created_at_us+2592000000000),
  state SMALLINT NOT NULL CHECK(state BETWEEN 1 AND 5),ended_as SMALLINT CHECK(ended_as IN(2,3,4)),
  escrow_gold NUMERIC(20,0) NOT NULL CHECK(escrow_gold BETWEEN 0 AND 999999999999),held_credit_gold NUMERIC(20,0) NOT NULL CHECK(held_credit_gold BETWEEN 0 AND 18446744073709551615),matching_pending BOOLEAN NOT NULL DEFAULT FALSE,
+ -- Private administrative ending evidence only; production migration/writer are unimplemented.
+ ended_at_us BIGINT,end_sequence BIGINT,
  UNIQUE(offer_id,world_id),FOREIGN KEY(world_id,definition_key) REFERENCES game_market_books,
  CHECK(piece_price*amount<=999999999999),CHECK((state=5)=(ended_as IS NOT NULL)),
  CHECK(escrow_gold=CASE WHEN side=1 AND state=1 THEN piece_price*remaining ELSE 0 END),
@@ -46,11 +50,7 @@ fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer {
     Offer {
         id: MarketOfferId::new(id(seed)).expect("offer"),
         world: world(),
-        definition: TypedDefinitionRef::new(
-            DefinitionFamily::Item,
-            ProductionKey::new("oteryn:content.item.vase").expect("key"),
-            DefinitionRevisionRef::new("r1").expect("revision"),
-        ),
+        definition: definition("oteryn:content.item.vase", "r1").expect("definition"),
         side,
         account: AccountId::from_bytes(id(account)).expect("account"),
         character: CharacterId::from_bytes(id(account + 1)).expect("character"),
@@ -65,6 +65,16 @@ fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer {
         held_credit_gold: 0,
         matching_pending: false,
     }
+}
+fn definition(
+    key: &str,
+    revision: &str,
+) -> Result<StoredItemDefinition, crate::durability::DurabilityError> {
+    StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+        family: "Item".to_owned(),
+        production_key: key.to_owned(),
+        revision_ref: revision.to_owned(),
+    })
 }
 fn price(o: &mut Offer, p: u64) {
     o.piece_price = p;
@@ -105,7 +115,7 @@ async fn seed(h: &Harness, o: &Offer) -> TestResult {
         "INSERT INTO game_market_books VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT DO NOTHING",
     )
     .bind(o.world.as_bytes().as_slice())
-    .bind(o.definition.key().as_str())
+    .bind(o.definition.key())
     .execute(&h.pool)
     .await?;
     let (state, ended) = match o.state {
@@ -113,10 +123,19 @@ async fn seed(h: &Harness, o: &Offer) -> TestResult {
         OfferState::Ended(e) => (end_code(e), None),
         OfferState::CreditHeld(e) => (5, Some(end_code(e))),
     };
-    sqlx::query("INSERT INTO game_market_offers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric,$9,$10,$11,$12,$13,$14,$15,$16::text::numeric,$17::text::numeric,$18)")
-        .bind(o.id.as_bytes().as_slice()).bind(o.world.as_bytes().as_slice()).bind(o.definition.key().as_str()).bind(o.definition.revision().as_str()).bind(if o.side==Side::Buy {1_i16}else{2}).bind(o.account.as_bytes().as_slice()).bind(o.character.as_bytes().as_slice()).bind(o.piece_price.to_string()).bind(i32::try_from(o.amount)?).bind(i32::try_from(o.remaining)?).bind(o.anonymous).bind(o.created_at_us).bind(o.expires_at_us).bind(state).bind(ended).bind(o.escrow_gold.to_string()).bind(o.held_credit_gold.to_string()).bind(o.matching_pending).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,anonymous,created_at_us,expires_at_us,state,ended_as,escrow_gold,held_credit_gold,matching_pending) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric,$9,$10,$11,$12,$13,$14,$15,$16::text::numeric,$17::text::numeric,$18)")
+        .bind(o.id.as_bytes().as_slice()).bind(o.world.as_bytes().as_slice()).bind(o.definition.key()).bind(o.definition.revision()).bind(if o.side==Side::Buy {1_i16}else{2}).bind(o.account.as_bytes().as_slice()).bind(o.character.as_bytes().as_slice()).bind(o.piece_price.to_string()).bind(i32::try_from(o.amount)?).bind(i32::try_from(o.remaining)?).bind(o.anonymous).bind(o.created_at_us).bind(o.expires_at_us).bind(state).bind(ended).bind(o.escrow_gold.to_string()).bind(o.held_credit_gold.to_string()).bind(o.matching_pending).execute(&h.pool).await?;
     Ok(())
 }
+// Administrative metadata injection, never an implementation of the ending writer.
+async fn seed_ending(h: &Harness, o: &Offer, ended_at_us: i64, sequence: i64) -> TestResult {
+    seed(h, o).await?;
+    sqlx::query("UPDATE game_market_offers SET ended_at_us=$2,end_sequence=$3 WHERE offer_id=encode($1,'hex')::uuid")
+        .bind(o.id.as_bytes().as_slice()).bind(ended_at_us).bind(sequence)
+        .execute(&h.pool).await?;
+    Ok(())
+}
+
 fn end_code(e: EndState) -> i16 {
     match e {
         EndState::Filled => 2,
@@ -273,11 +292,7 @@ fn market_book_pages_exclude_expired_future_ended_and_other_wares() -> TestResul
         let mut ended = offer(63, Side::Sell, 40, created);
         ended.state = OfferState::Ended(EndState::Cancelled);
         let mut other_ware = offer(64, Side::Sell, 40, created);
-        other_ware.definition = TypedDefinitionRef::new(
-            DefinitionFamily::Item,
-            ProductionKey::new("oteryn:content.item.other")?,
-            DefinitionRevisionRef::new("r1")?,
-        );
+        other_ware.definition = definition("oteryn:content.item.other", "r1")?;
         for o in [&live, &expired, &future, &ended, &other_ware] {
             seed(h, o).await?;
         }
@@ -300,122 +315,138 @@ fn market_book_pages_exclude_expired_future_ended_and_other_wares() -> TestResul
 }
 
 #[test]
-fn market_checked_total_and_fee_limits() {
-    assert_eq!(offer_total(1, MAX_TOTAL), Ok(MAX_TOTAL));
-    for (amount, price) in [
-        (0, 1),
-        (64001, 1),
-        (1, 0),
-        (1, u64::MAX),
-        (64000, MAX_TOTAL),
-    ] {
-        assert!(offer_total(amount, price).is_err());
-    }
-    assert_eq!(placement_fee(1, 1), Ok(20));
-    assert_eq!(placement_fee(1, 1049), Ok(20));
-    assert_eq!(placement_fee(1, 1050), Ok(21));
-    assert_eq!(placement_fee(1, MAX_TOTAL), Ok(1_000_000));
+fn market_ended_history_uses_ending_order_scopes_and_keeps_held_credit() -> TestResult {
+    run("markethistory", async |h| {
+        let mut created_newer = offer(60, Side::Sell, 40, 200);
+        created_newer.state = OfferState::Ended(EndState::Cancelled);
+        let mut ended_newer = offer(61, Side::Buy, 40, 100);
+        ended_newer.anonymous = true;
+        ended_newer.state = OfferState::CreditHeld(EndState::Cancelled);
+        ended_newer.escrow_gold = 0;
+        ended_newer.held_credit_gold = 1000;
+        let mut tied = offer(62, Side::Sell, 40, 150);
+        tied.state = OfferState::Ended(EndState::Filled);
+        tied.remaining = 0;
+        let mut other_character = offer(63, Side::Sell, 70, 100);
+        other_character.state = OfferState::Ended(EndState::Cancelled);
+        let mut other_world = created_newer.clone();
+        other_world.id = MarketOfferId::new(id(64))?;
+        other_world.world = WorldId::from_bytes(id(90))?;
+        seed_ending(h, &created_newer, 300, 1).await?;
+        seed_ending(h, &ended_newer, 400, 2).await?;
+        seed_ending(h, &tied, 400, 3).await?;
+        seed_ending(h, &other_character, 500, 4).await?;
+        seed_ending(h, &other_world, 600, 5).await?;
+        seed(h, &offer(65, Side::Sell, 40, 700)).await?;
+        let mut connection = h.pool.acquire().await?;
+        assert_eq!(
+            ended_character_offers(&mut connection, world(), created_newer.character).await?,
+            vec![
+                EndedOffer {
+                    offer: tied,
+                    ended_at_us: 400,
+                    end_sequence: 3
+                },
+                EndedOffer {
+                    offer: ended_newer,
+                    ended_at_us: 400,
+                    end_sequence: 2
+                },
+                EndedOffer {
+                    offer: created_newer,
+                    ended_at_us: 300,
+                    end_sequence: 1
+                },
+            ]
+        );
+        assert_eq!(
+            ended_character_offers(&mut connection, world(), other_character.character).await?,
+            vec![EndedOffer {
+                offer: other_character,
+                ended_at_us: 500,
+                end_sequence: 4
+            }]
+        );
+        assert_eq!(
+            ended_character_offers(&mut connection, other_world.world, other_world.character)
+                .await?,
+            vec![EndedOffer {
+                offer: other_world,
+                ended_at_us: 600,
+                end_sequence: 5
+            }]
+        );
+        Ok(())
+    })
 }
+
 #[test]
-fn market_state_custody_guards_fail_closed() {
-    let good = offer(60, Side::Buy, 40, 100);
-    assert_eq!(good.validate(), Ok(()));
-    let mut bad = good.clone();
-    bad.escrow_gold -= 1;
-    assert!(bad.validate().is_err());
-    let mut bad = good.clone();
-    bad.state = OfferState::CreditHeld(EndState::Cancelled);
-    bad.held_credit_gold = 1;
-    assert!(bad.validate().is_err());
-    let mut held = good.clone();
-    held.state = OfferState::CreditHeld(EndState::Cancelled);
-    held.held_credit_gold = 1000;
-    held.escrow_gold = 0;
-    assert!(held.validate().is_ok());
-    held.matching_pending = true;
-    assert!(held.validate().is_err());
-    let mut bad = good.clone();
-    bad.expires_at_us -= 1;
-    assert!(bad.validate().is_err());
-    let mut bad = good;
-    bad.remaining = 0;
-    bad.escrow_gold = 0;
-    assert!(bad.validate().is_err());
-    bad.state = OfferState::Ended(EndState::Filled);
-    assert!(bad.validate().is_ok());
+fn market_ended_history_limits_retention_backlog_to_latest_600() -> TestResult {
+    run("markethistorybound", async |h| {
+        let mut expected = Vec::new();
+        for index in 0_u16..602 {
+            let mut o = offer(100, Side::Sell, 40, 1000 - i64::from(index));
+            let mut unique = *o.id.as_bytes();
+            unique[14..].copy_from_slice(&index.to_be_bytes());
+            o.id = MarketOfferId::new(unique)?;
+            o.state = OfferState::Ended(EndState::Cancelled);
+            let ended_at_us = 2000 + i64::from(index / 2);
+            let end_sequence = i64::from(index) + 1;
+            seed_ending(h, &o, ended_at_us, end_sequence).await?;
+            expected.push(EndedOffer {
+                offer: o,
+                ended_at_us,
+                end_sequence,
+            });
+        }
+        expected.reverse();
+        expected.truncate(600);
+        let mut connection = h.pool.acquire().await?;
+        assert_eq!(
+            ended_character_offers(&mut connection, world(), CharacterId::from_bytes(id(41))?)
+                .await?,
+            expected
+        );
+        Ok(())
+    })
 }
+
 #[test]
-fn market_match_maker_price_and_exact_refund_without_compatibility_claim() {
-    let mut buy = offer(60, Side::Buy, 40, 200);
-    let sell = offer(61, Side::Sell, 70, 100);
-    price(&mut buy, 120);
-    let terms = match_terms(&buy, &sell, 4, 300).expect("terms");
-    assert_eq!(
-        (
-            terms.maker,
-            terms.sale_gold,
-            terms.buy_escrow_debit,
-            terms.buyer_refund_gold
-        ),
-        (sell.id, 400, 480, 80)
-    );
-    buy.created_at_us = 50;
-    buy.expires_at_us = 50 + LIFETIME_US;
-    assert_eq!(
-        match_terms(&buy, &sell, 4, 300)
-            .expect("buy maker")
-            .buyer_refund_gold,
-        0
-    );
-    let mut other = sell.clone();
-    other.account = buy.account;
-    assert_eq!(
-        match_terms(&buy, &other, 1, 300),
-        Err(PlanError::SameAccount)
-    );
-    let mut other = sell.clone();
-    price(&mut other, 121);
-    assert_eq!(
-        match_terms(&buy, &other, 1, 300),
-        Err(PlanError::NotCrossed)
-    );
-    for amount in [0, 11, u32::MAX] {
-        assert!(match_terms(&buy, &sell, amount, 300).is_err());
-    }
-    assert!(match_terms(&buy, &sell, 1, buy.expires_at_us).is_err());
-}
-#[test]
-fn market_cancel_expiry_and_held_credit_are_noncommitting_exact_requirements() {
-    let buy = offer(60, Side::Buy, 40, 100);
-    assert_eq!(
-        end_plan(&buy, EndReason::Expire, 200),
-        Err(PlanError::NotExpired)
-    );
-    let plan = end_plan(&buy, EndReason::Expire, buy.expires_at_us).expect("expire");
-    assert_eq!(
-        (plan.return_gold, plan.return_item_units, plan.ended_as),
-        (1000, 0, EndState::Expired)
-    );
-    let sell = offer(61, Side::Sell, 70, 100);
-    assert_eq!(
-        end_plan(&sell, EndReason::Cancel, 200)
-            .expect("cancel")
-            .return_item_units,
-        10
-    );
-    let mut held = buy;
-    held.state = OfferState::CreditHeld(EndState::Cancelled);
-    held.held_credit_gold = 1100;
-    held.escrow_gold = 0;
-    assert_eq!(
-        held_credit_release(&held, HARD_CREDIT_CEILING - 1100),
-        Ok(Some(1100))
-    );
-    assert_eq!(
-        held_credit_release(&held, HARD_CREDIT_CEILING - 1099),
-        Ok(None)
-    );
-    assert!(end_plan(&held, EndReason::Cancel, 200).is_err());
+fn market_ended_history_rejects_missing_invalid_and_duplicate_end_metadata() -> TestResult {
+    run("markethistorybad", async |h| {
+        let mut o = offer(60, Side::Sell, 40, 100);
+        o.state = OfferState::Ended(EndState::Cancelled);
+        seed(h, &o).await?;
+        for (ended_at_us, end_sequence) in [
+            (None, Some(1_i64)),
+            (Some(200_i64), None),
+            (Some(-1), Some(1)),
+            (Some(99), Some(1)),
+            (Some(200), Some(0)),
+            (Some(200), Some(-1)),
+        ] {
+            sqlx::query("UPDATE game_market_offers SET ended_at_us=$2,end_sequence=$3 WHERE offer_id=encode($1,'hex')::uuid")
+                .bind(o.id.as_bytes().as_slice()).bind(ended_at_us).bind(end_sequence)
+                .execute(&h.pool).await?;
+            let mut connection = h.pool.acquire().await?;
+            assert!(matches!(
+                ended_character_offers(&mut connection, world(), o.character).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+        }
+        sqlx::query("UPDATE game_market_offers SET ended_at_us=200,end_sequence=1")
+            .execute(&h.pool)
+            .await?;
+        let mut duplicate = o.clone();
+        duplicate.id = MarketOfferId::new(id(61))?;
+        seed_ending(h, &duplicate, 201, 1).await?;
+        let mut connection = h.pool.acquire().await?;
+        assert!(matches!(
+            ended_character_offers(&mut connection, world(), o.character).await,
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    })
 }
 
 #[test]
@@ -469,11 +500,7 @@ fn market_native_pending_matching_is_oldest_best_price_account_filtered() -> Tes
         seed(h, &own).await?;
         let mut first = offer(62, Side::Sell, 70, time + 100);
         price(&mut first, 80);
-        first.definition = TypedDefinitionRef::new(
-            DefinitionFamily::Item,
-            first.definition.key().clone(),
-            DefinitionRevisionRef::new("r2")?,
-        );
+        first.definition = definition(first.definition.key(), "r2")?;
         seed(h, &first).await?;
         let mut tie = offer(63, Side::Sell, 80, time + 200);
         price(&mut tie, 80);
@@ -553,7 +580,7 @@ fn market_native_operation_history_binding_immutability_and_occurrence_namespace
             CommandId::new(1)?,
         ));
         let actor = CharacterId::from_bytes(id(CHARACTER))?;
-        sqlx::query("INSERT INTO game_market_operations VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,3,encode($4,'hex')::uuid,$5,$6)").bind(id(WORLD).as_slice()).bind(occurrence.key()?).bind(id(60).as_slice()).bind(actor.as_bytes().as_slice()).bind([7_u8;32].as_slice()).bind([1_u8,2,3].as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_market_operations VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,3,encode($4,'hex')::uuid,$5,$6)").bind(id(WORLD).as_slice()).bind(fixture_occurrence_key(occurrence)?).bind(id(60).as_slice()).bind(actor.as_bytes().as_slice()).bind([7_u8;32].as_slice()).bind([1_u8,2,3].as_slice()).execute(&h.pool).await?;
         let mut c = h.pool.acquire().await?;
         let first = read_operation(
             &mut c,
@@ -634,14 +661,16 @@ fn market_native_operation_history_binding_immutability_and_occurrence_namespace
             step: JobStep::Expire,
             number: 1,
         };
-        assert_ne!(job.key()?, occurrence.key()?);
+        assert_ne!(
+            fixture_occurrence_key(job)?,
+            fixture_occurrence_key(occurrence)?
+        );
         assert!(
-            Occurrence::Job {
+            fixture_occurrence_key(Occurrence::Job {
                 offer: MarketOfferId::new(id(60))?,
                 step: JobStep::Expire,
                 number: 0
-            }
-            .key()
+            })
             .is_err()
         );
         let error = sqlx::query("UPDATE game_market_operations SET outcome=$1")
@@ -665,7 +694,7 @@ async fn seed_escrow(h: &Harness, o: &Offer, count: i32) -> TestResult {
     tx.execute("SET LOCAL session_replication_role=replica")
         .await?;
     sqlx::query("WITH items AS(INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,$3,1,1,game_character_uuid_v7() FROM generate_series(1,$4) RETURNING item_instance_id,world_id) INSERT INTO game_item_market_escrow_locations SELECT item_instance_id,world_id,encode($5,'hex')::uuid,row_number() OVER(ORDER BY item_instance_id) FROM items")
-        .bind(o.world.as_bytes().as_slice()).bind(o.definition.key().as_str()).bind(o.definition.revision().as_str()).bind(count).bind(o.id.as_bytes().as_slice()).execute(&mut *tx).await?;
+        .bind(o.world.as_bytes().as_slice()).bind(o.definition.key()).bind(o.definition.revision()).bind(count).bind(o.id.as_bytes().as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
@@ -726,6 +755,54 @@ fn market_native_schema_rejects_invalid_gold_custody_and_ended_matching() -> Tes
             );
             tx.rollback().await?;
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn market_stored_definition_validation_preserves_production_identity_restrictions() -> TestResult {
+    run("marketdefinition", async |h| {
+        let o = offer(60, Side::Sell, 40, 100);
+        seed(h, &o).await?;
+        for (key, revision) in [
+            ("unnamespaced".to_owned(), "r1".to_owned()),
+            ("n:é".to_owned(), "r1".to_owned()),
+            ("n:test-ware".to_owned(), "r1".to_owned()),
+            ("n:fixture-ware".to_owned(), "r1".to_owned()),
+            ("n:synthetic".to_owned(), "r1".to_owned()),
+            ("n:evidence".to_owned(), "r1".to_owned()),
+            (format!("n:{}", "x".repeat(511)), "r1".to_owned()),
+            ("n:ware".to_owned(), "r 1".to_owned()),
+            ("n:ware".to_owned(), "révision".to_owned()),
+            ("n:ware".to_owned(), "test/r1".to_owned()),
+            ("n:ware".to_owned(), "".to_owned()),
+            ("n:ware".to_owned(), "r".repeat(513)),
+        ] {
+            sqlx::query("INSERT INTO game_market_books VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT DO NOTHING")
+                .bind(o.world.as_bytes().as_slice()).bind(&key).execute(&h.pool).await?;
+            sqlx::query("UPDATE game_market_offers SET definition_key=$2,definition_revision=$3 WHERE offer_id=encode($1,'hex')::uuid")
+                .bind(o.id.as_bytes().as_slice()).bind(&key).bind(&revision).execute(&h.pool).await?;
+            let mut connection = h.pool.acquire().await?;
+            assert!(
+                matches!(
+                    open_character_offers(&mut connection, world(), o.character).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ),
+                "{key:?} / {revision:?}"
+            );
+        }
+        // Preserve the exact accepted boundaries; revision syntax permits graphic '+' even
+        // though ProductionKey syntax does not. Validation identifies data, not admission.
+        assert!(definition(&format!("n:{}", "x".repeat(510)), &"r".repeat(512)).is_ok());
+        assert!(definition("n:ware", "r+1").is_ok());
+        assert!(
+            StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+                family: "Creature".to_owned(),
+                production_key: "n:ware".to_owned(),
+                revision_ref: "r1".to_owned(),
+            })
+            .is_err()
+        );
         Ok(())
     })
 }

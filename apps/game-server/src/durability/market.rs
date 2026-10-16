@@ -11,16 +11,338 @@
 
 use super::DurabilityError;
 use super::character_progression::{numeric_u64, uuid_text};
-use crate::content::{DefinitionFamily, DefinitionRevisionRef, ProductionKey, TypedDefinitionRef};
-use crate::domain::market::*;
 use crate::domain::{AccountId, CharacterId, ItemInstanceId, WorldId};
 use crate::foundation::CommandRef;
 use sqlx::{PgConnection, Postgres, Row, Transaction};
 
-type Result<T> = std::result::Result<T, DurabilityError>;
+type Result<T, E = DurabilityError> = std::result::Result<T, E>;
 fn invalid() -> DurabilityError {
     DurabilityError::InvalidStoredState
 }
+/// Storage key with the exact existing ProductionKey lexical restrictions. This validates
+/// persisted identity only; neither its syntax nor its constructor admits marketability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct MarketDefinitionKey(String);
+impl MarketDefinitionKey {
+    pub(crate) fn new(value: &str) -> Result<Self> {
+        super::item_mint_audit::check_content_key(value).map_err(|_| invalid())?;
+        let namespaced = value
+            .split_once(':')
+            .is_some_and(|(namespace, local)| !namespace.is_empty() && !local.is_empty());
+        if !namespaced || !valid_key_bytes(value) || has_nonproduction_marker(value) {
+            return Err(invalid());
+        }
+        Ok(Self(value.to_owned()))
+    }
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+fn has_nonproduction_marker(value: &str) -> bool {
+    let lower = value.to_ascii_lowercase();
+    let has_test_segment = lower
+        .split([':', '.', '/', '_', '-'])
+        .any(|segment| segment == "test");
+    lower.contains("fixture")
+        || lower.contains("synthetic")
+        || lower.contains("evidence")
+        || lower.contains("test-only")
+        || has_test_segment
+}
+fn valid_key_bytes(value: &str) -> bool {
+    !value.is_empty()
+        && value.is_ascii()
+        && value.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
+        })
+}
+
+/// Accepted durable definition ABI, privately checked before use as a Market ITEM ware.
+/// No unchecked native string DTO or Content admission fact escapes through this wrapper.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct StoredItemDefinition(super::item_mint::TypedDefinitionRef);
+impl StoredItemDefinition {
+    pub(crate) fn new(value: super::item_mint::TypedDefinitionRef) -> Result<Self> {
+        if value.family != "Item" {
+            return Err(invalid());
+        }
+        MarketDefinitionKey::new(&value.production_key)?;
+        super::item_mint_audit::check_content_key(&value.revision_ref).map_err(|_| invalid())?;
+        if !value.revision_ref.is_ascii()
+            || !value
+                .revision_ref
+                .bytes()
+                .all(|byte| byte.is_ascii_graphic())
+            || has_nonproduction_marker(&value.revision_ref)
+        {
+            return Err(invalid());
+        }
+        Ok(Self(value))
+    }
+    pub(crate) fn family(&self) -> &str {
+        &self.0.family
+    }
+    pub(crate) fn key(&self) -> &str {
+        &self.0.production_key
+    }
+    pub(crate) fn revision(&self) -> &str {
+        &self.0.revision_ref
+    }
+}
+
+pub(crate) const MAX_TOTAL: u64 = 999_999_999_999;
+pub(crate) const HARD_CREDIT_CEILING: u64 = 9_000_000_000_000_000;
+pub(crate) const LIFETIME_US: i64 = 30 * 24 * 60 * 60 * 1_000_000;
+
+/// The accepted Game MarketOfferId, private until its owning registration slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct MarketOfferId([u8; 16]);
+impl MarketOfferId {
+    pub(crate) fn new(bytes: [u8; 16]) -> Result<Self> {
+        super::item_mint_audit::check_uuid_v7(&bytes).map_err(|_| invalid())?;
+        Ok(Self(bytes))
+    }
+    pub(crate) const fn as_bytes(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BookKey {
+    pub(crate) world: WorldId,
+    pub(crate) definition: MarketDefinitionKey,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Side {
+    Buy,
+    Sell,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EndState {
+    Filled,
+    Cancelled,
+    Expired,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum OfferState {
+    Open,
+    Ended(EndState),
+    CreditHeld(EndState),
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Offer {
+    pub(crate) id: MarketOfferId,
+    pub(crate) world: WorldId,
+    pub(crate) definition: StoredItemDefinition,
+    pub(crate) side: Side,
+    pub(crate) account: AccountId,
+    pub(crate) character: CharacterId,
+    pub(crate) piece_price: u64,
+    pub(crate) amount: u32,
+    pub(crate) remaining: u32,
+    pub(crate) anonymous: bool,
+    pub(crate) created_at_us: i64,
+    pub(crate) expires_at_us: i64,
+    pub(crate) state: OfferState,
+    pub(crate) escrow_gold: u64,
+    pub(crate) held_credit_gold: u64,
+    pub(crate) matching_pending: bool,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PlanError {
+    InvalidState,
+    NotOpen,
+    NotExpired,
+    SameAccount,
+    NotCrossed,
+    InvalidAmount,
+}
+
+pub(crate) fn offer_total(amount: u32, price: u64) -> Result<u64, PlanError> {
+    let total = u128::from(amount)
+        .checked_mul(u128::from(price))
+        .ok_or(PlanError::InvalidAmount)?;
+    if !(1..=64_000).contains(&amount) || price == 0 || total > u128::from(MAX_TOTAL) {
+        return Err(PlanError::InvalidAmount);
+    }
+    u64::try_from(total).map_err(|_| PlanError::InvalidAmount)
+}
+pub(crate) fn placement_fee(amount: u32, price: u64) -> Result<u64, PlanError> {
+    Ok((offer_total(amount, price)? / 50).clamp(20, 1_000_000))
+}
+impl Offer {
+    pub(crate) fn book(&self) -> BookKey {
+        BookKey {
+            world: self.world,
+            definition: MarketDefinitionKey(self.definition.key().to_owned()),
+        }
+    }
+    pub(crate) fn validate(&self) -> Result<(), PlanError> {
+        offer_total(self.amount, self.piece_price)?;
+        if self.definition.family() != "Item"
+            || self.remaining > self.amount
+            || self.created_at_us < 0
+            || self.created_at_us.checked_add(LIFETIME_US) != Some(self.expires_at_us)
+        {
+            return Err(PlanError::InvalidState);
+        }
+        let expected_escrow = if self.side == Side::Buy && self.state == OfferState::Open {
+            u64::from(self.remaining)
+                .checked_mul(self.piece_price)
+                .ok_or(PlanError::InvalidState)?
+        } else {
+            0
+        };
+        if self.escrow_gold != expected_escrow {
+            return Err(PlanError::InvalidState);
+        }
+        match self.state {
+            OfferState::Open if self.remaining == 0 || self.held_credit_gold != 0 => {
+                return Err(PlanError::InvalidState);
+            }
+            OfferState::CreditHeld(end)
+                if self.held_credit_gold == 0
+                    || self.matching_pending
+                    || (end == EndState::Filled && self.remaining != 0) =>
+            {
+                return Err(PlanError::InvalidState);
+            }
+            OfferState::Ended(end)
+                if self.held_credit_gold != 0
+                    || self.matching_pending
+                    || (end == EndState::Filled && self.remaining != 0) =>
+            {
+                return Err(PlanError::InvalidState);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+    fn open_at(&self, now_us: i64) -> Result<(), PlanError> {
+        self.validate()?;
+        if self.state != OfferState::Open
+            || now_us < self.created_at_us
+            || now_us >= self.expires_at_us
+        {
+            return Err(PlanError::NotOpen);
+        }
+        Ok(())
+    }
+}
+
+/// Economic terms only. Current admitted definition compatibility, custody selection (at
+/// most 100 touched items), Inbox reservations and all bank effects remain the atomic writer's
+/// job. This plan neither transfers value nor authorizes an execution.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct MatchTerms {
+    pub(crate) maker: MarketOfferId,
+    pub(crate) buyer: MarketOfferId,
+    pub(crate) seller: MarketOfferId,
+    pub(crate) amount: u32,
+    pub(crate) piece_price: u64,
+    pub(crate) sale_gold: u64,
+    pub(crate) buy_escrow_debit: u64,
+    pub(crate) buyer_refund_gold: u64,
+}
+pub(crate) fn match_terms(
+    a: &Offer,
+    b: &Offer,
+    amount: u32,
+    now_us: i64,
+) -> Result<MatchTerms, PlanError> {
+    a.open_at(now_us)?;
+    b.open_at(now_us)?;
+    if a.id == b.id || a.book() != b.book() || a.side == b.side {
+        return Err(PlanError::InvalidState);
+    }
+    if a.account == b.account {
+        return Err(PlanError::SameAccount);
+    }
+    let (buy, sell) = if a.side == Side::Buy { (a, b) } else { (b, a) };
+    if buy.piece_price < sell.piece_price {
+        return Err(PlanError::NotCrossed);
+    }
+    if amount == 0 || amount > buy.remaining || amount > sell.remaining {
+        return Err(PlanError::InvalidAmount);
+    }
+    let maker = if (a.created_at_us, a.id) < (b.created_at_us, b.id) {
+        a
+    } else {
+        b
+    };
+    let sale_gold = offer_total(amount, maker.piece_price)?;
+    let buy_escrow_debit = offer_total(amount, buy.piece_price)?;
+    Ok(MatchTerms {
+        maker: maker.id,
+        buyer: buy.id,
+        seller: sell.id,
+        amount,
+        piece_price: maker.piece_price,
+        sale_gold,
+        buy_escrow_debit,
+        buyer_refund_gold: buy_escrow_debit
+            .checked_sub(sale_gold)
+            .ok_or(PlanError::InvalidState)?,
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EndReason {
+    Cancel,
+    Expire,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct EndPlan {
+    pub(crate) offer: MarketOfferId,
+    pub(crate) ended_as: EndState,
+    pub(crate) return_gold: u64,
+    pub(crate) return_item_units: u32,
+}
+pub(crate) fn end_plan(
+    offer: &Offer,
+    reason: EndReason,
+    now_us: i64,
+) -> Result<EndPlan, PlanError> {
+    offer.validate()?;
+    if offer.state != OfferState::Open || now_us < offer.created_at_us {
+        return Err(PlanError::NotOpen);
+    }
+    if reason == EndReason::Expire && now_us < offer.expires_at_us {
+        return Err(PlanError::NotExpired);
+    }
+    Ok(EndPlan {
+        offer: offer.id,
+        ended_as: if reason == EndReason::Cancel {
+            EndState::Cancelled
+        } else {
+            EndState::Expired
+        },
+        return_gold: offer.escrow_gold,
+        return_item_units: if offer.side == Side::Sell {
+            offer.remaining
+        } else {
+            0
+        },
+    })
+}
+
+/// An owner's credit that does not fit remains explicit custody, never a refused/lost credit.
+/// The caller supplies the independently locked current balance; no balance write occurs here.
+pub(crate) fn held_credit_release(
+    offer: &Offer,
+    locked_balance: u64,
+) -> Result<Option<u64>, PlanError> {
+    offer.validate()?;
+    if !matches!(offer.state, OfferState::CreditHeld(_)) || locked_balance > HARD_CREDIT_CEILING {
+        return Err(PlanError::InvalidState);
+    }
+    Ok(locked_balance
+        .checked_add(offer.held_credit_gold)
+        .filter(|value| *value <= HARD_CREDIT_CEILING)
+        .map(|_| offer.held_credit_gold))
+}
+
 fn state(code: i16, ended: Option<i16>) -> Result<OfferState> {
     let end = |v| match v {
         2 => Ok(EndState::Filled),
@@ -39,12 +361,11 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<Offer> {
     let offer = Offer {
         id: MarketOfferId::new(uuid_text(row.try_get("offer_id")?)?).map_err(|_| invalid())?,
         world: WorldId::from_bytes(uuid_text(row.try_get("world_id")?)?).map_err(|_| invalid())?,
-        definition: TypedDefinitionRef::new(
-            DefinitionFamily::Item,
-            ProductionKey::new(row.try_get::<&str, _>("definition_key")?).map_err(|_| invalid())?,
-            DefinitionRevisionRef::new(row.try_get("definition_revision")?)
-                .map_err(|_| invalid())?,
-        ),
+        definition: StoredItemDefinition::new(super::item_mint::TypedDefinitionRef {
+            family: "Item".to_owned(),
+            production_key: row.try_get("definition_key")?,
+            revision_ref: row.try_get("definition_revision")?,
+        })?,
         side: match row.try_get::<i16, _>("side")? {
             1 => Side::Buy,
             2 => Side::Sell,
@@ -92,6 +413,57 @@ pub(crate) async fn open_character_offers(
         return Err(invalid());
     }
     rows.iter().map(decode).collect()
+}
+
+/// An ended offer plus its stored ending order, separate from creation/expiry metadata.
+/// These fields require the owning production migration and ending writer; this private
+/// reader does not create them or infer them from the offer's creation timestamp.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct EndedOffer {
+    pub(crate) offer: Offer,
+    pub(crate) ended_at_us: i64,
+    pub(crate) end_sequence: i64,
+}
+
+/// Private My Offers history: the last 600 endings, including unreleased CREDIT_HELD.
+/// Native current recovery/session/depot admission and owner resolution remain caller gates.
+/// CP D1159 requires a DB-clock ending timestamp and monotonic bigint sequence from the
+/// atomic ending writer. Proposed fixture columns are not a deployed production schema.
+pub(crate) async fn ended_character_offers(
+    connection: &mut PgConnection,
+    world: WorldId,
+    character: CharacterId,
+) -> Result<Vec<EndedOffer>> {
+    let rows = sqlx::query(
+        "SELECT offer_id::text,world_id::text,definition_key,definition_revision,side,account_id::text,character_id::text,piece_price::text,amount,remaining,anonymous,created_at_us,expires_at_us,state,ended_as,escrow_gold::text,held_credit_gold::text,matching_pending,ended_at_us,end_sequence FROM game_market_offers WHERE world_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND state IN(2,3,4,5) ORDER BY ended_at_us DESC,end_sequence DESC LIMIT 600",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(connection)
+    .await?;
+    let mut sequences = std::collections::BTreeSet::new();
+    rows.iter()
+        .map(|row| {
+            let offer = decode(row)?;
+            let ended_at_us = row
+                .try_get::<Option<i64>, _>("ended_at_us")?
+                .ok_or_else(invalid)?;
+            let end_sequence = row
+                .try_get::<Option<i64>, _>("end_sequence")?
+                .ok_or_else(invalid)?;
+            if ended_at_us < offer.created_at_us
+                || end_sequence <= 0
+                || !sequences.insert(end_sequence)
+            {
+                return Err(invalid());
+            }
+            Ok(EndedOffer {
+                offer,
+                ended_at_us,
+                end_sequence,
+            })
+        })
+        .collect()
 }
 
 /// Stable price/time/id pagination data, never a reservation or current offer proof.
@@ -305,10 +677,8 @@ impl LockedBook<'_, '_> {
         let mut units = 0_u64;
         for row in rows {
             if row.try_get::<&str, _>("definition_family")? != "Item"
-                || row.try_get::<&str, _>("definition_production_key")?
-                    != offer.definition.key().as_str()
-                || row.try_get::<&str, _>("definition_revision_ref")?
-                    != offer.definition.revision().as_str()
+                || row.try_get::<&str, _>("definition_production_key")? != offer.definition.key()
+                || row.try_get::<&str, _>("definition_revision_ref")? != offer.definition.revision()
                 || row.try_get::<i16, _>("lifecycle")? != 1
             {
                 return Err(invalid());
@@ -356,7 +726,7 @@ pub(crate) async fn expired_candidates(
             Ok((
                 BookKey {
                     world,
-                    definition: ProductionKey::new(r.try_get::<&str, _>("definition_key")?)
+                    definition: MarketDefinitionKey::new(r.try_get::<&str, _>("definition_key")?)
                         .map_err(|_| invalid())?,
                 },
                 MarketOfferId::new(uuid_text(r.try_get("offer_id")?)?).map_err(|_| invalid())?,
@@ -499,6 +869,8 @@ pub(crate) async fn read_operation(
     }))
 }
 
+/// Administrative fixture access to the exact production encoder; never a command grant.
 #[cfg(test)]
-#[path = "market_tests.rs"]
-mod tests;
+pub(crate) fn fixture_occurrence_key(occurrence: Occurrence) -> Result<Vec<u8>> {
+    occurrence.key()
+}

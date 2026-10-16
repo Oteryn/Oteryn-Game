@@ -1,263 +1,207 @@
-//! MARKET0 §§4/6/7: ITEM offer state and noncommitting economic plans.
-//! Definition references identify stored wares; they do not admit marketability or compatibility.
+//! MARKET0 production Content identities mapped onto the owned durable Market model.
+//! This conversion preserves typed definition identity, not marketability or admission.
 #![allow(
     dead_code,
     reason = "private Market owner awaits atomic CP integration"
 )]
 
-use super::{AccountId, CharacterId, DomainError, WorldId, validate_uuid_v7};
-use crate::content::{DefinitionFamily, ProductionKey, TypedDefinitionRef};
+use crate::content::{DefinitionFamily, TypedDefinitionRef};
+use crate::durability::DurabilityError;
+use crate::durability::market::StoredItemDefinition;
 
-pub(crate) const MAX_TOTAL: u64 = 999_999_999_999;
-pub(crate) const HARD_CREDIT_CEILING: u64 = 9_000_000_000_000_000;
-pub(crate) const LIFETIME_US: i64 = 30 * 24 * 60 * 60 * 1_000_000;
-
-/// The accepted Game MarketOfferId, private until its owning registration slot.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct MarketOfferId([u8; 16]);
-impl MarketOfferId {
-    pub(crate) fn new(bytes: [u8; 16]) -> Result<Self, DomainError> {
-        validate_uuid_v7(&bytes)?;
-        Ok(Self(bytes))
+pub(crate) fn definition_for_storage(
+    value: &TypedDefinitionRef,
+) -> Result<StoredItemDefinition, DurabilityError> {
+    if value.family() != DefinitionFamily::Item {
+        return Err(DurabilityError::InvalidStoredState);
     }
-    pub(crate) const fn as_bytes(&self) -> &[u8; 16] {
-        &self.0
-    }
+    StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+        family: "Item".to_owned(),
+        production_key: value.key().as_str().to_owned(),
+        revision_ref: value.revision().as_str().to_owned(),
+    })
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct BookKey {
-    pub(crate) world: WorldId,
-    pub(crate) definition: ProductionKey,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Side {
-    Buy,
-    Sell,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum EndState {
-    Filled,
-    Cancelled,
-    Expired,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OfferState {
-    Open,
-    Ended(EndState),
-    CreditHeld(EndState),
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Offer {
-    pub(crate) id: MarketOfferId,
-    pub(crate) world: WorldId,
-    pub(crate) definition: TypedDefinitionRef,
-    pub(crate) side: Side,
-    pub(crate) account: AccountId,
-    pub(crate) character: CharacterId,
-    pub(crate) piece_price: u64,
-    pub(crate) amount: u32,
-    pub(crate) remaining: u32,
-    pub(crate) anonymous: bool,
-    pub(crate) created_at_us: i64,
-    pub(crate) expires_at_us: i64,
-    pub(crate) state: OfferState,
-    pub(crate) escrow_gold: u64,
-    pub(crate) held_credit_gold: u64,
-    pub(crate) matching_pending: bool,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PlanError {
-    InvalidState,
-    NotOpen,
-    NotExpired,
-    SameAccount,
-    NotCrossed,
-    InvalidAmount,
-}
-
-pub(crate) fn offer_total(amount: u32, price: u64) -> Result<u64, PlanError> {
-    let total = u128::from(amount)
-        .checked_mul(u128::from(price))
-        .ok_or(PlanError::InvalidAmount)?;
-    if !(1..=64_000).contains(&amount) || price == 0 || total > u128::from(MAX_TOTAL) {
-        return Err(PlanError::InvalidAmount);
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+    use crate::bestiary_postgres_harness::{WORLD, id};
+    use crate::domain::{AccountId, CharacterId, WorldId};
+    use crate::durability::market::*;
+    fn world() -> WorldId {
+        WorldId::from_bytes(id(WORLD)).expect("world")
     }
-    u64::try_from(total).map_err(|_| PlanError::InvalidAmount)
-}
-pub(crate) fn placement_fee(amount: u32, price: u64) -> Result<u64, PlanError> {
-    Ok((offer_total(amount, price)? / 50).clamp(20, 1_000_000))
-}
-impl Offer {
-    pub(crate) fn book(&self) -> BookKey {
-        BookKey {
-            world: self.world,
-            definition: self.definition.key().clone(),
+    fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer {
+        Offer {
+            id: MarketOfferId::new(id(seed)).expect("offer"),
+            world: world(),
+            definition: definition("oteryn:content.item.vase", "r1").expect("definition"),
+            side,
+            account: AccountId::from_bytes(id(account)).expect("account"),
+            character: CharacterId::from_bytes(id(account + 1)).expect("character"),
+            piece_price: 100,
+            amount: 10,
+            remaining: 10,
+            anonymous: false,
+            created_at_us: created,
+            expires_at_us: created + LIFETIME_US,
+            state: OfferState::Open,
+            escrow_gold: if side == Side::Buy { 1000 } else { 0 },
+            held_credit_gold: 0,
+            matching_pending: false,
         }
     }
-    pub(crate) fn validate(&self) -> Result<(), PlanError> {
-        offer_total(self.amount, self.piece_price)?;
-        if self.definition.family() != DefinitionFamily::Item
-            || self.remaining > self.amount
-            || self.created_at_us < 0
-            || self.created_at_us.checked_add(LIFETIME_US) != Some(self.expires_at_us)
-        {
-            return Err(PlanError::InvalidState);
-        }
-        let expected_escrow = if self.side == Side::Buy && self.state == OfferState::Open {
-            u64::from(self.remaining)
-                .checked_mul(self.piece_price)
-                .ok_or(PlanError::InvalidState)?
+    fn definition(
+        key: &str,
+        revision: &str,
+    ) -> Result<StoredItemDefinition, crate::durability::DurabilityError> {
+        StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".to_owned(),
+            production_key: key.to_owned(),
+            revision_ref: revision.to_owned(),
+        })
+    }
+    fn price(o: &mut Offer, p: u64) {
+        o.piece_price = p;
+        o.escrow_gold = if o.side == Side::Buy && o.state == OfferState::Open {
+            u64::from(o.remaining) * p
         } else {
             0
         };
-        if self.escrow_gold != expected_escrow {
-            return Err(PlanError::InvalidState);
+    }
+    #[test]
+    fn market_production_definition_mapping_preserves_identity_and_rejects_other_families() {
+        use crate::content::{
+            DefinitionFamily, DefinitionRevisionRef, ProductionKey, TypedDefinitionRef,
+        };
+        let key = ProductionKey::new("n:ware").expect("key");
+        let revision = DefinitionRevisionRef::new("r+1").expect("revision");
+        let content =
+            TypedDefinitionRef::new(DefinitionFamily::Item, key.clone(), revision.clone());
+        let stored = super::definition_for_storage(&content).expect("mapping");
+        assert_eq!(
+            (stored.family(), stored.key(), stored.revision()),
+            ("Item", "n:ware", "r+1")
+        );
+        let other = TypedDefinitionRef::new(DefinitionFamily::Creature, key, revision);
+        assert!(super::definition_for_storage(&other).is_err());
+    }
+    #[test]
+    fn market_checked_total_and_fee_limits() {
+        assert_eq!(offer_total(1, MAX_TOTAL), Ok(MAX_TOTAL));
+        for (amount, price) in [
+            (0, 1),
+            (64001, 1),
+            (1, 0),
+            (1, u64::MAX),
+            (64000, MAX_TOTAL),
+        ] {
+            assert!(offer_total(amount, price).is_err());
         }
-        match self.state {
-            OfferState::Open if self.remaining == 0 || self.held_credit_gold != 0 => {
-                return Err(PlanError::InvalidState);
-            }
-            OfferState::CreditHeld(end) => {
-                if self.held_credit_gold == 0
-                    || self.matching_pending
-                    || (end == EndState::Filled && self.remaining != 0)
-                {
-                    return Err(PlanError::InvalidState);
-                }
-            }
-            OfferState::Ended(end) => {
-                if self.held_credit_gold != 0
-                    || self.matching_pending
-                    || (end == EndState::Filled && self.remaining != 0)
-                {
-                    return Err(PlanError::InvalidState);
-                }
-            }
-            _ => {}
-        }
-        Ok(())
+        assert_eq!(placement_fee(1, 1), Ok(20));
+        assert_eq!(placement_fee(1, 1049), Ok(20));
+        assert_eq!(placement_fee(1, 1050), Ok(21));
+        assert_eq!(placement_fee(1, MAX_TOTAL), Ok(1_000_000));
     }
-    fn open_at(&self, now_us: i64) -> Result<(), PlanError> {
-        self.validate()?;
-        if self.state != OfferState::Open
-            || now_us < self.created_at_us
-            || now_us >= self.expires_at_us
-        {
-            return Err(PlanError::NotOpen);
-        }
-        Ok(())
+    #[test]
+    fn market_state_custody_guards_fail_closed() {
+        let good = offer(60, Side::Buy, 40, 100);
+        assert_eq!(good.validate(), Ok(()));
+        let mut bad = good.clone();
+        bad.escrow_gold -= 1;
+        assert!(bad.validate().is_err());
+        let mut bad = good.clone();
+        bad.state = OfferState::CreditHeld(EndState::Cancelled);
+        bad.held_credit_gold = 1;
+        assert!(bad.validate().is_err());
+        let mut held = good.clone();
+        held.state = OfferState::CreditHeld(EndState::Cancelled);
+        held.held_credit_gold = 1000;
+        held.escrow_gold = 0;
+        assert!(held.validate().is_ok());
+        held.matching_pending = true;
+        assert!(held.validate().is_err());
+        let mut bad = good.clone();
+        bad.expires_at_us -= 1;
+        assert!(bad.validate().is_err());
+        let mut bad = good;
+        bad.remaining = 0;
+        bad.escrow_gold = 0;
+        assert!(bad.validate().is_err());
+        bad.state = OfferState::Ended(EndState::Filled);
+        assert!(bad.validate().is_ok());
     }
-}
-
-/// Economic terms only. Current admitted definition compatibility, custody selection (at
-/// most 100 touched items), Inbox reservations and all bank effects remain the atomic writer's
-/// job. This plan neither transfers value nor authorizes an execution.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MatchTerms {
-    pub(crate) maker: MarketOfferId,
-    pub(crate) buyer: MarketOfferId,
-    pub(crate) seller: MarketOfferId,
-    pub(crate) amount: u32,
-    pub(crate) piece_price: u64,
-    pub(crate) sale_gold: u64,
-    pub(crate) buy_escrow_debit: u64,
-    pub(crate) buyer_refund_gold: u64,
-}
-pub(crate) fn match_terms(
-    a: &Offer,
-    b: &Offer,
-    amount: u32,
-    now_us: i64,
-) -> Result<MatchTerms, PlanError> {
-    a.open_at(now_us)?;
-    b.open_at(now_us)?;
-    if a.id == b.id || a.book() != b.book() || a.side == b.side {
-        return Err(PlanError::InvalidState);
-    }
-    if a.account == b.account {
-        return Err(PlanError::SameAccount);
-    }
-    let (buy, sell) = if a.side == Side::Buy { (a, b) } else { (b, a) };
-    if buy.piece_price < sell.piece_price {
-        return Err(PlanError::NotCrossed);
-    }
-    if amount == 0 || amount > buy.remaining || amount > sell.remaining {
-        return Err(PlanError::InvalidAmount);
-    }
-    let maker = if (a.created_at_us, a.id) < (b.created_at_us, b.id) {
-        a
-    } else {
-        b
-    };
-    let sale_gold = offer_total(amount, maker.piece_price)?;
-    let buy_escrow_debit = offer_total(amount, buy.piece_price)?;
-    Ok(MatchTerms {
-        maker: maker.id,
-        buyer: buy.id,
-        seller: sell.id,
-        amount,
-        piece_price: maker.piece_price,
-        sale_gold,
-        buy_escrow_debit,
-        buyer_refund_gold: buy_escrow_debit
-            .checked_sub(sale_gold)
-            .ok_or(PlanError::InvalidState)?,
-    })
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum EndReason {
-    Cancel,
-    Expire,
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct EndPlan {
-    pub(crate) offer: MarketOfferId,
-    pub(crate) ended_as: EndState,
-    pub(crate) return_gold: u64,
-    pub(crate) return_item_units: u32,
-}
-pub(crate) fn end_plan(
-    offer: &Offer,
-    reason: EndReason,
-    now_us: i64,
-) -> Result<EndPlan, PlanError> {
-    offer.validate()?;
-    if offer.state != OfferState::Open || now_us < offer.created_at_us {
-        return Err(PlanError::NotOpen);
-    }
-    if reason == EndReason::Expire && now_us < offer.expires_at_us {
-        return Err(PlanError::NotExpired);
-    }
-    Ok(EndPlan {
-        offer: offer.id,
-        ended_as: if reason == EndReason::Cancel {
-            EndState::Cancelled
-        } else {
-            EndState::Expired
-        },
-        return_gold: offer.escrow_gold,
-        return_item_units: if offer.side == Side::Sell {
-            offer.remaining
-        } else {
+    #[test]
+    fn market_match_maker_price_and_exact_refund_without_compatibility_claim() {
+        let mut buy = offer(60, Side::Buy, 40, 200);
+        let sell = offer(61, Side::Sell, 70, 100);
+        price(&mut buy, 120);
+        let terms = match_terms(&buy, &sell, 4, 300).expect("terms");
+        assert_eq!(
+            (
+                terms.maker,
+                terms.sale_gold,
+                terms.buy_escrow_debit,
+                terms.buyer_refund_gold
+            ),
+            (sell.id, 400, 480, 80)
+        );
+        buy.created_at_us = 50;
+        buy.expires_at_us = 50 + LIFETIME_US;
+        assert_eq!(
+            match_terms(&buy, &sell, 4, 300)
+                .expect("buy maker")
+                .buyer_refund_gold,
             0
-        },
-    })
-}
-
-/// An owner's credit that does not fit remains explicit custody, never a refused/lost credit.
-/// The caller supplies the independently locked current balance; no balance write occurs here.
-pub(crate) fn held_credit_release(
-    offer: &Offer,
-    locked_balance: u64,
-) -> Result<Option<u64>, PlanError> {
-    offer.validate()?;
-    if !matches!(offer.state, OfferState::CreditHeld(_)) || locked_balance > HARD_CREDIT_CEILING {
-        return Err(PlanError::InvalidState);
+        );
+        let mut other = sell.clone();
+        other.account = buy.account;
+        assert_eq!(
+            match_terms(&buy, &other, 1, 300),
+            Err(PlanError::SameAccount)
+        );
+        let mut other = sell.clone();
+        price(&mut other, 121);
+        assert_eq!(
+            match_terms(&buy, &other, 1, 300),
+            Err(PlanError::NotCrossed)
+        );
+        for amount in [0, 11, u32::MAX] {
+            assert!(match_terms(&buy, &sell, amount, 300).is_err());
+        }
+        assert!(match_terms(&buy, &sell, 1, buy.expires_at_us).is_err());
     }
-    Ok(locked_balance
-        .checked_add(offer.held_credit_gold)
-        .filter(|value| *value <= HARD_CREDIT_CEILING)
-        .map(|_| offer.held_credit_gold))
+    #[test]
+    fn market_cancel_expiry_and_held_credit_are_noncommitting_exact_requirements() {
+        let buy = offer(60, Side::Buy, 40, 100);
+        assert_eq!(
+            end_plan(&buy, EndReason::Expire, 200),
+            Err(PlanError::NotExpired)
+        );
+        let plan = end_plan(&buy, EndReason::Expire, buy.expires_at_us).expect("expire");
+        assert_eq!(
+            (plan.return_gold, plan.return_item_units, plan.ended_as),
+            (1000, 0, EndState::Expired)
+        );
+        let sell = offer(61, Side::Sell, 70, 100);
+        assert_eq!(
+            end_plan(&sell, EndReason::Cancel, 200)
+                .expect("cancel")
+                .return_item_units,
+            10
+        );
+        let mut held = buy;
+        held.state = OfferState::CreditHeld(EndState::Cancelled);
+        held.held_credit_gold = 1100;
+        held.escrow_gold = 0;
+        assert_eq!(
+            held_credit_release(&held, HARD_CREDIT_CEILING - 1100),
+            Ok(Some(1100))
+        );
+        assert_eq!(
+            held_credit_release(&held, HARD_CREDIT_CEILING - 1099),
+            Ok(None)
+        );
+        assert!(end_plan(&held, EndReason::Cancel, 200).is_err());
+    }
 }
