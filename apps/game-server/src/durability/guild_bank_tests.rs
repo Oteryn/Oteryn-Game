@@ -20,7 +20,7 @@ use crate::item_transfer_postgres_cases::{
 use sqlx::Executor;
 
 // Exact unmerged GUILD1 owner candidate, base 7229b68227a65d22bc2427545b81b61deee754a7.
-// Source durability/guild.rs SHA256 6ad77f920264238af348819dd5a4d3facf401bd247939afb51fcdc8b77fa2034.
+// Source durability/guild.rs SHA256 33cfa4d52600ecbb4f08bc39b47d0c6f0a9754713b19090d110cfdff091d362b.
 // This is a disclosed validation-overlay dependency, not a schema installed on main.
 fn assert_guild_source() {
     assert_eq!(
@@ -35,7 +35,7 @@ fn assert_guild_source() {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a"
+        "387ba1c48521bb09a738acd6505084b65a64ec719dc4098171af5c9fb9cbb596"
     );
 }
 
