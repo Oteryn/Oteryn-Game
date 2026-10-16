@@ -4,7 +4,7 @@
 task_id: PVP-DEATH-1
 title: "PVP-DEATH-1: outcome leaf; shared death integration after #2193 (D1105)"
 mode: IMPLEMENTATION
-status: source_authored_unqualified
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-death-1
@@ -390,3 +390,27 @@ rulesets/evaluator endpoint acceptance, exact C/PVP1b guard/provenance lease (in
 and delayed settlement), A13 loss/training joins, migration/receipt compatibility, current-authority
 and workflow tests, independent persistence/combat/security/privacy/protocol and architect review,
 and CP shared queue slot. No worker commit, push, ready flag, merge or external publication.
+
+## D1122 draft checkpoint (2026-10-16)
+
+The component at `f2f38ccf7725e68b5fa893bc91323927e45856d0` passed
+15 native outcome tests and strict all-target Clippy in the private full-crate
+assembly. Its minimal private `combat/pvp/mod.rs` registration is qualification
+overlay only; product registration and actual death transaction integration
+remain absent. This does not qualify raw product compilation or runtime PvP.
+The full package stopped in the library: 3164 passed, 1 failed, 29 ignored.
+`gameplay_transport::monk_save::postgres_tests::boundary_unknown_monk_save_keeps_lease_until_store_recovers`
+failed with RootUnavailable. That RED remains unresolved and retained in
+`evidence/pvp-death-assembly-validation-results.json` outside the checkout;
+there is no blind full retry or full PASS claim.
+
+D1128 permits `combat/pvp/lethal_attribution.rs`, but its actual source is missing:
+the native PlayerLethalReceipt contains victim facts only, the common HP commit
+does not retain sourceCharacter/summonowner, and no qualified player damage/assist
+ledger observation is exposed. The exact source/API/blob request is CP2131
+comment6226506086, with packet
+`evidence/2205-lethal-attribution-exact-source-request.json`. No replacement
+ledger, supplied-data authority or duplicate victim anchor was added.
+`character_death.rs` remains solely E's until #2193 merges. This coherent draft
+checkpoint is NOT_FULLY_QUALIFIED under D1122; all original integration/review
+gates remain open, without ready, merge, queue changes or review trigger.
