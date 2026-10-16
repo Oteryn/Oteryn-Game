@@ -567,12 +567,29 @@ CREATE TRIGGER house_disposition_immutable BEFORE UPDATE OR DELETE ON game_house
 CREATE TRIGGER house_disposition_item_immutable BEFORE UPDATE OR DELETE ON game_house_disposition_items FOR EACH ROW EXECUTE FUNCTION game_house_disposition_immutable();
 CREATE TRIGGER house_disposition_step_immutable BEFORE UPDATE OR DELETE ON game_house_disposition_steps FOR EACH ROW EXECUTE FUNCTION game_house_disposition_immutable();
 CREATE FUNCTION game_house_disposition_fence_check(w UUID,h TEXT,i UUID,deleting BOOLEAN) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE op UUID;
+DECLARE op UUID;guild_relation REGCLASS;guild_guard REGPROCEDURE;
 BEGIN
- PERFORM 1 FROM game_house_ownership WHERE world_id=w AND house_key=h FOR SHARE;
+ -- Native row triggers can arrive with an item/provenance row already locked. Never
+ -- wait here behind a disposition that owns this anchor and is waiting for that row.
+ -- Root writers prelock the anchor; late generic writers fail closed with55P03.
+ PERFORM 1 FROM game_house_ownership WHERE world_id=w AND house_key=h FOR SHARE NOWAIT;
  SELECT operation_id INTO op FROM game_house_dispositions WHERE world_id=w AND house_key=h AND state IN(2,3);
  IF FOUND AND NOT (deleting AND EXISTS(SELECT 1 FROM game_house_disposition_items c WHERE c.operation_id=op AND c.item_instance_id=i AND c.moved_step IS NOT NULL AND c.moving_xact_id=pg_current_xact_id()))
  THEN RAISE EXCEPTION 'house disposition content fence' USING ERRCODE='23514'; END IF;
+ -- The typed Guild owner supplies its actual census/reservation guard. Both native item
+ -- mutations and House entry already pass through this one boundary. Ordinary DRAINED
+ -- history remains fenced; a Guild release cannot bypass the ordinary branch above.
+ guild_relation:=to_regclass(format('%I.game_house_guild_dispositions',current_schema()));
+ IF guild_relation IS NOT NULL OR EXISTS(SELECT 1 FROM pg_catalog.pg_attribute
+     WHERE attrelid='game_house_ownership'::regclass AND attname='owner_guild_id' AND NOT attisdropped) THEN
+  guild_guard:=to_regprocedure(format('%I.game_house_guild_disposition_fence_check(uuid,text,uuid,boolean)',current_schema()));
+  IF guild_relation IS NULL OR guild_guard IS NULL OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_proc
+      WHERE oid=guild_guard AND prokind='f' AND prorettype='void'::regtype) THEN
+   RAISE EXCEPTION 'Guild disposition fence owner is not installed' USING ERRCODE='23514';
+  END IF;
+  EXECUTE format('SELECT %I.game_house_guild_disposition_fence_check($1,$2,$3,$4)',current_schema())
+   USING w,h,i,deleting;
+ END IF;
 END $$;
 CREATE FUNCTION game_house_disposition_content_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
@@ -581,6 +598,18 @@ BEGIN
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
 END $$;
 CREATE TRIGGER house_disposition_content_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
+CREATE TRIGGER house_disposition_provenance_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_reclaim_provenance FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
+CREATE FUNCTION game_house_disposition_item_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE location RECORD;
+BEGIN
+ FOR location IN SELECT world_id,house_key FROM game_item_house_interior_locations
+     WHERE item_instance_id=OLD.item_instance_id ORDER BY world_id,house_key LOOP
+  -- A custody return moves its location/provenance; it never rewrites the frozen item.
+  PERFORM game_house_disposition_fence_check(location.world_id,location.house_key,OLD.item_instance_id,false);
+ END LOOP;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE TRIGGER house_disposition_item_fence BEFORE UPDATE OR DELETE ON game_item_instances FOR EACH ROW EXECUTE FUNCTION game_house_disposition_item_fence();
 CREATE FUNCTION game_house_disposition_entry_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
  IF NEW.state IN(1,2) THEN
@@ -608,13 +637,20 @@ BEGIN
  RETURN NULL;
 END $$;
 CREATE CONSTRAINT TRIGGER house_disposition_delivery_proven AFTER UPDATE ON game_house_disposition_items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_house_disposition_delivery_proven();
+-- Installed with the real common, location, provenance, item and entry guards above.
+-- The typed Guild owner requires this protected ABI before freezing or applying effects;
+-- an older ordinary-only fence has no such capability and must refuse Guild integration.
+CREATE FUNCTION game_house_disposition_guild_fence_abi() RETURNS INTEGER LANGUAGE sql IMMUTABLE AS $$ SELECT 1 $$;
 REVOKE ALL ON game_house_dispositions,game_house_disposition_items,game_house_disposition_steps FROM PUBLIC;
 DO $$ DECLARE n TEXT; BEGIN
- FOREACH n IN ARRAY ARRAY['game_house_disposition_immutable','game_house_disposition_content_fence','game_house_disposition_entry_fence','game_house_disposition_delivery_proven'] LOOP
+ FOREACH n IN ARRAY ARRAY['game_house_disposition_immutable','game_house_disposition_content_fence','game_house_disposition_item_fence','game_house_disposition_entry_fence','game_house_disposition_delivery_proven','game_house_disposition_guild_fence_abi'] LOOP
   EXECUTE format('ALTER FUNCTION %I() SET search_path=%I,pg_temp',n,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',n);
  END LOOP;
  EXECUTE format('ALTER FUNCTION game_house_disposition_fence_check(UUID,TEXT,UUID,BOOLEAN) SET search_path=%I,pg_temp',current_schema());
 END $$;
 REVOKE ALL ON FUNCTION game_house_disposition_fence_check(UUID,TEXT,UUID,BOOLEAN) FROM PUBLIC;
+-- The genuine Guild participant reads this constant on its runtime transaction. This
+-- grants no trigger, mutation, table or terminal-release authority to that role.
+GRANT EXECUTE ON FUNCTION game_house_disposition_guild_fence_abi() TO oteryn_game_runtime;
 "#;

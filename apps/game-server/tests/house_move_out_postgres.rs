@@ -343,6 +343,115 @@ async fn retained_notice_identity(h: &Harness) -> TestResult<String> {
 }
 
 #[test]
+fn frozen_native_item_and_provenance_mutations_share_the_content_fence() -> TestResult {
+    run("frozen_native_sources", async |h| {
+        setup(h, 1).await?;
+        let abi: i32 = sqlx::query_scalar("SELECT game_house_disposition_guild_fence_abi()")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(abi, 1);
+        let mut runtime_reader = h.pool.begin().await?;
+        runtime_reader
+            .execute("SET LOCAL ROLE oteryn_game_runtime")
+            .await?;
+        let runtime_abi: i32 =
+            sqlx::query_scalar("SELECT game_house_disposition_guild_fence_abi()")
+                .fetch_one(&mut *runtime_reader)
+                .await?;
+        assert_eq!(runtime_abi, 1);
+        let mutation_authority: bool = sqlx::query_scalar(
+            "SELECT has_function_privilege(current_user, \
+             'game_house_disposition_fence_check(uuid,text,uuid,boolean)', 'EXECUTE')",
+        )
+        .fetch_one(&mut *runtime_reader)
+        .await?;
+        assert!(!mutation_authority);
+        runtime_reader.rollback().await?;
+        // A native row trigger must never wait for an anchor held by a disposition,
+        // which may itself need that row. The entire rejected statement rolls back.
+        let mut owner = h.pool.begin().await?;
+        sqlx::query("SELECT 1 FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR UPDATE")
+            .bind(id(WORLD).as_slice()).bind(HOUSE).execute(&mut *owner).await?;
+        for statement in [
+            "UPDATE game_item_instances SET quantity=quantity WHERE item_instance_id IN(SELECT item_instance_id FROM game_item_house_interior_locations)",
+            "DELETE FROM game_item_house_reclaim_provenance",
+        ] {
+            let result = sqlx::query(statement).execute(&h.pool).await;
+            assert!(
+                matches!(result, Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("55P03"))
+            );
+        }
+        owner.rollback().await?;
+        past_notice(h).await?;
+        apply(h, freeze()?).await?;
+        for statement in [
+            "UPDATE game_item_instances SET quantity=quantity WHERE item_instance_id IN(SELECT item_instance_id FROM game_item_house_interior_locations)",
+            "DELETE FROM game_item_instances WHERE item_instance_id IN(SELECT item_instance_id FROM game_item_house_interior_locations)",
+            "DELETE FROM game_item_house_reclaim_provenance",
+        ] {
+            let result = sqlx::query(statement).execute(&h.pool).await;
+            let Err(sqlx::Error::Database(error)) = result else {
+                return Err("frozen native source mutation was not refused by the fence".into());
+            };
+            assert_eq!(error.code().as_deref(), Some("23514"));
+            assert!(error.message().contains("house disposition content fence"));
+        }
+        assert_eq!(counts(h).await?, (1, 1, 0, 0));
+        // The real custody path stamps its census before retiring provenance/location;
+        // the new guards must still admit that exact same-transaction native delivery.
+        assert!(matches!(apply(h, step(0)?).await?, Outcome::Step { view, .. } if view.drained));
+        assert_eq!(counts(h).await?, (0, 0, 1, 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn ordinary_drained_fence_remains_without_a_guild_owner_installation() -> TestResult {
+    run("ordinary_drained_fence", async |h| {
+        setup(h, 0).await?;
+        let guild_owner_absent: bool = sqlx::query_scalar(
+            "SELECT to_regclass(format('%I.game_house_guild_dispositions',current_schema())) IS NULL \
+             AND to_regprocedure(format('%I.game_house_guild_disposition_fence_check(uuid,text,uuid,boolean)',current_schema())) IS NULL",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(guild_owner_absent);
+        // No typed Guild schema or fake hook is installed in the ordinary native fixture.
+        sqlx::query(
+            "SELECT game_house_disposition_fence_check(encode($1,'hex')::uuid,$2,NULL,false)",
+        )
+        .bind(id(WORLD).as_slice())
+        .bind(HOUSE)
+        .execute(&h.pool)
+        .await?;
+        past_notice(h).await?;
+        apply(h, freeze()?).await?;
+        let drained = apply(h, step(0)?).await?;
+        assert!(matches!(drained, Outcome::Step { view, .. } if view.drained));
+        // Both actual native trigger entry points share this boundary. Ordinary state3 is
+        // still active even though no items remain and no Guild installation is present.
+        for deleting in [false, true] {
+            let rejected = sqlx::query(
+                "SELECT game_house_disposition_fence_check(encode($1,'hex')::uuid,$2,NULL,$3)",
+            )
+            .bind(id(WORLD).as_slice())
+            .bind(HOUSE)
+            .bind(deleting)
+            .execute(&h.pool)
+            .await;
+            assert!(
+                matches!(rejected, Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("23514"))
+            );
+        }
+        assert_eq!(counts(h).await?, (0, 0, 0, 1));
+        assert!(
+            matches!(apply(h, step(0)?).await?, Outcome::Step { view, replayed: true, .. } if view.drained)
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn notice_is_current_fenced_bounded_and_idempotent() -> TestResult {
     run("hm_notice", async |h| {
         setup(h, 0).await?;
