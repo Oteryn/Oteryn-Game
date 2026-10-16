@@ -59,7 +59,11 @@ STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/20
 
 **PROVEN source gap:** Platform [`7552a5003cf637bee7798743b913d915dd55e825`](https://github.com/Oteryn/Oteryn-Platform/tree/7552a5003cf637bee7798743b913d915dd55e825/deploy/oracle) starts Game `serve` directly in `game-runtime.compose.yml`; its Game environment has no `OTERYN_STEP_WAIT_RECEIPTS`. `game-supervisor.py` has no step-wait marker handling. The historical Game `deploy/synology-game/supervisor.sh` marker implementation does not prove an active VPS integration.
 
-**UNKNOWN installed state:** controller/configuration revision, marker consumption, process environment, enabled receipts and off-state byte identity on the VPS. These are not established by source inspection or by this PR. The marker alone cannot close this evidence gap.
+**Integration PR:** [Oteryn-Platform #1652](https://github.com/Oteryn/Oteryn-Platform/pull/1652) (open, head `cd902557532e0a015f3a57c94cf8e230fb617b57`) adds the marker-to-`serve` export to `game-supervisor.py` and `game-runtime.compose.yml`, with 5 new supervisor tests (11 pass). After merge, the owner installs both files into the host, because the Platform deploy does not install the supervisor.
+
+**Read-only VPS evidence (2026-10-16):** see the README *Read-only oteryn-vps evidence* paragraph. In short: the installed supervisor matches Platform main sha256 `2d978060…` and has no marker handling. The Game image is `24fc332f`, which has the switch. The latest Platform release receipt is `62ebdaf8`. The marker is absent, and the running incarnation `7ba14b6d…` is ready with no `OTERYN_STEP_WAIT_RECEIPTS`. The supervisor does not read `BASE/run/step-wait-receipts` today. The marker was not set and production was not restarted.
+
+**Earlier UNKNOWN installed state (partly resolved above):** controller/configuration revision, marker consumption, process environment, enabled receipts and off-state byte identity on the VPS. These are not established by source inspection or by this PR. The marker alone cannot close this evidence gap.
 
 **Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. Retain links to the installed revision, marker inspection, incarnation/readiness and capability boundary/off-state evidence before claiming operational completion. The owner has already waived waiting for the client release; this gap concerns actual enablement evidence.
 
@@ -78,6 +82,7 @@ Documentation-only local validation:
 - `python tools/agents/validate_governance.py`: passed.
 - `python -m unittest discover -s tools/agents/tests -p '*governance_lifecycle*.py'`: 25 passed.
 - `python -m unittest tools.agents.tests.test_meta_agent_policy_adoption`: 30 passed.
+- 2026-10-16 evidence update: `git diff --check` clean; `python tools/agents/validate_governance.py` passed; `python -m unittest discover -s tools/agents/tests` 124 passed.
 - Complete diff review and a section-boundary check: only the two owned files change, and README text outside the rollout section is unchanged.
 
 Rust builds, server tests and supervisor tests are not needed because no executable file or contract changes. Existing implementation qualification is recorded under STEP-PACE-WIRE-1; it is not presented as new live VPS validation.
