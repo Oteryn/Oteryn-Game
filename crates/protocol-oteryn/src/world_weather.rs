@@ -8,14 +8,23 @@
 //! full replacement value. The token is correlation data, never seed bytes or authority.
 //!
 //! The shape and 64-byte bound require D1027 approval before registration or production use.
-//! No capability, domain or message IDs, command, feature offer, current-owner check or binding
-//! derivation is allocated here. The eventual consumer must also admit the preset against its
+//! D1137 allocates capability 26 and state domain 22; their registration remains A2 after
+//! ITEM-LOOK-1 (#2182). No feature offer, current-owner check or binding derivation is
+//! implemented here. The eventual consumer must also admit the preset against its
 //! independently qualified policy. Unknown/repeated fields, mixed shapes and overflow refuse.
 
 pub use crate::charm_wire::CyclopediaWireError as WorldWeatherWireError;
 use crate::charm_wire::{
     WireResult, push_message_field, push_varint_field, read_bytes, read_varint, set_once,
 };
+
+/// D1137 allocated leaf ID; registry publication and D1027 frozen protocol review are pending.
+pub const CAPABILITY_WORLD_WEATHER_V1: u32 = 26;
+/// D1027: weather requires the World-spatial context.
+pub const CAPABILITY_WORLD_WEATHER_V1_REQUIRES: [u32; 1] =
+    [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+/// D1137 allocated leaf ID; this constant does not register a state domain or enable an offer.
+pub const STATE_DOMAIN_WORLD_WEATHER: u32 = 22;
 
 pub const MAX_WORLD_WEATHER_BYTES: usize = 64;
 const _: () = assert!(MAX_WORLD_WEATHER_BYTES <= crate::MAX_STATE_DELTA_PAYLOAD_BYTES);

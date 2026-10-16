@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: WEATHER-1
-title: "WEATHER-1: deterministic visual model, preset map and candidate codec"
+title: "WEATHER-1: visual model, candidate codec and partial clock read seam"
 mode: IMPLEMENT
-status: in_progress
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/weather-1
@@ -21,6 +21,7 @@ created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/world_clock.rs
   - apps/game-server/src/world_weather.rs
   - apps/game-server/src/world_weather_tests.rs
   - crates/protocol-oteryn/src/world_weather.rs
@@ -41,7 +42,54 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-## Source and accepted scope
+## D1137 authoring checkpoint — NOT_FULLY_QUALIFIED
+
+CP [D1137](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930839)
+assigns the seam and World seed accessor in `world_clock.rs` to #2202, capability26
+and state domain22 as leaf constants, registry A2 after#2182, and D1027 sign-off
+through frozen protocol review. This supersedes the separate WEATHER-SEAM-1
+path allocation below; it does not supply the missing production config source.
+[D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+permits this draft checkpoint with explicit RED/NOT_RUN and cheap checks.
+
+Authored here: `WorldClockSource::absolute_elapsed_ms` reads the existing clock's
+retained epoch with checked subtraction and no day wrap. Both native clock
+minutes and weather slot arithmetic consume this read. Existing clock tests now
+assert before-epoch, epoch, midnight and maximum-time reads. Leaf protocol
+constants capture26/22 and the World-spatial dependency; codec behavior is unchanged.
+
+**Exact source gap / CP action:** there is no production World-config owner
+carrying a WorldId-scoped private seed, clock identity/epoch and weather policy
+revision. `node/config.rs::WorldBundleConfig` contains content/bundle pins and
+start coordinates only. `gameplay_transport/connection.rs` constructs the clock
+with `DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS` (zero). The only clock state in
+`world_clock.rs::WorldClockSource` is its epoch scalar. Neither the bundle digest,
+WorldId, public revision token nor the legacy clock can become a private seed.
+CP must identify or allocate the production retained World-config source and its
+owner plus the minimum path authority needed to load its seed/epoch/policy facts.
+A seed accessor or canonical World/clock/policy/slot occurrence cannot be honestly
+integrated until that source exists. No synthetic owner, fixture, implicit policy
+or default epoch is used as weather admission evidence.
+
+D1025/D1026 remain mandatory integration gates: missing binding means no offer;
+binding loss after selection yields one full Unavailable while current; stale
+owner emits nothing. Current-owner/session revalidation belongs at publication.
+Those behaviors and replay/restart/Channel stability remain **NOT_RUN** on a real
+caller. No capability offer, registry write, shared caller or module registration
+is part of this checkpoint. D1160's single new-module-line allowance is unused:
+registering the incomplete server module alone would introduce unconsumed APIs.
+
+Validation for this authoring checkpoint: `cargo fmt --all --check`, explicit
+`rustfmt --edition 2024 --check` of all three changed Rust files, and
+`git diff --check` **PASS**. New clock read assertions are **NOT_RUN**. Prior native
+component **PASS11** remains historical evidence for `fd2700ea`; it does not qualify
+this changed clock/model source. Production acceptance remains **RED** because the required binding and caller
+are absent. Ordinary full package checks on this changed source are **NOT_RUN**
+under D1122; historical Weather package PASS remains historical. Exact updated
+source native tests, strict lint and full production integration are **NOT_RUN**.
+No full qualification, protocol sign-off, freeze, push or review trigger is claimed.
+
+## Previous source and accepted scope
 
 Qualified Rust source candidate: `fd2700ea3b646493dc5b8391b655cea32238f125`,
 on `skeleton/weather-1`, parent `e4eedab0440ea6f72751318c818a34d6d7306d98`.
@@ -77,7 +125,7 @@ protocol-owner sign-off. This authoring allocation does not grant it.
   Unknown/repeated fields, wrong types, mixed/missing fields, wrong token length,
   truncation, integer overflow and preset0/17 refuse. Exact field layout and
   token shape are **proposed for D1027 review**, with no schema/registry approval
-  implied. No capability/domain/message IDs or client command are allocated.
+  implied. D1137 now allocates capability26/domain22 as leaf constants; message IDs and client commands remain unallocated.
 - Authored tests cover the static map, native clock/light and independent SIM
   decision invariance, plus candidate codec bounds, shapes and malformed input.
   Native clock/SIM invariance is a component proof. Actual transport/gameplay
@@ -147,9 +195,9 @@ Later caller/slot integration retains the repository's normal package gates:
 ## Checkpoint
 
 ```yaml
-last_progress: fd2700ea native components PASS11; record-only successor reuses three exact Rust hashes
-status: in_progress
+last_progress: D1137 partial absolute-clock read and leaf IDs authored; source owner gap documented
+status: NOT_FULLY_QUALIFIED
 branch: skeleton/weather-1
-blocker: D1027 sign-off, WEATHER-SEAM-1, production head integration and allocated real-caller slot
-next_action: lead independent outcome review and publishing preflight; preserve NOT READY integration gates
+blocker: missing retained World-config seed/epoch/policy source; D1027 review and allocated real-caller slot
+next_action: lead independent source review; CP identifies retained World-config owner and path authority
 ```

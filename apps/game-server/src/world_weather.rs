@@ -21,8 +21,8 @@ const WEATHER_PURPOSE: &str = "weather_visual_v1";
 /// The absolute elapsed value is never reduced modulo a Tibian day. Before-epoch facts fail
 /// closed; this function neither reads a clock nor substitutes an epoch.
 pub(crate) fn absolute_weather_slot(epoch_utc_ms: u64, normalized_utc_ms: u64) -> Option<u64> {
-    normalized_utc_ms
-        .checked_sub(epoch_utc_ms)
+    crate::world_clock::WorldClockSource::new(epoch_utc_ms)
+        .absolute_elapsed_ms(normalized_utc_ms)
         .map(|elapsed| elapsed / WEATHER_SLOT_MS)
 }
 

@@ -97,9 +97,19 @@ impl WorldClockSource {
         Self { epoch_utc_ms }
     }
 
+    /// Read the absolute elapsed time from this clock's retained epoch. Unlike the Tibian
+    /// minute, this value does not wrap at midnight. The caller supplies the recorded UTC
+    /// fact; no wall clock or fallback epoch is consulted here.
+    ///
+    /// This arithmetic read does not prove World-config provenance. In particular, the
+    /// legacy epoch-zero clock at the transport caller is not a weather binding (D1025).
+    pub(crate) fn absolute_elapsed_ms(&self, recorded_utc_ms: u64) -> Option<u64> {
+        recorded_utc_ms.checked_sub(self.epoch_utc_ms)
+    }
+
     /// §11.2: `floor((t - epoch) / 2,500 ms) mod 1,440`. `None` before the epoch.
     pub(crate) fn tibian_minute(&self, now_utc_ms: u64) -> Option<u32> {
-        let elapsed = now_utc_ms.checked_sub(self.epoch_utc_ms)?;
+        let elapsed = self.absolute_elapsed_ms(now_utc_ms)?;
         u32::try_from((elapsed / TIBIAN_MINUTE_MS) % u64::from(TIBIAN_MINUTES_PER_DAY)).ok()
     }
 
@@ -163,6 +173,13 @@ mod tests {
     #[test]
     fn minute_is_a_pure_function_of_the_epoch() {
         let source = WorldClockSource::new(5 * HOUR_MS);
+        assert_eq!(source.absolute_elapsed_ms(5 * HOUR_MS - 1), None);
+        assert_eq!(source.absolute_elapsed_ms(5 * HOUR_MS), Some(0));
+        assert_eq!(source.absolute_elapsed_ms(6 * HOUR_MS), Some(HOUR_MS));
+        assert_eq!(
+            source.absolute_elapsed_ms(u64::MAX),
+            Some(u64::MAX - 5 * HOUR_MS)
+        );
         assert_eq!(source.tibian_minute(5 * HOUR_MS - 1), None);
         assert_eq!(source.tibian_minute(5 * HOUR_MS), Some(0));
         assert_eq!(source.tibian_minute(5 * HOUR_MS + 2_499), Some(0));
