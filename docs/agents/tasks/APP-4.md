@@ -290,3 +290,106 @@ and exact card-only scope check are retained in
 `/workspace/oteryn-prep/app-4-evidence/index.md`. No Rust, renderer, Windows,
 protocol roundtrip, server writer, relog or runtime appearance qualification is
 claimed from this documentation change.
+
+
+## Native verified-asset compositor successor, 2026-10-16 (AUTHORING, UNQUALIFIED)
+
+This five-path successor starts at actual draft `e075762135c932d8f848076325c86b61a46278af`.
+The narrower card-only preparation above is historical; root now leases the four exact new
+Rust files and this record. Existing client/server/asset files and shared wiring stay untouched.
+Accepted CHARACTER_APPEARANCE §§3, 4.1–4.6 and its cited Game-owned
+`OTERYN_ATLAS_ANIMATED_APPEARANCES_V1` outfit grammar bind this bounded increment.
+
+`PinnedOutfitAssets::open` consumes actual native `AssetStore::open_pinned`, `Catalog`,
+`AppearanceIndex` and `SpriteSheets`; `compose` returns actual composed pixel bytes and native
+`AtlasImage`, with source bottom-right anchoring and displacement. It uses the native public
+outfit category, native sheet layout/cell decode/hash checks and existing bounded sheet LRU.
+It adds no DAT/BMP/LZMA decoder, asset parser, HSI resolver, sprite cache or fallback look.
+The four palette RGB values resolve from a supplied133-entry content palette and indices;
+this component grants no catalogue/current-content/unlock authority.
+
+Rendering follows exact opaque mask roles (yellow head, red body, green legs, blue feet),
+RGB multiplication by role colour/255, base alpha-over then mask per row, and ascending enabled
+addon rows. Cardinal widths2/3, unsupported layer/addon grammar, unknown look and invalid
+palette fail explicitly. The pixels use actual15.30 native assets; the15.32 export contract is
+semantic evidence, never an alternative asset source. Sprite0 keeps the native empty-cell
+meaning. Existing per-entry and native renderer output bounds remain in force.
+
+The component intentionally renders only phase0/z0 of the first frame group retained by the
+existing native loader (its documented group0 surface). That loader does not expose fixed
+frame-group identity or timing; no other-group, moving, animation, mount or effect support
+is qualified. Native group identity/source mapping still needs owning integration review.
+`outfit_preview.rs` directly calls this same compositor and returns a fresh resolved/unresolved
+frame; failure cannot return a previous look. It stores no selected or observed actor state.
+
+Ten original bodies are authored: four explicitly synthetic pixel/palette/grammar controls and
+six native asset/preview bodies. The latter require the actual pinned15.30 manifest/assets,
+exercise native decoders and sheet pixels, compare white-control output to the native base
+resolver, independently inspect exact mask pixels, vary addons and test explicit failures.
+A supplied white/RGB test palette is synthetic DATA, never claimed an admitted game palette.
+All ten bodies are UNEXECUTED; no build/runtime/pixel-parity/performance/GPU pass is claimed.
+
+Outside-tree ordinary test-module mounting with actual native dependencies may qualify this
+private component after root heavyGO. `client-runtime` needs its native asset/renderer Cargo
+dependencies and module export; those shared changes remain CP-owned, as do the client module
+registration, scene/window adoption and APP-3/Session wire ownership. No existing `world.rs`,
+Scene, Cargo, lib/mod, codec, registry, content or pin file is edited. Full outfit UI, other-actor
+appearance observation, server unlock/sex/fallback selection and family acceptance stay open.
+No commit, push or remote mutation is authorized for this worker. Guild text remains frozen.
+
+
+## Actual native component qualification, 2026-10-16 (partial APP-4)
+
+The preceding UNQUALIFIED authoring section records the earlier state. The exact
+four Rust files from source checkpoint
+`c41e283a62d2a3e788d698cf74379cb97b4f4b2815e9882a04ab5b4922aa0dbb`
+now have actual component evidence. Their bytes did not change during qualification.
+This append preserves the complete 26,557-byte previously qualified card prefix;
+it changes no compiled input or acceptance scope.
+
+Owner-authorized isolated Ubuntu-24.04 WSL/Linux x86_64 execution used pinned
+Rust/Cargo/Clippy 1.94.0, jobs4, debug0 and incremental0. Actual literal native
+client-assets, renderer and client-runtime packages/manifests/features/lock were
+used. The outside-tree runtime module mount adds the two actual built native
+externs; preview compiles its verbatim source as an ordinary component test root.
+The original ten bodies are unchanged: four synthetic semantic controls and six
+native asset/preview cases, with the unchanged native runtime baseline as case11.
+Exact test discovery and execution passed runtime9 + preview2, with zero failed,
+ignored or filtered cases. Production component Clippy with `-D warnings` passed;
+preview component strict Clippy and runtime unit configured Clippy also passed.
+The capture-only Cargo101 is the expected recorded compiler-interception sentinel,
+not a test or compilation failure.
+
+All675 exact ownHEAD native input records (5,935,066 bytes), the four authored Rust
+files and five canonical 15.30 fixtures are hash-bound. The physical inventory of
+636 Rust files is labelled physical input inventory, not proof all were consumed.
+Captured native Cargo roots/argv/environment, all48 actual Cargo artifact records,
+standalone metadata/rlib/test binaries, exact test lists, source/fixture and direct
+extern before/after hashes are retained. Unit/preview metadata files were actually
+zero bytes; their compile exit/logs and executed native test binaries provide the
+qualification evidence. Compiler scratch stayed inside the isolated task root.
+The 8GB whole-root cap, physical C-drive 20GB floor, memory and new-OOM guards passed;
+no measured peak-memory or performance qualification is inferred.
+
+Two earlier setup failures remain recorded separately: original649 discovery
+omitted26 real manifest-declared test roots; the next offline attempt lacked a
+locked sibling-workspace rustls index version. Neither reached product compilation
+or tests. Exact ownHEAD input restoration and isolated locked registry resolution
+repaired setup without changing native manifests, lock, product code or test bodies.
+Full online and offline dependency metadata then passed; all297 cached archive
+checksums match the unchanged lock. The successful third attempt ended exit0.
+
+Compact actual evidence is retained at
+`/workspace/oteryn-prep/reviews/app4-pc/actual-native-3/`; its manifest SHA256 is
+`65fbfd3be4e4a8de476813a12c2562809a02db8d5f45abcb4ce5c4fadb42bc6c`.
+Full raw build JSON, source/cache evidence and binaries remain in the isolated
+owner-computer evidence directory, with hashes in that manifest. Historical setup
+failures and all earlier frozen evidence are preserved.
+
+This qualifies the limited static first-loader-group phase0/z0 compositor and
+preview component with real pinned assets. It does not qualify full apps/client
+Cargo/application integration, module/dependency registration, scene/other-actor
+adoption, outfit UI, animation, GPU/performance, or admitted current-content,
+palette, sex, unlock and server-selected fallback authority. Those owning CP/client
+and APP-1/2/3 integration gates and family acceptance boxes remain open. This worker
+performs no commit, push, publication, ready transition, merge or queue operation.
