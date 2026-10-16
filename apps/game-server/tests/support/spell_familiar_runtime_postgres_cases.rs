@@ -21,8 +21,9 @@ where
         result
     })
 }
-fn state() -> DurableFamiliarState {
-    DurableFamiliarState {
+fn state() -> TestResult<DurableFamiliarState> {
+    let state = DurableFamiliarState {
+        lifecycle: None,
         selected_look: 991,
         granted_looks: vec![991],
         saved_expiry_unix: 1_800_001_800,
@@ -32,8 +33,15 @@ fn state() -> DurableFamiliarState {
         familiar_revision: Some("r20".into()),
         profile_revision: "spell-p2-r20".into(),
         cooldowns: Vec::new(),
-    }
+    };
+    let writer =
+        crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence(1)?)
+            .map_err(debug)?;
+    state
+        .for_next_write(Some(1_800_000_000_000), &writer)
+        .map_err(debug)
 }
+
 fn save(
     tag: u8,
     before: DurableFamiliarState,
@@ -183,6 +191,12 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             vip_reduction_minutes: 0,
             cooldown_rate: 1.0,
             state: DurableFamiliarState::default(),
+            checkpoint_committed_at_ms: None,
+            lifecycle_writer:
+                crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence(
+                    1,
+                )?)
+                .map_err(debug)?,
         };
         let prepared = prepare_familiar_hook(
             &physical,
@@ -295,7 +309,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
 
         // Explicit isolated test setup: a real typed durable snapshot and actual
         // fixed-slot familiar. This does not claim a live Cast or XP producer.
-        let source_state = state();
+        let source_state = state()?;
         h.root
             .commit_character_familiar_state(
                 &authority,
@@ -362,6 +376,14 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
                 &projection,
             )
             .map_err(debug)?;
+        let durable_source = h
+            .root
+            .read_character_familiar_state(
+                &authority,
+                CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
         // Source Death does not read Premium/level/config benefit inputs. The
         // genuine physical lethal receipt, matching owner and durable state do.
         let current = FamiliarOwnerFacts {
@@ -370,6 +392,12 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             familiar_minutes: 0,
             cooldown_rate: 0.0,
             state: source_state,
+            checkpoint_committed_at_ms: durable_source.checkpoint_committed_at_ms(),
+            lifecycle_writer:
+                crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence(
+                    3,
+                )?)
+                .map_err(debug)?,
             ..current
         };
         let prepared = crate::spell::companion_lifecycle::prepare_lifecycle_familiar(

@@ -394,28 +394,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return FamiliarLogoutSave::NotApplicable;
         };
-        let Some(profile) = self.first_active_familiar_profile() else {
+        let Some(_) = self.first_active_familiar_profile() else {
             return FamiliarLogoutSave::NotApplicable;
         };
         let Some(fence) = self.familiar_logout_fence(session, loss_epoch.get()).await else {
             return FamiliarLogoutSave::FencedOut;
-        };
-        let Ok(Some(progression)) = self
-            .root
-            .read_character_progression(self.character, fence.character_id)
-            .await
-        else {
-            return FamiliarLogoutSave::Unknown;
-        };
-        let Ok(loaded) = self
-            .root
-            .read_character_familiar_state(self.character, fence.character_id)
-            .await
-        else {
-            return FamiliarLogoutSave::Unknown;
-        };
-        let Ok(unix) = self.root.read_familiar_unix_time(self.character).await else {
-            return FamiliarLogoutSave::Unknown;
         };
         let runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
@@ -438,54 +421,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             retained
         } else {
-            // A pending paid/lifecycle cast must resolve before actor-end can snapshot it.
-            if states.has_pending_familiar(actor, session) {
-                return FamiliarLogoutSave::Unknown;
-            }
-            let Some(before) = states.get(&runtime, actor, session) else {
-                return FamiliarLogoutSave::NotApplicable;
-            };
-            let Ok(after) = crate::spell::companion_lifecycle::familiar_logout_snapshot(
-                loaded.state(),
-                before,
-                profile,
-                self.spells,
-                self.owner_now(),
-                unix,
-            ) else {
-                return FamiliarLogoutSave::Unknown;
-            };
-            if &after == loaded.state() {
-                return FamiliarLogoutSave::NotApplicable;
-            }
-            let Ok(occurrence) = FamiliarStateOccurrence::from_bytes(nonce(
-                b"oteryn:familiar-logout:v1",
-                actor,
-                session,
-                loss_epoch.get(),
-            )) else {
-                return FamiliarLogoutSave::Unknown;
-            };
-            let prepared = PreparedFamiliarLogout {
-                actor,
-                session,
-                loss_epoch: loss_epoch.get(),
-                fence,
-                request: FamiliarStateRequest {
-                    occurrence,
-                    before: loaded.state().clone(),
-                    after,
-                    content_revision: progression.context.content,
-                    policy_revision: progression.policy_revision,
-                    policy_digest: content.source_digest(),
-                },
-                before: before.clone(),
-            };
-            if states.pending_familiar_logouts.try_reserve(1).is_err() {
-                return FamiliarLogoutSave::Unknown;
-            }
-            states.pending_familiar_logouts.push(prepared.clone());
-            prepared
+            // D1126/§5: new clean-end writes need actual familiar timer remaining
+            // and the close/wait return-admission barrier. This legacy API supplies
+            // neither. Preserve retry/reconcile of already-prepared receipts above;
+            // hold new writes instead of inventing a clean marker or unconverted v1.
+            return FamiliarLogoutSave::Unknown;
         };
         let committed = match self
             .root
@@ -752,6 +692,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 vip_reduction_minutes: value.vip_reduction_minutes,
                 cooldown_rate: value.cooldown_rate,
                 state: loaded.state().clone(),
+                checkpoint_committed_at_ms: loaded.checkpoint_committed_at_ms(),
+                lifecycle_writer:
+                    crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                        &fence,
+                    )
+                    .ok()?,
             };
             let Ok(mut familiar) = prepare_familiar(
                 &runtime,
@@ -1550,6 +1496,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 vip_reduction_minutes: settings.value.vip_reduction_minutes,
                 cooldown_rate: settings.value.cooldown_rate,
                 state: loaded.state().clone(),
+                checkpoint_committed_at_ms: loaded.checkpoint_committed_at_ms(),
+                lifecycle_writer:
+                    crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                        &fence,
+                    )
+                    .map_err(|_| ())?,
             };
             let stamp = runtime.issue_owner_work().map_err(|_| ())?;
             let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());

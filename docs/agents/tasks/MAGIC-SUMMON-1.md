@@ -312,3 +312,65 @@ runtime, client E2E or performance tests were run for this documentation-only pa
 The whole appended diff was reviewed against the source trace; no code or shared files
 changed. CP scope allocation and independent architecture/persistence/combat/content/
 protocol reviews remain required before the proposed integrations can be accepted.
+
+## #2199 D1126 / D1195 source continuation (2026-10-16)
+
+AUTHORING; NOT_FULLY_QUALIFIED. CP D1126 owns `durability/character_familiar.rs`
+and `spell/companion_lifecycle.rs`; D1195 assigns next-checkpoint migration
+`0107_familiar_state_versioned_lifecycle.sql`. This task-card entry is the scoped
+migration allocation ledger; no separate migration-number registry was identified.
+No historical migration or receipt is rewritten. The 0041 full legacy cooldown
+predicate is retained verbatim under a helper; CREATE OR REPLACE retains the
+existing validator function OID. Optional v2 serializes only when present, so old
+canonical v1 before-state bytes and binding hashes remain unchanged.
+
+The reader projects the actual linked familiar receipt `committed_at` milliseconds.
+The real Cast/Login/Advance/Death compositor converts on the next fenced write:
+legacy remaining is max(0, expiry*1000-checkpoint), never last_logout or read time.
+V2 stores remaining/open and full session/connection/channel/scope-generation writer
+identity. The actual writer checks that identity against the independently asserted
+current gameplay fence in its existing receipt transaction. Existing cooldowns and
+source configuration (900 seconds under current source parameters) are preserved.
+Closed login uses remaining duration, with exact millisecond timer restoration;
+open different-session/runtime login loses the familiar, keeping cooldowns.
+Same-session same-runtime open reconnect is refused by this reconstruction path:
+it must retain the current physical familiar/timer, not restart persisted remaining.
+
+HELD: accepted FAMILIARS0 §5 clean-end needs the actual familiar timer remaining
+and close/wait/reconcile return-admission protocol. `save_familiar_logout` previously
+provided only cooldown state, actor loss epoch, DB Unix and current fences.
+New writes from that incomplete port now return Unknown; already-prepared historical
+logout receipts retain retry/reconcile. No boolean is treated as clean-end evidence.
+`familiar_logout_snapshot` still represents the legacy cooldown-only API and refuses
+v2; it cannot close v2. The durable clean-end marker is modeled/validated but no
+unproven caller manufactures it. The writer rejects new non-null clean-end markers
+until that proof port exists, even when the caller has a genuine gameplay fence. FAMILIAR gating/return-admission caller ownership
+remains held; CP clarification is requested by the lead. This is not full offline
+clean-end acceptance, production activation, readiness or merge authorization.
+
+Prepared checks: one pure conversion/reconnect/ownership/boundary test, retained
+legacy byte-identity test, and one canonical Character-authority PostgreSQL case
+for actual linked checkpoint conversion, strict shape and independently current
+writer rejection. Existing source-runtime cases receive required typed facts.
+Rustfmt and diff checks are the only local validation; native/PG/Clippy/full package
+are NOT_RUN for this source. Prior immutable-head evidence is historical only.
+
+### Independent writer-boundary P1 disposition
+
+Fixed in source: after historical receipt lookup, every NEW writer mutation requires
+v2 after-state. New v1 and v2-to-v1 downgrade requests are rejected. Historical v1
+replay retains its original before/after JSON and binding. The new native PG case
+seeds historical v1 only in an explicitly isolated admin fixture transaction;
+`SET LOCAL session_replication_role=replica` ends at COMMIT before any actual API
+replay/negative/fresh write. This bypass is setup, not production qualification.
+Existing fresh-write fixtures now explicitly carry v2 current writer identity;
+D1164 permits the minimal proficiency fixture conversion. The accepted 0041 JSON
+predicate still accepts historical v1; runtime new-write admission is stricter.
+
+A persisted v2 non-null clean marker on a non-spawn event also remains held by the
+current writer guard until the actual clean-end proof port exists; it is not silently
+cleared or asserted current. D1212 clarified Logout versus GraceExpiry, but pinned
+c248 has `save_familiar_at_actor_end` only for expired grace and raw loss epoch;
+there is no FamiliarActorEnd enum. Timer due is private in SpellTimerOwner's Pending
+and LifecyclePending; registered_familiar returns an event but no due. Lead has the
+exact required caller/topology and timer accessor packet. No clean proof is guessed.

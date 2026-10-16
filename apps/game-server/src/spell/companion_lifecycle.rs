@@ -737,8 +737,8 @@ pub(crate) fn commit_familiar_timer(
 
 use super::native_companions::{FamiliarAction, FamiliarEvent, FamiliarFacts};
 use crate::durability::character_familiar::{
-    CommittedCharacterFamiliar, DurableFamiliarState, FamiliarStateOccurrence,
-    FamiliarStateRequest, FamiliarUnixTime,
+    CommittedCharacterFamiliar, DurableFamiliarState, FamiliarLifecycleWriter,
+    FamiliarStateOccurrence, FamiliarStateRequest, FamiliarUnixTime,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::PreparedCompanionSpawn;
@@ -758,6 +758,8 @@ pub(crate) struct FamiliarOwnerFacts {
     pub(crate) vip_reduction_minutes: i64,
     pub(crate) cooldown_rate: f32,
     pub(crate) state: DurableFamiliarState,
+    pub(crate) checkpoint_committed_at_ms: Option<i64>,
+    pub(crate) lifecycle_writer: FamiliarLifecycleWriter,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedFamiliar {
@@ -1033,6 +1035,38 @@ fn prepare_familiar_parts(
     } else {
         None
     };
+    let mut after = current
+        .state
+        .for_next_write(
+            current.checkpoint_committed_at_ms,
+            &current.lifecycle_writer,
+        )
+        .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    let lifecycle = after
+        .lifecycle
+        .as_mut()
+        .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+    if event == FamiliarEvent::Login {
+        if lifecycle.clean_end_game_session_id.as_ref()
+            == Some(&current.lifecycle_writer.game_session_id)
+        {
+            return Err(CompanionExecutionError::InvalidOwnerFacts);
+        }
+        if lifecycle.open {
+            if lifecycle.writer.same_lifecycle(&current.lifecycle_writer) {
+                // A reconnect must retain the existing physical/timer state. Replaying
+                // persisted remaining here would reset its live duration.
+                return Err(CompanionExecutionError::InvalidOwnerFacts);
+            }
+            lifecycle.familiar_remaining_ms = 0;
+            lifecycle.open = false;
+        }
+    }
+    let return_ms = (event == FamiliarEvent::Login).then_some(lifecycle.familiar_remaining_ms);
+    let return_seconds = return_ms
+        .map(|ms| i64::try_from(ms.div_ceil(1000)))
+        .transpose()
+        .map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
     let facts = FamiliarFacts {
         event: event.clone(),
         vocation: current.vocation.clone(),
@@ -1054,8 +1088,18 @@ fn prepare_familiar_parts(
         vip_reduction_minutes: current.vip_reduction_minutes,
         cooldown_rate: current.cooldown_rate,
         now_unix: unix.seconds(),
-        saved_expiry_unix: current.state.saved_expiry_unix,
-        last_logout_unix: current.state.last_logout_unix,
+        saved_expiry_unix: match return_seconds {
+            Some(seconds) => unix
+                .seconds()
+                .checked_add(seconds)
+                .ok_or(CompanionExecutionError::ArithmeticBounds)?,
+            None => current.state.saved_expiry_unix,
+        },
+        last_logout_unix: if return_seconds.is_some() {
+            unix.seconds()
+        } else {
+            current.state.last_logout_unix
+        },
         owner_present: true,
         creature_present: death.is_some(),
         creature_name: name.to_owned(),
@@ -1065,7 +1109,7 @@ fn prepare_familiar_parts(
         dz: 0,
         owner_tile_is_teleport: false,
     };
-    let actions = match spell
+    let mut actions = match spell
         .plan(
             Facts::Companion(&CompanionFacts::Familiar(facts.clone())),
             &mut |min, _| min,
@@ -1078,7 +1122,38 @@ fn prepare_familiar_parts(
         },
         _ => return Err(CompanionExecutionError::UnqualifiedProfile),
     };
-    let mut after = current.state.clone();
+    if let Some(ms) = return_ms {
+        let exact = i64::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
+        let rounded = return_seconds
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .checked_mul(1000)
+            .ok_or(CompanionExecutionError::ArithmeticBounds)?;
+        let minimum = p["warning_dispatch"]["scheduler_minimum_ms"]
+            .as_u64()
+            .and_then(|v| u32::try_from(v).ok())
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        for action in &mut actions {
+            match action {
+                FamiliarAction::ScheduleExpiry { delay_ms } => {
+                    *delay_ms =
+                        u32::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?
+                }
+                FamiliarAction::ScheduleWarning {
+                    raw_delay_ms,
+                    delay_ms,
+                    ..
+                } => {
+                    *raw_delay_ms = raw_delay_ms
+                        .checked_sub(rounded - exact)
+                        .ok_or(CompanionExecutionError::ArithmeticBounds)?;
+                    *delay_ms = u32::try_from((*raw_delay_ms).max(0))
+                        .map_err(|_| CompanionExecutionError::ArithmeticBounds)?
+                        .max(minimum);
+                }
+                _ => {}
+            }
+        }
+    }
     let mut look = None;
     let mut speed_delta = 0;
     let party = actions.contains(&FamiliarAction::RegisterPartyProtectionAllOwnedSummons);
@@ -1162,6 +1237,27 @@ fn prepare_familiar_parts(
             Ok(index) => after.cooldowns[index] = snapshot,
             Err(index) => after.cooldowns.insert(index, snapshot),
         }
+    }
+    let lifecycle = after
+        .lifecycle
+        .as_mut()
+        .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+    lifecycle.writer = current.lifecycle_writer.clone();
+    if spawn.is_some() {
+        lifecycle.open = true;
+        lifecycle.clean_end_game_session_id = None;
+        lifecycle.familiar_remaining_ms = u64::from(
+            actions
+                .iter()
+                .find_map(|a| match a {
+                    FamiliarAction::ScheduleExpiry { delay_ms } => Some(*delay_ms),
+                    _ => None,
+                })
+                .ok_or(CompanionExecutionError::UnqualifiedProfile)?,
+        );
+    } else if event == FamiliarEvent::FamiliarDeath {
+        lifecycle.open = false;
+        lifecycle.familiar_remaining_ms = 0;
     }
     after
         .validate()
@@ -2320,6 +2416,11 @@ pub(crate) fn familiar_logout_snapshot(
     unix: FamiliarUnixTime,
 ) -> Result<DurableFamiliarState, CompanionExecutionError> {
     parameters(profile, "familiar_summon")?;
+    // Closing v2 needs the actual timer remaining AND the return-admission barrier.
+    // Neither is supplied by this legacy actor-end API; never invent clean-end proof.
+    if current.lifecycle.is_some() {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
     let mut references = std::collections::BTreeMap::new();
     for spell in &book.spells {
         let super::Execution::NativeProfile(profile) = &spell.execution else {
