@@ -2568,3 +2568,865 @@ fn vip_remove_native_two_root_duplicate_distinct_and_add_remove_serialization() 
         Ok(())
     })
 }
+
+// Additive metadata fixture. PRIVATE_SCHEMA and all inherited test bodies above stay literal.
+// These private SQL codes are not protocol reservations or production privilege claims.
+const LIST_SCHEMA: &str = r#"
+CREATE TABLE game_vip_groups(account_id UUID NOT NULL,world_id UUID NOT NULL,group_no SMALLINT NOT NULL CHECK(group_no BETWEEN 4 AND 8),name TEXT NOT NULL CHECK(char_length(name) BETWEEN 1 AND 25),PRIMARY KEY(account_id,world_id,group_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);
+CREATE UNIQUE INDEX vip_fixture_group_names ON game_vip_groups(account_id,world_id,lower(name));
+ALTER TABLE game_vip_command_receipts ADD COLUMN group_no SMALLINT CHECK(group_no BETWEEN 4 AND 8);
+DO $$DECLARE c RECORD; BEGIN
+ FOR c IN SELECT conname FROM pg_constraint WHERE conrelid='game_vip_command_receipts'::regclass AND contype='c' AND (pg_get_constraintdef(oid) LIKE '%kind%' OR pg_get_constraintdef(oid) LIKE '%result%') LOOP
+ EXECUTE format('ALTER TABLE game_vip_command_receipts DROP CONSTRAINT %I',c.conname);
+ END LOOP;
+END$$;
+ALTER TABLE game_vip_command_receipts ADD CHECK(kind BETWEEN 1 AND 11),ADD CHECK(result BETWEEN 1 AND 9),
+ ADD CHECK((kind=5 AND result IN(1,3,4,5,6,7)) OR(kind IN(1,2,3,4) AND result IN(1,2,3,4)) OR(kind=6 AND result IN(1,2,3)) OR(kind BETWEEN 7 AND 11 AND result IN(1,2,3,7,8,9))),
+ ADD CHECK((kind=5 AND result IN(1,6))=(entry_no IS NOT NULL)),
+ ADD CHECK((kind=7 AND result=1)=(group_no IS NOT NULL)),
+ ADD CHECK((result=3 AND seconds IS NOT NULL AND seconds BETWEEN 1 AND 3) OR(result<>3 AND seconds IS NULL));
+"#;
+fn run_list<F>(tag: &'static str, body: F) -> TestResult
+where
+    F: AsyncFnOnce(&Harness) -> TestResult,
+{
+    run_add(tag, async |h| {
+        h.pool.execute(LIST_SCHEMA).await?;
+        body(h).await
+    })
+}
+fn list_request(number: u64, operation: VipListOperation) -> VipListRequest {
+    VipListRequest {
+        list: list(40),
+        command: withdraw(number).command,
+        operation,
+    }
+}
+async fn modify(
+    h: &Harness,
+    premium: &SpellPremiumCoordinator,
+    request: VipListRequest,
+) -> TestResult<VipListReceipt> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .modify_vip_list(
+            &authority,
+            &h.node,
+            harness::item_fence()?,
+            premium,
+            request,
+        )
+        .await
+        .map_err(|error| debug(error).into())
+}
+async fn list_snapshot(h: &Harness) -> TestResult<((String, String), String)> {
+    let groups: String = sqlx::query_scalar("SELECT COALESCE(jsonb_agg(to_jsonb(g) ORDER BY account_id,world_id,group_no),'[]'::jsonb)::text FROM game_vip_groups g").fetch_one(&h.pool).await?;
+    Ok((remove_snapshot(h).await?, groups))
+}
+fn unread_gate() -> SpellPremiumCoordinator {
+    SpellPremiumCoordinator::new(Arc::new(PremiumConsumer::default()), None, None, None)
+}
+#[test]
+fn vip_list_text_and_group_validation_boundaries() {
+    use crate::domain::vip::{vip_edit_description, vip_group_name};
+    assert_eq!(
+        vip_group_name("  Friends  "),
+        Some(("Friends".into(), "friends".into()))
+    );
+    for name in ["", "   ", "bad\nname", "12345678901234567890123456"] {
+        assert_eq!(vip_group_name(name), None);
+    }
+    assert!(vip_group_name(&"ą".repeat(25)).is_some());
+    assert_eq!(
+        vip_edit_description(" trim ", 10, &[1, 4, 8]),
+        Some("trim".into())
+    );
+    assert!(vip_edit_description(&"🦀".repeat(128), 0, &[]).is_some());
+    assert!(vip_edit_description(&"a".repeat(129), 0, &[]).is_none());
+    for (text, icon, groups) in [
+        ("bad\ntext", 0, vec![]),
+        ("", 11, vec![]),
+        ("", 0, vec![4, 4]),
+        ("", 0, vec![0]),
+        ("", 0, vec![9]),
+    ] {
+        assert!(vip_edit_description(text, icon, &groups).is_none());
+    }
+}
+#[test]
+fn vip_list_native_groups_fixed_bounds_casefold_cap_and_remove_memberships() -> TestResult {
+    run_list("viplistgroups", async |h| {
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    1,
+                    VipListOperation::GroupAdd {
+                        name: "Friends".into()
+                    }
+                )
+            )
+            .await?
+            .group_no,
+            Some(4)
+        );
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    2,
+                    VipListOperation::GroupAdd {
+                        name: "FRIENDS".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::NameTaken
+        );
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    3,
+                    VipListOperation::GroupRename {
+                        group_no: 4,
+                        name: "New name".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::Ok
+        );
+        for (command, group_no) in [(4, 1), (5, 3), (6, 9)] {
+            assert_eq!(
+                modify(
+                    h,
+                    &gate,
+                    list_request(command, VipListOperation::GroupRemove { group_no })
+                )
+                .await?
+                .result,
+                VipListResult::Rejected
+            );
+        }
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(7, VipListOperation::GroupRemove { group_no: 8 })
+            )
+            .await?
+            .result,
+            VipListResult::NotFound
+        );
+        for number in 5..=8 {
+            assert_eq!(
+                modify(
+                    h,
+                    &gate,
+                    list_request(
+                        u64::from(number) + 3,
+                        VipListOperation::GroupAdd {
+                            name: format!("Group {number}")
+                        }
+                    )
+                )
+                .await?
+                .group_no,
+                Some(number)
+            );
+        }
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    12,
+                    VipListOperation::GroupAdd {
+                        name: "Overflow".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::GroupLimit
+        );
+        // VIP0 §6 says rename waits until under the current cap. This pins the
+        // conservative count==5 interpretation pending clarification of its "Over" heading.
+        assert_eq!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    16,
+                    VipListOperation::GroupRename {
+                        group_no: 4,
+                        name: "At capacity".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::GroupLimit
+        );
+        add_target_fixture(h, 60, 70).await?;
+        add(h, &gate, add_request(13, &fixture_name(60))).await?;
+        assert_eq!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(
+                    14,
+                    VipListOperation::Edit {
+                        entry_no: 1,
+                        description: " note ".into(),
+                        icon: 10,
+                        notify: true,
+                        groups: vec![1, 4, 8]
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::Ok
+        );
+        let view = target_revision(h, 60).await?;
+        let removed = modify(
+            h,
+            &unread_gate(),
+            list_request(15, VipListOperation::GroupRemove { group_no: 4 }),
+        )
+        .await?;
+        assert_eq!(removed.result, VipListResult::Ok);
+        assert_eq!(h.count("game_vip_entries").await?, 1);
+        assert_eq!(h.count("game_vip_consents").await?, 1);
+        assert_eq!(h.count("game_vip_group_members").await?, 2);
+        assert_eq!(target_revision(h, 60).await?, view);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+#[test]
+fn vip_list_native_free_retains_data_edits_removes_and_replays_without_premium() -> TestResult {
+    run_list("viplistfree", async |h| {
+        let pre = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        modify(
+            h,
+            &pre,
+            list_request(
+                1,
+                VipListOperation::GroupAdd {
+                    name: "Retained".into(),
+                },
+            ),
+        )
+        .await?;
+        add_target_fixture(h, 60, 70).await?;
+        add(h, &pre, add_request(2, &fixture_name(60))).await?;
+        let free = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            true,
+        );
+        assert_eq!(
+            modify(
+                h,
+                &free,
+                list_request(3, VipListOperation::GroupAdd { name: "New".into() })
+            )
+            .await?
+            .result,
+            VipListResult::GroupLimit
+        );
+        assert_eq!(
+            modify(
+                h,
+                &free,
+                list_request(
+                    4,
+                    VipListOperation::GroupRename {
+                        group_no: 4,
+                        name: "Renamed".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::GroupLimit
+        );
+        assert_eq!(h.count("game_vip_groups").await?, 1);
+        let edit = list_request(
+            5,
+            VipListOperation::Edit {
+                entry_no: 1,
+                description: "Changed".into(),
+                icon: 2,
+                notify: false,
+                groups: vec![4],
+            },
+        );
+        let committed = modify(h, &unread_gate(), edit.clone()).await?;
+        assert_eq!(committed.result, VipListResult::Ok);
+        let after = list_snapshot(h).await?;
+        let replay = modify(h, &unread_gate(), edit).await?;
+        assert!(replay.replayed);
+        assert_eq!(replay.revision, committed.revision);
+        assert_eq!(list_snapshot(h).await?, after);
+        assert_eq!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(6, VipListOperation::GroupRemove { group_no: 4 })
+            )
+            .await?
+            .result,
+            VipListResult::Ok
+        );
+        assert_eq!(h.count("game_vip_group_members").await?, 0);
+        assert_eq!(h.count("game_vip_entries").await?, 1);
+        Ok(())
+    })
+}
+#[test]
+fn vip_list_native_edit_unknown_group_and_injected_fault_are_atomic() -> TestResult {
+    run_list("viplistatomic", async |h| {
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        add_target_fixture(h, 60, 70).await?;
+        add(h, &gate, add_request(1, &fixture_name(60))).await?;
+        modify(
+            h,
+            &gate,
+            list_request(
+                2,
+                VipListOperation::GroupAdd {
+                    name: "Stored".into(),
+                },
+            ),
+        )
+        .await?;
+        assert_eq!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(
+                    3,
+                    VipListOperation::Edit {
+                        entry_no: 1,
+                        description: "Will not apply".into(),
+                        icon: 1,
+                        notify: true,
+                        groups: vec![1, 8]
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::NotFound
+        );
+        let description: String = sqlx::query_scalar("SELECT description FROM game_vip_entries")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(description, "");
+        h.pool.execute("CREATE FUNCTION vip_edit_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected membership fault' USING ERRCODE='23514';END;$$;CREATE TRIGGER vip_edit_fault AFTER INSERT ON game_vip_group_members FOR EACH ROW EXECUTE FUNCTION vip_edit_fault()").await?;
+        let before = list_snapshot(h).await?;
+        assert!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(
+                    4,
+                    VipListOperation::Edit {
+                        entry_no: 1,
+                        description: "Must roll back".into(),
+                        icon: 2,
+                        notify: true,
+                        groups: vec![1, 4]
+                    }
+                )
+            )
+            .await
+            .is_err()
+        );
+        assert_eq!(list_snapshot(h).await?, before);
+        h.pool.execute("DROP TRIGGER vip_edit_fault ON game_vip_group_members;DROP FUNCTION vip_edit_fault()").await?;
+        // A receipt insertion fault after GroupAdd also rolls back its pre-delivery savepoint.
+        h.pool.execute("CREATE FUNCTION vip_receipt_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected receipt fault' USING ERRCODE='23514';END;$$;CREATE TRIGGER vip_receipt_fault AFTER INSERT ON game_vip_command_receipts FOR EACH ROW EXECUTE FUNCTION vip_receipt_fault()").await?;
+        assert!(
+            modify(
+                h,
+                &gate,
+                list_request(
+                    5,
+                    VipListOperation::GroupAdd {
+                        name: "Must roll back".into()
+                    }
+                )
+            )
+            .await
+            .is_err()
+        );
+        assert_eq!(list_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+#[test]
+fn vip_list_native_status_uses_party_baseline_and_rolls_back_if_missing() -> TestResult {
+    run_list("vipliststatus", async |h| {
+        let req = list_request(1, VipListOperation::Status { hidden: true });
+        let before = list_snapshot(h).await?;
+        assert!(modify(h, &unread_gate(), req.clone()).await.is_err());
+        assert_eq!(list_snapshot(h).await?, before);
+        // Explicit historical PARTY baseline DATA, not a VIP fallback/default producer.
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1')")
+            .bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        let hidden = modify(h, &unread_gate(), req.clone()).await?;
+        assert_eq!(hidden.result, VipListResult::Ok);
+        let setting: (i16, String) = sqlx::query_as(
+            "SELECT vip_status,vip_consent_revision::text FROM game_character_social_settings",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(setting, (2, "0".into()));
+        let after = list_snapshot(h).await?;
+        assert!(modify(h, &unread_gate(), req).await?.replayed);
+        assert_eq!(list_snapshot(h).await?, after);
+        assert_eq!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(2, VipListOperation::Status { hidden: false })
+            )
+            .await?
+            .result,
+            VipListResult::Ok
+        );
+        let shown: i16 =
+            sqlx::query_scalar("SELECT vip_status FROM game_character_social_settings")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(shown, 1);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+#[test]
+fn vip_list_native_authority_rejection_replay_binding_and_rate_refusal() -> TestResult {
+    run_list("viplistfences", async |h| {
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let req = list_request(
+            1,
+            VipListOperation::GroupAdd {
+                name: "Original".into(),
+            },
+        );
+        let before = list_snapshot(h).await?;
+        for mutation in 0..9 {
+            let mut fence = harness::item_fence()?;
+            let mut request = req.clone();
+            match mutation {
+                0 => fence.connection_generation = ConnectionGeneration::new(2)?,
+                1 => fence.character_lease_generation = 2,
+                2 => fence.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+                3 => request.list.account_id = account(70),
+                4 => request.list.world_id = WorldId::from_bytes(id(90)).map_err(debug)?,
+                5 => {
+                    request.command =
+                        CommandRef::new(GameSessionId::decode(&id(51))?, CommandId::new(1)?)
+                }
+                6 => fence.game_session_id = GameSessionId::decode(&id(51))?,
+                7 => fence.character_id = character(60),
+                _ => {
+                    fence.runtime_scope = RuntimeScopeRefV1::channel(
+                        crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        crate::foundation::ChannelId::decode(&id(90)).map_err(debug)?,
+                    )
+                }
+            }
+            assert!(matches!(
+                h.root
+                    .modify_vip_list(&authority, &h.node, fence, &gate, request)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(list_snapshot(h).await?, before);
+        }
+        let wrong_node = harness::register(&h.root, 2).await?;
+        assert!(matches!(
+            h.root
+                .modify_vip_list(
+                    &authority,
+                    &wrong_node,
+                    harness::item_fence()?,
+                    &gate,
+                    req.clone()
+                )
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(list_snapshot(h).await?, before);
+        let committed = h
+            .root
+            .modify_vip_list(
+                &authority,
+                &h.node,
+                harness::item_fence()?,
+                &gate,
+                req.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        let after = list_snapshot(h).await?;
+        let mut stale = harness::item_fence()?;
+        stale.connection_generation = ConnectionGeneration::new(2)?;
+        let replay = h
+            .root
+            .modify_vip_list(&authority, &h.node, stale, &unread_gate(), req)
+            .await
+            .map_err(debug)?;
+        assert!(replay.replayed);
+        assert_eq!(replay.revision, committed.revision);
+        assert_eq!(list_snapshot(h).await?, after);
+        assert!(matches!(
+            h.root
+                .modify_vip_list(
+                    &authority,
+                    &h.node,
+                    stale,
+                    &unread_gate(),
+                    list_request(
+                        1,
+                        VipListOperation::GroupAdd {
+                            name: "Changed".into()
+                        }
+                    )
+                )
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        let mut wrong_recovery = authority.record_for(&h.root).map_err(debug)?;
+        wrong_recovery.recovery_generation += 1;
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            modify_list_in_transaction(
+                &mut tx,
+                &wrong_recovery,
+                &h.node,
+                harness::item_fence()?,
+                &list_request(
+                    1,
+                    VipListOperation::GroupAdd {
+                        name: "Original".into()
+                    }
+                ),
+                5
+            )
+            .await,
+            Err(VipError::Unavailable(_))
+        ));
+        tx.rollback().await?;
+        assert_eq!(list_snapshot(h).await?, after);
+        sqlx::query("UPDATE game_vip_lists SET rate_tokens=0,rate_at=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint").execute(&h.pool).await?;
+        let limited = modify(
+            h,
+            &unread_gate(),
+            list_request(2, VipListOperation::GroupRemove { group_no: 4 }),
+        )
+        .await?;
+        assert!(matches!(
+            limited.result,
+            VipListResult::Exhausted { seconds: 1..=3 }
+        ));
+        assert_eq!(h.count("game_vip_groups").await?, 1);
+        assert_eq!(
+            modify(
+                h,
+                &unread_gate(),
+                list_request(2, VipListOperation::GroupRemove { group_no: 4 })
+            )
+            .await?
+            .result,
+            limited.result
+        );
+        Ok(())
+    })
+}
+#[test]
+fn vip_list_native_two_roots_duplicate_and_case_insensitive_name_race() -> TestResult {
+    run_list("viplistconcurrent", async |h| {
+        let second = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(second.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let first_authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let second_authority = second
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        let other_gate = SpellPremiumCoordinator::new(
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            None,
+            Some(second.clone()),
+        );
+        let req = list_request(
+            1,
+            VipListOperation::GroupAdd {
+                name: "Duplicate".into(),
+            },
+        );
+        let (a, b) = both(
+            h.root.modify_vip_list(
+                &first_authority,
+                &h.node,
+                harness::item_fence()?,
+                &gate,
+                req.clone(),
+            ),
+            second.modify_vip_list(
+                &second_authority,
+                &h.node,
+                harness::item_fence()?,
+                &other_gate,
+                req,
+            ),
+        )
+        .await;
+        let receipts = [a.map_err(debug)?, b.map_err(debug)?];
+        assert!(
+            receipts
+                .iter()
+                .all(|r| r.result == VipListResult::Ok && r.group_no == Some(4))
+        );
+        assert_eq!(receipts.iter().filter(|r| r.replayed).count(), 1);
+        let (a, b) = both(
+            h.root.modify_vip_list(
+                &first_authority,
+                &h.node,
+                harness::item_fence()?,
+                &gate,
+                list_request(
+                    2,
+                    VipListOperation::GroupAdd {
+                        name: "Racing".into(),
+                    },
+                ),
+            ),
+            second.modify_vip_list(
+                &second_authority,
+                &h.node,
+                harness::item_fence()?,
+                &other_gate,
+                list_request(
+                    3,
+                    VipListOperation::GroupAdd {
+                        name: "RACING".into(),
+                    },
+                ),
+            ),
+        )
+        .await;
+        let receipts = [a.map_err(debug)?, b.map_err(debug)?];
+        assert_eq!(
+            receipts
+                .iter()
+                .filter(|r| r.result == VipListResult::Ok)
+                .count(),
+            1
+        );
+        assert_eq!(
+            receipts
+                .iter()
+                .filter(|r| r.result == VipListResult::NameTaken)
+                .count(),
+            1
+        );
+        assert_eq!(h.count("game_vip_groups").await?, 2);
+        assert_eq!(h.count("game_vip_command_receipts").await?, 3);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_list_native_delivered_and_bypass_require_live_session_and_current_assignment() -> TestResult
+{
+    run_list("viplistcurrent", async |h| {
+        let pre = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        modify(
+            h,
+            &pre,
+            list_request(
+                1,
+                VipListOperation::GroupAdd {
+                    name: "Existing".into(),
+                },
+            ),
+        )
+        .await?;
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1')").bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        let free = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            true,
+        );
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        // Materialize the real durable activation latch through its own coordinator.
+        assert_eq!(
+            modify(
+                h,
+                &free,
+                list_request(
+                    2,
+                    VipListOperation::GroupRename {
+                        group_no: 4,
+                        name: "Free rename".into()
+                    }
+                )
+            )
+            .await?
+            .result,
+            VipListResult::GroupLimit
+        );
+        let before = list_snapshot(h).await?;
+        let delivered = list_request(
+            3,
+            VipListOperation::GroupRename {
+                group_no: 4,
+                name: "Fresh rename".into(),
+            },
+        );
+        let bypass = list_request(4, VipListOperation::Status { hidden: true });
+        // Each request crosses a different coordinator branch into the same native mutation
+        // fence; neither the delivered benefit decision nor the non-growth bypass grants it.
+        for request in [delivered.clone(), bypass.clone()] {
+            let mut stale = harness::item_fence()?;
+            stale.connection_generation = ConnectionGeneration::new(2)?;
+            assert!(matches!(
+                h.root
+                    .modify_vip_list(&authority, &h.node, stale, &free, request)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(list_snapshot(h).await?, before);
+        }
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3")
+            .execute(&h.pool)
+            .await?;
+        for request in [delivered.clone(), bypass.clone()] {
+            assert!(matches!(
+                h.root
+                    .modify_vip_list(&authority, &h.node, harness::item_fence()?, &free, request)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(list_snapshot(h).await?, before);
+        }
+        let replay = modify(
+            h,
+            &unread_gate(),
+            list_request(
+                1,
+                VipListOperation::GroupAdd {
+                    name: "Existing".into(),
+                },
+            ),
+        )
+        .await?;
+        assert!(replay.replayed);
+        assert_eq!(list_snapshot(h).await?, before);
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1")
+            .execute(&h.pool)
+            .await?;
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        };
+        let scope = harness::item_fence()?.runtime_scope;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(scope)
+            .await
+            .map_err(debug)?
+            .ok_or("current predecessor missing")?;
+        let role: String = sqlx::query_scalar("SELECT session_user")
+            .fetch_one(&h.pool)
+            .await?;
+        let revoked = h
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([91; 32]),
+                actor: ControlActor::new(&role).map_err(debug)?,
+                command: AssignmentCommand::Revoke { scope, predecessor },
+            })
+            .await
+            .map_err(debug)?;
+        assert!(matches!(revoked, AssignmentOutcome::Committed(_)));
+        for request in [delivered, bypass] {
+            assert!(matches!(
+                h.root
+                    .modify_vip_list(&authority, &h.node, harness::item_fence()?, &free, request)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(list_snapshot(h).await?, before);
+        }
+        Ok(())
+    })
+}

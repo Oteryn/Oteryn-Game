@@ -503,3 +503,87 @@ Whole final independent execution/source review and Root exact-C publication rem
 separate. Existing production schema/definer/grant, shared caller/wire/relay and full
 VIP-family CP gates still apply; this component does not complete the VIP mechanic.
 No worker commit, push, PR-state change or shared wiring edit was performed.
+
+## Family continuation: native groups, Edit and status — 2026-10-16
+
+Local AUTHORING starts at draft `bcb366b8a641f19d1901aa11f12ce01a6863bced`, on
+`skeleton/vip-1`, for existing PR #2143. The user packet assigns the complete nine
+owned paths to this task's one writer; historical narrower preparation leases do
+not restrict that current allocation. No shared registration, migration, manifest,
+registry, capability, connection, production, commit or publication change is made.
+The root lead owns publication and integration remains CP_ONLY / NOT_REQUIRED here.
+
+The appended native `DurabilityRoot::modify_vip_list` implements custom GroupAdd,
+GroupRename and GroupRemove, complete replacement Edit and `vip_status` SHOWN/HIDDEN.
+Every new command resolves native recovery/session/node/scope authority, locks the
+acting live Character root before its Account+World list, rechecks the immutable
+receipt, samples database time after blocking locks, charges the existing persisted
+bucket, advances the acting list once, and commits outcome/state/receipt atomically.
+No CharacterRevision or item changes. Private fixture receipt kinds 7–11 and results
+8–9 are proposed storage discriminators, never wire IDs or public reservations.
+
+Group storage is custom numbers 4–8. Fixed memberships 1–3 remain valid. Group removal
+atomically deletes only the selected custom definition and its memberships, retaining
+entries, consents and fixed memberships. Duplicate names use the same database
+`lower(name)` comparison as the fixture unique index. Text/icon/group shape rejects
+invalid data; an unknown custom membership refuses Edit before changing any field.
+Only GroupAdd/Rename consult the real Premium coordinator, including its shared-latch
+pre-delivery transaction and rollback savepoint. Delivered Free allows neither;
+Edit/GroupRemove/Status do not need a Premium read. The conservative rename rule
+requires count below the current cap, including count==5 refusal, following §6's
+literal "until it is under the cap"; an exact boundary test pins that interpretation.
+
+Status writes update the genuine PARTY settings row with its accepted source_policy,
+under the acting root lock. A missing baseline rolls back rather than manufacturing
+PARTY fields. Its genuine admission initializer, proposed VIP columns and subsequent
+presence hint remain integration dependencies; the local writer does not claim the
+accepted missing-row/default/full status lifecycle is delivered. A status write does
+not change the target consent view or its revision; visibility publication is VIP-2.
+
+Eight appended tests (one pure, seven native PG) cover text/icon/group boundaries,
+fixed/custom group bounds, case-insensitive names, current caps, free retention and
+metadata edits/removal, immutable replay, rate refusal, unknown membership, injected
+membership/receipt failures, missing-setting rollback, all native fence inputs,
+node mismatch, direct-core stale recovery before receipt, and two warmed native Roots
+for duplicate-command and case-insensitive-name races. Delivered GroupRename and
+non-growth Status separately reject a stale generation, an actually ended session
+and a real assignment-owner revoke. All 31 inherited tests and helpers remain a
+literal byte prefix. No new test reports unconfigured PostgreSQL as a pass; the
+existing required native runner asserts PostgreSQL 17.6. Native execution results
+belong to the lead's source-bound validation evidence, not source-phase claims.
+
+**CP finding disposition:** comment 6215954832 requests receipt replay after the live
+session fence. Accepted VIP0 §4 explicitly mandates current recovery, historical
+receipt, then fresh-command session checks. Its replay preserves a stored outcome
+after session end and changes no state. This continuation preserves the accepted
+contract and inherited replay tests. CP must correct its P2 or obtain an accepted
+contract amendment before that ordering changes; this is not silently declared fixed.
+
+**Remaining own scope / recheck triggers:** no approved wire field layout/numeric
+reservations or complete handle/relay custody contract is present in the bounded
+sources. No speculative protocol/transport stub or invalid private-import PG wrapper
+is created. Full VIP_INTENT ingress/snapshot/deltas, session handles, committed reply
+and relay publication, installed schema/definers/grants/receipt retention, genuine
+social-baseline initialization and production socket tests remain open. Recheck on
+the accepted wire/handle/listener decision and exact CP wiring/migration slot. VIP-2
+owns presence/index/reconcile/delivery. Full VIP-1 acceptance remains pending, and
+this partial native metadata component does not authorize ready, queue or merge.
+# Native qualification of the 2026-10-16 metadata increment
+
+The lead executed the unchanged native library source in an isolated validation checkout,
+with only the intended domain/durability VIP registrations added outside this branch.
+Rust 1.94 `cargo check --locked -p oteryn-game-server --lib` and strict
+`cargo clippy --locked -p oteryn-game-server --lib --quiet -- -D warnings` passed.
+All 39 VIP cases passed (4 pure, 35 PostgreSQL 17.6; zero failed or ignored;
+3179 unrelated native cases filtered). PostgreSQL reported `server_version_num=170006`.
+The original 31 cases and all original source bytes remain literal prefixes.
+The native executable and a manifest of its 876 compiler-reported source inputs were retained.
+
+The required broader `--all-targets` Clippy check was attempted and remains RED in
+the registration overlay: standalone integration-wrapper crate roots do not provide
+the real gameplay/Premium/test-harness modules now required by the registered VIP
+owner. The native library and its VIP tests compile and execute; this is not a
+global strict pass. Coordinated module/wrapper activation remains a CP slot task.
+Canonical shared registration files were not changed. Wire, production grants,
+runtime callers, final socket custody and the contradictory CP replay request remain
+the specific gates recorded above; no ready/merge or full-feature completion is claimed.

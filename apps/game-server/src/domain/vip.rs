@@ -89,3 +89,38 @@ pub(crate) fn charge_vip_bucket(bucket: VipRateBucket, now_us: i64) -> Option<Vi
         exhausted_seconds: None,
     })
 }
+
+/// VIP0-RL-06. Canonical spelling is retained; uniqueness uses the lowercase key.
+pub(crate) fn vip_group_name(name: &str) -> Option<(String, String)> {
+    if name.chars().any(char::is_control) {
+        return None;
+    }
+    let name = name.trim();
+    if name.is_empty() || name.chars().count() > 25 || name.chars().any(char::is_control) {
+        return None;
+    }
+    Some((name.to_owned(), name.to_lowercase()))
+}
+
+/// VIP0 §5 / RL-04–05. Fixed groups are 1–3, custom groups are 4–8.
+/// Existence of custom groups is resolved independently under the owning list lock.
+pub(crate) fn vip_edit_description(description: &str, icon: u8, groups: &[u8]) -> Option<String> {
+    if description.chars().any(char::is_control) {
+        return None;
+    }
+    let description = description.trim();
+    if description.len() > 512
+        || description.chars().count() > 128
+        || description.chars().any(char::is_control)
+        || icon > 10
+        || groups.len() > 8
+        || groups.iter().any(|group| !(1..=8).contains(group))
+        || groups
+            .iter()
+            .enumerate()
+            .any(|(index, group)| groups[..index].contains(group))
+    {
+        return None;
+    }
+    Some(description.to_owned())
+}

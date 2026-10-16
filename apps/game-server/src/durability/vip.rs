@@ -1064,3 +1064,473 @@ async fn add_target(
 #[cfg(test)]
 #[path = "vip_tests.rs"]
 mod tests;
+
+/// List metadata operations. These values are private SQL proposals, not wire tags.
+#[derive(Clone, Debug)]
+pub(crate) enum VipListOperation {
+    GroupAdd {
+        name: String,
+    },
+    GroupRename {
+        group_no: u8,
+        name: String,
+    },
+    GroupRemove {
+        group_no: u8,
+    },
+    Edit {
+        entry_no: u64,
+        description: String,
+        icon: u8,
+        notify: bool,
+        groups: Vec<u8>,
+    },
+    Status {
+        hidden: bool,
+    },
+}
+impl VipListOperation {
+    fn code(&self) -> i16 {
+        match self {
+            Self::GroupAdd { .. } => 7,
+            Self::GroupRename { .. } => 8,
+            Self::GroupRemove { .. } => 9,
+            Self::Edit { .. } => 10,
+            Self::Status { .. } => 11,
+        }
+    }
+    fn needs_premium(&self) -> bool {
+        matches!(self, Self::GroupAdd { .. } | Self::GroupRename { .. })
+    }
+}
+#[derive(Clone, Debug)]
+pub(crate) struct VipListRequest {
+    pub(crate) list: VipListKey,
+    pub(crate) command: CommandRef,
+    pub(crate) operation: VipListOperation,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum VipListResult {
+    Ok,
+    NotFound,
+    Rejected,
+    GroupLimit,
+    NameTaken,
+    Exhausted { seconds: u8 },
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct VipListReceipt {
+    pub(crate) result: VipListResult,
+    pub(crate) group_no: Option<u8>,
+    pub(crate) revision: u64,
+    pub(crate) replayed: bool,
+}
+fn list_digest(actor: CharacterId, request: &VipListRequest) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    hash.update(b"VIP0-LIST/v1");
+    hash.update(actor.as_bytes());
+    hash.update(request.list.account_id.as_bytes());
+    hash.update(request.list.world_id.as_bytes());
+    hash.update(request.operation.code().to_be_bytes());
+    // Explicit lengths bind exact request bytes, including invalid input, without ambiguity.
+    let text = |hash: &mut Sha256, value: &str| {
+        hash.update((value.len() as u64).to_be_bytes());
+        hash.update(value.as_bytes());
+    };
+    match &request.operation {
+        VipListOperation::GroupAdd { name } => text(&mut hash, name),
+        VipListOperation::GroupRename { group_no, name } => {
+            hash.update([*group_no]);
+            text(&mut hash, name);
+        }
+        VipListOperation::GroupRemove { group_no } => hash.update([*group_no]),
+        VipListOperation::Edit {
+            entry_no,
+            description,
+            icon,
+            notify,
+            groups,
+        } => {
+            hash.update(entry_no.to_be_bytes());
+            text(&mut hash, description);
+            hash.update([*icon, u8::from(*notify)]);
+            hash.update((groups.len() as u64).to_be_bytes());
+            hash.update(groups);
+        }
+        VipListOperation::Status { hidden } => hash.update([u8::from(*hidden)]),
+    }
+    hash.finalize().into()
+}
+async fn list_receipt(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: CharacterId,
+    request: &VipListRequest,
+) -> Result<Option<VipListReceipt>> {
+    let Some(row) = bound_receipt(
+        tx,
+        actor,
+        request.list,
+        request.command,
+        request.operation.code(),
+        list_digest(actor, request),
+    )
+    .await?
+    else {
+        return Ok(None);
+    };
+    let result = match (
+        row.try_get::<i16, _>("result")?,
+        row.try_get::<Option<i16>, _>("seconds")?,
+    ) {
+        (1, None) => VipListResult::Ok,
+        (2, None) => VipListResult::NotFound,
+        (7, None) => VipListResult::Rejected,
+        (8, None) => VipListResult::GroupLimit,
+        (9, None) => VipListResult::NameTaken,
+        (3, Some(seconds)) if (1..=3).contains(&seconds) => VipListResult::Exhausted {
+            seconds: u8::try_from(seconds).map_err(|_| corrupt())?,
+        },
+        _ => return Err(corrupt()),
+    };
+    let group: Option<i16> = sqlx::query_scalar("SELECT group_no FROM game_vip_command_receipts WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND command_id=$4::text::numeric")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice())
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_one(&mut **tx).await?;
+    let group_no = group
+        .map(|n| u8::try_from(n).map_err(|_| corrupt()))
+        .transpose()?;
+    if group_no.is_some_and(|n| !(4..=8).contains(&n))
+        || group_no.is_some()
+            != (matches!(request.operation, VipListOperation::GroupAdd { .. })
+                && result == VipListResult::Ok)
+    {
+        return Err(corrupt());
+    }
+    let revision = stored_u64(&row, "revision")?;
+    if revision == 0 {
+        return Err(corrupt());
+    }
+    Ok(Some(VipListReceipt {
+        result,
+        group_no,
+        revision,
+        replayed: true,
+    }))
+}
+impl DurabilityRoot {
+    /// Native metadata writer. Only growth/rename consult Premium. Removal, Edit and Status
+    /// remain usable after expiry and while over cap. Relay publication follows commit at CP.
+    pub(crate) async fn modify_vip_list(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        premium: &SpellPremiumCoordinator,
+        request: VipListRequest,
+    ) -> Result<VipListReceipt> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| VipError::AuthorityRejected)?;
+        let replay_recovery = recovery.clone();
+        let replay_request = request.clone();
+        let replay = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let outcome: Result<Option<VipListReceipt>> = async {
+                        assert_recovery_fence(&mut tx, &replay_recovery).await?;
+                        list_receipt(&mut tx, fence.character_id, &replay_request).await
+                    }
+                    .await;
+                    tx.rollback().await?;
+                    match outcome {
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        other => Ok(other),
+                    }
+                })
+            })
+            .await??;
+        if let Some(replay) = replay {
+            return Ok(replay);
+        }
+        let node = node.clone();
+        if !request.operation.needs_premium() {
+            return self
+                .modify_vip_delivered(recovery, node, fence, request, 0)
+                .await;
+        }
+        let root = self.clone();
+        premium
+            .with_premium_gate(
+                *request.list.account_id.as_bytes(),
+                move |status, supplied| {
+                    Box::pin(async move {
+                        match (status, supplied) {
+                            (PremiumStatus::NotActivated(_held), Some(tx)) => {
+                                // The gate commits even an Err callback: a savepoint encloses all VIP writes.
+                                let mut savepoint = tx.begin().await?;
+                                let result = modify_list_in_transaction(
+                                    &mut savepoint,
+                                    &recovery,
+                                    &node,
+                                    fence,
+                                    &request,
+                                    5,
+                                )
+                                .await;
+                                match result {
+                                    Ok(value) => {
+                                        savepoint.commit().await?;
+                                        Ok(value)
+                                    }
+                                    Err(error) => {
+                                        savepoint.rollback().await?;
+                                        Err(error)
+                                    }
+                                }
+                            }
+                            (PremiumStatus::Current, None) => {
+                                root.modify_vip_delivered(recovery, node, fence, request, 5)
+                                    .await
+                            }
+                            (PremiumStatus::NotCurrent, None) => {
+                                root.modify_vip_delivered(recovery, node, fence, request, 0)
+                                    .await
+                            }
+                            _ => Err(VipError::AuthorityRejected),
+                        }
+                    })
+                },
+            )
+            .await?
+    }
+    async fn modify_vip_delivered(
+        &self,
+        recovery: CharacterRecoveryFenceV1,
+        node: NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: VipListRequest,
+        group_cap: u8,
+    ) -> Result<VipListReceipt> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    match modify_list_in_transaction(
+                        &mut tx, &recovery, &node, fence, &request, group_cap,
+                    )
+                    .await
+                    {
+                        Ok(value) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(value))
+                        }
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+async fn modify_list_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    request: &VipListRequest,
+    group_cap: u8,
+) -> Result<VipListReceipt> {
+    assert_recovery_fence(tx, recovery).await?;
+    if let Some(replay) = list_receipt(tx, fence.character_id, request).await? {
+        return Ok(replay);
+    }
+    lock_admission_relations(tx).await?;
+    if request.command.game_session_id() != fence.game_session_id {
+        return Err(VipError::AuthorityRejected);
+    }
+    let account = assert_session_fence(tx, &fence, node)
+        .await?
+        .map_err(|_| VipError::AuthorityRejected)?;
+    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+        return Err(VipError::AuthorityRejected);
+    };
+    if uuid_text(&account)? != *request.list.account_id.as_bytes()
+        || world_id.as_bytes() != request.list.world_id.as_bytes()
+    {
+        return Err(VipError::AuthorityRejected);
+    }
+    let actor = sqlx::query("SELECT account_id::text,world_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(VipError::AuthorityRejected)?;
+    if uuid_text(actor.try_get("account_id")?)? != *request.list.account_id.as_bytes()
+        || uuid_text(actor.try_get("world_id")?)? != *request.list.world_id.as_bytes()
+    {
+        return Err(VipError::AuthorityRejected);
+    }
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    sqlx::query("INSERT INTO game_vip_lists(account_id,world_id,revision,next_entry_no,rate_tokens,rate_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,20,$3) ON CONFLICT DO NOTHING")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
+    let list = sqlx::query("SELECT revision::text,rate_tokens,rate_at FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if let Some(replay) = list_receipt(tx, fence.character_id, request).await? {
+        return Ok(replay);
+    }
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let revision = stored_u64(&list, "revision")?
+        .checked_add(1)
+        .ok_or_else(corrupt)?;
+    let charge = charge_vip_bucket(
+        VipRateBucket {
+            tokens: u8::try_from(list.try_get::<i16, _>("rate_tokens")?).map_err(|_| corrupt())?,
+            at_us: list.try_get("rate_at")?,
+        },
+        now,
+    )
+    .ok_or_else(corrupt)?;
+    let (result, group_no) = if let Some(seconds) = charge.exhausted_seconds {
+        (VipListResult::Exhausted { seconds }, None)
+    } else {
+        mutate_list(tx, fence.character_id, request, group_cap).await?
+    };
+    sqlx::query("UPDATE game_vip_lists SET revision=$3::text::numeric,rate_tokens=$4,rate_at=$5 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).bind(revision.to_string()).bind(i16::from(charge.bucket.tokens)).bind(charge.bucket.at_us).execute(&mut **tx).await?;
+    let (code, seconds) = match result {
+        VipListResult::Ok => (1_i16, None),
+        VipListResult::NotFound => (2, None),
+        VipListResult::Rejected => (7, None),
+        VipListResult::GroupLimit => (8, None),
+        VipListResult::NameTaken => (9, None),
+        VipListResult::Exhausted { seconds } => (3, Some(i16::from(seconds))),
+    };
+    sqlx::query("INSERT INTO game_vip_command_receipts(account_id,world_id,game_session_id,command_id,character_id,kind,binding,result,seconds,revision,group_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,$6,$7,$8,$9,$10::text::numeric,$11)")
+        .bind(request.list.account_id.as_bytes().as_slice()).bind(request.list.world_id.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+        .bind(fence.character_id.as_bytes().as_slice()).bind(request.operation.code()).bind(list_digest(fence.character_id, request).as_slice()).bind(code).bind(seconds).bind(revision.to_string()).bind(group_no.map(i16::from)).execute(&mut **tx).await?;
+    Ok(VipListReceipt {
+        result,
+        group_no,
+        revision,
+        replayed: false,
+    })
+}
+async fn mutate_list(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: CharacterId,
+    request: &VipListRequest,
+    group_cap: u8,
+) -> Result<(VipListResult, Option<u8>)> {
+    use crate::domain::vip::{vip_edit_description, vip_group_name};
+    let account = request.list.account_id.as_bytes().as_slice();
+    let world = request.list.world_id.as_bytes().as_slice();
+    let outcome = match &request.operation {
+        VipListOperation::GroupAdd { name } | VipListOperation::GroupRename { name, .. } => {
+            let rename = match request.operation {
+                VipListOperation::GroupRename { group_no, .. } => Some(group_no),
+                _ => None,
+            };
+            if rename.is_some_and(|n| !(4..=8).contains(&n)) {
+                return Ok((VipListResult::Rejected, None));
+            }
+            let Some((name, _)) = vip_group_name(name) else {
+                return Ok((VipListResult::Rejected, None));
+            };
+            let rows = sqlx::query("SELECT group_no,name,lower(name)=lower($3) AS same_name FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid ORDER BY group_no")
+                .bind(account).bind(world).bind(&name).fetch_all(&mut **tx).await?;
+            let mut groups = BTreeSet::new();
+            let mut taken = false;
+            for row in &rows {
+                let number =
+                    u8::try_from(row.try_get::<i16, _>("group_no")?).map_err(|_| corrupt())?;
+                let stored = row.try_get::<String, _>("name")?;
+                vip_group_name(&stored).ok_or_else(corrupt)?;
+                if !(4..=8).contains(&number) || !groups.insert(number) {
+                    return Err(corrupt());
+                }
+                taken |= Some(number) != rename && row.try_get::<bool, _>("same_name")?;
+            }
+            if rename.is_some_and(|n| !groups.contains(&n)) {
+                return Ok((VipListResult::NotFound, None));
+            }
+            if rows.len() >= usize::from(group_cap) {
+                return Ok((VipListResult::GroupLimit, None));
+            }
+            if taken {
+                return Ok((VipListResult::NameTaken, None));
+            }
+            if let Some(number) = rename {
+                sqlx::query("UPDATE game_vip_groups SET name=$4 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND group_no=$3")
+                    .bind(account).bind(world).bind(i16::from(number)).bind(name).execute(&mut **tx).await?;
+                (VipListResult::Ok, None)
+            } else {
+                let number = (4..=8).find(|n| !groups.contains(n)).ok_or_else(corrupt)?;
+                sqlx::query("INSERT INTO game_vip_groups(account_id,world_id,group_no,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)")
+                    .bind(account).bind(world).bind(i16::from(number)).bind(name).execute(&mut **tx).await?;
+                (VipListResult::Ok, Some(number))
+            }
+        }
+        VipListOperation::GroupRemove { group_no } => {
+            if !(4..=8).contains(group_no) {
+                return Ok((VipListResult::Rejected, None));
+            }
+            let changed = sqlx::query("DELETE FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND group_no=$3")
+                .bind(account).bind(world).bind(i16::from(*group_no)).execute(&mut **tx).await?.rows_affected();
+            if changed == 0 {
+                return Ok((VipListResult::NotFound, None));
+            }
+            // Fixed memberships (1–3) have no custom-group FK. Delete custom memberships
+            // explicitly within this transaction; the production slot may additionally cascade.
+            sqlx::query("DELETE FROM game_vip_group_members WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND group_no=$3")
+                .bind(account).bind(world).bind(i16::from(*group_no)).execute(&mut **tx).await?;
+            (VipListResult::Ok, None)
+        }
+        VipListOperation::Edit {
+            entry_no,
+            description,
+            icon,
+            notify,
+            groups,
+        } => {
+            let Some(description) = vip_edit_description(description, *icon, groups) else {
+                return Ok((VipListResult::Rejected, None));
+            };
+            let target: Option<String> = sqlx::query_scalar("SELECT character_id::text FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND entry_no=$3::text::numeric")
+                .bind(account).bind(world).bind(entry_no.to_string()).fetch_optional(&mut **tx).await?;
+            let Some(target) = target else {
+                return Ok((VipListResult::NotFound, None));
+            };
+            let target = uuid_text(&target)?;
+            for group in groups.iter().filter(|n| **n >= 4) {
+                let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND group_no=$3)")
+                    .bind(account).bind(world).bind(i16::from(*group)).fetch_one(&mut **tx).await?;
+                if !exists {
+                    return Ok((VipListResult::NotFound, None));
+                }
+            }
+            sqlx::query("UPDATE game_vip_entries SET description=$4,icon=$5,notify=$6 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
+                .bind(account).bind(world).bind(target.as_slice()).bind(description).bind(i16::from(*icon)).bind(*notify).execute(&mut **tx).await?;
+            sqlx::query("DELETE FROM game_vip_group_members WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
+                .bind(account).bind(world).bind(target.as_slice()).execute(&mut **tx).await?;
+            for group in groups {
+                sqlx::query("INSERT INTO game_vip_group_members(account_id,world_id,character_id,group_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)")
+                    .bind(account).bind(world).bind(target.as_slice()).bind(i16::from(*group)).execute(&mut **tx).await?;
+            }
+            (VipListResult::Ok, None)
+        }
+        VipListOperation::Status { hidden } => {
+            // The real PARTY admission producer owns all required baseline fields. VIP never
+            // reconstructs that baseline; missing provenance rolls back the rate and receipt.
+            let changed = sqlx::query("UPDATE game_character_social_settings SET vip_status=$2 WHERE character_id=encode($1,'hex')::uuid AND source_policy='PARTYPVP0-PARTIES-AND-PVP-V1'")
+                .bind(actor.as_bytes().as_slice()).bind(if *hidden { 2_i16 } else { 1_i16 }).execute(&mut **tx).await?.rows_affected();
+            if changed != 1 {
+                return Err(corrupt());
+            }
+            (VipListResult::Ok, None)
+        }
+    };
+    Ok(outcome)
+}
