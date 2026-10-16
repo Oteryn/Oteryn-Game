@@ -527,3 +527,52 @@ The separate827 E-binding source and its RED remain preserved outside this candi
 No E binding, shared source or current-authority constructor is added. Direct fmt,
 whitespace and cheap governance checks qualify source only; native execution remains
 with the lead. This getter does not qualify E's whole-kill writer or joint runtime.
+
+## D #2172 native E activity consumer — 2026-10-16
+
+The lead explicitly reopened AUTHORING on isolated `skeleton/party-xp-1` at
+`b856170ed896ab9b8d8cdbbd554a9c1aa49d3850`, allocating only `party_xp.rs`,
+`party_xp_tests.rs` and this task record. This increment reuses the focused owned
+827c9e54 binding delta without cherry-pick, merge, rebase, reset or a foreign write.
+The b856 `recorded_activity` getter and the entire existing 17-test source remain
+literal; three native consumer boundary bodies are appended (20 total).
+
+Production `plan_shared_xp` and `PartyXpKillInputs.activity` now consume the actual
+`ChannelAttackStates` owner. The planner resolves each strong-source member's native
+actor by current session, compares the current physical position and World/Channel,
+and calls E's real `shared_experience_active(runtime, actor, session, original_at)`.
+No activity stamp is constructed from a successful predicate, renewed, or restored.
+The retained recorded-cell evaluator is private rule-test support; it is not the
+production kill consumer's input. D continues to decide membership, 30-tile range,
+level ratio and actual leader-PZ observation independently.
+
+Exact provider: #2192 `8b79b5d31b20d8143705785838786bfcc1d8340a`, `attack.rs`
+SHA256 `ddff75a96e857d4abd5ce2b27dfe10e95a1ab68dede3e16b4819aff68642f73b`,
+handoff [comment6222804645](https://github.com/Oteryn/Oteryn-Game/pull/2192#issuecomment-6222804645).
+Its real predicate checks current owner/control/Character lease, original semantic
+microseconds and inclusive 120-second age. E alone owns actual committed attack/heal
+recording and its positive activity/expiry/replay tests. This source does not add
+that provider, its foreign spell/heal hook, or shared module registration.
+
+The three new bodies use native committed-assignment/session/position/Character-lease
+fixtures and E's actual public(crate) methods. They exercise preallocation without
+activity grant, unavailable/blocked leader-PZ precedence, missing current session,
+physical-position substitution, retired owner continuity, and strong membership
+removal. Each rejection changes its relevant input independently; no substitute
+provider boolean, synthetic native stamp or widened foreign fixture is introduced.
+They qualify consumer boundaries only when executed, not a positive committed event
+through the full World/TX/E/D path. Positive native engagement and inclusive expiry
+must additionally run E's own existing activity bodies against the same provider.
+
+Frozen Rust bytes for independent review/native composition:
+
+- `party_xp.rs` SHA256 `17828137d2e8057748935c79aa27a58ba538f01327d3eefb9c8bee967db1a7ef`.
+- `party_xp_tests.rs` SHA256 `cdd03d6311f416d9318bd4c1c00a36ccd599c0006d555f2eba5fc6ac09f4e467`.
+
+Direct pinned Rust 1.94 rustfmt, whitespace and cheap governance checks qualify
+source only. Native Cargo/Clippy/test execution is reserved to the lead's private
+composition with this exact E and actual #2201 sources; this author did not run
+Cargo. The old 827c binding RED caused by the absent E port remains historical and
+does not describe this now-concrete dependency. No PostgreSQL, full E-D/World path,
+atomic whole-kill settlement, gameplay completion, commit/push, readiness, merge,
+production action or paid-review PASS is claimed by this increment.

@@ -658,3 +658,144 @@ fn party_xp_original_event_replay_does_not_extend_activity_window() {
     assert_eq!(activity[0].recorded_activity(), recorded);
     assert_eq!(activity, before);
 }
+
+// These cases use the real native owner types and E's activity query; no substitute
+// provider or caller-created activity stamp is used. They are rule/source input
+// tests, not SQL authority or E's committed engagement producer qualification.
+fn native_attack_fixture() -> (
+    ChannelRuntimeV1,
+    crate::foundation::ExactActorRef,
+    SourcePartyXpMember,
+) {
+    use crate::foundation::{ChannelContentPin, NodeId};
+    let world = WorldId::decode(&id(1)).expect("world");
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        channel(),
+        NodeId::decode(&id(4)).expect("node"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        ChannelContentPin::test(world),
+    )
+    .expect("native runtime fixture");
+    let mut member = member(10, 100, 0, 0, 0);
+    let reservation = runtime
+        .reserve_fresh_session(member.session)
+        .expect("reserve player");
+    let actor = runtime
+        .commit_fresh_session(reservation)
+        .expect("native player");
+    runtime
+        .initialize_first_entry_position(actor)
+        .expect("entry position");
+    runtime
+        .bind_attacker_lease(
+            actor,
+            member.session,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(&member.character).expect("character"),
+                7,
+            )
+            .expect("lease"),
+        )
+        .expect("native current lease");
+    member.position = runtime
+        .read_actor_position(actor)
+        .expect("position")
+        .position();
+    (runtime, actor, member)
+}
+
+#[test]
+fn party_xp_native_attack_without_committed_activity_cannot_enable_sharing_or_hide_missing_pz() {
+    let (runtime, actor, member) = native_attack_fixture();
+    let mut owner = ChannelAttackStates::default();
+    let now = time(1_999);
+    assert!(owner.prepare_shared_experience_record(&runtime, actor, member.session));
+    assert!(!owner.shared_experience_active(&runtime, actor, member.session, now));
+    let members = [member];
+    let s = source(&members);
+    let eval = |sample| {
+        evaluate_activity(
+            &s,
+            channel(),
+            &members,
+            true,
+            ActivityInput::Attack(&owner, &runtime, now),
+            sample,
+            ExactI64::new(101),
+        )
+    };
+    off(
+        eval(Some(pz(member, now.get(), None))),
+        SharingOff::Inactive,
+    );
+    assert_eq!(eval(None), Err(PartyXpError::PzObservationUnavailable));
+    off(
+        eval(Some(pz(member, now.get(), Some(now.get() + 1)))),
+        SharingOff::LeaderPzBlock,
+    );
+}
+
+#[test]
+fn party_xp_native_attack_projection_refuses_missing_session_and_retired_runtime() {
+    let (mut runtime, _, member) = native_attack_fixture();
+    let owner = ChannelAttackStates::default();
+    let mut replaced = member;
+    replaced.session = GameSessionId::decode(&id(99)).expect("unbound session");
+    let evaluate_member = |runtime: &ChannelRuntimeV1, member: SourcePartyXpMember| {
+        let members = [member];
+        evaluate_activity(
+            &source(&members),
+            channel(),
+            &members,
+            true,
+            ActivityInput::Attack(&owner, runtime, time(1_999)),
+            Some(pz(member, 1_999, None)),
+            ExactI64::new(101),
+        )
+    };
+    assert_eq!(
+        evaluate_member(&runtime, replaced),
+        Err(PartyXpError::SourceChanged)
+    );
+    let mut moved = member;
+    moved.position.x += 1;
+    assert_eq!(
+        evaluate_member(&runtime, moved),
+        Err(PartyXpError::SourceChanged)
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        evaluate_member(&runtime, member),
+        Err(PartyXpError::SourceChanged)
+    );
+}
+
+#[test]
+fn party_xp_native_attack_activity_does_not_replace_d_membership_rules() {
+    let (runtime, actor, member) = native_attack_fixture();
+    let mut owner = ChannelAttackStates::default();
+    assert!(owner.prepare_shared_experience_record(&runtime, actor, member.session));
+    let members = [member];
+    let now = time(1_999);
+    let mut s = source(&members);
+    // Change only the strong membership fact; actor, session, lease and position
+    // remain native current facts. An allocated activity slot cannot add a member.
+    s.members.clear();
+    assert_eq!(
+        evaluate_activity(
+            &s,
+            channel(),
+            &members,
+            true,
+            ActivityInput::Attack(&owner, &runtime, now),
+            Some(pz(member, now.get(), None)),
+            ExactI64::new(101),
+        ),
+        Err(PartyXpError::InvalidRoster)
+    );
+}

@@ -1,14 +1,16 @@
 //! PARTY-PVP-0 §5.1: bounded activity, eligibility and the final equal split.
 //! Detached source component: no kill admission, XP receipt or current-authority producer.
 //! Callers hold runtime/player/SQL owner locks, read the toggle in that transaction and supply
-//! the actual leader PZ deadline. Activity events must already be qualified by the combat/heal
-//! owner. Supplied observations never attest current authority. Missing inputs refuse a plan.
+//! the actual leader PZ deadline. The native attack owner supplies its identity/lease-bound
+//! activity predicate at the original kill instant. Supplied observations never attest current
+//! authority. Missing inputs refuse a plan.
 #![allow(
     dead_code,
     reason = "CP slot must compose the native kill/reward owners"
 )]
 
 use super::actor_spell::ChannelSpellStates;
+use super::attack::ChannelAttackStates;
 use super::party_spell_owner::{SourcePartyWorld, SourcePartyXpMember};
 use crate::durability::world_party::WorldPartyXp;
 use crate::foundation::{ChannelId, ChannelRuntimeV1, GameSessionId, PartySnapshot, WorldId};
@@ -232,7 +234,7 @@ pub(crate) fn plan_shared_xp(
     setting: &WorldPartyXp,
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
-    activity: &[PartyXpActivity],
+    activity: &ChannelAttackStates,
     pz: Option<LeaderPzObservation>,
     now: SemanticTimeMicros,
     pool_after_bonus_and_summon: ExactI64,
@@ -245,14 +247,13 @@ pub(crate) fn plan_shared_xp(
     {
         return Err(PartyXpError::SourceChanged);
     }
-    evaluate(
+    evaluate_activity(
         &setting.source,
         runtime.binding().channel_id(),
         &source.xp_members(),
         setting.enabled,
-        activity,
+        ActivityInput::Attack(activity, runtime, now),
         pz,
-        now,
         pool_after_bonus_and_summon,
     )
 }
@@ -268,6 +269,41 @@ fn evaluate(
     now: SemanticTimeMicros,
     pool: ExactI64,
 ) -> Result<PartyXpDecision, PartyXpError> {
+    evaluate_activity(
+        source,
+        channel,
+        members,
+        enabled,
+        ActivityInput::Recorded(activity, now),
+        pz,
+        pool,
+    )
+}
+
+/// Private planner inputs: native E activity is queried at the ORIGINAL kill instant.
+/// A true native predicate never manufactures or renews an engagement timestamp.
+#[derive(Clone, Copy)]
+enum ActivityInput<'a> {
+    Recorded(&'a [PartyXpActivity], SemanticTimeMicros),
+    Attack(
+        &'a ChannelAttackStates,
+        &'a ChannelRuntimeV1,
+        SemanticTimeMicros,
+    ),
+}
+
+fn evaluate_activity(
+    source: &PartySnapshot,
+    channel: ChannelId,
+    members: &[SourcePartyXpMember],
+    enabled: bool,
+    activity: ActivityInput<'_>,
+    pz: Option<LeaderPzObservation>,
+    pool: ExactI64,
+) -> Result<PartyXpDecision, PartyXpError> {
+    let now = match activity {
+        ActivityInput::Recorded(_, at) | ActivityInput::Attack(_, _, at) => at,
+    };
     let off = |reason| Ok(PartyXpDecision::Off(reason));
     if source.party_id.is_none() {
         return off(SharingOff::Solo);
@@ -279,27 +315,29 @@ fn evaluate(
     let Some(leader) = members.iter().find(|m| Some(m.character) == source.leader) else {
         return off(SharingOff::LeaderAbsent);
     };
-    if activity.len() > MAX_MEMBERS {
-        return Err(PartyXpError::InvalidRoster);
-    }
-    for (i, cell) in activity.iter().enumerate() {
-        let Some(stamp) = cell.stamp else {
-            continue;
-        };
-        if !members.iter().any(|m| m.character == stamp.character)
-            || activity[..i]
-                .iter()
-                .any(|c| c.stamp.is_some_and(|s| s.character == stamp.character))
-        {
+    if let ActivityInput::Recorded(activity, _) = activity {
+        if activity.len() > MAX_MEMBERS {
             return Err(PartyXpError::InvalidRoster);
         }
-        if *stamp.world.as_bytes() != source.world
-            || stamp.channel != channel
-            || !members
-                .iter()
-                .any(|m| m.character == stamp.character && m.session == stamp.session)
-        {
-            return Err(PartyXpError::ActivityScopeChanged);
+        for (i, cell) in activity.iter().enumerate() {
+            let Some(stamp) = cell.stamp else {
+                continue;
+            };
+            if !members.iter().any(|m| m.character == stamp.character)
+                || activity[..i]
+                    .iter()
+                    .any(|c| c.stamp.is_some_and(|s| s.character == stamp.character))
+            {
+                return Err(PartyXpError::InvalidRoster);
+            }
+            if *stamp.world.as_bytes() != source.world
+                || stamp.channel != channel
+                || !members
+                    .iter()
+                    .any(|m| m.character == stamp.character && m.session == stamp.session)
+            {
+                return Err(PartyXpError::ActivityScopeChanged);
+            }
         }
     }
     let pz = pz.ok_or(PartyXpError::PzObservationUnavailable)?;
@@ -320,18 +358,36 @@ fn evaluate(
         }
         low = low.min(member.level);
         high = high.max(member.level);
-        let Some(stamp) = activity
-            .iter()
-            .filter_map(|c| c.stamp)
-            .find(|s| s.character == member.character && s.session == member.session)
-        else {
-            return off(SharingOff::Inactive);
+        let active = match activity {
+            ActivityInput::Recorded(cells, _) => {
+                let Some(stamp) = cells.iter().filter_map(|cell| cell.stamp).find(|stamp| {
+                    stamp.character == member.character && stamp.session == member.session
+                }) else {
+                    return off(SharingOff::Inactive);
+                };
+                let age = now
+                    .get()
+                    .checked_sub(stamp.at.get())
+                    .ok_or(PartyXpError::ClockRegressed)?;
+                age <= ACTIVITY_MICROS
+            }
+            ActivityInput::Attack(owner, runtime, _) => {
+                // The preceding native source read resolved this Character/session;
+                // lookup retains dead colocated XP members too, unlike spell targets.
+                let (actor, position) = runtime
+                    .positioned_player_for_session(member.session)
+                    .map_err(|_| PartyXpError::SourceChanged)?
+                    .ok_or(PartyXpError::SourceChanged)?;
+                if runtime.binding().channel_id() != channel
+                    || *runtime.binding().world_id().as_bytes() != source.world
+                    || position.position() != member.position
+                {
+                    return Err(PartyXpError::SourceChanged);
+                }
+                owner.shared_experience_active(runtime, actor, member.session, now)
+            }
         };
-        let age = now
-            .get()
-            .checked_sub(stamp.at.get())
-            .ok_or(PartyXpError::ClockRegressed)?;
-        if age > ACTIVITY_MICROS {
+        if !active {
             return off(SharingOff::Inactive);
         }
     }
@@ -363,7 +419,7 @@ fn evaluate(
 pub(crate) struct PartyXpKillInputs<'a> {
     pub(crate) death: crate::foundation::CreatureDeathOccurrenceKey,
     pub(crate) at: SemanticTimeMicros,
-    pub(crate) activity: &'a [PartyXpActivity],
+    pub(crate) activity: &'a ChannelAttackStates,
     pub(crate) leader_pz: Option<LeaderPzObservation>,
     pub(crate) pool_after_bonus_and_summon: ExactI64,
 }
