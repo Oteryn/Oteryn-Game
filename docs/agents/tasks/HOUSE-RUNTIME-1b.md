@@ -1,10 +1,10 @@
-# HOUSE-RUNTIME-1b — house scope runtime and entry (skeleton task record)
+# HOUSE-RUNTIME-1b — house scope runtime and entry
 
 ```yaml
 task_id: HOUSE-RUNTIME-1b
 title: "HOUSE-RUNTIME-1b: house scope runtime and entry"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +21,54 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+
+This checkpoint retains the bounded closed-boundary implementation at source head
+`5b164bcf5f0b6d86854498050a91f8817c1d5ab6`. The evidence below updates the
+historical execution dispositions later in this record; it does not complete the
+original runtime acceptance scope or open entry/exit gates.
+
+| Check | Observed disposition |
+|---|---|
+| Independent bounded source review | PASS; four owned Rust files, native closed refusals, no production caller or shared registration. |
+| PREPARE and actual Cargo CAPTURE | PASS; retained PREPARE proof and actual175 CAPTURE exit0, source match, quiescence and all112 resource samples PASS. CAPTURE records compiler context; it does not execute test cases. |
+| Selected native Clippy, cfg(test) rlib and driver link | PASS; actual184 reports all three exits0, source match, quiescence and all30 resource samples PASS. Body reconstruction verifies all five original test bodies remain literal. This is selected native compiler evidence, not a global test-ELF or package-wide qualification. |
+| Native LIST and four closed-boundary case executions | NOT_RUN; actual189 stopped on slot admission EAGAIN before child creation or LIST evidence. No case PASS or test RED is inferred. |
+| Native PostgreSQL17.6 case execution | NOT_RUN; no runtime case or database qualification is claimed. |
+| Full runtime, native loader/caller integration, restart/recovery and RL02/RL04 | NOT_RUN / incomplete; the dependencies and original acceptance items below remain open. |
+
+Exact retained observations are
+`/workspace/house-pc-execution-20261016/175-2165-capture-proof-observed.json`
+(SHA-256 `301607d482317edaab717c53c3e3bf8e74bdfe92cbc143144bdb97b50704d678`)
+and `/workspace/house-pc-execution-20261016/184-2165-native-proof-observed.json`
+(SHA-256 `75e8145caf0a3cf961b58408ab1707416e59e50c3c8ad3abc4c4ab5116e37a6f`).
+The latter pins the actual rlib, driver, metadata, compiler results and literal-body
+proof; none of those artifacts is a runtime test result.
+
+The operational blocker is a prechild slot HOLD. Actual191 observed A and PG held
+by RANK_2168 (supervisor283316, group283705); the A record lacks custody fields
+required by the current guard. The B kernel lock was free at that observation,
+which grants no later reservation. No lock record, guard or competing job was
+changed. The concrete coordination request is
+[CP2131 comment6225557139](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225557139).
+True native interior loader/read authority, actor/map and reservation/placement
+callers, transfer contract, shared registration and integrated measurements still
+require the owning native teams and CP decisions listed below.
+
+Retained formatter evidence is `/workspace/house-family-handoff/runtime.json`
+(SHA-256 `aad1b4500dfbb96ce4ac5557325c7a592fa68a4418897db0699eacb8f7ddadf1`),
+`tasks[0].authoring_packet.validation.rustfmt`: official verified Rust1.94.0,
+`--edition2024 --config skip_children=true --check`, PASS on all four owned Rust
+files. Their current SHA-256 values match that packet exactly; no formatter rerun
+is needed for this task-record-only checkpoint.
+
+[CP D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+permits one coherent checkpoint push on the existing draft with this explicit
+NOT_FULLY_QUALIFIED / RED / NOT_RUN accounting and passing fmt/whitespace checks.
+The PR remains draft; no ready action, `@codex review` request or manual CI restart
+is authorized by this checkpoint. Full checks remain required before a frozen
+review candidate. No observed owned test RED exists; unexecuted cases stay NOT_RUN.
 
 ## Goal
 
