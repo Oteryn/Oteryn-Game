@@ -1,10 +1,10 @@
-# ADMIT-CAP-2 — player field effects behind world-required capabilities (skeleton task record)
+# ADMIT-CAP-2 — player field capability predicate (draft checkpoint)
 
 ```yaml
 task_id: ADMIT-CAP-2
 title: "ADMIT-CAP-2: player field effects behind world-required capabilities"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,7 +21,61 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## Goal
+## D1132/D1140 authoring checkpoint
+
+[CP D1132/D1140](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930839)
+now assigns the owned leaf a borrowed `&BoundRequiredCapabilities` entry. It must
+call `matches_current(scope, generation, policy)` before reading `effective()`.
+WORLD_SPATIAL_FIELDS has no ID until FIELD-WIRE-1 and **is not required by #2150**
+at this checkpoint. This overrides the historical two-member requirement below;
+WORLD_INTERACTION_V1 remains required. No substitute ID or FIELD offer is added.
+
+The actual #2187 source was read at live head
+`1d16eda0b7de19e240e8fd5a20c2d476ee103967` (OPEN, unmerged). Its
+`gameplay_transport/world_required_capabilities.rs` exposes both production read
+methods and validates its immutable set through `for_channel_boot`. The new leaf
+uses that exact type and those methods; no cfg(test) `as_slice`, duplicated
+closure, session-selection authority or new owner is introduced. The dependency
+is not copied into this branch and must be integrated by its owner.
+
+Authored owned files:
+- `world_required_field_guard.rs`: match current scope/generation/policy, then
+  require registered WORLD_INTERACTION_V1 from the boot owner's sorted set.
+  Internal typed refusals distinguish stale binding from missing interaction.
+- `world_required_field_guard_tests.rs`: four focused source tests using the real
+  I boot constructor. They cover an explicit registered-edge test offer graph,
+  the actual bundle offer missing interaction, independently mismatched World,
+  Channel, old/new generation and policy, instance scope, and a successor whose
+  effective set differs without mutating the predecessor. The test graph does
+  not enable the production interaction offer or assert current authority.
+
+The API deliberately accepts only the owner-held binding and independently
+resolved current facts for a **positively player-origin field/wall** operation.
+It does not classify absent/unknown provenance as monster/system. Real callers
+must preserve those sources' existing paths and all caster/session/content,
+physical/tile/PvP and durable authority checks. A successful capability predicate
+alone cannot authorize a mutation. Recheck at the existing guarded new-write
+boundary, under its authority locks; immutable prepared facts are insufficient.
+Historical receipt reconciliation remains with the transaction owner.
+
+D1140 assigns the real `connection.rs` handoff to #2187 as the first A2 item after
+#2197 and #2163. No caller, shared module registration, registry/error code,
+FIELD activation, schema, content or other owner's source is changed here.
+Missing-binding refusal, monster/system isolation, no-trace cost rollback,
+prepare/commit replacement and replay/restart require actual caller integration.
+An external `tests/admit_cap_field_guard.rs` target is not fabricated around an
+unexported, unwired leaf; its meaningful native integration proof remains open.
+
+**NOT_FULLY_QUALIFIED.** Explicit Rustfmt of both owned Rust files and
+`git diff --check` PASS. Current branch lacks the unmerged I dependency/module
+registration; compile, strict lint, all four new tests and full package/runtime/
+PostgreSQL validation are **NOT_RUN**. Production acceptance is **RED** pending
+the actual caller and the retained integration matrix. Source tests provide no
+rollback, provenance, liveness or runtime proof. D1122 allows this draft authoring
+checkpoint; no push, freeze, ready transition, external review trigger or CI
+restart is performed here.
+
+## Historical goal and integration packet
 
 Player-created spatial field effects (FIELD-2) apply in a scope only when that scope's effective capability set contains WORLD_SPATIAL_FIELDS and WORLD_INTERACTION_V1. The effective set is fixed per scope generation, so admission and field application never disagree within one generation.
 
@@ -35,7 +89,7 @@ Single row (ADMIT0 §6 guard on top of ADMIT-CAP-1 world-required capabilities).
 |---|---|
 | ADMIT-CAP-1 (family entry gate) | BLOCKING (Wave 1, not merged) |
 | FIELD-2 (LOOP-WORLD-1 child) | BLOCKING (`blocked` in docs/agents/tasks/active/LOOP-WORLD-1.md) |
-| acceptance of ADMIT0 (brief CANDIDATE; plan §7 gate) | BLOCKING |
+| acceptance of ADMIT0 | ACCEPTED (#2209); no longer a blocker |
 
 Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
