@@ -236,3 +236,61 @@ remains unchecked; the detached subset is not mail delivery or text persistence.
 
 No independent exact-head review or architect/integration acceptance is claimed.
 The prepared subset is ready for CP review; full task criteria remain unchecked.
+
+## Native direct-backpack MAIL-TEXT increment — 2026-10-16
+
+The owner has explicitly assigned exclusive authorship of the family branches to
+this lead, superseding the old local six-path allocation prerequisite for the
+specific `.rs` paths in the current packet. Work remains AUTHORING; no candidate
+freeze, publication, migration number, shared-file or integration permission is
+inferred. The source base is `ad504f33da022abb7ce2f770dfee1f20eb7885e7`.
+
+`durability/item_text.rs` now implements a bounded native rewrite writer for
+letters and labels in the writer's direct main backpack. It uses the actual
+reconciled recovery seal, admission relation locks, current node/session/item
+fence and Character root lock. An independently queried latest
+`game_content_activations.server_artifact_digest`, protected by the existing
+content-activation lock, must match the loader-decoded `NativeGameplayState`.
+Writable/readable/max-length facts come from its qualified production profile;
+unknown, conflicting or present write-once targets fail closed. After an Item
+row lock, a fresh query checks current definition, World and direct ownership.
+
+The native transaction stores CommandRef replay/conflict bindings without text,
+retains a separate revision tombstone after deletion, refuses unsigned revision
+overflow, preserves unchanged text and enforces two changing writes in a rolling
+second across sessions using the Character root serialization. Its timestamp is
+sampled from PostgreSQL after blocking locks; the request supplies no timestamp
+or writable/current-authority boolean. No item value, audit event or
+CharacterRevision changes. Raw SQLx errors use the existing native classification
+which discards database detail; the request has no text-bearing Debug output.
+
+`ITEM_TEXT_SCHEMA_PROPOSAL` is an unnumbered slot input, not a delivered migration
+or runtime DDL path. Grants, cleanup, numbered migration, shared registrations and
+wire wiring remain undelivered. This is not full MAIL/WRITE acceptance: other
+locations, write-once transforms, reachable reads, reporting/moderation and mail
+posting are outside this increment.
+
+Activation remains blocked on qualified native letter/label content (the active
+413-profile artifact has neither), its explicit rewrite policy and a real
+player-trade owner exclusion/serialization port for offered containers under
+WRITE-0 §5.1. No fake trade table or client-supplied flag replaces it. CP also
+needs to resolve registration of native-content consumers in standalone durability
+PostgreSQL targets: their existing `content_shim.rs` lacks `native_gameplay`.
+The source is disconnected from shared module/wire composition until these
+conditions are satisfied; it grants no early activation permission.
+
+Three pure tests cover delete/rewrite revision non-reuse, overflow/unchanged
+behavior and replay-binding substitutions. Three SQLx cases use actual native
+migrations plus the explicit schema proposal for storage deletion/reload, rate
+refusal/no-op and rollback/retry. Fixture trigger bypass is explicit; these are
+storage-only cases and fabricate no current content or session authority.
+The rate-refusal fixture sets its two stored receipt times to PostgreSQL
+`infinity` so CI delays cannot age them out; it exercises conservative refusal
+and state preservation, not wall-clock expiry. The separate deletion/rewrite
+case explicitly ages its fixture receipts. Neither changes the production clock.
+All six new cases are **unexecuted**: this container has no Cargo/compiler, and
+no global PC test slot was acquired. The lead supplied an isolated official
+rustfmt 1.94 matching the repository toolchain; the owned source's formatting and
+`--check` passed, as did whitespace checks including the new file. No build, PG
+qualification, frozen-head CI or paid review is claimed. Existing eight-test
+evidence above covers only the earlier subset and does not qualify this writer.
