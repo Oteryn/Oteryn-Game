@@ -2606,6 +2606,7 @@ pub(crate) struct GuildDisbandJobRequest {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuildDisbandOutcome {
     WaitingForHouseDisposition,
+    HouseProgress { moved: u64, next_step: u64 },
     Advanced { step: i32, removed: usize },
     Disbanded { revision: u64 },
     AlreadyDisbanded { revision: u64 },
@@ -2635,6 +2636,18 @@ impl GuildDisbandTransaction {
 
     pub(super) fn world_id(&self) -> crate::foundation::WorldId {
         self.world
+    }
+
+    /// Borrow genuine Root-created current evidence for C's native same-TX participant.
+    /// Neither getter reconstructs authority from a retained cursor or C database row.
+    pub(super) fn house_release_recovery(
+        &self,
+    ) -> &crate::character_recovery_fence::CharacterRecoveryFenceV1 {
+        &self.recovery
+    }
+
+    pub(super) fn house_release_node(&self) -> &NodeIncarnationProof {
+        &self.node
     }
 
     pub(super) fn hall_occurrence(&self) -> &super::guildhall::GuildhallDisbandOccurrence {
@@ -2723,16 +2736,7 @@ async fn lock_guild_disband_with_recovery(
     assert_recovery_fence(tx, &recovery).await?;
     lock_admission_relations(tx).await?;
     assert_guild_job_world(tx, node, request.world_id).await?;
-    // All participant occurrence locks precede the Guild and its dependent rows (GUILD0-LO-01).
-    let hall_occurrence =
-        super::guildhall::lock_guild_disband_release_in_transaction(tx, &request.hall_identity)
-            .await
-            .map_err(hall_disband_error)?;
-    super::guild_bank::lock_guild_disband_payout_occurrence(tx, &request.bank_identity)
-        .await
-        .map_err(bank_disband_error)?;
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('guild-disband-terminal:'||encode($1,'hex'),0))")
-        .bind(request.guild_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+    let hall_occurrence = lock_disband_occurrences(tx, request).await?;
     let row = sqlx::query("SELECT world_id::text,state,revision::text FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(request.guild_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(None) };
@@ -2747,8 +2751,9 @@ async fn lock_guild_disband_with_recovery(
     if !checkpoint {
         return Err(invalid());
     }
-    // GUILD0 caps bound these locks (2000 members,500 invitations). No Character roots/session
-    // are acquired. Keeping the sorted spine here also prevents later participant lock inversion.
+    // GUILD0 caps bound these locks (2000 members,500 invitations). The production caller
+    // already reserved C's sorted recipient-root KEY SHARE pins before entering this spine.
+    // No additional Character roots/session may be acquired after the Guild row.
     sqlx::query("SELECT character_id FROM game_guild_members WHERE guild_id=encode($1,'hex')::uuid ORDER BY character_id FOR UPDATE")
         .bind(request.guild_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     sqlx::query("SELECT character_id FROM game_guild_invitations WHERE guild_id=encode($1,'hex')::uuid ORDER BY character_id FOR UPDATE")
@@ -2768,6 +2773,23 @@ async fn lock_guild_disband_with_recovery(
         hall_occurrence,
         bank_identity: request.bank_identity.clone(),
     }))
+}
+
+/// Position 1, before C pins recipient Character roots at position 2.
+async fn lock_disband_occurrences(
+    tx: &mut Transaction<'_, Postgres>,
+    request: &GuildDisbandJobRequest,
+) -> Result<super::guildhall::GuildhallDisbandOccurrence> {
+    let hall_occurrence =
+        super::guildhall::lock_guild_disband_release_in_transaction(tx, &request.hall_identity)
+            .await
+            .map_err(hall_disband_error)?;
+    super::guild_bank::lock_guild_disband_payout_occurrence(tx, &request.bank_identity)
+        .await
+        .map_err(bank_disband_error)?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('guild-disband-terminal:'||encode($1,'hex'),0))")
+        .bind(request.guild_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+    Ok(hall_occurrence)
 }
 
 fn hall_disband_error(error: super::guildhall::GuildhallEscrowError) -> GuildError {
@@ -2798,26 +2820,146 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
+        // Existing native UUIDv7 allocator; work identifiers are DATA, never authority.
+        // Allocate before an attempt, then retain the operation in our committed cursor.
+        // Every physical transaction receives a fresh C reservation ID.
+        let operation = crate::node::operator_files::uuid_v7()
+            .map_err(|_| GuildError::Unavailable(DurabilityError::Unavailable))?;
+        let reservation_id = crate::node::operator_files::uuid_v7()
+            .map_err(|_| GuildError::Unavailable(DurabilityError::Unavailable))?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 let result = async {
-                    let Some(context) = lock_guild_disband_with_recovery(&mut tx, recovery, &node, &request).await? else {
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    assert_guild_job_world(&mut tx, &node, request.world_id).await?;
+                    lock_disband_occurrences(&mut tx, &request).await?;
+                    // Unlocked discovery gives no authority; the actual constructor below
+                    // revalidates state/World/revision after the recipient reservation.
+                    let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=3)")
+                        .bind(request.guild_id.as_bytes().as_slice()).bind(request.world_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    if !pending {
                         let terminal = sqlx::query("SELECT revision::text FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=4")
                             .bind(request.guild_id.as_bytes().as_slice()).bind(request.world_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                         return Ok(if let Some(row)=terminal {
                             GuildDisbandOutcome::AlreadyDisbanded { revision: numeric_u64(&row,"revision")? }
                         } else { GuildDisbandOutcome::NoLongerPending });
-                    };
-                    advance_disband_transaction(&mut tx, &context, &request).await
+                    }
+                    let cursor = house_release_cursor(&mut tx, &request, operation).await?;
+                    // C alone discovers recipients and pins their roots sorted FOR KEY SHARE,
+                    // before ANY Guild row. Any error drops this whole physical TX; a retry
+                    // starts again at position 1, with a fresh reservation and current census.
+                    let reservation = super::house_ownership::reserve_guild_disband_recipients_in_transaction(
+                        &mut tx, request.world_id, request.guild_id, cursor.operation,
+                        cursor.step, reservation_id,
+                    ).await.map_err(house_release_error)?;
+                    let context = lock_guild_disband_with_recovery(&mut tx, recovery, &node, &request)
+                        .await?.ok_or(GuildError::NotCurrent)?;
+                    if house_release_cursor(&mut tx, &request, cursor.operation).await? != cursor {
+                        return Err(GuildError::NotCurrent);
+                    }
+                    let outcome = super::house_ownership::advance_guild_disband_release_in_transaction(
+                        &mut tx, &context, reservation,
+                    ).await.map_err(house_release_error)?;
+                    match outcome {
+                        super::house_ownership::GuildHallReleaseOutcome::Progress { moved, next_step } => {
+                            record_house_release_observation(&mut tx, &context, &cursor, reservation_id, Some(moved), next_step).await?;
+                            // Custody progress commits with its cursor/event, then STOPS.
+                            // No bids, Bank payout, cleanup, or phase-2 release is admitted.
+                            Ok(GuildDisbandOutcome::HouseProgress { moved, next_step })
+                        }
+                        super::house_ownership::GuildHallReleaseOutcome::Released(proof) => {
+                            assert_house_released(&mut tx, &context, &proof).await?;
+                            record_house_release_observation(&mut tx, &context, &cursor, reservation_id, None, cursor.step).await?;
+                            advance_disband_transaction(&mut tx, &context, &request, &proof).await
+                        }
+                    }
                 }.await;
                 match result {
                     Ok(outcome) => { commit_semantic_transaction(tx,deadline).await?; Ok(Ok(outcome)) }
-                    Err(GuildError::Unavailable(error)) => Err(error),
-                    Err(error) => Ok(Err(error)),
+                    Err(GuildError::Unavailable(error)) => { tx.rollback().await?; Err(error) }
+                    Err(error) => { tx.rollback().await?; Ok(Err(error)) },
                 }
             })
         }).await?
+    }
+}
+
+/// D's restart cursor is retained work DATA. Only C's opaque physical-TX proof
+/// can admit financial/cleanup consumers; no cursor field supplies current authority.
+#[derive(PartialEq, Eq)]
+struct HouseReleaseCursor {
+    operation: [u8; 16],
+    attempt: u64,
+    step: u64,
+}
+
+async fn house_release_cursor(
+    tx: &mut Transaction<'_, Postgres>,
+    request: &GuildDisbandJobRequest,
+    initial_operation: [u8; 16],
+) -> Result<HouseReleaseCursor> {
+    let row = sqlx::query("SELECT operation_id::text,attempt::text,next_step::text,world_id::text FROM game_guild_house_release_events WHERE guild_id=encode($1,'hex')::uuid ORDER BY attempt DESC LIMIT 1")
+        .bind(request.guild_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    match row {
+        Some(row) => {
+            if uuid_text(&row.try_get::<String, _>("world_id")?)? != *request.world_id.as_bytes() {
+                return Err(GuildError::NotCurrent);
+            }
+            Ok(HouseReleaseCursor {
+                operation: uuid_text(&row.try_get::<String, _>("operation_id")?)?,
+                attempt: numeric_u64(&row, "attempt")?
+                    .checked_add(1)
+                    .ok_or_else(invalid)?,
+                step: numeric_u64(&row, "next_step")?,
+            })
+        }
+        None => Ok(HouseReleaseCursor {
+            operation: initial_operation,
+            attempt: 1,
+            step: 0,
+        }),
+    }
+}
+
+async fn record_house_release_observation(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &GuildDisbandTransaction,
+    cursor: &HouseReleaseCursor,
+    reservation: [u8; 16],
+    moved: Option<u64>,
+    next_step: u64,
+) -> Result<()> {
+    context.assert_current(tx).await?;
+    sqlx::query("INSERT INTO game_guild_house_release_events(guild_id,world_id,operation_id,reservation_id,attempt,step,next_step,moved,released) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,$9)")
+        .bind(context.guild.as_bytes().as_slice()).bind(context.world.as_bytes().as_slice())
+        .bind(cursor.operation.as_slice()).bind(reservation.as_slice()).bind(cursor.attempt.to_string())
+        .bind(cursor.step.to_string()).bind(next_step.to_string()).bind(moved.map(|value| value as i64))
+        .bind(moved.is_none()).execute(&mut **tx).await?;
+    Ok(())
+}
+
+async fn assert_house_released(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &GuildDisbandTransaction,
+    proof: &super::house_ownership::GuildHallReleasedProof,
+) -> Result<()> {
+    super::house_ownership::assert_guild_disband_released_in_transaction(tx, context, proof)
+        .await
+        .map_err(house_release_error)
+}
+
+fn house_release_error(error: super::house_ownership::GuildHallReleaseError) -> GuildError {
+    use super::house_ownership::GuildHallReleaseError;
+    match error {
+        GuildHallReleaseError::GuildAuthority(error) => error,
+        GuildHallReleaseError::Database(error) => GuildError::Unavailable(error.into()),
+        GuildHallReleaseError::InvalidInput => GuildError::InvalidInput,
+        GuildHallReleaseError::MissingDependency(_) => {
+            GuildError::Unavailable(DurabilityError::Unavailable)
+        }
+        _ => GuildError::NotCurrent,
     }
 }
 
@@ -2825,8 +2967,9 @@ async fn advance_disband_transaction(
     tx: &mut Transaction<'_, Postgres>,
     context: &GuildDisbandTransaction,
     request: &GuildDisbandJobRequest,
+    house_proof: &super::house_ownership::GuildHallReleasedProof,
 ) -> Result<GuildDisbandOutcome> {
-    context.assert_current(tx).await?;
+    assert_house_released(tx, context, house_proof).await?;
     let latest = sqlx::query("SELECT step,phase,payout_transaction_id::text FROM game_guild_disband_steps WHERE guild_id=encode($1,'hex')::uuid ORDER BY step DESC LIMIT 1")
         .bind(context.guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let phase = latest
@@ -2843,10 +2986,12 @@ async fn advance_disband_transaction(
     if phase.is_none() {
         // This participant can commit genuine bid refund progress while C still owns pending
         // property/slot/ACL/Inbox disposition. Its wait is never promoted to a release proof.
+        assert_house_released(tx, context, house_proof).await?;
         super::guildhall::advance_guild_disband_release_in_transaction(tx, context)
             .await
             .map_err(hall_disband_error)?;
     }
+    assert_house_released(tx, context, house_proof).await?;
     match super::guildhall::assert_guild_disband_released_in_transaction(tx, context).await {
         Ok(()) => {}
         Err(super::guildhall::GuildhallEscrowError::HouseDispositionUnavailable) => {
@@ -2855,9 +3000,10 @@ async fn advance_disband_transaction(
         Err(error) => return Err(hall_disband_error(error)),
     }
     if phase.is_none() {
-        return commit_disband_step(tx, context, step, 2, None, &[], &[], &[]).await;
+        return commit_disband_step(tx, context, house_proof, step, 2, None, &[], &[], &[]).await;
     }
     if phase == Some(2) {
+        assert_house_released(tx, context, house_proof).await?;
         let payout = super::guild_bank::payout_guild_disband_in_transaction(
             tx,
             context,
@@ -2868,6 +3014,7 @@ async fn advance_disband_transaction(
         return commit_disband_step(
             tx,
             context,
+            house_proof,
             step,
             3,
             Some(payout.receipt.transaction_id),
@@ -2877,6 +3024,7 @@ async fn advance_disband_transaction(
         )
         .await;
     }
+    assert_house_released(tx, context, house_proof).await?;
     let payout = super::guild_bank::read_guild_disband_payout_in_transaction(tx, context)
         .await
         .map_err(bank_disband_error)?
@@ -2895,6 +3043,7 @@ async fn advance_disband_transaction(
         return commit_disband_step(
             tx,
             context,
+            house_proof,
             step,
             4,
             Some(payout.receipt.transaction_id),
@@ -2910,6 +3059,7 @@ async fn advance_disband_transaction(
         return commit_disband_step(
             tx,
             context,
+            house_proof,
             step,
             5,
             Some(payout.receipt.transaction_id),
@@ -2929,6 +3079,7 @@ async fn advance_disband_transaction(
     commit_disband_step(
         tx,
         context,
+        house_proof,
         step,
         6,
         Some(payout.receipt.transaction_id),
@@ -2943,6 +3094,7 @@ async fn advance_disband_transaction(
 async fn commit_disband_step(
     tx: &mut Transaction<'_, Postgres>,
     context: &GuildDisbandTransaction,
+    house_proof: &super::house_ownership::GuildHallReleasedProof,
     step: i32,
     phase: i16,
     payout: Option<[u8; 16]>,
@@ -2950,7 +3102,7 @@ async fn commit_disband_step(
     invitations: &[String],
     leadership: &[String],
 ) -> Result<GuildDisbandOutcome> {
-    context.assert_current(tx).await?;
+    assert_house_released(tx, context, house_proof).await?;
     if members.len() + invitations.len() > GUILD_DISBAND_ROWS_PER_STEP {
         return Err(invalid());
     }
@@ -3296,6 +3448,23 @@ CREATE TABLE game_guild_disband_step_events(
  payload_sha256 BYTEA NOT NULL CHECK(payload_sha256=sha256(payload)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),PRIMARY KEY(guild_id,step),
  FOREIGN KEY(guild_id,step) REFERENCES game_guild_disband_steps);
+-- D1167: append-only cursor + private event, committed atomically with C's actual work.
+-- No row is inserted (including the Guild FK check) before C's recipient-root reservation.
+CREATE TABLE game_guild_house_release_events(
+ guild_id UUID NOT NULL REFERENCES game_guilds,world_id UUID NOT NULL,
+ operation_id UUID NOT NULL CHECK(game_character_is_uuid_v7(operation_id)),
+ reservation_id UUID NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(reservation_id)),
+ attempt NUMERIC(20,0) NOT NULL CHECK(attempt BETWEEN 1 AND 18446744073709551615),
+ step NUMERIC(20,0) NOT NULL CHECK(step BETWEEN 0 AND 18446744073709551615),
+ next_step NUMERIC(20,0) NOT NULL CHECK(next_step BETWEEN 0 AND 18446744073709551615),
+ moved BIGINT,released BOOLEAN NOT NULL,
+ payload BYTEA NOT NULL,payload_sha256 BYTEA NOT NULL,
+ created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
+ CHECK(operation_id<>reservation_id),
+ CHECK((released AND moved IS NULL AND next_step=step)
+    OR (NOT released AND moved BETWEEN 0 AND 100 AND next_step=step+1)),
+ CHECK(octet_length(payload) BETWEEN 1 AND 4096 AND payload_sha256=sha256(payload)),
+ PRIMARY KEY(guild_id,attempt),UNIQUE(created_xact_id));
 "#;
 
 /// Private integrity guards for the five commands; no runtime/grant/SECURITY DEFINER shortcut.
@@ -3849,6 +4018,76 @@ BEGIN
 END $$;
 CREATE CONSTRAINT TRIGGER game_guild_disband_step_proven AFTER INSERT ON game_guild_disband_steps DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_disband_step_proven();
 CREATE CONSTRAINT TRIGGER game_guild_disband_step_event_proven AFTER INSERT ON game_guild_disband_step_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_disband_step_proven();
+-- Private D event data, not an admitted public EventEnvelope or authority capability.
+CREATE FUNCTION game_guild_house_release_payload(d game_guild_house_release_events) RETURNS JSONB
+LANGUAGE sql IMMUTABLE AS $$
+ SELECT jsonb_build_object('version',1,'guild_id',d.guild_id,'world_id',d.world_id,
+  'operation_id',d.operation_id,'reservation_id',d.reservation_id,'attempt',d.attempt,
+  'step',d.step,'next_step',d.next_step,'moved',d.moved,'released',d.released)
+$$;
+CREATE FUNCTION game_guild_house_release_observation_proven(d game_guild_house_release_events) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ -- Read C's protected owner evidence; runtime receives no direct C table grants.
+ IF d.created_xact_id<>pg_current_xact_id()
+  OR game_house_guild_authority_current(d.reservation_id) IS DISTINCT FROM TRUE
+  OR NOT EXISTS(SELECT 1 FROM game_house_guild_recipient_reservations r
+    WHERE r.reservation_id=d.reservation_id AND r.operation_id=d.operation_id
+      AND r.owner_guild_id=d.guild_id AND r.world_id=d.world_id AND r.step=d.step
+      AND r.status=3 AND r.created_xact_id=d.created_xact_id) THEN RETURN FALSE;END IF;
+ IF d.released THEN
+  RETURN EXISTS(SELECT 1 FROM game_house_guild_recipient_reservations r
+   WHERE r.reservation_id=d.reservation_id AND game_house_guild_assert_released(
+    r.reservation_id,r.operation_id,r.step,r.owner_guild_id,r.world_id,r.binding,r.created_xact_id::text) IS TRUE);
+ END IF;
+ RETURN EXISTS(SELECT 1 FROM game_house_guild_disposition_steps s
+  JOIN game_house_guild_dispositions o USING(operation_id)
+  WHERE s.operation_id=d.operation_id AND s.step=d.step AND s.moved_count=d.moved
+   AND s.created_xact_id=d.created_xact_id AND o.owner_guild_id=d.guild_id
+   AND o.world_id=d.world_id AND o.next_step=d.next_step AND o.state=2)
+  AND NOT EXISTS(SELECT 1 FROM game_guild_disband_steps WHERE created_xact_id=d.created_xact_id);
+END $$;
+CREATE FUNCTION game_guild_house_release_event_allowed() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE previous game_guild_house_release_events%ROWTYPE;has_previous BOOLEAN;
+BEGIN
+ SELECT * INTO previous FROM game_guild_house_release_events WHERE guild_id=NEW.guild_id ORDER BY attempt DESC LIMIT 1;
+ has_previous=FOUND;
+ IF NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND world_id=NEW.world_id AND state=3)
+  OR NEW.attempt<>(CASE WHEN has_previous THEN previous.attempt+1 ELSE 1 END)
+  OR NEW.step<>(CASE WHEN has_previous THEN previous.next_step ELSE 0 END)
+  OR (has_previous AND (NEW.operation_id<>previous.operation_id OR NEW.world_id<>previous.world_id))
+  OR game_guild_house_release_observation_proven(NEW) IS DISTINCT FROM TRUE THEN
+  RAISE EXCEPTION 'D House cursor requires actual same-TX C work/current binding' USING ERRCODE='23514';END IF;
+ NEW.payload=convert_to(game_guild_house_release_payload(NEW)::text,'UTF8');
+ NEW.payload_sha256=sha256(NEW.payload);
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_guild_house_release_event_allowed BEFORE INSERT ON game_guild_house_release_events
+ FOR EACH ROW EXECUTE FUNCTION game_guild_house_release_event_allowed();
+CREATE FUNCTION game_guild_house_release_event_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF game_guild_house_release_observation_proven(NEW) IS DISTINCT FROM TRUE
+  OR NEW.payload IS DISTINCT FROM convert_to(game_guild_house_release_payload(NEW)::text,'UTF8')
+  OR NEW.payload_sha256 IS DISTINCT FROM sha256(NEW.payload) THEN
+  RAISE EXCEPTION 'D House event/cursor lost actual C proof before commit' USING ERRCODE='23514';END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_guild_house_release_event_proven AFTER INSERT ON game_guild_house_release_events
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_house_release_event_proven();
+CREATE TRIGGER game_guild_house_release_event_immutable BEFORE UPDATE OR DELETE ON game_guild_house_release_events
+ FOR EACH ROW EXECUTE FUNCTION game_guild_rows_immutable();
+CREATE TRIGGER game_guild_house_release_event_no_truncate BEFORE TRUNCATE ON game_guild_house_release_events
+ FOR EACH STATEMENT EXECUTE FUNCTION game_guild_rows_immutable();
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_guild_house_release_observation_proven(game_guild_house_release_events) SET search_path=%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_guild_house_release_observation_proven(game_guild_house_release_events) FROM PUBLIC;
+-- Trigger consumers need the bounded predicate, never grants to C storage or secret material.
+GRANT EXECUTE ON FUNCTION game_guild_house_release_observation_proven(game_guild_house_release_events) TO oteryn_game_runtime;
+REVOKE ALL ON game_guild_house_release_events FROM PUBLIC;
+GRANT SELECT,INSERT ON game_guild_house_release_events TO oteryn_game_runtime;
+GRANT SELECT ON game_guild_house_release_events TO oteryn_game_control;
+
 DO $$ DECLARE tab TEXT;BEGIN
  FOREACH tab IN ARRAY ARRAY['game_guild_disband_steps','game_guild_disband_step_events'] LOOP
   EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION game_guild_rows_immutable()',tab||'_immutable',tab);

@@ -4,7 +4,7 @@
 task_id: GUILD-1
 title: "GUILD-1: guild core tables and transactions"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -1054,3 +1054,59 @@ released stable for independent review before heavy qualification. SHA256:
 This is a local source freeze for lead review, not a new published remote
 candidate. No commit/push, installation, ready/merge or whole-task completion
 claim is made. Accepted review repairs must reopen AUTHORING and replace hashes.
+
+### 2026-10-16 — D1167 actual C participant caller checkpoint
+
+AUTHORING reopened from published `ce4ee5833118879e37cad67b6b7edef39fcc5289`.
+CP D1167 comment6225337534 assigns this controller, cursor, private events,
+grants and the genuine context-borrowing getters to #2136. The exact C source
+is #2137@`50bc410809bdb0f909160134b487fa7ed76e0c8e`: verified source SHA256
+`house/guildhall_release.rs`20903ec4c576f4dda92a7a6d13c55b109d781be0b2a0a6f9b8756d56e7bab5a1,
+`durability/house_ownership.rs`026722307f6035cc962deced5b911c35d8fa2092dfb1a1f86a79425358f9778c.
+Those actual files, rather than historical mapping proposals, define this batch.
+
+The Root controller now calls C's actual opaque reservation/advance/assert APIs.
+It allocates work IDs with the existing native UUIDv7 allocator before an attempt;
+D retains the stable operation and C next-step as DATA in an append-only private
+cursor/event journal. Each physical transaction allocates a fresh reservation ID,
+takes occurrence/recovery/admission/current node+World evidence, then asks C to
+pin actual sorted recipient Character roots FOR KEY SHARE at position2 BEFORE
+any Guild row or D cursor insert/FK check. It then constructs the genuine locked
+Guild spine and rechecks the discovered D cursor. The getters borrow the actual
+Root-created recovery record and secret-bearing native node proof; no matching
+current facts are reconstructed from retained work.
+
+C Progress writes its D cursor/private event in the same physical TX and STOPS;
+no bid refund, Bank payout, membership cleanup or phase2 runs. C Released yields
+an opaque physical-TX proof revalidated before financial and bounded cleanup/
+terminal consumers. Every later TX reserves afresh and obtains a fresh proof.
+All errors explicitly roll back the complete physical TX; retries return to the
+same lock order without a NOWAIT exception. The existing public job request
+fields remain byte-compatible with Bank's existing literals.
+
+D's proposed SQL guards bind raw cursor/event writes to actual same-TX protected
+C reservation/authority and disposition-step evidence; Released observations
+require C's exact-reservation terminal predicate. The journal is immutable and
+monotonic with its whole canonical private payload; deferred verification rejects
+lost C evidence or Progress paired with a terminal D step. Runtime receives
+bounded D journal grants, never new grants to C storage/secret material. This is
+private preparation DATA, not an admitted public EventEnvelope or duplicate C
+item/custody store. Existing cleanup bounds and typed owner prerequisites remain.
+
+NOT_FULLY_QUALIFIED (D1122): pinned1.94 rustfmt and git diff --check PASS;
+governance22 documents/9 lanes PASS. Native compile, Clippy and PostgreSQL are
+NOTRUN for this successor; no previous104/98 PASS transfers. The local branch
+lacks the foreign C module/reexports and genuine native house_release_secret()
+getter (C owns that shared accessor after #2163); original d77 fence ref remains
+unavailable. No stub, copied C implementation, foreign edit or fabricated
+positive fixture substitutes for those dependencies. The real C12/House17
+PG matrices and exact rebased composition remain required before qualification.
+Existing native test bodies and retained prior evidence are unchanged.
+
+Local stable source release for independent review before any heavy execution:
+- guild.rs `4285cadf338b2aac96d8a2255ac9a360b90324788a4c3b9d102d49d3d043cd06`
+- node/guild_jobs.rs `754bbb7d89184c729faabb747fc204baae109a05ed67924a304814fbee4f2190`
+
+No commit/push, rebase/merge, foreign C/E/Bank/shared-file write, @codex trigger,
+ready transition, CI restart or fullqualification claim is made. Accepted review
+repairs reopen AUTHORING and supersede these source hashes.

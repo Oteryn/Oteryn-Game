@@ -3,7 +3,10 @@
 //! Discovery is unlocked; each candidate obtains fresh recovery/admission evidence and its
 //! own Guild lock in a separate native transaction. Checkpoints and private publication DATA
 //! survive restart. D1098 resumes the actual Hall→Bank→bounded cleanup controller, committing
-//! each Guild independently. Missing genuine House disposition is a typed wait, never closure.
+//! each Guild independently. D1167 runs C's actual recipient reservation/release before
+//! financial participants. A committed HouseProgress stops that Guild's step; its durable
+//! work cursor survives restart but grants no authority. Every next physical transaction
+//! reserves again and obtains a fresh opaque C release proof before financial/cleanup work.
 use crate::domain::guild::GuildId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -52,7 +55,11 @@ pub(crate) struct GuildDisbandPass {
 
 /// The scheduler supplies stable operation IDs before the first attempt, from the bounded
 /// pending page. These IDs are DATA: every candidate independently obtains current authority
-/// and all actual owner facts. A failure preserves earlier committed Guild steps for restart.
+/// and all actual owner facts. Root allocates each fresh C reservation with the native UUIDv7
+/// allocator and recovers the stable C work operation/cursor from its own committed journal.
+/// IDs/cursors are DATA only. Errors (including C resnapshot/NOWAIT) roll back the whole current
+/// transaction; any retry re-enters the same occurrence→recipient roots→Guild order.
+/// A failure preserves earlier committed Guild steps for restart.
 pub(crate) async fn run_guild_disband_pass(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
