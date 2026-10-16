@@ -501,3 +501,25 @@ Cleanup is plain/empty/no owned group; observation105 confirms slotB released
 and `NO_ACTIVE_CLAIM`. Final card edits are documentation only; executable
 source remains identical to the qualified input. Production installation,
 elapsed authority/runtime integration, ready and merge retain their CP gates.
+
+### D1163 slot-tier authoring — NOT_FULLY_QUALIFIED
+
+CP comment6225136278 allows Basic, Intricate and Powerful on every slot-bearing
+item. The unsupported per-item maximum/tier gate and obsolete refusal are removed
+from check_target_slot; only the owned native callers change. Unknown slot count,
+zero/out-of-range slots, category/occupancy and complete snapshot checks remain
+fail closed. outstanding_access and its Premium/quest/content semantics are
+unchanged. A new native-type test covers all three tiers with a real PremiumGate
+subcheck and retains higher-tier refusal for Free accounts. These helpers confer
+no current session, admitted Content or mutation authority.
+
+Independent source review, changed-file Rustfmt, diff and governance PASS. The23
+authored native cases, strict Clippy, full package and PostgreSQL/runtime for this
+increment are NOT_RUN. Earlier focused22/22 and full9785/0/37ignored qualification
+bind f48912af source; those PASS results do not qualify these changed bytes. The
+current canonical module root does not register the Imbue test fixture; no plain
+package run excluding it is presented as focused validation. Existing native
+overlay stage is the qualification route; the old recipe's22-count binding needs
+an explicitly updated23-case input, with no runner changed in this authoring.
+D1122 permits the disclosed checkpoint on the existing draft. Shared fee/audit
+and native elapsed source remain gated by2197→2155. No ready/merge.

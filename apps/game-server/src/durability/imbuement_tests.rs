@@ -848,76 +848,67 @@ fn native_premium_is_only_a_subcheck_and_no_result_grants_quest_or_content_acces
 }
 
 #[test]
-fn missing_item_rules_fail_closed_and_basic_maximum_is_not_coerced_to_two() {
-    for (slots, maximum) in [(None, Some(Tier::Basic)), (Some(3), None), (None, None)] {
-        assert_eq!(
-            check_target_slot(item(1), &[], slots, maximum, 0, "category", Tier::Basic),
-            Err(StateError::UnresolvedItemRules)
-        );
-    }
+fn missing_or_invalid_slot_rules_fail_closed() {
     assert_eq!(
-        check_target_slot(
-            item(1),
-            &[],
-            Some(3),
-            Some(Tier::Basic),
-            0,
-            "category",
-            Tier::Basic
-        ),
-        Ok(())
+        check_target_slot(item(1), &[], None, 0, "category"),
+        Err(StateError::UnresolvedItemRules)
     );
     assert_eq!(
-        check_target_slot(
-            item(1),
-            &[],
-            Some(3),
-            Some(Tier::Basic),
-            0,
-            "category",
-            Tier::Intricate
-        ),
-        Err(StateError::TierNotAllowed)
-    );
-    assert_eq!(
-        check_target_slot(
-            item(1),
-            &[],
-            Some(0),
-            Some(Tier::Powerful),
-            0,
-            "category",
-            Tier::Basic
-        ),
+        check_target_slot(item(1), &[], Some(0), 0, "category"),
         Err(StateError::SlotUnavailable)
     );
     assert_eq!(
-        check_target_slot(
-            item(1),
-            &[],
-            Some(4),
-            Some(Tier::Basic),
-            0,
-            "category",
-            Tier::Basic
-        ),
+        check_target_slot(item(1), &[], Some(4), 0, "category"),
         Err(StateError::InvalidItemRules)
     );
+    for category in ["", "   ", "category\n"] {
+        assert_eq!(
+            check_target_slot(item(1), &[], Some(3), 0, category),
+            Err(StateError::InvalidItemRules)
+        );
+    }
+}
+
+#[test]
+fn every_tier_fits_a_slot_bearing_item_while_shrine_premium_stays_independent() {
+    // Native pure flow helpers, not current session/quest/content authority for a mutation.
+    let premium = PremiumGate::from_fence_read(true);
+    let free = PremiumGate::from_fence_read(false);
+    for tier in [Tier::Basic, Tier::Intricate, Tier::Powerful] {
+        let mut proposed = binding(1, 0);
+        proposed.tier = tier;
+        let candidate = row(proposed, 1_000);
+        let proposed = candidate.binding();
+        assert_eq!(
+            check_target_slot(
+                proposed.item,
+                &[],
+                Some(1),
+                proposed.slot,
+                &proposed.category
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            outstanding_access(ApplyRoute::Shrine, proposed.tier, premium),
+            Ok(OutstandingAccess::QuestAndContentBindings)
+        );
+        assert_eq!(
+            outstanding_access(ApplyRoute::Shrine, proposed.tier, free),
+            if tier == Tier::Basic {
+                Ok(OutstandingAccess::QuestAndContentBindings)
+            } else {
+                Err(PremiumRefusal::NotCurrent)
+            }
+        );
+    }
 }
 
 #[test]
 fn zero_time_rows_still_occupy_their_slot_and_category_until_audited_expiry() {
     let expired = row(binding(1, 0), 0);
     assert_eq!(
-        check_target_slot(
-            item(1),
-            std::slice::from_ref(&expired),
-            Some(3),
-            Some(Tier::Powerful),
-            0,
-            "other",
-            Tier::Basic
-        ),
+        check_target_slot(item(1), std::slice::from_ref(&expired), Some(3), 0, "other"),
         Err(StateError::SlotUnavailable)
     );
     assert_eq!(
@@ -925,23 +916,13 @@ fn zero_time_rows_still_occupy_their_slot_and_category_until_audited_expiry() {
             item(1),
             std::slice::from_ref(&expired),
             Some(3),
-            Some(Tier::Powerful),
             1,
             &expired.binding().category,
-            Tier::Basic
         ),
         Err(StateError::CategoryOccupied)
     );
     assert_eq!(
-        check_target_slot(
-            item(1),
-            &[expired],
-            Some(3),
-            Some(Tier::Powerful),
-            1,
-            "other",
-            Tier::Powerful
-        ),
+        check_target_slot(item(1), &[expired], Some(3), 1, "other"),
         Ok(())
     );
 }
@@ -959,15 +940,7 @@ fn wrong_item_duplicate_slots_and_duplicate_categories_are_invalid_snapshots() {
         vec![first.clone(), row(same_category, 100)],
     ] {
         assert_eq!(
-            check_target_slot(
-                item(1),
-                &rows,
-                Some(3),
-                Some(Tier::Powerful),
-                2,
-                "other",
-                Tier::Basic
-            ),
+            check_target_slot(item(1), &rows, Some(3), 2, "other"),
             Err(StateError::InvalidSnapshot)
         );
     }

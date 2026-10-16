@@ -54,7 +54,6 @@ pub(crate) enum StateError {
     InvalidItemRules,
     SlotUnavailable,
     CategoryOccupied,
-    TierNotAllowed,
     InvalidSnapshot,
 }
 
@@ -114,16 +113,16 @@ impl SlotRecord {
 
 /// Structural item rules only; this never proves the item/category/rules came from admitted
 /// content or a current holder. Unknown rules refuse, including completed-scroll use.
+/// D1163: every slot-bearing item supports all three tiers; there is no per-item tier ceiling.
+/// Route/Premium/quest/content access remains the separate outstanding_access subcheck.
 pub(crate) fn check_target_slot(
     item: ItemInstanceId,
     rows: &[SlotRecord],
     declared_slots: Option<u8>,
-    allowed_maximum: Option<Tier>,
     slot: u8,
     category: &str,
-    tier: Tier,
 ) -> Result<(), StateError> {
-    let (Some(slots), Some(maximum)) = (declared_slots, allowed_maximum) else {
+    let Some(slots) = declared_slots else {
         return Err(StateError::UnresolvedItemRules);
     };
     if usize::from(slots) > MAX_SLOTS || !reference_present(category) {
@@ -149,9 +148,6 @@ pub(crate) fn check_target_slot(
     // A zero-time row remains present/occupied until the audited expiry deletes it.
     if categories.contains(category) {
         return Err(StateError::CategoryOccupied);
-    }
-    if tier > maximum {
-        return Err(StateError::TierNotAllowed);
     }
     Ok(())
 }
