@@ -30,6 +30,30 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## Native trigger-order repair — local recovery candidate, NOT_FULLY_QUALIFIED
+
+Actual227 executed only original case06 against PostgreSQL17.6 and observed
+SQLSTATE23514 (`DUR-03 item record changes only through a TRANSFER`) before the
+required NOWAIT ownership-anchor refusal55P03. PostgreSQL orders same-kind
+triggers by name: the generic `game_item_instance_guard` preceded the owned
+`house_disposition_item_fence`. This is an observed native RED, not a capacity HOLD.
+
+This authoring successor renames only the four owned trigger objects to
+`a_house_disposition_{content,provenance,item,entry}_fence`, so the existing House
+NOWAIT fence runs before generic proof guards. Trigger functions, event masks,
+ABI1, generic guards and original case06/assertion55P03 remain unchanged. Native
+setup now checks the real enabled BEFORE ROW trigger ordering for every relevant
+event on all four tables; no new mocked authority or alternate acceptance code.
+#2137's exact enabled-hook catalogue and disabled-hook negative consumer follow
+these names in D1162 producer→consumer order; mixed generations remain closed.
+
+Focused official Rustfmt1.94 and whitespace checks pass. The repaired native/PG
+generation is NOT_RUN and requires independent review plus a new actual executor
+allocation; the previous slot allocation has ended. No native PASS is transferred
+from the prior source. Independent source review passed after exact hash and
+owned-path checks; this successor is preserved as a local commit and verified
+bundle outside the checkout. Publication is separate; no ready/merge/rebase.
+
 ## Goal
 
 Second half of house ownership per SOCIAL_MAP_PACKETS HOUSE-1b: move-out and transfer, item return to the inbox, overlay of house tiles.

@@ -597,8 +597,8 @@ BEGIN
  IF TG_OP<>'DELETE' THEN PERFORM game_house_disposition_fence_check(NEW.world_id,NEW.house_key,NEW.item_instance_id,false); END IF;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
 END $$;
-CREATE TRIGGER house_disposition_content_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
-CREATE TRIGGER house_disposition_provenance_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_reclaim_provenance FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
+CREATE TRIGGER a_house_disposition_content_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
+CREATE TRIGGER a_house_disposition_provenance_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_reclaim_provenance FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
 CREATE FUNCTION game_house_disposition_item_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE location RECORD;
 BEGIN
@@ -609,7 +609,7 @@ BEGIN
  END LOOP;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
 END $$;
-CREATE TRIGGER house_disposition_item_fence BEFORE UPDATE OR DELETE ON game_item_instances FOR EACH ROW EXECUTE FUNCTION game_house_disposition_item_fence();
+CREATE TRIGGER a_house_disposition_item_fence BEFORE UPDATE OR DELETE ON game_item_instances FOR EACH ROW EXECUTE FUNCTION game_house_disposition_item_fence();
 CREATE FUNCTION game_house_disposition_entry_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
  IF NEW.state IN(1,2) THEN
@@ -617,7 +617,7 @@ BEGIN
  END IF;
  RETURN NEW;
 END $$;
-CREATE TRIGGER house_disposition_entry_fence BEFORE INSERT OR UPDATE ON game_house_scope_handoffs FOR EACH ROW EXECUTE FUNCTION game_house_disposition_entry_fence();
+CREATE TRIGGER a_house_disposition_entry_fence BEFORE INSERT OR UPDATE ON game_house_scope_handoffs FOR EACH ROW EXECUTE FUNCTION game_house_disposition_entry_fence();
 CREATE FUNCTION game_house_disposition_delivery_proven() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
  IF NEW.moved_step IS NOT NULL THEN

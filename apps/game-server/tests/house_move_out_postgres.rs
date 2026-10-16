@@ -256,6 +256,51 @@ async fn bootstrap_second_subject(h: &Harness) -> TestResult<[u8; 16]> {
         .map_err(debug)?;
     Ok(*record.character_id.as_bytes())
 }
+async fn assert_native_house_fence_order(h: &Harness) -> TestResult {
+    // PostgreSQL fires same-kind row triggers by name. The NOWAIT House anchor
+    // must precede generic DUR-03 proof guards, without bypassing those guards.
+    for (table, expected, events) in [
+        (
+            "game_item_house_interior_locations",
+            "a_house_disposition_content_fence",
+            &[4i32, 8, 16][..],
+        ),
+        (
+            "game_item_house_reclaim_provenance",
+            "a_house_disposition_provenance_fence",
+            &[4i32, 8, 16][..],
+        ),
+        (
+            "game_item_instances",
+            "a_house_disposition_item_fence",
+            &[8i32, 16][..],
+        ),
+        (
+            "game_house_scope_handoffs",
+            "a_house_disposition_entry_fence",
+            &[4i32, 16][..],
+        ),
+    ] {
+        for event in events {
+            let names: Vec<String> = sqlx::query_scalar(
+                "SELECT tgname::text FROM pg_trigger WHERE tgrelid=$1::regclass \
+                 AND NOT tgisinternal AND tgenabled IN('O','A') \
+                 AND (tgtype::integer & 3)=3 AND (tgtype::integer & $2)<>0 \
+                 ORDER BY tgname::text COLLATE \"C\"",
+            )
+            .bind(table)
+            .bind(*event)
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(
+                names.first().map(String::as_str),
+                Some(expected),
+                "native House NOWAIT fence must run first on {table}, event={event}: {names:?}"
+            );
+        }
+    }
+    Ok(())
+}
 async fn setup(h: &Harness, items: usize) -> TestResult {
     sqlx::raw_sql(PRIVATE_DISPOSITION_SCHEMA)
         .execute(&h.pool)
@@ -263,6 +308,7 @@ async fn setup(h: &Harness, items: usize) -> TestResult {
     sqlx::raw_sql(PRIVATE_DISPOSITION_TRANSFER_SCHEMA)
         .execute(&h.pool)
         .await?;
+    assert_native_house_fence_order(h).await?;
     let second = bootstrap_second_subject(h).await?;
     // Only preexisting item/ownership state is authored with replication triggers disabled.
     // All native custody/provenance/Inbox guards are active for candidate operations.
