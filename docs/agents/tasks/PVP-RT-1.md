@@ -4,7 +4,7 @@
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP combat runtime (skeleton)"
 mode: IMPLEMENTATION
-status: source_authored_unqualified
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-rt-1
@@ -417,3 +417,105 @@ The previous 12-case readmission qualification retains its original source and
 artifact provenance. PostgreSQL was not rerun for this assertion-only repair; the
 production restoration code and all PostgreSQL bodies are literal. Actor/caller
 installation and the full PvP activation gates remain unchanged.
+
+
+## D1124 same-transaction clock preparation — NOT_FULLY_QUALIFIED (2026-10-16)
+
+Authoring resumed from exact `4e4660762405315b9ae64cbed29c3cedcf0ec25f` on
+`skeleton/pvp-rt-1`; no new candidate has been committed or published. D1124 assigns
+`durability/pvp_state.rs` to this writer. This checkpoint does not alter the
+readmission caller (`fresh_admission_composition.rs` remains deferred until #2187
+merges), shared authority guards, production activation or the other PvP owners.
+
+The fenced `read_pvp_state` transaction now returns `PvpReadmissionClock`: a typed
+PostgreSQL Unix-microsecond observation and absolute logout/PZ/kill deadlines from
+one materialized `clock_timestamp()` sample in the same query/transaction. Existing
+remaining-millisecond fields remain available for their previous readers. Recovery,
+current session, Node, scope and lease checks and the transaction commit boundary
+remain unchanged.
+
+The incorrect `OwnerClock.now()`-after-await translation is removed. PostgreSQL
+Unix microseconds are not the owner's monotonic clock, so they are not cast into
+runtime `SemanticTimeMicros`. No accepted database-to-owner axis binding is present
+in this component: active stored locks now return `ClockBindingUnavailable` and
+leave all existing runtime slots unchanged. An absent row still returns false;
+a row with only elapsed/unset locks returns true without clearing prior slots.
+This is fail-closed clock-port preparation, not completed lock restoration or a
+claim that P2 is fully resolved. CP still needs to select the actual clock-axis
+binding and its runtime consumer; caller integration remains pending #2187.
+
+The old disabled standalone PG target is replaced by owned support cases, registered
+with the single D1160 `#[path] mod` line in the existing canonical
+`character_authority_postgres.rs` root. Its existing harness/production namespaces
+are reused. No new duplicate-test allowlist entry or copied shared authority source
+is added. This routed target
+prepares same-query sample/deadline/remaining consistency and a real relation-lock
+wait before the DB sample, active-refusal atomicity, absent/elapsed rows and the
+existing current-fence, revoked-Node, different-Root and real-query-error families.
+The old tests expecting node-time projection/overflow are superseded by explicit
+missing-binding cases; historical execution evidence above keeps its original
+source provenance and is not imported as evidence for this material change.
+
+Validation: touched Rust files formatted with Rust 1.94 rustfmt; final format/diff
+checks recorded in the review packet. Native unit tests, the PostgreSQL target,
+strict Clippy and full package are **NOT_RUN** for this authoring delta. Governance
+validation and all124 governance unit tests PASS.
+The shared family full-package RED remains retained. Per D1122 this is at most one
+coherent draft checkpoint before full checks; no ready/review/CI restart, complete
+qualification, merge or production activation is authorized. Source review by the
+lead precedes any commit or push.
+
+
+## D1180 supersedes missing-clock-binding refusal — NOT_FULLY_QUALIFIED
+
+D1180 ([CP2131#6225403220](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225403220))
+requires no database-to-owner epoch binding. It selects same-transaction typed
+remaining duration `max(0, deadline_DB - clock_timestamp())`, followed by
+`OwnerClock.now() + remaining` in a synchronous apply, with zero meaning no lock.
+This supersedes the earlier `ClockBindingUnavailable` preparation above; it does
+not authorize a database epoch cast or node sampling around an await.
+
+The same materialized PostgreSQL clock sample now also produces typed exact
+microsecond remaining values for logout/PZ/kill. Fenced reads and query errors
+remain under the existing Root transaction. The completed typed read is passed
+to synchronous `CombatLock::restore_pvp_readmission`: no async body or I/O exists
+there, the owner clock is sampled once, and all three checked deadline additions
+finish before the monotone runtime mutation. Read/overflow failures preserve all
+prior slots; absent rows and zero durations create no locks. Caller composition
+in `fresh_admission_composition.rs` remains deferred until #2187 merges.
+
+Three prepared pure cases cover one clock sample, positive duration and exact
+expiry, zero/absent data, monotone repeat restore and a later-slot overflow/read
+error with all-or-nothing preservation. Canonical PG cases now finish the real
+Root await before calling the synchronous apply, retaining current-authority
+negative cases and same-query duration/sample consistency. They are NOT_RUN for
+D1180. The earlier clock-port qualification job runs against its separate
+immutable source and retains only that older source's provenance; it was neither
+interrupted nor modified. No new PG job/build/test is launched by this author.
+Touched formatting/diff checks are cheap source checks only. No commit/push,
+full qualification, ready status, CI restart or production activation is claimed.
+
+
+## D1180 actual focused evidence and D1213 new fact — NOT_FULLY_QUALIFIED
+
+The immutable D1180 source (full18809-file fingerprint
+`3efd196dcd9c96fa5e5cdc699bf34741d8e2cc88d09347be0de55e67f8db2d68`)
+passed canonical native listing10 and execution10/0/0: seven real PostgreSQL17.6
+families plus three pure clock/atomicity cases. Source inventory before/after
+was identical. Focused log SHA256
+`f9824ff52effe51f0ea641e5ee36dc87672a79bff315df496093355a11ac205c`;
+`evidence/2204-D1180-native-result.json` is the lead's external custody record.
+This supersedes the D1180 NOT_RUN statement above only for that precise source.
+Strict Clippy and the full package remain NOT_RUN; retained family full RED
+is not resolved by these ten cases.
+
+D1213 assigns `gameplay_transport/combat_lock_fact.rs`, its own module item,
+and the existing `logout.rs::logout_in_fight` caller. The fact uses the actual
+actor/session-indexed AttackState and the current spell-state dead-actor check;
+locks remain spell_states then attack, with semantic-clock sampling after both.
+Its PvP source is exhaustively `NotWiredInRuntime`, never a forged actor-bound
+scalar CombatLock. This new fact/caller increment is not covered by the preceding
+D1180 run; native/Clippy remain NOT_RUN until its own source is checked. D1216
+selects main `b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16` for the actual logout
+caller, as a local integration merge commit; no PR merge/ready/rebase is done.
+Actual admission/readmission composition remains held after #2187.

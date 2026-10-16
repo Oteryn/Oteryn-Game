@@ -1,48 +1,20 @@
-#![cfg(any())] // CP slot: enable the routed native readmission target.
+//! PvP readmission cases routed through the existing canonical authority PostgreSQL root.
 #![allow(clippy::expect_used)]
-// Ordinary native Root composition, following combat_bestiary_postgres.rs.
-// The actual PVP-1 fixture is read-only; no copied guards or helper widening.
-extern crate oteryn_game_server as production_server;
-extern crate self as oteryn_game_server;
-pub use production_server::admission_evidence;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
-pub mod character_bootstrap_intent;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
 #[allow(dead_code)]
-#[path = "support/bestiary_postgres_harness.rs"]
-mod bestiary_postgres_harness;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/combat.rs"]
-pub mod combat;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
-#[allow(dead_code)]
-#[path = "../src/combat/pvp/lock.rs"]
+#[path = "../../src/combat/pvp/lock.rs"]
 mod pvp_readmission_lock;
 
 mod readmission_cases {
+    use super::pvp_readmission_lock::{CombatLock, PvpReadmissionError};
     use crate::bestiary_postgres_harness::{
         CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
     };
     use crate::durability::DurabilityRoot;
     use crate::durability::character_progression::CurrentCharacterGameplayFence;
-    use crate::foundation::owner_timer::{SemanticTimeMicros as OwnerTime, VirtualOwnerClock};
     use crate::foundation::{
         ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
         ScopeOwnershipGeneration, WorldId,
     };
-    use crate::pvp_readmission_lock::{CombatLock, PvpReadmissionError};
     use oteryn_simulation_determinism::SemanticTimeMicros as SimTime;
 
     fn run<F>(tag: &'static str, body: F) -> TestResult
@@ -89,10 +61,26 @@ mod readmission_cases {
         Ok(())
     }
 
+    fn apply_completed_read(
+        lock: &mut CombatLock,
+        read: Result<
+            Option<crate::durability::pvp_state::StoredPvpState>,
+            crate::durability::character_progression::CharacterProgressionError,
+        >,
+    ) -> Result<bool, PvpReadmissionError> {
+        // No clock is sampled across the I/O boundary; the synchronous owner apply owns it.
+        let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000),
+        );
+        lock.restore_pvp_readmission(
+            read.map(|state| state.map(|row| row.readmission_remaining)),
+            &clock,
+        )
+    }
+
     async fn call(
         h: &Harness,
         lock: &mut CombatLock,
-        clock: &VirtualOwnerClock,
         expected: CurrentCharacterGameplayFence,
     ) -> TestResult<Result<bool, PvpReadmissionError>> {
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -101,9 +89,8 @@ mod readmission_cases {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        Ok(lock
-            .restore_pvp_readmission(&h.root, &authority, &h.node, expected, clock)
-            .await)
+        let read = h.root.read_pvp_state(&authority, &h.node, expected).await;
+        Ok(apply_completed_read(lock, read))
     }
 
     fn prior_lock() -> CombatLock {
@@ -116,73 +103,97 @@ mod readmission_cases {
     }
 
     #[test]
-    fn readmission_restores_each_real_stored_deadline_on_owner_time() -> TestResult {
-        for (tag, logout, pz, kill) in [
-            ("pvp_readmit_logout", Some(120_000), None, None),
-            ("pvp_readmit_pz", None, Some(120_000), None),
-            ("pvp_readmit_kill", None, None, Some(120_000)),
-        ] {
-            run(tag, async |h| {
-                stored(h, logout, pz, kill).await?;
-                let clock = VirtualOwnerClock::new(OwnerTime::from_micros(5_000_000));
-                let mut lock = CombatLock::default();
-                assert!(
-                    call(h, &mut lock, &clock, fence(1)?)
-                        .await?
-                        .map_err(debug)?
-                );
-                let live = SimTime::from_micros(6_000_000);
-                assert!(lock.blocks_logout(live, None));
-                assert_eq!(lock.pz_block_running(live), pz.is_some());
-                assert_eq!(lock.kill_block_running(live), kill.is_some());
-                assert_eq!(lock.blocks_pz_entry(live), pz.is_some() || kill.is_some());
-                assert!(!lock.blocks_logout(SimTime::from_micros(126_000_000), None));
-                assert_eq!(h.root_revision().await?, "1");
-                Ok(())
-            })?;
-        }
-        Ok(())
+    fn readmission_keeps_each_absolute_deadline_bound_to_its_database_sample() -> TestResult {
+        run("pvp_readmit_database_clock", async |h| {
+            stored(h, Some(60_000), Some(120_000), Some(180_000)).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let state = h
+                .root
+                .read_pvp_state(&authority, &h.node, fence(1)?)
+                .await
+                .map_err(debug)?
+                .ok_or("stored row missing")?;
+            let sample = state.readmission_clock.sampled_at.get();
+            for (deadline, remaining, micros) in [
+                (
+                    state.readmission_clock.logout_until,
+                    state.logout_block_remaining_ms,
+                    state.readmission_remaining.logout,
+                ),
+                (
+                    state.readmission_clock.pz_until,
+                    state.pz_block_remaining_ms,
+                    state.readmission_remaining.pz,
+                ),
+                (
+                    state.readmission_clock.kill_until,
+                    state.kill_block_remaining_ms,
+                    state.readmission_remaining.kill,
+                ),
+            ] {
+                let until = deadline.ok_or("active database deadline missing")?.get();
+                assert!(until > sample);
+                // Both values must describe the very same database sample, including rounding.
+                assert_eq!(remaining, Some((until - sample).div_ceil(1_000)));
+                assert_eq!(micros.get(), until - sample);
+            }
+            let mut lock = prior_lock();
+            let before = lock;
+            assert!(matches!(call(h, &mut lock, fence(1)?).await?, Ok(true)));
+            assert_eq!(lock, before);
+            assert_eq!(h.root_revision().await?, "1");
+            Ok(())
+        })
     }
 
     #[test]
     fn readmission_no_row_and_expired_row_never_clear_prior_locks() -> TestResult {
         run("pvp_readmit_absent_expired", async |h| {
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
             let mut lock = prior_lock();
             let before = lock;
-            assert!(
-                !call(h, &mut lock, &clock, fence(1)?)
-                    .await?
-                    .map_err(debug)?
-            );
+            assert!(!call(h, &mut lock, fence(1)?).await?.map_err(debug)?);
             assert_eq!(lock, before);
-            stored(h, Some(-1), Some(-1), Some(-1)).await?;
-            assert!(
-                call(h, &mut lock, &clock, fence(1)?)
-                    .await?
-                    .map_err(debug)?
-            );
+            stored(h, Some(0), Some(-1), None).await?;
+            assert!(call(h, &mut lock, fence(1)?).await?.map_err(debug)?);
             assert_eq!(lock, before);
             Ok(())
         })
     }
 
     #[test]
-    fn readmission_repeated_shorter_data_cannot_shorten_existing_lock() -> TestResult {
-        run("pvp_readmit_no_shorten", async |h| {
-            stored(h, Some(60_000), Some(60_000), Some(60_000)).await?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
-            let mut lock = prior_lock();
-            let before = lock;
-            for _ in 0..2 {
-                assert!(
-                    call(h, &mut lock, &clock, fence(1)?)
-                        .await?
-                        .map_err(debug)?
-                );
-                assert_eq!(lock, before);
-                clock.advance(1_000);
+    fn readmission_database_sample_is_taken_after_actual_relation_lock_wait() -> TestResult {
+        run("pvp_readmit_tx_clock_wait", async |h| {
+            stored(h, Some(60_000), None, None).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut blocker = h.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_character_pvp_state IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            let pending = h.root.read_pvp_state(&authority, &h.node, fence(1)?);
+            tokio::pin!(pending);
+            if let Ok(result) =
+                tokio::time::timeout(std::time::Duration::from_millis(20), pending.as_mut()).await
+            {
+                return Err(format!("native read bypassed actual lock: {result:?}").into());
             }
+            let releasing_at: i64 = sqlx::query_scalar(
+                "SELECT (extract(epoch FROM clock_timestamp()) * 1000000)::bigint",
+            )
+            .fetch_one(&mut *blocker)
+            .await?;
+            blocker.commit().await?;
+            let state = pending.await.map_err(debug)?.ok_or("stored row missing")?;
+            assert!(state.readmission_clock.sampled_at.get() >= u64::try_from(releasing_at)?);
             Ok(())
         })
     }
@@ -191,13 +202,8 @@ mod readmission_cases {
     fn readmission_current_session_lease_and_scope_refusals_preserve_lock() -> TestResult {
         run("pvp_readmit_fence_refusals", async |h| {
             stored(h, Some(60_000), Some(60_000), Some(60_000)).await?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
             let mut positive = CombatLock::default();
-            assert!(
-                call(h, &mut positive, &clock, fence(1)?)
-                    .await?
-                    .map_err(debug)?
-            );
+            assert!(matches!(call(h, &mut positive, fence(1)?).await?, Ok(true)));
             let mut variants = Vec::new();
             let mut changed = fence(1)?;
             changed.character_id = crate::domain::CharacterId::from_bytes(id(99)).map_err(debug)?;
@@ -233,17 +239,16 @@ mod readmission_cases {
                 let mut lock = prior_lock();
                 let before = lock;
                 assert!(matches!(
-                    call(h, &mut lock, &clock, changed).await?,
+                    call(h, &mut lock, changed).await?,
                     Err(PvpReadmissionError::Read(_))
                 ));
                 assert_eq!(lock, before);
             }
             // The actual read uses item_fence(), so CharacterRevision is not a read invariant.
-            assert!(
-                call(h, &mut positive, &clock, fence(999)?)
-                    .await?
-                    .map_err(debug)?
-            );
+            assert!(matches!(
+                call(h, &mut positive, fence(999)?).await?,
+                Ok(true)
+            ));
             Ok(())
         })
     }
@@ -252,13 +257,8 @@ mod readmission_cases {
     fn readmission_revoked_actual_node_refuses_with_same_expected_binding() -> TestResult {
         run("pvp_readmit_node_revoked", async |h| {
             stored(h, Some(60_000), Some(60_000), Some(60_000)).await?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
             let mut positive = CombatLock::default();
-            assert!(
-                call(h, &mut positive, &clock, fence(1)?)
-                    .await?
-                    .map_err(debug)?
-            );
+            assert!(matches!(call(h, &mut positive, fence(1)?).await?, Ok(true)));
             h.root
                 .revoke_node_registration(h.node.fact())
                 .await
@@ -266,7 +266,7 @@ mod readmission_cases {
             let mut lock = prior_lock();
             let before = lock;
             assert!(matches!(
-                call(h, &mut lock, &clock, fence(1)?).await?,
+                call(h, &mut lock, fence(1)?).await?,
                 Err(PvpReadmissionError::Read(_))
             ));
             assert_eq!(lock, before);
@@ -286,19 +286,23 @@ mod readmission_cases {
                 .map_err(debug)?;
             let other_root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
             assert!(other_root.maintain_ready_once().await?);
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
             let mut positive = CombatLock::default();
-            assert!(
-                positive
-                    .restore_pvp_readmission(&h.root, &authority, &h.node, fence(1)?, &clock)
-                    .await
-                    .map_err(debug)?
-            );
+            assert!(matches!(
+                apply_completed_read(
+                    &mut positive,
+                    h.root.read_pvp_state(&authority, &h.node, fence(1)?).await
+                ),
+                Ok(true)
+            ));
             let mut lock = prior_lock();
             let before = lock;
             assert!(matches!(
-                lock.restore_pvp_readmission(&other_root, &authority, &h.node, fence(1)?, &clock)
-                    .await,
+                apply_completed_read(
+                    &mut lock,
+                    other_root
+                        .read_pvp_state(&authority, &h.node, fence(1)?)
+                        .await
+                ),
                 Err(PvpReadmissionError::Read(_))
             ));
             assert_eq!(lock, before);
@@ -316,14 +320,14 @@ mod readmission_cases {
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
             let mut positive = CombatLock::default();
-            assert!(
-                positive
-                    .restore_pvp_readmission(&h.root, &authority, &h.node, fence(1)?, &clock)
-                    .await
-                    .map_err(debug)?
-            );
+            assert!(matches!(
+                apply_completed_read(
+                    &mut positive,
+                    h.root.read_pvp_state(&authority, &h.node, fence(1)?).await
+                ),
+                Ok(true)
+            ));
             // Disposable fixture DB only: cause a genuine owner's query failure after the
             // independently successful control. No production schema or shared source changes.
             sqlx::query(
@@ -334,65 +338,13 @@ mod readmission_cases {
             let mut lock = prior_lock();
             let before = lock;
             assert!(matches!(
-                lock.restore_pvp_readmission(&h.root, &authority, &h.node, fence(1)?, &clock)
-                    .await,
+                apply_completed_read(
+                    &mut lock,
+                    h.root.read_pvp_state(&authority, &h.node, fence(1)?).await
+                ),
                 Err(PvpReadmissionError::Read(_))
             ));
             assert_eq!(lock, before);
-            Ok(())
-        })
-    }
-
-    #[test]
-    fn readmission_later_deadline_overflow_is_atomic_for_all_three_slots() -> TestResult {
-        run("pvp_readmit_checked_overflow", async |h| {
-            stored(h, Some(10_000), Some(20_000), Some(60_000)).await?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(u64::MAX - 40_000_000));
-            let mut lock = prior_lock();
-            let before = lock;
-            assert!(matches!(
-                call(h, &mut lock, &clock, fence(1)?).await?,
-                Err(PvpReadmissionError::DeadlineOverflow)
-            ));
-            assert_eq!(lock, before);
-            Ok(())
-        })
-    }
-
-    #[test]
-    fn readmission_samples_existing_owner_clock_after_the_blocked_native_read() -> TestResult {
-        run("pvp_readmit_clock_order", async |h| {
-            stored(h, Some(60_000), None, None).await?;
-            let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h
-                .root
-                .open_character_authority(&seal)
-                .await
-                .map_err(debug)?;
-            let clock = VirtualOwnerClock::new(OwnerTime::from_micros(1_000));
-            let mut lock = CombatLock::default();
-            let mut blocker = h.pool.begin().await?;
-            sqlx::query("LOCK TABLE game_character_pvp_state IN ACCESS EXCLUSIVE MODE")
-                .execute(&mut *blocker)
-                .await?;
-            {
-                let pending =
-                    lock.restore_pvp_readmission(&h.root, &authority, &h.node, fence(1)?, &clock);
-                tokio::pin!(pending);
-                if let Ok(result) =
-                    tokio::time::timeout(std::time::Duration::from_millis(20), pending.as_mut())
-                        .await
-                {
-                    return Err(
-                        format!("native read bypassed actual relation lock: {result:?}").into(),
-                    );
-                }
-                clock.advance(100_000_000); // Existing OwnerClock DATA, no fake provider.
-                blocker.commit().await?;
-                assert!(pending.await.map_err(debug)?);
-            }
-            assert!(lock.blocks_logout(SimTime::from_micros(101_000_000), None));
-            assert!(!lock.blocks_logout(SimTime::from_micros(161_000_000), None));
             Ok(())
         })
     }

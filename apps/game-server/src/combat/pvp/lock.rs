@@ -2,13 +2,9 @@
 //! relations. Readmission composes the existing fenced PVP-1 read with this monotone lock;
 //! actor installation, fresh-harm write-ahead and full PvP activation remain separate owners.
 
-use crate::durability::DurabilityRoot;
-use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::durability::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence,
-};
-use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
-use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros as OwnerTimeMicros};
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::pvp_state::{PvpReadmissionRemaining, PvpRemainingMicros};
+use crate::foundation::owner_timer::OwnerClock;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 /// A refused readmission changes no runtime deadline. Stored state is data, not a controller grant.
@@ -19,17 +15,16 @@ pub(crate) enum PvpReadmissionError {
 }
 
 fn readmission_deadline(
-    now: OwnerTimeMicros,
-    remaining_ms: Option<u64>,
+    now: u64,
+    remaining: PvpRemainingMicros,
 ) -> Result<Option<SemanticTimeMicros>, PvpReadmissionError> {
-    remaining_ms
-        .map(|ms| {
-            ms.checked_mul(1_000)
-                .and_then(|micros| now.get().checked_add(micros))
-                .map(SemanticTimeMicros::from_micros)
-                .ok_or(PvpReadmissionError::DeadlineOverflow)
-        })
-        .transpose()
+    if remaining.get() == 0 {
+        return Ok(None);
+    }
+    now.checked_add(remaining.get())
+        .map(SemanticTimeMicros::from_micros)
+        .map(Some)
+        .ok_or(PvpReadmissionError::DeadlineOverflow)
 }
 
 /// `PARTYPVP0-RL-12`: PZ block and PvP logout block, refreshed by each aggression or hit.
@@ -63,35 +58,23 @@ pub(crate) struct CombatLock {
 }
 
 impl CombatLock {
-    /// Restore only logout/PZ/kill deadlines through the existing native admission read.
-    ///
-    /// The Root independently checks recovery, current session, node, World/Channel and lease.
-    /// The clock is DATA from this same owner's monotonic axis, never authority. Sampling after
-    /// the successful database read conservatively retains its remaining duration across I/O.
-    /// Both semantic-time types have microsecond axes; conversion is explicit and checked.
-    /// All three deadlines are calculated before the single monotone mutation, so any read or
-    /// overflow refusal leaves the previous lock intact. `false` means no stored row exists;
-    /// `true` means a row was read, including a row whose three deadlines have all elapsed.
-    /// This does not restore skulls, grant a controller or activate any fresh PvP action.
-    pub(crate) async fn restore_pvp_readmission(
+    /// D1180: apply a completed, fenced database duration read synchronously. The caller
+    /// finishes the database await first; this method contains no I/O or await and samples
+    /// the owner's clock exactly once. It never converts a database epoch to owner time.
+    /// All three checked deadlines are computed before the single monotone mutation.
+    /// A missing row restores nothing; a read/overflow error preserves every existing slot.
+    pub(crate) fn restore_pvp_readmission(
         &mut self,
-        root: &DurabilityRoot,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
+        read: Result<Option<PvpReadmissionRemaining>, CharacterProgressionError>,
         clock: &impl OwnerClock,
     ) -> Result<bool, PvpReadmissionError> {
-        let Some(stored) = root
-            .read_pvp_state(authority, node, fence)
-            .await
-            .map_err(PvpReadmissionError::Read)?
-        else {
+        let Some(remaining) = read.map_err(PvpReadmissionError::Read)? else {
             return Ok(false);
         };
-        let now = clock.now();
-        let logout = readmission_deadline(now, stored.logout_block_remaining_ms)?;
-        let pz = readmission_deadline(now, stored.pz_block_remaining_ms)?;
-        let kill = readmission_deadline(now, stored.kill_block_remaining_ms)?;
+        let now = clock.now().get();
+        let logout = readmission_deadline(now, remaining.logout)?;
+        let pz = readmission_deadline(now, remaining.pz)?;
+        let kill = readmission_deadline(now, remaining.kill)?;
         self.restore(logout, pz, kill);
         Ok(true)
     }
@@ -107,8 +90,9 @@ impl CombatLock {
         raise(&mut self.pz_until, after(now, BLOCK_MS));
     }
 
-    /// A kill as a direct or assisting contributor: `until` is the database clock + 15 min
-    /// (`KILL_BLOCK_MS`), committed in the victim's death transaction.
+    /// A kill as a direct or assisting contributor: `until` is on this owner's axis.
+    /// Convert the durable database kill deadline through D1180 remaining duration first;
+    /// a database epoch must never be passed as an owner semantic timestamp.
     pub(crate) fn on_kill(&mut self, until: SemanticTimeMicros) {
         raise(&mut self.kill_until, until);
     }
@@ -289,36 +273,91 @@ impl<T: Copy + Eq> AggressionRelations<T> {
 }
 
 #[cfg(test)]
-mod readmission_conversion_tests {
-    use super::{OwnerTimeMicros, PvpReadmissionError, SemanticTimeMicros, readmission_deadline};
-
-    #[test]
-    fn readmission_explicit_owner_to_simulation_axis_and_elapsed_data() {
-        let now = OwnerTimeMicros::from_micros(7_000);
-        assert!(matches!(
-            readmission_deadline(now, Some(2)),
-            Ok(Some(until)) if until == SemanticTimeMicros::from_micros(9_000)
-        ));
-        assert!(matches!(readmission_deadline(now, None), Ok(None)));
-        assert!(matches!(
-            readmission_deadline(now, Some(0)),
-            Ok(Some(until)) if until == SemanticTimeMicros::from_micros(7_000)
-        ));
+mod readmission_clock_tests {
+    use super::*;
+    use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+    struct Clock {
+        now: u64,
+        samples: std::cell::Cell<u32>,
     }
-
+    impl OwnerClock for Clock {
+        fn now(&self) -> OwnerTime {
+            self.samples.set(self.samples.get() + 1);
+            OwnerTime::from_micros(self.now)
+        }
+    }
+    fn remaining(values: [u64; 3]) -> PvpReadmissionRemaining {
+        let [logout, pz, kill] = values.map(PvpRemainingMicros::for_test);
+        PvpReadmissionRemaining { logout, pz, kill }
+    }
     #[test]
-    fn readmission_millisecond_multiplication_overflow_is_refused() {
+    fn completed_duration_restore_samples_owner_once_and_expires_at_exact_boundary() {
+        let clock = Clock {
+            now: 7_000,
+            samples: Default::default(),
+        };
+        let mut lock = CombatLock::default();
         assert!(matches!(
-            readmission_deadline(OwnerTimeMicros::from_micros(0), Some(u64::MAX / 1_000 + 1)),
+            lock.restore_pvp_readmission(Ok(Some(remaining([2_000, 3_000, 4_000]))), &clock),
+            Ok(true)
+        ));
+        assert_eq!(clock.samples.get(), 1);
+        assert!(lock.blocks_logout(SemanticTimeMicros::from_micros(10_999), None));
+        assert!(!lock.blocks_logout(SemanticTimeMicros::from_micros(11_000), None));
+        assert!(!lock.pz_block_running(SemanticTimeMicros::from_micros(10_000)));
+        let before = lock;
+        assert!(
+            lock.restore_pvp_readmission(Ok(Some(remaining([1_000; 3]))), &clock)
+                .is_ok()
+        );
+        assert_eq!(lock, before);
+    }
+    #[test]
+    fn zero_and_absent_data_create_no_lock_and_never_shorten_existing_slots() {
+        let clock = Clock {
+            now: u64::MAX,
+            samples: Default::default(),
+        };
+        let mut lock = CombatLock::default();
+        assert!(matches!(
+            lock.restore_pvp_readmission(Ok(None), &clock),
+            Ok(false)
+        ));
+        assert_eq!(clock.samples.get(), 0);
+        assert!(matches!(
+            lock.restore_pvp_readmission(Ok(Some(remaining([0; 3]))), &clock),
+            Ok(true)
+        ));
+        assert_eq!(lock, CombatLock::default());
+        lock.on_kill(SemanticTimeMicros::from_micros(u64::MAX));
+        let before = lock;
+        assert!(
+            lock.restore_pvp_readmission(Ok(Some(remaining([0; 3]))), &clock)
+                .is_ok()
+        );
+        assert_eq!(lock, before);
+    }
+    #[test]
+    fn later_slot_overflow_and_read_failure_preserve_all_previous_slots() {
+        let clock = Clock {
+            now: u64::MAX - 5,
+            samples: Default::default(),
+        };
+        let mut lock = CombatLock::default();
+        lock.on_pvp_hit(SemanticTimeMicros::from_micros(1));
+        lock.on_aggression(SemanticTimeMicros::from_micros(1));
+        lock.on_kill(SemanticTimeMicros::from_micros(9));
+        let before = lock;
+        assert!(matches!(
+            lock.restore_pvp_readmission(Ok(Some(remaining([1, 2, 6]))), &clock),
             Err(PvpReadmissionError::DeadlineOverflow)
         ));
-    }
-
-    #[test]
-    fn readmission_owner_axis_addition_overflow_is_refused() {
+        assert_eq!(lock, before);
         assert!(matches!(
-            readmission_deadline(OwnerTimeMicros::from_micros(u64::MAX - 999), Some(1)),
-            Err(PvpReadmissionError::DeadlineOverflow)
+            lock.restore_pvp_readmission(Err(CharacterProgressionError::InvalidInput), &clock),
+            Err(PvpReadmissionError::Read(_))
         ));
+        assert_eq!(lock, before);
+        assert_eq!(clock.samples.get(), 1);
     }
 }
