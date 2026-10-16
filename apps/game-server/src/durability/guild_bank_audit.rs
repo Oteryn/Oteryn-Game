@@ -3,7 +3,6 @@
 //! payloads/retention before any production writer is activated. No wire/event IDs here.
 use super::item_mint_audit::check_uuid_v7;
 use prost::Message;
-use sha2::{Digest, Sha256};
 
 pub const HARD_CEILING: u64 = 9_000_000_000_000_000;
 pub const BANK_MAX: u64 = super::bank_audit::BANK_BALANCE_MAX;
@@ -82,8 +81,5 @@ impl GuildBankAuditProposal {
             _ => false,
         };
         legal.then(|| self.encode_to_vec())
-    }
-    pub fn digest(&self) -> Option<Vec<u8>> {
-        Some(Sha256::digest(self.checked_bytes()?).to_vec())
     }
 }
