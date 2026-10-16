@@ -37,5 +37,29 @@ Remaining dependencies: canonical CYC MapAreaIds, parent/discoverability and
 donation eligibility qualification; actual native World coordinate frame and
 served-tile intersection; reachability/overlap rules; public-map/compiler/bundle
 admission and actual POI pools. Anchors do not replace missing geometry and source
-z7 is never projected onto another floor. OWNER7UNKNOWN1CONFLICT parity remains
-pending under D1217; no source constant is inferred to close it.
+z7 is never projected onto another floor. D1230/a/b/c/d supersede the historical7UNKNOWN1CONFLICT parity label; the
+qualified facts and remaining source-packet gaps are recorded below.
+
+
+## D1230/a/b/c/d source decisions
+
+The cached CP decisions qualify these facts without changing the decoded source
+geometry or admitting native flags. D1230a/b, owner GUI in Thais: a single donation
+is1..=10,000,000gp; reject negative,zero and above10m. The separate aggregate
+bonus threshold remains10,000,000gp from CIPSOFT S3. Equality of these numbers
+does not combine the rules or authorize a debit/bonus transaction.
+
+D1230c owner GUI resolves the W4/W5 conflict: Vandura → Quara Caves has Discovery
+and counts toward Vandura. D1230d owner GUI excludes all five Tibiadrome locations
+from the Discovery catalogue; no discovery count is awarded. The raw source422
+five-parent observation stays intact as provenance, not five admitted entries.
+D1230 W4 qualifies Southern Darama Discovery=false. The named NoDiscovery set is
+Newhaven,Rookgaard,Isle of Destiny,Adventurers' Guild,Meluna,Temple of Light and
+Dawnport; its completeness remains PARITY_PENDING. The exact20region list and
+complete source manifest/zip full hash are not available in this packet; no names
+or full digest are invented. Per-decision URLs/classes are in adjacent provenance.
+
+The owned pure domain/cyclopedia.rs validates DonationAmount only, with an
+authored negative/zero/min/max/above-cap boundary case. It is unmounted and its
+compile/test execution is NOT_RUN. Debit,aggregate selection,respawn,discovery
+counts and native map admission remain separate unimplemented integration work.

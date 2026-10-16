@@ -296,12 +296,32 @@ POI pools, registry or pins are added. The old raw graph/ambiguity is preserved.
 Independent source review PASS precedes this package. Exact copy/hash,209JSONL
 records and whitespace are cheap source checks; native/compiler/runtime checks
 remain NOT_RUN. Native frame/served-tile/reachability/overlap and canonical CYC/
-donation/POI qualifications remain pending. D1217's7UNKNOWN1CONFLICT parity is
-preserved; it does not block this unadmitted source checkpoint. No readiness,
+donation/POI qualifications remain pending. D1217's historical7UNKNOWN1CONFLICT label is superseded by D1230/a/b/c/d
+source decisions below; remaining completeness gaps do not block this unadmitted
+source checkpoint. No readiness,
 merge, activation or completed CYC-CONTENT claim is made.
 
 Lead independent source/package review PASS: all209 source identities/runs/
 counts and null native qualifications checked; pinned reader semantics and
 source-format/budget provenance reviewed. The evidence report uses the owned
 docs/agents/evidence path. Full runtime/strict/package tests remain NOT_RUN;
-source data do not qualify live membership or unblock OWNER parity values.
+source data do not qualify live membership; later CP-qualified parity decisions
+are recorded separately below.
+
+
+## D1230/a/b/c/d parity and pure amount checkpoint
+
+Owner GUI qualifies single donations1..=10,000,000gp (D1230a/b), Vandura Quara
+Caves Discovery=true (D1230c,resolving W4/W5), and exclusion of all five Tibiadrome
+locations from Discovery (D1230d). D1230 W4 Southern Darama Discovery=false and
+the seven named NoDiscovery observations are retained with completeness
+PARITY_PENDING. The exact20regions list and full source manifest/zip hash remain
+missing; no inferred names/hash or complete-catalogue claim is added. Historical
+7UNKNOWN1CONFLICT is no longer the current parity status.
+
+Owned domain/cyclopedia.rs adds a pure validated DonationAmount with signed
+input bounds1..10m and a meaningful negative/zero/min/max/above-cap boundary case.
+The10m aggregate bonus threshold (CIPSOFT S3) remains a separate rule. No module
+mount, debit, donation writer, map authority, discovery flags or runtime effect is
+introduced. The source-mask JSONL/hash is unchanged. New domain compilation/test
+and all native/runtime integration remain NOT_RUN and NOT_FULLY_QUALIFIED.

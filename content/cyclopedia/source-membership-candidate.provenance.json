@@ -52,14 +52,58 @@
     "runtime_checks": "NOT_RUN"
   },
   "unresolved": [
-    "Canonical CYC MapAreaIds/parent choice and discoverability/donation source qualification",
+    "Canonical CYC MapAreaIds/parent choice and complete20region source packet; named NoDiscovery completeness PARITY_PENDING",
     "Native World frame/served-tile intersection/reachability and overlap policy",
-    "Public-map compiler/bundle admission; POI pools",
-    "Parity OWNER7UNKNOWN1CONFLICT remains pending"
+    "Public-map compiler/bundle admission; actual POI pools and donation eligibility/runtime binding"
   ],
   "native_map_area_ids_emitted": false,
   "canonical_parent_choices_emitted": false,
   "discoverability_or_donation_flags_emitted": false,
   "poi_pools_emitted": false,
-  "public_map_or_bundle_output": false
+  "public_map_or_bundle_output": false,
+  "accepted_source_decisions": {
+    "qualification": "CP_QUALIFIED_REFERENCE_FACTS_ONLY_NOT_NATIVE_MAP_FLAGS",
+    "D1230": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153",
+      "twenty_region_names": "SOURCE_PACKET_MISSING_NOT_INVENTED",
+      "southern_darama_discovery": false,
+      "southern_darama_evidence_class": "PARITY_WIKI_W4",
+      "named_no_discovery": [
+        "Newhaven",
+        "Rookgaard",
+        "Isle of Destiny",
+        "Adventurers' Guild",
+        "Meluna",
+        "Temple of Light",
+        "Dawnport"
+      ],
+      "named_no_discovery_evidence_class": "PARITY_WIKI_W4",
+      "named_no_discovery_completeness": "PARITY_PENDING",
+      "aggregate_bonus_threshold_gp": 10000000,
+      "aggregate_threshold_evidence_class": "CIPSOFT_S3",
+      "complete_manifest_and_full_zip_sha256": "NOT_AVAILABLE_NOT_INVENTED"
+    },
+    "D1230a_b": {
+      "sources": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226226005",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226229001"
+      ],
+      "evidence_class": "OWNER_GUI_THAIS",
+      "minimum_single_donation_gp": 1,
+      "maximum_single_donation_gp": 10000000,
+      "independent_of_aggregate_bonus_threshold": true
+    },
+    "D1230c": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226254589",
+      "evidence_class": "OWNER_GUI",
+      "vandura_quara_caves_discovery": true,
+      "W4_W5_conflict": "RESOLVED_GUI_CONFIRMS_W5"
+    },
+    "D1230d": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226282830",
+      "evidence_class": "OWNER_GUI_AND_W4",
+      "tibiadrome_all_five_locations_in_discovery_catalogue": false,
+      "raw_five_parent_edges_preserved_as_source_only": true
+    }
+  }
 }
