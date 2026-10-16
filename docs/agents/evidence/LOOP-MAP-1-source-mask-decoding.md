@@ -63,3 +63,18 @@ The owned pure domain/cyclopedia.rs validates DonationAmount only, with an
 authored negative/zero/min/max/above-cap boundary case. It is unmounted and its
 compile/test execution is NOT_RUN. Debit,aggregate selection,respawn,discovery
 counts and native map admission remain separate unimplemented integration work.
+
+## D1242 exact region source filter
+
+D1242 supplies the20region list and full owner screenshot zipSHA/size/count;
+the zip is not shared or locally verified, and CP explicitly requires no manifest.
+The earlier missing-list/full-hash blocker is closed. The separate
+source-region-admission.json joins exact raw area names to the accepted list:
+16/209 masks qualify as source-region masks,193 remain UNADMITTED. No parent
+inheritance,geometric inference or fuzzy name mapping is applied. Feyrist,
+Kilmaresh,Marapur and Quirefang have no exact named mask among these209; no
+geometry is invented. All209 original decoded records/hash remain immutable.
+Native World frame/tile intersection/reachability/canonical MapAreaIds and POI
+qualification remain pending; source admission does not grant runtime membership
+or override Southern Darama's Discovery=false. Donation Rust is unchanged from
+the actual one-case nativePASS at26aa26a4.

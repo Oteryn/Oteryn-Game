@@ -52,7 +52,7 @@
     "runtime_checks": "NOT_RUN"
   },
   "unresolved": [
-    "Canonical CYC MapAreaIds/parent choice and complete20region source packet; named NoDiscovery completeness PARITY_PENDING",
+    "Canonical CYC MapAreaIds/parent choice; named NoDiscovery completeness PARITY_PENDING",
     "Native World frame/served-tile intersection/reachability and overlap policy",
     "Public-map compiler/bundle admission; actual POI pools and donation eligibility/runtime binding"
   ],
@@ -65,7 +65,7 @@
     "qualification": "CP_QUALIFIED_REFERENCE_FACTS_ONLY_NOT_NATIVE_MAP_FLAGS",
     "D1230": {
       "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153",
-      "twenty_region_names": "SOURCE_PACKET_MISSING_NOT_INVENTED",
+      "twenty_region_names": "SUPERSEDED_BY_D1242",
       "southern_darama_discovery": false,
       "southern_darama_evidence_class": "PARITY_WIKI_W4",
       "named_no_discovery": [
@@ -81,7 +81,7 @@
       "named_no_discovery_completeness": "PARITY_PENDING",
       "aggregate_bonus_threshold_gp": 10000000,
       "aggregate_threshold_evidence_class": "CIPSOFT_S3",
-      "complete_manifest_and_full_zip_sha256": "NOT_AVAILABLE_NOT_INVENTED"
+      "complete_manifest_and_full_zip_sha256": "SUPERSEDED_BY_D1242"
     },
     "D1230a_b": {
       "sources": [
@@ -104,6 +104,20 @@
       "evidence_class": "OWNER_GUI_AND_W4",
       "tibiadrome_all_five_locations_in_discovery_catalogue": false,
       "raw_five_parent_edges_preserved_as_source_only": true
+    },
+    "D1242": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226466175",
+      "wiki_source": "https://www.tibiawiki.com.br/wiki/Measuring_Tibia_Quest",
+      "region_filter_file": "source-region-admission.json",
+      "region_filter_sha256": "e20531da199f674a666288995cb2554a66d21d488a595517ea794612e5319fbd",
+      "source_region_masks_admitted": 16,
+      "remaining_source_masks_unadmitted": 193,
+      "native_memberships_admitted": 0,
+      "owner_screenshot_zip_sha256": "b80ab50bb33ad57a7340afd3cb5e7a9ef2281d2ee291acf787c1189322bb0249",
+      "owner_screenshot_zip_bytes": 7590031,
+      "owner_screenshot_zip_entries": 35,
+      "zip_provenance": "CP_REPORTED_NOT_LOCALLY_ACCESSED_OR_VERIFIED; screenshots not redistributed",
+      "manifest_requirement": "NOT_REQUIRED_BY_CP_D1242"
     }
   }
 }
