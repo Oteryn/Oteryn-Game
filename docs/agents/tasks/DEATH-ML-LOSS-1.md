@@ -9,16 +9,16 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/death-ml-loss-1
 issue: 1622
-pr: null
+pr: 2193
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 DEATH-ML-LOSS-1 (rows 40, 41); wave 1 (migration chain #4)"
 class: "hard (persistence)"
 migration: yes
 registry: no
-owner: unassigned (builder)
+owner: "Codex family lead: Rozwój postaci i trening; domain worker /root/death_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
@@ -104,11 +104,11 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
+last_progress: accepted SKILLS-0 domain loss calculation prepared; durable writer remains pending
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: LOOP-PROGRESS-1; runtime capture/drain and loss writer integration
-next_action: CP reviews local choreography; owning integration packet below
+blocker: CP shared character_death.rs author/preimage with DEATH-COMPLETE-1; LOOP-PROGRESS-1; runtime integration
+next_action: qualify the domain candidate; CP allocates the shared writer and native caller slot
 ```
 
 
@@ -218,3 +218,39 @@ next_action: CP reviews local choreography; owning integration packet below
   owner must retire/apply the retained checkpoint without later replaying live
   deltas on top of death-lowered state; this one-checkpoint seam does not perform
   that actor-state lifecycle operation.
+
+## Domain loss increment (2026-10-16, family handoff)
+
+- Admission: live draft #2193 on `skeleton/death-ml-loss-1` was refreshed at
+  `a224a280517aff801aebd65060c6d3df1d36535a`; protected main was
+  `24fc332f256638e3b784bff1b3c85b18e2665a76`. The direct owner handoff assigns
+  this family; there is no competing branch writer. Actual changed files are
+  `src/domain/death.rs` under this app and this task record. Shared
+  `durability/character_death.rs` is held pending one CP author/preimage with
+  #2205; its broad historical owned-path entry is not an independent write grant.
+- SKILLS-0 is ACCEPTED on that main through ACCEPT-BATCH-2026-10-15 §6
+  (#2161, `b62a5595b6be426dd4c9cc016c9b3883e9193c9d`). This supersedes the
+  CANDIDATE statement in historical finding 6 above. A13 acceptance also remains
+  effective. No additional owner-approved loss rate is needed for this increment.
+- `calculate_death_build_loss` implements A13 §4.6 and SKILLS-0 §3.6 using
+  the actual capped XP loss divided by XP before death. It reuses the native
+  `BuildFormula`, cumulative-progress saturation and re-levelling; keeps vocation;
+  validates loss bounds and normalized reachable progress; and keeps exact values
+  for zero XP, zero loss and rounded-zero loss. It neither resolves current
+  authority nor writes a receipt. Formula/content currentness stays with the writer.
+- Eight new native inline tests exercise all families, per-family flooring and
+  de-levelling, seed floors, the actual capped death XP outcome, invalid inputs,
+  invalid requirements, saturation and signed-storage limits. They are arithmetic
+  fixtures, not additional Reference rates or PostgreSQL/restart evidence.
+- Historical finding 2 is narrowed: the domain calculation now exists; the live
+  writer still supplies `skill_progression: ()` and `magic_progression: ()`.
+  Before/after build payload, binding-version compatibility, INSERT/decode/reconcile,
+  the same-transaction build-row update and PG 17.6 death-after-training,
+  restart/replay/rollback tests are still missing. Existing 0030 nullable columns
+  are reused; no new loss-column migration is proposed.
+- Runtime capture/drain and `mod.rs::commit_death` integration remain with their
+  allocated owners/CP slot. Production training stays disabled. This is a partial
+  increment, not completion of the full accepted task or permission for ready,
+  queue, merge or deployment. Re-entry is triggered by CP naming the shared-file
+  author/preimage and supplying the runtime integration slot, plus the existing
+  LOOP-PROGRESS chain condition. No background continuation is asserted.
