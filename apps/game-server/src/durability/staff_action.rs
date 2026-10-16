@@ -61,7 +61,7 @@ pub struct OperationEvidence {
 }
 pub(crate) enum Begin {
     Replay(StoredOutcome),
-    Fresh(Pending),
+    Fresh(Box<Pending>),
 }
 pub(crate) struct Pending {
     request: VerifiedRequest,
@@ -148,11 +148,11 @@ async fn begin_with_clock(
     signature::check_freshness(request.request(), now)?;
     let occurred_at =
         i64::try_from(now.map_err(StaffError::Rejected)?).map_err(|_| Error::Clock)?;
-    Ok(Begin::Fresh(Pending {
+    Ok(Begin::Fresh(Box::new(Pending {
         physical_transaction,
         request,
         occurred_at,
-    }))
+    })))
 }
 
 #[cfg(test)]
@@ -174,7 +174,7 @@ pub(crate) async fn fixture_begin_with_clock(
 /// Never call a second root semantic pass from inside a domain transaction.
 pub(crate) async fn finish_in_transaction(
     connection: &mut PgConnection,
-    pending: Pending,
+    pending: Box<Pending>,
     contract: Contract,
     outcome: Outcome,
     server_build: &str,
