@@ -345,3 +345,159 @@ grants, timer/controller/effect, apply/clear/expiry DELETE, value or audit write
 elapsed owner, numbered schema/security composition, shared registration/runtime hooks and
 exact-head integrated CI remain CP work. This packet is a qualified private checkpoint
 storage component, not completed ITEM-IMBUE-1, full ticking or ready/merge authority.
+
+### Sparse checkpoint correctness repair (2026-10-16, authoring)
+
+On parent `bc8a8b6f0c5646f6672ec68b86dc80eec91a4508`, the pure planner deliberately
+omits unchanged item groups, but the native store required its write-set item IDs
+to equal every item in the loaded before snapshot. A mixed changed/unchanged
+snapshot, and an entirely unchanged nonempty snapshot, therefore failed with
+`InvalidBatch` before reaching the native current-state check.
+
+The store now accepts a canonical changed-item subset of the loaded items. It
+still replans the complete supplied batch, refuses any changed item outside that
+original selection, and re-reads and compares the **entire** original equipment,
+item selection and slot snapshot before its first row update. Omitted rows do not
+escape stale binding/time detection. Savepoint rollback, full row CAS, bounds,
+immutable application identities and zero-row retention are unchanged. A no-op
+batch performs no row updates and still requires the current full before state.
+
+Two new original native PostgreSQL regression bodies exercise mixed/all-no-op
+snapshots, unchanged rows and equipment, an omitted item's substituted content
+revision, a changed item outside the selection, and a genuinely committed
+checkpoint of an omitted item that must make the original snapshot stale without
+changing the other item. The source now contains 22 tests (12 pure, 10 PG).
+Actual Rust 1.94 native library execution used a disposable validation copy with
+test-only module/fixture registration, unchanged real Root/equipment/fixture
+implementations and the exact owned source bytes. This is native library-test
+evidence in that documented registration overlay, not production installation or
+PR-head CI coverage. The earlier 20/20 result still binds its historical source.
+
+The RED run selected all ten PG cases against parent storage: **6 passed, 4
+failed**, zero ignored, 3206 filtered, 82.01 s. The two new cases failed at the
+predicted sparse-batch refusals: mixed store returned `InvalidBatch`, and the
+omitted-item case received `InvalidBatch` where its assertion required `Stale`.
+The other two failures were unchanged native Root `RootPassDeadlineExceeded`
+outcomes in the nine-equipped-item and complete-before-binding cases. These
+timeouts are separate from the two reproduced regression failures. RED panic
+cleanup evidence is retained with the exact failed fixture identifiers.
+
+The GREEN run selected all **22 original cases (12 pure + 10 PG): 21 passed, 1
+failed**, zero ignored, 3194 filtered, 58.18 s. Both new regressions and the
+nine-equipped-item case passed. The complete-before-binding case again failed
+with `Unavailable(RootPassDeadlineExceeded)` under the unchanged two-second Root
+pass bound. Every PG setup asserted `server_version_num=170006`. This is a
+partial qualification result, not a full 22/22 qualification PASS.
+
+The cloud PostgreSQL allocation was changed from one to two CPUs during the
+controlled attempt; CPU throttling was measured, but that observation does not
+establish the cause of either Root timeout. No source predicate, Root deadline,
+schema, guard or lint was relaxed. The canonical owner-PC route passed its V2
+preflight with all slots free; a guarded qualification recipe is being prepared
+for independent review. No owner-PC test result is claimed yet. Full affected
+native qualification, strict Clippy and remote exact-head CI remain pending.
+
+The RED/GREEN ELF, exact storage source and raw logs are preserved under
+`/workspace/oteryn-family/validation/imbue-red-evidence/` and
+`/workspace/oteryn-family/validation/imbue-green-evidence/`, each with `SHA256.json`.
+GREEN storage SHA256 is
+`96830f09c222f058d1b78d77be2b8a76208286e16ba56a55063b38e376424cdc`;
+unchanged original/new test source SHA256 is
+`8b9fc82a7315f173c3374270ef995855441969ea902b859eed48111150130653`.
+Direct Rust 1.94 rustfmt and `git diff --check` pass. No full mechanic acceptance
+criterion is closed by this checkpoint repair or its partial native run.
+
+This repair introduces no elapsed-time producer or grant. Accepted IMBUE_FORGE0
+§6 I1 already admits the Imbue/ImbueClear/ImbueScroll fee sources; the current
+shared `item_fee_burn::{FeeBurnCause,burn_fee_in_transaction}` and
+`item_fee_burn_audit::FeeBurnCauseV1` implement CharmUnassign only and cannot be
+reused unchanged for item-only imbuement composition. The shared
+`item_mint_audit::OneItemOperationV1::TimedExpiry` is specifically timed-item
+expiry, not an admitted Imbue expiry event. Their actual cause/audit integration,
+the Basic-capable content codec and current admitted catalogue/access readers,
+continuous eligible elapsed hooks, registration and schema installation remain
+the specific CP-owned integration work. Unmerged family prerequisites gate the
+slot, not this isolated authoring repair. No commit or publication was performed.
+
+
+### Terminal private qualification checkpoint (2026-10-16)
+
+The frozen private test input is `PC_SOURCE_PACKET.json` SHA-256
+`ce0c7dc10623a9b54971a7b5ddff1f9cf2101aed34b4123efc9f2c8675ea792d`,
+full source manifest `75fe38c2dd11e827a26d637c0747722175141c6ff8ea86e8ec88ff2065883e4b`.
+Its historical task-card bytes precede this documentation candidate.
+
+Historical combined run `evidence-run-1792167456282407854` in
+`PC_FINAL_EVIDENCE.json` passed fmt and strict package all-target Clippy but
+failed package tests (exit 101): library 3150 passed / 29 ignored; later
+`character_authority_postgres` 1490 passed / 1 failed at
+`postgres_target_aggregation::every_postgres_target_runs_its_cases_in_a_ci_run_target`.
+No focused PG stage executed in that historical run. Launch 041 subsequently
+held before tests on the occupied canonical PG lock (observation 043), neither
+a focused test PASS nor a test FAIL.
+
+Actual focused run `evidence-run-1792176419124648929` is retained in
+`PC_FOCUSED_FINAL_EVIDENCE.json`, including exact native commands, logs and
+hash-verified ELF archive receipts. Runner V3 SHA-256
+`6f86ba9abef7c0dbb611a9bb59b93f3fcc39531253f58016ce67907700fac14a`;
+recipe V3 `8aedcff0eda55fb0d6b61ffa023aaa118e7bad1bc95e42064d7298bc30dace56`.
+Forge passed 9/9, including three actual PostgreSQL 17.6 cases. Imbue passed
+22/22 (12 pure + 10 actual PostgreSQL 17.6 cases, each asserting 170006),
+including complete-before-binding, with the same unchanged Root deadlines.
+Storage passed 7/7 pure native depot tests in the test-only registration overlay;
+its four actual PostgreSQL cloud cases remain separate historical evidence.
+The earlier cloud Imbue 21/22 `RootPassDeadlineExceeded` failure remains retained;
+this later PASS establishes no causal diagnosis for that earlier failure.
+
+Cleanup is clean, source mode plain, with no remaining owned process group.
+`PC_CALL_047_RESULT.json` attests `RELEASED_NO_ACTIVE_CLAIM`, supervisor 163594,
+start ticks 2603394, boot `1de2caf4-8501-4962-98e7-73177714c673`.
+These are private fixture results, not production installation or exact-head CI.
+
+The historical combined-package registration failure belongs to the Storage/Forge
+shared workflow guard; Imbue does not own that guard problem. Imbue's own required
+isolated normal-package qualification was pending at that checkpoint. The later
+candidate qualification below records its actual result. Full-head remote CI is
+a separate publication check.
+
+Other existing product integration slots and full mechanic acceptance remain gated.
+No Rust, workflow or shared source changed here; no commit, publication, new PR,
+ready, merge or complete package qualification is claimed.
+
+### Final sparse-selection candidate qualification (2026-10-16)
+
+The sparse checkpoint repair and two new regression bodies retain storage SHA256
+`96830f09c222f058d1b78d77be2b8a76208286e16ba56a55063b38e376424cdc`
+and tests `8b9fc82a7315f173c3374270ef995855441969ea902b859eed48111150130653`.
+The native focused22/22 above includes10 actual PostgreSQL17.6 cases with the
+unchanged Root deadlines. Sparse/no-op/mixed updates remain valid; an outside
+write-set item or stale omitted selection refuses before mutation. Savepoint,
+immutable binding, equipment authority and CAS predicates remain intact.
+
+Separate Imbue-only input: parent `bc8a8b6f0c5646f6672ec68b86dc80eec91a4508`,
+packet `de52f41c57f9ff5a8d31fc973469e1588190e60df22943002f9af9f0a45d157b`,
+manifest `bdec748e17629a151a8b12cae4c3bda83d52b5f37b3024153c7df9f9f549a351`.
+Native Rust1.94 fmt and strict package all-target Clippy passed. The first full
+package invocation genuinely failed after8652PASS/1FAIL/36ignored: the raw source
+copy lacked Git metadata needed by `world_bundle_artifact_boot` (`git ls-files`).
+This failure is retained in `IMBUE_NATIVE_PACKAGE_V4_EVIDENCE.json`; no source,
+assertion, deadline, workflow or pin was changed to address it.
+
+Reviewed V5 reconstructed genuine private Git metadata outside the frozen source
+from the same cached parent:18811 tracked paths, exact parent index,65 executable
+entries, and only these three owned dirty files; no intent-to-add or synthetic
+commit. The failed artifact target then passed1/1. A complete normal invocation
+`cargo test --locked -p oteryn-game-server --quiet -- --test-threads=1` passed
+**9785/0/37ignored in57 result groups**, including doctests, with the PG URL
+explicitly unset. This normal check is separate from the actual focused PG cases.
+Run `evidence-run-1792181181866845373` under
+`/root/oteryn-codex-20261016/imbue-package-20261016-native-1` retains actual
+commands/results/logs, source, native target artifacts and real-Git proof.
+`IMBUE_NATIVE_PACKAGE_V5_EVIDENCE.json` SHA256
+`b3c47d18e1b40e54564a33d3683c8cfc194e85134e00c6f8995813dd1dbbbc08`
+binds the terminal result; normal log SHA256
+`a2fc094671989ad041654259fe8b7bacfec4a55a8304eb0f4c26dabb70d6e996`.
+Cleanup is plain/empty/no owned group; observation105 confirms slotB released
+and `NO_ACTIVE_CLAIM`. Final card edits are documentation only; executable
+source remains identical to the qualified input. Production installation,
+elapsed authority/runtime integration, ready and merge retain their CP gates.

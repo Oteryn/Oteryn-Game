@@ -322,6 +322,136 @@ fn private_native_storage_decreases_to_zero_and_retains_complete_binding_after_r
 }
 
 #[test]
+fn private_native_storage_accepts_mixed_and_entirely_unchanged_checkpoint_snapshots() -> TestResult
+{
+    run_storage("imbue_noop", async |h| {
+        let items = storage_setup(h, 2).await?;
+        let before = snapshot(h, &items).await?;
+        let changed_item = before.items[0];
+        let mixed = CheckpointBatch::plan(
+            before
+                .rows()
+                .iter()
+                .map(|old| SlotCheckpoint {
+                    before: old.clone(),
+                    after: row(
+                        old.binding().clone(),
+                        if old.binding().item == changed_item {
+                            900
+                        } else {
+                            1000
+                        },
+                    ),
+                })
+                .collect(),
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            mixed.usage,
+            CheckpointUsage {
+                items: 1,
+                participants: 1,
+                work: 4
+            }
+        );
+        store(h, &before, &mixed).await?.map_err(debug)?;
+        let after = snapshot(h, &items).await?;
+        assert_eq!(before.equipment, after.equipment);
+        for (old, new) in before.rows().iter().zip(after.rows()) {
+            assert_eq!(old.binding(), new.binding());
+            assert_eq!(
+                new.remaining_ms(),
+                if old.binding().item == changed_item {
+                    900
+                } else {
+                    1000
+                }
+            );
+        }
+        let noop = CheckpointBatch::plan(
+            after
+                .rows()
+                .iter()
+                .map(|old| SlotCheckpoint {
+                    before: old.clone(),
+                    after: old.clone(),
+                })
+                .collect(),
+        )
+        .map_err(debug)?;
+        assert!(noop.items.is_empty());
+        store(h, &after, &noop).await?.map_err(debug)?;
+        assert_eq!(snapshot(h, &items).await?, after);
+        Ok(())
+    })
+}
+
+#[test]
+fn private_native_storage_rechecks_omitted_items_before_any_checkpoint_write() -> TestResult {
+    run_storage("imbue_omitted", async |h| {
+        let items = storage_setup(h, 2).await?;
+        let before = snapshot(h, &items).await?;
+        let changed_item = before.items[0];
+        let omitted_item = before.items[1];
+        let batch = CheckpointBatch::plan(
+            before
+                .rows()
+                .iter()
+                .filter(|old| old.binding().item == changed_item)
+                .map(|old| SlotCheckpoint {
+                    before: old.clone(),
+                    after: row(old.binding().clone(), 900),
+                })
+                .collect(),
+        )
+        .map_err(debug)?;
+        // The complete snapshot remains binding even for an item omitted from the write set.
+        // Neither substituted snapshot DATA nor a real concurrent checkpoint may disappear
+        // when the store accepts a strict subset of the originally read items.
+        let mut forged = before.clone();
+        let unchanged = forged
+            .rows
+            .iter_mut()
+            .find(|r| r.binding().item == omitted_item)
+            .ok_or("fixture omitted item row missing")?;
+        let mut rebound = unchanged.binding().clone();
+        rebound.content_revision = "substituted-omitted-revision".into();
+        *unchanged = row(rebound, unchanged.remaining_ms());
+        assert!(matches!(
+            store(h, &forged, &batch).await?,
+            Err(CheckpointStorageError::Stale)
+        ));
+        assert_eq!(snapshot(h, &items).await?, before);
+
+        let unselected = CheckpointBatch::plan(vec![change(220, 0, 1000, 900)]).map_err(debug)?;
+        assert!(matches!(
+            store(h, &before, &unselected).await?,
+            Err(CheckpointStorageError::InvalidBatch)
+        ));
+        assert_eq!(snapshot(h, &items).await?, before);
+
+        let other = snapshot(h, &[omitted_item]).await?;
+        store(h, &other, &decreased(&other, 800))
+            .await?
+            .map_err(debug)?;
+        let committed = snapshot(h, &items).await?;
+        assert!(matches!(
+            store(h, &before, &batch).await?,
+            Err(CheckpointStorageError::Stale)
+        ));
+        assert_eq!(snapshot(h, &items).await?, committed);
+        assert!(
+            committed
+                .rows()
+                .iter()
+                .filter(|r| r.binding().item == changed_item)
+                .all(|r| r.remaining_ms() == 1000)
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn private_native_storage_rejects_each_complete_before_binding_substitution() -> TestResult {
     run_storage("imbue_binding", async |h| {
         let items = storage_setup(h, 1).await?;

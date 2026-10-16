@@ -249,6 +249,9 @@ fn checked_storage_batch(batch: &CheckpointBatch) -> StorageResult<()> {
 /// called by production until the actual elapsed owner is admitted and composed at the CP slot.
 /// Native current equipment authority is necessary, but cannot justify caller-chosen elapsed
 /// time. A savepoint makes any refusal/error atomic even when a compositor retains its outer TX.
+/// The planner omits unchanged items, so the write set may be a strict subset of the loaded
+/// items (including empty). The complete before snapshot is still re-read and compared:
+/// unchanged/zero-time rows cannot hide a stale application or equipment binding.
 pub(super) async fn store_checkpoint_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &EquipmentAuthority,
@@ -256,8 +259,11 @@ pub(super) async fn store_checkpoint_in_transaction(
     batch: &CheckpointBatch,
 ) -> StorageResult<()> {
     checked_storage_batch(batch)?;
-    let wanted: Vec<_> = batch.items.iter().map(|item| item.item).collect();
-    if wanted != before.items {
+    if batch
+        .items
+        .iter()
+        .any(|item| !before.items.contains(&item.item))
+    {
         return Err(CheckpointStorageError::InvalidBatch);
     }
     let mut savepoint = tx.begin().await?;
