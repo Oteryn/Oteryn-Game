@@ -84,7 +84,9 @@ pub const MAX_HELD: usize = 1_024;
 /// durability holder per batch rather than two per Character.
 pub const PROFILE_BATCH: usize = 32;
 /// `PUBPROJ-NAME-HANDOFF-HOLD`: the longest a new holder of a vacated name
-/// waits for the vacating publication (§7.3). It bounds a rename cycle, in
+/// waits for the vacating publication and for an acknowledged `world_online`
+/// cut of the old holder's World that sees the handoff (§7.3). It bounds a
+/// rename cycle, in
 /// which each holder would wait on the other's vacating row forever; Platform
 /// answers a name held by two profiles as unknown meanwhile.
 pub const NAME_HANDOFF_HOLD: Duration = Duration::from_secs(60);
@@ -708,13 +710,27 @@ pub struct OnlineWorld {
     pub state: Option<OnlineState>,
 }
 
-/// One scan's read: the epoch, the cut time (database clock, Unix ms) and
-/// every World's qualifying online list at that cut.
+/// A vacated character name key and the old holder's World (§7.3): its new
+/// holder's profile stays held while Platform may still list the old holder
+/// under that name in the World's `world_online` snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameHandoff {
+    pub name_key: String,
+    pub character_id: String,
+    pub world_id: String,
+    /// The vacating change, database clock, Unix ms.
+    pub vacated_at_ms: i64,
+}
+
+/// One scan's read: the epoch, the cut time (database clock, Unix ms),
+/// every World's qualifying online list at that cut and the name handoffs
+/// the cut sees (at most `MAX_ONLINE`, oldest first).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OnlineCut {
     pub projection_epoch: u64,
     pub cut_ms: i64,
     pub worlds: Vec<OnlineWorld>,
+    pub handoffs: Vec<NameHandoff>,
 }
 
 /// The Game side of the public projections (§5). Every call is one database
@@ -728,8 +744,9 @@ pub trait PublicStore: Send + Sync {
     fn outbox_facts(&self) -> impl Future<Output = Result<OutboxFacts, ()>> + Send;
     /// The current profiles of up to `limit` Characters with the oldest
     /// undelivered changes, oldest first, skipping `held` Characters and any
-    /// new holder of a name whose vacating publication is still undelivered
-    /// and younger than `NAME_HANDOFF_HOLD` (§7.3).
+    /// new holder of a name whose vacating publication is still undelivered,
+    /// or whose handoff no acknowledged `world_online` cut has seen yet, and
+    /// younger than `NAME_HANDOFF_HOLD` (§7.3).
     fn next_profiles(
         &self,
         held: &[String],
@@ -758,8 +775,13 @@ pub trait PublicStore: Send + Sync {
     /// Store new revisions, unacknowledged, before anything of them is sent.
     fn persist_online(&self, states: &[OnlineState])
     -> impl Future<Output = Result<(), ()>> + Send;
-    /// Mark exactly these (World, epoch, revision) snapshots acknowledged.
-    fn ack_online(&self, states: &[OnlineState]) -> impl Future<Output = Result<(), ()>> + Send;
+    /// Mark exactly these (World, epoch, revision) snapshots acknowledged and
+    /// delete exactly these name handoffs, in one pass.
+    fn ack_online(
+        &self,
+        states: &[OnlineState],
+        handoffs: &[NameHandoff],
+    ) -> impl Future<Output = Result<(), ()>> + Send;
 }
 
 /// The last scan that completed in time: its epoch, cut and when it was read.
@@ -1627,6 +1649,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         let mut complete = observed >= 0;
         let mut persist = Vec::new();
         let mut pending = Vec::new();
+        // §7.3: the Worlds whose list at this cut Platform holds, so a name
+        // handoff this cut sees is settled for them.
+        let scanned: Vec<String> = cut.worlds.iter().map(|w| w.world_id.clone()).collect();
+        let mut current: Vec<String> = Vec::new();
         for world in cut.worlds {
             let retry_due = state.retry(&world.world_id).map(|r| r.at <= read_at);
             if retry_only && retry_due != Some(true) {
@@ -1660,6 +1686,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 {
                     if s.acked {
                         state.settled(&world.world_id);
+                        current.push(world.world_id);
                         continue;
                     }
                     Some((s.projection_revision, s.source_observed_at, false))
@@ -1756,6 +1783,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 match result {
                     Ok(_) => {
                         state.settled(&stored.world_id);
+                        current.push(stored.world_id.clone());
                         acked.push(OnlineState {
                             acked: true,
                             ..stored.clone()
@@ -1777,11 +1805,25 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         if self.clock.elapsed() > deadline {
             complete = false;
         }
-        // A lost acknowledgement record only resends the same pair next scan.
-        if !acked.is_empty() {
+        // §7.3: a handoff is settled once Platform holds a list of its World
+        // taken at a cut that sees it (or the World has no snapshot at all),
+        // and it is dropped once older than the hold.
+        let hold = i64::try_from(NAME_HANDOFF_HOLD.as_millis()).unwrap_or(i64::MAX);
+        let settled: Vec<NameHandoff> = cut
+            .handoffs
+            .into_iter()
+            .filter(|h| {
+                !scanned.contains(&h.world_id)
+                    || current.contains(&h.world_id)
+                    || h.vacated_at_ms <= cut.cut_ms.saturating_sub(hold)
+            })
+            .collect();
+        // A lost acknowledgement record only resends the same pair next scan,
+        // and a lost handoff deletion only holds its new holder longer.
+        if !acked.is_empty() || !settled.is_empty() {
             let _ = self
                 .retrying(deadline + ONLINE_SCAN_DEADLINE, || {
-                    self.store.ack_online(&acked)
+                    self.store.ack_online(&acked, &settled)
                 })
                 .await;
         }

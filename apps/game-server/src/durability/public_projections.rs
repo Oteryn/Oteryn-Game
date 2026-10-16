@@ -12,8 +12,8 @@ use super::character_authority::{
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use oteryn_game_server::native_admission_source::public_projections::{
     FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, NAME_HANDOFF_HOLD,
-    OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry, ProfileSnapshot,
-    PublicStore, VOCATION_IDS, VOCATIONS, projection_name_valid, vocation_id,
+    NameHandoff, OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry,
+    ProfileSnapshot, PublicStore, VOCATION_IDS, VOCATIONS, projection_name_valid, vocation_id,
 };
 use sqlx::Row;
 use std::collections::BTreeMap;
@@ -33,9 +33,12 @@ const _: () =
 // The Characters with the oldest undelivered changes ($3 at most, oldest
 // first), skipping held Characters and any Character holding a name whose
 // vacating publication is still undelivered (§7.3: a reused name never joins
-// the new holder before the old one's `[]`). The hold ends once the vacating
-// row is $2 ms old (`PUBPROJ-NAME-HANDOFF-HOLD`), so a rename cycle, where
-// each holder waits on the other's vacating row, cannot hold delivery forever.
+// the new holder before the old one's `[]`), or whose handoff the scan has not
+// yet settled (§7.3: Platform joins `world_online` by (World, name), so the
+// old holder's World must first be acknowledged at a cut that sees the
+// handoff). Each hold ends once its row is $2 ms old
+// (`PUBPROJ-NAME-HANDOFF-HOLD`), so a rename cycle, where each holder waits on
+// the other's vacating row, cannot hold delivery forever.
 // One statement reads the epoch, the revisions and the state. `observed_at` is
 // when the revision was assigned, never the read time, so a retry of the same
 // (epoch, revision) is byte-identical.
@@ -49,6 +52,13 @@ WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
                                     AND v.character_id <> n.character_id \
                                   WHERE n.character_id = o.character_id \
                                     AND v.created_at > floor(extract(epoch FROM \
+                                        statement_timestamp()) * 1000)::bigint - $2) \
+                 AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
+                                   JOIN game_public_name_handoffs x \
+                                     ON x.name_key = n.name_key \
+                                    AND x.character_id <> n.character_id \
+                                  WHERE n.character_id = o.character_id \
+                                    AND x.vacated_at > floor(extract(epoch FROM \
                                         statement_timestamp()) * 1000)::bigint - $2) \
                GROUP BY o.character_id \
                ORDER BY oldest, o.character_id LIMIT $3) \
@@ -119,7 +129,9 @@ const CLEAR_HIGHSCORES: &str = "DELETE FROM game_public_highscore_outbox \
 // `session_state = 2`, a current transport and no control loss. One with an
 // unclassifiable vocation, a level below 1 or a name outside the wire grammar
 // is not listed (§4.6). One entry more than the bound is read per World, so an
-// oversized World refuses instead of being truncated.
+// oversized World refuses instead of being truncated. Kind 3 are the name
+// handoffs this cut sees, $1 - 1 at most, oldest first (§7.3); the rest wait
+// for a later scan.
 pub(crate) const ONLINE: &str = "\
 WITH cut AS (SELECT e.projection_epoch, \
                     floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint AS cut_ms \
@@ -154,16 +166,22 @@ WITH cut AS (SELECT e.projection_epoch, \
 SELECT 0 AS kind, c.projection_epoch, c.cut_ms, NULL::text AS world_id, NULL::text AS name, \
        NULL::text AS vocation, NULL::text AS level, NULL::bigint AS projection_revision, \
        NULL::bytea AS characters_digest, NULL::bigint AS source_observed_at, \
-       NULL::boolean AS acked \
+       NULL::boolean AS acked, NULL::text AS name_key, NULL::text AS character_id, \
+       NULL::bigint AS vacated_at \
   FROM cut c \
 UNION ALL \
 SELECT 1, NULL, NULL, o.world_id::text, o.name, o.vocation, o.level::text, NULL, NULL, NULL, \
-       NULL \
+       NULL, NULL, NULL, NULL \
   FROM online o WHERE o.n <= $1 \
 UNION ALL \
 SELECT 2, s.projection_epoch, NULL, w.world_id::text, NULL, NULL, NULL, s.projection_revision, \
-       s.characters_digest, s.source_observed_at, s.acked \
-  FROM worlds w LEFT JOIN game_public_world_online s USING (world_id)";
+       s.characters_digest, s.source_observed_at, s.acked, NULL, NULL, NULL \
+  FROM worlds w LEFT JOIN game_public_world_online s USING (world_id) \
+UNION ALL \
+SELECT 3, NULL, NULL, x.world_id::text, NULL, NULL, NULL, NULL, NULL, NULL, NULL, x.name_key, \
+       x.character_id::text, x.vacated_at \
+  FROM (SELECT * FROM game_public_name_handoffs \
+         ORDER BY vacated_at, name_key, character_id LIMIT $1 - 1) x";
 
 const PERSIST_ONLINE: &str = "\
 INSERT INTO game_public_world_online \
@@ -182,6 +200,13 @@ UPDATE game_public_world_online s SET acked = true \
   FROM unnest($1::text[], $2::bigint[], $3::bigint[]) AS t(w, e, r) \
  WHERE s.world_id = t.w::uuid AND s.projection_epoch = t.e \
    AND s.projection_revision = t.r AND NOT s.acked";
+
+// Exactly the handoffs the scan settled: a later vacate of the same key by the
+// same Character (a new `vacated_at`) stays.
+pub(crate) const CLEAR_HANDOFFS: &str = "\
+DELETE FROM game_public_name_handoffs x \
+ USING unnest($1::text[], $2::text[], $3::bigint[]) AS t(k, c, v) \
+ WHERE x.name_key = t.k AND x.character_id = t.c::uuid AND x.vacated_at = t.v";
 
 fn positive(value: i64) -> Result<u64> {
     u64::try_from(value)
@@ -450,10 +475,13 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Mark these snapshots acknowledged and delete these settled name
+    /// handoffs (§7.3), in one transaction.
     pub async fn ack_public_online(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         states: &[OnlineState],
+        handoffs: &[NameHandoff],
     ) -> Result<()> {
         let recovery = authority.record_for(self)?;
         let mut columns = (vec![], vec![], vec![]);
@@ -461,6 +489,12 @@ impl DurabilityRoot {
             columns.0.push(state.world_id.clone());
             columns.1.push(wide(state.projection_epoch)?);
             columns.2.push(wide(state.projection_revision)?);
+        }
+        let mut settled = (vec![], vec![], vec![]);
+        for handoff in handoffs {
+            settled.0.push(handoff.name_key.clone());
+            settled.1.push(handoff.character_id.clone());
+            settled.2.push(handoff.vacated_at_ms);
         }
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -471,6 +505,12 @@ impl DurabilityRoot {
                         .bind(columns.0)
                         .bind(columns.1)
                         .bind(columns.2)
+                        .execute(&mut *tx)
+                        .await?;
+                    sqlx::query(CLEAR_HANDOFFS)
+                        .bind(settled.0)
+                        .bind(settled.1)
+                        .bind(settled.2)
                         .execute(&mut *tx)
                         .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -611,6 +651,7 @@ fn online_cut(rows: &[sqlx::postgres::PgRow]) -> Decoded<OnlineCut> {
     let mut read: BTreeMap<String, usize> = BTreeMap::new();
     let mut lists: BTreeMap<String, Vec<OnlineEntry>> = BTreeMap::new();
     let mut states: BTreeMap<String, Option<OnlineState>> = BTreeMap::new();
+    let mut handoffs = Vec::new();
     for row in rows {
         match row.try_get::<i32, _>("kind")? {
             0 => {
@@ -647,6 +688,12 @@ fn online_cut(rows: &[sqlx::postgres::PgRow]) -> Decoded<OnlineCut> {
                 };
                 states.insert(world_id, state);
             }
+            3 => handoffs.push(NameHandoff {
+                name_key: row.try_get("name_key")?,
+                character_id: row.try_get("character_id")?,
+                world_id: row.try_get("world_id")?,
+                vacated_at_ms: row.try_get("vacated_at")?,
+            }),
             _ => return Ok(Err(CharacterAuthorityError::Rejected)),
         }
     }
@@ -673,6 +720,7 @@ fn online_cut(rows: &[sqlx::postgres::PgRow]) -> Decoded<OnlineCut> {
         projection_epoch,
         cut_ms,
         worlds,
+        handoffs,
     }))
 }
 
@@ -753,9 +801,13 @@ impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
             .await
             .map_err(|_| ())
     }
-    async fn ack_online(&self, states: &[OnlineState]) -> std::result::Result<(), ()> {
+    async fn ack_online(
+        &self,
+        states: &[OnlineState],
+        handoffs: &[NameHandoff],
+    ) -> std::result::Result<(), ()> {
         self.root
-            .ack_public_online(self.authority, states)
+            .ack_public_online(self.authority, states, handoffs)
             .await
             .map_err(|_| ())
     }

@@ -11552,7 +11552,7 @@
         "maximum": 4096
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "The scan reads at most 4,097 online rows per World (one more than the bound) in one statement; a World above 4,096 publishes nothing and its feed goes stale, never a truncated list. A wire bound, not a capacity.",
+      "allocation_impact": "The scan reads at most 4,097 online rows per World (one more than the bound) in one statement; a World above 4,096 publishes nothing and its feed goes stale, never a truncated list. The same statement reads at most 4,096 name handoffs (section 7.3), oldest first; the rest wait for a later scan. A wire bound, not a capacity.",
       "client_visible": false,
       "boundary_tests": [
         "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 worst-case entries encode within PUBPROJ-ONLINE-REQUEST-BYTES; 4,097 are refused",
@@ -11736,7 +11736,7 @@
     {
       "id": "PUBPROJ-NAME-HANDOFF-HOLD",
       "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
-      "resource": "Longest hold of a character name's new holder behind an undelivered vacating publication",
+      "resource": "Longest hold of a character name's new holder behind an undelivered vacating publication or an unsettled name handoff (the old holder's World's world_online snapshot)",
       "unit": "seconds",
       "hard_maximum": 60,
       "configurable_range": {
@@ -11744,17 +11744,18 @@
         "maximum": 60
       },
       "failure_category": "UNAVAILABLE",
-      "allocation_impact": "No allocation. A held profile stays queued; after the hold it is sent, so a rename cycle cannot hold delivery forever, and Platform answers a name with two holders as unknown (section 7.3).",
+      "allocation_impact": "No allocation. A held profile stays queued; after the hold it is sent, so a rename cycle cannot hold delivery forever, and Platform answers a name with two holders as unknown (section 7.3). One game_public_name_handoffs row per vacate; the scan deletes it once settled or older than the hold.",
       "client_visible": false,
       "boundary_tests": [
-        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a simple name handoff waits for the vacating row; a rename cycle waits only for the bounded hold; a resync clears every vacated name key"
+        "apps/game-server/tests/support/public_projections_postgres_cases.rs: a simple name handoff waits for the vacating row; a rename cycle waits only for the bounded hold; after the vacating row is delivered the new holder still waits until its handoff is settled, and a handoff older than the hold no longer holds; a resync clears every vacated name key",
+        "apps/game-server/src/native_admission_source/public_projections_tests.rs a_scan_settles_only_name_handoffs_platform_has_seen: a handoff is settled only for a World acknowledged at the cut, unchanged and acknowledged, or without a snapshot, or once older than the hold"
       ],
       "consumers": [
         "apps/game-server/src/native_admission_source/public_projections.rs",
         "apps/game-server/src/durability/public_projections.rs",
         "apps/game-server/migrations/0091_public_projections.sql"
       ],
-      "notes": "Contract sections 7.3, 8 and 11. Measured from the vacating outbox row's created_at on the database clock. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+      "notes": "Contract sections 7.3, 8 and 11. Measured from the vacating outbox row's created_at, and from the name handoff's vacated_at, on the database clock. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
     },
     {
       "id": "PUBPROJ-STORE-PASS-GAP",
@@ -11799,7 +11800,7 @@
         "apps/game-server/src/durability/public_projections.rs",
         "apps/game-server/migrations/0091_public_projections.sql"
       ],
-      "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+      "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Sized for a store of 1,000,000 Characters plus all their highscores pairs (about 30 s at about 30 us per subject); if a resync exceeds it, re-run one family at a time, and if a single family still exceeds it, that is a blocker for the contract owner, resolved by a contract change and never by editing this deadline in place. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
     }
   ]
 }

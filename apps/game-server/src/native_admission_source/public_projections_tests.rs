@@ -415,6 +415,7 @@ struct Store {
     held_seen: Vec<Vec<String>>,
     worlds: Vec<(String, Option<Vec<OnlineEntry>>)>,
     online: Vec<OnlineState>,
+    handoffs: Vec<NameHandoff>,
     persisted: usize,
     cut_ms: i64,
     /// `online_cut` calls that find the connection busy before one reads.
@@ -523,6 +524,7 @@ impl PublicStore for Shared {
             projection_epoch: store.epoch,
             cut_ms: store.cut_ms,
             worlds,
+            handoffs: store.handoffs.clone(),
         })
     }
     async fn persist_online(&self, states: &[OnlineState]) -> Result<(), ()> {
@@ -535,9 +537,10 @@ impl PublicStore for Shared {
         }
         Ok(())
     }
-    async fn ack_online(&self, states: &[OnlineState]) -> Result<(), ()> {
+    async fn ack_online(&self, states: &[OnlineState], handoffs: &[NameHandoff]) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
         store.passes += 1;
+        store.handoffs.retain(|h| !handoffs.contains(h));
         for state in states {
             for stored in &mut store.online {
                 if stored.world_id == state.world_id
@@ -557,7 +560,10 @@ impl PublicStore for Shared {
 struct Sink {
     replies: Mutex<VecDeque<Option<Result<Delivery, NotDelivered>>>>,
     sent: Mutex<Vec<(Operation, String)>>,
-    /// Each exchange advances this clock by this much before it answers.
+    /// Each exchange advances this clock by this much and then answers. The
+    /// jump happens inside `send`, never through the clock's sleep, so a
+    /// latency never trips the exchange cut (`within`): the reply always
+    /// arrives, however long the latency.
     latency: Mutex<Option<(Clock, Duration)>>,
 }
 
@@ -1054,6 +1060,69 @@ fn a_scan_publishes_only_changed_worlds_at_new_revisions() {
     assert!(sent[2].1.contains(r#""projection_revision":"2""#));
 }
 
+/// §7.3: a name handoff is settled (deleted) only once Platform holds a list
+/// of the old holder's World taken at a cut that sees it: the World is
+/// unchanged and acknowledged, or acknowledged now, or has no snapshot at all;
+/// or once it is older than the hold. A World whose send failed keeps its
+/// handoff, so its new holder stays held.
+#[test]
+fn a_scan_settles_only_name_handoffs_platform_has_seen() {
+    const WORLD_3: &str = "01934f10-7c02-7001-805b-3b1122334403";
+    let store = Shared::default();
+    scanned(
+        &store,
+        vec![
+            (WORLD, Some(vec![online_entry("Aldric")])),
+            (WORLD_2, Some(vec![online_entry("Cato")])),
+        ],
+    );
+    let p = publisher(
+        &store,
+        vec![OK, OK, Some(Err(NotDelivered::Unavailable)), OK],
+    );
+    let mut state = ScanLoop::default();
+    assert!(block_on(p.scan(&mut state)));
+
+    let cut_ms = CUT_MS + 10_000;
+    let hold = i64::try_from(NAME_HANDOFF_HOLD.as_millis()).unwrap();
+    let handoff = |key: &str, world: &str, vacated_at_ms: i64| NameHandoff {
+        name_key: key.into(),
+        character_id: CHARACTER.into(),
+        world_id: world.into(),
+        vacated_at_ms,
+    };
+    let unchanged = handoff("aldo", WORLD, cut_ms - 1_000);
+    let failed = handoff("cato", WORLD_2, cut_ms - 1_000);
+    let absent = handoff("dara", WORLD_3, cut_ms - 1_000);
+    let expired = handoff("eli", WORLD_2, cut_ms - hold);
+    {
+        let mut s = store.lock().unwrap();
+        s.cut_ms = cut_ms;
+        // Cato was deleted: WORLD_2's list changes and its send fails.
+        s.worlds[1].1 = Some(vec![]);
+        s.handoffs = vec![
+            unchanged.clone(),
+            failed.clone(),
+            absent.clone(),
+            expired.clone(),
+        ];
+    }
+    *p.clock.0.lock().unwrap() += ONLINE_INTERVAL;
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(
+        p.sink.operations().len(),
+        3,
+        "only the changed World is sent"
+    );
+    assert_eq!(store.lock().unwrap().handoffs, vec![failed]);
+
+    // Its retry is acknowledged: settled.
+    *p.clock.0.lock().unwrap() += ONLINE_INTERVAL;
+    assert!(block_on(p.scan(&mut state)));
+    assert_eq!(p.sink.operations().len(), 4);
+    assert!(store.lock().unwrap().handoffs.is_empty());
+}
+
 #[test]
 fn an_unacknowledged_revision_is_resent_unchanged() {
     let store = Shared::default();
@@ -1131,6 +1200,8 @@ fn a_scan_past_its_deadline_fails() {
     // Both accepted, each within the exchange bound, but the last after the
     // deadline (this fake's exchanges run one after the other): the scan fails
     // and its cut is not a good one, though both acknowledgements are kept.
+    // The sink's latency never trips the cut (it is not a sleep), so only the
+    // scan deadline, checked after the sends, fails this scan.
     let store = Shared::default();
     scanned(&store, vec![(WORLD, Some(vec![])), (WORLD_2, Some(vec![]))]);
     let p = publisher(&store, vec![OK, OK]);

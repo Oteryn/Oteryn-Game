@@ -407,7 +407,14 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   (initial fill, Platform read-model loss, epoch raise). Platform cannot request a resync in v1.
   It runs with the node stopped, as one transaction of set-based statements (one per family),
   within `PUBPROJ-RESYNC-DEADLINE` (60 s), PostgreSQL timeouts included; one that does not finish
-  in time rolls back whole and is re-run.
+  in time rolls back whole and is re-run. The deadline is sized for a store of up to 1,000,000
+  Characters with every highscores pair: measured on PostgreSQL 17.6 at about 30 µs per subject
+  (10,000 Characters and 704 pairs in under 0.3 s), that is about 30 s, half the deadline. If a
+  resync still does not finish in time, the operator re-runs it one family at a time
+  (`character_profile`, then `highscores`, then `world_online`, each with the node stopped); if
+  one family alone exceeds the deadline, the store has outgrown this bound, and that is a blocker
+  for the contract owner, resolved by a contract change (a higher bound or a batched resync),
+  never by editing the deadline in place.
 
 ### 5.1 Liveness watermark
 
@@ -540,7 +547,14 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   `PUBPROJ-NAME-HANDOFF-HOLD` (60 s) from the vacating change, so a rename cycle (each holder
   waiting on the other's vacating publication) or an undeliverable vacating publication cannot
   hold the new holder forever; meanwhile, and after the bound while two profiles still hold the
-  name, Platform's rule below answers the name as unknown. Platform
+  name, Platform's rule below answers the name as unknown. `world_online` lists no
+  `character_id` (§4.6) and Platform joins its entries to profiles by (World, name), so the old
+  holder's `world_online` entry is a vacating publication too: the new holder is also held until
+  a `world_online` snapshot of the old holder's World taken at a cut that sees the vacating change
+  has been acknowledged (a new revision, or the stored snapshot when the World's list is unchanged
+  and already acknowledged at that cut; a World with no snapshot holds nothing), within the same
+  `PUBPROJ-NAME-HANDOFF-HOLD` bound, so the new holder never inherits the old holder's online
+  marker. Platform
   resolves a public name only when exactly one current, non-stale profile holds the character name
   in any World, or exactly one guild holds the guild name in that World: a name held by two or more is answered as an unknown name (§7.3 first rule) until a
   single holder remains, and never shows either holder's data. House names are presentation, not
@@ -580,7 +594,7 @@ the implementation, as LCFA's were.
 | `PUBPROJ-WATERMARK-GAP` | 10 s | maximum gap between watermarks of one family |
 | `PUBPROJ-INFLIGHT` | 1 per family per publisher; `world_online`: 1 per World, up to `PUBPROJ-ONLINE-WORLDS` | |
 | `PUBPROJ-PROFILE-BATCH` | 32 profiles | profiles read in one store pass and cleared in one; sent one at a time (`PUBPROJ-INFLIGHT`) |
-| `PUBPROJ-NAME-HANDOFF-HOLD` | 60 s | longest hold of a name's new holder behind a vacating publication (§7.3) |
+| `PUBPROJ-NAME-HANDOFF-HOLD` | 60 s | longest hold of a name's new holder behind a vacating publication, the old holder's World's `world_online` snapshot included (§7.3) |
 | `PUBPROJ-STORE-PASS-GAP` | 50 ms | minimum gap between two publisher passes over the durability root (§11) |
 | `PUBPROJ-RESYNC-DEADLINE` | 60 s | pass deadline of the operator resync (§5), PostgreSQL transaction, statement and lock timeouts included; the node is stopped |
 
@@ -672,9 +686,17 @@ the owner decided (Q3) that the pages answer 503 until their families are fresh.
 - **Name handoff** (§7.3): a root deletion or rename records the vacated name key in the profile
   outbox; the publisher holds any profile that now carries that key until the vacating row is
   acknowledged or `PUBPROJ-NAME-HANDOFF-HOLD` (60 s) old. A resync clears every recorded key: it
-  re-publishes every profile, so the handoff it guarded is superseded.
-- **Online read.** One statement reads the epoch, the cut, every online character (§4.6) and
-  every World's stored snapshot, so the scan sees one snapshot of the database.
+  re-publishes every profile, so the handoff it guarded is superseded. The same change records
+  (name key, old holder, old holder's World, time) in `game_public_name_handoffs`, and the
+  publisher also holds that key's new holder while such a row younger than the hold exists. Each
+  `world_online` cut reads up to `PUBPROJ-ONLINE` (4,096) of these rows, oldest first, in its one
+  statement; after its sends the scan deletes, in the pass that records its acknowledgements,
+  exactly the rows whose World Platform now holds at that cut (acknowledged now, or unchanged and
+  already acknowledged), whose World has no snapshot, or that are older than the hold. A resync
+  leaves these rows to the scan.
+- **Online read.** One statement reads the epoch, the cut, every online character (§4.6),
+  every World's stored snapshot and the name handoffs, so the scan sees one snapshot of the
+  database.
 - **Durability root.** The publisher shares the node's single durability root with gameplay, so
   it never holds it for long: each store pass starts at least `PUBPROJ-STORE-PASS-GAP` (50 ms)
   after the previous one ended, and a pass is skipped as "not now" while gameplay waits for the

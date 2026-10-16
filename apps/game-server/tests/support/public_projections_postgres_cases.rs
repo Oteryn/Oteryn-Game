@@ -5,10 +5,10 @@
 
 use super::durability::DurabilityRoot;
 use super::durability::character_authority::ReconciledCharacterAuthority;
-use super::durability::public_projections::{ONLINE, PROFILE, RESYNC_DEADLINE};
+use super::durability::public_projections::{CLEAR_HANDOFFS, ONLINE, PROFILE, RESYNC_DEADLINE};
 use oteryn_game_server::native_admission_source::public_projections::{
-    FILTERS, MAX_ONLINE, NAME_HANDOFF_HOLD, OnlineState, PROFILE_BATCH, VOCATION_IDS, VOCATIONS,
-    encode_highscores, encode_profile, online_digest,
+    FILTERS, MAX_ONLINE, NAME_HANDOFF_HOLD, NameHandoff, OnlineState, PROFILE_BATCH, VOCATION_IDS,
+    VOCATIONS, encode_highscores, encode_profile, online_digest,
 };
 use sqlx::{Connection, Executor, Row};
 
@@ -199,6 +199,45 @@ async fn online_names(pool: &sqlx::PgPool) -> TestResult<Vec<String>> {
         .filter(|row| row.get::<i32, _>("kind") == 1)
         .map(|row| row.get::<String, _>("name"))
         .collect())
+}
+
+/// (name key, Character, World, vacated at) of the name handoffs the producer's online read
+/// sees now.
+async fn online_handoffs(pool: &sqlx::PgPool) -> TestResult<Vec<(String, String, String, i64)>> {
+    let vocations: Vec<String> = VOCATIONS.iter().map(|(key, _)| (*key).to_owned()).collect();
+    let rows = sqlx::query(ONLINE)
+        .bind(i64::try_from(MAX_ONLINE + 1)?)
+        .bind(vocations)
+        .fetch_all(pool)
+        .await?;
+    Ok(rows
+        .iter()
+        .filter(|row| row.get::<i32, _>("kind") == 3)
+        .map(|row| {
+            (
+                row.get("name_key"),
+                row.get("character_id"),
+                row.get("world_id"),
+                row.get("vacated_at"),
+            )
+        })
+        .collect())
+}
+
+/// The scan's settlement of one handoff, as the runtime role.
+async fn settle(pool: &sqlx::PgPool, key: &str, character: &str, vacated_at: i64) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(CLEAR_HANDOFFS)
+        .bind(vec![key.to_owned()])
+        .bind(vec![character.to_owned()])
+        .bind(vec![vacated_at])
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 fn bare(seed: u8) -> String {
@@ -617,7 +656,15 @@ async fn projection_cases(database: &Database) -> TestResult {
         "DELETE FROM game_public_world_online".into(),
         "SELECT game_public_projection_resync('all', true)".into(),
         "SELECT game_public_projection_resync('world_online', false)".into(),
-        format!("SELECT game_public_profile_touch({}, NULL)", uuid(0x11)),
+        format!(
+            "SELECT game_public_profile_touch({}, NULL, NULL)",
+            uuid(0x11)
+        ),
+        format!(
+            "INSERT INTO game_public_name_handoffs VALUES ('aldric',{},{},0)",
+            uuid(0x11),
+            uuid(90)
+        ),
         format!(
             "SELECT game_public_highscores_touch({}, 1::smallint)",
             uuid(0x90)
@@ -833,6 +880,66 @@ async fn handoff_cases(pool: &sqlx::PgPool) -> TestResult {
     let mut heads = profile_heads(pool).await?;
     heads.sort();
     assert_eq!(heads, vec![bare(0x12), bare(0x13)]);
+
+    // The online half: Platform joins `world_online` by (World, name), so after 0x12's
+    // vacating publication is delivered 0x13 still waits, until a scan acknowledged at a cut
+    // that sees the handoff settles it (or the bounded hold passes).
+    attempt(pool, "DELETE FROM game_public_character_profile_outbox").await?;
+    attempt(
+        pool,
+        &format!(
+            "SELECT game_public_profile_touch({}, 'cato', {}); \
+             SELECT game_public_profile_touch({}, NULL, NULL);",
+            uuid(0x12),
+            uuid(90),
+            uuid(0x13)
+        ),
+    )
+    .await?;
+    assert_eq!(profile_heads(pool).await?, vec![bare(0x12)]);
+    attempt(
+        pool,
+        &format!(
+            "DELETE FROM game_public_character_profile_outbox WHERE character_id = {}",
+            uuid(0x12)
+        ),
+    )
+    .await?;
+    assert_eq!(
+        profile_heads(pool).await?,
+        Vec::<String>::new(),
+        "the old holder's World has no acknowledged cut that sees the handoff"
+    );
+    let seen = online_handoffs(pool).await?;
+    assert_eq!(seen.len(), 1, "{seen:?}");
+    let (key, character, world, vacated_at) = seen[0].clone();
+    assert_eq!(
+        (key.as_str(), character.clone(), world),
+        ("cato", bare(0x12), bare(90))
+    );
+    // Only exactly the handoff the cut saw is settled: a later vacate stays.
+    settle(pool, &key, &character, vacated_at - 1).await?;
+    assert_eq!(profile_heads(pool).await?, Vec::<String>::new());
+    settle(pool, &key, &character, vacated_at).await?;
+    assert_eq!(profile_heads(pool).await?, vec![bare(0x13)]);
+    assert!(online_handoffs(pool).await?.is_empty());
+    // A handoff older than the hold no longer holds anyone.
+    attempt(
+        pool,
+        &format!(
+            "DELETE FROM game_public_character_profile_outbox; \
+             SELECT game_public_profile_touch({}, NULL, NULL); \
+             INSERT INTO game_public_name_handoffs VALUES ('cato',{},{},\
+               floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint - {});",
+            uuid(0x13),
+            uuid(0x12),
+            uuid(90),
+            hold + 1
+        ),
+    )
+    .await?;
+    assert_eq!(profile_heads(pool).await?, vec![bare(0x13)]);
+    attempt(pool, "DELETE FROM game_public_name_handoffs").await?;
     // A resync re-publishes every profile and clears every recorded key.
     attempt(pool, &vacating(0x12, 1002, "'dara'")).await?;
     assert_eq!(resync(pool, "character_profile", false).await?, epoch);
@@ -1059,10 +1166,35 @@ pub(crate) async fn bootstrap_reads(
     root.persist_public_online(authority, std::slice::from_ref(&state))
         .await
         .map_err(error)?;
-    root.ack_public_online(authority, std::slice::from_ref(&state))
+    // A name handoff of this World (§7.3) is read with the cut and settled with the
+    // acknowledgement.
+    assert!(cut.handoffs.is_empty());
+    sqlx::query(
+        "INSERT INTO game_public_name_handoffs VALUES ('oldname', $1::uuid, $2::uuid, 1700000000000)",
+    )
+    .bind(character_id)
+    .bind(world_id)
+    .execute(pool)
+    .await?;
+    let handoffs = root
+        .public_online_cut(authority)
+        .await
+        .map_err(error)?
+        .handoffs;
+    assert_eq!(
+        handoffs,
+        vec![NameHandoff {
+            name_key: "oldname".into(),
+            character_id: character_id.to_owned(),
+            world_id: world_id.to_owned(),
+            vacated_at_ms: 1_700_000_000_000,
+        }]
+    );
+    root.ack_public_online(authority, std::slice::from_ref(&state), &handoffs)
         .await
         .map_err(error)?;
     let cut = root.public_online_cut(authority).await.map_err(error)?;
+    assert!(cut.handoffs.is_empty(), "settled with the acknowledgement");
     let stored = cut
         .worlds
         .iter()

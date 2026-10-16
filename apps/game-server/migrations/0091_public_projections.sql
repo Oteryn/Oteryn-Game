@@ -13,12 +13,16 @@
 --     gave up; the publisher holds a new holder of that key until the row is acknowledged or
 --     is older than the bounded handoff hold, so a rename cycle cannot hold delivery forever
 --     (contract §7.3 name handoff). A resync clears every recorded key.
+--   * `game_public_name_handoffs`: each vacated name key with the old holder's World. Platform
+--     joins `world_online` entries to profiles by (World, name), so the publisher also holds a
+--     new holder of the key until a `world_online` cut that sees the handoff is acknowledged
+--     for that World (or the same bounded hold passes); the scan then deletes the row.
 --   * `game_public_highscores` and `game_public_highscore_outbox`: the per-(World, category)
 --     revision. HS-1 advances it by attaching `game_public_highscores_snapshot_trigger()` to its
 --     snapshot table (one revision per committed job run, for all six filters).
 --   * `game_public_world_online`: the publisher's own last `world_online` snapshot per World
 --     (revision, content digest, observed time, acknowledged). It is the only table the runtime
---     writes, so a revision is never reused for different content across restarts.
+--     inserts into, so a revision is never reused for different content across restarts.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
 -- triggers, the tables and the functions. The projections are derived state: dropping them loses
@@ -81,6 +85,18 @@ CREATE TABLE game_public_world_online (
     acked BOOLEAN NOT NULL
 );
 
+-- One row per (vacated name key, old holder), its latest vacate. Rows leave only by the scan
+-- (seen and acknowledged, or older than the hold); a resync leaves them to age out.
+CREATE TABLE game_public_name_handoffs (
+    name_key TEXT NOT NULL,
+    character_id UUID NOT NULL,
+    world_id UUID NOT NULL,
+    vacated_at BIGINT NOT NULL CHECK (vacated_at >= 0),
+    PRIMARY KEY (name_key, character_id)
+);
+CREATE INDEX game_public_name_handoffs_age
+    ON game_public_name_handoffs (vacated_at, name_key, character_id);
+
 -- Characters committed before this migration (preproduction stores) are queued once at
 -- revision 1, so the initial fill needs no operator step and the watermark holds until then.
 INSERT INTO game_public_character_profiles(character_id, projection_revision, revised_at)
@@ -90,7 +106,8 @@ INSERT INTO game_public_character_profile_outbox(character_id, projection_epoch,
     projection_revision, created_at)
 SELECT character_id, 1, 1, revised_at FROM game_public_character_profiles;
 
-CREATE FUNCTION game_public_profile_touch(p_character UUID, p_vacated TEXT) RETURNS VOID
+CREATE FUNCTION game_public_profile_touch(p_character UUID, p_vacated TEXT, p_world UUID)
+RETURNS VOID
 LANGUAGE plpgsql AS $$
 DECLARE
     v_now BIGINT := floor(extract(epoch FROM transaction_timestamp()) * 1000)::BIGINT;
@@ -106,6 +123,12 @@ BEGIN
         projection_revision, created_at, vacated_name_key)
     SELECT p_character, projection_epoch, v_revision, v_now, p_vacated
     FROM game_public_projection_epoch WHERE epoch_scope = 1;
+    IF p_vacated IS NOT NULL THEN
+        INSERT INTO game_public_name_handoffs(name_key, character_id, world_id, vacated_at)
+        VALUES (p_vacated, p_character, p_world, v_now)
+        ON CONFLICT (name_key, character_id) DO UPDATE
+            SET world_id = EXCLUDED.world_id, vacated_at = EXCLUDED.vacated_at;
+    END IF;
 END; $$;
 
 -- SECURITY DEFINER: no writer role holds a privilege on the projection tables, so a profile
@@ -113,17 +136,17 @@ END; $$;
 CREATE FUNCTION game_public_profile_root_trigger() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
     IF TG_OP = 'INSERT' THEN
-        PERFORM game_public_profile_touch(NEW.character_id, NULL);
+        PERFORM game_public_profile_touch(NEW.character_id, NULL, NULL);
     ELSIF TG_OP = 'DELETE' THEN
-        PERFORM game_public_profile_touch(OLD.character_id, OLD.name_key);
+        PERFORM game_public_profile_touch(OLD.character_id, OLD.name_key, OLD.world_id);
     ELSE
         IF NEW.character_id <> OLD.character_id THEN
-            PERFORM game_public_profile_touch(OLD.character_id, OLD.name_key);
+            PERFORM game_public_profile_touch(OLD.character_id, OLD.name_key, OLD.world_id);
         END IF;
         PERFORM game_public_profile_touch(NEW.character_id,
             CASE WHEN NEW.name_key IS DISTINCT FROM OLD.name_key
                       OR NEW.character_id <> OLD.character_id
-                 THEN OLD.name_key END);
+                 THEN OLD.name_key END, OLD.world_id);
     END IF;
     RETURN NULL;
 END; $$;
@@ -138,10 +161,10 @@ CREATE TRIGGER game_public_profile_root_update AFTER UPDATE ON game_character_ro
 CREATE FUNCTION game_public_profile_state_trigger() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
     IF TG_OP IN ('UPDATE', 'DELETE') THEN
-        PERFORM game_public_profile_touch(OLD.character_id, NULL);
+        PERFORM game_public_profile_touch(OLD.character_id, NULL, NULL);
     END IF;
     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.character_id <> OLD.character_id) THEN
-        PERFORM game_public_profile_touch(NEW.character_id, NULL);
+        PERFORM game_public_profile_touch(NEW.character_id, NULL, NULL);
     END IF;
     RETURN NULL;
 END; $$;
@@ -326,6 +349,8 @@ CREATE TRIGGER game_public_highscores_no_truncate BEFORE TRUNCATE
     ON game_public_highscores EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_public_world_online_no_truncate BEFORE TRUNCATE
     ON game_public_world_online EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_public_name_handoffs_no_truncate BEFORE TRUNCATE
+    ON game_public_name_handoffs EXECUTE FUNCTION game_character_reject_truncate();
 -- Rows leave an outbox only by an acknowledgement; a truncation would let the watermark pass
 -- undelivered changes.
 CREATE TRIGGER game_public_character_profile_outbox_no_truncate BEFORE TRUNCATE
@@ -338,7 +363,7 @@ DECLARE
     v_function TEXT;
 BEGIN
     FOREACH v_function IN ARRAY ARRAY[
-        'game_public_profile_touch(uuid, text)',
+        'game_public_profile_touch(uuid, text, uuid)',
         'game_public_profile_root_trigger()',
         'game_public_profile_state_trigger()',
         'game_public_highscores_touch(uuid, smallint)',
@@ -355,9 +380,9 @@ END $$;
 
 REVOKE ALL ON game_public_projection_epoch, game_public_character_profiles,
     game_public_character_profile_outbox, game_public_highscores, game_public_highscore_outbox,
-    game_public_world_online FROM PUBLIC;
+    game_public_world_online, game_public_name_handoffs FROM PUBLIC;
 REVOKE ALL ON FUNCTION
-    game_public_profile_touch(uuid, text),
+    game_public_profile_touch(uuid, text, uuid),
     game_public_profile_root_trigger(),
     game_public_profile_state_trigger(),
     game_public_highscores_touch(uuid, smallint),
@@ -368,12 +393,12 @@ REVOKE ALL ON FUNCTION
     game_public_highscores_revision_guard(),
     game_public_world_online_guard()
 FROM PUBLIC;
--- Runtime publisher: read the projection state, clear acknowledged outbox rows and keep its own
--- `world_online` snapshots. The resync has no grant: only the owner login runs it, as invoker.
+-- Runtime publisher: read the projection state, clear acknowledged outbox rows and name
+-- handoffs and keep its own `world_online` snapshots. The resync has no grant: only the owner login runs it, as invoker.
 GRANT SELECT ON game_public_projection_epoch, game_public_character_profiles,
     game_public_highscores TO oteryn_game_runtime, oteryn_game_control;
-GRANT SELECT, DELETE ON game_public_character_profile_outbox, game_public_highscore_outbox
-    TO oteryn_game_runtime;
+GRANT SELECT, DELETE ON game_public_character_profile_outbox, game_public_highscore_outbox,
+    game_public_name_handoffs TO oteryn_game_runtime;
 GRANT SELECT ON game_public_character_profile_outbox, game_public_highscore_outbox,
-    game_public_world_online TO oteryn_game_control;
+    game_public_world_online, game_public_name_handoffs TO oteryn_game_control;
 GRANT SELECT, INSERT, UPDATE ON game_public_world_online TO oteryn_game_runtime;
