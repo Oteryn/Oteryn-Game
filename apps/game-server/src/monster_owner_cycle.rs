@@ -12,8 +12,8 @@ use crate::foundation::owner_timer::{
     OwnerTimerLane, SemanticTimeMicros,
 };
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GenerationError, RuntimeScopeRefV1, RuntimeWorkStamp,
-    ScopeOwnershipGeneration, ScopeRuntimeFence,
+    CarrierError, ChannelRuntimeV1, ExactActorRef, GenerationError, MovementLocalPosition,
+    RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::monster_summon::{
@@ -106,6 +106,115 @@ pub(crate) fn resolve_monster_profile_summons(
         .iter()
         .map(|proposal| owner.execute(runtime, current, stamp, catalog, proposal, policy))
         .collect())
+}
+
+/// Session-free body for the World owner's per-Channel respawn job. Foundation
+/// remains the only owner of spawn points, occurrence deadlines and window budgets.
+/// Installation/wakeup by the World composition root is a separate integration step.
+#[derive(Debug)]
+pub(crate) struct MonsterRespawnJob {
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    last_observed_micros: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RespawnJobError {
+    StaleOwner,
+    ClockRegressed,
+    Carrier(CarrierError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RespawnJobReport {
+    pub(crate) warnings: Vec<MovementLocalPosition>,
+    pub(crate) admitted: Vec<ExactActorRef>,
+    pub(crate) blocked: usize,
+    pub(crate) retried: usize,
+    pub(crate) skipped: usize,
+    /// Next native owner-window boundary, not another spawn occurrence/deadline.
+    /// None means the semantic clock cannot represent another complete boundary.
+    pub(crate) next_wake: Option<SemanticTimeMicros>,
+}
+
+impl MonsterRespawnJob {
+    pub(crate) fn new(
+        runtime: &ChannelRuntimeV1,
+        current: &ScopeRuntimeFence,
+    ) -> Result<Self, RespawnJobError> {
+        let binding = runtime.binding();
+        let job = Self {
+            scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            generation: binding.scope_generation(),
+            last_observed_micros: None,
+        };
+        job.check_current(runtime, current)?;
+        Ok(job)
+    }
+
+    fn check_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        current: &ScopeRuntimeFence,
+    ) -> Result<(), RespawnJobError> {
+        let binding = runtime.binding();
+        if self.scope != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+            || self.generation != binding.scope_generation()
+            || !current.is_current_for_scope(self.scope, self.generation)
+            || runtime.owner_fence().is_err()
+        {
+            return Err(RespawnJobError::StaleOwner);
+        }
+        Ok(())
+    }
+
+    /// Runs without a player, session, spell state or gameplay transport admission.
+    /// Repeated calls retain Foundation's one occurrence per point and shared window
+    /// budget. Late calls use the observed owner time once; no catch-up loop is added.
+    pub(crate) fn run(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: &ScopeRuntimeFence,
+        clock: &impl OwnerClock,
+    ) -> Result<RespawnJobReport, RespawnJobError> {
+        self.check_current(runtime, current)?;
+        let now = clock.now().get();
+        if self.last_observed_micros.is_some_and(|last| now < last) {
+            return Err(RespawnJobError::ClockRegressed);
+        }
+        // Record even a refused native pass: it may have progressed other points
+        // before returning its error, and a retry cannot move their clock backwards.
+        self.last_observed_micros = Some(now);
+        let report = runtime
+            .drive_spawn_respawns(now, |observer, cell| {
+                use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+                match (
+                    VisibilityPosition::new(observer.x, observer.y, observer.floor),
+                    VisibilityPosition::new(cell.x, cell.y, cell.floor),
+                ) {
+                    (Ok(observer), Ok(cell)) => {
+                        VisibilitySettings::REFERENCE.can_see(observer, cell)
+                    }
+                    _ => false,
+                }
+            })
+            .map_err(RespawnJobError::Carrier)?;
+        // CREATURE-AI-0 §7 / native spawn::OWNER_WINDOW_MICROS: 50 ms.
+        // The composition root owns the actual wakeup; this job retains no timer.
+        let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        let next_wake = (now / window)
+            .checked_add(1)
+            .and_then(|next| next.checked_mul(window))
+            .map(SemanticTimeMicros::from_micros);
+        Ok(RespawnJobReport {
+            warnings: report.warnings,
+            admitted: report.admitted,
+            blocked: report.blocked,
+            retried: report.retried,
+            skipped: report.skipped,
+            next_wake,
+        })
+    }
 }
 
 const AI01_CREATURES_PER_SCOPE: usize = 64; // Accepted AI decision §4.9:16sources×4population.
@@ -970,6 +1079,238 @@ mod tests {
                 .expect("probe after stale target")
                 .get(),
             4
+        );
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod loop_monster_respawns {
+    use super::*;
+    use crate::foundation::owner_timer::VirtualOwnerClock;
+    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId, crystal_timer_fixture};
+
+    fn setup() -> (ChannelRuntimeV1, ScopeRuntimeFence, MonsterRespawnJob) {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let source = room.spawn_source().expect("fixture spawn source");
+        assert_eq!(
+            runtime.realize_activation_spawns(vec![source.activation_facts()]),
+            Ok(2)
+        );
+        let (current, _) = crystal_timer_fixture(
+            RuntimeScopeRefV1::channel(world, channel),
+            ScopeOwnershipGeneration::new(1).expect("generation"),
+        )
+        .expect("independently supplied current test fence");
+        let job = MonsterRespawnJob::new(&runtime, &current).expect("job");
+        (runtime, current, job)
+    }
+
+    fn at(micros: u64) -> VirtualOwnerClock {
+        VirtualOwnerClock::new(SemanticTimeMicros::from_micros(micros))
+    }
+
+    #[test]
+    fn world_job_respawns_without_a_session_on_the_native_schedule() {
+        let (mut runtime, current, mut job) = setup();
+        assert!(
+            runtime
+                .positioned_melee_census()
+                .expect("census")
+                .iter()
+                .all(|(_, _, session)| session.is_none())
+        );
+        let (point, cell, live) = runtime.spawn_point_creatures()[0];
+        let original = live.expect("live rat");
+        assert!(runtime.kill_creature_for_test(original));
+        let first = job
+            .run(&mut runtime, &current, &at(0))
+            .expect("observe gone");
+        assert!(first.warnings.is_empty());
+        assert!(first.admitted.is_empty());
+        assert_eq!(
+            first.next_wake,
+            Some(SemanticTimeMicros::from_micros(50_000))
+        );
+        let due = runtime
+            .pending_respawn(point)
+            .expect("one native occurrence")
+            .due_micros;
+        assert!(
+            job.run(&mut runtime, &current, &at(due - 1))
+                .expect("not due")
+                .warnings
+                .is_empty()
+        );
+        let warned = job.run(&mut runtime, &current, &at(due)).expect("warning");
+        assert_eq!(warned.warnings, vec![cell]);
+        let admit_at = runtime
+            .pending_respawn(point)
+            .expect("native admission deadline")
+            .due_micros;
+        assert_eq!(admit_at, due + 4_200_000);
+        assert!(
+            job.run(&mut runtime, &current, &at(admit_at - 1))
+                .expect("not due")
+                .admitted
+                .is_empty()
+        );
+        let admitted = job
+            .run(&mut runtime, &current, &at(admit_at))
+            .expect("admit");
+        assert_eq!(admitted.admitted.len(), 1);
+        assert_ne!(admitted.admitted[0], original);
+        assert_eq!(runtime.pending_respawn(point), None);
+        let replay = job
+            .run(&mut runtime, &current, &at(admit_at))
+            .expect("repeat wake");
+        assert!(replay.admitted.is_empty());
+        assert!(replay.warnings.is_empty());
+        assert_eq!(
+            runtime.spawn_point_creatures()[0].2,
+            Some(admitted.admitted[0])
+        );
+    }
+
+    #[test]
+    fn repeated_runs_replay_identically_with_late_owner_wakes() {
+        let run = || {
+            let (mut runtime, current, mut job) = setup();
+            let (point, _, live) = runtime.spawn_point_creatures()[0];
+            assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+            let mut reports = vec![job.run(&mut runtime, &current, &at(123)).expect("gone")];
+            let due = runtime.pending_respawn(point).expect("due").due_micros;
+            // A late wake performs one native warning, never bursts through admission.
+            reports.push(
+                job.run(&mut runtime, &current, &at(due + 12_345))
+                    .expect("late warning"),
+            );
+            reports.push(
+                job.run(&mut runtime, &current, &at(due + 12_345))
+                    .expect("same wake"),
+            );
+            let admit_at = runtime
+                .pending_respawn(point)
+                .expect("admit deadline")
+                .due_micros;
+            reports.push(
+                job.run(&mut runtime, &current, &at(admit_at + 678))
+                    .expect("late admission"),
+            );
+            (reports, runtime.spawn_point_creatures())
+        };
+        let first = run();
+        assert_eq!(first.0.iter().map(|r| r.warnings.len()).sum::<usize>(), 1);
+        assert_eq!(first.0.iter().map(|r| r.admitted.len()).sum::<usize>(), 1);
+        assert_eq!(first, run());
+    }
+
+    #[test]
+    fn foreign_scope_or_replaced_generation_refuses_before_native_mutation() {
+        let (mut runtime, mut current, mut job) = setup();
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        job.run(&mut runtime, &current, &at(0)).expect("gone");
+        let pending = runtime.pending_respawn(point).expect("pending");
+        let before = runtime.spawn_point_creatures();
+        let binding = runtime.binding();
+        let foreign_world =
+            WorldId::decode(&[1, 0, 0, 0, 0, 9, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+                .expect("foreign world");
+        let foreign_channel =
+            ChannelId::decode(&[1, 0, 0, 0, 0, 9, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+                .expect("foreign channel");
+        for scope in [
+            RuntimeScopeRefV1::channel(foreign_world, binding.channel_id()),
+            RuntimeScopeRefV1::channel(binding.world_id(), foreign_channel),
+        ] {
+            let (foreign, _) = crystal_timer_fixture(scope, binding.scope_generation())
+                .expect("foreign live grant");
+            assert_eq!(
+                job.run(&mut runtime, &foreign, &at(pending.due_micros)),
+                Err(RespawnJobError::StaleOwner)
+            );
+            assert_eq!(runtime.pending_respawn(point), Some(pending));
+            assert_eq!(runtime.spawn_point_creatures(), before);
+            assert_eq!(job.last_observed_micros, Some(0));
+        }
+        current
+            .apply_external_grant(ScopeOwnershipGeneration::new(2).expect("successor"))
+            .expect("replace grant");
+        assert_eq!(
+            job.run(&mut runtime, &current, &at(pending.due_micros)),
+            Err(RespawnJobError::StaleOwner)
+        );
+        assert_eq!(runtime.pending_respawn(point), Some(pending));
+        assert_eq!(runtime.spawn_point_creatures(), before);
+        assert_eq!(job.last_observed_micros, Some(0));
+    }
+
+    #[test]
+    fn retired_runtime_cannot_be_revived_by_a_separate_matching_fence() {
+        let (mut runtime, current, mut job) = setup();
+        runtime.retire_owner_cycle();
+        assert_eq!(
+            job.run(&mut runtime, &current, &at(0)),
+            Err(RespawnJobError::StaleOwner)
+        );
+        assert!(matches!(
+            MonsterRespawnJob::new(&runtime, &current),
+            Err(RespawnJobError::StaleOwner)
+        ));
+        assert_eq!(job.last_observed_micros, None);
+    }
+
+    #[test]
+    fn clock_regression_preserves_pending_occurrence_and_valid_retry() {
+        let (mut runtime, current, mut job) = setup();
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        job.run(&mut runtime, &current, &at(1_000)).expect("gone");
+        let pending = runtime.pending_respawn(point).expect("pending");
+        let before = runtime.spawn_point_creatures();
+        assert_eq!(
+            job.run(&mut runtime, &current, &at(999)),
+            Err(RespawnJobError::ClockRegressed)
+        );
+        assert_eq!(runtime.pending_respawn(point), Some(pending));
+        assert_eq!(runtime.spawn_point_creatures(), before);
+        assert_eq!(job.last_observed_micros, Some(1_000));
+        assert_eq!(
+            job.run(&mut runtime, &current, &at(pending.due_micros))
+                .expect("valid retry")
+                .warnings
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn next_wake_never_wraps_at_the_end_of_semantic_time() {
+        let (mut runtime, current, mut job) = setup();
+        assert_eq!(
+            job.run(&mut runtime, &current, &at(u64::MAX))
+                .expect("last time")
+                .next_wake,
+            None
         );
     }
 }
