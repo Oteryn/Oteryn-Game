@@ -473,3 +473,15 @@ owned-path scope, original-card-prefix and final source/fixture bindings are
 recorded in `implementation-phase/final-checks/`; Rust hashes remain identical to
 `attempt-5/source-before.json` and `source-after.json` after this documentation
 update.
+
+### CP gap-review follow-up — 2026-10-16
+
+The remaining whole-reset work was checked against source
+`59172979bc3c333fb2eda43b6dae52065bbbf9ef` and CP comment `6216366289`.
+The concrete missing owner/consumer allocations, shared CI-list slot and
+qualification boundary are retained in
+`docs/agents/evidence/MAP-OVERLAY-1c-reset-owner-ports-2026-10-16.md`.
+This source assessment changes no Rust or runtime contract and does not complete
+the still-open acceptance criteria. Whole-reset orchestration needs actual
+transport/node, content activation and initializer consumers outside owned paths;
+HOUSE-RUNTIME-1a remains the dependency for real positive HouseInterior custody.
