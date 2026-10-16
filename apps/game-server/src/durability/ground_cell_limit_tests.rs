@@ -589,7 +589,7 @@ mod postgres {
         // that a runtime cast or compatible Content producer was admitted.
         crate::durability::spell_items_abi::QualifiedItemDefinition {
             definition: TypedDefinitionRef {
-                production_key: "fixture:ground.conjured".into(),
+                production_key: "oteryn:item.tibia.i2148".into(),
                 ..definition()
             },
             content_generation_digest: [7; 32],
@@ -602,6 +602,49 @@ mod postgres {
             decay: None,
             decay_chain: Vec::new(),
         }
+    }
+
+    fn spell_origin(
+        h: &Harness,
+    ) -> TestResult<(
+        crate::foundation::ChannelRuntimeV1,
+        crate::durability::spell_items_abi::SourceCasterOrigin,
+    )> {
+        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+        // The pin is explicit native runtime test DATA, not Content activation
+        // acceptance. The exact actor comes only from the real runtime factory;
+        // DB current recovery/node/scope/lease authority is independently issued.
+        let mut owner = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            h.node.fact().node_id(),
+            h.node.fact().registration_revision(),
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            ChannelContentPin::test(world),
+        )
+        .map_err(debug)?;
+        let reservation = owner
+            .reserve_fresh_session(GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?)
+            .map_err(debug)?;
+        let actor = owner.commit_fresh_session(reservation).map_err(debug)?;
+        let origin = crate::durability::spell_items_abi::SourceCasterOrigin {
+            actor,
+            character_lease_generation: harness::item_fence()?.character_lease_generation,
+        };
+        Ok((owner, origin))
+    }
+
+    fn spell_backpack() -> crate::durability::spell_items_abi::QualifiedItemDefinition {
+        let mut backpack = spell_definition();
+        backpack.definition = definition();
+        backpack.stack_maximum = 1;
+        backpack.container_capacity = Some(20);
+        backpack
     }
 
     fn spell_mint(number: u8) -> crate::durability::spell_items_abi::SpellItemOperation {
@@ -618,6 +661,7 @@ mod postgres {
     }
 
     fn spell_request(
+        origin: &crate::durability::spell_items_abi::SourceCasterOrigin,
         number: u64,
         transaction: u8,
         operations: Vec<crate::durability::spell_items_abi::SpellItemOperation>,
@@ -645,7 +689,7 @@ mod postgres {
                 caster_digest_before: [11; 32],
                 caster_digest_after: [12; 32],
             },
-            caster_origin: None,
+            caster_origin: Some(origin.clone()),
             operations,
             companion: None,
             direct_companion: None,
@@ -876,16 +920,24 @@ mod postgres {
     #[test]
     fn spell_batch_capacity_failure_rolls_back_earlier_root_and_all_source_rows() -> TestResult {
         run("ground_spell_batch", async |h| {
+            let (_runtime, origin) = spell_origin(h)?;
             use crate::durability::spell_item_transaction::apply_spell_items_in_transaction;
             mint(h, 1, 63, &target()).await?;
             let before = spell_footprint(h).await?;
-            let request = spell_request(700, 160, vec![spell_mint(180), spell_mint(181)])?;
+            let request = spell_request(&origin, 700, 160, vec![spell_mint(180), spell_mint(181)])?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
-            assert!(matches!(
-                apply_spell_items_in_transaction(&mut tx, &authority, &request).await,
-                Err(SpellItemError::Rejected("not enough room"))
-            ));
+            let result = apply_spell_items_in_transaction(&mut tx, &authority, &request).await;
+            assert!(
+                matches!(result, Err(SpellItemError::Rejected("not enough room"))),
+                "{result:?}"
+            );
+            let earlier_root: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(180).as_slice()).fetch_one(&mut *tx).await?;
+            assert_eq!(
+                earlier_root, 1,
+                "first native root must precede second-root refusal"
+            );
             tx.rollback().await?;
             assert_eq!(spell_footprint(h).await?, before);
             assert_eq!(h.root_revision().await?, "1");
@@ -897,6 +949,7 @@ mod postgres {
     fn spell_actual_removal_frees_room_and_committed_replay_does_not_charge_it_again() -> TestResult
     {
         run("ground_spell_replace", async |h| {
+            let (_runtime, origin) = spell_origin(h)?;
             use crate::durability::spell_item_transaction::{
                 apply_spell_items_in_transaction, prepare_ground_removal_in_transaction,
             };
@@ -911,6 +964,7 @@ mod postgres {
                     .await
                     .map_err(debug)?;
             let request = spell_request(
+                &origin,
                 701,
                 162,
                 vec![SpellItemOperation::RemoveGround(removed), spell_mint(180)],
@@ -942,6 +996,7 @@ mod postgres {
     fn actual_inventory_overflow_is_a_ground_root_and_refuses_without_partial_writes() -> TestResult
     {
         run("ground_spell_overflow", async |h| {
+            let (_runtime, origin) = spell_origin(h)?;
             use crate::durability::spell_item_transaction::apply_spell_items_in_transaction;
             use crate::durability::spell_items_abi::SpellItemOperation;
             mint(h, 1, 64, &target()).await?;
@@ -950,17 +1005,18 @@ mod postgres {
                 item_instance_id: id(180),
                 definition: spell_definition(),
                 quantity: 1,
-                backpack: spell_definition(),
+                backpack: spell_backpack(),
                 overflow_placement: ground_placement(&target()),
                 allow_ground_overflow: true,
             };
-            let request = spell_request(702, 164, vec![operation])?;
+            let request = spell_request(&origin, 702, 164, vec![operation])?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
-            assert!(matches!(
-                apply_spell_items_in_transaction(&mut tx, &authority, &request).await,
-                Err(SpellItemError::Rejected("not enough room"))
-            ));
+            let result = apply_spell_items_in_transaction(&mut tx, &authority, &request).await;
+            assert!(
+                matches!(result, Err(SpellItemError::Rejected("not enough room"))),
+                "{result:?}"
+            );
             tx.rollback().await?;
             assert_eq!(spell_footprint(h).await?, before);
             Ok(())
@@ -971,6 +1027,7 @@ mod postgres {
     fn actual_inventory_destination_and_existing_stack_merge_do_not_charge_full_ground()
     -> TestResult {
         run("ground_inventory_zero", async |h| {
+            let (_runtime, origin) = spell_origin(h)?;
             use crate::durability::spell_item_transaction::{
                 apply_spell_items_in_transaction, prepare_inventory_merge_in_transaction,
             };
@@ -1015,11 +1072,9 @@ mod postgres {
             drop(permit);
             mint(h, 2, 64, &target()).await?;
             let qualified = spell_definition();
-            let mut backpack = spell_definition();
-            backpack.definition = definition();
-            backpack.stack_maximum = 1;
-            backpack.container_capacity = Some(20);
+            let backpack = spell_backpack();
             let request = spell_request(
+                &origin,
                 801,
                 166,
                 vec![SpellItemOperation::MintInventory {
@@ -1053,6 +1108,7 @@ mod postgres {
             .map_err(debug)?
             .ok_or("real compatible inventory stack absent")?;
             let request = spell_request(
+                &origin,
                 802,
                 168,
                 vec![SpellItemOperation::MergeInventory(reservation)],
