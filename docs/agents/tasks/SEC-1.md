@@ -3,8 +3,8 @@
 ```yaml
 task_id: SEC-1
 title: "SEC-1: server-side client integrity and anti-bot checks (skeleton)"
-mode: REPORT_ONLY
-status: prerequisite_design_prepared
+mode: IMPLEMENT
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/sec-1
@@ -15,13 +15,18 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "hard (child graph SEC-REL-1, SEC-CHAL-1, SEC-TELEM-1, SEC-DETECT-1, SEC-CHAL-2)"
 migration: no
 registry: yes
-owner: "/root/sec_record (delegated SEC record-only writer; family lead /root / chat I)"
+owner: "/root/gm_compile_fix (sole allocated leaf writer; family lead /root / chat I)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/SEC-1.md
+  - apps/game-server/src/security/mod.rs (new, unregistered leaf root only)
+  - apps/game-server/src/security/trust_policy.rs (new)
+  - apps/game-server/src/security/trust_policy_tests.rs (new)
+  - apps/game-server/src/security/release_policy.rs (new)
+  - apps/game-server/src/security/release_policy_tests.rs (new)
 slot_only_paths: []
 public_contracts: []
 depends_on:
@@ -37,11 +42,53 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Current allocation is **REPORT_ONLY**, limited to this record by D1030. The delegated
-writer is `/root/sec_record`, under family lead `/root` / chat I. CP names future child
-owners at their separate allocations. Original 2026-10-15 source/slot allocations are retained
-as historical planning evidence and grant no current source-write authority. CP and
-architect retain final review, readiness, allocation and merge authority.
+Current leaf allocation is **IMPLEMENT**, limited to the new files listed above
+and this owned record, under the [CP correction](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225481669).
+Runtime wiring remains **REPORT_ONLY** until the owning prerequisite PRs merge.
+This allocation supersedes earlier record-only/source-allocation statements below
+only for these pure leaves. CP retains readiness, wiring allocation and merge authority.
+
+## Current leaf checkpoint — NOT_FULLY_QUALIFIED
+
+- `trust_policy` checks ordinary consecutive revision/predecessor/floor rules,
+  checkpoint revision/time bounds, applied/checkpoint equality, raw-wall versus
+  monotonic backward discrepancy, and strict post-step-fetch observation ordering.
+  These are numeric predicates, never an authenticated checkpoint or VERIFIED store.
+- `release_policy` checks signing-role separation and raw Ed25519 public-key
+  membership/revocation. It selects no signed key-id schema. Inputs do not prove
+  signatures or current authenticated key state. No crypto implementation is added.
+- Neither leaf reads a clock, network, database or config, supplies embedded pins,
+  seeds a restored store, emits challenges, admits builds or changes gameplay rights.
+  No existing server module/Cargo file is edited or registered.
+
+Accepted authority is SEC_CLIENT01 §3 (acceptance remains D1034); D1029 fixes
+canonical JCS and detached Ed25519, but these leaves consume no signed schema or
+serialized bytes and need no dependency or JCS rerun. Local `Duration` facts
+select no wire timestamp units. The 24h and 5min constants are accepted limits,
+not new resource allocations.
+
+Targeted prerequisite interface evidence:
+
+| Exact supplied PR head | Inspected interface | Consequence |
+| --- | --- | --- |
+| #2182 `1b9568e4df886d681a2319653d24a0f87a9b32d9` | `interaction/look.rs::item_text` | Read-only content description consumes qualified generation semantics; it supplies no trust/build admission authority. No speculative dependency is added. |
+| #2202 `0106edef4ad12afcf70a835d1ede994a41ad4608` | `world_clock.rs::now_utc_ms`, `WorldClockSource`; `world_weather.rs::absolute_weather_slot` | World time is clamped from one wall observation and weather arithmetic supplies no current binding. SEC backward-step checks therefore require separate raw wall and monotonic observations. Runtime wiring remains deferred. |
+
+Validation: isolated Rust 1.94.0 `rustc --edition 2024 --test -D warnings`
+compiled the exact five source files outside the checkout; **17/17 tests PASS**
+(11 trust-policy, 6 release-policy). Exact-file Rustfmt and `git diff --check`
+PASS. This is pure-policy proof, not Game Server compilation, cryptographic
+verification, signature/schema qualification, persistence/restart, freshness
+provenance or runtime integration proof. No heavy build, PG, PC or JCS run.
+Private harness/log and exact file hashes are retained under
+`/workspace/oteryn-prep/sec-policy-b2c7/`; lead owns independent review/publication.
+
+Still missing for consuming implementation: accepted closed trust/release/corpus
+schemas and inventory/bounds, exact embedded node seed and root-lineage/bootstrap
+contract, serialized durable trust owner with independently current retrieval and
+clock-latch provenance, and PROD-COMPAT's exact admitted-build source. None can be
+replaced by a caller boolean or this policy result. Existing detailed prerequisite
+packet below retains those concrete gaps; no new approval or runtime grant is implied.
 
 ## Goal
 
@@ -69,9 +116,10 @@ ADMIT-CAP-1 unmerged, and incorrectly treated SEC_CLIENT01/ADMIT0 acceptance as 
 That table is superseded by the decisions above; original source observations below
 remain dated evidence, not current implementation or merge claims.
 
-## Owned paths (current REPORT_ONLY allocation)
+## Owned paths (current pure-leaf allocation)
 
-- `docs/agents/tasks/SEC-1.md` only.
+- The five new `apps/game-server/src/security/` files listed in YAML above.
+- `docs/agents/tasks/SEC-1.md`.
 
 ## Historical child source-path plan — inactive in #2188
 
@@ -102,8 +150,8 @@ remain dated evidence, not current implementation or merge claims.
 Each SEC-* child with Reg=yes remains an inseparable wire+registry+capability+handler+tests
 bundle. D1030 requires **separate allocations, one child at a time**:
 SEC-REL-1 → SEC-CHAL-1 → SEC-TELEM-1 → SEC-DETECT-1 → SEC-CHAL-2.
-SEC-REL-1's future scope includes `tools/oteryn-release-sign/` and
-`apps/game-server/src/security/`; neither is allocated to this PR. SEC-TRUST-1 is a
+SEC-REL-1's future runtime/signing scope includes `tools/oteryn-release-sign/`.
+Only the listed pure security leaves are now allocated to this PR. SEC-TRUST-1 is a
 separate prerequisite owner, not an implicit expansion of SEC-REL-1.
 
 ## Acceptance criteria
@@ -126,14 +174,14 @@ SEC_CLIENT01 decision; plan App. 7 SEC-1. Plan: `docs/architecture/reviews/OTERY
 
 ## Current builder instructions
 
-- Update only this record on `skeleton/sec-1`; this allocation authorizes no implementation.
+- Implement only the listed new pure-leaf files and this record on `skeleton/sec-1`; runtime wiring remains REPORT_ONLY.
 - Children need separate CP allocation, accepted owning contracts and their prerequisite gates.
 - One author per branch; author only in AUTHORING, freeze the candidate before review,
   and explicitly return to AUTHORING through the lead before repairing a frozen candidate.
 - The record-only writer returns the candidate to the family lead for publication and
   review coordination; CP retains readiness, child allocation and merge authority.
 
-## Context checkpoint
+## Historical record-only context checkpoint (superseded by current leaf allocation)
 
 ```yaml
 last_progress: "D1029-D1034 recorded; later owner TEST telemetry override applied (2026-10-16)"
