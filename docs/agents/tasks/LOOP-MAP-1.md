@@ -325,3 +325,14 @@ The10m aggregate bonus threshold (CIPSOFT S3) remains a separate rule. No module
 mount, debit, donation writer, map authority, discovery flags or runtime effect is
 introduced. The source-mask JSONL/hash is unchanged. New domain compilation/test
 and all native/runtime integration remain NOT_RUN and NOT_FULLY_QUALIFIED.
+
+## D1230 native donation component qualification
+
+Actual native Cargo no-run at source26aa26a4 with exact Reset source2fca2ae7:
+compile exit0; this leaf's one literal donation boundary case1PASS,0ignored.
+The other four executed cases belong to Reset, not Cyclopedia. Private cfg(test)
+registration only; actual source hashes/dep-info match. Independent outcome review
+is retained with the external evidence packet. This supersedes the new domain
+compile/test NOT_RUN label above for this exact source only. Bank debit,aggregate
+bonus/runtime/native map admission,PG,strict and full package remain NOT_RUN.
+CP6226416516 requests the exact20region list/full source manifest and zip hash.
