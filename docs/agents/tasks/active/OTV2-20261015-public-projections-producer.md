@@ -63,7 +63,9 @@ operator command `oteryn-game-ops public-projection resync`. The publisher runs 
   (backoff 1 to 60 s, definite hold 300 s with alarm), §7.3 name handoff, §7.4 logging, §8 bounds.
 - DERIVED: vocation ids follow Game's `ReferenceBaseVocation` (control-plane ruling, matches the
   Platform consumer); `guild_visible` defaults to `true` (public, Tibia reference) because no
-  Game owner records the setting yet; only a Game-side setting may lower it (architect review B1).
+  Game owner records the setting yet; only a Game-side setting may lower it. Authority: CP ruling
+  https://github.com/Oteryn/Oteryn-Game/pull/2224#issuecomment-6206973613 (Platform owns guild privacy; its preference
+  is an upper bound over Game's `guild_visible`).
 - DERIVED (architect review of #2224): the publisher shares the single durability root, so it
   paces its passes (`PUBPROJ-STORE-PASS-GAP`), yields while gameplay waits and batches profiles
   (`PUBPROJ-PROFILE-BATCH`); the name handoff hold is bounded (`PUBPROJ-NAME-HANDOFF-HOLD`);
@@ -110,12 +112,30 @@ independent_current_fact_sources: [Character root, progression, build state, com
       Platform consumer, one-statement online read, ASCII names, invoker resync, no resend of an
       unchanged `world_online` watermark.
 
+- [x] Codex P2 and control-plane hardening of #2224: per-World `world_online` backoff 1 to 60 s
+      with retries between scans (§6); the `guild_visible` default cites the CP ruling (§4.2,
+      §12); projection names also refuse `/`, `.` and `..` (scoped to the projection encoders and
+      store reads; the account-characters wire keeps its rule); the online read uses the exact
+      `spell_character_lookup` predicate, eligible admission guard included (§4.6).
+
 ## Excluded scope
 
 Deployment, PKI, enabling the publisher in any stack, the Platform consumer, HS-1 (RANK-1 #2168),
 and the `character_deaths`, `guild` and `house` families.
 
 ## Validation
+
+Codex P2 and hardening fix head (2026-10-16):
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib --bins`: 3212 passed, 0 failed (29 ignored);
+  `oteryn-game-ops` 7 passed
+- PostgreSQL 17.6: `character_authority_postgres` 1526 passed (online predicate with eligible,
+  foreign-World and foreign-holder admission guards)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 124 passed
+- `git diff --check`: pass
 
 Architect-review fix head (2026-10-16):
 
@@ -146,7 +166,7 @@ Architect-review fix head (2026-10-16):
 ## Context checkpoint
 
 ```yaml
-last_progress: architect review findings of #2224 fixed in one push
+last_progress: Codex P2 (online backoff) and control-plane hardening of #2224 fixed in one push
 status: waiting
 branch: feat/public-projections-producer
 pr: 2224

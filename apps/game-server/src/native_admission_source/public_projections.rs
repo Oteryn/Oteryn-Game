@@ -399,7 +399,7 @@ pub fn encode_highscores(
         && rows.iter().all(|row| {
             canonical_uuid(&row.character_id, Some(b'7'))
                 && seen.insert(row.character_id.as_str())
-                && name_valid(&row.name)
+                && projection_name_valid(&row.name)
                 // A base-vocation list holds only that base vocation.
                 && row.vocation.is_some_and(|id| {
                     VOCATION_IDS.contains(&id) && (snapshot.filter == 0 || id == snapshot.filter)
@@ -438,6 +438,16 @@ pub fn encode_highscores(
     )
 }
 
+/// The §4.0 name rule of the projection wire: the account-characters rule
+/// and, as Platform's consumer (`NativeAccountCharactersWire::characterName`)
+/// also refuses, no `/` and not exactly `.` or `..`. Game's Character name
+/// CHECK already excludes them; this is defence in depth, scoped to the
+/// public projections so the account-characters wire keeps its own rule.
+#[must_use]
+pub fn projection_name_valid(name: &str) -> bool {
+    name_valid(name) && !name.contains('/') && name != "." && name != ".."
+}
+
 /// Exact §4.2 body.
 pub fn encode_profile(
     source_authority: &str,
@@ -445,7 +455,7 @@ pub fn encode_profile(
 ) -> Result<String, SourceError> {
     let entry_valid = snapshot.profile.as_ref().is_none_or(|entry| {
         canonical_uuid(&entry.world_id, Some(b'7'))
-            && name_valid(&entry.name)
+            && projection_name_valid(&entry.name)
             && entry.level != 0
             && VOCATION_IDS.contains(&entry.vocation)
             && entry.guild.as_ref().is_none_or(|guild| {
@@ -501,9 +511,9 @@ fn online_entries(characters: &[OnlineEntry]) -> Option<Vec<OnlineEntryWire<'_>>
         && characters
             .windows(2)
             .all(|w| w[0].name.as_bytes() < w[1].name.as_bytes())
-        && characters
-            .iter()
-            .all(|c| name_valid(&c.name) && VOCATION_IDS.contains(&c.vocation) && c.level != 0);
+        && characters.iter().all(|c| {
+            projection_name_valid(&c.name) && VOCATION_IDS.contains(&c.vocation) && c.level != 0
+        });
     valid.then(|| {
         characters
             .iter()
@@ -777,10 +787,59 @@ pub struct OutboxLoop {
     progress: Option<(String, u64, u64, u8)>,
 }
 
-/// The scan loop's state: Worlds held after a definite refusal.
+/// One World backing off after a transient `world_online` failure (§6).
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Retry {
+    world_id: String,
+    backoff: Duration,
+    at: Duration,
+}
+
+/// The scan loop's state: Worlds held after a definite refusal and Worlds
+/// backing off after a transient failure.
 #[derive(Debug, Default)]
 pub struct ScanLoop {
     held: Vec<Held>,
+    retries: Vec<Retry>,
+}
+
+/// §6: the next backoff after a transient failure, 1 s after the first and
+/// doubling up to 60 s.
+fn next_backoff(previous: Duration) -> Duration {
+    (previous * 2).clamp(BACKOFF_MIN, BACKOFF_MAX)
+}
+
+impl ScanLoop {
+    /// When the earliest World backing off is due again.
+    #[must_use]
+    pub fn next_retry(&self) -> Option<Duration> {
+        self.retries.iter().map(|r| r.at).min()
+    }
+
+    fn retry(&self, world_id: &str) -> Option<&Retry> {
+        self.retries.iter().find(|r| r.world_id == world_id)
+    }
+
+    /// A transient failure (`429`, `503`, a timeout or a transport error):
+    /// the World is retried after its next backoff, not at the scan interval.
+    fn back_off(&mut self, world_id: &str, now: Duration) {
+        if let Some(retry) = self.retries.iter_mut().find(|r| r.world_id == world_id) {
+            retry.backoff = next_backoff(retry.backoff);
+            retry.at = now + retry.backoff;
+        } else {
+            self.retries.push(Retry {
+                world_id: world_id.to_owned(),
+                backoff: BACKOFF_MIN,
+                at: now + BACKOFF_MIN,
+            });
+        }
+    }
+
+    /// The World no longer waits for a retry: delivered, refused, unchanged
+    /// or gone. Its backoff resets.
+    fn settled(&mut self, world_id: &str) {
+        self.retries.retain(|r| r.world_id != world_id);
+    }
 }
 
 impl OutboxLoop {
@@ -1035,7 +1094,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 });
             }
             Err(_) => {
-                let backoff = (state.backoff[lane] * 2).clamp(BACKOFF_MIN, BACKOFF_MAX);
+                let backoff = next_backoff(state.backoff[lane]);
                 state.backoff[lane] = backoff;
                 state.retry_at[lane] = now + backoff;
             }
@@ -1365,8 +1424,51 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     /// One `world_online` scan (§5.1). Returns whether it completed in time:
     /// no World over its bound, and every changed World acknowledged within
     /// `ONLINE_SCAN_DEADLINE` of the scan's start. Only then does its cut
-    /// become the watermark's `complete_through`.
+    /// become the watermark's `complete_through`. A World backing off (§6)
+    /// is not sent before its retry is due, and fails the scan meanwhile.
     pub async fn scan(&self, state: &mut ScanLoop) -> bool {
+        self.scan_worlds(state, false).await
+    }
+
+    /// The §6 retry, between scans, of the Worlds whose backoff is due: their
+    /// lists at a new cut, sent as a scan sends them. It never completes a
+    /// scan, so `complete_through` waits for the next full scan.
+    pub async fn retry_scan(&self, state: &mut ScanLoop) {
+        if state
+            .next_retry()
+            .is_some_and(|at| at <= self.clock.elapsed())
+        {
+            self.scan_worlds(state, true).await;
+        }
+    }
+
+    async fn scan_worlds(&self, state: &mut ScanLoop, retry_only: bool) -> bool {
+        let mut due_at = self.clock.elapsed();
+        let complete = self.scan_cut(state, retry_only, &mut due_at).await;
+        // A due World the scan did not reach (the cut, the fence or the
+        // store failed) backs off again rather than being retried at once.
+        let now = self.clock.elapsed();
+        let unreached: Vec<String> = state
+            .retries
+            .iter()
+            .filter(|r| r.at <= due_at)
+            .map(|r| r.world_id.clone())
+            .collect();
+        for world_id in unreached {
+            state.back_off(&world_id, now);
+        }
+        complete && !retry_only
+    }
+
+    /// One read of the cut and the sends it needs: every World, or with
+    /// `retry_only` only the Worlds whose backoff is due at the cut read
+    /// (`due_at`).
+    async fn scan_cut(
+        &self,
+        state: &mut ScanLoop,
+        retry_only: bool,
+        due_at: &mut Duration,
+    ) -> bool {
         const OPERATION: &str = "PublishWorldOnlineV1";
         let started = self.clock.elapsed();
         let deadline = started + ONLINE_SCAN_DEADLINE;
@@ -1383,19 +1485,29 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             return false;
         };
         let read_at = self.clock.elapsed();
+        *due_at = read_at;
         if let Err(refused) = self.admit(cut.projection_epoch) {
             log(Family::WorldOnline, OPERATION, refused, Duration::ZERO);
             return false;
         }
         state.held.retain(|h| h.until > read_at);
+        // A World no longer in the cut has nothing left to retry.
+        state
+            .retries
+            .retain(|r| cut.worlds.iter().any(|w| w.world_id == r.world_id));
         let observed = seconds(cut.cut_ms);
         let mut complete = observed >= 0;
         let mut persist = Vec::new();
         let mut pending = Vec::new();
         for world in cut.worlds {
+            let retry_due = state.retry(&world.world_id).map(|r| r.at <= read_at);
+            if retry_only && retry_due != Some(true) {
+                continue;
+            }
             let Some(characters) = world.characters else {
                 // §4.6: never truncated; the World and the family go stale.
                 log(Family::WorldOnline, OPERATION, "over_bound", Duration::ZERO);
+                state.settled(&world.world_id);
                 complete = false;
                 continue;
             };
@@ -1407,6 +1519,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     "invalid_report",
                     Duration::ZERO,
                 );
+                state.settled(&world.world_id);
                 complete = false;
                 continue;
             };
@@ -1416,6 +1529,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                         && s.characters_digest == digest =>
                 {
                     if s.acked {
+                        state.settled(&world.world_id);
                         continue;
                     }
                     Some((s.projection_revision, s.source_observed_at, false))
@@ -1428,10 +1542,17 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 None => Some((1, observed, true)),
             };
             let Some((revision, source_observed_at, changed)) = next else {
+                state.settled(&world.world_id);
                 complete = false;
                 continue;
             };
             if state.held.iter().any(|h| h.subject == world.world_id) {
+                state.settled(&world.world_id);
+                complete = false;
+                continue;
+            }
+            if retry_due == Some(false) {
+                // §6: backing off; sent when its retry is due.
                 complete = false;
                 continue;
             }
@@ -1450,6 +1571,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     "invalid_report",
                     Duration::ZERO,
                 );
+                state.settled(&world.world_id);
                 complete = false;
                 continue;
             };
@@ -1502,23 +1624,30 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             });
             for (stored, result) in join_all(sends.collect()).await {
                 match result {
-                    Ok(_) => acked.push(OnlineState {
-                        acked: true,
-                        ..stored.clone()
-                    }),
-                    Err(not_delivered) => {
+                    Ok(_) => {
+                        state.settled(&stored.world_id);
+                        acked.push(OnlineState {
+                            acked: true,
+                            ..stored.clone()
+                        });
+                    }
+                    Err(not_delivered) if definite(not_delivered) => {
                         complete = false;
-                        if definite(not_delivered) {
-                            let alarms = self.alarm();
-                            eprintln!(
-                                "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
-                            );
-                            state.held.push(Held {
-                                family: Family::WorldOnline,
-                                subject: stored.world_id.clone(),
-                                until: self.clock.elapsed() + DEFINITE_HOLD,
-                            });
-                        }
+                        let alarms = self.alarm();
+                        eprintln!(
+                            "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
+                        );
+                        state.settled(&stored.world_id);
+                        state.held.push(Held {
+                            family: Family::WorldOnline,
+                            subject: stored.world_id.clone(),
+                            until: self.clock.elapsed() + DEFINITE_HOLD,
+                        });
+                    }
+                    Err(_) => {
+                        // `429`, `503`, a timeout or a transport error.
+                        complete = false;
+                        state.back_off(&stored.world_id, self.clock.elapsed());
                     }
                 }
             }
@@ -1535,7 +1664,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 })
                 .await;
         }
-        if complete && let Ok(mut last) = self.last_cut.lock() {
+        if complete
+            && !retry_only
+            && let Ok(mut last) = self.last_cut.lock()
+        {
             *last = Some(GoodCut {
                 projection_epoch: cut.projection_epoch,
                 cut_ms: cut.cut_ms,
@@ -1623,13 +1755,25 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         }
     }
 
+    /// A scan every `ONLINE_INTERVAL`; between scans, a World backing off
+    /// (§6) is retried when its backoff is due.
     async fn scan_loop(&self) {
         let mut state = ScanLoop::default();
         loop {
             let started = self.clock.elapsed();
             self.scan(&mut state).await;
-            let next = (started + ONLINE_INTERVAL).saturating_sub(self.clock.elapsed());
-            self.clock.sleep(next).await;
+            let next_scan = started + ONLINE_INTERVAL;
+            // Every retry scan moves each due World's retry past its cut
+            // read or settles it, so this ends by the next scan.
+            while let Some(at) = state.next_retry().filter(|at| *at < next_scan) {
+                self.clock
+                    .sleep(at.saturating_sub(self.clock.elapsed()))
+                    .await;
+                self.retry_scan(&mut state).await;
+            }
+            self.clock
+                .sleep(next_scan.saturating_sub(self.clock.elapsed()))
+                .await;
         }
     }
 

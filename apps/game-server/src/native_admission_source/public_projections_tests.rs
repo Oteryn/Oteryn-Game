@@ -966,6 +966,7 @@ fn an_unacknowledged_revision_is_resent_unchanged() {
     assert!(!block_on(p.scan(&mut state)));
     assert!(p.last_cut.lock().unwrap().is_none());
     store.lock().unwrap().cut_ms = CUT_MS + 10_000;
+    *p.clock.0.lock().unwrap() += ONLINE_INTERVAL;
     assert!(block_on(p.scan(&mut state)));
     let sent = p.sink.sent();
     assert_eq!(sent[0].1, sent[1].1);
@@ -1115,5 +1116,161 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
         snapshot.filter = filter;
         snapshot.rows[0].vocation = Some(filter);
         assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    }
+}
+
+/// The retry state of `world`: its backoff and when it is due.
+fn retry_of(state: &ScanLoop, world: &str) -> Option<(Duration, Duration)> {
+    state.retry(world).map(|r| (r.backoff, r.at))
+}
+
+#[test]
+fn a_transient_online_failure_backs_the_world_off_from_one_to_sixty_seconds() {
+    let store = Shared::default();
+    scanned(
+        &store,
+        vec![
+            (WORLD, Some(vec![online_entry("Aldric")])),
+            (WORLD_2, Some(vec![])),
+        ],
+    );
+    let p = publisher(&store, vec![Some(Err(NotDelivered::RateLimited)), OK]);
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(p.sink.operations().len(), 2);
+    // The first retry is due about 1 s after the failure, not at the scan interval.
+    let (backoff, at) = retry_of(&state, WORLD).unwrap();
+    assert_eq!(backoff, BACKOFF_MIN);
+    assert!(at > p.clock.elapsed() && at <= p.clock.elapsed() + BACKOFF_MIN);
+    assert_eq!(state.next_retry(), Some(at));
+    assert!(retry_of(&state, WORLD_2).is_none());
+    // Not yet due: neither a retry nor a scan sends it, and the scan fails.
+    block_on(p.retry_scan(&mut state));
+    assert_eq!(p.sink.operations().len(), 2);
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(p.sink.operations().len(), 2);
+    assert_eq!(retry_of(&state, WORLD), Some((backoff, at)));
+    // Due: the retry sends only that World; each failure doubles the backoff up to 60 s.
+    store.lock().unwrap().worlds[1].1 = Some(vec![online_entry("Bera")]);
+    let mut expected = BACKOFF_MIN;
+    for _ in 0..8 {
+        let (_, at) = retry_of(&state, WORLD).unwrap();
+        *p.clock.0.lock().unwrap() = at;
+        let sent = p.sink.operations().len();
+        block_on(p.retry_scan(&mut state));
+        let after = p.sink.sent();
+        assert_eq!(after.len(), sent + 1);
+        assert!(after[sent].1.contains(WORLD) && !after[sent].1.contains(WORLD_2));
+        expected = (expected * 2).min(BACKOFF_MAX);
+        let (backoff, next) = retry_of(&state, WORLD).unwrap();
+        assert_eq!(backoff, expected);
+        assert!(next > at && next <= p.clock.elapsed() + backoff);
+    }
+    assert_eq!(expected, BACKOFF_MAX);
+    // A delivery resets the backoff; a retry never completes a scan.
+    let (_, at) = retry_of(&state, WORLD).unwrap();
+    *p.clock.0.lock().unwrap() = at;
+    p.sink.replies.lock().unwrap().push_back(OK);
+    block_on(p.retry_scan(&mut state));
+    assert!(retry_of(&state, WORLD).is_none());
+    assert_eq!(state.next_retry(), None);
+    assert!(p.last_cut.lock().unwrap().is_none());
+    let acked: Vec<bool> = store
+        .lock()
+        .unwrap()
+        .online
+        .iter()
+        .map(|s| s.acked)
+        .collect();
+    assert_eq!(acked, vec![true, true]);
+    // The next scan sends the other World's change and completes.
+    p.sink.replies.lock().unwrap().push_back(OK);
+    assert!(block_on(p.scan(&mut state)));
+    assert!(p.sink.sent().last().unwrap().1.contains(WORLD_2));
+    assert!(p.last_cut.lock().unwrap().is_some());
+}
+
+#[test]
+fn a_backing_off_world_retried_by_a_scan_resets_on_delivery() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    let p = publisher(&store, vec![Some(Err(NotDelivered::Unavailable)), None, OK]);
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    assert_eq!(retry_of(&state, WORLD).unwrap().0, BACKOFF_MIN);
+    // A timeout is transient too.
+    *p.clock.0.lock().unwrap() = retry_of(&state, WORLD).unwrap().1;
+    block_on(p.retry_scan(&mut state));
+    assert_eq!(retry_of(&state, WORLD).unwrap().0, BACKOFF_MIN * 2);
+    // A due World is sent by a full scan as well, and its delivery resets the backoff.
+    *p.clock.0.lock().unwrap() = retry_of(&state, WORLD).unwrap().1;
+    assert!(block_on(p.scan(&mut state)));
+    assert!(retry_of(&state, WORLD).is_none());
+    assert_eq!(p.sink.operations().len(), 3);
+}
+
+#[test]
+fn a_definite_refusal_or_a_vanished_world_ends_its_backoff() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![])), (WORLD_2, Some(vec![]))]);
+    let p = publisher(
+        &store,
+        vec![
+            Some(Err(NotDelivered::Unavailable)),
+            Some(Err(NotDelivered::Unavailable)),
+            Some(Err(NotDelivered::Conflict)),
+        ],
+    );
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    assert!(retry_of(&state, WORLD).is_some() && retry_of(&state, WORLD_2).is_some());
+    // WORLD_2 leaves the cut; WORLD is refused: held, not retried.
+    store.lock().unwrap().worlds.truncate(1);
+    *p.clock.0.lock().unwrap() = state.next_retry().unwrap();
+    block_on(p.retry_scan(&mut state));
+    assert_eq!(state.next_retry(), None);
+    assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    assert_eq!(p.sink.operations().len(), 3);
+}
+
+#[test]
+fn a_retry_that_cannot_read_the_cut_backs_off_again() {
+    let store = Shared::default();
+    scanned(&store, vec![(WORLD, Some(vec![]))]);
+    let p = publisher(&store, vec![Some(Err(NotDelivered::Unavailable))]);
+    let mut state = ScanLoop::default();
+    assert!(!block_on(p.scan(&mut state)));
+    let (_, at) = retry_of(&state, WORLD).unwrap();
+    *p.clock.0.lock().unwrap() = at;
+    store.lock().unwrap().demand = true;
+    block_on(p.retry_scan(&mut state));
+    // Nothing was sent, and the World is not due again at once.
+    assert_eq!(p.sink.operations().len(), 1);
+    let (backoff, next) = retry_of(&state, WORLD).unwrap();
+    assert_eq!(backoff, BACKOFF_MIN * 2);
+    assert!(next > p.clock.elapsed());
+}
+
+#[test]
+fn projection_names_refuse_slash_dot_and_dot_dot() {
+    for name in ["/", "Al/dric", ".", ".."] {
+        assert!(!projection_name_valid(name), "{name:?}");
+        // The account-characters rule keeps its own grammar.
+        assert!(name_valid(name), "{name:?}");
+        assert!(
+            encode_profile(
+                AUTHORITY,
+                &profile(Some(ProfileEntry {
+                    name: name.into(),
+                    ..entry(None)
+                }))
+            )
+            .is_err()
+        );
+        assert!(encode_online(AUTHORITY, &online(vec![online_entry(name)])).is_err());
+        assert!(encode_highscores(AUTHORITY, &highscores(vec![row(1, 1, name)])).is_err());
+    }
+    for name in ["Al Dric", "...", "Al.dric", ".a"] {
+        assert!(projection_name_valid(name), "{name:?}");
     }
 }

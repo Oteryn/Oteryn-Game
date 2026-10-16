@@ -206,9 +206,38 @@ fn bare(seed: u8) -> String {
 }
 
 /// A game session of `character` (on World `world`) in `state`, with or without a transport
-/// and a control loss. Foreign keys are off for the insert (a fresh session's admission
-/// receipt is not this test's subject); every CHECK still holds.
+/// and a control loss, held by an eligible admission guard on that World.
 fn session(
+    character: u8,
+    account: u8,
+    world: u8,
+    state: u8,
+    transport: bool,
+    loss: bool,
+) -> String {
+    format!(
+        "{}{}",
+        session_row(character, account, world, state, transport, loss),
+        guard(character, account, world, true, character)
+    )
+}
+
+/// The admission guard of `character` on World `world`, `eligible` or not, holding the game
+/// session of `holder` (see `session_row`). Foreign keys stay off (`session_row`).
+fn guard(character: u8, account: u8, world: u8, eligible: bool, holder: u8) -> String {
+    format!(
+        "INSERT INTO game_durability_admission_character_guards VALUES \
+           ({},{},{},{eligible},1,{},1,'test',1,'character-current',1,0,'{{}}');",
+        uuid(character),
+        uuid(account),
+        uuid(world),
+        uuid(holder.wrapping_add(0x40)),
+    )
+}
+
+/// The game session row alone. Foreign keys are off for the insert (a fresh session's
+/// admission receipt is not this test's subject); every CHECK still holds.
+fn session_row(
     character: u8,
     account: u8,
     world: u8,
@@ -704,7 +733,8 @@ async fn handoff_cases(pool: &sqlx::PgPool) -> TestResult {
 }
 
 /// §4.6: a Character is online only with a live session on its own World: state 2, a
-/// current transport and no control loss.
+/// current transport and no control loss, held by its eligible admission guard on that World
+/// (the predicate of `spell_character_lookup`).
 async fn online_cases(pool: &sqlx::PgPool) -> TestResult {
     attempt(
         pool,
@@ -731,6 +761,25 @@ async fn online_cases(pool: &sqlx::PgPool) -> TestResult {
         )
         .await?;
     }
+    assert_eq!(online_names(pool).await?, vec!["Aldric".to_owned()]);
+    // A live session whose admission guard is not eligible, is on another World, or holds
+    // another session: not online.
+    attempt(
+        pool,
+        &format!(
+            "{}{}{}{}{}{}{}{}{}",
+            root(0x1b, 0xa9, "Jon"),
+            root(0x1c, 0xaa, "Kai"),
+            root(0x1d, 0xab, "Lia"),
+            session_row(0x1b, 0xa9, 90, 2, true, false),
+            guard(0x1b, 0xa9, 90, false, 0x1b),
+            session_row(0x1c, 0xaa, 90, 2, true, false),
+            guard(0x1c, 0xaa, 91, true, 0x1c),
+            session_row(0x1d, 0xab, 90, 2, true, false),
+            guard(0x1d, 0xab, 90, true, 0x11),
+        ),
+    )
+    .await?;
     assert_eq!(online_names(pool).await?, vec!["Aldric".to_owned()]);
     // The session ends: no longer listed.
     attempt(

@@ -168,7 +168,9 @@ Encoding rules:
   allow, a subset of the wire rule. The consumer validates the wire rule only. Game's character
   names are ASCII letters and spaces, and the producer refuses any name outside printable ASCII,
   so a published name never holds U+2028 or U+2029 (Zl, Zp: allowed by the wire rule, but line
-  breaks in a JavaScript string literal) or any other non-ASCII character.
+  breaks in a JavaScript string literal) or any other non-ASCII character. The producer also
+  refuses a name holding `/` or equal to `.` or `..`, which the Platform consumer refuses
+  (`NativeAccountCharactersWire::characterName`) and Game's name policy already excludes.
 - **Integers.** `category`, `filter`, `vocation`, `rank_level` and guild `ranks[].level` are JSON integers in canonical
   form (no sign, no leading zero, no exponent), in the ranges given per family. Levels, ranks,
   values, gold amounts and times are canonical decimal uint64 strings, with `0` allowed only where
@@ -254,9 +256,12 @@ different content, `429` rate limited, `503` unavailable.
   names come from the `guild` family, so a rename of either never touches profiles.
 - `guild_visible` is a required JSON boolean in every entry: whether the character's guild
   membership may be shown on its public profile. It defaults to `true` (public, as in the Tibia
-  reference); only a Game-side setting may lower it to `false`. The Platform per-character
-  preference is an opt-out applied on top, an upper bound: Platform never shows a membership Game
-  publishes as `false`. The `guild` member is sent either way. While `guild_visible` is `false`,
+  reference); only a Game-side setting may lower it to `false`. Authority: the control-plane
+  ruling of 2026-10-16 (https://github.com/Oteryn/Oteryn-Game/pull/2224#issuecomment-6206973613). Guild privacy is
+  owned by Platform (`CHARACTER_PROFILE_PREFERENCES_CONTRACT.md`, Oteryn/Oteryn-Platform#1645),
+  and Game has no per-character setting to fail closed on, so a Game `false` would override every
+  owner's choice. The Platform per-character preference is an opt-out applied on top, an upper
+  bound: Platform never shows a membership Game publishes as `false`. The `guild` member is sent either way. While `guild_visible` is `false`,
   the membership is not public: Platform stores it but never shows it on the profile or derives
   anything public from it, and shows the profile as having no guild. A change of the setting is a
   visibility decision and advances the profile revision (§5). No Game owner records the setting
@@ -354,8 +359,10 @@ different content, `429` rate limited, `503` unavailable.
   and whose presence may be public (§7.2). A character hidden by a sanction or any other
   visibility decision is never listed. Game reads "online" as a live root (`lifecycle = 1`) with a
   game session on its own World in `session_state = 2` (live) that has a current transport
-  (`current_transport_ref IS NOT NULL`) and no control loss (`control_loss_epoch IS NULL`): a
-  session that is admitting (1), ended (3), between transports or in a control-loss grace is not
+  (`current_transport_ref IS NOT NULL`) and no control loss (`control_loss_epoch IS NULL`), held
+  by the character's admission guard, which is eligible on that World: exactly the predicate of
+  Game's own presence lookup (`spell_character_lookup`). A session that is admitting (1), ended
+  (3), between transports, in a control-loss grace or not held by an eligible guard is not
   online. A character whose vocation the producer cannot map, whose level is below 1 or whose name
   is outside the name rule above is not listed. There are 0 to
   `PUBPROJ-ONLINE` (4,096) entries, sorted by name in byte order, unique.
@@ -449,8 +456,11 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 
 **Producer (Game).**
 
-- `429`, `503`, timeouts and transport errors: retry with exponential backoff from 1 s to 60 s.
-  The outbox row stays queued.
+- `429`, `503`, timeouts and transport errors: retry with exponential backoff from 1 s to 60 s
+  (the first retry 1 s after the failure, doubling to at most 60 s, reset by a delivery), per
+  family for the outbox families and per World for `world_online`, where a World backing off is
+  retried between scans when due and is not sent by a scan before then (that scan fails, §5.1).
+  The outbox row stays queued. A watermark is not a retry: it keeps its own period (§5.1).
 - `400`, `401` and `409` are producer or configuration defects. The row stays queued, retries for
   that subject drop to at most once per 5 minutes, and an operator alarm counter is raised. A row
   is never dropped or rewritten to make it pass. The watermark stalls, so the family goes stale
@@ -699,7 +709,9 @@ Owner decisions relayed by the control plane on 2026-10-15 (Oteryn/Oteryn-Platfo
 - Control-plane rulings for revision 2: vocation ids follow Game's reference base-vocation enum
   (§4.0), which the Platform consumer uses; `character_profile` carries the required
   `guild_visible`, which defaults to `true` (public, Tibia reference) and only a Game-side setting
-  may lower (§4.2).
+  may lower (§4.2). The `guild_visible` default rests on the control-plane ruling of 2026-10-16,
+  https://github.com/Oteryn/Oteryn-Game/pull/2224#issuecomment-6206973613: Platform owns guild privacy and its
+  per-character preference is an upper bound over Game's `guild_visible`.
 
 `character_deaths`, `guild` and `house` remain candidates. After acceptance, any change to a
 member, path, bound or response of an accepted family is a new `contract_version`.

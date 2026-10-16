@@ -10,11 +10,10 @@ use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
-use oteryn_game_server::native_admission_source::account_characters::name_valid;
 use oteryn_game_server::native_admission_source::public_projections::{
     FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, NAME_HANDOFF_HOLD,
     OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry, ProfileSnapshot,
-    PublicStore, VOCATION_IDS, VOCATIONS, vocation_id,
+    PublicStore, VOCATION_IDS, VOCATIONS, projection_name_valid, vocation_id,
 };
 use sqlx::Row;
 use std::collections::BTreeMap;
@@ -104,12 +103,13 @@ const CLEAR_HIGHSCORES: &str = "DELETE FROM game_public_highscore_outbox \
 // its statement time on the database clock), every qualifying online
 // Character (kind 1) and every World with a Character or a stored snapshot,
 // with that snapshot (kind 2). A Character is online while it holds a live
-// game session on its own World: `session_state = 2` with a current transport
-// and no control loss, the predicate of the Game's own presence lookups
-// (`spell_character_lookup`). One with an unclassifiable vocation, a level
-// below 1 or a name outside the wire grammar is not listed (§4.6). One entry
-// more than the bound is read per World, so an oversized World refuses
-// instead of being truncated.
+// game session on its own World, exactly the predicate of the Game's own
+// presence lookup (`spell_character_lookup`): its admission guard is eligible
+// on that World and held by the session, and the session has
+// `session_state = 2`, a current transport and no control loss. One with an
+// unclassifiable vocation, a level below 1 or a name outside the wire grammar
+// is not listed (§4.6). One entry more than the bound is read per World, so an
+// oversized World refuses instead of being truncated.
 pub(crate) const ONLINE: &str = "\
 WITH cut AS (SELECT e.projection_epoch, \
                     floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint AS cut_ms \
@@ -123,8 +123,12 @@ WITH cut AS (SELECT e.projection_epoch, \
                     ON g.character_id = r.character_id \
                   LEFT JOIN game_character_build_state b ON b.character_id = r.character_id \
                  WHERE r.lifecycle = 1 \
-                   AND EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s \
-                                WHERE s.character_id = r.character_id \
+                   AND EXISTS (SELECT 1 FROM game_durability_admission_character_guards a \
+                                  JOIN game_durability_reconnect_sessions s \
+                                    ON s.game_session_id = a.holder_game_session_id \
+                                WHERE a.character_id = r.character_id \
+                                  AND a.eligible AND a.world_id = r.world_id \
+                                  AND s.character_id = r.character_id \
                                   AND s.world_id = r.world_id \
                                   AND s.session_state = 2 \
                                   AND s.current_transport_ref IS NOT NULL \
@@ -133,7 +137,8 @@ WITH cut AS (SELECT e.projection_epoch, \
                    AND coalesce(g.level, 1) >= 1 \
                    AND octet_length(r.name) BETWEEN 1 AND 64 \
                    AND r.name COLLATE \"C\" ~ '^[ -~]+$' \
-                   AND strpos(r.name, chr(34)) = 0 AND strpos(r.name, chr(92)) = 0), \
+                   AND strpos(r.name, chr(34)) = 0 AND strpos(r.name, chr(92)) = 0 \
+                   AND strpos(r.name, chr(47)) = 0 AND r.name NOT IN ('.', '..')), \
      worlds AS (SELECT world_id FROM game_character_roots \
                 UNION SELECT world_id FROM game_public_world_online) \
 SELECT 0 AS kind, c.projection_epoch, c.cut_ms, NULL::text AS world_id, NULL::text AS name, \
@@ -482,17 +487,19 @@ fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<ProfileSnapshot> {
     let vocation: String = row.try_get("vocation")?;
     let profile = match (world_id, name, lifecycle) {
         (Some(world_id), Some(name), Some(1)) => match (vocation_id(&vocation), decimal(&level)) {
-            (Some(vocation), Ok(level)) if level != 0 && name_valid(&name) => Some(ProfileEntry {
-                world_id,
-                name,
-                vocation,
-                level,
-                // Guild membership defaults to public (§4.2, the Tibia
-                // reference); no Game-side setting lowers it yet.
-                guild_visible: true,
-                // No guild exists natively yet (§4.2): always `[]`.
-                guild: None,
-            }),
+            (Some(vocation), Ok(level)) if level != 0 && projection_name_valid(&name) => {
+                Some(ProfileEntry {
+                    world_id,
+                    name,
+                    vocation,
+                    level,
+                    // Guild membership defaults to public (§4.2, the Tibia
+                    // reference); no Game-side setting lowers it yet.
+                    guild_visible: true,
+                    // No guild exists natively yet (§4.2): always `[]`.
+                    guild: None,
+                })
+            }
             // Unclassifiable: published as absent, never held (§4.2).
             _ => None,
         },
@@ -613,7 +620,7 @@ fn online_cut(rows: &[sqlx::postgres::PgRow]) -> Decoded<OnlineCut> {
                 let (Some(vocation), Ok(level)) = (vocation_id(&vocation), decimal(&level)) else {
                     continue;
                 };
-                if level == 0 || !name_valid(&name) {
+                if level == 0 || !projection_name_valid(&name) {
                     continue;
                 }
                 lists.entry(world_id).or_default().push(OnlineEntry {
