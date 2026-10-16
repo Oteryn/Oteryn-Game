@@ -4,7 +4,7 @@
 task_id: APP-2
 title: "APP-2: outfit and mount definitions"
 mode: IMPLEMENT
-status: implementing
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -246,3 +246,24 @@ other-family files; these hunks remain private validation assembly pending their
 No compiling/publish-ready whole-head claim is made while that cascade remains unresolved.
 Native qualification/review, real content population, APP-1/APP-3/APP-4 integration and the shared
 index/manifest/lock slot after #2129/#2197 remain open. No ready/merge authority is claimed.
+
+
+## D1117 canonical initializer checkpoint — 2026-10-16
+
+CP 6224930201 grants exactly seven cosmetics initializers in six native test-fixture files.
+They now explicitly call the existing checked `NativeGameplayInput::unavailable_cosmetics()`;
+no production catalogue, content identity or authority is supplied by these fixtures.
+The former private constructor overlay is no longer needed for this successor.
+
+Qualification state at authoring freeze: **NOT_FULLY_QUALIFIED**.
+- Historical fa06 private native41 / Python14 / real-generator3 PASS remain separately bound
+  to their original source and explicit private overlay; they are not this head's qualification.
+- Current successor native compile/focused cosmetics tests/strict affected Clippy: NOT_RUN.
+- Full package tests, CI and integrated admission/runtime: NOT_RUN.
+- Previous fa06 CI RED seven missing initializers is addressed by source; fresh execution
+  must establish the result, and the historical missing presentation-module CI failure
+  remains historical, not a repaired or passing claim.
+
+D1122 permits one coherent existing-draft checkpoint after fmt/diff checks, without ready,
+manual review trigger or CI restarts. Actual results belong to exact-SHA evidence and PR
+status. The ten live-source conflicts remain UNKNOWN; lock/manifest waits for #2129/#2197.
