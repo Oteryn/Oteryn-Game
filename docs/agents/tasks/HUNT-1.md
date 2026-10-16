@@ -4,7 +4,7 @@
 task_id: HUNT-1
 title: "HUNT-1: prey and hunting tasks"
 mode: IMPLEMENT
-status: local_preparation_pending_qualification
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -56,7 +56,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `crates/protocol-oteryn/src/prey.rs`
 - `crates/protocol-oteryn/src/prey_tests.rs`
 - `apps/game-server/tests/prey_postgres.rs`
-- `content/rulesets/progression/prey/ and content/rulesets/progression/task-board/ authoring inputs`
+- `rulesets/progression/prey/ and rulesets/progression/task-board/ authoring inputs`
 - `docs/agents/tasks/HUNT-1.md` (this record: status and notes only)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
@@ -263,3 +263,19 @@ results above remain evidence of the predecessor only. Fresh package Clippy
 and tests remain NOT_RUN; no PG/content/runtime coverage is claimed.
 The writer, accepted PREY-CONTENT-1, reset, content-path allocation and
 slot-only gates described above remain open. This repair does not complete HUNT-1.
+
+
+### CP D1151/D1122 checkpoint
+
+AUTHORING resumed for the checkpoint record after the reviewed test-placement
+repair d6d17ca06c6cc03b569944f3082a33470acbb99f. Its Rust sources are unchanged.
+CP6224947337 corrects the two rulesets authoring paths and allocates
+PREY-CONTENT-1 plus its schema/compiler leaves in `tools/content-schema/` to
+this PR; content remains subject to CP review and Reference provenance.
+The LOOP-MONSTER caller belongs to #2200, consuming this PR's API.
+
+NOT_FULLY_QUALIFIED under D1122: source review, fmt, diff and governance124
+PASS; fresh Cargo all-target Clippy and package/PG tests NOT_RUN. This
+checkpoint preserves the 11 existing test bodies and makes no fresh runtime
+PASS claim. D1160 module registration, writer/content/compiler/API and the
+rest of HUNT-1 remain unfinished; shared hunks follow the J order.
