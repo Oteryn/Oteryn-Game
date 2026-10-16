@@ -4,8 +4,9 @@
 //! carried total under its locks, and resolve each exact definition from compatible active
 //! Content. `Known` alone does not admit a weight's unit or meaning. Capacity and every weight
 //! must already share one admitted integer unit. The separate Reference projection below
-//! returns centi-ounces; it does not select the current Character capacity source. B3-3's
-//! capacity-source and transaction-integration evidence gates remain open.
+//! returns historical centi-ounces. The Global helpers implement D1163's selected initial
+//! capacity and level-up increments, not a current Character capacity read. Persisted capacity,
+//! migration provenance and transaction integration remain the owning Character writer's work.
 //!
 //! An incoming container contributes its own weight plus all descendants exactly once. Current
 //! carried weight includes the equipment slots and main-backpack tree. Moves within that
@@ -35,11 +36,10 @@ pub(crate) enum ReferenceCapacityRefusal {
 }
 
 /// Pure Reference DATA ONLY, in the accepted item-weight unit of centi-ounces (#1336/D207).
-/// This is neither current Character authority nor an admitted Character baseline. Formulae
-/// gives 400 oz at level 1, while Newhaven gives 600 oz; the existing Character conditional
-/// 200 oz and profile/provenance choice remain unresolved (GAME-CHAR-01 Stage-B §9).
-/// Do not infer a universal 200 oz adjustment, initialize state, or use this as current
-/// transaction capacity without the owning source decision and locked Character facts.
+/// Historical Formulae gives 400 oz at level 1; D1163 selects a separate Global 600 oz initial
+/// capacity. Keep this historical projection unchanged. It cannot initialize current imported
+/// state or infer its migration status (GAME-CHAR-01 Stage-B §9); use authoritative stored
+/// capacity and explicit provenance, not a universal adjustment of this formula.
 pub(crate) fn project_reference_capacity_centi_oz(
     level: u32,
     vocation: &str,
@@ -83,6 +83,75 @@ pub(crate) fn project_reference_capacity_centi_oz(
     let whole_ounces = u64::try_from(whole_ounces).map_err(|_| InvalidReferenceData)?;
     // Exactly one unit conversion, after the complete whole-ounce reference formula.
     whole_ounces.checked_mul(100).ok_or(ArithmeticOverflow)
+}
+
+/// The owner supplies this provenance with authoritative stored capacity. An imported pending
+/// adjustment is consumed only by a real level-up; fresh Global characters use NotApplicable.
+/// This raw enum is not evidence that migration is due or that an award is new rather than replay.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NewhavenCapacityMigration {
+    NotApplicable,
+    PendingImported,
+    ConsumedImported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CapacityAdvance {
+    pub capacity_centi_oz: u64,
+    pub migration: NewhavenCapacityMigration,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CapacityAdvanceRefusal {
+    UnknownVocation,
+    ArithmeticOverflow,
+}
+
+/// D1163: initial capacity for a fresh current-Global character, in centi-ounces.
+/// This selects no all-level rookie formula and never replaces an imported stored value.
+pub(crate) const fn initial_global_capacity_centi_oz() -> u64 {
+    60_000
+}
+
+/// D1163's pure level-up arithmetic from authoritative stored centi-ounces. The owner must
+/// resolve the actual awarded levels, vocation and migration status under current locks, and
+/// atomically persist both returned fields with the award's replay identity. Nothing here
+/// writes state or proves Character/session authority. All supplied levels must share the same
+/// vocation at award; split awards at vocation transitions instead of inferring past vocations.
+pub(crate) fn advance_global_capacity_centi_oz(
+    stored_capacity_centi_oz: u64,
+    awarded_levels: u32,
+    vocation_at_award: &str,
+    migration: NewhavenCapacityMigration,
+) -> Result<CapacityAdvance, CapacityAdvanceRefusal> {
+    use CapacityAdvanceRefusal::{ArithmeticOverflow, UnknownVocation};
+    let gain_centi_oz = match vocation_at_award {
+        "knight" | "elite_knight" | "monk" | "exalted_monk" => 2_500_u64,
+        "paladin" | "royal_paladin" => 2_000,
+        "druid" | "elder_druid" | "sorcerer" | "master_sorcerer" | "none" => 1_000,
+        _ => return Err(UnknownVocation),
+    };
+    let mut after = CapacityAdvance {
+        capacity_centi_oz: stored_capacity_centi_oz,
+        migration,
+    };
+    if awarded_levels == 0 {
+        return Ok(after);
+    }
+    let gain = gain_centi_oz
+        .checked_mul(u64::from(awarded_levels))
+        .ok_or(ArithmeticOverflow)?;
+    after.capacity_centi_oz = stored_capacity_centi_oz
+        .checked_add(gain)
+        .ok_or(ArithmeticOverflow)?;
+    if migration == NewhavenCapacityMigration::PendingImported {
+        after.capacity_centi_oz = after
+            .capacity_centi_oz
+            .checked_add(20_000)
+            .ok_or(ArithmeticOverflow)?;
+        after.migration = NewhavenCapacityMigration::ConsumedImported;
+    }
+    Ok(after)
 }
 
 /// BAGS0-RL-02: one incoming container tree, root included; no truncation.

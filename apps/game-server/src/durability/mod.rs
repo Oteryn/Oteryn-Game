@@ -36,6 +36,7 @@ pub(crate) mod equipment_policy_abi;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod house_scope_handoff;
+pub(crate) mod item_capacity;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
