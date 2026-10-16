@@ -6,7 +6,9 @@ use crate::durability::runtime_scope_assignment::{
     RuntimeScopeAssignmentWriter,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::durability::world_reset::{WorldResetError, WorldResetRetirement, candidate_schema_sql};
+use crate::durability::world_reset::{
+    WorldResetError, WorldResetRetirement, candidate_schema_sql, census_retiring_world_reset,
+};
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use crate::item_transfer_postgres_cases::{
     CHANNEL, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, runtime, scope,
@@ -388,10 +390,21 @@ fn reset_native_foreign_channel_holder_is_refused_but_house_assignment_is_not_a_
   assert!(matches!(h.root.freeze_next_world_reset_item(&permit,&authority,&h.node,world()?,channel()?).await,Err(WorldResetError::NotCurrent)));
   assert_eq!(footprint(&h).await?,before);
   admit(&h).await?;replace_with(&h,&foreign,101).await?;
+  let mut census_tx=h.pool.begin().await?;
+  assert!(matches!(census_retiring_world_reset(&mut census_tx,&h.node,world()?).await,Err(WorldResetError::NotCurrent)));
+  census_tx.rollback().await?;
   assert!(matches!(h.root.freeze_next_world_reset_item(&permit,&authority,&h.node,world()?,channel()?).await,Err(WorldResetError::NotCurrent)));
   assert_eq!(footprint(&h).await?,before);
   replace_with(&h,&h.node,102).await?;
+  let mut census_tx=h.pool.begin().await?;
+  let census=census_retiring_world_reset(&mut census_tx,&h.node,world()?).await.map_err(debug)?.ok_or("retiring census")?;
+  assert_eq!((census.reset_epoch,census.target_digest,census.channel_count,census.ground_root_count,census.ground_corpse_entry_count),(0,[7;32],1,1,0));
+  census_tx.rollback().await?;
   assert!(matches!(pass(&h,&permit,&authority).await?,WorldResetPass::Retired(_)));
+  let mut census_tx=h.pool.begin().await?;
+  let census=census_retiring_world_reset(&mut census_tx,&h.node,world()?).await.map_err(debug)?.ok_or("empty retiring census")?;
+  assert_eq!((census.channel_count,census.ground_root_count,census.ground_corpse_entry_count),(1,0,0));
+  census_tx.rollback().await?;
   assert_eq!(h.item_state(item).await?,(0,2));
   assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_runtime_scope_assignments WHERE scope_kind=2 AND holder_node_id=encode($1,'hex')::uuid").bind(foreign.fact().node_id().as_bytes().as_slice()).fetch_one(&h.pool).await?,1);
   drop(authority);drop(seal);drop(permit);h.cleanup().await

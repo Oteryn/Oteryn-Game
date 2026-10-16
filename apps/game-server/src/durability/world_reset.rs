@@ -69,6 +69,114 @@ fn uuid(value: String) -> Result<[u8; 16], DurabilityError> {
     super::item_mint::uuid_text(&value)
 }
 
+/// Durable census data, not a drain certificate or permission to activate content.
+/// The caller must retain the transaction and its locks through its next operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldResetCensus {
+    pub reset_epoch: u64,
+    pub target_digest: [u8; 32],
+    pub reset_revision: u64,
+    pub channel_count: u64,
+    pub ground_root_count: u64,
+    pub ground_corpse_entry_count: u64,
+}
+
+/// D1134: census the complete durable Channel cohort in the caller's transaction.
+///
+/// Epoch/revision/target come from the locked control-published job, never the request.
+/// Current incarnation and every ordinary Channel's replacement/closed-readiness/session
+/// predicates come from the native database owners. House assignments are not Channels.
+/// This follows retirement's admission -> job -> assignment lock order. Ground and corpse
+/// entry relation locks then keep this census stable until the caller ends the transaction.
+/// Call before taking Item locks; never retain this value as current proof after COMMIT.
+///
+/// `None` means no RETIRING job. A stale incarnation, incomplete cohort, foreign holder,
+/// open readiness or live/reconnectable session refuses. This does not prove the transport's
+/// in-memory actor/pending-work drain, target House/property eligibility, content activation
+/// issuance or live quiescence. Those are additional required final-activation boundaries.
+pub async fn census_retiring_world_reset(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    world: WorldId,
+) -> Result<Option<WorldResetCensus>, WorldResetError> {
+    lock_admission_relations(tx).await?;
+    let job = sqlx::query(
+        "SELECT reset_epoch::text,target_digest,revision::text FROM game_world_reset_jobs \
+         WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    let Some(job) = job else { return Ok(None) };
+    let epoch: String = job.try_get(0).map_err(DurabilityError::from)?;
+    sqlx::query("LOCK TABLE game_runtime_scope_assignments IN SHARE MODE")
+        .execute(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?;
+    if !prove_current_incarnation(tx, node).await? {
+        return Err(WorldResetError::NotCurrent);
+    }
+    let fact = node.fact();
+    let current: bool = sqlx::query_scalar(
+        "SELECT game_world_reset_cohort_current(encode($1,'hex')::uuid,$2::text::numeric,\
+         encode($3,'hex')::uuid,$4::text::numeric)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(&epoch)
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    if !current {
+        return Err(WorldResetError::NotCurrent);
+    }
+    sqlx::query(
+        "LOCK TABLE game_item_ground_locations,game_item_corpse_container_entries IN SHARE MODE",
+    )
+    .execute(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    let counts = sqlx::query(
+        "SELECT \
+         (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1),\
+         (SELECT count(*) FROM game_item_ground_locations WHERE world_id=encode($1,'hex')::uuid),\
+         (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_ground_locations g \
+          ON g.item_instance_id=e.parent_item_instance_id WHERE g.world_id=encode($1,'hex')::uuid)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    let count = |index| -> Result<u64, WorldResetError> {
+        u64::try_from(
+            counts
+                .try_get::<i64, _>(index)
+                .map_err(DurabilityError::from)?,
+        )
+        .map_err(|_| WorldResetError::InvalidStoredState)
+    };
+    Ok(Some(WorldResetCensus {
+        reset_epoch: epoch
+            .parse()
+            .map_err(|_| WorldResetError::InvalidStoredState)?,
+        target_digest: job
+            .try_get::<Vec<u8>, _>(1)
+            .map_err(DurabilityError::from)?
+            .try_into()
+            .map_err(|_| WorldResetError::InvalidStoredState)?,
+        reset_revision: job
+            .try_get::<String, _>(2)
+            .map_err(DurabilityError::from)?
+            .parse()
+            .map_err(|_| WorldResetError::InvalidStoredState)?,
+        channel_count: count(0)?,
+        ground_root_count: count(1)?,
+        ground_corpse_entry_count: count(2)?,
+    }))
+}
+
 impl DurabilityRoot {
     /// Persist one frozen candidate before work, or resume this generation's exact bytes.
     /// Later ownership generations reserve afresh, like native corpse decay; old generation

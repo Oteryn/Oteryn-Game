@@ -4,7 +4,7 @@
 task_id: MAP-OVERLAY-1c
 title: "MAP-OVERLAY-1c: world reset and overlay retire"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,7 +21,69 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## Goal
+## D1134/D1135/D1152 owned authoring checkpoint
+
+[CP D1134/D1135](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930839)
+assigns the all-Channel census, atomic next-epoch ACTIVATED writer and active
+revision reader to this leaf in `durability/world_reset.rs`. Close/logout/drain
+remains with #2187 at A2. [D1152](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224947337)
+assigns durable reset epoch/month history and migration0096 after #2163's0095;
+DAILY and RANK consume the eventual port. Allocation is not schema installation.
+
+This checkpoint adds a real caller-transaction census port,
+`census_retiring_world_reset(tx, node, world)`. It reads the retained job's epoch,
+target digest and revision under its row lock; proves current native incarnation;
+reuses the native all-Channel replacement/closed-readiness/session predicate;
+and counts actual World Ground roots and their corpse entries. Admission,
+assignment, Ground and entry relation locks remain held by the caller transaction.
+House assignments do not enter the ordinary Channel count. No request supplies
+a current epoch, generation, list of Channels or close certificate. `None` means
+no RETIRING job; current-fact failures return `NotCurrent`. Returned data is not
+an activation/drain authority and must not survive transaction end as proof.
+
+The existing native PG foreign-holder/House-exclusion case now exercises this
+port before and after retirement. It expects a foreign resetting node to refuse,
+the actual current cohort to count one Channel/one Ground root, and then zero
+Ground roots after native retirement while the foreign House assignment remains.
+These assertions are authored and **NOT_RUN**; no multi-Channel or restart pass
+is inferred from them.
+
+**Exact remaining source gap / CP-ready request:** atomic activation requires
+all of the following in the same owner transaction, and the allocated source
+has no complete input proof for them yet:
+- #2187's genuine close/logout plus actor/pending-work drain and live quiescence
+  boundary. Durable closed readiness and absent sessions do not prove that state.
+- The accepted target House catalogue/membership/property eligibility and final
+  locked recheck. The existing branch has no target-qualified reset preflight
+  token/API. An absent table/document or caller boolean cannot certify it.
+- Exact current content activation issuances for every Channel and their target
+  digest/client/frame binding. `content_activation.rs::record_content_activation`
+  opens/commits its own transaction; SQL `game_content_record_activation` requires
+  independently granted control-role authority. Copying a request is no grant.
+  The sealed live content activator has only boot quiescence on this branch.
+
+Consequently no successful ACTIVATED writer or `read_active_world_revision(tx,
+world)` is fabricated here. Candidate job rows can currently be inserted as
+ACTIVATED without the content-activation binding, and their update trigger
+forbids actual phase transition. Reading such a row as accepted active authority
+would bypass ADR-0021. Migration0096's final phase/activation/history guards must
+be authored with the actual target/drain/issuance source; this checkpoint neither
+installs nor pretends to qualify that migration. D1152's month history must follow
+that same genuine committed activation rather than a timer, caller month or mirror.
+CP must identify/allocate the exact target/preflight and quiescence source APIs
+(and a caller-TX content issuance seam if needed), retaining #2167 as sole reset
+writer. The pre-existing owner assessment contains the full boundary inventory.
+
+**NOT_FULLY_QUALIFIED:** explicit Rustfmt for the two changed Rust files and
+`git diff --check` PASS. Compilation, strict lint, revised PG runtime, all-Channel
+race/empty census, House recheck, activation, month history, restart and full
+package validation are **NOT_RUN**. Existing component qualification below is
+historical source evidence, not a result for this changed census. Production
+acceptance stays **RED**. No shared audit/mod/root/boot file, registration,
+numbered migration installation, registry, external mutation, push or freeze.
+D1122 permits the truthful draft checkpoint, not a readiness transition.
+
+## Historical goal and qualification
 
 World reset retires overlay items (Ground, corpses, decayed items) deterministically with audit, honouring house interiors (packet §2.7).
 
