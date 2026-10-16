@@ -1,21 +1,20 @@
 //! Inactive HOUSE_INTENT preparation boundary. No dispatch or writer is installed.
 //!
-//! Resolves the body house key using native HouseId and the actor's supplied World; the client
-//! cannot nominate another owner, World, session, lease or controller in this body. Inputs are
+//! Every body supplies an explicit World-qualified target. Its World must equal the current
+//! actor World; native HouseId validates the key. The request selects no owner/session/lease. Inputs are
 //! data, not evidence of current admission. CP's handler must resolve actual current session/
 //! actor/house/property/ACL under owning native locks before calling any mutation writer.
 
 use crate::durability::house_scope_handoff::HouseId;
 use crate::foundation::{CharacterId, CommandRef, WorldId};
 use oteryn_protocol_oteryn::house::{
-    HouseAclRole, HouseIntent, HouseWireError, decode_house_intent,
+    HouseAclRole, HouseAction, HouseWireError, decode_house_intent,
 };
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreparedHouseAction {
     Bid {
-        house: HouseId,
         max_gold: u64,
     },
     MoveOut {
@@ -44,6 +43,7 @@ pub struct PreparedHouseIntent {
     command: CommandRef,
     actor: CharacterId,
     world: WorldId,
+    house: HouseId,
     action: PreparedHouseAction,
 }
 impl PreparedHouseIntent {
@@ -56,6 +56,9 @@ impl PreparedHouseIntent {
     pub const fn world(&self) -> WorldId {
         self.world
     }
+    pub const fn house(&self) -> &HouseId {
+        &self.house
+    }
     pub const fn action(&self) -> &PreparedHouseAction {
         &self.action
     }
@@ -65,6 +68,7 @@ impl PreparedHouseIntent {
 pub enum HouseIntentPreparationError {
     Wire(HouseWireError),
     InvalidHouseKey,
+    WorldMismatch,
 }
 
 /// Prepare syntactic request data. It neither chooses a current actor house nor checks Premium,
@@ -77,18 +81,17 @@ pub fn prepare_house_intent(
     actor: CharacterId,
     world: WorldId,
 ) -> Result<PreparedHouseIntent, HouseIntentPreparationError> {
-    let action = match decode_house_intent(payload).map_err(HouseIntentPreparationError::Wire)? {
-        HouseIntent::Bid {
-            house_key,
-            max_gold,
-        } => PreparedHouseAction::Bid {
-            house: HouseId::new(world, &house_key)
-                .ok_or(HouseIntentPreparationError::InvalidHouseKey)?,
-            max_gold,
-        },
-        HouseIntent::MoveOut { date_unix_ms } => PreparedHouseAction::MoveOut { date_unix_ms },
-        HouseIntent::CancelMoveOut => PreparedHouseAction::CancelMoveOut,
-        HouseIntent::AclSet {
+    let request = decode_house_intent(payload).map_err(HouseIntentPreparationError::Wire)?;
+    if request.house.world_id != world {
+        return Err(HouseIntentPreparationError::WorldMismatch);
+    }
+    let house = HouseId::new(world, &request.house.house_key)
+        .ok_or(HouseIntentPreparationError::InvalidHouseKey)?;
+    let action = match request.action {
+        HouseAction::Bid { max_gold } => PreparedHouseAction::Bid { max_gold },
+        HouseAction::MoveOut { date_unix_ms } => PreparedHouseAction::MoveOut { date_unix_ms },
+        HouseAction::CancelMoveOut => PreparedHouseAction::CancelMoveOut,
+        HouseAction::AclSet {
             role,
             character_ids,
             expected_revision,
@@ -97,7 +100,7 @@ pub fn prepare_house_intent(
             character_ids,
             expected_revision,
         },
-        HouseIntent::DoorSet {
+        HouseAction::DoorSet {
             position,
             character_ids,
             expected_revision,
@@ -106,13 +109,14 @@ pub fn prepare_house_intent(
             character_ids,
             expected_revision,
         },
-        HouseIntent::Kick { character_id } => PreparedHouseAction::Kick { character_id },
-        HouseIntent::Leave => PreparedHouseAction::Leave,
+        HouseAction::Kick { character_id } => PreparedHouseAction::Kick { character_id },
+        HouseAction::Leave => PreparedHouseAction::Leave,
     };
     Ok(PreparedHouseIntent {
         command,
         actor,
         world,
+        house,
         action,
     })
 }

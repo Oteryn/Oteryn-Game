@@ -1,26 +1,44 @@
 //! Inactive HOUSE-WIRE-1 body codec, from accepted HOUSE_OWN0 §11 and HOUSE_RUNTIME0 §5.
 //!
 //! Field tags and flat byte bounds are a protocol-review proposal in `house_v1.proto`.
-//! No capability/opcode/domain numbers are allocated or offered here. The envelope owns
+//! D1170 allocates leaf numbers only; no capability or dispatch is offered. The envelope owns
 //! CommandRef and the current session. These bodies contain requests, never authority.
 
 use std::collections::BTreeSet;
 
-use crate::CharacterId;
 pub use crate::charm_wire::CyclopediaWireError as HouseWireError;
 use crate::charm_wire::{
     push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes, read_varint,
     set_once,
 };
 use crate::world_spatial::{ActorPosition, decode_position, encode_position};
+use crate::{CharacterId, WorldId};
 
 type Result<T> = std::result::Result<T, HouseWireError>;
 /// Native migration0025/HouseId key bound, not a new registered resource row.
 pub const MAX_HOUSE_KEY_BYTES: usize = 512;
 /// HOUSEOWN0-RL-12, per list.
 pub const MAX_HOUSE_ACL_ENTRIES: usize = 200;
-/// Proposed flat bound:200 UUID fields(3600), native position message(12), revision(11), envelope(3), with6 spare bytes.
-pub const MAX_HOUSE_INTENT_BYTES: usize = 3632;
+/// CP D1170: leaf assignments; registry/capability/dispatch activation remains A2-owned.
+pub const CAPABILITY_HOUSE_V1: u32 = 27;
+pub const COMMAND_TYPE_HOUSE_INTENT: u32 = 27;
+pub const COMMAND_TYPE_HOUSE_QUERY: u32 = 28;
+pub const HOUSE_DOMAIN: u32 = 23;
+/// Largest native Door action3626 + explicit World/512-byte key target536 +6 spare.
+pub const MAX_HOUSE_INTENT_BYTES: usize = 4168;
+const MAX_HOUSE_ACTION_BYTES: usize = 3632;
+
+/// Client request identity only; transport verifies World and native HouseId grammar.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseTarget {
+    pub world_id: WorldId,
+    pub house_key: String,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseIntent {
+    pub house: HouseTarget,
+    pub action: HouseAction,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HouseAclRole {
@@ -29,9 +47,8 @@ pub enum HouseAclRole {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HouseIntent {
+pub enum HouseAction {
     Bid {
-        house_key: String,
         max_gold: u64,
     },
     /// Requested Unix milliseconds. The owning writer evaluates1..30 days under its DB clock.
@@ -72,20 +89,11 @@ fn validate_ids(ids: &[CharacterId]) -> Result<()> {
     Ok(())
 }
 
-fn validate(value: &HouseIntent) -> Result<()> {
+fn validate(value: &HouseAction) -> Result<()> {
     match value {
-        HouseIntent::Bid { house_key, .. } => {
-            if house_key.len() > MAX_HOUSE_KEY_BYTES {
-                return Err(HouseWireError::LimitExceeded);
-            }
-            // Grammar is resolved by native HouseId at the transport boundary.
-            if house_key.is_empty() {
-                return malformed();
-            }
-        }
-        HouseIntent::MoveOut { date_unix_ms } if *date_unix_ms <= 0 => return malformed(),
-        HouseIntent::AclSet { character_ids, .. } => validate_ids(character_ids)?,
-        HouseIntent::DoorSet {
+        HouseAction::MoveOut { date_unix_ms } if *date_unix_ms <= 0 => return malformed(),
+        HouseAction::AclSet { character_ids, .. } => validate_ids(character_ids)?,
+        HouseAction::DoorSet {
             position,
             character_ids,
             ..
@@ -105,24 +113,20 @@ fn validate(value: &HouseIntent) -> Result<()> {
 }
 
 /// Encode a complete body only after validating its complete typed input.
-pub fn encode_house_intent(value: &HouseIntent) -> Result<Vec<u8>> {
+fn encode_house_action(value: &HouseAction) -> Result<Vec<u8>> {
     validate(value)?;
     let mut body = Vec::new();
     let field = match value {
-        HouseIntent::Bid {
-            house_key,
-            max_gold,
-        } => {
-            push_message_field(&mut body, 1, house_key.as_bytes());
+        HouseAction::Bid { max_gold } => {
             push_nonzero_varint_field(&mut body, 2, *max_gold);
             1
         }
-        HouseIntent::MoveOut { date_unix_ms } => {
+        HouseAction::MoveOut { date_unix_ms } => {
             push_varint_field(&mut body, 1, *date_unix_ms as u64);
             2
         }
-        HouseIntent::CancelMoveOut => 3,
-        HouseIntent::AclSet {
+        HouseAction::CancelMoveOut => 3,
+        HouseAction::AclSet {
             role,
             character_ids,
             expected_revision,
@@ -131,7 +135,7 @@ pub fn encode_house_intent(value: &HouseIntent) -> Result<Vec<u8>> {
             encode_list(&mut body, character_ids, *expected_revision);
             4
         }
-        HouseIntent::DoorSet {
+        HouseAction::DoorSet {
             position,
             character_ids,
             expected_revision,
@@ -140,15 +144,15 @@ pub fn encode_house_intent(value: &HouseIntent) -> Result<Vec<u8>> {
             encode_list(&mut body, character_ids, *expected_revision);
             5
         }
-        HouseIntent::Kick { character_id } => {
+        HouseAction::Kick { character_id } => {
             push_message_field(&mut body, 1, character_id.as_bytes());
             6
         }
-        HouseIntent::Leave => 7,
+        HouseAction::Leave => 7,
     };
     let mut output = Vec::new();
     push_message_field(&mut output, field, &body);
-    if output.len() > MAX_HOUSE_INTENT_BYTES {
+    if output.len() > MAX_HOUSE_ACTION_BYTES {
         return Err(HouseWireError::LimitExceeded);
     }
     Ok(output)
@@ -163,8 +167,8 @@ fn encode_list(body: &mut Vec<u8>, ids: &[CharacterId], revision: u64) {
 
 /// Unknown fields, duplicate singular fields, empty/multiple oneofs and invalid identifiers
 /// refuse. Unpacked repeated UUID bytes are bounded before allocating another entry.
-pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
-    if input.len() > MAX_HOUSE_INTENT_BYTES {
+fn decode_house_action(input: &[u8]) -> Result<HouseAction> {
+    if input.len() > MAX_HOUSE_ACTION_BYTES {
         return Err(HouseWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -175,11 +179,11 @@ pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
     }
     let value = match key {
         10 => decode_bid(body)?,
-        18 => HouseIntent::MoveOut {
+        18 => HouseAction::MoveOut {
             date_unix_ms: i64::try_from(decode_scalar(body)?)
                 .map_err(|_| HouseWireError::Malformed)?,
         },
-        26 if body.is_empty() => HouseIntent::CancelMoveOut,
+        26 if body.is_empty() => HouseAction::CancelMoveOut,
         34 => decode_acl(body)?,
         42 => decode_door(body)?,
         50 => {
@@ -191,9 +195,9 @@ pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
             if c != body.len() {
                 return malformed();
             }
-            HouseIntent::Kick { character_id }
+            HouseAction::Kick { character_id }
         }
-        58 if body.is_empty() => HouseIntent::Leave,
+        58 if body.is_empty() => HouseAction::Leave,
         _ => return malformed(),
     };
     validate(&value)?;
@@ -214,29 +218,16 @@ fn decode_scalar(body: &[u8]) -> Result<u64> {
     }
     Ok(value)
 }
-fn decode_bid(body: &[u8]) -> Result<HouseIntent> {
-    let (mut key, mut gold) = (None, None);
+fn decode_bid(body: &[u8]) -> Result<HouseAction> {
+    let mut gold = None;
     let mut cursor = 0;
     while cursor < body.len() {
         match read_varint(body, &mut cursor)? {
-            10 => {
-                let bytes = read_bytes(body, &mut cursor)?;
-                if bytes.len() > MAX_HOUSE_KEY_BYTES {
-                    return Err(HouseWireError::LimitExceeded);
-                }
-                set_once(
-                    &mut key,
-                    std::str::from_utf8(bytes)
-                        .map_err(|_| HouseWireError::Malformed)?
-                        .to_owned(),
-                )?;
-            }
             16 => set_once(&mut gold, read_varint(body, &mut cursor)?)?,
             _ => return malformed(),
         }
     }
-    Ok(HouseIntent::Bid {
-        house_key: key.ok_or(HouseWireError::Malformed)?,
+    Ok(HouseAction::Bid {
         max_gold: gold.unwrap_or(0),
     })
 }
@@ -247,7 +238,7 @@ fn read_id_list(body: &[u8], cursor: &mut usize, ids: &mut Vec<CharacterId>) -> 
     ids.push(decode_id(read_bytes(body, cursor)?)?);
     Ok(())
 }
-fn decode_acl(body: &[u8]) -> Result<HouseIntent> {
+fn decode_acl(body: &[u8]) -> Result<HouseAction> {
     let (mut role, mut revision) = (None, None);
     let mut ids = Vec::new();
     let mut cursor = 0;
@@ -266,13 +257,13 @@ fn decode_acl(body: &[u8]) -> Result<HouseIntent> {
             _ => return malformed(),
         }
     }
-    Ok(HouseIntent::AclSet {
+    Ok(HouseAction::AclSet {
         role: role.ok_or(HouseWireError::Malformed)?,
         character_ids: ids,
         expected_revision: revision.unwrap_or(0),
     })
 }
-fn decode_door(body: &[u8]) -> Result<HouseIntent> {
+fn decode_door(body: &[u8]) -> Result<HouseAction> {
     let (mut position, mut revision) = (None, None);
     let mut ids = Vec::new();
     let mut cursor = 0;
@@ -288,10 +279,89 @@ fn decode_door(body: &[u8]) -> Result<HouseIntent> {
             _ => return malformed(),
         }
     }
-    Ok(HouseIntent::DoorSet {
+    Ok(HouseAction::DoorSet {
         position: position.ok_or(HouseWireError::Malformed)?,
         character_ids: ids,
         expected_revision: revision.unwrap_or(0),
+    })
+}
+
+/// Complete D1170 intent. Every action has exactly one explicit World-qualified target.
+/// The target is request data and never attests current admission or placement.
+pub fn encode_house_intent(value: &HouseIntent) -> Result<Vec<u8>> {
+    validate_target(&value.house)?;
+    let mut output = encode_house_action(&value.action)?;
+    let mut target = Vec::new();
+    push_message_field(&mut target, 1, value.house.world_id.as_bytes());
+    push_message_field(&mut target, 2, value.house.house_key.as_bytes());
+    push_message_field(&mut output, 8, &target);
+    if output.len() > MAX_HOUSE_INTENT_BYTES {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    Ok(output)
+}
+fn validate_target(target: &HouseTarget) -> Result<()> {
+    if target.house_key.len() > MAX_HOUSE_KEY_BYTES {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    if target.house_key.is_empty() {
+        return malformed();
+    }
+    Ok(())
+}
+fn decode_target(input: &[u8]) -> Result<HouseTarget> {
+    let (mut world, mut key) = (None, None);
+    let mut cursor = 0;
+    while cursor < input.len() {
+        match read_varint(input, &mut cursor)? {
+            10 => set_once(
+                &mut world,
+                WorldId::decode(read_bytes(input, &mut cursor)?)
+                    .map_err(|_| HouseWireError::Malformed)?,
+            )?,
+            18 => {
+                let bytes = read_bytes(input, &mut cursor)?;
+                if bytes.len() > MAX_HOUSE_KEY_BYTES {
+                    return Err(HouseWireError::LimitExceeded);
+                }
+                set_once(
+                    &mut key,
+                    std::str::from_utf8(bytes)
+                        .map_err(|_| HouseWireError::Malformed)?
+                        .to_owned(),
+                )?;
+            }
+            _ => return malformed(),
+        }
+    }
+    let target = HouseTarget {
+        world_id: world.ok_or(HouseWireError::Malformed)?,
+        house_key: key.ok_or(HouseWireError::Malformed)?,
+    };
+    validate_target(&target)?;
+    Ok(target)
+}
+pub fn decode_house_intent(input: &[u8]) -> Result<HouseIntent> {
+    if input.len() > MAX_HOUSE_INTENT_BYTES {
+        return Err(HouseWireError::LimitExceeded);
+    }
+    let (mut house, mut action) = (None, None);
+    let mut cursor = 0;
+    while cursor < input.len() {
+        let start = cursor;
+        let key = read_varint(input, &mut cursor)?;
+        let body = read_bytes(input, &mut cursor)?;
+        match key {
+            66 => set_once(&mut house, decode_target(body)?)?,
+            10 | 18 | 26 | 34 | 42 | 50 | 58 => {
+                set_once(&mut action, decode_house_action(&input[start..cursor])?)?
+            }
+            _ => return malformed(),
+        }
+    }
+    Ok(HouseIntent {
+        house: house.ok_or(HouseWireError::Malformed)?,
+        action: action.ok_or(HouseWireError::Malformed)?,
     })
 }
 

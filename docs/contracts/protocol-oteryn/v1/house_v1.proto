@@ -1,13 +1,15 @@
 // HOUSE-WIRE-1 INACTIVE PROPOSAL, pending independent protocol review and CP slot.
 // Accepted semantics: HOUSE_OWN0§11; HOUSE_RUNTIME0§5.3/§5.5 adds kick/leave.
 // This draft proposes these message/field numbers, date representation and flat byte bound;
-// it allocates NO capability ID, opcode, domain ID or resource-registry row. No codegen/pins.
+// CP D1170 leaf assignments: HOUSE_V1=27, HOUSE_INTENT=27, HOUSE_QUERY=28, domain23.
+// Registry/capability/dispatch activation remains A2-owned; no codegen/pins.
 // FND-02 owns CommandRef and current session. Every body is request data, never authorization.
 // Exactly one variant required. Unknown fields/wire types, repeated singular fields, invalid
 // UTF-8/UUIDv7, duplicate list identities and >200 list entries fail closed. Empty list clears.
-// Actor's current World supplies HouseId World; body never selects owner/World/session/lease.
-// Proposed max3632 bytes derives from existing200 list entries×18B +position12B +revision11B
-// +outer3B, with6B slack. CP must register/measure bounds before activation.
+// Every intent carries HouseIdV1; its World must equal the actor current World at transport.
+// Body never selects owner/session/lease or proves current admission/placement.
+// Proposed max4168 bytes: largest native Door action3626 + target536 +6B slack.
+// Target536 is World18B +512-byte key515B +nested envelope3B. Resource row remains pending.
 // Existing guild ACL amendment needs its own reviewed wire representation before this
 // character-only editing subset can claim complete ACL coverage. Query/domain projection,
 // common+house result mapping and client panel are NOT defined or activated by this proposal.
@@ -15,7 +17,7 @@ syntax = "proto3";
 package oteryn.protocol.v1.house;
 
 message HouseBidV1 {
-  string house_key = 1; //1..512 UTF-8 bytes; native HouseId grammar checked by transport
+  reserved 1; //target moved to common HouseIdV1; no second independently chosen key
   uint64 max_gold = 2; //0 valid syntactically; owning auction writer applies actual admission
 }
 message HouseMoveOutV1 {
@@ -42,7 +44,9 @@ message HouseDoorSetV1 {
   uint64 expected_revision = 3;
 }
 message HouseKickV1 { bytes character_id = 1; }
+message HouseIdV1 { bytes world_id = 1; string house_key = 2; } //UUIDv7,1..512UTF8B; native grammar in transport
 message HouseIntentV1 {
+  HouseIdV1 house = 8; //required exactly once for every action, including leave/cancel/kick/ACL/door
   oneof intent {
     HouseBidV1 bid = 1;
     HouseMoveOutV1 move_out = 2;

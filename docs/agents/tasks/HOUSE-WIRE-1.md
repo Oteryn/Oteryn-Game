@@ -36,6 +36,32 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## D1170 target-binding successor — AUTHORING, NOT_FULLY_QUALIFIED
+
+CP D1170 assigns leaf constants HOUSE_V1=27, HOUSE_INTENT=27, HOUSE_QUERY=28,
+domain23. No registry, offered capability, shared exports or dispatch is activated.
+Every complete intent now carries one explicit WorldId plus native House key,
+including ACL, door, kick, move-out, cancel and leave. Transport refuses a body
+World different from the current actor World before preparing any action, validates
+all keys with native HouseId, and retains that identity alongside the exact actor
+and CommandRef. Prepared values remain request data, never current authority.
+The old Bid-local key is removed to keep one target. Unqualified old bodies refuse.
+
+The proposed full bound is4168 bytes: largest native200-member Door action3626
+plus World/key target536 plus6 spare. Target uses field8 alongside exactly one
+original action; unknown/duplicate/missing fields and invalid UUID/UTF8 refuse.
+Action-level coordinate/list/revision cases remain focused on the private action
+codec; new tests exercise the public complete-target codec and actual native
+preparation boundary, World mismatch, invalid non-Bid keys and request correlation.
+
+Prior direct-rustc255/6 evidence below applies only to3142194 and is historical.
+This source generation's compile, Clippy and test execution are NOT_RUN. Exact
+Rustfmt1.94 and full whitespace checks pass. Independent Medium source review
+passed the complete six-path batch, including target binding and byte bounds.
+HOUSE_QUERY town/cursor/projection, guild ACL tags from#2153, full revisioned writer
+integration, A2 activation and client panel after#1942 remain NOT_IMPLEMENTED.
+Layout/bounds require independent protocol review; no complete feature claim.
+
 ## Goal
 
 Capability `HOUSE_V1`, `HOUSE_INTENT` commands (house list, bids, move-out, ACL edits) and the House Management panel.
