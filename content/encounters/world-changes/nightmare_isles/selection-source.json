@@ -1,0 +1,52 @@
+{
+  "schema": "OTERYN_WORLD_CHANGE_SELECTION_SOURCE/candidate-1",
+  "kind": "WORLD_CHANGE",
+  "provenance": {
+    "key": "decision:W11",
+    "kind": "decision:W11",
+    "trigger": "decision:W11/W15",
+    "variants.variant_key": "canary:nightmareIsleConfig[].mapName",
+    "variants.weight": "decision:W15",
+    "variants.reference_map": "canary:Game.loadMap"
+  },
+  "unresolved": [
+    "NATIVE_LAYER_GEOMETRY",
+    "TARGET_HOUSE_MEMBERSHIP",
+    "VALUE_SOURCE_MULTIPLICITY",
+    "SPAWN_NPC_RAID_BINDINGS",
+    "ANNOUNCEMENT_TEXT",
+    "COMPILER_BUNDLE_BINDING"
+  ],
+  "key": "nightmare_isles",
+  "trigger": {
+    "kind": "at_reset",
+    "chance_permille": 1000
+  },
+  "variants": [
+    {
+      "variant_key": "ankrahmun-north",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm"
+    },
+    {
+      "variant_key": "darashia-north",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-north.otbm"
+    },
+    {
+      "variant_key": "darashia-west",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-west.otbm"
+    }
+  ],
+  "sources": {
+    "decision": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/0bbfbf5856b5bacd722b51d8f22f8a13f663b67b/docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+      "sha256": "088bc7becbd56611edf2ff5c7b65b94cad68081798dd68f0468b18ce86e2205c"
+    },
+    "canary": {
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/world_changes/nightmare_isles.lua",
+      "sha256": "ca41506fb7949527c1254a0a9fca146f455a982b912cead5545fa02acddc5c65"
+    }
+  }
+}

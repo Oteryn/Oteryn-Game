@@ -122,3 +122,42 @@ and mechanic qualification remain NOT_RUN. LAYER/ACT require separate CP PRs
 under D1057; this builder creates none. EVENTS-RAID-1 gates RT, not this
 amendment authoring. Nomads uses accepted weight1 per camp; Bank Robbery is
 outside v1, and traps alone require HAZARD-1. The checkpoint follows D1122.
+
+## WCHANGE-CONTENT-1 selection-source authoring (local successor)
+
+D1054/D1057 authorizes owned CONTENT work on #2178. The new
+`world_change/content.rs` and two `selection-source.json` documents retain the
+accepted Fury Gates343/ten city variants and Nightmare Isles1000/three named
+variants, all weight1. Per-field provenance names the accepted brief at published
+`0bbfbf5856b5bacd722b51d8f22f8a13f663b67b` and pinned Canary reference
+`04b83b512114bfd888000d6e1433ed8ecaec7c5b`; full URLs and exact source SHA256
+are retained in each document. Canary's startup1000 rule does not replace the
+accepted Fury chance343. Reference map paths are evidence locators only.
+
+This is a proposed **selection-source candidate schema**, not the complete W1
+World Project family or a native layer/definition. It explicitly carries unresolved
+native geometry, target House membership, value-source multiplicity, spawn/NPC/
+raid bindings, announcement text and compiler/bundle binding. Empty completed
+gameplay arrays, guessed placements/IDs, fake qualified references or implicit
+multiplicity are not substituted for those sources. Directory population states
+remain READY_UNPOPULATED for the complete admitted family.
+
+The typed source validator checks W14 ceilings256/16, supported trigger shape and
+chance/date values, unique keys/variants, positive non-overflowing weights,
+per-field source/hash shape and explicit unresolved bindings. It neither fetches
+nor attests provenance and does not parse unbounded files or admit a bundle.
+Existing bounded World Project capture/compiler integration remains required.
+Four authored tests cover the accepted two source documents, malformed bounds,
+identity/weight faults, unknown fields, missing provenance and false completion.
+Source validation does not prove exclusive-layer composition, House safety,
+spawn limits, native compilation, activation or gameplay behavior.
+
+Cheap checks: JSON syntax/accepted selector facts/provenance digest binding,
+explicit Rustfmt of all three owned Rust files and `git diff --check` PASS.
+New Rust compilation, four tests, strict lint, compiler/bundle/native runtime and
+all gameplay qualification remain **NOT_RUN**. Status remains
+NOT_FULLY_QUALIFIED; production acceptance **RED** pending the missing bindings
+and LAYER/ACT plus later RT/ANNOUNCE. No shared root registration, generator,
+shared schema, manifest, content pin, wire/RNG/activation or other owner's source
+is changed. This successor stays local for review; no immediate second push,
+freeze, external review trigger or CI restart is performed by this author.
