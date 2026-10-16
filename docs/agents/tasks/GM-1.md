@@ -4,7 +4,7 @@
 task_id: GM-1
 title: "GM-1: allocated OPS-GM-AUDIT-1 source authoring"
 mode: IMPLEMENT
-status: authoring
+status: NOT_FULLY_QUALIFIED
 active_child_task_id: OTV2-20261016-gm-audit-1
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -30,8 +30,9 @@ owned_paths:
   - "workspace-boundaries.toml (D1091: exact member/path/production and two edge hunks only)"
   - "apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)"
   - "docs/agents/tasks/GM-1.md"
+  - "apps/game-server/src/{lib.rs,durability/mod.rs} (D1160: own module registration line only)"
+  - "apps/game-server/tests/*.rs (D1161: 26 exact production node/staff forwarding lines only)"
 slot_only_paths:
-  - "apps/game-server/src/lib.rs, apps/game-server/src/durability/mod.rs (after #2163)"
   - "apps/game-server/src/node/serve.rs, apps/game-server/src/node/config.rs"
   - "Cargo.toml, apps/game-server/Cargo.toml, Cargo.lock (sequentially after #1942)"
   - "apps/game-server/migrations/0092_staff_audit.sql (reserved; proposal only before slot)"
@@ -42,6 +43,42 @@ slot_only_paths:
   - "apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs, crates/protocol-oteryn/src/lib.rs"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## Current checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
+
+This checkpoint supersedes earlier validation and shared-registration statements
+below. Existing draft #2181 remains draft. [D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+permits one coherent existing-draft checkpoint with explicit RED/NOT_RUN evidence
+before full checks; it does not authorize ready, review triggers or CI restarts.
+[D1160](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224912485)
+authorizes exactly `pub mod staff;` in `src/lib.rs` and
+`pub mod staff_action;` in `src/durability/mod.rs` now.
+[D1161](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224978258)
+authorizes exactly the production `node`/`staff` forwarding insertion in 26
+source-included durability fixture roots; the dedicated staff fixture already
+has its own staff module and production node and remains unchanged.
+
+- **PROVEN, compile-only:** cloud `cargo check --locked -p oteryn-game-server
+  --all-targets --quiet` PASS on the private assembly bound to `d11297a7`.
+  This assembly includes held shared-path integration inputs; this is neither
+  standalone Git-tree qualification nor a runtime/test result.
+- **RED, repaired but not yet requalified:** strict Game Server Clippy at
+  `d11297a7` failed `large_enum_variant` for `Begin::Fresh(Pending)` in lib and
+  libtest. `e34d4f44` boxes the pending state without changing transaction,
+  clock or request checks; no replacement Clippy PASS is claimed.
+- **PROVEN, compile-only:** release-manifest strict Clippy PASS in that cloud
+  assembly. Three previously passed JCS tests are reused historical evidence.
+- **NOT_RUN:** all 11 authored staff pure tests and all 11 PostgreSQL test
+  families. Compilation does not execute either group; PostgreSQL qualification
+  is deferred to the CP-directed frozen ready-PR CI path under D1161.
+- Exact changed-file formatting and `git diff --check` PASS for this repair.
+  Lead owns independent review, remaining qualification and draft publication.
+
+Root Cargo membership/dependency/lock, node configuration/control, proto,
+migration and STAFF_ACTION registration slots remain unchanged under
+D1086/D1091. No root manifest, lock, node, proto or migration slot is installed
+by this checkpoint. No new runtime authority, full qualification, ready or merge
+claim follows.
 
 ## Goal
 
@@ -83,8 +120,9 @@ family path inventory below does not allocate a child or authorize slot work.
 - apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring; crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants; module registration in lib.rs / durability/mod.rs / domain/mod.rs
 
 `docs/contracts/game-events/v2/staff_action.proto` and the `STAFF_ACTION`
-registration require a CP contract allocation. Shared module registration and
-slot-only files require the allocated slot; this record authorizes no wiring.
+registration require a CP contract allocation. D1160/D1161 now permit only
+the exact own registration/forwarding lines described in the current checkpoint;
+all other shared wiring remains slot-held.
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -371,8 +409,9 @@ Ordinary audit expiry/publication and retained-proof prefix pruning still need
 their concrete slot-installed lifecycle; no production retention completeness
 is claimed by the schema proposal alone.
 
-The held shared files remain untouched. D1086 requires registration after #2163,
-node config/control hunks after Admission, manifests/lock sequentially after
+D1160/D1161 supersede the historical registration hold for the two own module
+lines and 26 fixture forwarding lines only. D1086 still holds node config/control
+hunks after Admission, manifests/lock sequentially after
 #1942, and the reserved 0092/proto/STAFF_ACTION slots. An explicit private native
 assembly recipe is outside this checkout; it is validation input, never a
 published shared-path patch or event-number allocation. Real node dispatch and
@@ -414,7 +453,8 @@ outbox detection after owner FK bypass, valid-envelope SQL mirror forgery, and
 operation identity forgery after removal of its expired outbox row.
 An audit-failure fixture increments a nontransactional sequence before raising,
 so an unrelated early error cannot masquerade as audit-insert rollback proof.
-These tests are authored and **NOT EXECUTED** at this checkpoint. Missing PG
+The staff pure tests and PostgreSQL families are authored and **NOT_RUN**
+at this checkpoint. Missing PG
 emits PRE-ROUTING/NONCANONICAL and is not qualification. Restore application,
 surviving sanction/roster rows and session-generation mutations need their
 actual allocated child consumers; no fixture claims those are passed.
@@ -425,8 +465,8 @@ Native Rust 1.94 formatting PASS for the six server Rust files and the frozen
 JCS module; the sole writer verified every before/after file hash and applied
 the exact formatting-only patch. Independent v3 source review PASS for all
 eleven owned files, with no remaining material finding in that targeted review.
-Cargo type checks, native unit tests and PG execution remain unrun pending the
-lead's guarded PC route and global heavy-build capacity. No ready, merge, production authority or runtime-pass
+The compile-only cloud results and remaining RED/NOT_RUN scopes are recorded
+in the current checkpoint above; staff unit and PG execution remain NOT_RUN. No ready, merge, production authority or runtime-pass
 claim follows from this authoring checkpoint.
 
 
