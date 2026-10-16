@@ -3380,3 +3380,7 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+// ACH-COUNTER-1 batch regression cases (CP D1153/D1160).
+#[path = "../src/achievement/grant_tests.rs"]
+mod achievement_batch_postgres_cases;

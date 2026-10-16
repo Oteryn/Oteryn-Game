@@ -39,3 +39,7 @@ mod bestiary_postgres_harness;
 // cases file.
 #[path = "support/account_achievement_postgres_cases.rs"]
 mod account_achievement_postgres_cases;
+
+// ACH-COUNTER-1 batch regression cases (CP D1153/D1160).
+#[path = "../src/achievement/grant_tests.rs"]
+mod achievement_batch_postgres_cases;

@@ -4,6 +4,7 @@
 task_id: ACH-1
 title: "ACH-1: achievements, badges, titles"
 mode: IMPLEMENT
+status: NOT_FULLY_QUALIFIED
 status: skeleton
 repository: Oteryn/Oteryn-Game
 issue: 1622
@@ -172,3 +173,32 @@ validator suite now passes 23 tests, including both malformed-key shapes. This
 change requires no runtime grant writer, schema/content admission, CP slot,
 PostgreSQL job or Rust source change. Existing runtime ownership blockers above
 remain applicable to their separate children.
+
+
+### CP D1153/D1160: batch grant writer (2026-10-16)
+
+AUTHORING resumed from published coverage repair 9d877bf37a180a516523489a0f2eada00bf070e0.
+CP comment 6224947337 assigns `durability/account_achievement.rs` exclusively
+to this PR and migration 0098 for the separate receipt increment.
+
+The existing writer now accepts 1..64 requests with one consumed same-TX
+fenced witness and one Character-root lock. It rejects duplicate
+(source kind, event id, key) pairs and validates all inputs before storage,
+writes in event/key order and returns outcomes in input order. The single
+grant delegates to this API. An all-retired batch still verifies the witness.
+Errors require the earning owner to discard its transaction; no independent
+transaction or replacement writer is added. The existing test-only owner
+harness also calls the batch once, matching the production witness rule.
+
+Four pure validation tests and seven real PostgreSQL case bodies are added.
+PG cases live in the owned `achievement/grant_tests.rs` and are registered
+only by `account_achievement_postgres.rs` and the canonical aggregate
+`character_authority_postgres.rs` under D1160. They are not mounted by lib
+or transitive durability copies. Missing PG is an explicit error.
+
+NOT_FULLY_QUALIFIED (D1122): package Clippy and package/PG execution NOT_RUN.
+The earlier coverage repair retains its separate 23/23 PASS and review evidence.
+No compilation, runtime batch PASS or full ACH-1 completion is claimed.
+Quest-transition schema belongs to #2198; counter receipts, encounter receipt
+migration0098, true earning callers and post-commit notices remain unfinished.
+Shared slot ordering and migration/registry wiring remain subject to CP.
