@@ -4,7 +4,7 @@
 task_id: ARENA-1
 title: "ARENA-1: Tibiadrome and arenas (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/arena-1
@@ -24,6 +24,8 @@ owned_paths:
   - "content/encounters/arenas/ and content/encounters/tibiadrome/ source inputs"
   - "rulesets/encounters/tibiadrome/ and rulesets/pvp/arena/ source inputs (D1048)"
   - "docs/agents/tasks/ARENA-1.md"
+  - "docs/architecture/reviews/OTERYN_GAME_ARENA1_DECISION_2026-10-15.md (D1129 acceptance transfer)"
+  - "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md (ARENA-1 row only, D1129)"
 slot_only_paths:
   - "regenerate_content.py outputs, project.json, manifest.json, content.lock.json, pins, Rust pins"
   - "migration if durable"
@@ -193,3 +195,37 @@ locations, four tier rules, scaling and the Paragon reward set. INSTANCE/runtime
 durable reward/clock work and protocol work remain separate accepted children.
 No new drome references, reward identities, pins, registries, regeneration outputs,
 architecture edits, shared wiring or production changes are included.
+
+
+## D1129 architecture acceptance transfer — pending merge #2179
+
+Authoring base remains published `d34b20d86a744de3d60bc25f6ffabc2c7bc818e0` on
+`skeleton/arena-1`. The live GitHub connector read before authoring confirmed
+#2179 open/draft at that exact head, base main, not merged. No commit or push has
+been made for this delta.
+
+The existing `OTERYN_GAME_ARENA1_DECISION_2026-10-15.md` now records the owner's
+A1–A11 + D1047 acceptance, the scoped A3/A5/A9 contract amendments and D1129's
+acceptance act: **protected merge of #2179**, carrying the brief and only ARENA-1's
+mechanics-plan row. This transfer does not claim that merge or activate an arena.
+D1129 supersedes the historical proposal to implement runtime/CONTENT on this PR:
+those require a separate ARENA-RT-1 allocation after merge. Migration/protocol
+splits and exact-head review/gates remain in force.
+
+D1163's current Tibia Global price rule supersedes historical donor/engineering
+prices as present-value claims. No current Global price Reference or new numeric
+value was supplied: the four tier fee fields and resource row now explicitly
+read UNKNOWN / PARITY_PENDING. Historical numbers retain their historical
+provenance, including the earlier Paragon default; no price is invented or
+activated. This does not alter the accepted non-price rules.
+
+The existing 40-reference catalog remains byte-for-byte unchanged and remains an
+offline inventory. No runtime, CONTENT, schema, migration, protocol, asset or
+other mechanics-plan row changes. The three-file documentation delta awaits
+independent source review and the required governance/exact-head integration
+gates; prior inventory validation keeps its original source provenance. No ready,
+CI restart, full qualification or merge authority is claimed.
+
+Lead independent review of the three-document transfer PASS; governance validation,
+all124 governance tests and diff whitespace PASS. Current-price Reference/architecture
+exact-head review and protected merge remain pending; no content/runtime qualification.

@@ -1,18 +1,48 @@
 # ARENA-1 Tibiadrome, the PvE arena and PvP arenas
 
 - Decision: `ARENA1-TIBIADROME-AND-ARENAS-V1`
-- Status: **CANDIDATE** (architect-authored). Acceptance needs exact-head validation, independent review (security, concurrency, persistence, economy, combat and protocol) and protected integration. Owner acceptance is the owner's to give; none is recorded here.
+- Status: **OWNER-ACCEPTED, EFFECTIVE ONLY ON PROTECTED MERGE OF #2179**. The owner accepted A1–A11 plus D1047 on 2026-10-16 ([acceptance](https://github.com/Oteryn/Oteryn-Game/pull/2179#issuecomment-6216812425)). D1051/D1129 make merge of this brief and the ARENA-1 plan row in #2179 the acceptance act; it has not occurred. Exact-head validation, independent review and protected integration remain required; no runtime or CONTENT acceptance follows from this draft.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the mechanics completion plan row 106 (`OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`, batch ARENA-1: "Tibiadrome and arenas"); the PvP arena moved here from SOCIAL-LATE-1 (`OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md` point 8: "SOCIAL-LATE-1: as in Tibia. No marriage. The PvP arena moves to ARENA-1."); the task record `docs/agents/tasks/ARENA-1.md`; BOSS-RAID-0 §18 and PARTY-PVP-0 (arenas and PvP zones deferred to their own decision); the gap register §20 (arenas).
 - Builds on: BOSS-RAID-0 (accepted 2026-10-15: §6 boss rooms as activity instances, lever admission, cooldowns, exit and recovery; §12 lock order and World jobs); the instance baseline (`INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md`, owner-accepted); HOUSE-RUNTIME-0 §4 (SCOPE-HANDOFF-1 transition and exit fallback); ENCOUNTER-RT-0 (accepted 2026-10-14); PARTY-PVP-0 (accepted: §7 legality, §9 consequences, §10 PvP death); DEATH-0 (accepted: the death receipt); ADR-0001 §10 and §12; GAME-CHANNEL-01 §13 to §15; DUR-03 (MINT, ledgers); PREMIUM activation (accepted 2026-10-13); the content and ruleset tree; owner rule 5905825574 (Global parity).
-- Owner answers (2026-10-15, "akceptuje"): (1) a fourth set of Paragon rewards is authored as ARENA-CONTENT-1 content; (2) the engineering defaults for the Paragon fee, the Paragon scale, the duo scale and the kills per level are accepted as the draft (A8, A8c, tuning rule in §5). This answer is not acceptance of the whole brief; the Status above is unchanged.
+- Owner answers (2026-10-15, "akceptuje"): (1) a fourth set of Paragon rewards is authored as ARENA-CONTENT-1 content; (2) the engineering defaults for the Paragon fee, the Paragon scale, the duo scale and the kills per level are accepted as the draft (A8, A8c, tuning rule in §5). This earlier answer covered those defaults only; the later whole-brief owner acceptance and merge condition are recorded above. The later Global-price rule below supersedes the price default as a current-price claim.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
-- Runtime, migration, wire and production authority: NONE until accepted and allocated. Each child needs its own #162 allocation.
+- Runtime, migration, wire and production authority: NONE from this acceptance transfer. D1129 places arena runtime and CONTENT in a separate `ARENA-RT-1`, allocated only after #2179 merges; subsequent migration/protocol children retain their separate allocations and review gates.
 
+
+## 0. Acceptance transfer and current-price boundary
+
+This file remains at its existing architecture decision path; #2179 transfers the
+accepted brief together with **only** the ARENA-1 mechanics-plan row. D1129
+([CP](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930545))
+clarifies D1051: merge of #2179 is the acceptance act, as for D1095. An unmerged
+status line is not proof of that merge. The 40 Creature references already in
+`content/encounters/arenas/pve-catalog.json` remain an offline inventory, not
+ARENA-CONTENT-1 completion or a runtime/content activation.
+
+D1047's accepted amendment scope is carried here: A3 changes DEATH-0 §3.1 and
+PARTY-PVP-0 §10 to consult the arena instance's `death_policy`; A9 changes
+PARTY-PVP-0 §7.2 legality within the arena; A5 suppresses the specified ITEM-USE /
+RUNE-USE consumption in the Tibiadrome. The detailed A3/A5/A9 rules below are the
+amendments, effective only with this brief's protected integration. They do not
+change the owning contracts' behavior outside that arena scope. Implementation
+and current-authority proof remain work for the separately allocated children.
+
+**D1163 price precedence:** [the later owner/CP rule](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225136278)
+is parity with **current Tibia Global**; arena prices must come from Global.
+No new accepted price numbers or current-Global price References accompany that
+ruling. Therefore current arena-price fields are **UNKNOWN / PARITY_PENDING**
+until a dated current-Global Reference qualifies the value and its arena/tier
+scope. This applies to every price claim, including a proposed zero fee. Earlier
+Canary/Halvar values, older external extracts and the Paragon engineering default
+remain historical evidence only; none establishes a current Global price or
+permits a guessed fallback. The child must retain the Reference with the eventual
+price, and cannot activate an unresolved price. This supersedes pricing defaults,
+not the accepted non-price A1–A11 rules or the existing inventory.
 
 ## 1. Scope
 
-Three arena kinds: the **Tibiadrome** (a group PvE wave battle with rotations, leaderboards and rewards), the **PvE arena** (the Svargrond arena, rebuilt for the Oteryn roster and level range: four level-banded tiers of ten pits, solo or as a duo, repeatable with a weekly time ranking) and the **PvP arena** (a lever-started match between characters). This brief decides their common instance model, entry, death outcome, rewards, durable state, the Tibiadrome's wave scaling, monsters, modifiers, potions and rotation anchor, and the PvE arena's bands, opponents, fees, weekly ranking and duo mode, and the PvP arena's match shapes. Nothing is left open: every value has a cited source (§2, §5) or is a stated engineering default with its rationale (§5).
+Three arena kinds: the **Tibiadrome** (a group PvE wave battle with rotations, leaderboards and rewards), the **PvE arena** (the Svargrond arena, rebuilt for the Oteryn roster and level range: four level-banded tiers of ten pits, solo or as a duo, repeatable with a weekly time ranking) and the **PvP arena** (a lever-started match between characters). This brief decides their common instance model, entry, death outcome, rewards, durable state, the Tibiadrome's wave scaling, monsters, modifiers, potions and rotation anchor, and the PvE arena's bands, opponents, fees, weekly ranking and duo mode, and the PvP arena's match shapes. Non-price values retain their cited sources or accepted engineering rationale (§2, §5). Current-price parity remains UNKNOWN / PARITY_PENDING under §0; architecture acceptance does not qualify those values.
 
 ## 2. Reference grounding
 
@@ -138,14 +168,14 @@ This is a DEATH-0 §3.1 and PARTY-PVP-0 §10 amendment, pending on acceptance of
 **A8. PvE arena (Svargrond), rebuilt for Oteryn.** Owner decision 2026-10-15: the arena is rebuilt entirely and fitted to the game's current monsters and levels; the copied Tibia roster is dropped, and no "Champion" tier is added on top of the old three. Pit structure, fee-per-try, pit timer, exits and death rule follow Canary and Crystal (`svargrond_arena.lua`, `movements_arena_*`, Halvar), matching TibiaWiki.
 - **Tiers and bands** (`ARENA1-RL-22`). Four tiers cover the whole Oteryn level range. A band is a level range, derived from the Oteryn-curve: the edges 100, 300 and 600 are round levels at which the cumulative experience steps up 28x (level 100 = 15.7 million to level 300 = 441 million), 8x (to level 600 = 3.56 billion) and 4.6x (to level 1000 = 16.6 billion) and the first edge, level 20, is where a character leaves the starter levels (level 20 = 98,800). The top tier is aimed at level 1000 and has no upper bound, so characters above 1000 enter it too.
 
-| Tier | Level band | Fee (`ARENA1-RL-16`) | Upper bound |
+| Tier | Level band | Current Global fee (`ARENA1-RL-16`, §0) | Upper bound |
 |---|---|---|---|
-| Greenhorn | 20 to 99 | 1,000 gp | enforced |
-| Scrapper | 100 to 299 | 5,000 gp | enforced |
-| Warlord | 300 to 599 | 10,000 gp | enforced |
-| Paragon (top tier, aimed at level 1000) | 600 and above | 25,000 gp (decided default, a gold sink at the top) | none |
+| Greenhorn | 20 to 99 | UNKNOWN / PARITY_PENDING | enforced |
+| Scrapper | 100 to 299 | UNKNOWN / PARITY_PENDING | enforced |
+| Warlord | 300 to 599 | UNKNOWN / PARITY_PENDING | enforced |
+| Paragon (top tier, aimed at level 1000) | 600 and above | UNKNOWN / PARITY_PENDING | none |
 
-  The first three tier names and fees are the reference's; Paragon is the new top tier (the name is content, changeable in ARENA-CONTENT-1). The upper bounds keep the weekly ranking (A8b) fair: a high-level character cannot take the lowest board. A character that levels past a band keeps the rows it earned there and cannot enter that tier again.
+  Historical proposal: Greenhorn 1,000 gp, Scrapper 5,000 gp and Warlord 10,000 gp came from Canary/Halvar; Paragon 25,000 gp was the earlier accepted engineering default. These numbers are not current Global prices (§0). The first three tier names remain the reference's; Paragon is the new top tier (the name is content, changeable in ARENA-CONTENT-1). The upper bounds keep the weekly ranking (A8b) fair: a high-level character cannot take the lowest board. A character that levels past a band keeps the rows it earned there and cannot enter that tier again.
 - **Opponent selection** (`ARENA1-RL-23`, reproducible). Each tier's ten pits are existing Oteryn creatures, chosen so difficulty rises with the pit:
   1. The tier's experience window is `[ (xp(Lmin+1) - xp(Lmin)) / 300 , (xp(Lmax+1) - xp(Lmax)) / 300 ]` creature base experience, where `xp(L)` is `minimum_experience` of level L in the Oteryn-curve and 300 is the assumed kills per level (decided default; Lmax is 99, 299, 599 and 1000). Windows: Greenhorn 57 to 1,585; Scrapper 1,617 to 14,751; Warlord 14,851 to 59,501; Paragon 59,701 to 166,167.
   2. Pit `k` (1 to 10) targets experience `window_low x (window_high / window_low)^((k-1)/9)` and health `1.5 x` that experience (the median health to experience ratio of the Oteryn-roster is 1.3 to 1.6 in the first three windows); the creature closest in log distance to both targets, not used in another tier or pit, is taken.
@@ -266,7 +296,7 @@ This is a DEATH-0 §3.1 and PARTY-PVP-0 §10 amendment, pending on acceptance of
 | `ARENA1-RL-13` raffle potions per rotation per World | 50 | TibiaGoals, TibiaXplorer |
 | `ARENA1-RL-14` raffle share of the remaining participants | 20%, rounded down | Manual, rounding decided |
 | `ARENA1-RL-15` PvE arena pit time limit | 600 s (kept) | Canary `kickTime` |
-| `ARENA1-RL-16` PvE arena fees, per participant per run | 1,000, 5,000, 10,000, 25,000 gp (Greenhorn, Scrapper, Warlord, Paragon) | Canary `ARENA`, Halvar; Paragon decided |
+| `ARENA1-RL-16` PvE arena fees, per participant per run | UNKNOWN / PARITY_PENDING for all four tiers | D1163: current Global Reference required (§0); historical donor/default values do not qualify pricing |
 | `ARENA1-RL-17` PvP arena match time limit | 30 minutes | OTLand model of the real arena, decided |
 | `ARENA1-RL-18` modifiers per rotation | 2 of 9 | TibiaWiki-Drome |
 | `ARENA1-RL-19` seed period by group size | 20, 17, 14, 11, 8 s; seed step-on window 6 s | Manual |
@@ -287,7 +317,11 @@ This is a DEATH-0 §3.1 and PARTY-PVP-0 §10 amendment, pending on acceptance of
 
 ## 4. Packets (proposed)
 
-Allocated one by one by the control plane after acceptance; each its own PR.
+D1129 routes runtime and CONTENT to a separate `ARENA-RT-1` only after #2179
+merges. The following packet breakdown describes that later work, not additional
+implementation in this acceptance PR. D1049 keeps CONTENT/INSTANCE/DROME-RT/PVE/PVP
+on the mechanic runtime PR, with each own review gate; migration and wire packets
+remain separate PRs. Every writer still needs a fresh control-plane allocation.
 1. **ARENA-CONTENT-1** (content): `content/encounters/tibiadrome/`, `content/encounters/arenas/`, `rulesets/encounters/tibiadrome/` and `rulesets/pvp/arena/` schemas with the drome monster pool, the nine modifiers, locations, the four PvE arena tiers with their ten-pit opponent lists (by creature key, A8) and scaling rows, the fourth set of Paragon rewards (achievement, reward claim, trophy item; owner answer 2026-10-15), the weekly ranking and duo rows, and PvP arena definitions, with provenance. No runtime.
 2. **ARENA-INSTANCE-1** (hard, security and concurrency review): the arena instance kind on the BOSS-ROOM-1 admission and the SCOPE-HANDOFF-1 transition, A2 gates, the A3 `death_policy` (DEATH-0 amendment), the vitals restore, exit and recovery. Needs BOSS-ROOM-1, SCOPE-HANDOFF-1, ENC-RT-1, DEATH-1.
 3. **DROME-RT-1** (hard, combat review): A4 and A5 (waves, modifiers, `drome_modifier`, consumption and progression suppression, soul-point refusal, PvP rule 0). Needs ARENA-INSTANCE-1, LOOP-MONSTER-1, ITEM-USE-1c, PVP-RT-1 (rule 0 only).
@@ -301,11 +335,11 @@ Order: ARENA-CONTENT-1, ARENA-INSTANCE-1, then DROME-RT-1, ARENA-PVE-1 and ARENA
 
 ## 5. Sourced notes and declared differences
 
-No point is open. Notes, each with its source:
+Non-price design points are resolved; current price qualification remains UNKNOWN / PARITY_PENDING under §0. Notes, each with its source:
 - **Real-Tibia versus OT.** Canary and Crystal implement only the Svargrond arena and the lever PvP arenas; the Tibiadrome (waves, rotation, modifiers, leaderboards) is real-Tibia-only, taken from the Manual, TibiaWiki-Drome, TibiaQA-HP and TibiaGoals. Where an OT value differs from real Tibia, real Tibia is used (Global parity): Duelling Arena death rule (no penalty, home temple) over the OT standard death; one instance per run over Canary's shared pits and queue.
 - **Engineering defaults, no source anywhere.** Damage curve and wave-0 max hits (A4, `ARENA1-RL-20`), Domestikion buff size, hazard radii and percentages not stated by TibiaGoals, Murmillion paralyze and Scissorion invisibility durations, raffle rounding (down), the uniform potion kind draw, the PvP match time limit (30 minutes), the tie fallback by CharacterId, `ARENA1-RL-08` and `ARENA1-RL-10`. Each is registered as an `ARENA1-RL` row, so a change is a registry change.
 - **PvE arena rebuild (owner decision 2026-10-15).** The Tibia opponent roster, the three-tier sequence predicate and the once-only tier are replaced by four level-banded tiers built from the Oteryn-curve and Oteryn-roster, repeatable runs with a weekly ranking (option b) and a duo mode (option c). The 600 s pit timer, the fee per try and the `STANDARD` death rule are kept. Tier bands, the 300-kills-per-level window, the 1.5 health ratio, the Paragon ramp, the duo factors, the Paragon fee and the title reward are engineering defaults with no external source, registered as `ARENA1-RL-22` to `ARENA1-RL-28` and `ARENA1-RL-16`. The time to kill at level 1000 is unverified (no per-level damage data in the repository).
-- **Accepted defaults and tuning rule (owner answer 2026-10-15, "akceptuje").** The Paragon fee (25,000 gp, `ARENA1-RL-16`), the Paragon scale (health 1.0 to 2.0, damage 1.0 to 1.25, `ARENA1-RL-25`), the duo scale (health x 2.0, damage x 1.25, `ARENA1-RL-28`) and 300 kills per level (`ARENA1-RL-22`, `ARENA1-RL-23`) stand as the draft. Tuning rule: after a measured time-to-kill at level 1000 (a character of level 1000 or above clearing each Paragon pit, solo and duo, in a test World), these values are adjusted through registry changes only, never by changing the design, so that a well-equipped character of the band clears a pit within the 600 s limit with margin; no value changes before that measurement.
+- **Historical accepted defaults and tuning rule (owner answer 2026-10-15, "akceptuje"); current prices now follow §0.** The Paragon fee (25,000 gp, `ARENA1-RL-16`), the Paragon scale (health 1.0 to 2.0, damage 1.0 to 1.25, `ARENA1-RL-25`), the duo scale (health x 2.0, damage x 1.25, `ARENA1-RL-28`) and 300 kills per level (`ARENA1-RL-22`, `ARENA1-RL-23`) stand as the draft. Tuning rule: after a measured time-to-kill at level 1000 (a character of level 1000 or above clearing each Paragon pit, solo and duo, in a test World), these values are adjusted through registry changes only, never by changing the design, so that a well-equipped character of the band clears a pit within the 600 s limit with margin; no value changes before that measurement.
 - **Excluded by design.** Duelling Arena entrance fees, pots and Last Man Standing (CipSoft removed the arenas for abuse scenarios, 2023-02-14); no fee or reward flow in the PvP arena.
 - **Data.** The Crystal drome cube table has a copy error (holy amplification twice); the canary item ids 36723 to 36742 are authoritative.
 - **Task record.** `docs/agents/tasks/ARENA-1.md` lists `content/arenas/` as a source input; the tree has `content/encounters/arenas/` and `content/encounters/tibiadrome/`, corrected there.
@@ -320,11 +354,13 @@ No point is open. Notes, each with its source:
 ## 7. Handback
 
 ```yaml
-result: CANDIDATE
+result: OWNER_ACCEPTED_PENDING_PROTECTED_MERGE_2179
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_ARENA1_DECISION_2026-10-15.md
 resource_values_changed: false
 production_authority_changed: false
 implementation_may_resume: false
+runtime_content_next: "ARENA-RT-1, fresh allocation only after merge #2179"
+current_price_parity: "UNKNOWN / PARITY_PENDING; current Global Reference required (D1163)"
 required_fresh_allocation: true
 required_independent_review: "security, concurrency, persistence, economy, combat, protocol"
 amends_pending_acceptance: "DEATH-0 §3.1 and PARTY-PVP-0 §7.2, §10 (A3, A5, A9); ITEM-USE and RUNE-USE consumption (A5)"
