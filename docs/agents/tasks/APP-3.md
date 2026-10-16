@@ -36,7 +36,7 @@ APP-3 (hard, protocol, Reg).
 | APP-1 | BLOCKING (Wave 4) |
 | combat child E protocol lane (DEATH-2/ATTACK) | ATTACK-1b MERGED; DEATH-2: verify |
 | registry lease | CP lease |
-| acceptance of CHARACTER_APPEARANCE (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of CHARACTER_APPEARANCE | ACCEPTED on protected main by #2209 (`e2da9805d296a27b06b32335bf67394509d4910b`); no wire layout or registry IDs allocated by that acceptance |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
