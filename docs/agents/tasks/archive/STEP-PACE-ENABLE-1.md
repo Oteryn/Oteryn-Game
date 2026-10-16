@@ -80,7 +80,7 @@ STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/20
 - [x] Runbook identifies oteryn-vps and Platform controller ownership, historical Synology location, owner-only marker/restart/rollback actions and the exact operational proof gap.
 - [x] No production action is taken by the builder; no release, retirement or active marker integration is claimed without evidence.
 - [x] Active controller support (Platform #1652 merged `562d77bd`) installed on oteryn-vps; marker, restart, label/env and readiness evidence recorded above.
-- [x] Live capability 13 receipt boundary and off-state byte-identity evidence: superseded by D1139, which accepts the existing #2041 tests as that evidence; no live probe is required.
+- [x] Live capability 13 receipt boundary and off-state byte-identity evidence: superseded by [CP D1139](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224930839), which accepts the existing #2041 tests as that evidence; no live probe is required.
 
 ## Validation
 
