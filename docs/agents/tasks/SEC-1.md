@@ -15,61 +15,71 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "hard (child graph SEC-REL-1, SEC-CHAL-1, SEC-TELEM-1, SEC-DETECT-1, SEC-CHAL-2)"
 migration: no
 registry: yes
-owner: boot_rat_policy_1 (local report-only allocation)
+owner: "/root/sec_record (delegated SEC record-only writer; family lead /root / chat I)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/security/ (new module dir)
-  - apps/game-server/tests/security_*.rs (new)
-  - crates/protocol-oteryn/src/client_integrity*.rs (new)
-slot_only_paths:
-  - connection.rs
-  - mod.rs
-  - capabilities.rs
-  - crates/protocol-oteryn/src/lib.rs
-  - PROTOCOL_OTERYN_V1_REGISTRY.json
-  - RESOURCE_LIMITS_REGISTRY.json
+  - docs/agents/tasks/SEC-1.md
+slot_only_paths: []
 public_contracts: []
 depends_on:
   - "CLOCK-1 residue: MERGED #2114"
-  - "ITEM-LOOK-1 (registry order): BLOCKING: not merged (draft skeleton/item-look-1)"
-  - "ADMIT-CAP-1 (for SEC-CHAL-1/2): BLOCKING: not merged; ADMIT0 CANDIDATE"
-  - "SEC_CLIENT01 ACCEPTED: BLOCKING: decision Status CANDIDATE"
-  - "PROD-COMPAT-01 release train, ANL-01, ANL-03, DATA-PRIVACY-01 disclosure: BLOCKING/UNKNOWN: CP verifies"
+  - "ITEM-LOOK-1 and WEATHER-1: CP rechecks completion before allocating SEC-TRUST-1/SEC-REL-1"
+  - "ADMIT0 ACCEPTED; ADMIT-CAP-1 implementation remains a SEC-CHAL-1/2 gate"
+  - "SEC_CLIENT01 ACCEPTED (D1034); acceptance is not child implementation authority"
+  - "SEC-TRUST-1 node floor/checkpoint seed: separately allocated; fail closed pending qualification"
+  - "D1032 release-train reconciliation before SEC-REL-1 slot; PROD-COMPAT admitted-build source before SEC-CHAL-1"
+  - "ANL-01, ANL-03: child prerequisites; DATA-PRIVACY-01 disclosure: production collection gate only"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
-`slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
-CP and architect do the final review.
+Current allocation is **REPORT_ONLY**, limited to this record by D1030. The delegated
+writer is `/root/sec_record`, under family lead `/root` / chat I. CP names future child
+owners at their separate allocations. Original 2026-10-15 source/slot allocations are retained
+as historical planning evidence and grant no current source-write authority. CP and
+architect retain final review, readiness, allocation and merge authority.
 
 ## Goal
 
 Server-side integrity checks per SEC_CLIENT01 (CLIENT_INTEGRITY, INPUT_TELEMETRY). Pacing stays in LOOP-WORLD-1; 9c/6c3 retirement is separate.
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+## Current dependency decisions — 2026-10-16
 
-| Dependency | State |
+Authority: [CP D1029–D1034](https://github.com/Oteryn/Oteryn-Game/pull/2188#issuecomment-6216591759)
+and the later [owner telemetry override](https://github.com/Oteryn/Oteryn-Game/pull/2188#issuecomment-6216811726).
+
+| Dependency | Current decision / unresolved gate |
 |---|---|
-| CLOCK-1 residue | MERGED #2114 |
-| ITEM-LOOK-1 (registry order) | BLOCKING: not merged (draft skeleton/item-look-1) |
-| ADMIT-CAP-1 (for SEC-CHAL-1/2) | BLOCKING: not merged; ADMIT0 CANDIDATE |
-| SEC_CLIENT01 ACCEPTED | BLOCKING: decision Status CANDIDATE |
-| PROD-COMPAT-01 release train, ANL-01, ANL-03, DATA-PRIVACY-01 disclosure | BLOCKING/UNKNOWN: CP verifies |
+| CLOCK-1 residue | Historical evidence: MERGED #2114. |
+| SEC_CLIENT01; ADMIT0 | **ACCEPTED** (D1034). The old CANDIDATE blockers are superseded; acceptance does not prove ADMIT-CAP-1 implementation merged. |
+| ITEM-LOOK-1; WEATHER-1 | CP rechecks live completion before allocating SEC-TRUST-1 and SEC-REL-1; no merge status inferred here. |
+| SEC-TRUST-1 | Owns embedded node floor and checkpoint seed (D1031); no floor bootstrap or genesis-0 workaround in SEC-REL-1. |
+| SEC-REL-1 / RELEASE-MANIFEST-3 | Shared canonical format/signing owner; D1029 fixes JCS, uint64 decimal strings and detached Ed25519. Remaining schema/bounds/inventory and independent review stay open. |
+| Release train | GitHub Releases + Velopack (free), alpha-ops §4 rulings 5/8/9/11/12 (D1032, owner B); reconcile CLIENT-INSTALLER-0 §2/§5 before SEC-REL-1 slot. |
+| PROD-COMPAT admitted-build source | SEC never synthesizes it; SEC-CHAL-1 waits for its owning PROD-COMPAT packet (D1033), plus SEC-REL-1 and ADMIT-CAP-1. |
+| ANL-01; ANL-03 | Required by their telemetry/detector children; implementation readiness remains unverified here. |
+| DATA-PRIVACY-01 disclosure | Production collection gate remains. Later owner D enables telemetry during **TEST**; it supersedes only D1034's telemetry-off ruling. No telemetry is implemented or activated by this record. |
 
-**BLOCKING:** ITEM-LOOK-1 (registry order); ADMIT-CAP-1 (for SEC-CHAL-1/2); SEC_CLIENT01 ACCEPTED; PROD-COMPAT-01 release train, ANL-01, ANL-03, DATA-PRIVACY-01 disclosure. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+Historical 2026-10-15 dependency state at main@5742f30f3 had ITEM-LOOK-1 and
+ADMIT-CAP-1 unmerged, and incorrectly treated SEC_CLIENT01/ADMIT0 acceptance as pending.
+That table is superseded by the decisions above; original source observations below
+remain dated evidence, not current implementation or merge claims.
 
-## Owned paths (builder edits freely)
+## Owned paths (current REPORT_ONLY allocation)
+
+- `docs/agents/tasks/SEC-1.md` only.
+
+## Historical child source-path plan — inactive in #2188
 
 - apps/game-server/src/security/ (new module dir)
 - apps/game-server/tests/security_*.rs (new)
 - crates/protocol-oteryn/src/client_integrity*.rs (new)
 
-## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
+## Historical slot-only path plan — no current allocation
 
 - connection.rs
 - mod.rs
@@ -89,15 +99,20 @@ Server-side integrity checks per SEC_CLIENT01 (CLIENT_INTEGRITY, INPUT_TELEMETRY
 
 ## Inseparable bundles
 
-Each SEC-* child with Reg=yes is wire+registry+capability+handler+tests. Allocate children in order SEC-REL-1, SEC-CHAL-1, SEC-TELEM-1, SEC-DETECT-1, SEC-CHAL-2; split into child PRs if more than one becomes ready.
+Each SEC-* child with Reg=yes remains an inseparable wire+registry+capability+handler+tests
+bundle. D1030 requires **separate allocations, one child at a time**:
+SEC-REL-1 → SEC-CHAL-1 → SEC-TELEM-1 → SEC-DETECT-1 → SEC-CHAL-2.
+SEC-REL-1's future scope includes `tools/oteryn-release-sign/` and
+`apps/game-server/src/security/`; neither is allocated to this PR. SEC-TRUST-1 is a
+separate prerequisite owner, not an implicit expansion of SEC-REL-1.
 
 ## Acceptance criteria
 
 - [ ] Only children whose brief is ACCEPTED and deps merged are implemented.
-- [ ] Privacy: telemetry collection off in production until DATA-PRIVACY-01 disclosure.
+- [ ] Telemetry enabled during TEST per later owner D; production collection remains off until DATA-PRIVACY-01 disclosure. No runtime activation in this REPORT_ONLY PR.
 - [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
-## Validation
+## Historical child validation plan (not required/executed for this record)
 
 - `cargo fmt --all --check`
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings` (and `-p protocol-oteryn` when the wire changes)
@@ -109,24 +124,37 @@ Each SEC-* child with Reg=yes is wire+registry+capability+handler+tests. Allocat
 
 SEC_CLIENT01 decision; plan App. 7 SEC-1. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §4 Epic 6 SEC-1 (row 135); App. 7 SEC-1.
 
-## Builder instructions
+## Current builder instructions
 
-- Work on branch `skeleton/sec-1`; push rarely and batched (every push to this draft runs CI).
-- Do not mark the PR ready; CP marks it ready at its merge-queue turn.
-- Slot-only paths only in the final commit, after merging main at the queue turn.
-- One Codex round on the final head; at most 2 repair rounds, then CP splits the task.
+- Update only this record on `skeleton/sec-1`; this allocation authorizes no implementation.
+- Children need separate CP allocation, accepted owning contracts and their prerequisite gates.
+- One author per branch; author only in AUTHORING, freeze the candidate before review,
+  and explicitly return to AUTHORING through the lead before repairing a frozen candidate.
+- The record-only writer returns the candidate to the family lead for publication and
+  review coordination; CP retains readiness, child allocation and merge authority.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: "D1029-D1034 recorded; later owner TEST telemetry override applied (2026-10-16)"
+status: prerequisite_design_prepared
+mode: REPORT_ONLY
 branch: skeleton/sec-1
-blocker: ITEM-LOOK-1 (registry order); ADMIT-CAP-1 (for SEC-CHAL-1/2); SEC_CLIENT01 ACCEPTED; PROD-COMPAT-01 release train, ANL-01, ANL-03, DATA-PRIVACY-01 disclosure
-next_action: CP rechecks BLOCKING rows
+pr: 2188
+authoring_source: 87d1ee94a335831c9af3b799e89664b47f24ea27
+writer: /root/sec_record
+owned_paths: [docs/agents/tasks/SEC-1.md]
+blockers:
+  - "Separate child allocations after ITEM-LOOK-1/WEATHER-1 completion recheck"
+  - "SEC-TRUST-1 embedded node floor/checkpoint seed, root lineage and non-restored freshness qualification"
+  - "SEC-REL shared closed schema, upstream JCS qualification/golden vectors, bounds and final artifact/corpus inventory"
+  - "CLIENT-INSTALLER-0 sections 2/5 reconciliation with alpha-ops release train before SEC-REL-1 slot"
+  - "PROD-COMPAT-owned admitted-build source; ADMIT-CAP-1 merge evidence before SEC-CHAL-1"
+  - "ANL-01/ANL-03 child prerequisites; DATA-PRIVACY-01 before production telemetry"
+next_action: "Lead validates/freezes this record candidate; CP allocates prerequisite/child packets separately"
 ```
 
-## SEC-REL prerequisite/design packet — 2026-10-15
+## SEC-REL prerequisite/design packet — 2026-10-15 (historical evidence, amended below)
 
 This is **REPORT_ONLY**, on `skeleton/sec-1`, exact authoring source
 `65e256f7b49ff1249a38fcc2409f1d8e883d36a1`, existing draft #2188.
@@ -147,9 +175,10 @@ its header says rulings/packets are accepted on merge while named amendments rem
 pending their owning packets. Its ruling 9 already chooses **detached Ed25519 over
 canonical bytes**, the offline signing role and a separate root release attestation.
 RELEASE-MANIFEST-3 is explicitly SEC-REL-1's manifest half, **one owner**, not a second
-competing trust format. Canonical serialization itself has not been specified or
-implemented by those words. Recommendations below are proposals requiring that owner
-and independent security review; none silently becomes an accepted protocol.
+competing trust format. Those earlier words alone did not specify or implement canonical
+serialization. D1029 now selects the canonical encoding. Remaining proposed schema and binding
+choices still require that owner and independent security review; they are not silently
+accepted by selecting JCS.
 
 | Accepted source | Binding consequence |
 | --- | --- |
@@ -189,26 +218,42 @@ reader was found in the inspected runtime. Node config has no client_build_floor
 bootstrap codecs alone do not implement VERSION-FLOOR-1. Primitive ed25519-dalek2.2.0 and
 SHA-256 availability is not implementation of SEC-REL.
 
-**Concrete release-train reconciliation gate:** CLIENT-INSTALLER-0 remains labelled
+**Concrete release-train reconciliation gate (resolved direction, pending contract reconciliation):** CLIENT-INSTALLER-0 remains labelled
 CANDIDATE while its implemented identity/Inno/MQ slices and owner D854 are documented.
 Its §5 proposes Platform hosting/pointer sequence and authorized lower-version rollback;
 alpha-ops §4 rulings5/8 propose alpha/GitHub Releases, Velopack and higher-version rollback,
 and ruling11 says Platform does not gate builds. Installer §2/§5 instead names Platform/
-Gateway compatibility authority. Keep the actual native release id as an opaque exact
-identity; CP must reconcile these owning contracts and rollout authority explicitly.
+Gateway compatibility authority. D1032 and owner B now select alpha-ops §4 rulings
+5/8/9/11/12, GitHub Releases and
+Velopack (free). Keep the actual native release id as an opaque exact identity;
+CLIENT-INSTALLER-0 §2/§5 must be reconciled before the SEC-REL-1 slot.
 Do not silently replace the native installer, impose SemVer ordering on release ids,
 activate an unsigned ci artifact, or assume a future Platform API/schema.
 
-### 3. Canonical bytes: concrete PROPOSAL, not implemented contract
+### 3. Canonical bytes: D1029 selected; remaining schema proposals
 
-**Decision required from RELEASE-MANIFEST-3/SEC-REL owner:**
+**D1029:** RFC 8785 JCS is the canonical encoding; uint64 values are decimal strings.
+Use one mature upstream JCS implementation and cross-language golden vectors; GM-1
+uses the same canonicalizer (D1040). Detached Ed25519 signs the exact file bytes, with
+no BOM or trailing newline. CBOR and protobuf are excluded (ANL-01 §§2, 9).
+`serde_json::to_vec` or BTreeMap ordering alone is not JCS. Upstream selection and
+qualification remain implementation work for the separately allocated owner. The original
+2026-10-15 proposal compared JCS with RFC 8949 deterministic CBOR; that alternative
+is superseded by D1029, not an available implementation choice.
+
+**Historical 2026-10-15 alternatives proposal — superseded by D1029.** The original
+comparison is preserved verbatim below as evidence only; its RFC 8949 alternative
+and request for an encoding choice are no longer operative.
 
 | Alternative | Tradeoff / recommendation |
 | --- | --- |
 | RFC8785 JCS, closed typed JSON, uint64 values encoded as canonical decimal strings | Recommended proposal: inspectable operator artifacts and existing JSON ecosystem; string representation preserves all uint64 values without JSON/JavaScript number truncation. Needs explicit schema acceptance and a qualified upstream JCS implementation; serde_json::to_vec or BTreeMap order alone is not JCS. |
 | RFC8949 core deterministic CBOR, typed uint64 and byte strings | Valid alternative with natural full-width integers and compact signatures; adds a binary contract/tooling and must freeze deterministic encoding/tag policy. Do not mix both encodings under one format version. |
 
-For the recommended option, the proposed signed file is exactly UTF-8 JCS of a closed
+The following envelope, field names and normalization details remain **proposals**;
+D1029 settles the canonicalizer/integer/signature choices, not the complete schema.
+
+The proposed signed file is exactly UTF-8 JCS of a closed
 object `{kind,format_version,signer_key_id,payload}`; **no BOM, trailing newline or bytes**.
 `kind` distinguishes manifest/trust-record/checkpoint/release-attestation and is inside
 the signature. These names/version are proposed artifact-domain bytes, not allocated wire
@@ -238,8 +283,9 @@ and register them before a decoder allocates. No guessed limits are promoted her
 | Release attestation | Required alpha-ops fields exactly: channel/version/package_sha256/package_size/manifest_sha256/trust_revision. Propose manifest_sha256 = SHA-256(exact canonical manifest file, excluding detached signature). Validate exact package/manifest binding, and trust_revision <= applied trust head; later trust-only records do not make an attested release uninstallable. This root object is additional to release-key verification, never a root-signed manifest. |
 
 No sample private/public root, signature, genesis revision or hardcoded build roster is
-created. Every byte choice above needs golden cross-language vectors and the owning
-security review before implementation; it is not an accepted invented signed envelope.
+created. D1029's selected byte/signature rules require golden cross-language vectors and the
+owning security review. The additional proposed schema choices still need explicit
+acceptance; no signed envelope is invented as an accepted contract here.
 
 ### 4. Publication, Game trust and corpus integration sequence
 
@@ -268,12 +314,13 @@ security review before implementation; it is not an accepted invented signed env
    authenticated log/checkpoint, validate their role/bytes/age/floor, apply consecutive records
    under the Game trust owner's serialized transaction and persist highest-applied revision
    with the corresponding key state. No CharacterRevision or session authority is advanced.
-5. **Floor bootstrap GAP:** SEC §3 does not specify the Game node's complete trusted key state
+5. **Floor bootstrap: SEC-TRUST-1 (D1031):** SEC §3 does not specify the Game node's complete trusted key state
    at its embedded floor; client alpha-ops ruling9 does specify a client snapshot, which is
    not automatically a node contract. A restored DB below the embedded floor cannot be repaired
-   by treating an ordinary record at that floor as a fresh advance. Recommend an explicitly
-   allocated SEC-TRUST-1 embedded node snapshot/seed contract; alternatively remain UNVERIFIED
-   until an independently qualified state restore. Neither is implemented here. Genesis,
+   by treating an ordinary record at that floor as a fresh advance. D1031 assigns the
+   embedded node floor and checkpoint seed to SEC-TRUST-1.
+   Until that packet qualifies bootstrap, the node starts UNVERIFIED and a DB below
+   the floor fails closed. Neither a node seed nor a state restore is implemented here. Genesis,
    root-lineage transition and uint64 exhaustion need that owner; never default to revision0
    or bypass the <=floor rejection. External non-restored freshness high-water belongs to
    SEC-TRUST-1, not a new pretend DB anchor or self-issued current-verified boolean.
@@ -329,17 +376,39 @@ may stand in for the negative current-authority cases.
 
 ### 6. CP handoff and validation
 
-Next concrete packet is SEC-REL/RELEASE-MANIFEST-3 after CP resolves: (a) canonical schema/
-byte/integer/key-id rules and bounds, (b) authoritative release train/admitted-build set
-and installer versus alpha-ops conflicts, (c) Game floor seed/root-lineage bootstrap and
-which SEC-TRUST-1 guarantees are allocated, (d) exact final artifact/corpus inventory.
-Then implement shared verifier/signing tool, native Game store/fetch and real artifact
-qualification together with independently reviewed security boundaries. Release workflow,
-pins, migration numbering, current sources and production wiring need their own explicit
-CP slot/owner authority; this card grants none. SEC-CHAL/TELEM are not started as a workaround.
+D1029–D1034 and the later owner comment settle the canonical encoding, ownership
+boundaries, release-train direction and test telemetry policy; they leave these gates:
+
+- CP rechecks ITEM-LOOK-1/WEATHER-1 and separately allocates SEC-TRUST-1 and
+  SEC-REL-1 with their child owners; this record remains REPORT_ONLY.
+- SEC-TRUST-1 qualifies embedded node floor/checkpoint seed and the root-lineage/
+  non-restored freshness contract. Start UNVERIFIED; DB below floor fails closed,
+  with no genesis-0 or ordinary-record-at-floor bypass.
+- SEC-REL/RELEASE-MANIFEST-3 has one shared format/verifier/signing owner, with future
+  `tools/oteryn-release-sign/` and `apps/game-server/src/security/` scope. It must settle
+  closed schema/key-id/bounds, upstream JCS qualification/golden vectors and exact final
+  artifact/corpus inventory under independent security review.
+- CLIENT-INSTALLER-0 §2/§5 must be reconciled with alpha-ops §4 rulings 5/8/9/11/12
+  before that slot. Owner B confirms free GitHub Releases + Velopack; owner C holds
+  distinct offline release/root keys. No key provisioning, CI signing or publication
+  is authorized here; unchanged-head checkpoint cadence still needs the offline owner.
+- PROD-COMPAT supplies the authoritative exact admitted-build set; SEC-CHAL-1 waits
+  for its owner, SEC-REL-1 and ADMIT-CAP-1 implementation. SEC cannot fabricate a
+  source from declarations, manifests, directories, Platform grants or SemVer floors.
+- Children are separately allocated in D1030 order. ANL-01/ANL-03 remain prerequisite
+  gates. Owner D's later ruling enables telemetry during TEST and supersedes the
+  earlier D1034 telemetry-off direction; DATA-PRIVACY-01 disclosure remains mandatory
+  before production collection. This record changes no capability or runtime setting.
+
+Release workflow, pins, migrations, registries, current-source wiring and production
+activation retain their owning packet/review/CP slot gates. Session-generation fences,
+WorldId/ChannelId separation and possession-only evidence limitations remain intact.
 
 Only governance and owned-document checks are appropriate to this packet. No Rust/Cargo,
 crypto verification, trust-store, release publication, checkpoint freshness, restore,
 challenge or telemetry test has been executed. The matrix above is future acceptance
 work, not evidence of runtime completeness. Actual read commands/source hashes and final
-governance output are retained under `/workspace/oteryn-prep/sec-1-evidence/`.
+governance output from the 2026-10-15 packet were retained under
+`/workspace/oteryn-prep/sec-1-evidence/` (historical local evidence, not a current gate).
+The 2026-10-16 record-only refresh runs governance validation, its unittest suite and
+`git diff --check`; its exact results are returned to the lead for the candidate freeze.
