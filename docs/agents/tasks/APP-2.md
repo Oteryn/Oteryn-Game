@@ -235,6 +235,12 @@ V9 framing/decoded metadata; unknown/promotion/source refusal; canonical-schema 
 actual activation/stale issuance).
 They are not yet claimed compiled or executed. The synthetic fixture is explicitly test-only.
 
+The first actual native V2 qualification attempt stopped before tests with E0631 in the
+activation pin check: `ContentError` was passed directly to the existing `ProjectError`
+qualification variant. The successor preserves that error through the existing
+`From<ContentError> for ProjectError` conversion. The failed attempt remains failed evidence;
+native execution and production lint must be rerun against the successor's exact source.
+
 Seven external test constructors require the mechanical new unavailable-pin initializer in six
 other-family files; these hunks remain private validation assembly pending their exact CP scope.
 No compiling/publish-ready whole-head claim is made while that cascade remains unresolved.

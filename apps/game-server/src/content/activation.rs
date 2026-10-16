@@ -610,6 +610,7 @@ pub(crate) fn activate_native_entry_room_with_gameplay(
     }
     input
         .validate_cosmetics_pin()
+        .map_err(super::ProjectError::from)
         .map_err(NativeEntryActivationError::Qualification)?;
     let room = super::qualify_selected_native_gameplay_room(scope_world_id, input)
         .map_err(NativeEntryActivationError::Qualification)?;
