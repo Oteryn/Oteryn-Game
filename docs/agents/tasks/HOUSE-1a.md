@@ -4,7 +4,7 @@
 task_id: HOUSE-1a
 title: "HOUSE-1a: house ownership, auction and rent (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: owned_property_schema_preparation_pending_native_qualification
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-1a
@@ -46,7 +46,7 @@ House ownership, auction (bid escrow) and rent per HOUSE-OWN-0 §3-§9 and SOCIA
 | HOUSE-RUNTIME-1b | NOT MERGED (Wave 3) | **BLOCKING** |
 | HOUSE-RUNTIME-1c | NOT MERGED (Wave 3) | **BLOCKING** |
 | PREM-WIRE-1 (PREMIUM-1) | MERGED (#2110) | ok |
-| HOUSE_OWN0 acceptance (brief CANDIDATE; packet accepted via SOCIAL_MAP_PACKETS) | verify before ready | **BLOCKING** |
+| HOUSE_OWN0 acceptance | ACCEPTED by ACCEPT-SOCIAL-MAP-0 #1771; current main status reconciled | ok |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -198,3 +198,64 @@ Logs/provenance and the small standalone executable remain under
 `/workspace/oteryn-prep/house-1a-evidence/` (about 6.2 MiB); no server binary was built.
 Whole-diff self-review and owned-path check: only the two allocated Rust files and this
 record differ; no shared wiring or durable authority/value mutation was prepared.
+
+## ROOT-AJ-20261016-C — independent ordinary-property storage
+
+Direct owner assignment, reiterated by CP comment
+https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6195906702,
+authorizes this family writer without an additional lease number or a new CP decision.
+This continuation starts from #2137 `e467fb5f0274ed0a8212e8fcedefd0671fbed215`.
+The earlier detached-auction qualification above remains historical; it does not qualify
+this new source or a future frozen candidate.
+
+`apps/game-server/src/durability/house_ownership.rs` now prepares the independent
+ordinary-property storage unit required by accepted HOUSE-OWN-0 §3 and HOUSE-TENURE
+§4.2 / owner answer Q1a. Its SQL fragment creates canonical properties, World-global
+tiles and one personal housing slot per Account+World. It preserves the legacy `0038`
+ownership anchor used by `0047` instance bindings and immutable ACL receipts. The
+canonical property and retained legacy row must agree at transaction commit; ownership
+generation remains separate from property lifecycle and global ACL revisions. An
+acquisition must succeed an auction with a new receipt; a release increments ownership
+generation, clears both owners, retains the acquisition receipt and removes the slot
+atomically. The legacy owner trigger is replaced to permit this NULL-owner release.
+Neither the property nor its legacy anchor may be deleted. A retired property cannot
+return to `VACANT` or `AUCTION`. Deferred slot checks cover both old and new property
+keys, so moving a slot cannot strand its previous owned property.
+
+This unit grants no runtime or control-role ownership writer. It provides no auction
+settlement, bank debit, escrow, Premium proof, Game event or production installer. The
+receipt UUID binds storage generations; it is not current acquisition authority. The
+initial fragment is explicitly ordinary-house-only: guildhall mutation and its genuine
+guild lifecycle proofs remain with that later owner. HOUSE-1a acquisition/first rent
+does not absorb HOUSE-1b's ongoing rent, grace, eviction or disposition implementation.
+
+Pre-existing legacy ownership is an exact import boundary: `0038` stores no first-rent
+or `paid_until` facts. Installation refuses unreconciled legacy rows without changing
+them. It does not infer tenancy dates, discard their receipts or replace immutable
+instance bindings. Any actual import must supply accepted original tenancy evidence.
+
+Five native PostgreSQL17.6 tests are prepared in the same owned module. They use the
+unchanged native migration set and administrative native-root fixture seeding, with
+all property/anchor/slot guards enabled for the actual cases. Cases cover durable
+release/reload with instance and immutable receipt retention and CharacterRevision
+unchanged; incomplete release rollback and independent anchor mutation/deletion
+refusal; two real connections competing for one Account+World slot; terminal retirement;
+and failclosed legacy import without invented rent. These are storage invariants,
+not qualified session, Premium, economy or gameplay acquisition cases.
+
+Validation of this continuation: official Rust1.94 `rustfmt` with edition2024 and
+`skip_children=true`, and diff whitespace checks passed. Native compilation, Clippy,
+all five PostgreSQL cases and RED/GREEN execution are **NOT_RUN**. D1011 requires
+the approved PC executor/global slot; its current allocation/helper is pending, not
+declared globally unavailable. Module registration and numbered migration installation
+remain CP-slot work, so existing PR CI cannot qualify an unregistered source file.
+No native checks, commit, push, shared-file changes, schema installation or paid review
+were performed in this continuation. Source review is independent and remains distinct
+from the mandatory native qualification before readiness.
+
+The bank finding is scoped to live reserve/credit/settlement integration, not a blanket
+block on this independent storage unit. SOCIAL-MAP §1.12 still requires resolving the
+one shared credit-headroom seam before those acquisition operations are activated.
+Remaining acquisition gates include current session/recovery fences, accepted runtime
+exit dependencies, Premium before locks, native occurrence/economy/event evidence,
+catalogue admission and tile/Ground guards, and canonical access-function integration.
