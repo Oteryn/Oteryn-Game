@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -134,6 +135,19 @@ def git_blob_sha(path: Path) -> str:
     return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
 
 def main() -> int:
+    # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
+    # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
+    cosmetics_source = ROOT / "content/cosmetics/outfits/authoring.json"
+    cosmetics_output = ROOT / "content/cosmetics/outfits/native-cosmetics.json"
+    cosmetics_outputs = {}
+    if cosmetics_source.exists() or cosmetics_output.exists():
+        tool = ROOT / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
+        spec = importlib.util.spec_from_file_location("canonical_cosmetics_authoring", tool)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("COSMETICS_MATERIALIZER_MISSING")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        cosmetics_outputs = module.materialized_outputs(ROOT)
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
     editor = load(LEGACY / "editor" / "author.json")
@@ -545,7 +559,12 @@ def main() -> int:
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
     service_managed = [path for shards in service_shards.values() for path in shards]
     service_managed += [f"{node}index.json" for node, _, _ in SERVICE_FAMILIES.values()]
-    managed = sorted([*item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
+    for relative, data in cosmetics_outputs.items():
+        path = ROOT / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    managed = sorted([*cosmetics_outputs, *(["content/cosmetics/outfits/authoring.json"] if cosmetics_outputs else []),
+                      *item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",

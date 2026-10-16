@@ -15,6 +15,7 @@ use super::project::{
     ProjectV2DefinitionRef, ProjectV2Family,
 };
 use crate::ability::condition::{ConditionType, DotElement};
+use crate::domain::appearance::AppearanceContent;
 use crate::foundation::{ChannelRuntimeV1, CompiledCreaturePolicies, CompiledCreaturePolicy};
 use crate::spell::{SpellBook, executable_catalog};
 use serde::{Deserialize, Serialize};
@@ -23,6 +24,449 @@ use std::{
     path::Path,
     sync::Arc,
 };
+
+// D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
+#[path = "cosmetics_loader.rs"]
+pub(crate) mod cosmetics_loader;
+
+/// Immutable decoded definitions and sorted identities from this exact native artifact.
+/// This is borrowed data; ActiveGeneration remains the current admission authority.
+#[derive(Debug, Clone)]
+pub(crate) struct NativeCosmeticsView {
+    source_digest: [u8; 32],
+    content: Arc<cosmetics_loader::CosmeticsCandidate>,
+    outfit_keys: Arc<[String]>,
+    mount_keys: Arc<[String]>,
+}
+impl NativeCosmeticsView {
+    pub(crate) fn source_digest(&self) -> [u8; 32] {
+        self.source_digest
+    }
+    pub(crate) fn outfit_keys(&self) -> impl Iterator<Item = &str> {
+        self.outfit_keys.iter().map(String::as_str)
+    }
+    pub(crate) fn mount_keys(&self) -> impl Iterator<Item = &str> {
+        self.mount_keys.iter().map(String::as_str)
+    }
+}
+impl std::ops::Deref for NativeCosmeticsView {
+    type Target = cosmetics_loader::CosmeticsCandidate;
+    fn deref(&self) -> &Self::Target {
+        &self.content
+    }
+}
+impl AppearanceContent<String> for NativeCosmeticsView {
+    fn palette_size(&self) -> u16 {
+        self.content.palette_size()
+    }
+    fn outfit_addon_count(&self, key: &String) -> Option<u8> {
+        self.content.outfit_addon_count(key)
+    }
+    fn outfit_is_starter(&self, key: &String, sex: crate::domain::appearance::Sex) -> bool {
+        self.content.outfit_is_starter(key, sex)
+    }
+    fn addon_is_starter(
+        &self,
+        key: &String,
+        sex: crate::domain::appearance::Sex,
+        addon: u8,
+    ) -> bool {
+        self.content.addon_is_starter(key, sex, addon)
+    }
+    fn mount_exists(&self, key: &String) -> bool {
+        self.content.mount_exists(key)
+    }
+}
+
+mod native_cosmetics {
+    //! D1093 canonical authoring admission. The outer native artifact owns issuance/currentness;
+    //! per-field promotion evidence is mandatory data and never inferred from source observations.
+    use super::cosmetics_loader::{ProposedCosmeticsBinding, compile_candidate};
+    use super::{PinnedGameplayBytes, hex, invalid};
+    use crate::content::ContentError;
+    use serde::Deserialize;
+    use serde_json::Value;
+    use std::collections::BTreeSet;
+
+    pub(super) const MAX_BYTES: usize = 16 * 1024 * 1024;
+    const SCHEMA: &str = "OTERYN_NATIVE_COSMETICS/v1";
+    const UNAVAILABLE: &[u8] =
+        b"{\"schema\":\"OTERYN_NATIVE_COSMETICS/v1\",\"availability\":\"unavailable\"}";
+
+    /// Explicit legacy-version policy, not an empty-byte sentinel or a fabricated fallback.
+    /// The ordinary pin qualification still checks these real bytes and their SHA256.
+    pub(super) fn unavailable() -> PinnedGameplayBytes {
+        PinnedGameplayBytes {
+            bytes: UNAVAILABLE.to_vec(),
+            sha256: hex(crate::content::digest::sha256(UNAVAILABLE)),
+        }
+    }
+
+    #[derive(Deserialize)]
+    #[serde(tag = "availability", deny_unknown_fields)]
+    enum Section {
+        #[serde(rename = "unavailable")]
+        Unavailable { schema: String },
+        #[serde(rename = "authored")]
+        Authored {
+            schema: String,
+            authoring: Box<Authoring>,
+            source_manifest: String,
+            source_shards: Vec<Shard>,
+        },
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Authoring {
+        schema: String,
+        profile: Profile,
+        client_version: String,
+        document: StrictValue,
+        promotions: Vec<Promotion>,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Profile {
+        kind: ProfileKind,
+        revision: String,
+        mount_speed_bonus: u16,
+    }
+    #[derive(Deserialize)]
+    enum ProfileKind {
+        #[serde(rename = "reference")]
+        Reference,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Promotion {
+        path: String,
+        value: StrictValue,
+        state: PromotionState,
+        decision: String,
+        source_kind: PromotionSource,
+        source: Citation,
+    }
+    #[derive(Deserialize)]
+    enum PromotionState {
+        #[serde(rename = "PROMOTED")]
+        Promoted,
+    }
+    #[derive(Deserialize)]
+    enum PromotionSource {
+        #[serde(rename = "STRUCTURED_REFERENCE_DATA")]
+        StructuredReference,
+        #[serde(rename = "OWNER_DECISION")]
+        OwnerDecision,
+        #[serde(rename = "ACCEPTED_REFERENCE_EVIDENCE")]
+        AcceptedReference,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Citation {
+        reference: String,
+        revision: String,
+        sha256: String,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Shard {
+        path: String,
+        json: String,
+    }
+
+    /// Reject duplicate members before normalizing the authored document or promotion values.
+    struct StrictValue(Value);
+    impl<'de> Deserialize<'de> for StrictValue {
+        fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+            struct Visitor;
+            impl<'de> serde::de::Visitor<'de> for Visitor {
+                type Value = Value;
+                fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_str("JSON with unique members and integer numbers")
+                }
+                fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<Value, E> {
+                    Ok(Value::Bool(v))
+                }
+                fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Value, E> {
+                    Ok(v.into())
+                }
+                fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Value, E> {
+                    Ok(v.into())
+                }
+                fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Value, E> {
+                    Ok(v.into())
+                }
+                fn visit_unit<E: serde::de::Error>(self) -> Result<Value, E> {
+                    Ok(Value::Null)
+                }
+                fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                    self,
+                    mut a: A,
+                ) -> Result<Value, A::Error> {
+                    let mut values = Vec::new();
+                    while let Some(v) = a.next_element::<StrictValue>()? {
+                        values.push(v.0);
+                    }
+                    Ok(Value::Array(values))
+                }
+                fn visit_map<A: serde::de::MapAccess<'de>>(
+                    self,
+                    mut a: A,
+                ) -> Result<Value, A::Error> {
+                    let mut values = serde_json::Map::new();
+                    while let Some((k, v)) = a.next_entry::<String, StrictValue>()? {
+                        if values.insert(k, v.0).is_some() {
+                            return Err(serde::de::Error::custom("duplicate cosmetics member"));
+                        }
+                    }
+                    Ok(Value::Object(values))
+                }
+            }
+            d.deserialize_any(Visitor).map(Self)
+        }
+    }
+
+    fn text(value: &str, max: usize) -> bool {
+        !value.is_empty()
+            && value.len() <= max
+            && value.bytes().all(|v| (b' '..=b'~').contains(&v))
+            && !value.eq_ignore_ascii_case("UNKNOWN")
+    }
+    fn canonical_document(value: &Value) -> Result<(), ContentError> {
+        fn ascii(value: &Value) -> bool {
+            match value {
+                Value::String(v) => {
+                    v.bytes().all(|v| (b' '..=b'~').contains(&v))
+                        && !v.eq_ignore_ascii_case("UNKNOWN")
+                }
+                Value::Array(values) => values.iter().all(ascii),
+                Value::Object(values) => values.values().all(ascii),
+                _ => true,
+            }
+        }
+        let key = |value: &Value| -> bool {
+            value.as_str().is_some_and(|key| {
+                key.len() <= 160
+                    && key.strip_prefix("oteryn:").is_some_and(|local| {
+                        local
+                            .as_bytes()
+                            .first()
+                            .is_some_and(|v| v.is_ascii_lowercase() || v.is_ascii_digit())
+                            && local.bytes().all(|v| {
+                                v.is_ascii_lowercase()
+                                    || v.is_ascii_digit()
+                                    || matches!(v, b'.' | b'_' | b'/' | b':' | b'-')
+                            })
+                    })
+            })
+        };
+        if !ascii(value) || !key(&value["palette"]["key"]) {
+            return Err(invalid("cosmetics canonical text/key profile"));
+        }
+        for family in ["outfits", "mounts"] {
+            let records = value[family]
+                .as_array()
+                .ok_or_else(|| invalid("cosmetics records"))?;
+            if records.len() > super::MAX_RECORDS || records.iter().any(|r| !key(&r["key"])) {
+                return Err(invalid("cosmetics canonical record bounds/keys"));
+            }
+            if family == "outfits"
+                && records.iter().any(|r| {
+                    r["unlock_sources"]
+                        .as_array()
+                        .is_none_or(|v| v.len() > super::MAX_RECORDS)
+                })
+            {
+                return Err(invalid("cosmetics canonical unlock-source bounds"));
+            }
+        }
+        Ok(())
+    }
+    fn digest(value: &str) -> Result<[u8; 32], ContentError> {
+        if value.len() != 64
+            || !value
+                .bytes()
+                .all(|v| v.is_ascii_digit() || (b'a'..=b'f').contains(&v))
+        {
+            return Err(invalid("cosmetics source digest"));
+        }
+        let mut result = [0; 32];
+        for (out, pair) in result.iter_mut().zip(value.as_bytes().chunks_exact(2)) {
+            let pair = std::str::from_utf8(pair).map_err(|_| invalid("cosmetics digest UTF8"))?;
+            *out = u8::from_str_radix(pair, 16).map_err(|_| invalid("cosmetics digest hex"))?;
+        }
+        if result == [0; 32] {
+            return Err(invalid("cosmetics zero source digest"));
+        }
+        Ok(result)
+    }
+
+    fn promotion_paths(document: &Value) -> Result<BTreeSet<String>, ContentError> {
+        let mut paths: BTreeSet<_> = [
+            "/source_manifest_sha256",
+            "/source_appearances_sha256",
+            "/palette",
+            "/fallbacks/female",
+            "/fallbacks/male",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+        for (family, fields) in [
+            (
+                "outfits",
+                &[
+                    "key",
+                    "revision",
+                    "female",
+                    "male",
+                    "addon_count",
+                    "starter_female",
+                    "starter_male",
+                    "starter_addons_female",
+                    "starter_addons_male",
+                    "premium",
+                    "unlock_sources",
+                ][..],
+            ),
+            (
+                "mounts",
+                &["key", "revision", "look", "speed_bonus", "premium"][..],
+            ),
+        ] {
+            let records = document[family]
+                .as_array()
+                .ok_or_else(|| invalid("cosmetics records"))?;
+            for index in 0..records.len() {
+                for field in fields {
+                    paths.insert(format!("/{family}/{index}/{field}"));
+                }
+            }
+        }
+        Ok(paths)
+    }
+
+    pub(super) fn decode(bytes: &[u8]) -> Result<Option<super::NativeCosmeticsView>, ContentError> {
+        super::bounded(bytes, MAX_BYTES)?;
+        let section: Section = serde_json::from_slice(bytes)
+            .map_err(|_| invalid("cosmetics section JSON or unpromoted source"))?;
+        let (schema, authoring, source_manifest, source_shards) = match section {
+            Section::Authored {
+                schema,
+                authoring,
+                source_manifest,
+                source_shards,
+            } => (schema, authoring, source_manifest, source_shards),
+            Section::Unavailable { schema } => {
+                return if schema == SCHEMA {
+                    Ok(None)
+                } else {
+                    Err(invalid("cosmetics unavailable schema"))
+                };
+            }
+        };
+        let authoring = *authoring;
+        if schema != SCHEMA
+            || authoring.schema != "OTERYN_CHARACTER_COSMETICS_AUTHORING/v1"
+            || authoring.document.0["schema"] != "OTERYN_CHARACTER_COSMETICS/v1"
+            || !text(&authoring.client_version, 128)
+            || authoring.profile.mount_speed_bonus != 10
+        {
+            return Err(invalid("cosmetics authoring/profile discriminator"));
+        }
+        crate::content::DefinitionRevisionRef::new(&authoring.profile.revision)?;
+        let mut document = authoring.document.0;
+        if !text(&authoring.profile.revision, 128) || authoring.promotions.len() > 65536 {
+            return Err(invalid("cosmetics canonical profile/promotion bounds"));
+        }
+        canonical_document(&document)?;
+        let expected_paths = promotion_paths(&document)?;
+        let mut seen = BTreeSet::new();
+        for promotion in authoring.promotions {
+            let _ = (&promotion.state, &promotion.source_kind);
+            if !expected_paths.contains(&promotion.path)
+                || !seen.insert(promotion.path.clone())
+                || document.pointer(&promotion.path) != Some(&promotion.value.0)
+                || !text(&promotion.decision, 1024)
+                || !text(&promotion.source.reference, 1024)
+                || !text(&promotion.source.revision, 128)
+            {
+                return Err(invalid(
+                    "cosmetics missing, duplicated or mismatched promotion",
+                ));
+            }
+            digest(&promotion.source.sha256)?;
+        }
+        if seen != expected_paths {
+            return Err(invalid("cosmetics incomplete field promotion"));
+        }
+        if document["mounts"]
+            .as_array()
+            .is_none_or(|mounts| mounts.iter().any(|m| m["speed_bonus"] != 10))
+        {
+            return Err(invalid("cosmetics Reference ruleset speed"));
+        }
+        if document["palette"]["colours"].as_array().map(Vec::len) != Some(133) {
+            return Err(invalid("cosmetics Reference palette size"));
+        }
+        let content_revision = document["content_revision"]
+            .as_str()
+            .ok_or_else(|| invalid("cosmetics content revision"))?
+            .to_owned();
+        let keys = |family: &str| -> Result<super::Arc<[String]>, ContentError> {
+            let rows = document[family]
+                .as_array()
+                .ok_or_else(|| invalid("cosmetics records"))?;
+            let mut keys = BTreeSet::new();
+            for row in rows {
+                let key = row["key"]
+                    .as_str()
+                    .ok_or_else(|| invalid("cosmetics definition key"))?;
+                keys.insert(key.to_owned());
+            }
+            Ok(keys.into_iter().collect::<Vec<_>>().into())
+        };
+        let outfit_keys = keys("outfits")?;
+        let mount_keys = keys("mounts")?;
+        let appearances_sha256 = digest(
+            document["source_appearances_sha256"]
+                .as_str()
+                .ok_or_else(|| invalid("cosmetics appearances digest"))?,
+        )?;
+        // Only the schema discriminator is normalized for the existing, single source-bound
+        // compiler. No source ID, sex, starter, premium, palette or fallback value is inferred.
+        document["schema"] = "OTERYN_CHARACTER_COSMETICS_CANDIDATE/v1".into();
+        let document =
+            serde_json::to_vec(&document).map_err(|_| invalid("cosmetics normalization"))?;
+        let shards: Vec<_> = source_shards
+            .iter()
+            .map(|s| (s.path.as_str(), s.json.as_bytes()))
+            .collect();
+        compile_candidate(
+            &document,
+            ProposedCosmeticsBinding {
+                document_sha256: crate::content::digest::sha256(&document),
+                content_revision: &content_revision,
+                manifest_sha256: crate::content::digest::sha256(source_manifest.as_bytes()),
+                appearances_sha256,
+                client_version: &authoring.client_version,
+            },
+            source_manifest.as_bytes(),
+            &shards,
+        )
+        .map(|content| {
+            Some(super::NativeCosmeticsView {
+                // Parsing supplies immutable data only. The enclosing native decoder below
+                // binds this field to the complete outer artifact before exposing its state.
+                source_digest: crate::content::digest::sha256(bytes),
+                content: super::Arc::new(content),
+                outfit_keys,
+                mount_keys,
+            })
+        })
+        .map_err(|_| invalid("cosmetics source-bound content"))
+    }
+}
 
 pub(crate) const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub(crate) const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -35,6 +479,9 @@ pub(crate) const MAGIC_V6: &[u8; 8] = b"OTNGP06\0";
 pub(crate) const MAGIC_V7: &[u8; 8] = b"OTNGP07\0";
 /// V7 plus the twelfth `loot_tables` section (ARCH-KILL-REWARD-LOGOUT-1 §1.1).
 pub(crate) const MAGIC_V8: &[u8; 8] = b"OTNGP08\0";
+/// V8 plus the thirteenth permanent-cosmetics section (D1093). This is a binary layout
+/// prerequisite, not a gameplay dependency between cosmetics and loot.
+pub(crate) const MAGIC_V9: &[u8; 8] = b"OTNGP09\0";
 pub(crate) const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -45,6 +492,7 @@ pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
         || bytes.starts_with(MAGIC_V6)
         || bytes.starts_with(MAGIC_V7)
         || bytes.starts_with(MAGIC_V8)
+        || bytes.starts_with(MAGIC_V9)
 }
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
@@ -73,6 +521,8 @@ pub(crate) enum NativeGameplayMapProfile {
 }
 #[derive(Debug, Clone)]
 pub(crate) struct NativeGameplayInput {
+    /// Mandatory explicit pin: authored V9 content or the validated unavailable legacy packet.
+    pub(crate) cosmetics: PinnedGameplayBytes,
     pub(crate) native_map_profile: NativeGameplayMapProfile,
     pub(crate) catalog: PinnedGameplayBytes,
     pub(crate) source_selection: PinnedGameplayBytes,
@@ -172,6 +622,8 @@ struct ProvisioningManifest {
     item_keys: Option<FilePin>,
     #[serde(default)]
     loot_tables: Option<FilePin>,
+    #[serde(default)]
+    cosmetics: Option<FilePin>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -360,6 +812,7 @@ pub(crate) struct NativeGameplayState {
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
+    cosmetics: Option<NativeCosmeticsView>,
     progression: Option<Arc<CharacterProgressionContent>>,
     item_index: Option<Arc<super::item_ref::ItemDefinitionIndex>>,
     reward_table: Arc<super::creature_reward::CreatureRewardTable>,
@@ -371,6 +824,11 @@ impl PartialEq for NativeGameplayState {
 }
 impl Eq for NativeGameplayState {}
 impl NativeGameplayState {
+    /// Artifact-derived permanent cosmetics. Legacy/unavailable profiles expose no catalogue.
+    /// The containing active generation, not this borrowed view, owns current authority.
+    pub(crate) fn cosmetics(&self) -> Option<&NativeCosmeticsView> {
+        self.cosmetics.as_ref()
+    }
     /// The Item definition index of the pinned Item key set (MAP-ITEM-REF-1); `None` when the
     /// artifact carries no key set, which leaves capability 4 unoffered.
     pub(crate) fn item_index(&self) -> Option<&Arc<super::item_ref::ItemDefinitionIndex>> {
@@ -534,6 +992,9 @@ impl NativeGameplayState {
                 .bind_qualified_outer_artifact(digest)
                 .map_err(|_| invalid("native gameplay outer Wheel pin"))?;
         }
+        if let Some(cosmetics) = &mut self.cosmetics {
+            cosmetics.source_digest = digest;
+        }
         self.source_digest = digest;
         Ok(())
     }
@@ -585,10 +1046,20 @@ fn read_bounded(path: &Path, max: usize) -> Result<Vec<u8>, ContentError> {
     Ok(bytes)
 }
 impl NativeGameplayInput {
+    pub(super) fn validate_cosmetics_pin(&self) -> Result<(), ContentError> {
+        qualify(&self.cosmetics, native_cosmetics::MAX_BYTES)
+    }
+
+    /// A historical artifact version explicitly has no permanent-cosmetics activation.
+    pub(crate) fn unavailable_cosmetics() -> PinnedGameplayBytes {
+        native_cosmetics::unavailable()
+    }
     pub(crate) fn from_manifest(path: &Path) -> Result<Self, ContentError> {
         let bytes = read_bounded(path, 16 * 1024)?;
         let manifest: ProvisioningManifest = serde_json::from_slice(&bytes)
             .map_err(|_| invalid("native gameplay provisioning manifest"))?;
+        let is_v6 = manifest.schema.ends_with("/v6");
+        let has_v5 = manifest.schema.ends_with("/v5") || is_v6;
         if !matches!(
             manifest.schema.as_str(),
             "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v1"
@@ -596,20 +1067,18 @@ impl NativeGameplayInput {
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v3"
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v4"
                 | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5"
+                | "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
         ) || (manifest.schema.ends_with("/v1") == manifest.item_profiles.is_some())
-            || ((manifest.schema.ends_with("/v3")
-                || manifest.schema.ends_with("/v4")
-                || manifest.schema.ends_with("/v5"))
+            || ((manifest.schema.ends_with("/v3") || manifest.schema.ends_with("/v4") || has_v5)
                 != manifest.spell_appearances.is_some())
-            || ((manifest.schema.ends_with("/v4") || manifest.schema.ends_with("/v5"))
-                != manifest.build_training.is_some())
-            || (manifest.schema.ends_with("/v5") != manifest.familiar_config.is_some())
-            || (manifest.wheel_profile.is_some() && !manifest.schema.ends_with("/v5"))
-            || (manifest.progression.is_some() && !manifest.schema.ends_with("/v5"))
+            || ((manifest.schema.ends_with("/v4") || has_v5) != manifest.build_training.is_some())
+            || (has_v5 != manifest.familiar_config.is_some())
+            || (is_v6 != manifest.cosmetics.is_some())
+            || (manifest.wheel_profile.is_some() && !has_v5)
+            || (manifest.progression.is_some() && !has_v5)
             || (manifest.item_keys.is_some() && manifest.progression.is_none())
             || (manifest.loot_tables.is_some() && manifest.item_keys.is_none())
-            || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
-                && !manifest.schema.ends_with("/v5"))
+            || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1 && !has_v5)
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
                 && manifest.source_world.is_some())
         {
@@ -627,7 +1096,18 @@ impl NativeGameplayInput {
             qualify(&pinned, limit)?;
             Ok(pinned)
         };
+        let cosmetics = match manifest.cosmetics {
+            Some(pin) => {
+                let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                if native_cosmetics::decode(&pin.bytes)?.is_none() {
+                    return Err(invalid("native gameplay v6 requires authored cosmetics"));
+                }
+                pin
+            }
+            None => native_cosmetics::unavailable(),
+        };
         Ok(Self {
+            cosmetics,
             native_map_profile: manifest.native_map_profile,
             wheel_profile: manifest
                 .wheel_profile
@@ -700,6 +1180,13 @@ pub(crate) fn compile_native_gameplay(
     {
         return Err(invalid(
             "native gameplay explicit map profile requires v5 and no world addon",
+        ));
+    }
+    input.validate_cosmetics_pin()?;
+    let has_cosmetics = native_cosmetics::decode(&input.cosmetics.bytes)?.is_some();
+    if has_cosmetics && input.loot_tables.is_none() {
+        return Err(invalid(
+            "native gameplay v9 layout requires the v8 section closure",
         ));
     }
     let pins = [
@@ -789,7 +1276,9 @@ pub(crate) fn compile_native_gameplay(
         }
         qualify(loot, MAX_PROFILES)?;
     }
-    let mut bytes = if input.loot_tables.is_some() {
+    let mut bytes = if has_cosmetics {
+        MAGIC_V9
+    } else if input.loot_tables.is_some() {
         MAGIC_V8
     } else if input.item_keys.is_some() {
         MAGIC_V7
@@ -873,6 +1362,11 @@ pub(crate) fn compile_native_gameplay(
         bytes.extend_from_slice(&sha256(&loot.bytes));
         bytes.extend_from_slice(&loot.bytes);
     }
+    if has_cosmetics {
+        bytes.extend_from_slice(&(input.cosmetics.bytes.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(&sha256(&input.cosmetics.bytes));
+        bytes.extend_from_slice(&input.cosmetics.bytes);
+    }
     bounded(&bytes, MAX_ARTIFACT_BYTES)?;
     decode(&bytes)?; // validate the full source policy, book and decoded creature policies now
     Ok(base.with_native_server_artifact(bytes))
@@ -888,7 +1382,8 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         return Err(invalid("native gameplay discriminator"));
     }
     let mut cursor = MAGIC.len();
-    let is_v8 = bytes.starts_with(MAGIC_V8);
+    let is_v9 = bytes.starts_with(MAGIC_V9);
+    let is_v8 = bytes.starts_with(MAGIC_V8) || is_v9;
     let is_v7 = bytes.starts_with(MAGIC_V7) || is_v8;
     let is_v6 = bytes.starts_with(MAGIC_V6) || is_v7;
     let is_v5 = bytes.starts_with(MAGIC_V5) || is_v6;
@@ -907,7 +1402,9 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     if !is_v2 && bytes.len() > 56 * 1024 * 1024 {
         return Err(invalid("native gameplay v1 bounds"));
     }
-    let mut sections = Vec::with_capacity(if is_v8 {
+    let mut sections = Vec::with_capacity(if is_v9 {
+        13
+    } else if is_v8 {
         12
     } else if is_v7 {
         11
@@ -933,6 +1430,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         .chain(is_v6.then_some(MAX_PROGRESSION_SECTION_BYTES))
         .chain(is_v7.then_some(MAX_PROFILES))
         .chain(is_v8.then_some(MAX_PROFILES))
+        .chain(is_v9.then_some(native_cosmetics::MAX_BYTES))
     {
         let header_end = cursor
             .checked_add(36)
@@ -1241,11 +1739,20 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         &creatures,
         loot.as_ref(),
     ));
+    let cosmetics = if is_v9 {
+        let mut cosmetics = native_cosmetics::decode(sections[12])?
+            .ok_or_else(|| invalid("native gameplay v9 cosmetics unavailable"))?;
+        cosmetics.source_digest = source_digest;
+        Some(cosmetics)
+    } else {
+        None
+    };
     let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
+            cosmetics,
             progression,
             item_index,
             reward_table,
@@ -1505,6 +2012,7 @@ pub(crate) mod tests {
     }
     pub(super) fn input() -> NativeGameplayInput {
         NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
                 "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
@@ -2409,6 +2917,264 @@ pub(crate) mod tests {
     }
     /// A loot section binding the sample rat to a gold-only table and the familiar to no loot.
     const SAMPLE_LOOT_TABLES: &[u8] = br#"{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1","creature_loot":[{"creature":{"family":"Creature","key":"canary:creature/knight_familiar","revision":"canary-47dfd51f"},"loot":null},{"creature":{"family":"Creature","key":"canary:creature/rat","revision":"canary-47dfd51f"},"loot":{"family":"Loot","key":"oteryn:loot/rat","revision":"r1"}}],"tables":[{"identity":{"family":"Loot","key":"oteryn:loot/rat","revision":"r1"},"algorithm":"IndependentBernoulliPpm","entries":[{"item":{"family":"Item","key":"oteryn:item/i3031","revision":"r1"},"min_count":1,"max_count":3,"probability_ppm":500000}]}],"items":[{"item":{"family":"Item","key":"canary:item/5964","revision":"canary-47dfd51f"},"materializable":true,"container_capacity":16},{"item":{"family":"Item","key":"oteryn:item/i3031","revision":"r1"},"materializable":true,"container_capacity":null}]}"#;
+    /// RAW SYNTHETIC facts only, with real pinned source bytes. This is never production
+    /// population, accepted Wiki/sex/starter evidence or permission to activate a catalogue.
+    fn cosmetics_test_packet() -> Value {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source = root.join("imports/cipsoft-appearances/outfits");
+        let manifest = std::fs::read(source.join("manifest.json")).unwrap();
+        let parsed: Value = serde_json::from_slice(&manifest).unwrap();
+        let shards: Vec<_> = parsed["files"].as_array().unwrap().iter().map(|pin| {
+            let name = pin["path"].as_str().unwrap();
+            serde_json::json!({"path":name,"json":std::fs::read_to_string(source.join(name)).unwrap()})
+        }).collect();
+        let authoring: Value = serde_json::from_slice(include_bytes!(
+            "../../../../tools/content-schema/cosmetics-authoring/synthetic-authoring.json"
+        ))
+        .unwrap();
+        serde_json::json!({"schema":"OTERYN_NATIVE_COSMETICS/v1","availability":"authored",
+            "authoring":authoring,"source_manifest":String::from_utf8(manifest).unwrap(),
+            "source_shards":shards})
+    }
+    fn cosmetics_test_input() -> NativeGameplayInput {
+        let mut supplied = v7_input(Some(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/item-keys.json"
+        )));
+        supplied.loot_tables = Some(pinned(SAMPLE_LOOT_TABLES));
+        supplied.cosmetics = pinned(&serde_json::to_vec(&cosmetics_test_packet()).unwrap());
+        supplied
+    }
+    #[test]
+    fn cosmetics_legacy_unavailable_preserves_bytes_and_refuses_bad_pin() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let mut expected = MAGIC.to_vec();
+        for section in [
+            &baseline.compiled().server_artifact[..],
+            &supplied.catalog.bytes,
+            &supplied.source_selection.bytes,
+            &supplied.creature_profiles.bytes,
+            &supplied.presentation_profiles.bytes,
+        ] {
+            expected.extend_from_slice(&(section.len() as u32).to_be_bytes());
+            expected.extend_from_slice(&sha256(section));
+            expected.extend_from_slice(section);
+        }
+        assert_eq!(artifact.server_artifact, expected);
+        assert!(decode(&expected).unwrap().state.cosmetics().is_none());
+        supplied.cosmetics.bytes.push(b' ');
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        supplied.cosmetics = pinned(
+            br#"{"schema":"OTERYN_NATIVE_COSMETICS/v1","availability":"unavailable","fallback":0}"#,
+        );
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+    }
+    #[test]
+    fn cosmetics_v9_decodes_exact_view_and_legacy_framing_cannot_hide_section() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let supplied = cosmetics_test_input();
+        let mut old = supplied.clone();
+        old.cosmetics = NativeGameplayInput::unavailable_cosmetics();
+        let v8 = compile_native_gameplay(baseline.compiled(), &old).unwrap();
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let mut framed = (supplied.cosmetics.bytes.len() as u32)
+            .to_be_bytes()
+            .to_vec();
+        framed.extend_from_slice(&sha256(&supplied.cosmetics.bytes));
+        framed.extend_from_slice(&supplied.cosmetics.bytes);
+        let mut expected = MAGIC_V9.to_vec();
+        expected.extend_from_slice(&v8.server_artifact[MAGIC.len()..]);
+        expected.extend_from_slice(&framed);
+        assert_eq!(compiled.server_artifact, expected);
+        let decoded = decode(&expected).unwrap();
+        assert_eq!(decoded.state.source_digest(), compiled.server_digest());
+        let cosmetics = decoded.state.cosmetics().unwrap();
+        assert_eq!(cosmetics.source_digest(), compiled.server_digest());
+        assert_eq!(
+            cosmetics.outfit_keys().collect::<Vec<_>>(),
+            vec!["oteryn:outfit.proposed"]
+        );
+        assert_eq!(
+            cosmetics.mount_keys().collect::<Vec<_>>(),
+            vec!["oteryn:mount.proposed"]
+        );
+        assert_eq!(cosmetics.content_revision(), "proposal-content-r1");
+        assert_eq!(
+            cosmetics.look_type(
+                "oteryn:outfit.proposed",
+                crate::domain::appearance::Sex::Female
+            ),
+            Some(136)
+        );
+        assert_eq!(
+            cosmetics.look_type(
+                "oteryn:outfit.proposed",
+                crate::domain::appearance::Sex::Male
+            ),
+            Some(128)
+        );
+        assert_eq!(cosmetics.palette().len(), 133);
+        assert_eq!(
+            cosmetics
+                .fallback(crate::domain::appearance::Sex::Female)
+                .mount_key,
+            None
+        );
+        let mut trailing = v8.server_artifact.clone();
+        trailing.extend_from_slice(&framed);
+        assert!(decode(&trailing).is_err());
+        let mut truncated = MAGIC_V9.to_vec();
+        truncated.extend_from_slice(&v8.server_artifact[MAGIC.len()..]);
+        assert!(decode(&truncated).is_err());
+        let unavailable = NativeGameplayInput::unavailable_cosmetics();
+        truncated.extend_from_slice(&(unavailable.bytes.len() as u32).to_be_bytes());
+        truncated.extend_from_slice(&sha256(&unavailable.bytes));
+        truncated.extend_from_slice(&unavailable.bytes);
+        assert!(decode(&truncated).is_err());
+        expected.pop();
+        assert!(decode(&expected).is_err());
+        let mut incomplete = supplied;
+        incomplete.loot_tables = None;
+        assert!(compile_native_gameplay(baseline.compiled(), &incomplete).is_err());
+    }
+    #[test]
+    fn cosmetics_unknown_missing_and_mismatched_promotions_fail_closed() {
+        let original = cosmetics_test_packet();
+        for (field, value) in [
+            ("state", "UNKNOWN"),
+            ("source_kind", "OtsHypothesisOnly"),
+            ("source_kind", "SOURCE_OBSERVATIONS_ONLY"),
+        ] {
+            let mut changed = original.clone();
+            changed["authoring"]["promotions"][0][field] = value.into();
+            assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+        }
+        let mut changed = original.clone();
+        changed["authoring"]["promotions"]
+            .as_array_mut()
+            .unwrap()
+            .pop();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+        let mut changed = original.clone();
+        changed["authoring"]["document"]["outfits"][0]["starter_female"] = false.into();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+        let mut changed = original.clone();
+        let manifest = changed["source_manifest"].as_str().unwrap().to_owned() + " ";
+        changed["source_manifest"] = manifest.into();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+        let mut changed = original.clone();
+        changed["authoring"]["profile"]["mount_speed_bonus"] = 11.into();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+        let duplicate = serde_json::to_string(&original).unwrap().replace(
+            "\"starter_female\":true",
+            "\"starter_female\":true,\"starter_female\":true",
+        );
+        assert!(native_cosmetics::decode(duplicate.as_bytes()).is_err());
+    }
+    #[test]
+    fn cosmetics_canonical_bounds_ascii_and_zero_citations_match_materializer() {
+        let original = cosmetics_test_packet();
+        let mut changed = original.clone();
+        changed["authoring"]["document"]["outfits"][0]["key"] =
+            ("oteryn:".to_owned() + &"a".repeat(154)).into();
+        assert!(matches!(
+            native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()),
+            Err(ContentError::InvalidArtifact(
+                "cosmetics canonical record bounds/keys"
+            ))
+        ));
+        let mut changed = original.clone();
+        changed["authoring"]["document"]["outfits"][0]["source"]["reference"] =
+            "non-ASCII-é".into();
+        assert!(matches!(
+            native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()),
+            Err(ContentError::InvalidArtifact(
+                "cosmetics canonical text/key profile"
+            ))
+        ));
+        let mut changed = original.clone();
+        changed["authoring"]["document"]["outfits"][0]["source"]["sha256"] = "0".repeat(64).into();
+        assert!(matches!(
+            native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()),
+            Err(ContentError::InvalidArtifact(
+                "cosmetics source-bound content"
+            ))
+        ));
+        for family in ["outfits", "mounts"] {
+            let mut changed = original.clone();
+            let row = changed["authoring"]["document"][family][0].clone();
+            changed["authoring"]["document"][family] = vec![row; 4097].into();
+            assert!(matches!(
+                native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()),
+                Err(ContentError::InvalidArtifact(
+                    "cosmetics canonical record bounds/keys"
+                ))
+            ));
+        }
+        let mut changed = original;
+        changed["authoring"]["promotions"][0]["decision"] = "UNKNOWN".into();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err());
+    }
+    #[test]
+    fn cosmetics_activation_uses_independent_outer_issuance_and_keeps_previous_generation() {
+        let world = test_source(1).unwrap().world_id;
+        let supplied = cosmetics_test_input();
+        let room = super::super::qualify_selected_native_gameplay_room(world, &supplied).unwrap();
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &supplied,
+        )
+        .unwrap();
+        let old_digest = controller
+            .active()
+            .unwrap()
+            .native_gameplay()
+            .unwrap()
+            .source_digest();
+        assert!(
+            controller
+                .active()
+                .unwrap()
+                .native_gameplay()
+                .unwrap()
+                .cosmetics()
+                .is_some()
+        );
+        let mut packet = cosmetics_test_packet();
+        packet["authoring"]["document"]["content_revision"] = "proposal-content-r2".into();
+        let mut changed = supplied;
+        changed.cosmetics = pinned(&serde_json::to_vec(&packet).unwrap());
+        assert!(matches!(
+            activate_native_entry_room_with_gameplay(
+                &mut controller,
+                &NodeBootQuiescence::before_channel_runtime(),
+                world,
+                &issuance,
+                &changed
+            ),
+            Err(crate::content::NativeEntryActivationError::DigestMismatch)
+        ));
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        assert_eq!(native.source_digest(), old_digest);
+        assert_eq!(
+            native.cosmetics().unwrap().content_revision(),
+            "proposal-content-r1"
+        );
+    }
     #[test]
     fn loot_section_selects_v8_and_builds_the_reward_table() {
         use super::super::creature_reward::NoSettlementReason;

@@ -4,7 +4,7 @@
 task_id: APP-2
 title: "APP-2: outfit and mount definitions"
 mode: IMPLEMENT
-status: skeleton
+status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -35,7 +35,7 @@ APP-2 (impl, content).
 |---|---|
 | content pipeline | MERGED |
 | #1025 loader follow-up | verify |
-| acceptance of CHARACTER_APPEARANCE (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of CHARACTER_APPEARANCE | ACCEPTED on main; D1093 grants schema/materializer and native ABI authoring |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -201,3 +201,42 @@ Concrete integration requirements:
   must agree with the admitted profile/ruleset fact before any speed effect; it applies no bonus.
 - Register module/load path and populate/regenerate content/pins only in the CP slot; integrate
   APP-1 durable writer and APP-3/4 committed observation later. No readiness checkbox is closed.
+
+## D1093 authoring successor — 2026-10-16
+
+CP [6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346)
+assigns APP-2 the canonical cosmetics schema/materializer and the `native_gameplay.rs`
+cosmetics ABI/compiler hunk plus the `activation.rs` caller. This supersedes the earlier
+schema/ABI allocation blocker above; historical compiler evidence remains historical.
+The ten source conflicts submitted in
+[6219674132](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219674132)
+remain unresolved. No source value, starter, sex/look or fallback mapping is promoted here.
+
+The tree-first schema/tool under `tools/content-schema/cosmetics-authoring/` requires complete
+typed records, explicit per-field value-bound promotion evidence and exact historical source
+bytes. `world_project_v2_to_tree.py` calls that producer before derived writes when a canonical
+authoring input exists; absent input creates no catalogue and a stale orphan output refuses.
+The immutable historical identity-only WorldProject packets and the existing cosmetics shards
+are unchanged. The real producer's future output joins its manifest/lock set in the CP slot.
+
+`NativeGameplayInput.cosmetics` is the mandatory `PinnedGameplayBytes` assigned by CP.
+Historical provisioning V1–V5 supplies an explicit checked unavailable packet; V1–V8 artifact
+bytes remain identical and expose no permanent cosmetics. Provisioning V6 requires authored
+cosmetics. Binary V9 appends one framed section to the V8 layout. Its decoded immutable view
+and sorted key iterators are owned by `NativeGameplayState`, with the same independently
+qualified outer digest, and use the existing source-bound compiler. The activation caller
+checks the mandatory pin and retains independent issuance and sealed generation activation.
+`UNKNOWN`, OTS-only and observations-only promotion classes fail closed. The per-field decision
+references are admission data, not self-issued authority or proof of source truth.
+
+Current cheap qualification: 14 Python tests PASS; targeted Rust formatting and diff checks
+PASS; governance validator and its 124 tests PASS. Five new native integration cases are authored (legacy byte preservation/pin rejection;
+V9 framing/decoded metadata; unknown/promotion/source refusal; canonical-schema boundary parity;
+actual activation/stale issuance).
+They are not yet claimed compiled or executed. The synthetic fixture is explicitly test-only.
+
+Seven external test constructors require the mechanical new unavailable-pin initializer in six
+other-family files; these hunks remain private validation assembly pending their exact CP scope.
+No compiling/publish-ready whole-head claim is made while that cascade remains unresolved.
+Native qualification/review, real content population, APP-1/APP-3/APP-4 integration and the shared
+index/manifest/lock slot after #2129/#2197 remain open. No ready/merge authority is claimed.
