@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
-// Real public writer types and arithmetic; only the unregistered owned adapter is path-loaded.
+// Library unit-test placement: import the actual registered adapter and real durable owners.
 use durability::character_build::{
     BuildCause, BuildFormula, BuildOccurrence, DurableBuildState, MAX_BUILD_LEVEL, MIN_SKILL_LEVEL,
     NO_VOCATION, cumulative_progress,
@@ -8,10 +8,7 @@ use durability::character_build::{
 use durability::character_progression::CharacterProgressionError;
 use oteryn_game_server::durability;
 
-#[path = "../src/interaction/vocation_choice.rs"]
-mod vocation_choice;
-
-use vocation_choice::vocation_choice_request;
+use crate::gameplay_transport::vocation_choice::vocation_choice_request;
 
 /// Synthetic arithmetic table, not native Dawnport facts or a production policy.
 struct Table;

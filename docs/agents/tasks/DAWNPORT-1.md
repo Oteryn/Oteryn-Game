@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: DAWNPORT-1
-title: "DAWNPORT-1: Dawnport content and vocation choice (skeleton)"
+title: "DAWNPORT-1: Dawnport start and native vocation choice"
 mode: IMPLEMENT
-status: in_progress
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/dawnport-1
@@ -15,16 +15,18 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "impl (content)"
 migration: maybe
 registry: no
-owner: unassigned (builder)
+owner: "family E /root/dawnport (sole local author)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - content/world/ Dawnport inputs (new family files only)
   - content/npcs/ Dawnport vocation NPC dialogue (new files)
-  - apps/game-server/src/interaction/vocation_choice.rs (new)
-  - apps/game-server/tests/dawnport_*.rs (new)
+  - apps/game-server/src/interaction/vocation_choice.rs
+  - apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
+  - apps/game-server/tests/dawnport_*.rs (existing owned request test)
+  - apps/game-server/tests/private/dawnport_native_*.rs (new native-owner fixtures)
 slot_only_paths:
   - regenerate_content.py outputs, content/project.json, manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins (one author, one commit)
   - migration number if a vocation-choice receipt is needed
@@ -45,7 +47,7 @@ CP and architect do the final review.
 
 ## Goal
 
-Dawnport content and the vocation-choice interaction; choosing a vocation keeps cumulative progress (SKILLS-0 §3.3).
+D1103: a new Character starts on Dawnport without a vocation; Thais is a native test only. The vocation-choice interaction preserves cumulative progress (SKILLS-0 §3.3). D1103 does not choose numeric caps or a stance-fit rule.
 
 ## Dependencies (state on main@5742f30f3, 2026-10-15)
 
@@ -62,7 +64,8 @@ Dawnport content and the vocation-choice interaction; choosing a vocation keeps 
 
 - content/world/ Dawnport inputs (new family files only)
 - content/npcs/ Dawnport vocation NPC dialogue (new files)
-- apps/game-server/src/interaction/vocation_choice.rs (new)
+- apps/game-server/src/interaction/vocation_choice.rs
+- apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
 - apps/game-server/tests/dawnport_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
@@ -109,12 +112,59 @@ A13 §; SKILLS-0 §3.3; Reference Dawnport map/NPC data. Plan: `docs/architectur
 ## Context checkpoint
 
 ```yaml
-last_progress: local adapter prepared; five real-library tests and focused Clippy pass
+last_progress: D1103 native NPC caller and five-file test/source bundle applied locally; no build or publication
 status: authoring
 branch: skeleton/dawnport-1
-blocker: qualified native Dawnport interaction/departure and stance-fit facts; ITEM-LOOP-1 final migration-slot order
-next_action: CP/architect qualify native facts, independent review and integration slot
+blocker: coordinated live None build installation; separate A2/native-test registration; qualified caps, nonempty stance and departure
+next_action: compose exact source snapshot privately with progression owner handoff, then scheduled native validation
 ```
+
+## D1103 native authoring checkpoint (2026-10-16)
+
+The family lead refreshed #2191 as OPEN/DRAFT at
+`413079b6cad240f956198810cb7ce0b0e7fb7421`, supplied D1103 from CP comment
+[6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346)
+(updated 2026-10-16T16:11:36Z), and released the third canonical author slot after
+#2193 froze. This supersedes the historical Thais-start product answer for this task.
+The exact initial preimages and sole-author allocation were recorded before writes.
+
+Applied local source consists only of `interaction/vocation_choice.rs`, the allocated
+`npc_command.rs` SessionNpc/ingress hunk, and three `tests/dawnport_*.rs` files, plus
+this material task checkpoint. The actual NPC path retains explicit confirmation and
+one server-minted occurrence, invokes the real forced training saver, reads current
+build/stance/progression under independent session/root facts, and calls
+`RevisionSlot::commit_build`. It reconciles only ambiguous unavailable results;
+known binding conflicts remain refusals. The Monk topic clears an older four-vocation
+quote so a following `yes` cannot choose that stale class.
+
+The source deliberately refuses a nonempty stance without its fit rule. It does not
+invent a cap, departure/gear/coin rule, spawn tile or content activation. Oressa's
+four direct choice topics and separate Monk redirection were checked against imported
+Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446` and Crystal
+`ff7ede593c69d4c658b382c97443e8155926924a`; these donors remain OTS hypothesis evidence.
+Numeric cap disagreement and Monk/quest/departure semantics are not promoted to
+accepted product rules.
+
+`gameplay_transport/mod.rs` belongs to the separate A2/CP writer. Native unit-test
+mounts in `lib.rs` and manifest wrapper changes also remain separate slot work;
+none was applied here. The five-file bundle is AUTHORING, not a compile-qualified
+or publishable frozen candidate while that registration is absent. It proposes five
+native NPC cases, five existing request cases and one real receipt-core PostgreSQL
+case; none has run on this new source. The earlier private PostgreSQL pass qualified
+an older explicitly adapted proposal only and is not evidence for this caller.
+
+Progression is the sole writer of the shared live `None` actor. The current caller
+initializes the first spell state only on the older no-state path and refuses an
+already present different live state. Its coordinated receipt/reservation installation
+must be integrated before qualifying the new live-None playable case; no live reset
+is inferred. The separate `mana_training.rs` proposal now preserves account-owned
+Premium maximum soul and current soul exactly, following progression's review.
+It is not part of this canonical source change.
+
+Exact source/preimage/patch hashes and the private-composition handoff live under
+`/workspace/oteryn-family/evidence/d1103-dawnport/`. Private dry apply, Rust 1.94
+owned-file formatting and `git diff --check` passed. No build, test, local commit,
+push, paid review, ready or merge was performed for this authoring batch.
 
 ## Bounded local preparation (2026-10-15)
 
@@ -216,3 +266,46 @@ SHA-256 bindings (full provenance and commands are in the external evidence fold
 No acceptance claim is made for current DB/session authority, native availability,
 stance fit, departure, durable replay or exactly one committed receipt: these need
 the future qualified caller, writer execution and independent integration review.
+
+
+## D1122 checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
+
+This is the one coherent source checkpoint permitted on existing draft #2191 by
+[CP D1122](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224930201).
+The PR remains draft. This checkpoint is not a frozen review candidate; full required
+checks and independently qualified final composition remain outstanding. No ready,
+external review trigger or CI restart is requested by this checkpoint.
+
+The independently reviewed R5 layout proposal moves only the two NEW native-owner
+fixtures into `apps/game-server/tests/private/`. The receipt fixture's relative
+harness path becomes `../support/bestiary_postgres_harness.rs`; assertions, test
+bodies and production APIs remain unchanged. Existing tracked
+`tests/dawnport_vocation.rs` stays at its existing path with identical checkpoint
+predecessor bytes. No foreign Cargo/lib/mod, schema, content, pin or registration
+change is included. Native mounts are separate CP-held composition proposals.
+
+Validation state for this exact checkpoint layout:
+
+- PASS: changed-path Rust 1.94 formatting and diff whitespace check; exact logs and
+  source hashes are retained in the immutable external checkpoint proposal packet.
+- NOT_RUN: required `cargo fmt --all --check` across the workspace.
+- NOT_RUN: required Cargo clippy all-targets and full game-server package tests.
+- NOT_RUN: fresh R5 actual native eleven-case qualification and PostgreSQL 17.6
+  execution, with exact source/ELF and no-skip evidence.
+- NOT_RUN: qualification of a real admitted classless Dawnport content/world-start
+  pin, caps, nonempty stance fit and departure semantics.
+- RED (known source-composition blocker; not a new compiler result): the production
+  module graph and native test registration remain CP-held. The existing request
+  integration test imports the held gameplay vocation module; moving the two new
+  fixtures alone does not make the package coherent or qualify feature delivery.
+
+Historical private R4 native11 PASS belongs only to its retained actual composed
+source and ELF. It is preserved independently and is not PASS evidence for this
+canonical source or R5 layout. Its source included later private repairs and foreign
+owner proposals that are not imported into this checkpoint. Thais remains a fixture;
+no actual admitted Dawnport content pin or real Dawnport first-start is asserted.
+
+The existing CP request is tracked at
+[2131 comment 6224922436](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224922436).
+No duplicate request is needed. New blockers or CP requests belong exclusively in
+#2131 prefixed `→ CP #2191`; mechanics status belongs exclusively on #2191.

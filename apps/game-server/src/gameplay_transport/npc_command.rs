@@ -51,6 +51,8 @@ struct SessionNpc {
     recent: RecentIntents,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
+    // D1103: confirmation and retained receipt intent use this existing session owner.
+    vocation: Option<super::vocation_choice::NpcVocationConversation>,
 }
 
 /// The NPC conversations of the admitted sessions of one Channel. The lock is never held across
@@ -155,6 +157,69 @@ impl NpcTradeRefusal {
 const MAX_TRADE_QUANTITY: u32 = 100;
 
 impl NpcConversations {
+    pub(crate) fn dawnport_choice(
+        &self,
+        session: GameSessionId,
+    ) -> Option<super::vocation_choice::ConfirmedNpcVocation> {
+        self.sessions
+            .lock()
+            .ok()?
+            .get(&session)?
+            .vocation
+            .as_ref()?
+            .confirmed()
+    }
+    pub(crate) fn retain_dawnport_choice(
+        &self,
+        session: GameSessionId,
+        occurrence: crate::durability::character_build::BuildOccurrence,
+        request: super::vocation_choice::RetainedNpcVocation,
+    ) -> bool {
+        self.sessions
+            .lock()
+            .ok()
+            .and_then(|mut sessions| {
+                sessions
+                    .get_mut(&session)?
+                    .vocation
+                    .as_mut()
+                    .map(|topic| topic.retain(occurrence, request))
+            })
+            .unwrap_or(false)
+    }
+    pub(crate) fn rollback_dawnport_request(
+        &self,
+        session: GameSessionId,
+        occurrence: crate::durability::character_build::BuildOccurrence,
+    ) {
+        if let Ok(mut sessions) = self.sessions.lock() {
+            if let Some(topic) = sessions
+                .get_mut(&session)
+                .and_then(|state| state.vocation.as_mut())
+            {
+                topic.rollback_request(occurrence);
+            }
+        }
+    }
+    pub(crate) fn complete_dawnport_choice(
+        &self,
+        session: GameSessionId,
+        occurrence: crate::durability::character_build::BuildOccurrence,
+    ) {
+        if let Ok(mut sessions) = self.sessions.lock() {
+            if let Some(state) = sessions.get_mut(&session) {
+                if state
+                    .vocation
+                    .as_ref()
+                    .and_then(|topic| topic.confirmed())
+                    .is_some_and(|choice| choice.occurrence == occurrence)
+                {
+                    state.vocation = None;
+                }
+            }
+        }
+    }
+
     /// The session is retired: its rate window goes with it. The conversation itself lives in
     /// the chat state of the session, shared with the chat path.
     pub(crate) fn forget(&self, session: GameSessionId) {
@@ -440,6 +505,36 @@ impl NpcConversations {
             y: npc.position.y,
             floor: npc_floor,
         };
+        if runtime.npc_key(npc.actor) == Some(super::vocation_choice::DAWNPORT_CHOICE_NPC) {
+            if runtime.owner_fence().is_err()
+                || !runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return NpcTalkOutcome::only(Disposition::Rejected);
+            }
+            if at
+                .distance(there)
+                .is_none_or(|distance| distance > TALK_RANGE_TILES)
+            {
+                return NpcTalkOutcome {
+                    disposition: Disposition::NotInRange,
+                    conversation: end(chat, session, intent),
+                    window: None,
+                };
+            }
+            // Dialogue-backed Oressa does not need a generated-reply book entry.
+            // Rate, exact generation, present actor and range were checked by this owner.
+            return super::vocation_choice::dawnport_choice_dialogue(
+                &mut sessions.entry(session).or_default().vocation,
+                chat,
+                actor,
+                session,
+                intent.npc_actor,
+                npc.actor,
+                text.as_str(),
+            );
+        }
         let Some(entry) = runtime.npc_key(npc.actor).and_then(|key| book.get(key)) else {
             // A placed NPC with no talk entry (a Dialogue-backed NPC) is silent.
             return NpcTalkOutcome::only(Disposition::NoConversation);
