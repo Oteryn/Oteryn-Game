@@ -397,3 +397,39 @@ failures and older interruptions remain retained under their original source/mou
 CP admission/current-content binding producer, budgeted NPC scheduler, chat-owner egress
 and the other actor/travel/shared gates remain missing; all original acceptance boxes remain
 open. No full-package, production activation or full NPC-WORLD delivery PASS is claimed.
+
+## D1114 — granted shared test-root registration authoring (2026-10-16)
+
+CP [comment 6222415946](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6222415946)
+granted #2157 exclusive authoring of the three missing test-root registration hunks and
+the two branch module registrations. The prior no-slot state above is historical. The
+lead reopened authoring from `70c85937925fa9d16eb0e5fe26b57e044150b896`.
+
+Applied exactly the accepted proposal: one ordinary canonical
+`#[path = "support/bestiary_postgres_harness.rs"] mod bestiary_postgres_harness;` in each
+of `tests/native_admission_source_postgres.rs`,
+`tests/runtime_scope_assignment_postgres.rs` and `tests/wp5_s3b_composition.rs`. Each new
+registration uses only the existing scoped `dead_code` subset-helper allowance/reason.
+Existing cases, canonical harness/helper source and existing root registrations are
+unchanged. The local duplicate module from 1ac remains absent. The travel global consumer
+remains byte-identical to tested 9f SHA256
+`fabdc7c83889a533f3f6048fe5204d2d1b52857b5663fba78a64bf3b713100d5`.
+
+Added only `pub(crate) mod npc_travel;` in `durability/mod.rs` and `mod npc_voice;` in
+`gameplay_transport/mod.rs`, as CP now permits on this branch. These are ordinary source
+registrations of the unchanged native modules, not an overlay, replacement harness or
+test exclusion. Final shared module registration must be reapplied in the CP slot after
+merging main. This grant does not provide the remaining activation/producer contracts.
+
+**New candidate qualification: PENDING freeze and execution.** Strict all-target Clippy
+and full-package `--no-run` must pass first; then repeat the exact native voice7 + genuine
+PostgreSQL travel1 on that new head, with nonzero exact inventory and no ignored cases.
+Full-package runtime may start only after green compilation and is not passed until actual
+completion. Old 9f native8 passes, E0432 failures, 1ac duplicate-module failure/controlled
+stop and earlier interrupted/failed runs retain their original source/profile bindings.
+The author performed no Cargo/tests/PC execution, commit or push for D1114.
+
+NPC content/current admission (#2129/#2184), NPC-TRAVEL-1, PREM-3, fee/cause writer, physical
+relocation/obligation owners, budgeted scheduler, chat-owner egress and all other actor/travel
+activation gates remain open. All original acceptance boxes remain open; no full-package,
+production activation or full NPC-WORLD delivery PASS is claimed.
