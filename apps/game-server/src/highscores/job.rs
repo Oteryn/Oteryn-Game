@@ -12,6 +12,8 @@ pub(crate) struct HighscoreWorldJob {
     root: Arc<DurabilityRoot>,
     world: WorldId,
     catalogues: SnapshotCatalogues,
+    #[cfg(test)]
+    completed_passes: std::sync::atomic::AtomicU64,
 }
 
 impl HighscoreWorldJob {
@@ -24,6 +26,8 @@ impl HighscoreWorldJob {
             root,
             world,
             catalogues,
+            #[cfg(test)]
+            completed_passes: std::sync::atomic::AtomicU64::new(0),
         }
     }
 
@@ -41,34 +45,46 @@ impl HighscoreWorldJob {
             .await
     }
 
-    /// First check is immediate. Dropping the composition root's reset sender stops the task.
-    /// A failed pass leaves the prior durable generation and the next scheduled pass can try
-    /// again. Missed intervals are skipped; there is no immediate retry loop.
+    #[cfg(test)]
+    pub(crate) fn completed_passes(&self) -> u64 {
+        self.completed_passes
+            .load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    /// First check is immediate. Every successful check schedules from durable database time,
+    /// including a recent snapshot skipped after restart. A failed periodic pass backs off one
+    /// interval; a failed reset preserves the pending periodic deadline. Closing resets stops.
     pub(crate) async fn run(&self, mut planned_resets: mpsc::Receiver<()>) {
         let interval = Duration::from_secs(30 * 60);
         let mut due = Instant::now();
         loop {
-            let result = match timeout_at(due, planned_resets.recv()).await {
-                Ok(Some(())) => {
-                    let result = self.after_planned_reset().await;
-                    if result.is_ok() {
+            let reset = match timeout_at(due, planned_resets.recv()).await {
+                Ok(Some(())) => true,
+                Ok(None) => break,
+                Err(_) => false,
+            };
+            // Anchor before the database pass. Subtracting its elapsed time is conservative:
+            // connection/lock delay can cause an early recheck, never postpone durable expiry.
+            let started = Instant::now();
+            let result = self
+                .root
+                .refresh_highscore_schedule(self.world, self.catalogues.clone(), reset)
+                .await;
+            match result {
+                Ok(refresh) => due = started + refresh.next_check_after,
+                Err(error) => {
+                    if !reset {
                         due = Instant::now() + interval;
                     }
-                    result
+                    eprintln!(
+                        "highscore snapshot pass failed world={:?}: {error:?}",
+                        self.world
+                    );
                 }
-                Ok(None) => break,
-                Err(_) => {
-                    let result = self.periodic_tick().await;
-                    due = Instant::now() + interval;
-                    result
-                }
-            };
-            if let Err(error) = result {
-                eprintln!(
-                    "highscore snapshot pass failed world={:?}: {error:?}",
-                    self.world
-                );
             }
+            #[cfg(test)]
+            self.completed_passes
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         }
     }
 }

@@ -26,7 +26,7 @@ use ranking::{RankingRow, ranked_list};
 use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Private persisted filter order, not a new protocol-number allocation.
 const FILTERS: [Option<&str>; 6] = [
@@ -96,6 +96,13 @@ fn corrupt() -> SnapshotError {
     DurabilityError::InvalidStoredState.into()
 }
 
+#[derive(Debug)]
+pub(crate) struct SnapshotRefresh {
+    pub snapshots: Vec<SnapshotInfo>,
+    /// Remaining time from this transaction's database clock to the earliest durable expiry.
+    pub next_check_after: Duration,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SnapshotInfo {
     pub snapshot_id: u64,
@@ -163,7 +170,9 @@ impl DurabilityRoot {
         &self,
         world: WorldId,
     ) -> Result<Vec<SnapshotInfo>> {
-        self.publish_highscore_cut(world, None, false).await
+        self.publish_highscore_cut(world, None, false)
+            .await
+            .map(|refresh| refresh.snapshots)
     }
 
     /// Periodic publication is due after 30 minutes; a planned reset forces one complete cut.
@@ -174,6 +183,17 @@ impl DurabilityRoot {
         catalogues: SnapshotCatalogues,
         planned_reset: bool,
     ) -> Result<Vec<SnapshotInfo>> {
+        self.refresh_highscore_schedule(world, catalogues, planned_reset)
+            .await
+            .map(|refresh| refresh.snapshots)
+    }
+
+    pub(crate) async fn refresh_highscore_schedule(
+        &self,
+        world: WorldId,
+        catalogues: SnapshotCatalogues,
+        planned_reset: bool,
+    ) -> Result<SnapshotRefresh> {
         self.publish_highscore_cut(world, Some(catalogues), !planned_reset)
             .await
     }
@@ -183,7 +203,7 @@ impl DurabilityRoot {
         world: WorldId,
         catalogues: Option<SnapshotCatalogues>,
         only_if_due: bool,
-    ) -> Result<Vec<SnapshotInfo>> {
+    ) -> Result<SnapshotRefresh> {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -448,7 +468,9 @@ async fn publish_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Vec<SnapshotInfo>> {
-    publish_cut(tx, world, None, false).await
+    publish_cut(tx, world, None, false)
+        .await
+        .map(|refresh| refresh.snapshots)
 }
 
 async fn publish_cut(
@@ -456,7 +478,7 @@ async fn publish_cut(
     world: WorldId,
     catalogues: Option<&SnapshotCatalogues>,
     only_if_due: bool,
-) -> Result<Vec<SnapshotInfo>> {
+) -> Result<SnapshotRefresh> {
     let categories: i32 = if catalogues.is_some() { 11 } else { 9 };
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
@@ -475,11 +497,20 @@ async fn publish_cut(
     // Read due state while holding the same per-category locks used by publication. A stale
     // concurrent RR cut loses with a typed conflict rather than publishing a second generation.
     if only_if_due {
-        let recent: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category<=$2 AND s.computed_at_ms>$3")
+        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category<=$2 AND s.computed_at_ms>$3")
             .bind(world.as_bytes().as_slice()).bind(categories)
             .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).fetch_one(&mut **tx).await?;
-        if recent == i64::from(categories) {
-            return Ok(Vec::new());
+        if recent.try_get::<i64, _>("recent")? == i64::from(categories) {
+            let oldest: i64 = recent.try_get("oldest")?;
+            let remaining = oldest
+                .saturating_add(SNAPSHOT_INTERVAL_MS)
+                .saturating_sub(computed_at_ms);
+            return Ok(SnapshotRefresh {
+                snapshots: Vec::new(),
+                next_check_after: Duration::from_millis(
+                    u64::try_from(remaining).map_err(|_| corrupt())?,
+                ),
+            });
         }
     }
     let source = read_source(tx, world).await?;
@@ -521,7 +552,12 @@ async fn publish_cut(
             source_cut: source_cut.clone(),
         });
     }
-    Ok(published)
+    Ok(SnapshotRefresh {
+        snapshots: published,
+        next_check_after: Duration::from_millis(
+            u64::try_from(SNAPSHOT_INTERVAL_MS).map_err(|_| corrupt())?,
+        ),
+    })
 }
 
 fn stored_row(row: PgRow) -> Result<SnapshotRow> {

@@ -385,3 +385,38 @@ loot collapses `Committed` and `AlreadyCommitted`, and actual combat/item/sessio
 commit hooks live in unallocated owners. A standalone emitter could not repair
 those real consumers, so none is presented as completed emission. No commit,
 push, ready transition, review trigger, merge or shared-path write was performed.
+
+### Reviewed scheduler repair (successor authoring, 2026-10-16)
+
+Independent static review of `df034dd61746996912e7f72997c1a80028812d81`
+accepted one P2: a skipped startup check scheduled another full interval from
+process restart and could postpone an already due durable refresh. This batch
+explicitly returned to AUTHORING; the old commit/review/bundle remain retained.
+The locked RR publication check now returns the remaining interval from the
+oldest retained current category timestamp and database time. The actual job
+anchors its next check conservatively before the pass, so connection/processing
+delay can cause an early recheck but cannot postpone expiry. A successful reset
+uses its returned durable interval; a failed reset preserves the pending
+periodic deadline. A failed periodic pass retains the prior cut and backs off
+one interval, avoiding an immediate retry loop.
+
+Two added native PostgreSQL bodies exercise the actual `HighscoreWorldJob::run`
+loop with genuine Root passes and real timers: startup near a retained cut's
+expiry followed by a real SQL reset failure still publishes within the bounded
+observation window; a failed periodic publication retains the previous cut and
+does not spin after its failure trigger is removed. These seed only valid derived
+headers under the unchanged SQL guards. A test-only completion counter exposes
+pass completion, while actual durable generation advancement decides success;
+conservatively early skipped passes are allowed. No fake clock, Root or Tokio
+feature/manifests change is used. These regression bodies are authored but
+unexecuted because the PC-global heavy-resource slot remains absent.
+
+The same review batch expands actual-source evidence: native Charm unlock spends
+five of 25 earned points while the highscore remains 25; account representatives
+cover two accounts, different levels and absent-build vocation `none`; eleven
+categories now have a separate two-real-Root concurrency/retention case; a missing
+active Achievement catalogue key refuses the full cut and preserves every prior
+category. The original nine-category concurrency fixture remains unchanged.
+There are now 15 PostgreSQL case bodies plus 11 inherited ranking cases, without
+new execution claims. Rust/PG qualification and all recorded shared integration,
+role, concrete wire-layout and real analyser commit-point blockers remain open.

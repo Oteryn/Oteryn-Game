@@ -553,6 +553,48 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
                 },
             ).await.map_err(debug)?;
         }
+        use crate::domain::charm::{CharmCatalogue, CharmCategory, CharmDefinition, CharmKey};
+        use crate::durability::charm_state::{
+            CharmCommand, CharmCommandOccurrence, CharmCommandRequest,
+        };
+        let charm = CharmKey::new("oteryn:charm.wound").map_err(debug)?;
+        let catalogue = CharmCatalogue::new([CharmDefinition {
+            key: charm.clone(),
+            category: CharmCategory::Major,
+            stage_costs: [5, 5, 5],
+        }])
+        .map_err(debug)?;
+        let outcome = h
+            .root
+            .commit_charm_command(
+                &authority,
+                &h.node,
+                harness::fence(5)?,
+                CharmCommandRequest {
+                    occurrence: CharmCommandOccurrence::from_bytes(id(85)).map_err(debug)?,
+                    command: CharmCommand::UnlockNextStage { charm },
+                    catalogue_revision: "content-1".into(),
+                    catalogue,
+                },
+                BestiaryCharmFacts::new(complete_catalogues()?.bestiary.into_values())
+                    .map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            outcome,
+            crate::durability::charm_state::CharmCommandOutcome::Committed(
+                crate::durability::charm_state::CommittedCharmCommand {
+                    effect: crate::durability::charm_state::CharmCommandEffect::Unlocked {
+                        cost: 5,
+                        ..
+                    },
+                    ..
+                }
+            )
+        ));
+        // Five points were durably spent, but the highscore below still reports 25 earned.
+        assert_eq!(h.count("game_character_charm_unlocks").await?, 1);
         drop(authority);
         drop(seal);
         let ids = h
@@ -657,6 +699,265 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
         );
         assert_eq!(h.count("game_public_highscore_outbox").await?, 11);
         assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+        Ok(())
+    })
+}
+
+#[test]
+fn eleven_category_publishers_keep_one_complete_generation_and_retention() -> TestResult {
+    run("hsconcurrentfull", async |h| {
+        h.root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let mut first = std::pin::pin!(h.root.refresh_highscore_world(
+            world(),
+            complete_catalogues()?,
+            true
+        ));
+        let mut second =
+            std::pin::pin!(other.refresh_highscore_world(world(), complete_catalogues()?, true));
+        let mut a = None;
+        let mut b = None;
+        std::future::poll_fn(|cx| {
+            if a.is_none()
+                && let std::task::Poll::Ready(v) = std::future::Future::poll(first.as_mut(), cx)
+            {
+                a = Some(v);
+            }
+            if b.is_none()
+                && let std::task::Poll::Ready(v) = std::future::Future::poll(second.as_mut(), cx)
+            {
+                b = Some(v);
+            }
+            if a.is_some() && b.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        let results = [a.unwrap(), b.unwrap()];
+        assert!(results.iter().any(|r| r.is_ok()));
+        assert!(
+            results
+                .iter()
+                .all(|r| matches!(r, Ok(_) | Err(SnapshotError::RetryableConflict)))
+        );
+        let current: Vec<i64> = sqlx::query_scalar(
+            "SELECT current_snapshot_id FROM game_world_highscore_heads ORDER BY category",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert!(
+            results
+                .iter()
+                .filter_map(|r| r.as_ref().ok())
+                .any(|generation| generation
+                    .iter()
+                    .map(|s| s.snapshot_id)
+                    .eq(current.iter().map(|id| id.unsigned_abs())))
+        );
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
+        assert_eq!(h.root_revision().await?, "2");
+        Ok(())
+    })
+}
+
+#[test]
+fn account_representatives_include_vocation_none_and_choose_level_before_identity() -> TestResult {
+    run("hsrepresentatives", async |h| {
+        // Administrative committed native source DATA with all native guards enabled. None
+        // means an absent build row; each initialized XP row remains at root revision one.
+        let rows = serde_json::to_string(&serde_json::json!([
+            {"id":hex(&generated(200)),"account":hex(&id(40)),"level":60,"name":"Higher Hero"},
+            {"id":hex(&generated(201)),"account":hex(&generated(400)),"level":70,"name":"Other Hero"},
+            {"id":hex(&generated(199)),"account":hex(&id(40)),"level":55,"name":"Lower Hero"}
+        ]))?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+            .bind(generated(400).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT x.id::uuid,x.account::uuid,r.world_id,1,1,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,x.name FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,account TEXT,name TEXT) CROSS JOIN game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid")
+            .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_progression_state SELECT (jsonb_populate_record(NULL::game_character_progression_state,to_jsonb(p)||jsonb_build_object('character_id',x.id,'character_revision',1,'level',x.level))).* FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,level BIGINT) CROSS JOIN game_character_progression_state p WHERE p.character_id=encode($2,'hex')::uuid")
+            .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        h.root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        let accounts = page(h, 10, None, 1, 0).await?;
+        assert_eq!(accounts.rows.len(), 2);
+        assert!(accounts.rows.iter().all(|row| row.vocation == "none"));
+        assert!(
+            accounts
+                .rows
+                .iter()
+                .any(|row| row.character_id.as_bytes() == &generated(200) && row.level == 60)
+        );
+        assert!(
+            accounts
+                .rows
+                .iter()
+                .any(|row| row.character_id.as_bytes() == &generated(201) && row.level == 70)
+        );
+        assert!(page(h, 10, Some("knight"), 1, 0).await?.rows.is_empty());
+        assert_eq!(page(h, 1, None, 1, 0).await?.rows.len(), 1);
+        assert_eq!(page(h, 11, None, 1, 0).await?.rows.len(), 1);
+        Ok(())
+    })
+}
+
+/// Seed valid retained derived headers with a short remaining interval. This fixture changes
+/// no source, bypasses no trigger, and supplies no current gameplay authority.
+async fn seed_near_due_headers(h: &Harness, remaining_ms: i64) -> TestResult {
+    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM generate_series(1,11) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
+        .bind(world().as_bytes().as_slice()).bind(remaining_ms).execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn drive_real_job(
+    job: &job::HighscoreWorldJob,
+    resets: tokio::sync::mpsc::Receiver<()>,
+    observer: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    let mut runner = std::pin::pin!(job.run(resets));
+    let mut observer = std::pin::pin!(observer);
+    std::future::poll_fn(|cx| {
+        if std::future::Future::poll(runner.as_mut(), cx).is_ready() {
+            return std::task::Poll::Ready(Err("job ended before observer completed".into()));
+        }
+        std::future::Future::poll(observer.as_mut(), cx)
+    })
+    .await
+}
+
+async fn wait_for_passes(job: &job::HighscoreWorldJob, count: u64) {
+    while job.completed_passes() < count {
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+}
+
+#[test]
+fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestResult {
+    run("hsjobdeadline", async |h| {
+        let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(root.maintain_ready_once().await?);
+        seed_near_due_headers(h, 3000).await?;
+        let job =
+            job::HighscoreWorldJob::new(std::sync::Arc::new(root), world(), complete_catalogues()?);
+        let (sender, resets) = tokio::sync::mpsc::channel(1);
+        let observer = async {
+            wait_for_passes(&job, 1).await;
+            // The immediate restart check truly skipped the not-yet-due retained cut.
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+            h.pool.execute("CREATE SEQUENCE highscore_job_failure_seen; CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('highscore_job_failure_seen'); RAISE EXCEPTION 'fixture reset failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
+            sender.send(()).await?;
+            wait_for_passes(&job, 2).await;
+            let failed: bool =
+                sqlx::query_scalar("SELECT is_called FROM highscore_job_failure_seen")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert!(failed);
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+            h.pool
+                .execute("DROP TRIGGER highscore_job_fail ON game_world_highscore_snapshots")
+                .await?;
+            while h.count("game_world_highscore_snapshots").await? != 22 {
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            assert!(job.completed_passes() >= 3);
+            // Uses the actual run-loop timer. The old process-relative +30min scheduler
+            // times out here; neither the skipped restart nor the reset error may postpone it.
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
+            let ids: Vec<i64> = sqlx::query_scalar(
+                "SELECT current_snapshot_id FROM game_world_highscore_heads ORDER BY category",
+            )
+            .fetch_all(&h.pool)
+            .await?;
+            assert!(ids.iter().all(|id| *id > 11));
+            drop(sender);
+            Ok(())
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(12),
+            drive_real_job(&job, resets, observer),
+        )
+        .await??;
+        Ok(())
+    })
+}
+
+#[test]
+fn actual_job_periodic_failure_keeps_prior_cut_and_backs_off_without_busy_loop() -> TestResult {
+    run("hsjobfailure", async |h| {
+        seed_near_due_headers(h, -1).await?;
+        h.pool.execute("CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'fixture periodic failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
+        let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(root.maintain_ready_once().await?);
+        let job =
+            job::HighscoreWorldJob::new(std::sync::Arc::new(root), world(), complete_catalogues()?);
+        let (sender, resets) = tokio::sync::mpsc::channel(1);
+        let observer = async {
+            wait_for_passes(&job, 1).await;
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+            h.pool
+                .execute("DROP TRIGGER highscore_job_fail ON game_world_highscore_snapshots")
+                .await?;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            assert_eq!(job.completed_passes(), 1);
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+            drop(sender);
+            Ok(())
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            drive_real_job(&job, resets, observer),
+        )
+        .await??;
+        Ok(())
+    })
+}
+
+#[test]
+fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult {
+    run("hssourcefailure", async |h| {
+        let before = h
+            .root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        // Administrative stored-data corruption fixture: native append-only SQL guards still
+        // apply, but this account fact's key is absent from the active owning catalogue.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/highscore_missing','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+            .bind(vec![2_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        assert!(matches!(
+            h.root
+                .refresh_highscore_world(world(), complete_catalogues()?, true)
+                .await,
+            Err(SnapshotError::Unavailable(
+                DurabilityError::InvalidStoredState
+            ))
+        ));
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+        for snapshot in before {
+            assert_eq!(
+                page(h, snapshot.category, None, 1, 0)
+                    .await?
+                    .snapshot
+                    .snapshot_id,
+                snapshot.snapshot_id
+            );
+        }
+        assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })
 }
