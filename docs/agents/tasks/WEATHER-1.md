@@ -4,21 +4,21 @@
 task_id: WEATHER-1
 title: "WEATHER-1: weather state and change events (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/weather-1
 issue: 1622
-pr: null
+pr: 2202
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 WEATHER-1 (row 17); wave 2"
 class: "impl"
 migration: no
 registry: yes
-owner: unassigned (builder)
+owner: WEATHER-1 worker (family G)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/world_weather.rs (new)
@@ -34,7 +34,7 @@ public_contracts: []
 depends_on:
   - "LOOP-CLOCK-1 slice: MERGED #2071"
   - "CLOCK-1 residue: MERGED #2114"
-  - "registry order ITEM-LOOK-1, SEC-1, WEATHER-1: BLOCKING: ITEM-LOOK-1 and SEC-1 not merged; SEC-1 gated on SEC_CLIENT01 -> CP decides whether WEATHER-1 may pass SEC-1"
+  - "registry order ITEM-LOOK-1 -> WEATHER-1 -> SEC-1; feature offer additionally waits for WEATHER-SEAM-1 and protocol-owner sign-off"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -54,9 +54,11 @@ World weather state and change events (owner direction 2026-10-13: in scope).
 |---|---|
 | LOOP-CLOCK-1 slice | MERGED #2071 |
 | CLOCK-1 residue | MERGED #2114 |
-| registry order ITEM-LOOK-1, SEC-1, WEATHER-1 | BLOCKING: ITEM-LOOK-1 and SEC-1 not merged; SEC-1 gated on SEC_CLIENT01 -> CP decides whether WEATHER-1 may pass SEC-1 |
+| registry order ITEM-LOOK-1 → WEATHER-1 → SEC-1 | CP controls the slot; SEC-1 does not block WEATHER-1 (D1028) |
+| WEATHER-SEAM-1 | Required read-only binding and canonical occurrence; no offer before integration |
+| Protocol owner | No accepted weather schema or field numbers found on inspected main; codec blocked |
 
-**BLOCKING:** registry order ITEM-LOOK-1, SEC-1, WEATHER-1. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+D1023–D1028 authorize the pure server model in owned paths. Registry order is ITEM-LOOK-1 → WEATHER-1 → SEC-1; SEC-1 is not a blocker. Feature admission, binding, protocol sign-off and CP slot integration remain separate gates. Nothing in slot-only paths is edited here.
 
 ## Owned paths (builder edits freely)
 
@@ -110,16 +112,80 @@ WORLD_INTERACTION0 §11 (clock); Reference weather. Plan: `docs/architecture/rev
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: pure model arithmetic and selector authored under D1023-D1028
+status: in_progress
 branch: skeleton/weather-1
-blocker: registry order ITEM-LOOK-1, SEC-1, WEATHER-1
-next_action: CP rechecks BLOCKING rows
+blocker: WEATHER-SEAM-1 canonical binding and protocol-owner accepted schema; no production offer
+next_action: lead validates owned model; CP allocates seam and protocol schema before wiring
 ```
+
+## Current implementation checkpoint — 2026-10-16
+
+Lifecycle: **local FREEZE_DIFF for lead review**, local worktree `/workspace/oteryn-family-g/2202`, branch
+`skeleton/weather-1`, base/head `c9241ccddcddb886b82d3d18b454e4a3c7b6d3aa`.
+No commit, push, review request, ready action or deployment is authorized in this work packet.
+
+Accepted evidence: CP D1023–D1028 at
+https://github.com/Oteryn/Oteryn-Game/pull/2202#issuecomment-6216591471;
+owner presets **rain, fog, snow** at
+https://github.com/Oteryn/Oteryn-Game/pull/2202#issuecomment-6216811445.
+`origin/main` ACCEPT-BATCH §2 item 10 and §3 confirm visual-only behavior and
+ITEM-LOOK-1 → WEATHER-1 → SEC-1. SIM-DETERMINISM-01 §§5,10–12,15 governs
+retained revisions, private roots, stable occurrences and normalized recorded time.
+The historical packet below is superseded only where those decisions explicitly rule.
+
+Owned writes in this pass: `apps/game-server/src/world_weather.rs`,
+`apps/game-server/src/world_weather_tests.rs`, and this card. The allocated
+`crates/protocol-oteryn/src/world_weather.rs` remains absent: neither an accepted
+weather `.proto` nor exact field/union encoding exists on inspected main, and
+D1027 explicitly requires protocol-owner sign-off. No placeholder protocol types,
+capability/domain IDs, inferred codec or public 32-byte token contract are introduced.
+
+Implemented pure model: checked absolute `(normalized_utc_ms - epoch_utc_ms) / 900000`,
+explicit 1..16 admitted policy-local indices, exactly sixteen selector entries,
+repeated entries for weights, one `deterministic_decision_u64` call using
+`weather_visual_v1` and draw 0, high-four-bit selector, no defaults or clear preset.
+Indices are not a shipped asset mapping; exact rain/fog/snow mapping and weights
+remain owner-authored policy data. Construction validates counts, zero/out-of-range,
+duplicates and dangling selector entries. There is no timer, cursor, history,
+migration, live clock read, gameplay mutation or Channel-dependent input.
+
+This is an arithmetic/RNG component, **not a qualified World evaluator**. The
+sampler takes the existing root and `DecisionOccurrenceId` explicitly. It does
+not invent canonical World/clock/policy/slot bytes or claim those facts are current.
+WEATHER-SEAM-1 must qualify the read-only World binding and accepted canonical
+occurrence; transport must independently fence current owner/session immediately
+before publication. No binding at admission means no offer. Binding loss after
+selection means one full Unavailable only for a current owner; stale owners emit
+nothing. Those accepted D1026 publication rules remain unwired and unclaimed here.
+Production must never fill that seam with epoch-0 DEFAULT or fixture roots.
+
+Tests authored: slot 0/P−1/P/P+1, day wrap, skipped slots, pre-epoch and u64 bounds;
+policy negative cases; all sixteen bucket endpoints and explicit repeated weights;
+SIM-profile-v1 primitive golden, unrelated-purpose isolation and restart-style
+reconstruction. Fixture occurrences do not prove canonical World/replay/Channel
+binding. Full stale-owner/Unavailable, gameplay isolation through live transport,
+codec/compatibility and admission coverage must run after their seams integrate.
+The modules intentionally await the CP-only declaration/wiring paths.
+
+Validation: Rust 1.94 exact-source external harness includes both owned modules
+verbatim and depends on the real local `oteryn-simulation-determinism` crate;
+**4 tests passed**, strict `cargo clippy --locked --all-targets -- -D warnings`
+passed, owned-file `rustfmt --check` passed. Harness-only `allow(dead_code)` permits
+the intentionally unwired module declaration; product source has no lint bypass.
+`python tools/agents/validate_governance.py` passed and governance unittest suite
+**124 tests passed**; whole-diff whitespace passed. This is not a native full-package,
+whole-workspace, transport/codec, PostgreSQL, content or GPU validation claim.
+
+Review binding: no commit SHA was created (packet prohibition). Frozen base/head
+plus the three exact owned-file SHA256 values are recorded in
+`/workspace/oteryn-family-g/evidence/2202-freeze.json`. This is a local diff snapshot,
+not a published/frozen candidate SHA or merge-readiness claim. Any repair must
+explicitly return to AUTHORING and replace this binding after fresh checks.
 
 ## Required first design packet — 2026-10-15 (PROPOSED; not architect approval)
 
-Current lease: **DESIGN_PACKET_ONLY**, this record only, branch `skeleton/weather-1`
+Historical lease (superseded by D1023–D1028 above): **DESIGN_PACKET_ONLY**, this record only, branch `skeleton/weather-1`
 source `172ad99048d947f055e46fc1bbfd1983d5303830`. No product source, contract,
 registry or content is edited. The original skeleton and its historical status
 are retained. Its acceptance criterion explicitly requires “builder writes
