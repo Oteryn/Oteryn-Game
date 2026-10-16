@@ -572,3 +572,101 @@ bridge are retained in `guild-1-text-native-4-evidence/resume-3`. Independent na
 append changes only the task record; all four Rust files remain source-checkpoint3 bytes.
 Root alone may publish the coherent successor to existing draft PR2136. No ready, merge
 or queue action is requested.
+
+
+### SetRank increment on published 7f6bdf04 — authored, UNVERIFIED
+
+The next native command is `SetRank(target, expected_revision, level)` within the
+existing Guild owner. GUILD0 §3.2 (lines149–173) requires both strict inequalities:
+current actor rank < current target rank and current actor rank < proposed rank;
+the proposed level must already exist in this Guild. This includes ordinary rank3
+actors over rank4, without importing the leader/vice-only Exclude or text predicates.
+
+Only a new move from a non-vice rank into level2 consumes the actual target Account's
+Current/NotActivated Premium decision (§3.2 lines131–133; §3.3 lines185–192). Existing
+vice-to-vice edits retain the exact leadership position without regrant; demotion deletes
+only that Account/Guild/Character position. Global Account contention is serialized by
+the native Account guard after Guild/member locks. No target root lock, caller Account,
+caller role or caller Premium flag supplies authority. The real writer revalidates the
+native target selector and current recovery/session/Node/member facts, applies expected
+revision CAS and emits one closed immutable rank receipt/event in the same transaction.
+NotActivated uses the actual coordinator's borrowed physical transaction and a savepoint;
+callback refusal/error cannot commit partial Guild/member/position/event mutation.
+
+GUILD0 §3.3 lines179–182 counts all current rank2 memberships for synchronous fourth-vice
+FORMING→ACTIVE activation, including retained vices whose Premium later lapses. The actor,
+leader and all other vices are not new Premium qualifications. ACTIVE below-four changes
+set the first vice deficit once; further deficit changes preserve it and a timely cure
+clears it. Formation/deficit deadline comparisons use the actual database transaction
+clock, with equality permitted and strictly late cure refused (§3.2 lines169–173).
+`premium_deficit_since` remains daily-job-owned and unchanged by this command. No daily
+job, formation scheduler, transfer-leadership or shared-runtime path is implemented here.
+
+The first coherent authored test set adds12 bodies (one pure and11 PostgreSQL families):
+closed request/audit binding; target Premium/position transitions; both rank inequalities
+and Guild/World scope; activation/first-deficit/cure; historical replay/conflicts/CAS/
+overflow; two-root revision/occurrence races; global Account contention; physical-TX
+savepoint/closed-SQL faults; current session/Node/recovery and target-selector recheck;
+real Found→Invite→Accept feed-through; exact physical database-clock deadlines; and shared
+Premium-latch ordering. The complete96638-byte inherited owner/helper prefix and all36
+previously qualified bodies remain literal; the candidate total is48 (12 pure/36 PG).
+
+All new native execution, ordinary Cargo compilation, Clippy, PostgreSQL and complete
+candidate qualification remain **UNVERIFIED** at this source checkpoint. Early core
+review47dce617 found no blocking semantic issue; it is not final source/native approval.
+The separate ordinary Cargo probe uses immutable snapshots, never a live author clone.
+Private SQL proposals stay uninstalled, and CP integration/production privileges/wire/
+event-retention/runtime boundaries from the prior increment remain open. Root alone
+publishes a reviewed candidate to existing draft PR2136; no ready/merge/queue action.
+
+### SetRank — actual native48 qualification
+
+The authored SetRank source at checkpoint `f205a399` passed ordinary native Cargo
+compilation and all48 focused unit tests:12 pure and36 PostgreSQL, zero failures and
+zero ignored. This reruns all36 inherited bodies with the12 new bodies; their complete
+96638-byte owner/helper prefix and unchanged domain file remain literal. The command
+inventory is now Found, Invite, Revoke, Accept, Leave, Exclude, SetTitle, SetMessage and
+SetRank. Rank changes require both current-role inequalities, an existing proposed rank,
+expected revision CAS and the actual target Account's Premium/position decision for a
+new vice promotion. The tested owner commits rank/position/revision/receipt/event and
+synchronous formation/vice-deficit transitions atomically.
+
+Validation used the literal native package, manifests/dependencies and Rust1.94.0 with
+`cargo test --locked --offline -p oteryn-game-server --lib guild::tests:: -- --nocapture --test-threads=1`.
+Four validation-only cfg(test) declarations in three outside registration roots mount
+the actual Guild/domain/audit and native PostgreSQL fixture modules. No body dispatcher,
+test-attribute rewrite, API shim, copied auth helper or new product lint exemption was introduced.
+The actual ELF list equals the48 expected native names;3194 other library tests were
+filtered and are not claimed as executed. All36 PG functions emitted actual native
+`GUILD-NATIVE-PG server_version_num=170006` markers,80 markers total. The full408356656-byte
+native test ELF `57af7b93` and the18813-file physical source inventory were unchanged
+before/after; the inventory is not a claim that every file was consumed by the compiler.
+
+The corrected strict native-unit Clippy check passed with zero diagnostics. It uses
+ordinary Cargo `--lib --profile test --no-deps` with the literal workspace lint policy
+and `-D warnings`; the actual primary compiler is `--test` with `profile.test=true`.
+This qualifies the native unit component, not a non-test production Guild graph.
+The first current strict Clippy run returned101 for ten `expect_used` diagnostics solely
+in the unchanged shared item-transfer PostgreSQL fixture, with zero authored-file
+diagnostics. The corrected validation fixture mount restores the exact inherited native
+allow block from ownHEAD `tests/guild_postgres.rs`; it changes no product/helper/test
+body or workspace lint policy. The initial RED remains retained separately.
+The earlier text-increment strict-production eight-dead-code RED is historical evidence,
+not a current production check. This component is registered only for validation under
+cfg(test); non-test production compilation/Clippy would omit Guild and is not claimed.
+CP still owns production module registration, SQL installation/privileges, admitted
+wire/event/retention contracts, runtime adoption, daily jobs and latest-main integration.
+The private SQL proposals remain uninstalled; no live gameplay entry or full-suite pass
+is inferred from these focused native results.
+
+The retained compile proof is `reviews/guild-rank-pc/f205-native-normal-cargo-compile-actual.json`
+(`2859e660`); runtime48 proof is `f205-native-normal-cargo-runtime48-actual.json` (`178fd56d`)
+and raw runtime log is `fcd7adf8`. Independent actual-native review `6b1d0ff7` verifies
+the focused48 result and its context/resource/source/PG proofs. Source reviews `0ab78391` and `744ae94e` independently
+verify current authority, same physical transaction, target Premium, lifecycle/deadlines,
+closed SQL/audit and all12 meaningful new test families. All four Rust files remain
+source1 bytes; this final append updates only the evidence record. Root alone publishes
+the reviewed successor to existing draft PR2136; no ready, merge or queue action.
+
+Current strict-unit Clippy proof: `f205-unit-clippy-strict-original-fixture-scope-GREEN-actual.json` (`f8d8afa9`);
+independent binding: `guild48-current-clippy-native-resource-review.json` (`c75cc304`).

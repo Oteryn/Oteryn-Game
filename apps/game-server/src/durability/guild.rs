@@ -9,7 +9,7 @@ use super::character_progression::{assert_session_fence, numeric_u64, uuid_text}
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::guild_audit::{GuildAuditProposal, GuildTextAuditProposal};
+use super::guild_audit::{GuildAuditProposal, GuildRankAuditProposal, GuildTextAuditProposal};
 use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -63,6 +63,7 @@ pub enum GuildCommand {
     /// Private proposed persistence kinds, not allocated protocol IDs.
     SetTitle(CharacterId),
     SetMessage,
+    SetRank(CharacterId),
 }
 impl GuildCommand {
     fn code(self) -> i16 {
@@ -75,11 +76,16 @@ impl GuildCommand {
             Self::Found => 6,
             Self::SetTitle(_) => 7,
             Self::SetMessage => 8,
+            Self::SetRank(_) => 9,
         }
     }
     fn target(self, actor: CharacterId) -> CharacterId {
         match self {
-            Self::Invite(c) | Self::Revoke(c) | Self::Exclude(c) | Self::SetTitle(c) => c,
+            Self::Invite(c)
+            | Self::Revoke(c)
+            | Self::Exclude(c)
+            | Self::SetTitle(c)
+            | Self::SetRank(c) => c,
             Self::Accept | Self::Leave | Self::Found | Self::SetMessage => actor,
         }
     }
@@ -159,6 +165,35 @@ impl GuildTextRequest {
             text,
         })
     }
+}
+
+/// Rank edit DATA only. Current ranks, Account position and Premium are resolved by the writer.
+#[derive(Debug, Clone)]
+pub(crate) struct GuildRankRequest {
+    common: GuildRequest,
+    expected_revision: u64,
+    level: GuildRank,
+}
+impl GuildRankRequest {
+    pub(crate) fn new(common: GuildRequest, expected_revision: u64, level: u8) -> Result<Self> {
+        if expected_revision == 0 || !matches!(common.operation, GuildCommand::SetRank(_)) {
+            return Err(GuildError::InvalidInput);
+        }
+        Ok(Self {
+            common,
+            expected_revision,
+            level: GuildRank::new(level).map_err(|_| GuildError::InvalidInput)?,
+        })
+    }
+}
+
+fn rank_binding(fence: &CurrentCharacterItemFence, rank: &GuildRankRequest) -> Result<Vec<u8>> {
+    let mut digest = Sha256::new();
+    digest.update(b"oteryn:guild-rank-proposal:v1");
+    digest.update(binding(fence, &rank.common)?);
+    digest.update(rank.expected_revision.to_be_bytes());
+    digest.update([rank.level.level()]);
+    Ok(digest.finalize().to_vec())
 }
 
 /// Policy outcomes under actual locked facts. No caller revision is required for these five
@@ -407,7 +442,10 @@ impl DurabilityRoot {
     ) -> Result<GuildOutcome> {
         if matches!(
             request.operation,
-            GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage
+            GuildCommand::Found
+                | GuildCommand::SetTitle(_)
+                | GuildCommand::SetMessage
+                | GuildCommand::SetRank(_)
         ) {
             return Err(GuildError::InvalidInput);
         }
@@ -440,6 +478,134 @@ impl DurabilityRoot {
             Some(text),
         )
         .await
+    }
+
+    /// GUILD0 §3.2/§3.3: mutate a real member's rank and its synchronous vice-count effects.
+    /// Only a new move into level2 consumes the actual TARGET Account's Premium decision.
+    pub(crate) async fn commit_guild_rank(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        rank: GuildRankRequest,
+        premium: &SpellPremiumCoordinator,
+    ) -> Result<GuildOutcome> {
+        let binding = rank_binding(&fence, &rank)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let pre_recovery = recovery.clone();
+        let pre_node = node.clone();
+        let pre_rank = rank.clone();
+        let pre_binding = binding.clone();
+        let preflight = self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let result = async {
+                    lock_fenced_guild_operation(&mut tx, &pre_recovery, &pre_rank.common).await?;
+                    if let Some(outcome) = replay(&mut tx, &pre_rank.common, &pre_binding).await? {
+                        return Ok(RankPreflight::Replayed(outcome));
+                    }
+                    assert_session_fence(&mut tx, &fence, &pre_node).await?
+                        .map_err(|_| GuildError::NotCurrent)?;
+                    // A selector read, never caller Account data or target session authority.
+                    // GUILD0-LO-01 explicitly takes no target root lock for this command.
+                    let target = pre_rank.common.operation.target(fence.character_id);
+                    let row = sqlx::query("SELECT account_id::text,world_id::text,lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(target.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                    let account = match row {
+                        Some(row) if row.try_get::<i16,_>("lifecycle")? == 1
+                            && uuid_text(&row.try_get::<String,_>("world_id")?)? == *fence.runtime_scope.world_id().as_bytes() =>
+                            Some(uuid_text(&row.try_get::<String,_>("account_id")?)?),
+                        _ => None,
+                    };
+                    Ok(RankPreflight::Fresh(account))
+                }.await;
+                match result {
+                    Ok(value) => { commit_semantic_transaction(tx, deadline).await?; Ok(Ok(value)) }
+                    Err(GuildError::Unavailable(error)) => Err(error),
+                    Err(error) => Ok(Err(error)),
+                }
+            })
+        }).await??;
+        let account = match preflight {
+            RankPreflight::Replayed(value) => return Ok(value),
+            RankPreflight::Fresh(account) => account,
+        };
+        let write = RankWrite {
+            node: node.clone(),
+            fence,
+            rank,
+            binding,
+            account,
+        };
+        let Some(account) = account else {
+            // Unknown/inactive/other-World target cannot acquire a Premium decision.
+            // The real writer rechecks all current facts and can only refuse without one.
+            return self.run_guild_rank_write(recovery, write, None).await;
+        };
+        let root = self.clone();
+        premium
+            .with_premium_gate(account, move |status, tx| {
+                Box::pin(async move {
+                    match tx {
+                        Some(tx) => {
+                            if !matches!(&status, PremiumStatus::NotActivated(_)) {
+                                return Err(invalid());
+                            }
+                            // The native gate commits its physical transaction even on callback error.
+                            let mut savepoint = tx.begin().await?;
+                            let result = write
+                                .execute(&mut savepoint, &recovery, Some(&status))
+                                .await;
+                            match result {
+                                Ok(outcome) => {
+                                    savepoint.commit().await?;
+                                    Ok(outcome)
+                                }
+                                Err(error) => {
+                                    savepoint.rollback().await?;
+                                    Err(error)
+                                }
+                            }
+                        }
+                        None => {
+                            let status: PremiumStatus<'static> = match status {
+                                PremiumStatus::Current => PremiumStatus::Current,
+                                PremiumStatus::NotCurrent => PremiumStatus::NotCurrent,
+                                PremiumStatus::NotActivated(_) => return Err(invalid()),
+                            };
+                            root.run_guild_rank_write(recovery, write, Some(status))
+                                .await
+                        }
+                    }
+                })
+            })
+            .await?
+    }
+
+    async fn run_guild_rank_write(
+        &self,
+        recovery: crate::character_recovery_fence::CharacterRecoveryFenceV1,
+        write: RankWrite,
+        premium: Option<PremiumStatus<'static>>,
+    ) -> Result<GuildOutcome> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = write.execute(&mut tx, &recovery, premium.as_ref()).await;
+                    match result {
+                        Ok(value) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(value))
+                        }
+                        Err(GuildError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
     }
 
     async fn commit_guild_operation(
@@ -480,6 +646,48 @@ impl DurabilityRoot {
                 })
             })
             .await?
+    }
+}
+
+enum RankPreflight {
+    Replayed(GuildOutcome),
+    Fresh(Option<[u8; 16]>),
+}
+struct RankWrite {
+    node: NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    rank: GuildRankRequest,
+    binding: Vec<u8>,
+    account: Option<[u8; 16]>,
+}
+struct RankEdit<'a, 'premium> {
+    request: &'a GuildRankRequest,
+    account: Option<[u8; 16]>,
+    premium: Option<&'a PremiumStatus<'premium>>,
+}
+impl RankWrite {
+    async fn execute(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+        premium: Option<&PremiumStatus<'_>>,
+    ) -> Result<GuildOutcome> {
+        lock_fenced_guild_operation(tx, recovery, &self.rank.common).await?;
+        let edit = RankEdit {
+            request: &self.rank,
+            account: self.account,
+            premium,
+        };
+        execute(
+            tx,
+            &self.node,
+            &self.fence,
+            &self.rank.common,
+            &self.binding,
+            None,
+            Some(&edit),
+        )
+        .await
     }
 }
 
@@ -577,6 +785,7 @@ impl FoundWrite {
                     audit: None,
                     found_name: Some(self.name.as_str()),
                     text: None,
+                    rank: None,
                 },
             )
             .await;
@@ -616,6 +825,7 @@ impl FoundWrite {
                 audit: Some(&audit),
                 found_name: Some(self.name.as_str()),
                 text: None,
+                rank: None,
             },
         )
         .await?;
@@ -683,10 +893,18 @@ async fn execute_fenced_operation(
     binding: &[u8],
     text: Option<&GuildTextRequest>,
 ) -> Result<GuildOutcome> {
+    lock_fenced_guild_operation(tx, recovery, request).await?;
+    execute(tx, node, fence, request, binding, text, None).await
+}
+
+async fn lock_fenced_guild_operation(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    request: &GuildRequest,
+) -> Result<()> {
     assert_recovery_fence(tx, recovery).await?;
     lock_admission_relations(tx).await?;
-    lock_operation(tx, request).await?;
-    execute(tx, node, fence, request, binding, text).await
+    lock_operation(tx, request).await
 }
 
 async fn execute(
@@ -696,6 +914,7 @@ async fn execute(
     request: &GuildRequest,
     binding: &[u8],
     text: Option<&GuildTextRequest>,
+    rank: Option<&RankEdit<'_, '_>>,
 ) -> Result<GuildOutcome> {
     if let Some(row) = sqlx::query("SELECT request_binding,result,previous_revision::text,revision::text,transaction_id::text,event_id::text FROM game_guild_operations WHERE occurrence=encode($1,'hex')::uuid")
         .bind(request.identity.occurrence.as_slice()).fetch_optional(&mut **tx).await? {
@@ -823,6 +1042,197 @@ async fn execute(
     };
     let acting = member(actor)?;
     let subject = member(target)?;
+    if let Some(edit) = rank {
+        let desired = edit.request.level.level();
+        let target_root = sqlx::query("SELECT account_id::text,world_id::text,lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(target.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        let target_account = match target_root {
+            Some(row)
+                if row.try_get::<i16, _>("lifecycle")? == 1
+                    && uuid_text(&row.try_get::<String, _>("world_id")?)?
+                        == *fence.runtime_scope.world_id().as_bytes() =>
+            {
+                Some(uuid_text(&row.try_get::<String, _>("account_id")?)?)
+            }
+            _ => None,
+        };
+        if target_account != edit.account {
+            return Err(GuildError::NotCurrent);
+        }
+        let rank_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_ranks WHERE guild_id=encode($1,'hex')::uuid AND level=$2)")
+            .bind(request.guild_id.as_bytes().as_slice()).bind(i16::from(desired)).fetch_one(&mut **tx).await?;
+        let allowed = match (&acting, &subject) {
+            (Some(a), Some(t)) if target_account.is_some() && rank_exists => {
+                GuildRank::new(a.rank).map_err(|_| invalid())?.may_set_rank(
+                    GuildRank::new(t.rank).map_err(|_| invalid())?,
+                    edit.request.level,
+                )
+            }
+            _ => false,
+        };
+        let refusal = if !allowed {
+            Some(GuildResult::NotAllowed)
+        } else if edit.request.expected_revision != previous {
+            Some(GuildResult::StaleRevision)
+        } else {
+            None
+        };
+        if let Some(result) = refusal {
+            return store(
+                tx,
+                fence,
+                request,
+                binding,
+                result,
+                (Some(previous), None),
+                None,
+            )
+            .await;
+        }
+        let before = subject.as_ref().ok_or_else(invalid)?.rank;
+        let account = target_account.ok_or_else(invalid)?;
+        let guard: Option<i32> = sqlx::query_scalar("SELECT 1 FROM game_character_account_guards WHERE account_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(account.as_slice()).fetch_optional(&mut **tx).await?;
+        if guard.is_none() {
+            return Err(GuildError::NotCurrent);
+        }
+        let position = sqlx::query("SELECT guild_id::text,character_id::text FROM game_account_guild_leadership WHERE account_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(account.as_slice()).fetch_optional(&mut **tx).await?;
+        if before == 2 {
+            let Some(row) = &position else {
+                return Err(invalid());
+            };
+            if uuid_text(&row.try_get::<String, _>("guild_id")?)? != *request.guild_id.as_bytes()
+                || uuid_text(&row.try_get::<String, _>("character_id")?)? != *target.as_bytes()
+            {
+                return Err(invalid());
+            }
+        }
+        let promoting = before != 2 && desired == 2;
+        let refusal = if promoting && position.is_some() {
+            Some(GuildResult::AccountHasPosition)
+        } else if promoting
+            && !matches!(
+                edit.premium,
+                Some(PremiumStatus::Current | PremiumStatus::NotActivated(_))
+            )
+        {
+            Some(GuildResult::NotPremium)
+        } else {
+            None
+        };
+        if let Some(result) = refusal {
+            return store(
+                tx,
+                fence,
+                request,
+                binding,
+                result,
+                (Some(previous), None),
+                None,
+            )
+            .await;
+        }
+        let vices: i64 = sqlx::query_scalar("SELECT count(*) FROM game_guild_members WHERE guild_id=encode($1,'hex')::uuid AND rank_level=2")
+            .bind(request.guild_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let after_vices = vices - i64::from(before == 2) + i64::from(desired == 2);
+        let now: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM transaction_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&mut **tx)
+        .await?;
+        if state
+            .ensure_vice_count_change_allowed(
+                usize::try_from(after_vices).map_err(|_| invalid())?,
+                guild.try_get("formation_deadline")?,
+                guild.try_get("vice_deficit_since")?,
+                now,
+            )
+            .is_err()
+        {
+            return store(
+                tx,
+                fence,
+                request,
+                binding,
+                GuildResult::GuildDeadlinePassed,
+                (Some(previous), None),
+                None,
+            )
+            .await;
+        }
+        // GUILD0 §3.3 counts actual vice memberships, including retained ranks after Premium lapse.
+        // Premium leadership counts belong only to the daily job; never write its deficit here.
+        let activates = state == GuildState::Forming && after_vices >= 4;
+        let next_state = if activates {
+            2_i16
+        } else {
+            guild.try_get::<i16, _>("state")?
+        };
+        let old_deficit: Option<i64> = guild.try_get("vice_deficit_since")?;
+        let deficit = if next_state == 2 {
+            if after_vices >= 4 {
+                None
+            } else {
+                old_deficit.or(Some(now))
+            }
+        } else {
+            old_deficit
+        };
+        let next = previous.checked_add(1).ok_or_else(invalid)?;
+        let audit = GuildRankAuditProposal {
+            operation: GuildAuditProposal {
+                version: 1,
+                occurrence: request.identity.occurrence,
+                transaction_id: request.identity.transaction_id,
+                event_id: request.identity.event_id,
+                guild_id: *request.guild_id.as_bytes(),
+                world_id: *fence.runtime_scope.world_id().as_bytes(),
+                actor: *actor.as_bytes(),
+                target: *target.as_bytes(),
+                action: 9,
+                previous_revision: previous,
+                revision: next,
+                rank_before: Some(before),
+                rank_after: Some(desired),
+                removed_invitations: 0,
+                occurred_at_unix_ms: request.identity.occurred_at_unix_ms,
+            },
+            expected_revision: edit.request.expected_revision,
+        }
+        .checked_bytes()
+        .ok_or_else(invalid)?;
+        let outcome = store_operation(
+            tx,
+            fence,
+            request,
+            binding,
+            GuildResult::Ok,
+            OperationPayload {
+                revisions: (Some(previous), Some(next)),
+                audit: Some(&audit),
+                found_name: None,
+                text: None,
+                rank: Some((edit.request, before)),
+            },
+        )
+        .await?;
+        sqlx::query("UPDATE game_guild_members SET rank_level=$3 WHERE guild_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+            .bind(request.guild_id.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).bind(i16::from(desired)).execute(&mut **tx).await?;
+        if promoting {
+            sqlx::query("INSERT INTO game_account_guild_leadership(account_id,guild_id,character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+                .bind(account.as_slice()).bind(request.guild_id.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).execute(&mut **tx).await?;
+        } else if before == 2 && desired != 2 {
+            let changed = sqlx::query("DELETE FROM game_account_guild_leadership WHERE account_id=encode($1,'hex')::uuid AND guild_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
+                .bind(account.as_slice()).bind(request.guild_id.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).execute(&mut **tx).await?;
+            if changed.rows_affected() != 1 {
+                return Err(invalid());
+            }
+        }
+        sqlx::query("UPDATE game_guilds SET revision=$2::text::numeric,state=$3,vice_deficit_since=$4 WHERE guild_id=encode($1,'hex')::uuid")
+            .bind(request.guild_id.as_bytes().as_slice()).bind(next.to_string()).bind(next_state).bind(deficit).execute(&mut **tx).await?;
+        return Ok(outcome);
+    }
     if let Some(text) = text {
         let allowed = match request.operation {
             GuildCommand::SetTitle(_) => {
@@ -885,6 +1295,7 @@ async fn execute(
                 audit: Some(&audit),
                 found_name: None,
                 text: Some(text),
+                rank: None,
             },
         )
         .await?;
@@ -1002,7 +1413,10 @@ async fn execute(
                 GuildResult::Ok
             }
         }
-        GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage => {
+        GuildCommand::Found
+        | GuildCommand::SetTitle(_)
+        | GuildCommand::SetMessage
+        | GuildCommand::SetRank(_) => {
             return Err(GuildError::InvalidInput);
         }
         GuildCommand::Leave => match member_in_guild(&acting, &request.guild_id) {
@@ -1123,7 +1537,10 @@ async fn execute(
             }
         }
         GuildCommand::Revoke(_) => {}
-        GuildCommand::Found | GuildCommand::SetTitle(_) | GuildCommand::SetMessage => {
+        GuildCommand::Found
+        | GuildCommand::SetTitle(_)
+        | GuildCommand::SetMessage
+        | GuildCommand::SetRank(_) => {
             return Err(GuildError::InvalidInput);
         }
     }
@@ -1176,6 +1593,7 @@ async fn store(
             audit,
             found_name: None,
             text: None,
+            rank: None,
         },
     )
     .await
@@ -1186,6 +1604,7 @@ struct OperationPayload<'a> {
     audit: Option<&'a [u8]>,
     found_name: Option<&'a str>,
     text: Option<&'a GuildTextRequest>,
+    rank: Option<(&'a GuildRankRequest, u8)>,
 }
 
 async fn store_operation(
@@ -1201,14 +1620,15 @@ async fn store_operation(
         audit,
         found_name,
         text,
+        rank,
     } = payload;
     let event = audit.map(|_| request.identity.event_id);
-    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name,expected_revision,edit_text) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17,$18::text::numeric,$19)")
+    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name,expected_revision,edit_text,previous_rank,edit_rank) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17,$18::text::numeric,$19,$20,$21)")
         .bind(request.identity.occurrence.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice())
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.guild_id.as_bytes().as_slice())
         .bind(request.operation.target(fence.character_id).as_bytes().as_slice()).bind(request.operation.code()).bind(binding).bind(result.code())
-        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name).bind(text.map(|t| t.expected_revision.to_string())).bind(text.map(|t| t.text.as_str()))
+        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name).bind(text.map(|t| t.expected_revision).or_else(||rank.map(|(r,_)|r.expected_revision)).map(|r|r.to_string())).bind(text.map(|t| t.text.as_str())).bind(rank.map(|(_,before)|i16::from(before))).bind(rank.map(|(r,_)|i16::from(r.level.level())))
         .execute(&mut **tx).await?;
     if let Some(audit) = audit {
         sqlx::query("INSERT INTO game_guild_event_outbox(event_id,occurrence,guild_id,occurred_at,payload,payload_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,sha256($5))")
@@ -1284,15 +1704,17 @@ CREATE TABLE game_guild_operations(
  game_session_id UUID NOT NULL CHECK(game_character_is_uuid_v7(game_session_id)),
  command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
  actor UUID NOT NULL REFERENCES game_character_roots,world_id UUID NOT NULL,guild_id UUID NOT NULL,
- target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 8),
+ target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 9),
  request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 12),
  previous_revision NUMERIC(20,0),revision NUMERIC(20,0),event_id UUID UNIQUE,audit_sha256 BYTEA,
  found_name TEXT CHECK((action=6 AND found_name IS NOT NULL AND game_character_is_name(found_name)) OR (action<>6 AND found_name IS NULL)),
- expected_revision NUMERIC(20,0),edit_text TEXT,
+ expected_revision NUMERIC(20,0),edit_text TEXT,previous_rank SMALLINT,edit_rank SMALLINT,
  CHECK(CASE WHEN action IN(7,8) AND result=0 THEN expected_revision IS NOT NULL AND expected_revision=previous_revision AND expected_revision>=1 AND edit_text IS NOT NULL
    AND ((action=7 AND char_length(edit_text)<=29) OR (action=8 AND char_length(edit_text) BETWEEN 1 AND 255 AND octet_length(edit_text)<=1020))
+   WHEN action=9 AND result=0 THEN expected_revision IS NOT NULL AND expected_revision=previous_revision AND expected_revision>=1 AND edit_text IS NULL
    ELSE expected_revision IS NULL AND edit_text IS NULL END),
- CHECK(result<>12 OR action IN(7,8)),
+ CHECK(CASE WHEN action=9 AND result=0 THEN previous_rank BETWEEN 2 AND 20 AND previous_rank IS NOT NULL AND edit_rank BETWEEN 2 AND 20 AND edit_rank IS NOT NULL ELSE previous_rank IS NULL AND edit_rank IS NULL END),
+ CHECK(result<>12 OR action IN(7,8,9)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
  UNIQUE(game_session_id,command_id),UNIQUE(created_xact_id),
  CHECK(CASE WHEN result=0 THEN previous_revision IS NOT NULL AND revision IS NOT NULL
@@ -1325,7 +1747,7 @@ DO $$ DECLARE tab TEXT;BEGIN
 END $$;
 
 CREATE FUNCTION game_guild_command_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE o game_guild_operations%ROWTYPE;r SMALLINT;w UUID;n BIGINT;
+DECLARE o game_guild_operations%ROWTYPE;r SMALLINT;w UUID;n BIGINT;now_millis BIGINT;rank_state SMALLINT;rank_deficit BIGINT;
 BEGIN
  SELECT * INTO o FROM game_guild_operations WHERE created_xact_id=pg_current_xact_id() AND result=0;
  IF NOT FOUND THEN RAISE EXCEPTION 'Guild mutation requires its same-transaction operation' USING ERRCODE='23514';END IF;
@@ -1337,6 +1759,22 @@ BEGIN
       OR NEW.created_at<>n OR NEW.formation_deadline<>n+259200000
       OR NEW.vice_deficit_since IS NOT NULL OR NEW.premium_deficit_since IS NOT NULL OR NEW.motd<>'' THEN
     RAISE EXCEPTION 'Found must create exactly its bound initial Guild' USING ERRCODE='23514';END IF;
+   RETURN NEW;
+  END IF;
+  IF o.action=9 THEN
+   SELECT rank_level INTO r FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.actor;
+   SELECT count(*) INTO n FROM game_guild_members WHERE guild_id=o.guild_id AND rank_level=2;
+   now_millis=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint;
+   rank_state=CASE WHEN OLD.state=1 AND n>=4 THEN 2 ELSE OLD.state END;
+   rank_deficit=CASE WHEN rank_state=2 AND n>=4 THEN NULL WHEN rank_state=2 THEN coalesce(OLD.vice_deficit_since,now_millis) ELSE OLD.vice_deficit_since END;
+   IF TG_OP<>'UPDATE' OR OLD.guild_id<>o.guild_id OR OLD.world_id<>o.world_id OR OLD.state NOT IN(1,2)
+      OR OLD.revision<>o.expected_revision OR OLD.revision<>o.previous_revision OR NEW.revision<>o.revision
+      OR NOT coalesce(r<o.previous_rank AND r<o.edit_rank,false)
+      OR NEW.state<>rank_state OR NEW.vice_deficit_since IS DISTINCT FROM rank_deficit
+      OR (to_jsonb(OLD)-'revision'-'state'-'vice_deficit_since'-'name_key')<>(to_jsonb(NEW)-'revision'-'state'-'vice_deficit_since'-'name_key')
+      OR (n>=4 AND ((OLD.state=1 AND now_millis>OLD.formation_deadline)
+          OR (OLD.state=2 AND OLD.vice_deficit_since IS NOT NULL AND now_millis::numeric-OLD.vice_deficit_since::numeric>1209600000))) THEN
+    RAISE EXCEPTION 'rank edit requires actual roles/revision and exact synchronous lifecycle' USING ERRCODE='23514';END IF;
    RETURN NEW;
   END IF;
   IF o.action IN(7,8) THEN
@@ -1380,6 +1818,15 @@ BEGIN
       OR NOT EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=o.guild_id AND character_id=o.actor AND expires_at>floor(extract(epoch FROM transaction_timestamp())*1000)::bigint) THEN
     RAISE EXCEPTION 'join must consume the actual live invitation into the lowest rank' USING ERRCODE='23514';END IF;
    RETURN NEW;
+  ELSIF TG_OP='UPDATE' AND o.action=9 THEN
+   SELECT rank_level INTO r FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.actor;
+   IF OLD.guild_id<>o.guild_id OR OLD.character_id<>o.target OR OLD.rank_level<>o.previous_rank OR NEW.rank_level<>o.edit_rank
+      OR NOT coalesce(r<OLD.rank_level AND r<NEW.rank_level,false)
+      OR (to_jsonb(OLD)-'rank_level')<>(to_jsonb(NEW)-'rank_level')
+      OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=o.guild_id AND world_id=o.world_id AND state IN(1,2) AND revision=o.expected_revision)
+      OR NOT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=o.target AND world_id=o.world_id AND lifecycle=1) THEN
+    RAISE EXCEPTION 'rank edit requires its exact current member/role/bound levels' USING ERRCODE='23514';END IF;
+   RETURN NEW;
   ELSIF TG_OP='UPDATE' AND o.action=7 THEN
    SELECT rank_level INTO r FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.actor;
    IF r IS DISTINCT FROM 1 OR OLD.guild_id<>o.guild_id OR OLD.character_id<>o.target OR NEW.title IS DISTINCT FROM o.edit_text
@@ -1414,9 +1861,15 @@ BEGIN
    RAISE EXCEPTION 'Found must create its three bound default ranks' USING ERRCODE='23514';END IF;
   RETURN NEW;
  ELSIF TG_TABLE_NAME='game_account_guild_leadership' AND TG_OP='INSERT' THEN
+  IF o.action=9 AND o.previous_rank<>2 AND o.edit_rank=2 AND NEW.guild_id=o.guild_id AND NEW.character_id=o.target
+     AND NEW.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.target)
+     AND EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.target AND rank_level=2) THEN RETURN NEW;END IF;
   IF o.action=6 AND NEW.guild_id=o.guild_id AND NEW.character_id=o.actor
      AND NEW.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.actor) THEN RETURN NEW;END IF;
  ELSIF TG_TABLE_NAME='game_account_guild_leadership' AND TG_OP='DELETE' THEN
+  IF o.action=9 AND o.previous_rank=2 AND o.edit_rank<>2 AND OLD.guild_id=o.guild_id AND OLD.character_id=o.target
+     AND OLD.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.target)
+     AND EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=o.guild_id AND character_id=o.target AND rank_level=o.edit_rank) THEN RETURN OLD;END IF;
   IF o.action IN(4,5) AND OLD.guild_id=o.guild_id AND OLD.character_id=o.target
      AND OLD.account_id=(SELECT account_id FROM game_character_roots WHERE character_id=o.target) THEN RETURN OLD;END IF;
  END IF;
@@ -1470,7 +1923,9 @@ BEGIN
        OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level=1)))
      OR (NEW.action=8 AND (NEW.target<>NEW.actor OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND motd=NEW.edit_text)
        OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level<=2)))
-     OR (NEW.action IN(7,8) AND NEW.expected_revision IS DISTINCT FROM NEW.previous_revision)
+     OR (NEW.action IN(7,8,9) AND NEW.expected_revision IS DISTINCT FROM NEW.previous_revision)
+     OR (NEW.action=9 AND (NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.target AND rank_level=NEW.edit_rank)
+       OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level<NEW.previous_rank AND rank_level<NEW.edit_rank)))
      OR (NEW.action=6 AND (
        NEW.actor<>NEW.target OR NEW.previous_revision<>0 OR NEW.revision<>1
        OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND name=NEW.found_name AND state=1 AND vice_deficit_since IS NULL AND premium_deficit_since IS NULL AND motd='')
@@ -1494,6 +1949,10 @@ BEGIN
  IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS(SELECT 1 FROM game_guild_operations o WHERE o.occurrence=NEW.occurrence AND o.result=0 AND o.guild_id=NEW.guild_id AND o.event_id=NEW.event_id AND o.audit_sha256=NEW.payload_sha256 AND o.created_xact_id=pg_current_xact_id()
    AND (o.action NOT IN(7,8) OR ((convert_from(NEW.payload,'UTF8')::jsonb->>'text') IS NOT DISTINCT FROM o.edit_text
       AND (convert_from(NEW.payload,'UTF8')::jsonb->>'expected_revision')::numeric IS NOT DISTINCT FROM o.expected_revision
+      AND (convert_from(NEW.payload,'UTF8')::jsonb->>'action')::smallint=o.action))
+   AND (o.action<>9 OR ((convert_from(NEW.payload,'UTF8')::jsonb->>'expected_revision')::numeric=o.expected_revision
+      AND (convert_from(NEW.payload,'UTF8')::jsonb->>'rank_before')::smallint=o.previous_rank
+      AND (convert_from(NEW.payload,'UTF8')::jsonb->>'rank_after')::smallint=o.edit_rank
       AND (convert_from(NEW.payload,'UTF8')::jsonb->>'action')::smallint=o.action))) THEN
   RAISE EXCEPTION 'Guild event has no matching operation' USING ERRCODE='23514';END IF;
  RETURN NULL;
