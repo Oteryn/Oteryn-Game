@@ -736,6 +736,30 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
+                    // Capacity is checked only for a fresh Ground root, after the
+                    // historical receipt and the real current writer fence above.
+                    let death = &frozen.request.cause.death;
+                    if let Err(error) =
+                        super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+                            &mut tx,
+                            permit,
+                            &recovery,
+                            &node,
+                            (
+                                crate::foundation::RuntimeScopeRefV1::channel(
+                                    death.world_id,
+                                    death.channel_id,
+                                ),
+                                death.scope_ownership_generation.get(),
+                            ),
+                            &frozen.request.ground,
+                            &frozen.item_instance_id,
+                        )
+                        .await
+                    {
+                        return Ok(Err(error.into_item_mint_error()));
+                    }
+
                     let tuple = match tx.frozen_tuple(&frozen.envelope) {
                         Ok(tuple) => tuple,
                         Err(error) => return Ok(Err(error.into())),
@@ -877,6 +901,30 @@ impl DurabilityRoot {
                         || !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await?
                     {
                         return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
+
+                    // Capacity is checked only for a fresh Ground root, after the
+                    // historical receipt and the real current writer fence above.
+                    let death = &frozen.request.cause.death;
+                    if let Err(error) =
+                        super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+                            &mut tx,
+                            permit,
+                            &recovery,
+                            &node,
+                            (
+                                crate::foundation::RuntimeScopeRefV1::channel(
+                                    death.world_id,
+                                    death.channel_id,
+                                ),
+                                death.scope_ownership_generation.get(),
+                            ),
+                            &frozen.request.ground,
+                            &frozen.item_instance_id,
+                        )
+                        .await
+                    {
+                        return Ok(Err(error.into_item_mint_error()));
                     }
 
                     let tuple = match tx.frozen_tuple(&frozen.envelope) {

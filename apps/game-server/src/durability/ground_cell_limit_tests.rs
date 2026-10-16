@@ -1,5 +1,10 @@
-use super::*;
+use crate::durability::ground_cell_limit::{
+    GroundCellLimitError, check_ground_cell_root_admission,
+};
+use crate::durability::item_mint::GroundItemInstance;
 use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
+use crate::durability::spell_items_abi::SpellGroundTarget;
+use crate::foundation::{ChannelId, WorldId};
 
 fn uuid(n: u8) -> [u8; 16] {
     let mut value = [0; 16];
@@ -229,23 +234,94 @@ fn repeated_reload_evaluation_has_no_memory_or_mutation() {
     );
 }
 
+#[test]
+fn only_the_typed_room_limit_maps_to_native_mint_capacity() {
+    use crate::durability::ground_cell_limit::GroundCellAdmissionError;
+    use crate::durability::item_mint::ItemMintError;
+    use crate::durability::map_item_mint::MapItemMintError;
+    use crate::durability::spell_item_transaction::SpellItemError;
+    assert!(matches!(
+        GroundCellAdmissionError::Limit(GroundCellLimitError::NotEnoughRoom).into_item_mint_error(),
+        ItemMintError::CapacityExceeded
+    ));
+    assert!(matches!(
+        GroundCellAdmissionError::Limit(GroundCellLimitError::NotEnoughRoom)
+            .into_map_item_mint_error(),
+        MapItemMintError::CapacityExceeded
+    ));
+    for reason in [
+        "unreconciled opaque or incompatible Ground placement",
+        "tile item snapshot exceeds 500 visited items",
+        "tile read requires same physical owner transaction",
+        "not enough room",
+    ] {
+        assert!(matches!(
+            GroundCellAdmissionError::Source(SpellItemError::Rejected(reason))
+                .into_item_mint_error(),
+            ItemMintError::Unavailable(_)
+        ));
+        assert!(matches!(
+            GroundCellAdmissionError::Source(SpellItemError::Rejected(reason))
+                .into_map_item_mint_error(),
+            MapItemMintError::Unavailable(_)
+        ));
+    }
+}
+
+#[test]
+fn current_scope_issuer_failure_stays_authority_and_native_source_error_stays_source() {
+    use crate::durability::ground_cell_limit::GroundCellAdmissionError;
+    use crate::durability::item_mint::ItemMintError;
+    use crate::durability::map_item_mint::MapItemMintError;
+    use crate::durability::spell_item_transaction::SpellItemError;
+    assert!(matches!(
+        GroundCellAdmissionError::Source(SpellItemError::Rejected(
+            "current timer scope/node authority"
+        ))
+        .into_item_mint_error(),
+        ItemMintError::AuthorityRejected
+    ));
+    assert!(matches!(
+        GroundCellAdmissionError::Source(SpellItemError::Rejected(
+            "current timer scope/node authority"
+        ))
+        .into_map_item_mint_error(),
+        MapItemMintError::AuthorityRejected
+    ));
+    assert!(matches!(
+        GroundCellAdmissionError::Source(SpellItemError::Durability(
+            crate::durability::DurabilityError::RootUnavailable
+        ))
+        .into_spell_error(),
+        SpellItemError::Durability(crate::durability::DurabilityError::RootUnavailable)
+    ));
+}
+
 /// PostgreSQL cases use real native source MINT/TRANSFER writers and current
 /// Root/Node/recovery/scope predicates. Prospective insertions remain DATA.
 mod postgres {
-    use super::super::*;
     use crate::bestiary_postgres_harness as harness;
+    use crate::durability::ground_cell_limit::{
+        GroundCellAdmissionError, GroundCellLimitError,
+        check_ground_cell_root_admission_in_transaction,
+    };
+    use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
     use crate::durability::item_mint::{
         ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
     };
     use crate::durability::item_transfer::{
         ItemDefinitionFacts, ItemStackClass, ItemTransferDestination, ItemTransferRequest,
     };
+    use crate::durability::spell_item_transaction::SpellItemError;
     use crate::durability::spell_item_transaction::{
         SpellItemScopeAuthority, assert_spell_item_scope_in_transaction,
     };
+    use crate::durability::spell_items_abi::SpellGroundTarget;
     use crate::durability::spell_owner_commit::SpellLanePermit;
+    use crate::foundation::{ChannelId, WorldId};
     use crate::foundation::{CommandId, CommandRef, GameSessionId, ScopeOwnershipGeneration};
     use harness::{CHANNEL, Harness, TestResult, WORLD, debug, id};
+    use sqlx::{Postgres, Transaction};
 
     fn run<F>(tag: &'static str, body: F) -> TestResult
     where
@@ -402,9 +478,830 @@ mod postgres {
         Ok(ids)
     }
 
+    async fn frozen_mint(
+        h: &Harness,
+        actor: u32,
+        at: &SpellGroundTarget,
+        purpose: &str,
+    ) -> TestResult<crate::durability::item_mint::ItemMintCandidate> {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        h.root
+            .freeze_item_mint(
+                &recovery,
+                &h.node,
+                ItemMintRequest {
+                    cause: ItemMintCause::for_test(
+                        WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                        actor,
+                        1,
+                        TypedDefinitionRef {
+                            family: "LootTable".into(),
+                            production_key: "fixture:ground.loot".into(),
+                            revision_ref: "definition-r1".into(),
+                        },
+                        purpose.into(),
+                        0,
+                    ),
+                    item: definition(),
+                    quantity: 1,
+                    ground: GroundPlacement {
+                        spatial_position: at.spatial_position.clone(),
+                        corpse_ref: id(3).to_vec(),
+                        map_revision: at.map_revision.clone(),
+                        content_revision: at.content_revision.clone(),
+                        native_room_placement_context: at.placement_context.clone(),
+                    },
+                    content_revision: "content-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    sim_revision: "sim-1".into(),
+                },
+            )
+            .await
+            .map_err(|error| debug(error).into())
+    }
+
+    async fn mint_footprint(h: &Harness) -> TestResult<[i64; 4]> {
+        Ok([
+            h.count("game_item_instances").await?,
+            h.count("game_item_ground_locations").await?,
+            h.count("game_item_mint_receipts").await?,
+            h.count("game_item_audit_outbox").await?,
+        ])
+    }
+
+    fn command(number: u64) -> TestResult<CommandRef> {
+        Ok(CommandRef::new(
+            GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
+            CommandId::new(number).map_err(debug)?,
+        ))
+    }
+
+    async fn player_authority(
+        tx: &mut Transaction<'_, Postgres>,
+        h: &Harness,
+        command: CommandRef,
+    ) -> TestResult<(
+        SpellLanePermit,
+        crate::durability::spell_item_transaction::SpellItemAuthority,
+    )> {
+        let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let authority =
+            crate::durability::spell_item_transaction::assert_spell_item_authority_in_transaction(
+                tx,
+                &permit,
+                &h.root,
+                &recovery,
+                &h.node,
+                &harness::item_fence()?,
+                command,
+                [7; 32],
+            )
+            .await
+            .map_err(debug)?;
+        Ok((permit, authority))
+    }
+
+    fn ground_placement(at: &SpellGroundTarget) -> GroundPlacement {
+        GroundPlacement {
+            spatial_position: at.spatial_position.clone(),
+            corpse_ref: id(3).to_vec(),
+            map_revision: at.map_revision.clone(),
+            content_revision: at.content_revision.clone(),
+            native_room_placement_context: at.placement_context.clone(),
+        }
+    }
+
+    fn spell_definition() -> crate::durability::spell_items_abi::QualifiedItemDefinition {
+        // Explicit native SQL-writer definition input fixture, not an assertion
+        // that a runtime cast or compatible Content producer was admitted.
+        crate::durability::spell_items_abi::QualifiedItemDefinition {
+            definition: TypedDefinitionRef {
+                production_key: "fixture:ground.conjured".into(),
+                ..definition()
+            },
+            content_generation_digest: [7; 32],
+            materializable: true,
+            movable: true,
+            stack_maximum: 100,
+            container_capacity: None,
+            inventory_destination: true,
+            ground_destination: true,
+            decay: None,
+            decay_chain: Vec::new(),
+        }
+    }
+
+    fn spell_mint(number: u8) -> crate::durability::spell_items_abi::SpellItemOperation {
+        crate::durability::spell_items_abi::SpellItemOperation::MintGround {
+            item_instance_id: id(number),
+            definition: spell_definition(),
+            quantity: 1,
+            placement: ground_placement(&target()),
+            lifetime_millis: None,
+            blocks_movement: false,
+            blocks_projectile: false,
+            description: None,
+        }
+    }
+
+    fn spell_request(
+        number: u64,
+        transaction: u8,
+        operations: Vec<crate::durability::spell_items_abi::SpellItemOperation>,
+    ) -> TestResult<crate::durability::spell_items_abi::SpellItemTransactionRequest> {
+        use crate::durability::spell_items_abi::{CastCostBinding, SpellItemTransactionRequest};
+        Ok(SpellItemTransactionRequest {
+            command: command(number)?,
+            spell: TypedDefinitionRef {
+                family: "Spell".into(),
+                production_key: "fixture:ground.spell".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            catalog_digest: [7; 32],
+            transaction_id: id(transaction),
+            event_id: id(transaction + 1),
+            cost: CastCostBinding {
+                vitals_revision_before: 1,
+                vitals_revision_after: 2,
+                mana_before: 200,
+                mana_after: 180,
+                soul_before: 100,
+                soul_after: 100,
+                cooldowns_before: Vec::new(),
+                cooldowns_after: vec![("spell:fixture_ground".into(), 100_000)],
+                caster_digest_before: [11; 32],
+                caster_digest_after: [12; 32],
+            },
+            caster_origin: None,
+            operations,
+            companion: None,
+            direct_companion: None,
+        })
+    }
+
+    async fn spell_footprint(h: &Harness) -> TestResult<[i64; 7]> {
+        Ok([
+            h.count("game_item_instances").await?,
+            h.count("game_item_ground_locations").await?,
+            h.count("game_spell_item_receipts").await?,
+            h.count("game_spell_item_lines").await?,
+            h.count("game_spell_item_audit_outbox").await?,
+            h.count("game_spell_item_source_descriptions").await?,
+            h.count("game_spell_field_temporal_schedules").await?,
+        ])
+    }
+
+    async fn readiness_footprint(h: &Harness) -> TestResult<[i64; 5]> {
+        Ok([
+            h.count("game_item_instances").await?,
+            h.count("game_item_ground_locations").await?,
+            h.count("game_item_mint_receipts").await?,
+            h.count("game_item_audit_outbox").await?,
+            h.count("game_map_item_mint_receipts").await?,
+        ])
+    }
+
     #[test]
-    fn native_locked_census_enforces_64_and_preserves_zero_admission_overfull_truth() -> TestResult
+    fn genuine_not_ready_publication_refuses_fresh_mint_corpse_and_map_without_room_classification()
+    -> TestResult {
+        run("ground_not_ready", async |h| {
+            use crate::durability::admission_authority_guards::{
+                AdmissionGuardStore, GuardPublicationDisposition,
+            };
+            use crate::durability::item_mint::{
+                CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
+                ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
+            };
+            use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+            use crate::durability::map_item_mint::{MapItemMintError, MapItemMintRequest};
+            use crate::durability::map_item_mint_audit::{
+                map_item_spatial_position, map_revision_of,
+            };
+            use crate::durability::spell_owner_commit::SpellLanePermit;
+            use crate::foundation::admission_authority_publication::{
+                AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+                AdmissionPublicationPreconditionV1,
+            };
+            use crate::foundation::{
+                ChannelId, CommandId, CommandRef, GameSessionId, ScopeOwnershipGeneration, WorldId,
+            };
+
+            let digest = [0xd1; 32];
+            let definition = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "fixture:b3.stone".into(),
+                revision_ref: "definition-r1".into(),
+            };
+            let ground = GroundPlacement {
+                spatial_position: map_item_spatial_position(120, 5, -7),
+                corpse_ref: id(3).to_vec(),
+                map_revision: map_revision_of(&digest),
+                content_revision: "content-1".into(),
+                native_room_placement_context: digest.to_vec(),
+            };
+            let request = |actor, purpose: &str| -> TestResult<ItemMintRequest> {
+                Ok(ItemMintRequest {
+                    cause: ItemMintCause::for_test(
+                        WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
+                        ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+                        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                        actor,
+                        1,
+                        TypedDefinitionRef {
+                            family: "LootTable".into(),
+                            production_key: "fixture:ground.loot".into(),
+                            revision_ref: "definition-r1".into(),
+                        },
+                        purpose.into(),
+                        0,
+                    ),
+                    item: definition.clone(),
+                    quantity: 1,
+                    ground: ground.clone(),
+                    content_revision: "content-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    sim_revision: "sim-1".into(),
+                })
+            };
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            for actor in 1..=64 {
+                let mut candidate = h
+                    .root
+                    .freeze_item_mint(&recovery, &h.node, request(actor, "fixture:ground.seed")?)
+                    .await
+                    .map_err(debug)?;
+                let permit = candidate.fresh_death_lane_permit().await;
+                assert!(matches!(
+                    h.root
+                        .commit_item_mint(&permit, &recovery, &h.node, &mut candidate)
+                        .await
+                        .map_err(debug)?,
+                    ItemMintOutcome::Committed(_)
+                ));
+            }
+            let mut ordinary = h
+                .root
+                .freeze_item_mint(&recovery, &h.node, request(100, "fixture:ground.new")?)
+                .await
+                .map_err(debug)?;
+            let mut corpse = h
+                .root
+                .freeze_item_mint(
+                    &recovery,
+                    &h.node,
+                    request(101, CORPSE_MATERIALIZATION_PURPOSE_KEY)?,
+                )
+                .await
+                .map_err(debug)?;
+            let fence = harness::item_fence()?;
+            let mut map = h
+                .root
+                .freeze_map_item_mint(
+                    &recovery,
+                    &h.node,
+                    fence,
+                    MapItemMintRequest {
+                        command: CommandRef::new(
+                            GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
+                            CommandId::new(900).map_err(debug)?,
+                        ),
+                        base_bundle_digest: digest,
+                        placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, 1)
+                            .ok_or("native placement key")?,
+                        reset_epoch: 1,
+                        item: ItemDefinitionFacts {
+                            definition,
+                            stack: ItemStackClass::NonStackable,
+                            container_capacity: None,
+                            container_slot_equip_pattern: false,
+                        },
+                        quantity: 1,
+                        content_revision: "content-1".into(),
+                        ruleset_revision: "ruleset-1".into(),
+                        sim_revision: "sim-1".into(),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            let store = AdmissionGuardStore::from_root(h.root.clone());
+            let mut changes = store
+                .load(&[AdmissionAuthorityGuardKeyV1::Runtime(harness::scope()?)])
+                .await
+                .map_err(debug)?;
+            let mut change = changes
+                .pop()
+                .flatten()
+                .ok_or("actual current Runtime publication absent")?;
+            let AdmissionAuthorityGuardStateV1::Runtime {
+                ready,
+                ownership_generation,
+                ..
+            } = &mut change.state
+            else {
+                return Err("actual runtime guard has wrong type".into());
+            };
+            assert!(*ready);
+            assert_eq!(*ownership_generation, 1);
+            *ready = false;
+            change.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: change.publication_revision,
+            };
+            change.publication_revision += 1;
+            change.source.source_revision += 1;
+            change.source.decision_identity = "ground-native-readiness-false".into();
+            let now: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM statement_timestamp()))::bigint",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            change.source.source_observed_at = now.max(change.source.source_observed_at);
+            let publication = harness::ground_native_readiness_enforcement::prepare(change, now)?;
+            assert_eq!(
+                h.root
+                    .publish_runtime_readiness(&h.node, &publication)
+                    .await
+                    .map_err(debug)?,
+                GuardPublicationDisposition::Applied
+            );
+            let before = readiness_footprint(h).await?;
+            assert_eq!(before[1], 64);
+            let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
+            assert!(matches!(
+                h.root
+                    .commit_item_mint(&permit, &recovery, &h.node, &mut ordinary)
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+            assert!(matches!(
+                h.root
+                    .commit_corpse_mint(
+                        &permit,
+                        &recovery,
+                        &h.node,
+                        &mut corpse,
+                        id(harness::CHARACTER)
+                    )
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+            assert!(matches!(
+                h.root
+                    .commit_map_item_mint(&permit, &recovery, &h.node, fence, &mut map)
+                    .await,
+                Err(MapItemMintError::AuthorityRejected)
+            ));
+            assert_eq!(readiness_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn spell_batch_capacity_failure_rolls_back_earlier_root_and_all_source_rows() -> TestResult {
+        run("ground_spell_batch", async |h| {
+            use crate::durability::spell_item_transaction::apply_spell_items_in_transaction;
+            mint(h, 1, 63, &target()).await?;
+            let before = spell_footprint(h).await?;
+            let request = spell_request(700, 160, vec![spell_mint(180), spell_mint(181)])?;
+            let mut tx = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
+            assert!(matches!(
+                apply_spell_items_in_transaction(&mut tx, &authority, &request).await,
+                Err(SpellItemError::Rejected("not enough room"))
+            ));
+            tx.rollback().await?;
+            assert_eq!(spell_footprint(h).await?, before);
+            assert_eq!(h.root_revision().await?, "1");
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn spell_actual_removal_frees_room_and_committed_replay_does_not_charge_it_again() -> TestResult
     {
+        run("ground_spell_replace", async |h| {
+            use crate::durability::spell_item_transaction::{
+                apply_spell_items_in_transaction, prepare_ground_removal_in_transaction,
+            };
+            use crate::durability::spell_items_abi::{
+                SpellItemOperation, SpellItemTransactionOutcome,
+            };
+            let ids = mint_quantity(h, 1, 64, &target(), 1).await?;
+            let mut tx = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut tx, h, command(701)?).await?;
+            let removed =
+                prepare_ground_removal_in_transaction(&mut tx, &authority, &target(), ids[0])
+                    .await
+                    .map_err(debug)?;
+            let request = spell_request(
+                701,
+                162,
+                vec![SpellItemOperation::RemoveGround(removed), spell_mint(180)],
+            )?;
+            let outcome = apply_spell_items_in_transaction(&mut tx, &authority, &request)
+                .await
+                .map_err(debug)?;
+            let SpellItemTransactionOutcome::Applied(receipt) = outcome else {
+                return Err("fresh replacement did not apply".into());
+            };
+            tx.commit().await?;
+            let before = spell_footprint(h).await?;
+            assert_eq!(before[1], 64);
+            let retired: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(ids[0].as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(retired, 2);
+            let mut replay = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut replay, h, request.command).await?;
+            assert!(
+                matches!(apply_spell_items_in_transaction(&mut replay, &authority, &request).await.map_err(debug)?, SpellItemTransactionOutcome::AlreadyCommitted(value) if value == receipt)
+            );
+            replay.commit().await?;
+            assert_eq!(spell_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn actual_inventory_overflow_is_a_ground_root_and_refuses_without_partial_writes() -> TestResult
+    {
+        run("ground_spell_overflow", async |h| {
+            use crate::durability::spell_item_transaction::apply_spell_items_in_transaction;
+            use crate::durability::spell_items_abi::SpellItemOperation;
+            mint(h, 1, 64, &target()).await?;
+            let before = spell_footprint(h).await?;
+            let operation = SpellItemOperation::MintInventory {
+                item_instance_id: id(180),
+                definition: spell_definition(),
+                quantity: 1,
+                backpack: spell_definition(),
+                overflow_placement: ground_placement(&target()),
+                allow_ground_overflow: true,
+            };
+            let request = spell_request(702, 164, vec![operation])?;
+            let mut tx = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
+            assert!(matches!(
+                apply_spell_items_in_transaction(&mut tx, &authority, &request).await,
+                Err(SpellItemError::Rejected("not enough room"))
+            ));
+            tx.rollback().await?;
+            assert_eq!(spell_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn actual_inventory_destination_and_existing_stack_merge_do_not_charge_full_ground()
+    -> TestResult {
+        run("ground_inventory_zero", async |h| {
+            use crate::durability::spell_item_transaction::{
+                apply_spell_items_in_transaction, prepare_inventory_merge_in_transaction,
+            };
+            use crate::durability::spell_items_abi::SpellItemOperation;
+            let backpack_id = mint_quantity(h, 1, 1, &target(), 1).await?[0];
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let fence = harness::item_fence()?;
+            let mut transfer = h
+                .root
+                .freeze_item_transfer(
+                    &recovery,
+                    &h.node,
+                    fence,
+                    ItemTransferRequest {
+                        command: command(800)?,
+                        source_item_instance_id: backpack_id,
+                        destination: ItemTransferDestination::ContainerSlot,
+                        item: ItemDefinitionFacts {
+                            definition: definition(),
+                            stack: ItemStackClass::NonStackable,
+                            container_capacity: Some(20),
+                            container_slot_equip_pattern: true,
+                        },
+                        backpack: None,
+                        content_revision: "content-1".into(),
+                        ruleset_revision: "ruleset-1".into(),
+                        sim_revision: "sim-1".into(),
+                    },
+                )
+                .await
+                .map_err(debug)?;
+            let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
+            h.root
+                .commit_item_transfer(&permit, &recovery, &h.node, fence, &mut transfer)
+                .await
+                .map_err(debug)?;
+            drop(permit);
+            mint(h, 2, 64, &target()).await?;
+            let qualified = spell_definition();
+            let mut backpack = spell_definition();
+            backpack.definition = definition();
+            backpack.stack_maximum = 1;
+            backpack.container_capacity = Some(20);
+            let request = spell_request(
+                801,
+                166,
+                vec![SpellItemOperation::MintInventory {
+                    item_instance_id: id(180),
+                    definition: qualified.clone(),
+                    quantity: 1,
+                    backpack: backpack.clone(),
+                    overflow_placement: ground_placement(&target()),
+                    allow_ground_overflow: true,
+                }],
+            )?;
+            let mut tx = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
+            apply_spell_items_in_transaction(&mut tx, &authority, &request)
+                .await
+                .map_err(debug)?;
+            tx.commit().await?;
+            assert_eq!(h.count("game_item_ground_locations").await?, 64);
+            assert_eq!(h.count("game_item_container_entries").await?, 1);
+            let mut tx = h.pool.begin().await?;
+            let (_permit, authority) = player_authority(&mut tx, h, command(802)?).await?;
+            let reservation = prepare_inventory_merge_in_transaction(
+                &mut tx,
+                &authority,
+                &qualified,
+                1,
+                &backpack,
+                &ground_placement(&target()),
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("real compatible inventory stack absent")?;
+            let request = spell_request(
+                802,
+                168,
+                vec![SpellItemOperation::MergeInventory(reservation)],
+            )?;
+            apply_spell_items_in_transaction(&mut tx, &authority, &request)
+                .await
+                .map_err(debug)?;
+            tx.commit().await?;
+            assert_eq!(h.count("game_item_ground_locations").await?, 64);
+            assert_eq!(h.count("game_item_container_entries").await?, 1);
+            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(quantity, 2);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn map_mint_writer_counts_actual_roots_and_replays_before_full_tile_admission() -> TestResult {
+        run("ground_map_mint", async |h| {
+            use crate::durability::map_item_mint::{
+                MapItemMintError, MapItemMintOutcome, MapItemMintRequest,
+            };
+            use crate::durability::map_item_mint_audit::{
+                map_item_spatial_position, map_revision_of,
+            };
+            let digest = [0xd1; 32];
+            let at = SpellGroundTarget {
+                spatial_position: map_item_spatial_position(120, 5, -7),
+                map_revision: map_revision_of(&digest),
+                content_revision: "content-1".into(),
+                placement_context: digest.to_vec(),
+            };
+            mint(h, 1, 63, &at).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let fence = harness::item_fence()?;
+            let request = |number, ordinal| -> TestResult<MapItemMintRequest> {
+                Ok(MapItemMintRequest {
+                    command: command(number)?,
+                    base_bundle_digest: digest,
+                    placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, ordinal)
+                        .ok_or("native placement key")?,
+                    reset_epoch: 1,
+                    item: ItemDefinitionFacts {
+                        definition: definition(),
+                        stack: ItemStackClass::NonStackable,
+                        container_capacity: None,
+                        container_slot_equip_pattern: false,
+                    },
+                    quantity: 1,
+                    content_revision: "content-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    sim_revision: "sim-1".into(),
+                })
+            };
+            let mut first = h
+                .root
+                .freeze_map_item_mint(&recovery, &h.node, fence, request(400, 1)?)
+                .await
+                .map_err(debug)?;
+            let mut second = h
+                .root
+                .freeze_map_item_mint(&recovery, &h.node, fence, request(401, 2)?)
+                .await
+                .map_err(debug)?;
+            let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
+            let committed = h
+                .root
+                .commit_map_item_mint(&permit, &recovery, &h.node, fence, &mut first)
+                .await
+                .map_err(debug)?;
+            let MapItemMintOutcome::Committed(committed) = committed else {
+                return Err("fresh map MINT did not commit".into());
+            };
+            let before = mint_footprint(h).await?;
+            let receipts = h.count("game_map_item_mint_receipts").await?;
+            assert_eq!(before[1], 64);
+            assert!(matches!(
+                h.root
+                    .commit_map_item_mint(&permit, &recovery, &h.node, fence, &mut second)
+                    .await,
+                Err(MapItemMintError::CapacityExceeded)
+            ));
+            assert_eq!(mint_footprint(h).await?, before);
+            assert_eq!(h.count("game_map_item_mint_receipts").await?, receipts);
+            assert!(
+                matches!(h.root.commit_map_item_mint(&permit, &recovery, &h.node, fence, &mut first).await.map_err(debug)?, MapItemMintOutcome::AlreadyCommitted(value) if value == committed)
+            );
+            assert_eq!(mint_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn concurrent_native_mints_serialize_the_last_physical_root() -> TestResult {
+        run("ground_race", async |h| {
+            use crate::durability::item_mint::ItemMintError;
+            mint(h, 1, 63, &target()).await?;
+            let mut first = frozen_mint(h, 100, &target(), "fixture:ground.drop").await?;
+            let mut second = frozen_mint(h, 101, &target(), "fixture:ground.drop").await?;
+            // Each genuine Root retains its unchanged one-connection pool. Two
+            // independent Roots are required for overlapping physical passes.
+            let left_root = crate::durability::DurabilityRoot::connect_test_runtime(&format!(
+                "{}?application_name=ground_race_left",
+                h.database.url
+            ))?;
+            let right_root = crate::durability::DurabilityRoot::connect_test_runtime(&format!(
+                "{}?application_name=ground_race_right",
+                h.database.url
+            ))?;
+            assert!(left_root.maintain_ready_once().await?);
+            assert!(right_root.maintain_ready_once().await?);
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let left_authority = left_root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let right_authority = right_root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let one = first.fresh_death_lane_permit().await;
+            let two = second.fresh_death_lane_permit().await;
+            // An observer holds ONLY the real native Channel key33. It writes no
+            // custody or authority. Both independent native passes must overlap
+            // and wait before it releases the lock; timing alone is no witness.
+            let mut blocker = h.pool.begin().await?;
+            let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                .fetch_one(&mut *blocker)
+                .await?;
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))")
+                .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+                .execute(&mut *blocker).await?;
+            let (left, right, overlap) = tokio::join!(
+                left_root.commit_item_mint(&one, &left_authority, &h.node, &mut first),
+                right_root.commit_item_mint(&two, &right_authority, &h.node, &mut second),
+                async {
+                    tokio::time::timeout(std::time::Duration::from_millis(1_500), async {
+                        loop {
+                            let observed: bool = sqlx::query_scalar("SELECT count(*)=2 AND coalesce(bool_or($1=ANY(pg_blocking_pids(pid))),false) FROM pg_stat_activity WHERE datname=current_database() AND application_name IN ('ground_race_left','ground_race_right') AND wait_event_type='Lock' AND cardinality(pg_blocking_pids(pid))>0")
+                                .bind(blocker_pid).fetch_one(&h.pool).await?;
+                            if observed { break; }
+                            tokio::task::yield_now().await;
+                        }
+                        Ok::<(), sqlx::Error>(())
+                    }).await.map_err(|_| "native passes did not overlap at the held Channel key33")??;
+                    blocker.commit().await?;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+            );
+            overlap?;
+            assert!(matches!(
+                (&left, &right),
+                (
+                    Ok(ItemMintOutcome::Committed(_)),
+                    Err(ItemMintError::CapacityExceeded)
+                ) | (
+                    Err(ItemMintError::CapacityExceeded),
+                    Ok(ItemMintOutcome::Committed(_))
+                )
+            ));
+            assert_eq!(h.count("game_item_ground_locations").await?, 64);
+            assert_eq!(h.count("game_item_mint_receipts").await?, 64);
+            assert_eq!(h.count("game_item_audit_outbox").await?, 64);
+            // Reload from a different connection, not an in-memory capacity receipt.
+            let mut reloaded = h.pool.begin().await?;
+            let (_permit, scope) = authority(&mut reloaded, h).await?;
+            let rows = check_ground_cell_root_admission_in_transaction(
+                &mut reloaded,
+                &scope,
+                &target(),
+                &[],
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(rows.len(), 64);
+            reloaded.rollback().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn ordinary_and_corpse_mint_boundaries_enforce_capacity_and_replay_full_tile() -> TestResult {
+        run("ground_mint_writers", async |h| {
+            use crate::durability::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, ItemMintError};
+            mint(h, 1, 63, &target()).await?;
+            let mut corpse =
+                frozen_mint(h, 100, &target(), CORPSE_MATERIALIZATION_PURPOSE_KEY).await?;
+            let mut ordinary = frozen_mint(h, 101, &target(), "fixture:ground.drop").await?;
+            let mut another_corpse =
+                frozen_mint(h, 102, &target(), CORPSE_MATERIALIZATION_PURPOSE_KEY).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let permit = corpse.fresh_death_lane_permit().await;
+            let committed = h
+                .root
+                .commit_corpse_mint(
+                    &permit,
+                    &recovery,
+                    &h.node,
+                    &mut corpse,
+                    id(harness::CHARACTER),
+                )
+                .await
+                .map_err(debug)?;
+            let ItemMintOutcome::Committed(committed) = committed else {
+                return Err("fresh corpse did not commit".into());
+            };
+            let before = mint_footprint(h).await?;
+            assert_eq!(before[1], 64);
+            assert!(matches!(
+                h.root
+                    .commit_item_mint(&permit, &recovery, &h.node, &mut ordinary)
+                    .await,
+                Err(ItemMintError::CapacityExceeded)
+            ));
+            assert!(matches!(
+                h.root
+                    .commit_corpse_mint(
+                        &permit,
+                        &recovery,
+                        &h.node,
+                        &mut another_corpse,
+                        id(harness::CHARACTER)
+                    )
+                    .await,
+                Err(ItemMintError::CapacityExceeded)
+            ));
+            assert_eq!(mint_footprint(h).await?, before);
+            assert!(matches!(
+                h.root.commit_corpse_mint(&permit, &recovery, &h.node, &mut corpse, id(harness::CHARACTER)).await.map_err(debug)?,
+                ItemMintOutcome::AlreadyCommitted(value) if value == committed
+            ));
+            assert_eq!(mint_footprint(h).await?, before);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn native_locked_census_enforces_64_and_preserves_zero_admission_truth() -> TestResult {
         run("ground_cap", async |h| {
             mint(h, 1, 63, &target()).await?;
             let mut tx = h.pool.begin().await?;
@@ -434,16 +1331,16 @@ mod postgres {
                 ))
             ));
             tx.rollback().await?;
-            mint(h, 65, 1, &target()).await?;
+            assert!(mint(h, 65, 1, &target()).await.is_err());
             let mut tx = h.pool.begin().await?;
             let (_permit, scope) = authority(&mut tx, h).await?;
-            // A pre-existing65-root tile is retained. No new root => no capacity charge,
-            // not permission to insert, remove, expire or reconstruct any item.
+            // The real writer now prevents creating the65th root. A zero-root
+            // inspection still changes no existing custody or quantity.
             check_ground_cell_root_admission_in_transaction(&mut tx, &scope, &target(), &[])
                 .await
                 .map_err(debug)?;
             tx.commit().await?;
-            assert_eq!(h.count("game_item_ground_locations").await?, 65);
+            assert_eq!(h.count("game_item_ground_locations").await?, 64);
             assert_eq!(h.root_revision().await?, "1");
             Ok(())
         })
@@ -712,8 +1609,8 @@ mod postgres {
     }
 
     #[test]
-    fn complete_native_reader_refuses_opaque_sources_and_empty_target_is_not_content_authority()
-    -> TestResult {
+    fn native_writer_refuses_opaque_targets_and_empty_target_is_not_content_authority() -> TestResult
+    {
         run("ground_opaque", async |h| {
             let mut unknown = target();
             unknown.map_revision = "unadmitted-data".into();
@@ -731,31 +1628,36 @@ mod postgres {
             tx.rollback().await?;
             let mut opaque = target();
             opaque.spatial_position = vec![1, 2, 3];
-            mint(h, 1, 1, &opaque).await?;
+            let before = mint_footprint(h).await?;
+            assert!(mint(h, 1, 1, &opaque).await.is_err());
+            assert_eq!(mint_footprint(h).await?, before);
             let mut tx = h.pool.begin().await?;
             let (_permit, scope) = authority(&mut tx, h).await?;
             assert!(matches!(
                 check_ground_cell_root_admission_in_transaction(
                     &mut tx,
                     &scope,
-                    &target(),
-                    &[prospective(200, &target())?]
+                    &opaque,
+                    &[prospective(200, &opaque)?]
                 )
                 .await,
-                Err(GroundCellAdmissionError::Source(SpellItemError::Rejected(
-                    "unreconciled opaque or incompatible Ground placement"
-                )))
+                Err(GroundCellAdmissionError::Limit(
+                    GroundCellLimitError::IncompatibleInput
+                ))
             ));
             tx.rollback().await?;
             Ok(())
         })
     }
     #[test]
-    fn native_complete_reader_work_bound_never_falls_back_to_empty_occupancy() -> TestResult {
+    fn native_writer_refuses_65th_without_creating_unread_occupancy() -> TestResult {
         run("ground_read_bound", async |h| {
-            // The existing MINT writer has not integrated the new admission guard;
-            // these native fixture MINTs can establish an overfull durable tile.
-            mint_quantity(h, 1, 501, &target(), 1).await?;
+            // Previously this fixture created501 roots through unguarded MINT.
+            // Enforced native writers must not bypass admission to seed that state.
+            mint_quantity(h, 1, 64, &target(), 1).await?;
+            let before = mint_footprint(h).await?;
+            assert!(mint_quantity(h, 65, 1, &target(), 1).await.is_err());
+            assert_eq!(mint_footprint(h).await?, before);
             let mut tx = h.pool.begin().await?;
             let (_permit, scope) = authority(&mut tx, h).await?;
             assert!(matches!(
@@ -766,12 +1668,12 @@ mod postgres {
                     &[prospective(200, &target())?]
                 )
                 .await,
-                Err(GroundCellAdmissionError::Source(SpellItemError::Rejected(
-                    "tile item snapshot exceeds 500 visited items"
-                )))
+                Err(GroundCellAdmissionError::Limit(
+                    GroundCellLimitError::NotEnoughRoom
+                ))
             ));
             tx.rollback().await?;
-            assert_eq!(h.count("game_item_ground_locations").await?, 501);
+            assert_eq!(h.count("game_item_ground_locations").await?, 64);
             Ok(())
         })
     }

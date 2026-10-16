@@ -388,3 +388,129 @@ Owned Rust formatting, workspace `cargo fmt --all --check`, focused pure
 `clippy-driver -D warnings`, governance validation and all **124/124** governance
 unit tests passed. Full Cargo/Clippy, PostgreSQL and global integration qualification
 are not claimed by these bounded results. No commit or push was performed.
+
+## D1096/D1097 enforcement authoring — 2026-10-16 (not runtime acceptance)
+
+Current source is local candidate `aa91ae5b2dccb68171069e3770640c71f06f1dfe`
+plus the pending owned delta. CP comment
+[6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346),
+updated 2026-10-16 16:11:36 UTC, authorizes real guard calls in four durability
+owners. D1097 means one local hunk per caller: `commit_item_mint` and
+`commit_corpse_mint` are two callers in the same file; `commit_map_item_mint`,
+`initialize_in_transaction` and `apply_physical_item_line` are the other three.
+This supersedes the report-only four-owner integration finding above. D1096
+shared registration/aggregate/support edits remain reserved after #2163; none
+has been applied in this authoring delta. No commit, push or publication occurs.
+
+The actual guard uses the native sealed scope authority, genuine recovery and
+Node inputs, the same physical PostgreSQL transaction, the native key-33 lock
+and the complete native live-root reader. Each fresh physical root is checked
+before new writer side effects. MINT and map MINT obtain a genuine scope seal
+from the existing native issuer; spell Player projects its existing native seal
+inside its owner, while Creature uses its genuine scope seal. No fake permit,
+caller-provided remaining-row DTO, truncated census, prospective definition
+stub, new custody writer, production visibility change or suppression is added.
+The original complete-admission API returns the actual checked rows for direct
+same-transaction reuse by the insertion guard, without making them authority.
+
+Historical receipt classification precedes capacity admission. Native-map
+adoption/replay is not charged. Spell admission applies only to fresh Ground
+roots (`kind == 1 && destination.is_none()`), including an actually resolved
+inventory overflow. Inventory destinations and merges add no Ground root.
+Removal is credited only after its actual operation has executed; requests are
+not reordered. Later batch refusal still requires the owning transaction to
+roll back all prior effects. Only `Limit(NotEnoughRoom)` maps to native MINT
+capacity errors; issuer/current-authority, database, foreign-transaction and
+source-integrity failures retain their non-capacity classification. The issuer's
+existing current-readiness requirement is enforced and may narrow a fresh MINT
+that previously checked only assignment/incarnation; historical replay remains
+before that requirement.
+
+The test-free canonical helper will be registered once in durability. Planned
+private qualification mounts the adjacent tests once through the actual
+character-authority aggregate using canonical native owners and its existing
+bestiary fixture. There are 12 pure and 15 mandatory PG cases. The seven new PG
+cases exercise ordinary/corpse MINT, map MINT, concurrent last-root admission,
+real spell batch rollback, actual same-transaction removal/replacement/replay,
+actual inventory overflow, and actual inventory destination/merge with a full
+tile. Test definition/cost inputs are explicit native SQL-writer fixtures;
+sealed authority is produced by the actual native issuer. These are not claims
+of admitted gameplay casts, payment integration or Content E2E.
+
+Two additional private full-server-native cases live in the frozen qualification
+packet outside the product. Their additive test-only mount is inside the
+existing `content::native_gameplay::tests` factory module. They use the real
+activated source, current runtime and `CurrentNativeMapInitialization` producer
+and initialize its complete placement set: last-cell 64th-root success plus
+replay, and last-cell overflow with complete source-batch rollback. They do not
+implement a proof trait, clone the issuer, filter placements or broaden privacy.
+
+Three old PG fixture bodies are intentionally changed: guarded current MINT
+cannot create 65 or 501 roots or opaque custody. They now assert refusal and
+absence of new custody/receipt/audit effects. The prior unmodified-candidate
+legacy-census outcomes remain historical evidence, separate from this delta.
+A genuine pre-upgrade database fixture is still needed to qualify existing
+legacy-overfull recovery and the 501-row reader after enforcement; bypassing
+native custody guards with unaudited SQL is not an acceptance substitute.
+Original unchanged pure bodies and each changed/new test are mapped separately
+in the immutable enforcement source packet.
+
+The implementation-only five-source snapshot has independent source PASS
+(`2158-enforcement/implementation-1`, patch SHA-256
+`703cb4acad3fd794f779723db4ff67ebc39eba36d7ac93782f7f9e3a821990e9`).
+The final tests, native discovery, strict Cargo/Clippy and PG acceptance await
+fresh independent review and lead-owned validation. No prior component18 PASS,
+G4 proposal build or standalone excerpt result qualifies this new enforcement.
+
+Outstanding acceptance remains explicit: future ITEM-MOVE drop and DEATH-DUR
+spill owners must call the guard; native transport mappings do not yet prove
+wire-level "not enough room" delivery; full Creature gameplay producer,
+new-generation native-map adoption/no-resurrection, process restart and legacy
+upgrade coverage are not claimed by the new cases. No periodic decay is added.
+The mechanic acceptance boxes remain unchecked pending actual qualification.
+
+### Enforcement source generation 2 — review repair, not execution
+
+The immutable first enforcement packet received source-test review changes:
+its two concurrent MINT calls shared the fixture Root's one-connection pool;
+that was serial execution, not evidence of concurrent census. The successor
+uses two independent genuine Roots with unchanged one-connection pools and
+separately opened current recovery witnesses. A transaction holding only the
+native Channel advisory key-33 lock observes both named native passes blocked,
+including a direct dependency on that lock holder, before releasing them. The
+expected result remains exactly one new 64th root and one typed capacity loser.
+This authored blocking assertion has not yet executed.
+
+The full native-map rollback case now asserts that actual earlier native
+receipts and item rows exist inside the still-readable failed transaction before
+rollback. Version output is aligned with the other mandatory PG fixtures.
+One additional private acceptance case, mounted as a child of the existing
+bestiary fixture, reuses its existing `RuntimeReadiness` publisher for a genuine
+compare-and-set `ready=false` successor at unchanged ownership generation.
+Fresh ordinary, corpse and map MINT commits on the already-full tile must refuse
+as authority failures and preserve custody/receipt/audit footprints. No new
+sealed publisher implementation, fixture clone or visibility expansion is used.
+The planned inventory is now 12 pure plus 18 PG cases across the aggregate and
+private native contexts; no new runtime result is claimed. First-generation
+review findings and all previous frozen source/runtime evidence remain retained.
+
+
+The final single-mount successor keeps the existing-fixture child test-only
+helper free of `#[test]`. One owned aggregate PG case invokes that helper for
+the three genuine not-ready writer refusals. This avoids registering the same
+case in both library and aggregate targets: ordinary library adds zero Ground
+cases; aggregate has 12 pure and 16 PG; the separate full native-map context adds
+two PG. The provisional source-2 dual-target topology is retained as superseded,
+not an applied or qualified result. No duplicate-source exemption is added.
+
+
+The next source repair retains the entire not-ready writer case in owned Ground
+tests. Its tiny private fixture child only prepares the existing actual
+`RuntimeReadiness` publication, and the existing bootstrap preparation also
+uses that same helper. Both are real publication consumers, so other native
+fixture targets do not acquire an unused private helper or new allowances.
+The additive native-map child is placed after the existing inner attributes.
+Canonical fixture integration belongs to H/#2170 under D1092; D1096 does not
+allocate `tests/support/bestiary_postgres_harness.rs` or the new readiness helper.
+An exact minimal H handback is prepared outside the checkout; private native
+qualification is permitted, but no canonical fixture edit is made here.
