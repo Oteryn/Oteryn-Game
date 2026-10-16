@@ -406,3 +406,110 @@ superseded detached increment; it does not qualify these new bytes. The lead own
 native Clippy/test execution against the actual2201 source in a private disclosed
 qualification composition. No Cargo, commit, push, E/shared-module write, ready,
 merge, production action or paid review was performed by this author.
+
+
+## D1102 executed composition and E handoff — 2026-10-16
+
+This current entry supersedes the preceding execution-pending wording, retaining it
+as history. Actual #2172 source `bd45762e7617de9f614a5fc729fed20b63915bbf`
+passes **17 pure XP bodies and1 real native consumer body**, each invoked exactly
+once with0 failures/0 ignored. The lead executed the preserved whole-crate native
+ELF against configured PostgreSQL17.6 (`server_version_num=170006`). Independent
+`D1102-execution-review.md` verifies exact invocations, results and compiler inputs:
+
+- Native ELF SHA256: `889ab44ebd5c27b203d921940ced69ed7cb25aa01c15b92a2d5218c84bdc1dd1`.
+- Compiler-source archive SHA256: `b67d061700bf01e7620a54eaf7355d23a1b249cfc92e86df865ac4993b4d17d7`.
+- XP planner/consumer SHA256: `8f848ee1a0c3f18f87f69a9637228eea94ecdec91a3d2c5e6cce9c3efa6d25ce`;
+  tests: `25888c8edfed9f48e022655883415e362e981040e95228acfc5872d478358fca`.
+- Actual sole2201 provider at `d2f390fdd2957630614f0334c15a8dcfdac269ac`:
+  World SHA256 `99d3c9eaf8843cc7897e9c2ab32ab62c59ba893ff249db58d95a2b38413c65a0`;
+  foundation SHA256 `eb8ca50bfc4f181987e859c1d1857285ef15386418469f5990b67e774929f039`.
+
+The executed World test is actual2201 source plus outside consumer patch SHA256
+`826c05c129faa2fb6286d91a2ab7d2614cfc8643e329812785e3563ec0fb86e5`,
+in the private qualification composition with explicit CP module registration.
+That patch/registration is not canonical #2172 source; D1101's inverse remains
+intentional. The real native case qualifies same-TX source planning and its negative
+fences, not an E kill settlement or activity/PZ producer. Prior XP34 evidence remains
+historical. Strict native unit Clippy is a separate lead qualification; no global
+Clippy PASS or complete shared-XP gameplay is inferred.
+
+### Implemented typed consumer for E #2192
+
+These actual private types live in `apps/game-server/src/gameplay_transport/party_xp.rs`;
+this inline handoff is usable without access to the author's local artifact paths.
+`SemanticTimeMicros` and `ExactI64` below are from `oteryn_simulation_determinism`;
+`CreatureDeathOccurrenceKey`, actor/session and runtime are native foundation types.
+
+```rust
+struct PartyXpKillInputs<'a> {
+    death: CreatureDeathOccurrenceKey,
+    at: SemanticTimeMicros,
+    activity: &'a [PartyXpActivity],
+    leader_pz: Option<LeaderPzObservation>,
+    pool_after_bonus_and_summon: ExactI64,
+}
+struct PartyXpKillPlan {
+    death: CreatureDeathOccurrenceKey,
+    at: SemanticTimeMicros,
+    party_id: Option<[u8; 16]>,
+    party_revision: Option<u64>,
+    decision: PartyXpDecision,
+}
+enum PartyXpConsumerError {
+    Source(SpellItemError),
+    Plan(PartyXpError),
+}
+async fn plan_shared_xp_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    root: &crate::durability::DurabilityRoot,
+    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    caster: (crate::foundation::ExactActorRef, GameSessionId),
+    input: PartyXpKillInputs<'_>,
+) -> Result<PartyXpKillPlan, PartyXpConsumerError>;
+```
+
+The consumer checks death World/Channel/scope generation, calls actual2201
+`read_world_party_xp_for_scope_actor_in_transaction` and the actual physical
+`read_source_party_world_for_scope_in_transaction` on THAT caller transaction, then
+calls the existing `plan_shared_xp`. Source errors preserve native refusal; valid
+`Off(SharingOff)` selects the existing whole-kill damage-share path. `Shares` contains
+`PartyXpShare { character:[u8;16], session:GameSessionId, amount:ExactI64 }`.
+Every returned field is DATA, not a reservation, current Character grant or receipt.
+
+E #2192 remains sole writer of the real combat/progression/death/kill settlement and
+attack/heal engagement ports; D supplies this consumer, not an E writer. Required
+caller composition:
+
+- Resolve each of1..50 distinct recipients' OWN current Character/session/connection/
+  lease/scope/revision fences, policy and stable `(death,Character)` occurrence.
+  Settle all admitted recipients and receipts in ONE physical transaction, with
+  rollback/unknown-outcome recovery; a loop of singleton commits is insufficient.
+- Retain original at-kill membership/toggle/recipients, qualified aggressive-monster
+  attack or committed member-heal activity and actual leader PZ observation. Preserve
+  original microseconds and event timestamps on retry/replay. E's captured death
+  milliseconds cannot safely be multiplied back to reconstruct a same-ms event;
+  foundation owner-timer and simulation time types require explicit same-incarnation
+  conversion. The death key does not attest input time or kill-time provenance.
+- `LeaderPzObservation` binds actual leader Character/session/observed_at and optional
+  `pz_until`. Outer `None` is unavailable; absent inner deadline is known unblocked.
+  Do not substitute logout/battle block or invented producer data. Replayed heals
+  retain their original committed timestamp instead of renewing activity at retry.
+- Obey actual sequencer ordering: no runtime lock while waiting for Character slots
+  or across durable writes. E must supply genuine reservation/revalidation and a
+  stable total recipient lock order; this borrowed read adapter supplies neither.
+- Apply real party bonus and summon share BEFORE this pool/split, then each own Prey
+  and stamina AFTER, without redistribution. Zero pool legitimately produces zero
+  shares; the current positive-only award writer rejects zero. E must account for
+  zero awards through its actual batch semantics, never clamp to1 or redistribute.
+- Replay the retained original recipient set, amounts, policies and occurrences;
+  never re-plan from changed party/activity/PZ or mint new occurrences. Reject
+  conflicting occurrence input and reconcile absolute committed facts, preserving
+  later progression/Bestiary revisions. Qualify1/50 bounds, duplicates, second/last
+  recipient rollback, overlap, lost commit outcome/restart and timestamp boundaries.
+
+Real E atomic integration/producers/modifiers, shared activation and eventual main
+merge only AFTER #2201 remain open. This docs-only update changes no Rust or owner
+allocation and claims no additional execution beyond the exact composition above.
