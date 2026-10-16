@@ -1,5 +1,82 @@
 -- HOUSE-RUNTIME-1a, HOUSE_RT_INBOX §1.2/1.3/2.1. No ownership, runtime or wire activation.
 -- Production access stays the 0074 no-row stub; HOUSE1a owns its later replacement.
+-- D1168: read-only loader, not admission/access authority. Only the current
+-- incarnation holding this exact World/House generation may read the snapshot.
+-- Native order is incarnation registration SHARE then exact assignment SHARE,
+-- as in game_house_item_apply; no Character/property/item locks are introduced.
+CREATE FUNCTION game_house_interior_load(
+ p_world UUID,p_house TEXT,p_generation NUMERIC,p_node UUID,p_node_revision NUMERIC,p_secret BYTEA)
+RETURNS TABLE(
+ item_instance_id BYTEA,definition_family TEXT,definition_production_key TEXT,
+ definition_revision_ref TEXT,quantity BIGINT,lifecycle SMALLINT,key_number BIGINT,
+ state_revision TEXT,spatial_position BYTEA,stack_ordinal TEXT,
+ placement_transaction_id BYTEA,reclaim_subject_character_id BYTEA,provenance_revision TEXT,
+ has_contents BOOLEAN)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE n BIGINT:=0; q RECORD;
+BEGIN
+ IF p_world IS NULL OR NOT game_character_is_uuid_v7(p_world)
+  OR p_house IS NULL OR NOT game_house_scope_key_valid(p_house)
+  OR p_generation IS NULL OR p_generation NOT BETWEEN 1 AND 18446744073709551615
+  OR p_generation<>trunc(p_generation) OR p_node IS NULL OR p_node_revision IS NULL
+  OR p_secret IS NULL OR octet_length(p_secret)<>32 THEN
+  RAISE EXCEPTION 'HOUSE_LOAD_INVALID_INPUT';
+ END IF;
+ IF game_node_prove_current_incarnation(p_node,p_node_revision,p_secret) IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'HOUSE_LOAD_NOT_CURRENT';
+ END IF;
+ PERFORM 1 FROM game_runtime_scope_assignments a
+ WHERE a.scope_key=game_house_scope_key(p_world,p_house) AND a.scope_kind=2
+  AND a.world_id=p_world AND a.house_key=p_house AND a.state=1
+  AND a.ownership_generation=p_generation AND a.holder_node_id=p_node
+  AND a.holder_registration_revision=p_node_revision FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'HOUSE_LOAD_NOT_CURRENT';END IF;
+ -- One statement/MVCC snapshot for locations + item identity/state + provenance.
+ -- LEFT JOIN prevents a missing/mismatched item or provenance from disappearing.
+ -- The cursor is one statement snapshot; RETURN NEXT buffers until the whole
+ -- function succeeds, so overflow/corruption never returns a truncated result.
+ FOR q IN SELECT uuid_send(h.item_instance_id) AS item_id,i.definition_family,
+  i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,
+  coalesce(k.key_number,0)::BIGINT AS key_number,i.state_revision::TEXT AS state_revision,
+  h.spatial_position,h.stack_ordinal::TEXT AS stack_ordinal,
+  uuid_send(h.placed_transaction_id) AS placement_id,
+  uuid_send(pr.reclaim_subject_character_id) AS reclaim_subject,
+  pr.provenance_revision::TEXT AS provenance_revision,
+  (EXISTS(SELECT 1 FROM game_item_container_entries c WHERE c.parent_item_instance_id=h.item_instance_id)
+   OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries c WHERE c.parent_item_instance_id=h.item_instance_id)) AS has_contents
+ FROM (SELECT l.* FROM game_item_house_interior_locations l
+       WHERE l.world_id=p_world AND l.house_key=p_house ORDER BY l.item_instance_id LIMIT 2001) h
+ LEFT JOIN game_item_instances i ON i.item_instance_id=h.item_instance_id AND i.world_id=h.world_id
+ LEFT JOIN game_item_keys k ON k.item_instance_id=h.item_instance_id
+ LEFT JOIN game_item_house_reclaim_provenance pr ON pr.item_instance_id=h.item_instance_id
+  AND pr.world_id=h.world_id AND pr.house_key=h.house_key
+  AND pr.placement_transaction_id=h.placed_transaction_id
+ ORDER BY h.item_instance_id LOOP
+  n:=n+1;
+  IF n>2000 THEN RAISE EXCEPTION 'HOUSE_LOAD_STORAGE_FULL';END IF;
+  IF q.definition_family IS NULL OR q.definition_production_key IS NULL
+   OR q.definition_revision_ref IS NULL OR q.quantity IS NULL OR q.quantity NOT BETWEEN 1 AND 100
+   OR q.lifecycle IS DISTINCT FROM 1 OR q.state_revision IS NULL
+   OR q.reclaim_subject IS NULL OR q.provenance_revision IS NULL OR q.has_contents THEN
+   RAISE EXCEPTION 'HOUSE_LOAD_INVALID_STORED_STATE';
+  END IF;
+  item_instance_id:=q.item_id;definition_family:=q.definition_family;
+  definition_production_key:=q.definition_production_key;definition_revision_ref:=q.definition_revision_ref;
+  quantity:=q.quantity;lifecycle:=q.lifecycle;key_number:=q.key_number;state_revision:=q.state_revision;
+  spatial_position:=q.spatial_position;stack_ordinal:=q.stack_ordinal;
+  placement_transaction_id:=q.placement_id;reclaim_subject_character_id:=q.reclaim_subject;
+  provenance_revision:=q.provenance_revision;has_contents:=q.has_contents;
+  RETURN NEXT;
+ END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION game_house_interior_load(UUID,TEXT,NUMERIC,UUID,NUMERIC,BYTEA)
+ FROM PUBLIC,oteryn_game_control;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_interior_load(UUID,TEXT,NUMERIC,UUID,NUMERIC,BYTEA) SET search_path = pg_catalog, %I, pg_temp',current_schema());
+END $$;
+GRANT EXECUTE ON FUNCTION game_house_interior_load(UUID,TEXT,NUMERIC,UUID,NUMERIC,BYTEA)
+ TO oteryn_game_runtime;
+
 CREATE FUNCTION game_house_access_tile(p_world UUID,p_house TEXT,p_position BYTEA)
 RETURNS BOOLEAN LANGUAGE sql AS $$ SELECT false $$;
 REVOKE ALL ON FUNCTION game_house_access_tile(UUID,TEXT,BYTEA) FROM PUBLIC;

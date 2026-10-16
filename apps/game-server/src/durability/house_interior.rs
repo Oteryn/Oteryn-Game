@@ -189,6 +189,139 @@ use sqlx::{Postgres, Row, Transaction};
 type WriterResult<T> = Result<T, HouseWriterError>;
 type DbResult<T> = Result<T, DurabilityError>;
 
+/// A point-in-time read, not an admission, placement, ACL or future-write grant.
+/// The caller retains its physical transaction; no pool or recovery is acquired here.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseInteriorSnapshot {
+    pub house: HouseId,
+    pub ownership_generation: u64,
+    pub items: Vec<HouseInteriorLoadedItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseInteriorLoadedItem {
+    pub item_instance_id: [u8; 16],
+    pub definition: TypedDefinitionRef,
+    pub quantity: u32,
+    pub key_number: u32,
+    pub state_revision: u64,
+    pub spatial_position: Vec<u8>,
+    pub stack_ordinal: u64,
+    pub placement_transaction_id: [u8; 16],
+    pub reclaim_subject_character_id: [u8; 16],
+    pub provenance_revision: u64,
+}
+
+#[derive(Debug)]
+pub enum HouseInteriorLoadError {
+    InvalidInput,
+    NotCurrent,
+    StorageFull,
+    InvalidStoredState,
+    Durability(DurabilityError),
+}
+
+impl From<sqlx::Error> for HouseInteriorLoadError {
+    fn from(error: sqlx::Error) -> Self {
+        if let sqlx::Error::Database(database) = &error {
+            match database.message() {
+                "HOUSE_LOAD_NOT_CURRENT" => return Self::NotCurrent,
+                "HOUSE_LOAD_STORAGE_FULL" => return Self::StorageFull,
+                "HOUSE_LOAD_INVALID_INPUT" => return Self::InvalidInput,
+                "HOUSE_LOAD_INVALID_STORED_STATE" => return Self::InvalidStoredState,
+                _ => {}
+            }
+        }
+        Self::Durability(error.into())
+    }
+}
+
+/// Read at most HOUSEOWN0-RL-14 original native locations, identities and provenance
+/// from one SQL statement snapshot. The SQL owner proves secret possession and
+/// locks the exact current node registration and House assignment until this TX ends.
+/// Concurrent item commits may precede or follow the snapshot; this data does not
+/// authorize applying effects later or install/rebind a runtime placement owner.
+pub async fn load_house_interior_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    house: &HouseId,
+    ownership_generation: u64,
+    node: &NodeIncarnationProof,
+) -> Result<HouseInteriorSnapshot, HouseInteriorLoadError> {
+    if ownership_generation == 0 {
+        return Err(HouseInteriorLoadError::InvalidInput);
+    }
+    let fact = node.fact();
+    let rows = sqlx::query(
+        "SELECT * FROM game_house_interior_load(encode($1,'hex')::uuid,$2,\
+         $3::text::numeric,encode($4,'hex')::uuid,$5::text::numeric,$6)",
+    )
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
+    .bind(ownership_generation.to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .bind(node.sql_possession_secret())
+    .fetch_all(&mut **tx)
+    .await?;
+    if rows.len() > HOUSE_INTERIOR_ITEMS_MAX as usize {
+        return Err(HouseInteriorLoadError::StorageFull);
+    }
+    let mut items = Vec::with_capacity(rows.len());
+    for row in rows {
+        let uuid = |name| -> Result<[u8; 16], HouseInteriorLoadError> {
+            let bytes: Vec<u8> = row.try_get(name)?;
+            let value = bytes
+                .try_into()
+                .map_err(|_| HouseInteriorLoadError::InvalidStoredState)?;
+            audit::check_uuid_v7(&value).map_err(|_| HouseInteriorLoadError::InvalidStoredState)?;
+            Ok(value)
+        };
+        let positive = |name| -> Result<u64, HouseInteriorLoadError> {
+            let value: String = row.try_get(name)?;
+            value
+                .parse::<u64>()
+                .ok()
+                .filter(|value| *value > 0)
+                .ok_or(HouseInteriorLoadError::InvalidStoredState)
+        };
+        let quantity: i64 = row.try_get("quantity")?;
+        let key_number: i64 = row.try_get("key_number")?;
+        let lifecycle: i16 = row.try_get("lifecycle")?;
+        let has_contents: bool = row.try_get("has_contents")?;
+        let spatial_position: Vec<u8> = row.try_get("spatial_position")?;
+        if !(1..=100).contains(&quantity)
+            || !(0..=u32::MAX as i64).contains(&key_number)
+            || lifecycle != 1
+            || has_contents
+            || spatial_position.is_empty()
+            || spatial_position.len() > HOUSE_TILE_MAX_BYTES
+        {
+            return Err(HouseInteriorLoadError::InvalidStoredState);
+        }
+        items.push(HouseInteriorLoadedItem {
+            item_instance_id: uuid("item_instance_id")?,
+            definition: TypedDefinitionRef {
+                family: row.try_get("definition_family")?,
+                production_key: row.try_get("definition_production_key")?,
+                revision_ref: row.try_get("definition_revision_ref")?,
+            },
+            quantity: quantity as u32,
+            key_number: key_number as u32,
+            state_revision: positive("state_revision")?,
+            spatial_position,
+            stack_ordinal: positive("stack_ordinal")?,
+            placement_transaction_id: uuid("placement_transaction_id")?,
+            reclaim_subject_character_id: uuid("reclaim_subject_character_id")?,
+            provenance_revision: positive("provenance_revision")?,
+        });
+    }
+    Ok(HouseInteriorSnapshot {
+        house: house.clone(),
+        ownership_generation,
+        items,
+    })
+}
+
 #[derive(Debug)]
 pub enum HouseWriterError {
     InvalidInput,

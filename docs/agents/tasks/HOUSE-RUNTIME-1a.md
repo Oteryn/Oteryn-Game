@@ -22,6 +22,33 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## D1168 loader authoring — NOT_FULLY_QUALIFIED
+
+An isolated authoring successor of `e061be95895b25a61dc7cc1771d2b9711e1fc092`
+adds `load_house_interior_in_transaction` in the owned durability module and an
+EXECUTE-only native read function in allocated migration0095. The caller supplies
+its existing physical transaction, actual native `HouseId`, expected generation
+and `NodeIncarnationProof`. SQL independently proves secret possession and holds
+the native current registration and exact World/House assignment SHARE locks,
+using the existing incarnation-before-assignment order until that transaction ends.
+No pool, recovery authority or supplied current-access boolean is introduced.
+
+Locations, exact Item identity/state and matching provenance come from one SQL
+statement snapshot. Missing/mismatched item/provenance and nonempty containers
+refuse the load; a 2001st row refuses the entire result rather than truncating it.
+The runtime receives EXECUTE on this bounded function, never SELECT on the private
+tables. The function has a fixed owner-schema search path and PUBLIC/control
+execution is revoked. Secret bytes remain one separate SQL parameter.
+
+This is point-in-time snapshot data, not reusable admission, ACL, current placement
+or future-write authority. Native placement/rebind and runtime installation are
+still pending their D1168 owner. Three additional PG cases are authored for exact
+currentness/identity refusals and empty state, a real native committed placement
+snapshot, and registration/assignment locks held through caller rollback.
+Official Rustfmt1.94 focused formatting and `git diff --check` pass. Compiler,
+Clippy and PostgreSQL execution remain NOT_RUN; independent review and actual
+bounded executor qualification are required before freeze/publication.
+
 ## Goal
 
 Durable house interior shapes and item placement inside a house through the one-item transaction, with custody and audit (packet §2.1).

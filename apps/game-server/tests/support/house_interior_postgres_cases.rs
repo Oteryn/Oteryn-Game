@@ -2472,3 +2472,147 @@ fn house_audit_closed_endpoints_and_duplicate_oneof_are_refused() {
         Err(native_audit::AuditError::CapacityExceeded)
     ));
 }
+
+#[test]
+fn house_loader_requires_independent_current_incarnation_and_exact_assignment() -> TestResult {
+    use crate::durability::house_interior::{
+        HouseInteriorLoadError, load_house_interior_in_transaction,
+    };
+    run_native("house_loader_current", async |h, _, _| {
+        let wrong = NodeIncarnationProof::new(h.node.fact(), BootstrapSecret::from_bytes([99; 32]));
+        let other_house = HouseId::new(current_house()?.world_id(), "oteryn:content.house.other")
+            .ok_or("other house")?;
+        let other_world = HouseId::new(
+            WorldId::decode(&native::id(97)).map_err(native::debug)?,
+            HOUSE,
+        )
+        .ok_or("other world")?;
+        for (house, generation, node) in [
+            (current_house()?, 1, &wrong),
+            (current_house()?, 2, &h.node),
+            (other_house, 1, &h.node),
+            (other_world, 1, &h.node),
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            assert!(matches!(
+                load_house_interior_in_transaction(&mut tx, &house, generation, node).await,
+                Err(HouseInteriorLoadError::NotCurrent)
+            ));
+            tx.rollback().await?;
+        }
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let empty = load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node)
+            .await
+            .map_err(native::debug)?;
+        assert!(empty.items.is_empty());
+        assert_eq!(empty.house, current_house()?);
+        assert_eq!(empty.ownership_generation, 1);
+        let readable: bool = sqlx::query_scalar("SELECT has_table_privilege(current_user,'game_item_house_interior_locations','SELECT') OR has_table_privilege(current_user,'game_item_house_reclaim_provenance','SELECT')")
+            .fetch_one(&mut *tx).await?;
+        assert!(!readable, "loader must not open blanket table reads");
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn house_loader_reads_actual_native_shape_identity_location_and_provenance() -> TestResult {
+    use crate::durability::house_interior::load_house_interior_in_transaction;
+    run_native("house_loader_native", async |h, backpack, item| {
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let request = item_request(
+            item,
+            390,
+            HouseItemAction::Place {
+                source: HouseCharacterSource::Inventory {
+                    parent: backpack,
+                    ordinal: 1,
+                },
+                position: vec![1, 2, 3],
+            },
+        )?;
+        let candidate = h
+            .root
+            .freeze_house_item(&a, &h.node, house_fence()?, request)
+            .await
+            .map_err(native::debug)?;
+        let receipt = committed(
+            h.root
+                .commit_house_item(&a, &h.node, house_fence()?, &candidate)
+                .await
+                .map_err(native::debug)?,
+        )?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let snapshot = load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node)
+            .await
+            .map_err(native::debug)?;
+        assert_eq!(snapshot.items.len(), 1);
+        let loaded = &snapshot.items[0];
+        assert_eq!(loaded.item_instance_id, item);
+        assert_eq!(loaded.definition.family, "Item");
+        assert_eq!(loaded.definition.production_key, "fixture:house.item");
+        assert_eq!(loaded.definition.revision_ref, "definition-r1");
+        assert_eq!(loaded.quantity, 1);
+        assert_eq!(loaded.spatial_position, vec![1, 2, 3]);
+        assert_eq!(loaded.placement_transaction_id, receipt.transaction_id);
+        assert_eq!(
+            loaded.reclaim_subject_character_id,
+            native::id(native::CHARACTER)
+        );
+        assert_eq!(loaded.provenance_revision, 1);
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn house_loader_retains_registration_and_assignment_locks_in_callers_transaction() -> TestResult {
+    use crate::durability::house_interior::load_house_interior_in_transaction;
+    run_native("house_loader_locks", async |h, _, _| {
+        let mut held = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *held)
+            .await?;
+        load_house_interior_in_transaction(&mut held, &current_house()?, 1, &h.node)
+            .await
+            .map_err(native::debug)?;
+        for query in [
+            "SELECT 1 FROM game_node_registrations WHERE node_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT",
+            "SELECT 1 FROM game_runtime_scope_assignments WHERE holder_node_id=encode($1,'hex')::uuid AND scope_kind=2 FOR UPDATE NOWAIT",
+        ] {
+            let mut competitor = h.pool.begin().await?;
+            let result = sqlx::query(query)
+                .bind(h.node.fact().node_id().as_bytes().as_slice())
+                .execute(&mut *competitor)
+                .await;
+            assert!(
+                matches!(result, Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("55P03")),
+                "current authority must stay locked until caller TX ends"
+            );
+            competitor.rollback().await?;
+        }
+        held.rollback().await?;
+        let mut successor = h.pool.begin().await?;
+        sqlx::query(
+            "SELECT 1 FROM game_runtime_scope_assignments WHERE scope_kind=2 FOR UPDATE NOWAIT",
+        )
+        .execute(&mut *successor)
+        .await?;
+        successor.rollback().await?;
+        Ok(())
+    })
+}
