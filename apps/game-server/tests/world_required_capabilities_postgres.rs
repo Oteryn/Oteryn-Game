@@ -36,6 +36,16 @@ use std::sync::{
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+async fn require_postgres_17_6(pool: &sqlx::PgPool) -> TestResult {
+    let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
+        .fetch_one(pool)
+        .await?;
+    if version != 170006 {
+        return Err(format!("ADMIT0 requires PostgreSQL 17.6 (170006), received {version}").into());
+    }
+    Ok(())
+}
+
 async fn durable_counts(
     pool: &sqlx::PgPool,
 ) -> Result<(i64, i64, i64, i64, i64, i64), sqlx::Error> {
@@ -55,11 +65,12 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
             let database = postgres::IsolatedPostgres::create("admit0_fresh_refusal").await?;
             let result = async {
                 let url = database.database_url()?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                require_postgres_17_6(&pool).await?;
                 durability::MigrationExecutor::connect_migration(&url)
                     .await?
                     .apply_embedded_ledger()
                     .await?;
-                let pool = sqlx::PgPool::connect(&url).await?;
                 let now: i64 = sqlx::query_scalar(
                     "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
                 )
@@ -201,7 +212,9 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
             }
             .await;
             database.cleanup().await?;
-            result
+            result?;
+            println!("ADMIT0_PG17_6_PASS fresh_atomic_refusal");
+            Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
 
@@ -221,11 +234,12 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
             let database = postgres::IsolatedPostgres::create("admit0_current_owner").await?;
             let result = async {
                 let url = database.database_url()?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                require_postgres_17_6(&pool).await?;
                 durability::MigrationExecutor::connect_migration(&url)
                     .await?
                     .apply_embedded_ledger()
                     .await?;
-                let pool = sqlx::PgPool::connect(&url).await?;
                 let now: i64 = sqlx::query_scalar(
                     "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
                 )
@@ -313,7 +327,9 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
             }
             .await;
             database.cleanup().await?;
-            result
+            result?;
+            println!("ADMIT0_PG17_6_PASS current_runtime_replacement");
+            Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
 
@@ -408,8 +424,9 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
         let database = postgres::IsolatedPostgres::create("admit0_v2_refusal").await?;
         let result = async {
             let url = database.database_url()?;
-            durability::MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
+            require_postgres_17_6(&pool).await?;
+            durability::MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
             let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
@@ -580,6 +597,8 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
             Ok::<(), Box<dyn std::error::Error>>(())
         }.await;
         database.cleanup().await?;
-        result
+        result?;
+        println!("ADMIT0_PG17_6_PASS v2_prepare_commit_refusal");
+        Ok::<(), Box<dyn std::error::Error>>(())
     }))
 }
