@@ -56,14 +56,11 @@ fn checked_secret_is_retained_and_only_the_bound_world_can_read_it() -> TestResu
     assert_eq!(read.clock_identity, "clock-v1");
     assert_eq!(read.policy_revision, "policy-7");
     assert_eq!(read.clock.absolute_elapsed_ms(18_900_000), Some(900_000));
-    assert_eq!(read.root, &GameplayDecisionRoot::from_bytes([0x39; 32]));
+    assert!(read.root == &GameplayDecisionRoot::from_bytes([0x39; 32]));
     assert!(retained.read(world(2)?).is_none());
     // Altering the source file after boot cannot reseed the retained World root.
     std::fs::write(file.seed(), [0x72; 32])?;
-    assert_eq!(
-        retained.read(world(1)?).ok_or("retained binding")?.root,
-        read.root
-    );
+    assert!(retained.read(world(1)?).ok_or("retained binding")?.root == read.root);
     let debug = format!("{retained:?}");
     assert!(debug.contains("<redacted>"));
     assert!(!debug.contains("GameplayDecisionRoot"));

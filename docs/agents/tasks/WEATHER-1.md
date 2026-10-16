@@ -253,3 +253,9 @@ Lead independent source review PASS for the owned retained-config leaf; changed-
 Rustfmt/diff and governance validator +124 tests PASS. D1122 permits this
 NOT_FULLY_QUALIFIED checkpoint; new native/strict/runtime remain NOT_RUN. The
 private shared A2 proposal remains uncommitted to the product and slot-bound.
+
+Native compile found two test assertions requiring Debug on intentionally
+non-Debug GameplayDecisionRoot (E0277, duplicate diagnostics). Assertions now use
+boolean equality, preserving the secret type without printing its bytes. First
+compile exit101/runtime NOT_RUN retained; repaired source requires new native
+qualification. Production loader source is unchanged.
