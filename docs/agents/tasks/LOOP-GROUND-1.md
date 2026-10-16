@@ -197,3 +197,125 @@ acceptance or independent exact-head review is claimed by pure helper tests.
 
 The detached owned subset is prepared, not accepted as the full LOOP-GROUND-1
 implementation. The original runtime acceptance boxes remain unchecked.
+
+## Native capacity owner, generation 2 (authoring checkpoint; 2026-10-15)
+
+Existing draft #2158 at `8c2e00b6dd3f74fe89cf72acb9980ad1d14061c7`
+has a new exact four-path local allocation: the Ground helper, its tests, the
+original PG wrapper and this card. Accepted Batch §§2–3 remains the rule owner:
+64 physical Ground roots, “not enough room”, no periodic cleanup. The original
+decay-policy/candidate gate is historical; no new decay implementation is made.
+
+`check_ground_cell_root_admission_in_transaction` consumes the existing sealed
+native `SpellItemScopeAuthority` and an actual borrowed physical transaction.
+It reuses `locked_tile_rows_for_scope`, whose genuine producer independently
+checks Root recovery, Node incarnation, current scope assignment/readiness and
+native admission, and holds the existing Channel key-33 lock. The reader checks
+the physical transaction, actual live row placement/generation/order and its
+existing complete 500-visited-item bound. Unknown or incompatible rows are never
+filtered into an empty/cached/truncated fallback. Actual current rows become the
+native remaining inputs to the unchanged count/identity policy; the caller
+cannot supply a remaining/removal DTO.
+
+The caller must read after its actual removals and before its exact prospective
+insertions in that same transaction. The result neither writes nor commits,
+reserves room beyond the transaction, authorizes an insertion, nor qualifies
+current Character/item/content/map/frame facts. In particular, a target matching
+an empty tile is still target DATA; only the eventual actual writer can prove
+the current admitted target. No new authority wrapper, getter, guard predicate,
+cause, schema, clock, role, wire code or migration is introduced.
+
+Zero new roots incur no capacity charge, even for preexisting overfull rows;
+native transaction/source checks remain. Removal-only and rebuild paths preserve
+truth rather than using a capacity refusal to hide/retire it. The actual writer
+still owns stack merging and overflow destinations. Every player drop, death
+spill, map/loot/spell MINT and overflow insertion must later compose this guard
+with its own real source/current authority and exact inserts. No claim of global
+enforcement or complete atomic drop integration follows from this callable part.
+
+### Source qualification plan (not executed)
+
+The original eight pure test bodies remain byte-identical. Eight native PG
+bodies are authored for 63+1/64+1 and 65-root zero admission; an actual native
+Ground-to-container-slot transfer observed without supplied remaining rows;
+foreign physical transaction; stored placement/prospective identity mismatch;
+actual stale scope generation and independently registered nonholder Node;
+native row locks through rollback; opaque stored source/empty-target authority
+distinction; and the native 501-row complete-read refusal. The removal case
+qualifies a real committed source removal followed by a fresh guarded read,
+not an unimplemented removal-plus-insertion compositor.
+
+PG fixtures use installed native migrations, genuine bestiary Root/recovery/
+Node/scope/readiness fixtures, actual MINT/TRANSFER writers and unchanged native
+guards. MINT causes and definition facts are explicitly native test fixtures,
+not gameplay-produced kills or admitted Content. The existing test-only fresh
+spell lane is fixture setup; no fabricated sealed DB authority constructor is
+added. The private-root standalone target is disabled until CP registers the
+module; zero tests there is not a runtime pass. Outside-tree literal native
+registration/selected-body qualification is planned, with its transforms and
+source bindings recorded.
+
+No new Rust or PG result is claimed at this checkpoint. Heavy qualification
+awaits the root's existing Trade/VIP/Guild queue and storage budget. Evidence
+is retained in `/workspace/oteryn-prep/loop-ground-1-native-2-evidence`.
+Early independent review corrected a fixture assertion to the actual native
+`game_item_container_slots` Character/World/item binding; it was caught before
+compilation and is not runtime RED evidence. A wrapper-context concern was
+explicitly retracted after verifying this exact draft's native source, with no
+source expansion. Original full-family acceptance and CP no-ready/merge/shared
+slot rules stay open and unchanged. The worker performs no commit or push.
+
+The source-only phase-3 review removes a newly added module-level
+`allow(dead_code)` rather than hiding the missing production insertion callers.
+The real strict-production result remains pending and any actual unused-chain
+failure will be retained as RED/unqualified. Root permits a separately recorded
+ordinary-Rust-warning metadata context, retaining the configured Clippy denials,
+to qualify the original private-root consumer and selected native bodies after
+that result. This scoped evidence cannot complete the strict/global CI gate or
+substitute for the real future insertion callers. No fake caller or public
+visibility expansion is used.
+
+
+## Native generation 4: actual focused qualification (2026-10-16)
+
+The bounded same-transaction Ground admission component now has an actual
+**16/16 PASS**, comprising the original eight pure cases and eight mandatory
+native PostgreSQL cases. All eight PG fixtures independently reported
+`server_version_num=170006`; zero tests were ignored. The selected native rlib
+and driver compiled and linked successfully. Actual current Root/recovery/Node/
+scope constructors, native MINT/TRANSFER writers, row locks, complete-reader
+bounds and negative authority assertions remained enabled.
+
+The first genuine native run was **10 PASS / 6 FAIL**: six MINT-based fixtures
+supplied an empty `corpse_ref`, which the unchanged native technical-byte guard
+rejects. The shared PG fixture now supplies bounded canonical native test DATA
+`id(3)`. This changes neither authority nor admission rules. All sixteen test
+function bodies and the original eight-case pure prefix remain unchanged.
+The actual failing run and successful successor are both retained.
+
+Production strict metadata remains **RED/unqualified** for six unused private
+Ground-chain items. The enabled original consumer strict check likewise remains
+**RED/unqualified** for two unused existing native harness helpers. Separately
+named ordinary-Rust-warning production and original-consumer metadata contexts,
+and fresh selected-native metadata, passed with every configured Clippy denial
+preserved. No allowance, fake caller, visibility widening or global strict PASS
+was introduced. Production metadata reuse proves the exact retained 1,964-file
+context, all 61 extern/proc-macro artifacts, actual captured argv/environment,
+toolchain and restored artifact hash; the repaired leaf is excluded by native
+`cfg(test)` in the unchanged production graph. Fresh consumer/selected metadata
+and the native sixteen cases were executed after the fixture repair.
+
+The root-approved measured Ground-only operating budget retained the 512 MB
+reserve and all product/test gates. Earlier setup and resource-check failures
+remain evidence. Runtime code hashes before and after qualification are equal;
+this card update is a literal append after that completed execution. Evidence,
+commands, original-body mappings and logs are in
+`/workspace/oteryn-prep/loop-ground-1-native-2-evidence/`, especially
+`attempt-4-tests.log`, `attempt-4-status.json` and `overlay-manifest-attempt-4.json`.
+
+This qualifies the bounded native component and its original fixtures. It does
+not complete every insertion writer, shared module registration, destination/
+stack planning, current Content/map authority, full-server/wire/E2E, global strict
+CI or the complete mechanic. Those CP and runtime acceptance gates remain open.
+Final independent execution review and root-owned candidate publication follow
+this checkpoint; the worker has made no commit or push.

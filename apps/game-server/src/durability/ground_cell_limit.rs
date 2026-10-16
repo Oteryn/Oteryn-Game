@@ -1,11 +1,18 @@
-//! Detached Ground-root admission check; no custody writer or authority grant.
+//! Ground-root admission: native same-transaction census plus the shared count policy.
+//! No custody writer or authority grant.
 //!
 //! ACCEPT-BATCH-2026-10-15 §§2–3 sets 64 items per tile and forbids periodic
 //! ground cleanup between resets. This check has no clock, expiry or state.
 
+use super::character_progression::uuid_text;
 use super::item_mint::GroundItemInstance;
+use super::item_mint::{GroundPlacement, TypedDefinitionRef};
+use super::spell_item_transaction::{
+    SpellItemError, SpellItemScopeAuthority, locked_tile_rows_for_scope,
+};
 use super::spell_items_abi::{SpellGroundTarget, decode_ground_cell};
 use crate::foundation::{ChannelId, WorldId};
+use sqlx::{Postgres, Row, Transaction};
 
 pub(crate) const GROUND_CELL_ROOT_LIMIT: usize = 64;
 
@@ -22,6 +29,92 @@ impl GroundCellLimitError {
             Self::IncompatibleInput => None,
         }
     }
+}
+
+#[derive(Debug)]
+pub(crate) enum GroundCellAdmissionError {
+    Limit(GroundCellLimitError),
+    /// Preserve native authority, source-integrity and database failures. Unknown
+    /// occupancy is never interpreted as an empty tile or as a capacity refusal.
+    Source(SpellItemError),
+}
+
+impl From<SpellItemError> for GroundCellAdmissionError {
+    fn from(value: SpellItemError) -> Self {
+        Self::Source(value)
+    }
+}
+
+/// Check new physical roots against the actual complete live Ground census.
+/// The caller already holds the native scope authority in this physical transaction;
+/// its native admission and Channel owner locks last until commit/rollback. Read after
+/// actual removals, before the exact proposed insertions. No remaining/removal DTO is
+/// accepted, and no query, lock, authority predicate or custody writer is duplicated.
+///
+/// `target` and `inserted` are DATA: matching an empty tile does not qualify its current
+/// admitted map/content/frame. The eventual writer must independently qualify them,
+/// validate current Character/item authority and perform exactly those insertions in
+/// this transaction. Success is neither insertion permission nor a reservation that
+/// survives commit. Every insertion route must integrate this check separately.
+///
+/// With no new roots, a merge/removal/rebuild incurs no capacity charge, including a
+/// preexisting overfull tile. Native source/same-transaction checks still apply. This
+/// function never removes/hides truth, runs cleanup, or guesses overflow/merge rules.
+pub(crate) async fn check_ground_cell_root_admission_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+    inserted: &[GroundItemInstance],
+) -> Result<(), GroundCellAdmissionError> {
+    decode_ground_cell(&target.spatial_position)
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let rows = locked_tile_rows_for_scope(tx, authority, target).await?;
+    if inserted.is_empty() {
+        return Ok(());
+    }
+    let world = WorldId::decode(&authority.world_bytes())
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let channel = ChannelId::decode(&authority.channel_bytes())
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let remaining = rows
+        .into_iter()
+        .map(|row| -> Result<_, SpellItemError> {
+            let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+                .map_err(|_| SpellItemError::Rejected("invalid live Ground quantity"))?;
+            if quantity == 0 {
+                return Err(SpellItemError::Rejected("empty live Ground root"));
+            }
+            Ok(GroundItemInstance {
+                item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+                world_id: world,
+                channel_id: channel,
+                definition: TypedDefinitionRef {
+                    family: row.try_get("definition_family")?,
+                    production_key: row.try_get("definition_production_key")?,
+                    revision_ref: row.try_get("definition_revision_ref")?,
+                },
+                quantity,
+                runtime_scope_ownership_generation: authority.generation(),
+                ground: GroundPlacement {
+                    spatial_position: row.try_get("spatial_position")?,
+                    corpse_ref: row.try_get("corpse_ref")?,
+                    map_revision: row.try_get("map_revision")?,
+                    content_revision: row.try_get("content_revision")?,
+                    native_room_placement_context: row.try_get("native_room_placement_context")?,
+                },
+                minted_transaction_id: uuid_text(row.try_get("minted_transaction_id")?)?,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    check_ground_cell_root_admission(
+        world,
+        channel,
+        authority.generation(),
+        target,
+        &remaining,
+        inserted,
+    )
+    .map_err(GroundCellAdmissionError::Limit)
 }
 
 /// Checks the physical Ground roots that would coexist after an admission.
