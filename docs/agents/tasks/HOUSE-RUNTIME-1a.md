@@ -382,3 +382,72 @@ Validation sources/ranges/hashes, complete source manifests and raw results are 
 guard repair, not another full native or PostgreSQL run. Production, SQL, proto,
 registry and the earlier component evidence are unchanged. The new candidate still
 needs exact-head CI/required review; the PR stays draft and only root publishes it.
+
+## Family authoring and qualification repair — 2026-10-16
+
+The user directly confirmed exclusive authorship of this family in this chat:
+the previous team will not write these branches, and no additional CP lease number
+is required for current owned paths. The lead is the sole author of this checkout.
+This pass explicitly returns to AUTHORING from published reference
+`967d972d29feba8307cff84f3f3b7929dea240cb`; it has not selected a new qualified head.
+No shared file, migration, registry, wiring or content is changed.
+
+The current-main read is `24fc332f256638e3b784bff1b3c85b18e2665a76`.
+The older base/migration-number statements above are historical slot provenance,
+not assertions about current main. The published exact head has green game-gate
+and 18 successful checks plus one skipped check, as freshly read from GitHub.
+Those checks do not qualify the source changes in this authoring pass.
+
+Two independent nonauthor source reviews covered the published complete bounded
+scope, including its actual callers, SQL guards, audit codec, resource registries
+and test registration. They found no demonstrated production authority bypass but
+identified missing uncommitted-apply authority and distinct-command/concurrent
+revocation qualification. The repair adds three literal native test bodies:
+
+- A 27-case matrix: Place, Take and TileMove each run in fresh databases with one
+  independently changed current connection generation, Character lease, terminal
+  session, native assignment replacement, native assignment revocation, node
+  revocation, guild revision, ACL revision or missing access row. A valid frozen,
+  uncommitted candidate first attempts the native writer, then the matching SQL
+  apply under the runtime role using original expectations and actual fixture-node
+  possession. Full value/provenance/receipt/event rows remain unchanged; retained
+  reservation identities remain fixed and exactly one retry unit is consumed.
+- Three distinct-command races against genuine source custody, with both candidates
+  frozen before commit. Exactly one commits and the other is SourceChanged. Checks
+  bind winner receipt/proof/event, item revision, custody, placement transaction,
+  reclaim subject/revision and ordinals; losing reconciliation adds no value effect.
+- Both orders of actual ACL revocation versus native apply. PostgreSQL blocking
+  observations establish the interleaving. A test-only scheduling trigger preserves
+  every existing guard; its connection is closed before joins wait, including on
+  observation errors. No synthetic current-authority record or guard disabling is
+  used. The common SQL access-lock boundary precedes all three shape branches;
+  interleaving uses Place while the authority matrix exercises each actual shape.
+
+Session deletion is not an applicable operator because committed handoff FKs retain
+the session; terminal state is exercised instead. Physical assignment deletion is
+forbidden by its monotonic/receipt guard; native Revoke supplies missing authority.
+Expected facts are never reconstructed from the negatively mutated current row.
+All owned PostgreSQL entry paths now error on missing/non-Unicode canonical test
+configuration instead of returning success without execution. Exact PostgreSQL
+17.6 checks and all original test bodies/semantic assertions remain retained.
+
+Source-review repairs were batched: an initial comparison wrongly assumed
+HouseWriterError implemented PartialEq; explicit fieldless variant matching fixes
+that test without modifying production error types. Race identity assertions and
+actual revocation scheduling were completed before this candidate is frozen.
+These are source dispositions, not claims that RED/GREEN execution occurred.
+
+Validation so far: official SHA-verified Rust1.94 rustfmt parse/format with child
+traversal disabled and diff whitespace pass. Native compilation, Clippy, all package
+checks and PostgreSQL execution remain pending the approved PC executor/global slot
+under D1011. No successful execution count is claimed for the added cases.
+An external source-bound executor/checkpoint packet is retained at
+`/workspace/house-family-handoff/`; it is not an automatic queue or background job.
+
+The registry conflict has a separately reviewed additive-union proposal preserving
+all current-main entries and existing maxima; applying it/merging main still needs
+the concrete shared CP slot. Candidate tag11 still requires CP/architect disposition.
+Production access remains the accepted section10 no-row/false staging boundary.
+No additional mechanic is invented for this limited task; HOUSE-ACL, runtime1b/1c,
+entry/exit contract and content owners retain their integration responsibilities.
+All original acceptance boxes and final CP/CI/merge qualification remain open.

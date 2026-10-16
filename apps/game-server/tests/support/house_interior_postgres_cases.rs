@@ -270,8 +270,7 @@ fn house_interior_provenance_revision_cannot_wrap() {
 
 async fn database_case() -> TestResult {
     let Ok(admin_url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        eprintln!("PRE-ROUTING / NONCANONICAL: PostgreSQL cases not executed; test URL absent");
-        return Ok(());
+        return Err("House PostgreSQL cases require the canonical PG17.6 executor URL".into());
     };
     if !admin_url.starts_with("postgresql://oteryn_test_admin:")
         || !admin_url.ends_with("@127.0.0.1:5432/postgres")
@@ -583,7 +582,7 @@ fn run_native(
     case: impl AsyncFnOnce(&native::Harness, [u8; 16], [u8; 16]) -> TestResult,
 ) -> TestResult {
     let Some(admin) = native::configured_admin() else {
-        return Ok(());
+        return Err("House PostgreSQL cases require the canonical PG17.6 executor URL".into());
     };
     native::runtime()?.block_on(async {
         let h = native::Harness::create(admin, tag).await?;
@@ -996,6 +995,599 @@ fn house_shapes_fail_closed_current_fences_access_and_tile() -> TestResult {
         assert_eq!(h.count("game_item_container_entries").await?, 1);
         Ok(())
     })
+}
+
+// Compare actual rows, including provenance and item revisions, rather than only
+// cardinalities. Reservations are checked separately because a refused apply
+// intentionally consumes one durable retry unit.
+async fn house_value_snapshot(h: &native::Harness) -> TestResult<Vec<serde_json::Value>> {
+    let mut rows = Vec::new();
+    for table in [
+        "game_item_instances",
+        "game_item_container_entries",
+        "game_item_container_slots",
+        "game_item_house_interior_locations",
+        "game_item_house_reclaim_provenance",
+        "game_item_house_placement_transactions",
+        "game_item_house_shape_proofs",
+        "game_item_transfer_receipts",
+        "game_item_audit_outbox",
+    ] {
+        rows.push(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+            "SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]'::jsonb) FROM {table} t"
+        ))).fetch_one(&h.pool).await?);
+    }
+    Ok(rows)
+}
+
+async fn house_request_for_shape(
+    h: &native::Harness,
+    backpack: [u8; 16],
+    item: [u8; 16],
+    shape: u8,
+) -> TestResult<HouseItemRequest> {
+    let place = item_request(
+        item,
+        900,
+        HouseItemAction::Place {
+            source: HouseCharacterSource::Inventory {
+                parent: backpack,
+                ordinal: 1,
+            },
+            position: vec![1, 2, 3],
+        },
+    )?;
+    if shape == 5 {
+        return Ok(place);
+    }
+    let seal = h.recovery.seal_current().map_err(native::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(native::debug)?;
+    let candidate = h
+        .root
+        .freeze_house_item(&authority, &h.node, house_fence()?, place)
+        .await
+        .map_err(native::debug)?;
+    let placed = committed(
+        h.root
+            .commit_house_item(&authority, &h.node, house_fence()?, &candidate)
+            .await
+            .map_err(native::debug)?,
+    )?;
+    let action = match shape {
+        6 => HouseItemAction::Take {
+            placement: placed.transaction_id,
+            provenance_revision: 1,
+        },
+        7 => HouseItemAction::TileMove {
+            placement: placed.transaction_id,
+            provenance_revision: 1,
+            position: vec![4, 5, 6],
+        },
+        _ => return Err("unknown test shape".into()),
+    };
+    let mut request = item_request(item, 901, action)?;
+    if shape == 6 {
+        request.backpack = Some(HouseBackpackFacts {
+            definition: native::backpack_facts().definition,
+            capacity: 20,
+        });
+    }
+    Ok(request)
+}
+
+#[test]
+fn house_uncommitted_apply_rechecks_independent_current_authority() -> TestResult {
+    // One database per operator: never restore a terminal authority or let an
+    // earlier refusal exhaust the retry budget and mask a later predicate.
+    for shape in [5, 6, 7] {
+        for operator in 0..9 {
+            run_native(
+                &format!("house_interior_a{shape}_{operator}"),
+                async |h, backpack, item| {
+                    let request = house_request_for_shape(h, backpack, item, shape).await?;
+                    let command = request.command.command_id().get().to_string();
+                    let seal = h.recovery.seal_current().map_err(native::debug)?;
+                    let authority = h
+                        .root
+                        .open_character_authority(&seal)
+                        .await
+                        .map_err(native::debug)?;
+                    let candidate = h
+                        .root
+                        .freeze_house_item(&authority, &h.node, house_fence()?, request)
+                        .await
+                        .map_err(native::debug)?;
+                    let before = house_value_snapshot(h).await?;
+                    let reservation_before: serde_json::Value = sqlx::query_scalar(
+                    "SELECT to_jsonb(r)-'work_units_used' FROM game_item_transfer_reservations r WHERE command_id=$1::text::numeric"
+                ).bind(&command).fetch_one(&h.pool).await?;
+                    let expected = match operator {
+                        0..=2 => {
+                            let query = match operator {
+                                0 => {
+                                    "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid"
+                                }
+                                1 => {
+                                    "UPDATE game_durability_reconnect_sessions SET character_lease_generation=character_lease_generation+1 WHERE game_session_id=encode($1,'hex')::uuid"
+                                }
+                                _ => {
+                                    "UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid"
+                                }
+                            };
+                            assert_eq!(
+                                sqlx::query(query)
+                                    .bind(house_fence()?.game_session_id.as_bytes().as_slice())
+                                    .execute(&h.pool)
+                                    .await?
+                                    .rows_affected(),
+                                1
+                            );
+                            HouseWriterError::NotCurrent
+                        }
+                        3 | 4 => {
+                            let row = sqlx::query("SELECT ownership_generation::text,source_revision::text FROM game_runtime_scope_assignments WHERE scope_key=game_house_scope_key(encode($1,'hex')::uuid,$2)")
+                            .bind(native::id(native::WORLD).as_slice()).bind(HOUSE).fetch_one(&h.pool).await?;
+                            let predecessor =
+                                crate::durability::house_scope_handoff::HouseScopePredecessor {
+                                    ownership_generation: row
+                                        .try_get::<String, _>("ownership_generation")?
+                                        .parse()?,
+                                    source_revision: row
+                                        .try_get::<String, _>("source_revision")?
+                                        .parse()?,
+                                };
+                            let command = if operator == 3 {
+                                HouseScopeAssignmentCommand::Replace {
+                                    house: current_house()?,
+                                    predecessor,
+                                    target: h.node.fact(),
+                                }
+                            } else {
+                                HouseScopeAssignmentCommand::Revoke {
+                                    house: current_house()?,
+                                    predecessor,
+                                }
+                            };
+                            assert!(matches!(
+                                h.root
+                                    .assign_house_scope(HouseScopeAssignmentRequest {
+                                        operation_key: OperationKey::from_bytes(
+                                            [90 + operator; 32]
+                                        ),
+                                        actor: ControlActor::new("oteryn_test_admin")
+                                            .map_err(native::debug)?,
+                                        actor_role: "oteryn_test_admin".into(),
+                                        command,
+                                    })
+                                    .await
+                                    .map_err(native::debug)?,
+                                HouseScopeAssignmentOutcome::Committed(_)
+                            ));
+                            HouseWriterError::NotCurrent
+                        }
+                        5 => {
+                            h.root
+                                .revoke_node_registration(h.node.fact())
+                                .await
+                                .map_err(native::debug)?;
+                            HouseWriterError::NotCurrent
+                        }
+                        6 => {
+                            sqlx::query("UPDATE test_house_grants SET guild_revisions=jsonb_build_object('fixture:guild',2)")
+                            .execute(&h.pool).await?;
+                            HouseWriterError::AccessChanged
+                        }
+                        7 => {
+                            sqlx::query("UPDATE test_house_properties SET acl_revision=2")
+                                .execute(&h.pool)
+                                .await?;
+                            HouseWriterError::AccessChanged
+                        }
+                        _ => {
+                            sqlx::query("DELETE FROM test_house_grants")
+                                .execute(&h.pool)
+                                .await?;
+                            HouseWriterError::NoAccess
+                        }
+                    };
+                    // Expectations remain the original independently prepared facts;
+                    // never manufacture a matching fence from the mutated DB row.
+                    let result = h
+                        .root
+                        .commit_house_item(&authority, &h.node, house_fence()?, &candidate)
+                        .await;
+                    assert!(
+                        matches!(
+                            (&result, &expected),
+                            (
+                                Err(HouseWriterError::NotCurrent),
+                                HouseWriterError::NotCurrent
+                            ) | (
+                                Err(HouseWriterError::AccessChanged),
+                                HouseWriterError::AccessChanged
+                            ) | (Err(HouseWriterError::NoAccess), HouseWriterError::NoAccess)
+                        ),
+                        "{result:?}"
+                    );
+                    let row = sqlx::query("SELECT transaction_id::text,house_intent,work_units_used,to_jsonb(r)-'work_units_used' AS immutable FROM game_item_transfer_reservations r WHERE command_id=$1::text::numeric")
+                    .bind(&command).fetch_one(&h.pool).await?;
+                    assert_eq!(row.try_get::<i16, _>("work_units_used")?, 1);
+                    assert_eq!(
+                        row.try_get::<serde_json::Value, _>("immutable")?,
+                        reservation_before
+                    );
+                    let mut p: serde_json::Value = row.try_get("house_intent")?;
+                    p["transaction"] = row.try_get::<String, _>("transaction_id")?.into();
+                    p["scope_generation"] = "1".into();
+                    p["connection_generation"] = "1".into();
+                    p["lease_generation"] = "2".into();
+                    p["phase"] = "apply".into();
+                    let query = match shape {
+                        5 => {
+                            "SELECT game_house_item_place($1,encode($2,'hex')::uuid,$3::text::numeric,$4)"
+                        }
+                        6 => {
+                            "SELECT game_house_item_take($1,encode($2,'hex')::uuid,$3::text::numeric,$4)"
+                        }
+                        _ => {
+                            "SELECT game_house_item_move($1,encode($2,'hex')::uuid,$3::text::numeric,$4)"
+                        }
+                    };
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                        .execute(&mut *tx)
+                        .await?;
+                    let error = sqlx::query(query)
+                        .bind(p)
+                        .bind(h.node.fact().node_id().as_bytes().as_slice())
+                        .bind(h.node.fact().registration_revision().to_string())
+                        .bind([1u8; 32].as_slice())
+                        .execute(&mut *tx)
+                        .await
+                        .expect_err(
+                            "direct apply must independently reject the same stale authority",
+                        );
+                    let message = match expected {
+                        HouseWriterError::NotCurrent => "NOT_CURRENT",
+                        HouseWriterError::AccessChanged => "ACCESS_CHANGED",
+                        _ => "NO_ACCESS",
+                    };
+                    assert_eq!(
+                        error.as_database_error().and_then(|e| e.code()).as_deref(),
+                        Some("P0001")
+                    );
+                    assert_eq!(
+                        error.as_database_error().map(|e| e.message()),
+                        Some(message)
+                    );
+                    tx.rollback().await?;
+                    assert_eq!(house_value_snapshot(h).await?, before);
+                    Ok(())
+                },
+            )?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn house_distinct_commands_compete_for_one_real_source() -> TestResult {
+    for shape in [5, 6, 7] {
+        run_native(
+            &format!("house_interior_race{shape}"),
+            async |h, backpack, item| {
+                let first_request = house_request_for_shape(h, backpack, item, shape).await?;
+                let mut second_request = first_request.clone();
+                second_request.command = CommandRef::new(
+                    house_fence()?.game_session_id,
+                    CommandId::new(902).map_err(native::debug)?,
+                );
+                let seal = h.recovery.seal_current().map_err(native::debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(native::debug)?;
+                let peer =
+                    crate::durability::DurabilityRoot::connect_test_runtime(&h.database.url)?;
+                assert!(peer.maintain_ready_once().await?);
+                let peer_authority = peer
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(native::debug)?;
+                let first = h
+                    .root
+                    .freeze_house_item(&authority, &h.node, house_fence()?, first_request)
+                    .await
+                    .map_err(native::debug)?;
+                let second = peer
+                    .freeze_house_item(&peer_authority, &h.node, house_fence()?, second_request)
+                    .await
+                    .map_err(native::debug)?;
+                let events = h.count("game_item_audit_outbox").await?;
+                let receipts = h.count("game_item_transfer_receipts").await?;
+                let proofs = h.count("game_item_house_shape_proofs").await?;
+                let before: (String, i64, i16) = sqlx::query_as("SELECT state_revision::text,quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).fetch_one(&h.pool).await?;
+                let (one, two) = native::join_two(
+                    h.root
+                        .commit_house_item(&authority, &h.node, house_fence()?, &first),
+                    peer.commit_house_item(&peer_authority, &h.node, house_fence()?, &second),
+                )
+                .await;
+                let (winner, loser) = match (one, two) {
+                    (Ok(HouseItemOutcome::Committed(r)), Err(HouseWriterError::SourceChanged)) => {
+                        (r, &second)
+                    }
+                    (Err(HouseWriterError::SourceChanged), Ok(HouseItemOutcome::Committed(r))) => {
+                        (r, &first)
+                    }
+                    outcomes => return Err(format!(
+                        "distinct causes require one winner and a source-change loser: {outcomes:?}"
+                    )
+                    .into()),
+                };
+                assert_eq!(h.count("game_item_audit_outbox").await?, events + 1);
+                assert_eq!(h.count("game_item_transfer_receipts").await?, receipts + 1);
+                assert_eq!(h.count("game_item_house_shape_proofs").await?, proofs + 1);
+                let after: (String, i64, i16, String) = sqlx::query_as("SELECT state_revision::text,quantity,lifecycle,last_transaction_id::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(after.0.parse::<u64>()?, before.0.parse::<u64>()? + 1);
+                assert_eq!((after.1, after.2), (before.1, before.2));
+                assert_eq!(
+                    after.3.replace('-', ""),
+                    winner
+                        .transaction_id
+                        .iter()
+                        .map(|b| format!("{b:02x}"))
+                        .collect::<String>()
+                );
+                assert_eq!(
+                    h.count("game_item_house_interior_locations").await?,
+                    i64::from(shape != 6)
+                );
+                assert_eq!(
+                    h.count("game_item_house_reclaim_provenance").await?,
+                    i64::from(shape != 6)
+                );
+                let first_command: u64 = if shape == 5 { 900 } else { 901 };
+                let work: Vec<i16> = sqlx::query_scalar("SELECT work_units_used FROM game_item_transfer_reservations WHERE game_session_id=encode($1,'hex')::uuid AND command_id IN($2::text::numeric,902) ORDER BY command_id")
+                    .bind(house_fence()?.game_session_id.as_bytes().as_slice())
+                    .bind(first_command.to_string()).fetch_all(&h.pool).await?;
+                assert_eq!(work, vec![1, 1]);
+                let retained: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_transfer_receipts r JOIN game_item_house_shape_proofs p USING(transaction_id,event_id) WHERE r.transaction_id=encode($1,'hex')::uuid AND r.event_id=encode($2,'hex')::uuid AND r.source_item_instance_id=encode($3,'hex')::uuid AND r.shape=$4 AND p.shape=r.shape AND p.item_instance_id=r.source_item_instance_id")
+                    .bind(winner.transaction_id.as_slice()).bind(winner.event_id.as_slice())
+                    .bind(item.as_slice()).bind(i16::from(shape)).fetch_one(&h.pool).await?;
+                assert_eq!(retained, 1);
+                let (envelope, event) = house_audit::decode_house_transfer_envelope(
+                    winner.envelope.as_deref().ok_or("retained winning event")?,
+                )
+                .map_err(native::debug)?;
+                assert_eq!(envelope.event_id, winner.event_id);
+                assert_eq!(
+                    envelope
+                        .transaction_event
+                        .as_ref()
+                        .ok_or("transaction event")?
+                        .transaction_id,
+                    winner.transaction_id
+                );
+                assert_eq!(event.before, event.after);
+                assert_eq!(
+                    event.before.as_ref().ok_or("item state")?.item_instance_id,
+                    item
+                );
+                if shape == 6 {
+                    let destination: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid AND placement_ordinal=1 AND placed_transaction_id=encode($4,'hex')::uuid")
+                        .bind(item.as_slice()).bind(native::id(native::CHARACTER).as_slice())
+                        .bind(backpack.as_slice()).bind(winner.transaction_id.as_slice())
+                        .fetch_one(&h.pool).await?;
+                    assert_eq!(destination, 1);
+                } else {
+                    assert_eq!(h.count("game_item_container_entries").await?, 0);
+                    let position = if shape == 5 {
+                        vec![1u8, 2, 3]
+                    } else {
+                        vec![4u8, 5, 6]
+                    };
+                    let destination: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_house_interior_locations l JOIN game_item_house_reclaim_provenance p USING(item_instance_id,world_id,house_key) WHERE l.item_instance_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid AND l.house_key=$3 AND l.spatial_position=$4 AND l.stack_ordinal=1 AND l.placed_transaction_id=encode($5,'hex')::uuid AND p.placement_transaction_id=l.placed_transaction_id AND p.reclaim_subject_character_id=encode($6,'hex')::uuid AND p.provenance_revision=$7::text::numeric")
+                        .bind(item.as_slice()).bind(native::id(native::WORLD).as_slice()).bind(HOUSE)
+                        .bind(position).bind(winner.transaction_id.as_slice())
+                        .bind(native::id(native::CHARACTER).as_slice())
+                        .bind(if shape == 5 { "1" } else { "2" }).fetch_one(&h.pool).await?;
+                    assert_eq!(destination, 1);
+                }
+                let values = house_value_snapshot(h).await?;
+                assert!(
+                    h.root
+                        .reconcile_house_item(&authority, loser)
+                        .await
+                        .map_err(native::debug)?
+                        .is_none()
+                );
+                assert_eq!(house_value_snapshot(h).await?, values);
+                Ok(())
+            },
+        )?;
+    }
+    Ok(())
+}
+
+async fn wait_house_blocker(
+    h: &native::Harness,
+    blocker: i32,
+    waiter: Option<i32>,
+) -> TestResult<i32> {
+    let observation = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+        loop {
+            let pid: Option<i32> = sqlx::query_scalar("SELECT a.pid FROM pg_stat_activity a WHERE a.datname=current_database() AND a.pid<>pg_backend_pid() AND $1=ANY(pg_blocking_pids(a.pid)) AND ($2::integer IS NULL OR a.pid=$2) LIMIT 1")
+                .bind(blocker).bind(waiter).fetch_optional(&h.pool).await?;
+            if let Some(pid) = pid {
+                return Ok::<i32, sqlx::Error>(pid);
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }).await;
+    match observation {
+        Ok(result) => Ok(result?),
+        Err(_) => Err("actual House writer/revoker lock interleaving was not observed".into()),
+    }
+}
+
+#[test]
+fn house_actual_apply_serializes_both_orders_of_acl_revocation() -> TestResult {
+    for writer_first in [false, true] {
+        let tag = if writer_first {
+            "house_interior_writer_first"
+        } else {
+            "house_interior_revoke_first"
+        };
+        run_native(tag, async |h, backpack, item| {
+            let request = house_request_for_shape(h, backpack, item, 5).await?;
+            let seal = h.recovery.seal_current().map_err(native::debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(native::debug)?;
+            let candidate = h
+                .root
+                .freeze_house_item(&authority, &h.node, house_fence()?, request)
+                .await
+                .map_err(native::debug)?;
+            let before = house_value_snapshot(h).await?;
+            if !writer_first {
+                let mut revoker = h.pool.begin().await?;
+                let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                    .fetch_one(&mut *revoker)
+                    .await?;
+                sqlx::query("UPDATE test_house_properties SET acl_revision=2")
+                    .execute(&mut *revoker)
+                    .await?;
+                let (result, observed) = native::join_two(
+                    h.root
+                        .commit_house_item(&authority, &h.node, house_fence()?, &candidate),
+                    async {
+                        if let Err(error) = wait_house_blocker(h, pid, None).await {
+                            revoker.rollback().await?;
+                            return Err(error);
+                        }
+                        revoker.commit().await?;
+                        Ok::<(), Box<dyn std::error::Error>>(())
+                    },
+                )
+                .await;
+                observed?;
+                assert!(
+                    matches!(result, Err(HouseWriterError::AccessChanged)),
+                    "{result:?}"
+                );
+                assert_eq!(house_value_snapshot(h).await?, before);
+            } else {
+                // Scheduling only: pause the ACTUAL native shape after it has read
+                // and locked current access. All original value/authority guards
+                // remain installed; this trigger supplies no proof or privilege.
+                sqlx::raw_sql("CREATE FUNCTION test_house_pause_shape() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(2163902); RETURN NEW; END $$; CREATE TRIGGER test_house_pause_shape BEFORE INSERT ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION test_house_pause_shape()")
+                    .execute(&h.pool).await?;
+                let mut gate = PgConnection::connect(&h.database.url).await?;
+                let gate_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                    .fetch_one(&mut gate)
+                    .await?;
+                sqlx::query("SELECT pg_advisory_lock(2163902)")
+                    .execute(&mut gate)
+                    .await?;
+                let mut gate = Some(gate);
+                let (result, observed) = native::join_two(
+                    h.root
+                        .commit_house_item(&authority, &h.node, house_fence()?, &candidate),
+                    async move {
+                        let observation: TestResult = async {
+                            let writer_pid = wait_house_blocker(h, gate_pid, None).await?;
+                            let mut revoker = h.pool.begin().await?;
+                            let revoker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                                .fetch_one(&mut *revoker)
+                                .await?;
+                            let (revoked, blocked) = native::join_two(
+                                async {
+                                    sqlx::query("UPDATE test_house_properties SET acl_revision=2")
+                                        .execute(&mut *revoker)
+                                        .await?;
+                                    revoker.commit().await
+                                },
+                                async {
+                                    let blocked =
+                                        wait_house_blocker(h, writer_pid, Some(revoker_pid)).await;
+                                    gate.take()
+                                        .ok_or("missing scheduling connection")?
+                                        .close()
+                                        .await?;
+                                    blocked?;
+                                    Ok::<(), Box<dyn std::error::Error>>(())
+                                },
+                            )
+                            .await;
+                            blocked?;
+                            revoked?;
+                            Ok::<(), Box<dyn std::error::Error>>(())
+                        }
+                        .await;
+                        // Release on observation errors before join waits for the
+                        // actual writer; never rely on its deadline for cleanup.
+                        if let Some(gate) = gate.take() {
+                            gate.close().await?;
+                        }
+                        observation
+                    },
+                )
+                .await;
+                observed?;
+                let winner = committed(result.map_err(native::debug)?)?;
+                assert_eq!(h.count("game_item_house_interior_locations").await?, 1);
+                let row: (String, String) = sqlx::query_as("SELECT placed_transaction_id::text,p.provenance_revision::text FROM game_item_house_interior_locations l JOIN game_item_house_reclaim_provenance p USING(item_instance_id,world_id,house_key) WHERE l.item_instance_id=encode($1,'hex')::uuid")
+                    .bind(item.as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    row.0.replace('-', ""),
+                    winner
+                        .transaction_id
+                        .iter()
+                        .map(|b| format!("{b:02x}"))
+                        .collect::<String>()
+                );
+                assert_eq!(row.1, "1");
+                let values = house_value_snapshot(h).await?;
+                let mut take = item_request(
+                    item,
+                    903,
+                    HouseItemAction::Take {
+                        placement: winner.transaction_id,
+                        provenance_revision: 1,
+                    },
+                )?;
+                take.backpack = Some(HouseBackpackFacts {
+                    definition: native::backpack_facts().definition,
+                    capacity: 20,
+                });
+                assert!(matches!(
+                    h.root
+                        .freeze_house_item(&authority, &h.node, house_fence()?, take)
+                        .await,
+                    Err(HouseWriterError::AccessChanged)
+                ));
+                assert_eq!(house_value_snapshot(h).await?, values);
+            }
+            let revision: String =
+                sqlx::query_scalar("SELECT acl_revision::text FROM test_house_properties")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(revision, "2");
+            Ok(())
+        })?;
+    }
+    Ok(())
 }
 
 fn audit_move() -> house_audit::OneItemHouseTransferV1 {
@@ -1523,7 +2115,7 @@ impl crate::durability::character_equipment::EquipmentMoveContent for EquipmentF
 #[test]
 fn house_equipped_source_uses_native_owner_without_second_receipt() -> TestResult {
     let Some(admin) = native::configured_admin() else {
-        return Ok(());
+        return Err("House PostgreSQL cases require the canonical PG17.6 executor URL".into());
     };
     native::runtime()?.block_on(async{
         let h=native::Harness::create(admin,"house_interior_equipment").await?;
