@@ -284,9 +284,10 @@ The lead reopened authoring for this owned repair. The duplicate quiet branches 
 one condition using short-circuit `||`: when the cadence has not elapsed, the chance draw
 is still skipped; once due, the same native chance draw decides whether the line is quiet.
 No source admission, actor ownership, randomness, cadence state or chat policy is changed.
-The seven earlier passes belong only to `16ac7974`; this uncommitted successor requires its
-own freeze and fresh real Cargo/lint evidence. The repair author ran no PC/Cargo job and
-made no commit, push, registration or ref change.
+The seven earlier passes belong only to `16ac7974`. At the repair-author handoff the successor
+was uncommitted and required its own freeze and fresh real Cargo/lint evidence; the subsequent
+frozen `547557b8` run is recorded below. The repair author ran no PC/Cargo job and made no
+commit, push, registration or ref change.
 
 Repair-local checks passed: focused official rustfmt 1.94 and diff checks, governance validation
 (22 documents / 9 lanes), and all 124 governance unit tests. These are not successor Cargo or
@@ -295,3 +296,47 @@ strict Clippy evidence.
 Full-package tests, active content binding/admission, budgeted think/chat integration and
 the other actor/travel/shared CP gates above remain outstanding. All original acceptance
 boxes remain open.
+
+## Frozen 547 native continuation — actual full-package failure (2026-10-16)
+
+The lead froze the repaired source at `547557b88c25129d7e140c1a879b8b63244f9233`.
+For that exact source, ordinary focused **7 passed**, full-package `--no-run`, workspace fmt,
+and strict Clippy for both `--lib` and `--all-targets` passed. These results supersede the
+old-head lint failure only for this new source; the original failing/interrupted evidence
+remains retained.
+
+The earlier full-package runtime interruption remains an incomplete run. SAME547 attempt2
+completed its fmt/strict lint gates and stopped before PostgreSQL admission; it is not a
+completed full-package runtime. Attempt3 reuses the verified same-source build/proofs and
+retains those green gates without repeating them. The actual ordinary full Cargo invocation
+under canonical **B + PG** finished with **exit 101**. Its library stage had **3,157 passed /
+29 ignored**, but `character_authority_postgres` finished **1,490 passed / 1 failed**:
+`postgres_target_aggregation::every_postgres_target_runs_its_cases_in_a_ci_run_target`
+reported `npc_world_postgres: includes no support/*_cases.rs file`. The raw evidence is
+`/workspace/oteryn-family-b/actual-npc-successor-pg-3/full-package-tests.log`.
+**Overall full-package result: FAIL**; the library subtotal and earlier green gates do not
+waive this independent aggregation failure or qualify the entire package.
+
+The previously planned
+`547557b88c25129d7e140c1a879b8b63244f9233 -> future docs-only head` bridge was superseded by
+the material owned fixture repair below. Preserve the original 547 manifest, mount, source
+proofs and all interrupted/failed runtime evidence; do not relabel them as execution of a
+future successor.
+
+## Owned PostgreSQL fixture placement repair — successor pending (2026-10-16)
+
+The standalone `tests/npc_world_postgres.rs` contained only the private `TEST_SCHEMA`
+constant, so Cargo discovered an empty PostgreSQL target that violated the existing
+aggregation guard. The unchanged schema string now lives in the existing local
+`#[cfg(test)] mod npc_travel_fixture_data` in `durability/npc_travel.rs`; its native unit
+consumer keeps the same `use` and `sqlx::query(TEST_SCHEMA)` call. The empty standalone
+target is removed. No support/shared file, artificial include, production schema, new
+registration or aggregation-guard exception is introduced.
+
+This material successor is **PENDING a new freeze and real native qualification**. No tests,
+PC/Cargo execution, commit or push were performed by the repair author. The failed 547
+full-package run remains failed; no successor or full-package pass is claimed.
+
+CP admission/current-content binding producer, budgeted NPC scheduler and chat-owner egress
+are still missing. Actor/travel/shared integration gates and all original acceptance boxes
+remain open; no production activation or full NPC-WORLD delivery is claimed.

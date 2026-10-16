@@ -266,8 +266,14 @@ async fn load_arrival(
 }
 
 #[cfg(test)]
-#[path = "../../tests/npc_world_postgres.rs"]
-mod npc_travel_fixture_data;
+mod npc_travel_fixture_data {
+    // Private test schema only; no production migration, role grant or integration writer.
+    pub const TEST_SCHEMA: &str = "CREATE TABLE game_character_pending_arrivals (
+    character_id UUID PRIMARY KEY REFERENCES game_character_roots(character_id),
+    occurrence_id UUID NOT NULL, world_id UUID NOT NULL,
+    tile_x INTEGER NOT NULL, tile_y INTEGER NOT NULL, tile_floor SMALLINT NOT NULL
+)";
+}
 
 #[cfg(test)]
 mod npc_travel_postgres {
