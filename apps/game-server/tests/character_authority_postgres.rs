@@ -3380,3 +3380,6 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+#[path = "support/raid_postgres_cases.rs"]
+mod raid_postgres_cases;

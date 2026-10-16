@@ -4,7 +4,7 @@
 task_id: EVENTS-RAID-1
 title: "EVENTS-RAID-1: raids (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/events-raid-1
@@ -21,7 +21,7 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/raid/ (new) + tests"
-  - "content/raids/ source inputs"
+  - "content/encounters/raids/ source inputs (D1127)"
   - "docs/agents/tasks/EVENTS-RAID-1.md"
 slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/world/pins/*, Rust pins"
@@ -277,3 +277,59 @@ producers, sealed recovery/admission transaction boundary, bounded World-job que
 physical raid actors and announcements, migration/grants and composition wiring.
 Those steps remain separate from this feasible owned-source preparation; no full
 raid acceptance checkbox is closed by the calendar conversion alone.
+
+
+## D1160 native module and PostgreSQL routing — NOT_FULLY_QUALIFIED
+
+CP2131#6224912485 permits the single own-module registration line `mod raid;`
+in `lib.rs` without a shared slot. The existing private data-only raid component
+is now compiled by ordinary Cargo; no scheduler, content or capability is activated.
+The mandatory-PG case moves out of the library unit lane into the owned
+`tests/support/raid_postgres_cases.rs`, registered under D1160 in the existing
+canonical `character_authority_postgres.rs` root. It uses production Content
+and the native canonical Foundation namespace
+and the same real raid sources; no shim or copied authority implementation exists.
+A shared non-test-bearing `raid/core.rs` retains the exact transition/store implementation.
+The library wrapper includes the 20 pure cases; the PG wrapper includes only the one PG case.
+Both share helper-only synthetic test data. No test-bearing source compiles twice,
+and existing private store/helper/field visibility is preserved.
+
+Prior exact4dff source evidence: native21 (20 pure+1PG17.6), workspace fmt and
+strict all-target Clippy PASS, run20261016T204836.133758Z-74565, independent ready
+package review PASS. Those results retain their own exact source provenance.
+The new registration/routing delta has touched-file format and diff checks;
+new native/PG/Clippy/full-package validation remains NOT_RUN until recorded.
+The PG-COVERAGE-1 thin-wrapper rule is respected through the existing canonical
+root; no new standalone target, protected workflow or pin change is needed.
+The full-package RED2162 `progression_initialization_unavailable` fingerprint
+73db711cea32c24a6d9d26736869dea11c39f9610866a20314f5841a338d2ccd is retained.
+No full-package retry or complete qualification is claimed. D1122 permits a
+single coherent existing-draft checkpoint with these RED/NOT_RUN disclosures.
+WorldReset/current-channel port remains #2167; real recovery-TX/actors/content,
+announcements and production wiring are still incomplete under D1127.
+
+
+## Final canonical routing actual native/Clippy — partial checkpoint
+
+Final D1160 code generation passed native listing20/library execution20/0/0,
+canonical Character-authority PG listing1/execution1/0/0 on real PostgreSQL17.6,
+and strict `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+(exit0,622.4s). The full18817-file before/after inventory was identical, fingerprint
+`c7a9ec10c61e59f99654dc840c85b76844c52ea8cceaf58e9b417ae6a8b48af9`.
+The PG case retains actual numericMAX reload at firing ordinals9/10/11.
+Raw results in lead custody: `evidence/2177-canonical-v2-native-result.json`.
+Unit log SHA256135b4d9caca9fef69445d6c0d2c07531e6223c34d20b1a0e668d11e5c4e77cf5;
+PG log fe709d8f6c81fb4ccede996267520dd579ae6e130e269df23ba67662f60baea5;
+Clippy log88ad0a580c3a2a7685d994465c57642eebc7200377bd2f878e366f57d3704b56.
+
+The independently reviewed absence behavior matches canonical test routing:
+unconfigured admin emits PRE-ROUTING/NONCANONICAL and skips ordinary workspace
+runs; malformed/nonunicode supplied routes fail. Actual qualification requires
+configured canonical route, version170006, one positive case and the PG markers,
+so that skip cannot count as evidence. No guard/allowlist is weakened.
+
+These results qualify only the owned data component/routing, with final card
+evidence updated separately under governance. Full package remains NOT_RUN with
+the exact shared RED above retained. Production WorldReset/fences/actor bridge,
+announcements, content/migration/wiring remain open. No ready/PRmerge/rebase,
+paid review trigger or complete raid/PvP/gameplay qualification is claimed.

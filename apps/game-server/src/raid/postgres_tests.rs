@@ -2,7 +2,7 @@
 //! The fixture installs the proposed schema into its own disposable database, never production.
 use super::{
     store::{self, Cas},
-    tests::*,
+    test_support::*,
     *,
 };
 use sqlx::{Connection, Executor};
@@ -10,7 +10,16 @@ type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[test]
 fn private_postgres_cas_replay_reload_rollback_and_concurrent_loser() -> TestResult {
-    let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    let admin = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+        Ok(admin) => admin,
+        Err(std::env::VarError::NotPresent) => {
+            eprintln!(
+                "PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured"
+            );
+            return Ok(());
+        }
+        Err(error) => return Err(error.into()),
+    };
     if !admin.starts_with("postgresql://oteryn_test_admin:")
         || !admin.ends_with("@127.0.0.1:5432/postgres")
     {
