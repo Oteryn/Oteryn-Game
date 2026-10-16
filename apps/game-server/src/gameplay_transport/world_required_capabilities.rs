@@ -232,12 +232,7 @@ impl BoundRequiredCapabilities {
             self.required.offered,
         )
         .map_err(SessionCapabilityError::InvalidProfile)?;
-        let forced: BTreeSet<_> = self
-            .effective()
-            .iter()
-            .copied()
-            .chain(profile)
-            .collect();
+        let forced: BTreeSet<_> = self.effective().iter().copied().chain(profile).collect();
         let supported: Vec<_> = supported
             .iter()
             .copied()
