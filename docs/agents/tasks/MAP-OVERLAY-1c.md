@@ -547,3 +547,20 @@ This source assessment changes no Rust or runtime contract and does not complete
 the still-open acceptance criteria. Whole-reset orchestration needs actual
 transport/node, content activation and initializer consumers outside owned paths;
 HOUSE-RUNTIME-1a remains the dependency for real positive HouseInterior custody.
+
+
+### D1189 caller-transaction issuance seam (source authoring)
+
+CP2131 comment6225612898 assigns the real reset activation composition to G.
+`record_content_activation_in_tx(tx, request)` now performs the existing checked
+issuance SQL within the caller transaction. The public method retains its early
+request validation and delegates without changing SQL bindings/refusal behavior;
+it commits only on success. A refusal may abort PostgreSQL's transaction, so a
+caller must roll back, never continue as though issuance succeeded.
+
+This primitive does not authorize reset or mint current facts. The final reset
+caller must derive the request only from its locked RETIRING job and retain all
+proofs through atomic commit. House preflight, I2187's sealed WorldDrainProof,
+0096 locked-job wrapper/history and final activation/read ports remain to be
+implemented/composed in their assigned order. New strict/runtime/PG checks are
+NOT_RUN; earlier reset/census evidence is preserved without relabelling.
