@@ -2711,7 +2711,10 @@ impl FreshAdmissionStore {
     /// Independent signed-fixture qualification of the same locked ADMIT0 gate.
     /// Production always uses registered custody and the mandatory callback above.
     #[cfg(test)]
-    #[allow(dead_code, reason = "the focused PostgreSQL target drives this test-only seam")]
+    #[allow(
+        dead_code,
+        reason = "the focused PostgreSQL target drives this test-only seam"
+    )]
     pub(crate) async fn apply_complete_reconnect_with_capabilities(
         &self,
         request: std::sync::Arc<CompleteReconnectRequestV1>,

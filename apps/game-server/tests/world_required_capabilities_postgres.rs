@@ -21,7 +21,10 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
-#[expect(dead_code, reason = "shared corruption helpers are unused in this target")]
+#[expect(
+    dead_code,
+    reason = "shared corruption helpers are unused in this target"
+)]
 #[path = "support/postgres.rs"]
 mod postgres;
 
