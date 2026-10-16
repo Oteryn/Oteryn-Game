@@ -42,12 +42,16 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `house scope runtime module (path fixed by CP at GO, under apps/game-server/src/gameplay_transport/ or world_runtime submodule)`
-- `apps/game-server/tests/house_runtime_*.rs`
+- `apps/game-server/src/gameplay_transport/house_runtime.rs`
+- `apps/game-server/src/gameplay_transport/house_runtime_loading.rs`
+- `apps/game-server/src/gameplay_transport/house_runtime_tests.rs`
+- `apps/game-server/tests/house_runtime_postgres.rs`
 - `docs/agents/evidence/HOUSE-RUNTIME-1b-*.md`
 - `docs/agents/tasks/HOUSE-RUNTIME-1b.md` (this record: status and notes only)
 
-To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
+CP D1062 fixes the four implementation paths above. Shared `mod.rs` registration and
+the aggregate test target are slot-only; the historical registration permission
+does not authorize a shared edit during this authoring pass.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -368,3 +372,81 @@ native source hashes and prepared1a exported-file hash verification. Evidence:
 `/workspace/oteryn-prep/house-runtime-1b-evidence`. Full1a/1b/1c delivery, path allocation,
 exit lifting, CP/architect exact-head independent qualification and every original open
 acceptance item remain pending.
+
+## 2026-10-16 bounded closed-boundary authoring
+
+CP/architect [D1062–D1065](https://github.com/Oteryn/Oteryn-Game/pull/2165#issuecomment-6216594046)
+supersedes the historical card-only/path-unfixed allocation above. The owner also
+confirmed exclusive authorship of this existing draft in the current session; no
+additional CP lease number is required. This pass starts from exact branch head
+`b0abc4ceaad2ce905f5b11cc91d1bdd800c90bd0`. It writes only the four fixed files and
+this record, with no shared registration, migration, content, registry or wiring.
+
+The new runtime boundary accepts the native `HouseEntryRequest` by reference and
+returns `HousePrepareOutcome::Refused(HouseClosed)` before load, tile reservation,
+source freeze or durable PREPARE. Saved-house login activation also refuses
+`HouseClosed`. The loading sibling is explicitly a refusal, not a successful
+loader, empty interior or readiness/assignment proof. It has no open flag. The
+exit boundary delegates to the actual `house_scope::exit_into_channel`; leave,
+kick, revalidation and quiesce therefore retain `ExitNotAdmitted`. There is no
+HouseRuntimeOwner/Ready state or actor/session store fabricated to fill the
+missing native ports. These unregistered boundaries have no production caller yet.
+
+Four native-type cases cover a permissive actor precheck, independently
+changed invalid/stale request inputs with the exact request retained, saved-house
+activation, and the actual native exit refusal. The PostgreSQL case uses the
+real migrated PostgreSQL17.6 schema with a schema-valid Channel-session fixture and
+compares complete source-session, handoff and assignment rows before/after each
+boundary. It proves only closed refusal; it supplies no positive current authority,
+house placement/access/load or actor proof. The standalone target is active and
+mounts all five cases once, using the public production types rather than copying
+test-bearing Foundation/durability modules. The production source module has no
+second test mount. Missing or non-Unicode PG routing returns an error, so the
+database case cannot report success without execution. Canonical execution
+requires PostgreSQL17.6 and the case's actual QUALIFIED marker. These cases are
+authored, not executed. CP
+must retain one test-bearing mount when consolidating its aggregate at the slot.
+
+Authority-invariant applicability for this bounded component:
+
+| Boundary | Identity / current / temporal mutation operators |
+|---|---|
+| Door and saved-house activation | Refuse before all authority-consuming work. A permissive precheck, absent assignment, stale lease or missing tile cannot reach loading/PREPARE. No successful authority grant exists in this component. |
+| Exit | Delegates the actual native refusal, with no local fallback/session/position write. |
+| Recovery / restart | NOT_IMPLEMENTED: no persisted outcome is interpreted and no node-wide cleanup is invoked from a house-local call. The existing native reconciliation/release owners remain required. |
+
+D1064's wording about PREPARED handoffs does not narrow the native capacity rule:
+`durability/house_scope_handoff.rs` counts live/reconnectable House sessions **plus**
+PREPARED handoffs against200. This pass does not change that writer or add a weaker
+local occupancy count. Clarification of the wording remains a CP/architect item.
+
+Concrete remaining integration owners and acceptance gates:
+
+- 1a/durability owner: actual current-generation-qualified interior load, consistent
+  item locations/provenance and proper runtime read grant; no direct runtime SELECT
+  or admin pool substitute. This source base has no such loader.
+- Native actor/map owners: real House carrier, active Bundle exact House→tiles and
+  arrival/retained outside entrance binding, current content/assignment/incarnation
+  checks, shared actor policy and collision/door adapters. Generic house flags and
+  a forged Channel cannot fill these ports.
+- Native handoff/admission owners: actual reservation/current placement callers,
+  serialized lifecycle/idle unload/quiesce, restart and uncertain-outcome matrix,
+  real House guard rebind, capacity200 conservation and destination installation.
+- Architect D573/SCOPE-HANDOFF-2: transfer contract and independently qualified
+  ADMIT0 §3.2 selection/scope ack/lost-ack/no-snapshot lift. Until then every entry
+  remains `HOUSE_CLOSED`; D1063 prohibits merge before the transfer contract.
+- CP: #2163 merged prerequisite, shared registration/aggregate test slot, and real
+  integrated RL02 cold/warm p99≤500ms plus RL04 measurements/registry evidence.
+  Timing this refusal helper cannot satisfy either measurement.
+
+Validation is intentionally limited by D1011: no Cargo, rustc, heavy build or PG
+execution was attempted in this cloud environment. The initial formatter command
+was unavailable. The lead subsequently provided an official verified Rust1.94.0
+formatter outside the repository; all four owned Rust files were formatted and
+passed its parse/format check with child traversal disabled. This is not type
+checking or test execution. Governance validation and its124 tests passed; exact
+five-file scope and tracked/untracked whitespace checks passed.
+The external source-bound handoff is
+`/workspace/house-family-handoff/runtime.json`; it records the exact input/output
+hashes and actual static check dispositions. Every original acceptance box remains
+open. No commit, push, ready, review trigger, merge or runtime activation occurred.
