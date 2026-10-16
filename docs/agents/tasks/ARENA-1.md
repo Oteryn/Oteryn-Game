@@ -22,6 +22,7 @@ merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/arena/ (new) + tests"
   - "content/encounters/arenas/ and content/encounters/tibiadrome/ source inputs"
+  - "rulesets/encounters/tibiadrome/ and rulesets/pvp/arena/ source inputs (D1048)"
   - "docs/agents/tasks/ARENA-1.md"
 slot_only_paths:
   - "regenerate_content.py outputs, project.json, manifest.json, content.lock.json, pins, Rust pins"
@@ -38,7 +39,7 @@ Tibiadrome and arenas (encounter rooms, rewards).
 
 | Dependency | State | Gate |
 |---|---|---|
-| BOSS_RAID0 acceptance (CANDIDATE) | NOT ACCEPTED | **BLOCKING** |
+| BOSS_RAID0 acceptance | ACCEPTED 2026-10-15 (D1050) | acceptance met; child runtime gates remain |
 | LOOP-MONSTER-1 | NOT MERGED (Wave 2) | **BLOCKING** |
 | PARTY-XP-1, BOSS-ROOM-1 (child prerequisites) | NOT MERGED | **BLOCKING** |
 
@@ -48,6 +49,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 - apps/game-server/src/arena/ (new) + tests
 - `content/encounters/arenas/ and content/encounters/tibiadrome/ source inputs`
+- `rulesets/encounters/tibiadrome/` and `rulesets/pvp/arena/` source inputs (D1048)
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -104,3 +106,90 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded PvE reference inventory preparation — 2026-10-16
+
+Author: the assigned family lead's arena worker, sole writer of this checkout.
+Authoring base: `d3a34a812cb72e982d994edabbc395c45a02394f`, existing draft #2179,
+`skeleton/arena-1`; live PR metadata/head refreshed before this preparation.
+
+Current decision evidence supersedes the historical acceptance status in the brief:
+[D1046–D1051](https://github.com/Oteryn/Oteryn-Game/pull/2179#issuecomment-6216592796)
+correct ownership and split the mechanic, migration and protocol work;
+[owner acceptance](https://github.com/Oteryn/Oteryn-Game/pull/2179#issuecomment-6216812425)
+accepts A1–A11 plus D1047. D1051 still requires the architecture acceptance PR to
+merge before integration; that merge and the child runtime dependencies are not
+claimed here. The existing permission to draft owned code without assuming
+unmerged schemas permits this source-reference preparation only.
+
+`content/encounters/arenas/pve-catalog.json` contains the 40 existing Creature
+identity triples selected by A8, copied at their actual `definition-r1` revisions.
+Its only field is the existing Encounter tooling catalog's `definitions` array;
+its entries contain only `family`, `key` and `revision`. It introduces no schema,
+canonical identity or asset. It is an offline reference inventory, with no Rust
+loader/caller, runtime authority or content population/activation claim. The
+directory's existing `READY_UNPOPULATED` index remains unchanged. This is partial
+preparation, not completed ARENA-CONTENT-1 or ARENA-1.
+
+### Preserved A8 pit mapping
+
+The flattened catalog order preserves A8's four tiers, ten pits each. Each suffix
+below has the literal `oteryn:creature.` prefix; list order is pit 1 through 10.
+The existing catalog format has no tier/band/scaling fields, so none are added.
+
+| Tier | Catalog positions (1-based) | Ordered Creature key suffixes |
+|---|---|---|
+| Greenhorn | 1–10 | `honour_guard`, `scar_tribe_warrior`, `dire_penguin`, `bonelord`, `deepling_brawler`, `deathbine`, `wyvern`, `bane_of_light`, `cult_scholar`, `pirat_bombardier` |
+| Scrapper | 11–20 | `warlord_ruzad`, `goldhanded_cultist`, `enslaved_dwarf`, `two_headed_turtle`, `draken_abomination`, `rhindeer`, `kerberos`, `rootthing_nutshell`, `juggernaut`, `noxious_ripptor` |
+| Warlord | 21–30 | `sulphider`, `branchy_crawler`, `grand_master_oberon`, `wandering_pillar`, `the_monster`, `the_pale_count`, `zoralurk`, `lloyd`, `melting_frozen_horror`, `tentugly_s_head` |
+| Paragon | 31–40 | `hazardous_phantom`, `overseer_osverger`, `court_warlock`, `soul_of_dragonking_zyrtarch`, `magma_bubble`, `infernatil`, `essence_of_malice`, `the_corruptor_of_souls`, `prince_drazzak`, `the_pale_worm` |
+
+### Provenance and bounded validation
+
+All inputs are retained on the authoring base above. Each selected canonical
+record retains its own donor source binding; this inventory does not upgrade a
+donor fact to official Tibia evidence. A8's HP, XP, reward-boss flag and declared
+shard match all 40 canonical records; each identity has one retained source
+binding naming that same exact reference. No new stats or scaled definitions are
+authored. These SHA256 values bind the inputs and the prepared output:
+
+| Input/output | SHA256 |
+|---|---|
+| `OTERYN_GAME_ARENA1_DECISION_2026-10-15.md` | `cc9636558bc4bd13e7e7b13ad3310fa764c7c8c66fe22c126ad93596b7b339ed` |
+| `creatures-00000-00499.json` | `790bf6b275f52977026e243f3405a2ae7cd7d1c9fd6180d74670c73aff5a2234` |
+| `creatures-00500-00999.json` | `a450f654319808f39dac810b936c20154672a795549fdddb0e4aab5ac12ea246` |
+| `creatures-01000-01499.json` | `d39b9f8a970826f424332d99c1812befa972dd2ad552ade9e328e341eba7555a` |
+| `creatures-01500-01862.json` | `6cc26f42b45a939f72198451e884f2062f746cab4e0d930ed8470dbadecd8461` |
+| `tools/content-schema/encounter-authoring/validate_encounter.py` | `04881610468e68b39795ad0b578e7d00b0d97168711dc8c3bdcf45cbba52bbe0` |
+| `tools/content-schema/encounter-authoring/encounter.schema.json` | `cc77fc37ac446c0e03dcdd1ca2c27dc078195b60a433e48a55e352fb88471b35` |
+| `content/encounters/arenas/pve-catalog.json` | `16a6b518be5ca4800a4e8a78a06fe34ae422d8828c8a86549f6c7676888c20ed` |
+
+The existing Python validator's `CreatureRef` participant schema and catalog
+resolution at `validate_encounter.py:367` accept Creature triples. Compatibility
+was checked before authoring with its retained valid Zamulosh sample: an
+in-memory participant containing all 40 actual references and its corresponding
+catalog validate successfully. Removing a required reference or changing its
+revision is refused as `unresolved definition`. This is a catalog-reader probe,
+not an authored Zamulosh/arena encounter or gameplay test. The positive probe
+qualifies reference resolution inside an existing valid Encounter; standalone
+catalog schema and compiled CONTENT qualification remain unclaimed. Inventory checks require
+exactly 40 unique references in A8 pit order, exact canonical revisions, matching
+HP/XP/boss facts and source-binding targets; an empty or drifting inventory fails.
+
+Actual local checks on this two-file preparation:
+- Actual-file inventory/source check passed, including eight refused inventory
+  variants (empty, duplicate, wrong family/revision/key, reordered and extra
+  top-level/entry fields), plus the existing consumer probe and its two negative
+  cases described above.
+- `python tools/content-schema/encounter-authoring/verify_encounter_schema.py`:
+  233/233 checks passed; synthetic schema/semantic fixtures only.
+- `python tools/agents/validate_governance.py`: passed; 22 documents, 9 lanes.
+- `python -m unittest discover -s tools/agents/tests`: 124 tests passed.
+- No Rust loader references this filename; no Rust build, generated-content
+  rebuild, PostgreSQL validation or gameplay execution is claimed.
+
+Remaining CONTENT-1 work includes actual arena/drome definitions, modifiers,
+locations, four tier rules, scaling and the Paragon reward set. INSTANCE/runtime,
+durable reward/clock work and protocol work remain separate accepted children.
+No new drome references, reward identities, pins, registries, regeneration outputs,
+architecture edits, shared wiring or production changes are included.
