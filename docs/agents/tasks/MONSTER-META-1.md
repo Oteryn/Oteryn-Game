@@ -354,3 +354,15 @@ any write. These new cases have **not yet been compiled or run**: the family lea
 Rust build slot. The earlier 5+1 results do not qualify this changed candidate. Full reward,
 room, reset, runtime and production-role integration remain unqualified; no acceptance box
 is completed, and no commit, push or paid-review trigger has been performed by this worker.
+
+### Native qualification compile repair — 2026-10-16
+
+Returned from frozen `13935a6b40e5e20a80c5318868d1fbb0aa3032a3` to AUTHORING.
+The lead's native listing compile failed with E0061 at the new wrong-secret fixture:
+`NodeRegistrationFact::new` accepts exactly `(node_id, registration_revision)`.
+Removed only the duplicate revision argument. The negative still preserves the genuine
+node identity/revision and changes only the bootstrap secret. No authority, SQL, production
+wiring or expected assertion changed. The failed native-list log
+`20261016T163257.266570Z-44857-monster-meta-assembly-native-list.log` is retained.
+Native listing, ten focused cases, strict clippy, full package tests and RED/GREEN remain
+pending on the repaired successor; the earlier fmt-only failure is also preserved.

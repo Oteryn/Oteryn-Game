@@ -751,7 +751,6 @@ async fn qualify_reward_claims(fixture: &native_fixture::Harness) -> TestResult 
         super::super::runtime_scope_assignment::NodeRegistrationFact::new(
             fact.node_id(),
             fact.registration_revision(),
-            fact.registration_revision(),
         ),
         super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([2; 32]),
     );
