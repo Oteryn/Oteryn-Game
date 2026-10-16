@@ -3,6 +3,7 @@
 // before CP registration. All borrowed native APIs are actual production types/functions.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
+pub use production_server::content;
 pub use production_server::durability::item_mint_audit;
 #[path = "../src/domain/forge.rs"]
 pub mod forge_domain;
@@ -13,6 +14,7 @@ pub mod domain {
 }
 pub mod durability {
     pub use crate::forge_storage as forge;
+    pub use production_server::durability::{item_mint, item_transfer};
 }
 
 use oteryn_game_server::domain::forge::ItemTier;

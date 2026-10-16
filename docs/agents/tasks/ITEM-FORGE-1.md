@@ -138,7 +138,8 @@ ACCEPT_BATCH §1 (owner item 5) accepts IMBUE-FORGE-0; the owning §8 states:
 The row belongs to the ItemInstance and every TRANSFER keeps it”. It also says a
 tier change is `STATE_MUTATION` / `PRESERVE_INSTANCE`. This draft prepares only:
 
-- `domain/forge.rs`: the 0..10 tier value, without classification or eligibility.
+- `domain/forge.rs`: the 0..10 tier value and pure structural checks described
+  in the 2026-10-16 authoring continuation below.
 - `durability/forge.rs`: private schema SQL with actual ItemInstance FK, tier
   bounds, uniqueness and immutable row identity, plus a raw single-statement
   reader. Existing item/no tier row returns zero; unknown/malformed item identity
@@ -194,3 +195,119 @@ Durable commands, original logs, source hashes and honest qualification limits:
 schema/read preparation; family acceptance checkboxes above remain intentionally
 open. No runtime forge, fee/dust mutation, effects, content generation or pins are
 implemented or enabled.
+
+## Authoring continuation — 2026-10-16
+
+The current chat assigns one exclusive author for this PR, recorded in
+`/workspace/oteryn-family/AUTHOR_ASSIGNMENTS.json`; the earlier private lease
+reference above is historical preparation evidence. The continuation stays in
+the assigned forge core, test and task-record paths.
+
+`ForgeItemShape` now consumes the existing `ProjectV2ItemForgeProfile` and native
+`ItemDefinitionFacts`/`ItemStackClass`. It refuses absent profiles, classifications
+outside 1-4, caps outside 1-10, unknown or stackable definitions and stored tiers
+above the supplied definition cap. Caps are Content inputs, not Canary constants.
+Standard fusion checks the complete definition identity including revision,
+consistent profiles, equal tiers and space for the success tier. Standard
+transfer checks the shared class, an untiered receiver, donor tier at least two
+and the receiver's cap for donor tier minus one. Convergence transfer enforces
+the same transfer prerequisites and class four on both definitions, then keeps
+the donor tier subject to the receiver cap. These are reusable pure predicates,
+not a recipe executor or proof of current gameplay eligibility.
+
+The actual writer still must resolve profile-to-definition binding from admitted
+current Content and validate distinct live instances, main-backpack placement,
+absence of imbuements, session-generation and other authority under its actual
+locks. No authoring profile, returned shape or raw stored tier grants that
+authority. Convergence fusion (same-slot facts are absent from the supplied native
+types), RNG, costs, bonuses, receipts, history, schema installation,
+mutation, wire, effects and the existing shared integration blockers remain open.
+
+Five focused test groups in `durability/forge_tests.rs` cover missing/malformed
+profiles, class/cap boundaries, unknown and stackable facts, full definition
+revision mismatch, fusion cap/equal-tier failures and transfer donor/receiver
+constraints, including convergence class requirements and preserving tier ten
+only when the receiver cap permits it. The existing exact-source `forge_postgres`
+harness loads these tests using production Content/native item types. Database
+cases retain their canonical
+PostgreSQL 17.6 route. No storage reader defect was established in this sweep.
+
+Validated with native Rust 1.94.0:
+`cargo test --locked -p oteryn-game-server --test forge_postgres --quiet -- --test-threads=1`
+passed 9/9 tests (zero failed, ignored or filtered): five new structural predicate
+groups, the existing tier-value test and three actual PostgreSQL 17.6 cases
+requiring `server_version_num = 170006`. The canonical PostgreSQL URL was set.
+`forge_postgres` is an automatically discovered integration target under Cargo's
+default `autotests = true`; it has no explicit `[[test]]` entry. The disabled
+`character_forge_dust_postgres` entry is a separate target.
+`cargo fmt --all --check`, `git diff --check` and the governance validator passed.
+The unchanged governance test tree `c32e3d282081025220746cd71779187496cea77c`
+passed its shared 124-test suite. Evidence:
+`/workspace/oteryn-family/forge-native-test.log`,
+`/workspace/oteryn-family/item-forge-1-fmt.log`,
+`/workspace/oteryn-family/item-forge-1-governance.log` and
+`/workspace/oteryn-family/VALIDATION_PROGRESS.md`.
+Strict package Clippy, the full package test suite and full-head CI qualification
+remain pending. These checks prove the supplied-fact predicates and existing
+private tier schema/reader, not a live Forge writer, current Content binding,
+atomic economy operation or runtime dispatch. The family acceptance checkboxes
+and shared integration blockers remain open. Historical validation above does
+not validate this continuation.
+
+
+### Terminal private qualification checkpoint (2026-10-16)
+
+The frozen private test input is `PC_SOURCE_PACKET.json` SHA-256
+`ce0c7dc10623a9b54971a7b5ddff1f9cf2101aed34b4123efc9f2c8675ea792d`,
+full source manifest `75fe38c2dd11e827a26d637c0747722175141c6ff8ea86e8ec88ff2065883e4b`.
+Its historical task-card bytes precede this documentation candidate.
+
+Historical combined run `evidence-run-1792167456282407854` in
+`PC_FINAL_EVIDENCE.json` passed fmt and strict package all-target Clippy but
+failed package tests (exit 101): library 3150 passed / 29 ignored; later
+`character_authority_postgres` 1490 passed / 1 failed at
+`postgres_target_aggregation::every_postgres_target_runs_its_cases_in_a_ci_run_target`.
+No focused PG stage executed in that historical run. Launch 041 subsequently
+held before tests on the occupied canonical PG lock (observation 043), neither
+a focused test PASS nor a test FAIL.
+
+Actual focused run `evidence-run-1792176419124648929` is retained in
+`PC_FOCUSED_FINAL_EVIDENCE.json`, including exact native commands, logs and
+hash-verified ELF archive receipts. Runner V3 SHA-256
+`6f86ba9abef7c0dbb611a9bb59b93f3fcc39531253f58016ce67907700fac14a`;
+recipe V3 `8aedcff0eda55fb0d6b61ffa023aaa118e7bad1bc95e42064d7298bc30dace56`.
+Forge passed 9/9, including three actual PostgreSQL 17.6 cases. Imbue passed
+22/22 (12 pure + 10 actual PostgreSQL 17.6 cases, each asserting 170006),
+including complete-before-binding, with the same unchanged Root deadlines.
+Storage passed 7/7 pure native depot tests in the test-only registration overlay;
+its four actual PostgreSQL cloud cases remain separate historical evidence.
+The earlier cloud Imbue 21/22 `RootPassDeadlineExceeded` failure remains retained;
+this later PASS establishes no causal diagnosis for that earlier failure.
+
+Cleanup is clean, source mode plain, with no remaining owned process group.
+`PC_CALL_047_RESULT.json` attests `RELEASED_NO_ACTIVE_CLAIM`, supervisor 163594,
+start ticks 2603394, boot `1de2caf4-8501-4962-98e7-73177714c673`.
+These are private fixture results, not production installation or exact-head CI.
+
+The exact shared CI remedy `CP_PG_TARGET_REGISTRATION.patch` and rationale `.md`
+remain UNAPPLIED: register the existing Storage/Forge targets in
+`.github/workflows/merge-group-gate.yml` through the existing helper. This shared
+workflow slot and qualifying package/CI results remain required for this target.
+
+Other existing product integration slots and full mechanic acceptance remain gated.
+No Rust, workflow or shared source changed here; no commit, publication, new PR,
+ready, merge or complete package qualification is claimed.
+
+### Local recovery checkpoint (2026-10-16)
+
+Owned Rust bytes retain the qualified native9/9 result, including3 actual
+PostgreSQL17.6 cases. Imbue's later normal-package PASS belongs to its different
+frozen input. This Forge-only full normal package is NOT_RUN; the combined
+input's actual aggregation-guard FAIL above remains RED.
+Publication is held under root AGENTS.md47 (run local changed-path checks before
+pushing and fix all failures of a run in one push) and CONTEXT_ROUTING.md68
+(Rust changes require fmt, strict all-target Clippy and normal package tests).
+The two-line shared workflow registration remedy remains unapplied pending its
+CP slot. The owned candidate is secured as a local commit and verified recovery
+bundle outside this checkout; exact identifiers are in the family recovery record.
+No shared file, ready, merge or rebase is part of this checkpoint.
