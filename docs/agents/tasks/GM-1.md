@@ -2,9 +2,10 @@
 
 ```yaml
 task_id: GM-1
-title: "GM-1: GM tools, mute, kick, staff audit and reports (skeleton)"
+title: "GM-1: allocated OPS-GM-AUDIT-1 source authoring"
 mode: IMPLEMENT
-status: skeleton
+status: authoring
+active_child_task_id: OTV2-20261016-gm-audit-1
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/gm-1
@@ -22,11 +23,19 @@ needs_registry: yes
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
-  - "apps/game-server/src/staff/ (new: audit, sanctions, roster, reports) + tests"
+  - "apps/game-server/src/staff/{mod,audit,signature}.rs (new)"
+  - "apps/game-server/src/durability/staff_action.rs (new)"
+  - "apps/game-server/tests/staff_audit_postgres.rs (new)"
+  - "crates/release-manifest/ (new; shared JCS only, D1087)"
+  - "workspace-boundaries.toml (D1091: exact member/path/production and two edge hunks only)"
   - "apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)"
   - "docs/agents/tasks/GM-1.md"
 slot_only_paths:
+  - "apps/game-server/src/lib.rs, apps/game-server/src/durability/mod.rs (after #2163)"
   - "apps/game-server/src/node/serve.rs, apps/game-server/src/node/config.rs"
+  - "Cargo.toml, apps/game-server/Cargo.toml, Cargo.lock (sequentially after #1942)"
+  - "apps/game-server/migrations/0092_staff_audit.sql (reserved; proposal only before slot)"
+  - "docs/contracts/game-events/v2/staff_action.proto and STAFF_ACTION registration"
   - "migrations: game_character_sanctions, game_staff_roles, game_player_reports"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (staff panel)"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json (`staff_action`)"
@@ -44,7 +53,7 @@ Game side of OPS-GM-01: OPS-GM-AUDIT-1, SANCTION-2, REPORT-3, ROSTER-4, STAFF-5,
 |---|---|---|
 | LOGOUT-WIRE-1 | MERGED (#2127); former SANCTION-2 gate removed | cleared |
 | WRITE-MOD-1 (REPORT-3 commands only) | merge required for REPORT-3 | **BLOCKING REPORT-3 ONLY** |
-| OPS-GM-AUDIT-1 | first child PR; awaiting CP allocation after this record correction | allocation required |
+| OPS-GM-AUDIT-1 | D1085 allocated on existing #2181, task OTV2-20261016-gm-audit-1 | source authoring |
 | OPS-GM-P1 (Platform), ARCH-CONTROL-ANCHOR-0 | external gate for EXT phase only | ok |
 
 WRITE-MOD-1 gates only REPORT-3. SANCTION-2 owns its session-generation
@@ -53,7 +62,11 @@ family path inventory below does not allocate a child or authorize slot work.
 
 ## Owned paths (family inventory; child allocation required)
 
-- apps/game-server/src/staff/ (new: audit, sanctions, roster, reports) + tests
+- Current AUDIT-1 allocation: apps/game-server/src/staff/{mod,audit,signature}.rs
+- apps/game-server/src/durability/staff_action.rs
+- apps/game-server/tests/staff_audit_postgres.rs
+- crates/release-manifest/ (JCS module only; SEC-REL-1 later owns release schemas)
+- workspace-boundaries.toml (D1091's exact inventory/edge additions only)
 - apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)
 - docs/agents/tasks/GM-1.md
 
@@ -301,3 +314,144 @@ Checkpoint validation: `python tools/agents/validate_governance.py` PASS (22
 policy documents, 9 project lanes); `python -m unittest discover -s
 tools/agents/tests` PASS (124 tests, 0 failures); `git diff --check` PASS.
 No Rust build or runtime test was needed for this record-only correction.
+
+## Allocated AUDIT-1 authoring checkpoint (2026-10-16)
+
+[CP D1085–D1088](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6218747873)
+supersedes the preceding checkpoint's pending allocation. Task
+`OTV2-20261016-gm-audit-1` uses existing draft #2181; AUTHORING resumed from
+`a4d84863c556fcde127a047c11318c7423f44913`. One writer authors the exact paths
+above. This allocation does not start SANCTION-2, REPORT-3, ROSTER-4 or PREPORT-6.
+
+Authored components (source evidence, not runtime qualification):
+
+- `staff/signature.rs`: bounded raw OpenSSH verification before closed typed
+  decoding/JCS equality, pinned copied allowed-signers bytes, independent
+  environment/roster/activation bindings, exact request/receipt namespaces,
+  uint64 decimal strings, synchronized-clock windows, and streaming retained
+  chain verification against independently loaded reviewed activations.
+- `staff/audit.rs`: complete accepted action/reason/result taxonomy and proposed
+  protobuf payload in the ANL envelope. The initial typed request codec covers
+  eight ALPHA variants; future allocated owners add complete typed variants for
+  their economy/privacy/restore commands. No opaque JSON or fallback string
+  accepts an unimplemented command. Registry admission fails closed while the
+  actual STAFF_ACTION allocation/retention profile is absent.
+- `durability/staff_action.rs`: participant in the existing semantic transaction,
+  per-environment locked head, exact-byte retry before freshness, typed conflicting
+  operation/predecessor refusal, atomic link/outcome/audit, and signed receipt
+  reconciliation. Later domain owners must use its same-physical-transaction
+  participant and preserve their independent current fences. No pool getter or
+  second domain writer was added. The public root currently offers the audit
+  boundary for reads and receipt storage; it refuses domain mutations.
+  Trusted time is sampled after all awaited prerequisites; exact terminal replay
+  does not consult the clock. A receipt's outcome digest now covers the
+  authoritative execution timestamp, and the event/source row must match it.
+- Existing ops executable: prepare signed bytes, submit detached signatures,
+  prepare/store submission receipts, and bounded streaming audit verification.
+  Private keys are never accepted or generated by production commands. Exact
+  evidence is retained exclusively before output; an unsigned transport outcome
+  never substitutes for an operator-signed COMMITTED receipt.
+  `historical-reconcile` is a separate read-only path: the complete independently
+  anchored chain seals an exact old request, then a real READ ONLY semantic
+  transaction returns its existing outcome or absent/conflict. Missing outcomes
+  never enter execution. Current submit still requires the current roster; the
+  historical proof grants no current signer or domain authority.
+- `crates/release-manifest`: JCS only, upstream
+  `serde_json_canonicalizer = 0.4.1`, with RFC8785 ECMAScript number/UTF16 vectors,
+  closed duplicate/unknown-field and byte-equality checks. No release manifest
+  schema, key custody or SEC authority is implemented here.
+
+D1088's table/DDL proposal lives in the owned transaction source as
+`PROPOSED_MIGRATION_0092`; runtime never installs it. It proposes immutable links,
+operations/outcomes, signed receipts, ANL outbox, cross-row same-transaction
+constraints, payload ceilings, finite audit expiry metadata, and restricted
+grants. Seeding an initial head must import independently reviewed signed
+activation evidence; no runtime activation or genesis-zero shortcut exists.
+Ordinary audit expiry/publication and retained-proof prefix pruning still need
+their concrete slot-installed lifecycle; no production retention completeness
+is claimed by the schema proposal alone.
+
+The held shared files remain untouched. D1086 requires registration after #2163,
+node config/control hunks after Admission, manifests/lock sequentially after
+#1942, and the reserved 0092/proto/STAFF_ACTION slots. An explicit private native
+assembly recipe is outside this checkout; it is validation input, never a
+published shared-path patch or event-number allocation. Real node dispatch and
+full operator inspect/report data delivery remain unqualified until those
+slots; an audit-only result is not a delivered GM command implementation.
+
+The earlier workspace inventory finding is **resolved by authoring allocation**
+[D1091](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346):
+`workspace-boundaries.toml` now includes exactly the new member/path/production
+entry, `oteryn-game-server` to `oteryn-release-manifest`, and the new crate's empty
+internal dependency list. No Client or release-sign edge was added. Root Cargo
+membership and lock remain D1086 slots after #1942, so this inventory change
+does not claim the unregistered checked-in workspace already passes architecture
+or Rust qualification.
+
+Forensic completeness repairs: verification begins at the earliest independently
+retained activation, checks every retained operation/outbox/receipt by anti-join
+as well as traversing the chain, and compares SQL event routing/schema/retention,
+identity, timestamp/expiry, hash and publication-state mirrors to the actual
+envelope. The outcome hash and receipt-requirement mirrors are checked too.
+For a read lacking an optional signed receipt, a missing event is excused only
+after the signed request's latest permitted execution time plus retention. This
+fails closed during the ambiguous expiry interval (at most 15 minutes); it does
+not trust a database owner to backdate the unsigned read outcome.
+
+Qualification inventory: security tests cover independent missing/unknown/wrong
+signature namespace, environment/roster/parameter substitution, authenticated
+unknown/duplicate/missing/noncanonical fields, clock bounds/unsynchronized clock,
+chain gaps/forks/previous digest, unrecorded activation, removed signer, receipt
+namespace/principal, and event kind/target/reason/parameter/missing-byte changes.
+Eleven native PostgreSQL families use actual OpenSSH fixtures and the production
+participant/proposed DDL: old identical retry and changed operation bytes;
+clock/sequence/predecessor/roster refusals; forced audit-insert failure with
+domain/head/link/outcome rollback; two-connection predecessor contention;
+receipt digests/disposition/chain/idempotency; actual runtime-role grant refusals.
+Additional cases cover independently advanced activation/current-roster historical
+read-only lookup, clock sampling after an observed real head-lock wait, orphan
+outbox detection after owner FK bypass, valid-envelope SQL mirror forgery, and
+operation identity forgery after removal of its expired outbox row.
+An audit-failure fixture increments a nontransactional sequence before raising,
+so an unrelated early error cannot masquerade as audit-insert rollback proof.
+These tests are authored and **NOT EXECUTED** at this checkpoint. Missing PG
+emits PRE-ROUTING/NONCANONICAL and is not qualification. Restore application,
+surviving sanction/roster rows and session-generation mutations need their
+actual allocated child consumers; no fixture claims those are passed.
+
+Current cheap checks: governance validator PASS (22 policy documents, 9 lanes),
+agent unit suite PASS (124 tests, zero failures), and `git diff --check` PASS.
+Native Rust 1.94 formatting PASS for the six server Rust files and the frozen
+JCS module; the sole writer verified every before/after file hash and applied
+the exact formatting-only patch. Independent v3 source review PASS for all
+eleven owned files, with no remaining material finding in that targeted review.
+Cargo type checks, native unit tests and PG execution remain unrun pending the
+lead's guarded PC route and global heavy-build capacity. No ready, merge, production authority or runtime-pass
+claim follows from this authoring checkpoint.
+
+
+Durable-column evidence map (D1088 proposal; checked independently of surviving
+outbox):
+
+| Proposed table/columns | Independent binding / bounded contract |
+| --- | --- |
+| links: environment, control_seq, previous_link_sha256, roster_sha256 | Verified signed request/receipt and independently pinned activation history; gapless complete prefix starts at earliest reviewed activation. |
+| links: link_sha256, signed_bytes, principal, key_fingerprint, signature | SHA-256 of exact verified bytes; OpenSSH verification using offhost reviewed roster, exact namespace and actual signer fingerprint. |
+| links: link_kind | Decoded signed request action distinguishes REQUEST/ACTIVATION; receipt namespace distinguishes RECEIPT. Reverse joins require retained operation/receipt for every nonactivation link. |
+| heads: environment, control_seq, link_sha256, activation_sha256 | Complete verified chain terminates at this head; activation digest equals independent current restart config. Same locked head serializes first execution. |
+| operations: environment, operation_id (composite PK), request_sha256, request_bytes, principal, key_fingerprint, control_seq | Exact signed request and its verified link; checked even when the outbox has expired. |
+| operations: outcome_bytes, outcome_sha256, action_id, transaction_id, occurred_at | Closed canonical outcome, exact SHA-256, canonical UUID identities and execution timestamp; timestamp constrained by signed request execution window and additionally covered by mutation receipt outcome digest. |
+| operations: requires_receipt | Derived from signed action kind, never a database authority flag. Outcome disposition/result must obey the committed/OK relation. |
+| outbox: environment, operation_id, event_id (PK), transaction_id | Exact signed request and canonical outcome identities, plus reverse operation association. |
+| outbox: event_type_id, schema_revision, retention_profile_id, occurred_at, expires_at, envelope, envelope_sha256 | Registered STAFF_ACTION contract, full decoded ANL envelope/payload, outcome timestamp, exact 365-day expiry and exact envelope hash. No event allocation is guessed. |
+| outbox: publication_state | Only contract states 1/2 are legal; this mutable lifecycle marker is not a signature or proof of publication. Publication/pruning implementation remains slot-held. |
+| receipts: environment, operation_id (composite PK), receipt_bytes, principal, key_fingerprint, signature, control_seq | Verified historical receipt, exact matching receipt chain link and original request signer, request/outcome digests and COMMITTED disposition; reverse scan detects orphan receipts. |
+| links/operations/outbox/receipts: created_xact_id | Insert-time current physical transaction check and same-group joins (request/link/operation/outbox; receipt/link). This unsigned local database metadata proves enforced transaction participation at insertion, not an independently signed transaction identity against database-root rewriting. |
+
+The complete operation verifier is shared by ordinary stored-outcome replay,
+historical read-only reconciliation and audit verification. Its thirteen-field
+negative matrix has no outbox input. The native expiry-boundary case removes the
+event, verifies retained operation evidence, then changes only its SQL operation
+UUID while retaining signed request/outcome bytes and original transaction stamp;
+verification must refuse. Additional negative matrices cover eleven event mirrors
+and signed link-kind substitution. Native execution remains pending.
