@@ -156,3 +156,19 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
   content/family facts; they are not claimed complete by this supported-input slice.
 - Local evidence and reproducible commands live outside the repository in
   `/workspace/oteryn-prep/ach-1-evidence/`. No Rust build is needed for this slice.
+
+
+## ACH-COVERAGE-1 invalid-key repair (2026-10-16)
+
+Returned to AUTHORING for a concrete defect in the allocated coverage tooling:
+with `--chest-claims`, an invalid catalogue key represented as a JSON list or
+object raised `TypeError` before the CLI could emit its invalid-catalogue report.
+Only string keys now enter reference binding, matching catalogue key validation.
+Schema rejection, unbound-reference failure and `INVALID_CATALOGUE` coverage
+remain intact; malformed values cannot count as content coverage.
+
+The CLI regression reproduced both crashes before the fix. The complete offline
+validator suite now passes 23 tests, including both malformed-key shapes. This
+change requires no runtime grant writer, schema/content admission, CP slot,
+PostgreSQL job or Rust source change. Existing runtime ownership blockers above
+remain applicable to their separate children.

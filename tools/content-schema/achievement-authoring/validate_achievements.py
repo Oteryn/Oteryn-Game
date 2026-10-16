@@ -117,7 +117,9 @@ def unbound_refs(refs: list[str], records: list[dict]) -> list[str]:
     keys = {
         record["identity"].get("key")
         for record in records
-        if isinstance(record, dict) and isinstance(record.get("identity"), dict)
+        if isinstance(record, dict)
+        and isinstance(record.get("identity"), dict)
+        and isinstance(record["identity"].get("key"), str)
     }
     return [ref for ref in refs if bind_ref(ref, keys) is None]
 

@@ -262,6 +262,30 @@ class CoverageTest(unittest.TestCase):
             report = v.coverage_report(records, [SAMPLE["identity"]["key"]])
             self.assertEqual(report, {"status": "INVALID_CATALOGUE"})
 
+    def test_cli_reports_invalid_unhashable_keys_with_chest_claims(self) -> None:
+        for key in ([], {}):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as directory:
+                record = copy.deepcopy(SAMPLE)
+                record["identity"]["key"] = key
+                records = Path(directory) / "records.json"
+                records.write_text(json.dumps([record]))
+                claims = Path(directory) / "claims.json"
+                placement = {"achievement": {"key": SAMPLE["identity"]["key"]}}
+                claims.write_text(
+                    json.dumps({"claims": [{"placements": [placement]}]})
+                )
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    result = v.main([str(records), "--chest-claims", str(claims)])
+                report = json.loads(output.getvalue())
+                self.assertEqual(result, 1)
+                self.assertEqual(report["valid"], 0)
+                self.assertEqual(len(report["invalid"]), 1)
+                self.assertEqual(
+                    report["unbound_chest_refs"], [SAMPLE["identity"]["key"]]
+                )
+                self.assertEqual(report["coverage"], {"status": "INVALID_CATALOGUE"})
+
     def test_cli_emits_pending_without_failing_valid_catalogue(self) -> None:
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
