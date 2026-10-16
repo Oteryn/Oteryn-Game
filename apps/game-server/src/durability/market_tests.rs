@@ -242,6 +242,21 @@ fn market_book_pages_follow_best_price_time_and_id_without_skips() -> TestResult
                 book_page(&mut connection, &wrong_book, side, Some(&cursor)).await,
                 Err(DurabilityError::InvalidStoredState)
             ));
+            for (piece_price, created_at_us) in [
+                (0, cursor.created_at_us),
+                (MAX_TOTAL + 1, cursor.created_at_us),
+                (cursor.piece_price, -1),
+            ] {
+                let invalid_cursor = BookCursor {
+                    piece_price,
+                    created_at_us,
+                    ..cursor.clone()
+                };
+                assert!(matches!(
+                    book_page(&mut connection, &key, side, Some(&invalid_cursor)).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+            }
         }
         Ok(())
     })

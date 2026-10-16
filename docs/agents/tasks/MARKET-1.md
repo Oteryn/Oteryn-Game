@@ -4,7 +4,7 @@
 task_id: MARKET-1
 title: "MARKET-1: world market"
 mode: IMPLEMENT
-status: waiting
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -272,3 +272,13 @@ Independent review found P2 in initial book pagination: the text projection alia
 make ORDER BY sort lexically. Fixed both sides to name the numeric table column and changed
 the price fixture to 2/9/10/100/101 so an actual PG run detects the regression. Disposition:
 fixed in source; execution remains NOT_RUN until compatible native Cargo validation.
+
+### CP D1160/D1122: own module registrations and checkpoint (2026-10-16)
+
+Status NOT_FULLY_QUALIFIED. CP comment6224912485 grants minimal own-module registrations
+without a slot; register domain::market and durability::market so library CI compiles the
+actual components. No other shared line is changed. This does not grant an alternate
+composition of standalone roots: their Content/private-domain ABI compatibility remains
+unqualified until real Cargo checks run. New own reads/four PG tests: NOT_RUN; fmt/diff
+PASS and static review only. D1122 comment6224930201 supersedes the earlier publication
+hold for one coherent existing-draft checkpoint; it does not grant ready/merge or full PASS.

@@ -8,6 +8,7 @@ pub mod currency;
 pub mod death;
 pub mod equipment;
 pub mod forge_dust;
+pub mod market;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;
