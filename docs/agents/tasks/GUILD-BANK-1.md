@@ -299,3 +299,38 @@ Root semantic-pass HRTB closures. Genuine Guild controller tests retain responsi
 its production semantic-pass wrapper. No visibility widening, fake capability, authority
 predicate/production API/SQL change or disabled guard. Native recompilation remains pending;
 failed9151 candidate and raw native-compile.log are preserved.
+
+
+### Canonical native qualification — Bank76d9 (2026-10-16)
+
+Canonical source `76d9db754f34edfe55e6b2263a8f787ccd5b3fa2` passed **11/11 native
+bodies,0 failed** (one pure/ten PostgreSQL17.6), each separately executed and verified
+as one body: `evidence/bank-canonical-final/runtime-results.json`. This includes actual
+Guild-context payout rollback/retry/new-Root replay, physical-transaction refusal, funded
+conservation/property sequences and original negative/ledger/recovery cases. The genuine
+native whole-crate test executable contains canonical Bank sources with the held D1099
+shared overlay **absent**; its results do not qualify that deferred decoder.
+
+Exact retained native ELF SHA256:
+`fb07ff41f27df4a788dbcd17eac2652982e61257ad8d8d4dbb7d6dc17b370a02`.
+Exact source archive (`exact-native-inputs.zip`) SHA256:
+`fa4c3e34919df3d222de176257837d0effa61556f1ef5e9e3a833d86882ad5a5`.
+The adjacent `source-manifest.json` binds actual source/Cargo/compiler inputs and mounts.
+Historical partial **3 PASS/1 RED** remains in
+`evidence/guild-terminal-sql-repair/bank-runtime.log`: the real Guild guard first failed
+42501 while reading its new disband-step table. The repair added only that fixture SELECT;
+23514 and the exact native guard message stayed required. No production permission or
+predicate was weakened. The unused audit digest helper/import was removed; actual persist
+still hashes the same already-checked payload. Strict native unit Clippy is a separate lead
+run (58073), pending at this note; no Clippy PASS is inferred from runtime.
+
+D1099 remains outside canonical source and outside its final slot after #2197/main merge.
+Old held patch `1aa9a611...` separately passed two real participant bodies plus one decoder
+body in a private native overlay, then strict Clippy found one explicit-auto-deref error.
+Repaired patch `5112259bf99f7deb7e7abbafb2cc0db7bd21331f956d9bac4b0f073589dffac8`
+is source-only at this note; no new exact-patch PASS is claimed. Its manifest preserves the
+old patch/evidence. Genuine C property/auction/Inbox completion is still required before
+whole Guild terminal release/cleanup. The exact external `bank_audit.rs`/event compatibility
+hunk for native operations on legally retained above-soft Account balances also remains
+unallocated/uninstalled. Native component PASS does not close those integration gates or
+claim full feature readiness, production activation, ready/queue/merge authority.
