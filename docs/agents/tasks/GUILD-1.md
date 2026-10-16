@@ -1010,3 +1010,47 @@ Whole all-targets Clippy remains RED on uninstalled caller APIs/context;
 lead's final strict unit-context check is a separate disposition, not implied
 by these passes. Production installation, public events and whole-scope
 completion remain pending; no ready/merge/production claim is made.
+
+### 2026-10-16 — CHAT current-membership owner DATA preparation
+
+AUTHORING reopened from clean published `caf3c375c02c97db1bb667f384529a110bcfe7d9`
+for the accepted GUILD0 §8 / GUILDS_V1 §7 owner-read gap. Only guild.rs,
+guild_tests.rs and this task record change. Native Root methods now read current
+send/login GuildId, rank, MOTD and actual Guild state, or read the recipient
+Character against the authenticated payload GuildId. They take the real
+Root-bound reconciled Character authority, current node and full Character
+session/lease/scope fence. The same native semantic transaction asserts recovery,
+locks admission relations, proves current session/node assignment, locks the
+live same-Account/World Character root, then Guild, then member. Unlocked Guild
+discovery is rechecked after the Guild lock; a concurrent changed binding fails
+closed rather than producing stale/rerouted membership. No occurrence, mutation,
+public protocol, storage schema, Premium role surrogate or foreign writer is added.
+
+These results are committed read DATA only, never retained current authority or
+queue/transport/socket custody. Absence supplies no membership; DB/authority
+errors return errors. CHAT owns counted failed-read drops and its future delivery
+composition. The precise delivery linearization point and DISBANDING chat policy
+remain unresolved CP decisions. Returning actual Guild state does not choose
+that policy. The Root-owned transaction pattern is preserved; no arbitrary
+caller-TX authority API or locks across socket I/O are introduced.
+
+Six appended native PostgreSQL17.6 bodies cover committed MOTD/rank changes via
+actual text/resign writers; leave/accept G-to-H movement without old-payload
+rerouting; actual exclusion; both read methods against session, lease, scope,
+Character/session binding, World/Channel and genuine alternate node mismatches;
+Root provenance, stale recovery and actual DB-read errors; and actual DISBANDING
+state observation. All existing guild_tests.rs bytes are an unchanged prefix;
+prior98 qualified bodies/evidence remain historical unchanged evidence, not an
+execution claim for this successor. No Cargo, native runtime or heavy check ran
+in this authoring batch. The six new bodies and exact-source native Clippy need
+qualification after independent review.
+
+Pinned Rust1.94 rustfmt (edition2024, skip_children), whitespace, governance
+validator (22 documents/9 lanes) and124 governance unit tests pass. Source is
+released stable for independent review before heavy qualification. SHA256:
+- guild.rs: `efeff4b4daf0b3ee7a054f241911d49196af2bba79260c70642b3c96b42dca82`
+- guild_tests.rs: `f4a345b49754d50a90d9d9127caa55b8fd0dc1ebed5545ae581a40e68ac2a91e`
+
+This is a local source freeze for lead review, not a new published remote
+candidate. No commit/push, installation, ready/merge or whole-task completion
+claim is made. Accepted review repairs must reopen AUTHORING and replace hashes.
