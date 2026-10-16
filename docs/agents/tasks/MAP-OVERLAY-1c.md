@@ -616,3 +616,8 @@ Lead source review PASS after repairs: native-source catalogue bounds remain
 new dependency or collected live-row set. Positive unit tests return Result
 without unwrap/allow. New preflight compilation/three tests/PG remain NOT_RUN
 until actual native qualification; no current-authority token is minted.
+
+The preflight consumer requires `&(dyn WorldResetHouseSource + Sync)` because its
+borrow spans SQLx awaits in the durable semantic lane. The CP local trait is
+unchanged and no production implementation is invented. The prior three native
+case PASS remains exact to6bd7824e; this signature's renewed compile is NOT_RUN.

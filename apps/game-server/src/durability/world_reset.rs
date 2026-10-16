@@ -262,7 +262,7 @@ fn check_reset_house_definition(
 pub(crate) async fn preflight_world_reset_houses(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     world: WorldId,
-    source: &dyn super::world_reset_port::WorldResetHouseSource,
+    source: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
 ) -> Result<(), WorldResetError> {
     use super::world_reset_port::CatalogueSide;
     sqlx::query("LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE")
