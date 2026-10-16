@@ -11,6 +11,11 @@ pub(crate) mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
 pub mod bestiary_progress;
+#[allow(
+    dead_code,
+    reason = "APP-1 production caller awaits admitted content, sex and grant owners"
+)]
+pub(crate) mod character_appearance;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;

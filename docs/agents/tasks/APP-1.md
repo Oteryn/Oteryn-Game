@@ -1,284 +1,131 @@
-# APP-1 — durable selected appearance and AccountUnlock set (partial implementation)
+# APP-1 — durable appearance storage and native fenced selection (partial)
 
 ```yaml
 task_id: APP-1
-title: "APP-1: durable selected appearance and AccountUnlock set"
+title: "Durable selected appearance and AccountUnlock set"
 mode: IMPLEMENT
 status: partial
 repository: Oteryn/Oteryn-Game
 issue: 1622
+pr: 2170
 wave: 4
-plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
-plan_row: "§4 Epic 6 row APP-1 (rows 126, 127); §7 supporting briefs row APP-1"
-briefs:
-  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md
+branch: skeleton/app-1
 base_branch: main
 base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
-branch: skeleton/app-1
+observed_main_sha: 24fc332f256638e3b784bff1b3c85b18e2665a76
+allocation: "D1112 / CP issuecomment-6221235486; supersedes D1092 slot restriction"
+plan: docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md
+plan_row: "§4 Epic 6 APP-1; §7 supporting brief"
+briefs:
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md
 needs_migration: true
 needs_registry: false
 needs_content_regeneration: false
-merge_authority: CP_ONLY (builder never marks ready)
-allocation: "D1092 / CP issuecomment-6219643346 (2026-10-16)"
+merge_authority: CP_ONLY
 ```
 
-## Goal
+## Authority and base
 
-Durable selected appearance and the AccountUnlock set, validation §4.3, character fence; selection survives relog.
+CHARACTER_APPEARANCE is ACCEPTED through protected #2209, read at
+`e2da9805d296a27b06b32335bf67394509d4910b`. Its physical storage belongs to APP-1;
+account-progress/#707 §4.3/§4.6 governs earned facts. Store remains unavailable.
 
-Children (allocate from the brief's child graph; the plan row is only the family entry gate):
+[CP D1112](https://github.com/Oteryn/Oteryn-Game/pull/2170#issuecomment-6221235486)
+requires module registration and migration 0093 **now with the appearance recovery hunk**.
+The previous D1092 requirement to withhold those files is superseded. The true branch fork
+is still `5742f30f`; protected main was freshly observed at `24fc332f` on 2026-10-16.
+#2163 remains open/unmerged at that read. Resolve its eventual module-line conflict by
+merging main after #2163, never by rebase; this repair does not claim a newer ancestry base.
 
-APP-1 (hard, persistence).
-
-## Dependencies (state on main@5742f30f3, 2026-10-15)
-
-| Dependency | State |
-|---|---|
-| Character authority | MERGED (0005) |
-| progression readiness migration numbering | CP lease |
-| CHARACTER_APPEARANCE | ACCEPTED by protected #2209 (`e2da9805d296a27b06b32335bf67394509d4910b`) |
-
-Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
-
-## owned_paths (builder edits freely)
+## owned_paths
 
 - `apps/game-server/src/durability/character_appearance.rs`
-- `apps/game-server/src/durability/character_appearance_tests.rs`
+- `apps/game-server/src/durability/character_appearance_stored.rs` (D1112 production-reader rename)
+- `apps/game-server/src/durability/character_appearance_tests.rs` (focused pure tests only)
 - `apps/game-server/tests/character_appearance_postgres.rs`
-- `docs/agents/tasks/APP-1.md` (this record: status and notes only)
-- D1092: `apps/game-server/tests/character_appearance_native_postgres.rs` (nine native cases)
-- D1092: `apps/game-server/tests/support/bestiary_postgres_harness.rs` (additive APP-1 helper only)
-- D1092: `apps/game-server/src/durability/character_authority.rs` (appearance recovery hunk only)
+- `apps/game-server/tests/character_appearance_native_postgres.rs` (D1092 nine native cases)
+- `apps/game-server/tests/support/bestiary_postgres_harness.rs` (D1092 additive helper only)
+- `apps/game-server/src/durability/character_authority.rs` (appearance recovery hunk only)
+- `apps/game-server/src/durability/mod.rs` (D1112 appearance registration only)
+- `apps/game-server/migrations/0093_character_appearance.sql` (D1112 installed migration)
+- `docs/agents/tasks/APP-1.md`
 
-To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
+Other shared registries, protocol/runtime wiring, pins, content regeneration and grant-owner
+ports remain outside this task. One writer, one batched push; CP owns ready, queue and merge.
 
-## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
+## Current implementation
 
-- tools/content-migration/regenerate_content.py outputs
-- content/project.json
-- content/manifest.json, content/world/manifest.json
-- content/content.lock.json, content/world/content.lock.json
-- content/interactions/index.json
-- content/world/pins/*
-- Rust pins (pinned registries / fixtures regenerated from content)
-- docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
-- apps/game-server/migrations/0093_character_appearance.sql (D1092: publish after #2163 and merge current main)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
-- crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+The unconditional native writer uses the existing semantic pass/transaction, exact root-object
+recovery authority, recovery fence, admission locks, occurrence serialization, complete native
+gameplay/root fence, locked progression context, exact prior selection and pending-respawn guard.
+Root and progression advance exactly +1 with the immutable receipt and selected projection in
+one transaction. Current interpretation is independently checked by the native owner.
 
-## Wiring points (verified on origin/main 5742f30f3)
+CP explicitly accepts replay before the gameplay fence: an exact binding returns historical
+`AlreadyCommitted`; a changed binding is `ConflictingOccurrence`. Neither result grants actor
+or publication authority. The appearance revision bump stays; stale XP/death writers must retry.
 
-- apps/game-server/src/domain/appearance.rs (pure rules, existing)
-- apps/game-server/src/gameplay_transport/appearance_atomic.rs
-- character fence (character_recovery_fence.rs)
+`read_current_character_appearance` checks recovery/admission/gameplay/root/state in one semantic
+transaction. Its progression SELECT is a plain read; the existing native gameplay fence retains
+its root lock. Selected revisions ahead of the root and pending respawn fail closed. Historical
+read/reconcile and the current DB read return data, not loaded-content, sex, actor or condition
+capabilities. APP-3 must independently recheck those current owners immediately before publication.
+`Unavailable` remains unresolved until reconciliation rather than a definite rejection.
 
-## Inseparable bundles (never split across PRs)
+The one production reader/recovery implementation is `character_appearance_stored.rs`.
+`character_appearance_tests.rs` now contains only the unchanged three pure decoder/validator
+bodies. No duplicate native IDs, validator, fence implementation or cfg-hidden writer is added.
 
-- migration + appearance writer + durability tests
+Migration 0093 is the sole DDL source. It installs selected appearance, immutable selection/grant
+receipts and earned facts, root/projection/receipt FKs, shape constraints, immutable/deferred
+appearance-chain guards, all existing 0073 global progression clauses plus appearance arms,
+fixed function search paths and least-privilege runtime/control grants. The appearance recovery
+union and verifier call are registered in the same candidate. There is no staging SQL literal,
+`PRIVATE_SCHEMA`, private SQL include or qualification overlay.
 
-## Acceptance criteria
+## Acceptance and outstanding qualification
 
-- [ ] Locked outfit/addon/mount rejected; out-of-palette colour rejected.
-- [ ] Stale character fence writes nothing.
-- [ ] Selection survives relog.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] D1112 source assembly: native module, installed 0093 and recovery integration together.
+- [x] One migration source; four explicit installed-migrator PostgreSQL storage cases.
+- [x] Production reader renamed; pure decoder tests remain separate unit tests.
+- [ ] Exact clean-head qualification: nine native + four installed-storage + five unchanged
+  Bestiary PostgreSQL17.6 cases, strict affected Clippy and CI. The old private PASS is insufficient.
+- [ ] Production outfit/addon/mount/colour validation with admitted content, sex and earned facts.
+- [ ] Actual client relog/restart/session-generation flow through the admitted runtime caller.
+- [ ] Complete earned grant consumer and production observation/publication integration.
 
-## Validation commands
+The native writer implements the tested starter subset and rejects earned/Store/mount authority
+until its real resolver exists. Occurrence concurrency, typed losing writers, stale-fence no-write,
+restart reload, cross-family revision chains and recovery/rollback fault cases remain in the nine
+native bodies; their new clean-head execution is required before claiming this repair qualified.
 
-```bash
-cargo fmt --all -- --check
-cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
-cargo test -p oteryn-game-server app
-cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
-```
+The storage target has four real PG bodies, each using the unchanged native constructor through
+`Harness::create_appearance`: installed ledger/version/checksum, native root/bootstrap/session and
+actual root/state/receipt constraints. They cover unknown-key/provenance roundtrip and reconnect,
+receipt/global revision rollback, immutable first account provenance/isolation, native validation
+and privileged-corruption recovery refusal. Test-admin INSERTs are storage fixtures, not event
+or grant authority. The three focused pure tests are additional unit inventory, not three PG cases.
 
-## Reference evidence pointers
+## Validation and evidence
 
-- docs/architecture/reviews/OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md §4.2-§4.4, §5, §8
-- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 4), §7
-- docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
+Required focused checks: workspace fmt; strict Clippy for the three affected integration targets;
+actual PostgreSQL17.6 execution of exactly 9+4+5 selected cases with inventory/filtered counts;
+governance validation and its tests. CI owns broader package/workspace qualification.
+The next action is clean-head qualification and independent D1112 review, then guarded publication
+on existing draft #2170. No ready/merge/new PR or manual paid-review trigger is authorized here.
 
-## Builder instructions
+Historical `e32`, `8295`, `a392` and published `29ef` evidence remains immutable and separate.
+The previous 29ef **private overlay** 18-case PASS included registration and 0093 and therefore
+never qualified the published head. Its exact-head CI failed E0433 because registration was
+absent; D1112 repairs that source assembly. No old result is relabelled as new clean-head evidence.
 
-- Work only in owned_paths until CP gives the queue-turn GO; then merge main, run regeneration/registry/migration numbering/wiring in ONE final slot commit.
-- Push rarely and batched: one push per fix round (heavy builds per push). No status-only commits.
-- Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
-- Max 2 repair rounds on the PR; then CP closes and splits.
-- A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+## Remaining owners
 
-## Local preparation — 2026-10-15 (not an acceptance or runtime-ready claim)
-
-Owning `CHARACTER_APPEARANCE` is now ACCEPTED through merged #2209, read at protected
-`e2da9805d296a27b06b32335bf67394509d4910b`; its §4.2 delegates physical schema to this child.
-The earlier CANDIDATE row is historical. The separate account-progress/#707 decision §4.3 and
-§4.6 governs earned facts. The schema, migration content, fenced writer and qualification are APP-1 mechanic work. Only
-migration numbering and shared integration require the CP slot; they are not a missing owner
-schema decision. This preparation leaves the migration/writer/test bundle incomplete.
-
-Implemented only private read shapes and PostgreSQL readers: a per-Character selected appearance
-and the account's earned unlock facts with immutable first provenance. Decoding uses native
-`domain::{AccountId, CharacterId, CharacterRevision}` and `AppearanceSelection<String>`; malformed
-widths/ranges/revisions fail closed. Unknown keys and historical content provenance are retained.
-Native `domain::appearance::{validate_selection, displayed_look}` is reused unchanged. No
-production mutation, current-authority proof, new entitlement, fallback write or Store grant is
-implemented. Reads must be called within an independently authorized admission/read transaction;
-returning these historical records grants no gameplay authority.
-
-### Private physical schema packet (implementing-child design; CP slot required)
-
-Names below are private Game storage, not Platform/Store or protocol contracts. The owned PG test
-installs four private schema fixture tables in a throwaway database, including the selection
-receipt and its deferred projection/appearance-chain guards. It is not a production migration
-or a production schema compatibility/role qualification.
-
-| Relation | Keys and columns / final constraints |
-|---|---|
-| `game_character_appearance` | `character_id UUID PRIMARY KEY`, `outfit_key TEXT`, `colours INTEGER[4]` (one dimension, lower bound 1, exactly four non-null unsigned-16 values), `addons SMALLINT` (0..255), `mount_key TEXT NULL`, `content_revision TEXT` (1..128 UTF-8 bytes), `committed_character_revision NUMERIC(20,0)` (native u64, at least 2), final `last_appearance_occurrence_id UUID`. The fixture projection references its exact immutable last receipt; the final projection also references the Character root; no key/palette interpretation occurs on load. |
-| `game_character_appearance_receipts` (created by the owned private fixture) | UUIDv7 `appearance_occurrence_id PRIMARY KEY`; complete versioned command binding; Character identity; original and committed CharacterRevision (exact +1, independently unique per Character); complete optional before/after selections and their provenance; the existing progression-chain columns (level/experience before/after, profile/ruleset/content/simulation/evidence/declaration/policy/reward revisions), unchanged for a cosmetic transition; committed time. Before/after cannot be identical. Immutable UPDATE/DELETE/TRUNCATE protection. Current full gameplay fence is checked independently before first insertion; a replay only returns historical disposition and must never reactivate an actor. |
-| `game_account_appearance_unlock_receipts` | `grant_occurrence_id UUID PRIMARY KEY`; `account_id UUID`, `unlock_key TEXT`, `content_revision TEXT` (1..128 bytes), `granting_character_id UUID`, `source_kind TEXT` (nonempty), `source_event_id BYTEA` (nonempty opaque owning-event identity). Unique `(source_kind, source_event_id, unlock_key)` prevents rebinding a granting event; unique `(grant_occurrence_id, account_id, unlock_key)` supports the fact FK. The production consumer must compare a replay's full binding (account/Character/key/revision/source), not treat `ON CONFLICT` alone as replay authorization. All rows immutable; retain first and subsequent duplicate grant provenance. |
-| `game_account_appearance_unlocks` | Primary key `(account_id, unlock_key)` with `grant_occurrence_id UUID`; composite FK to exactly that receipt/account/key. `ON CONFLICT(account_id,unlock_key) DO NOTHING` preserves the **first** fact and provenance. Immutable UPDATE/DELETE/TRUNCATE protection. No cascade or FK to the granting Character: Character deletion must not revoke account facts. Final account identity is derived from the event's locked Character root, never supplied as grant authority. |
-
-All non-optional fields are NOT NULL. Outfit/mount/unlock keys stay opaque content keys; no
-invented key concatenation, addon-key derivation, collation for gameplay, SQL points rule or
-provenance-equality compatibility rule is introduced. Active definitions decide key mapping and
-provenance compatibility. Each addon is authorized separately through the existing domain trait.
-No World/Channel equivalence or account-wide selected look is introduced. Final permissions are
-least privilege, REVOKE PUBLIC, immutable grants/facts and receipt reads/inserts only; the
-existing runtime role and event owner must be qualified in the slot, not granted here.
-
-### Concrete remaining native integration seams
-
-1. Final migration and event writer must extend
-   `migrations/0073_character_progression_guard_wheel_union.sql`'s latest
-   `game_character_progression_consistency_guard()` family union, plus
-   `durability/character_authority.rs::verify_character_integrity` (the receipt union and
-   appearance-specific projection/receipt replay verification). The root revision guard in
-   `0022_character_name.sql` only enforces exact +1; it is the deferred chain guard, not that
-   root guard, that currently lacks an appearance receipt family. Preserve every existing arm.
-   The native writer is now authored in its owned source; shared integrity integration is
-   carried separately in the explicit private CP mount packet.
-2. First selection writes must use the actual `begin_semantic_transaction` / semantic deadline,
-   `assert_recovery_fence`, `lock_admission_relations`, and
-   `character_progression::assert_gameplay_fence` (including current node incarnation,
-   session/connection/lease/scope generations, guards, locked root/revision and independent
-   interpretation). Lock occurrence before the root as in the existing stance writer; compare
-   exact replay binding before returning historical disposition. Lock progression state, verify
-   context/root and expected prior selection, then atomically advance root/progression +1 and
-   insert receipt/update selection. Concurrent losing transitions receive typed revision/state
-   rejection; do not retry a conflicting occurrence with new facts. Pending respawn handling and
-   semantic commit must match native Character writers. No completion is consumed as authority.
-3. Earned unlock insertion must be **inside the actual quest/NPC granting event transaction**.
-   Existing `account_achievement::FencedGrantingCharacter` is transaction-stamped with private
-   Character/transaction fields; its only production constructor is
-   `reward_claim_mint::admit` via `RewardClaimFenceChecked`. It exposes no cosmetic grant consumer
-   accessor. Its owner must provide the exact shared transaction-bound consumer seam (including
-   independently derived account, current event identity and earned source) before APP-1 can
-   insert facts. A request source label or retained committed quest receipt is insufficient.
-   No public token constructor, new grant authority or separate account-grant revision is added.
-4. APP-2/current content must supply a real `AppearanceContent` implementation, addon unlock-key
-   mapping and compatible-provenance resolver. Character creation/sex still needs its owning
-   input; only the accepted native default test Character may use a content-declared default.
-   Temporary spell `gameplay_transport/appearance_atomic.rs` is not the durable selection commit
-   owner. Store remains unavailable until gap §32; it never becomes an earned AccountUnlock.
-5. Module registration, migration numbering, shared integrity/guard integration, audit/event family
-   registration, runtime admission/command publication and protocol wiring require the CP slot.
-   APP-1 owns the production DDL/permissions content and native writer. Those mechanics are
-   authored here; runtime integration and unavailable entitlement paths are not claimed complete.
-   Native independent exact-head review is required before the eventual persistence integration.
-
-### Historical e07 qualification and limits
-
-The following describes the published e07 read/schema increment, not exact-head evidence for
-the new owned source split below. That standalone test wrapper loads the actual source and uses the existing native
-server rlib for all domain IDs, revisions and the unmodified appearance validator. No duplicate
-native types or validator are compiled. An isolated PostgreSQL **17.6** database qualifies
-private projection reads, per-Character/per-account isolation, reconnection/reload, write-once
-first provenance, source-event collision, UPDATE/DELETE/TRUNCATE refusal, and SQL shape bounds.
-The new selection receipt cases additionally cover exact +1, unchanged XP/level, complete prior state and provenance,
-no-op refusal, deferred projection/chain consistency, transaction rollback and storage reload.
-The private recovery helper rejects individually corrupted projection, before selection and
-before provenance even when fixture triggers are bypassed by the isolated test administrator.
-It still needs the CP-owned call from `verify_character_integrity` and its global receipt-union arm.
-Fixture-only earned mapping/compatibility is explicit; revision equality there is not a product
-policy. No production granting authority, runtime session, real relog, complete fenced writer,
-Character deletion flow, role/grant compatibility, complete event chain or E2E is qualified.
-The acceptance checkboxes above intentionally remain unchecked. In particular “stale fence writes
-nothing” was not qualified by that read-only subset; fresh native qualification of the current
-writer and its independently supplied authority is required for the new candidate.
-
-Evidence, exact commands, checks and source hashes are retained outside the repository in
-`/workspace/oteryn-prep/app-1-evidence/` (historical index, validation, scope and source manifest).
-That preparation made no worker commit/push/ready/merge/review trigger, shared source edit,
-production DDL or content change.
-
-### Current owned implementation — 2026-10-16
-
-The native fenced starter-selection writer now lives unconditionally in
-`character_appearance.rs`: semantic pass/transaction, exact root-object recovery authority,
-recovery fence, admission relation locks, occurrence serialization, complete gameplay/root fence,
-progression/current-content context, exact prior selection, pending-respawn refusal, root/state
-revision +1, immutable receipt, projection, historical replay/reconcile and recovery-gated load.
-The earned/Store/mount path remains unavailable; no authorizing callback or grant token is added.
-The existing pure `AppearanceContent` and `Sex` inputs are not proofs of admitted content or sex.
-
-`read_current_character_appearance(authority, node, fence)` additionally provides one actual
-semantic transaction for recovery, admission locks, current gameplay/root revision, locked
-progression context and stored selection. It rejects selected revisions ahead of the root and
-pending respawn. This returns durable data only; APP-3 must still independently bind its loaded
-content view, runtime owner/session/connection/scope and conditions immediately before publication.
-An incompatible historical selection is preserved rather than reinterpreted as a current default.
-The existing nine native cases now exercise this read for absent/committed selection, current
-connection after restart, independently changed request fences, real connection/session/scope
-replacement, foreign root/node, independently advanced interpretation and DB issuance corruption.
-Typed fence rejection and unresolved `Unavailable` remain distinct. These source additions require
-fresh successor-head qualification; the earlier a392 qualification cannot qualify this method.
-
-Within the exact allocated filenames, `character_appearance_tests.rs` now holds the **single**
-production SQLx reader/recovery implementation plus its original three focused tests in a nested
-`#[cfg(test)]` module. The writer loads this source as `stored`; the standalone PG target loads
-the same source directly. This filename tradeoff avoids duplicate implementations, private fence
-facades, cfg suppression of the writer or a shared production module-registration edit. The
-standalone target still qualifies only the historical reader/schema boundary, not native writing.
-
-`APP1_MIGRATION_CONTENT` in the owned PG target contains the executable complete unnumbered
-DDL, immutable selection/grant receipts and facts, exact projection/receipt FK and deferred
-selection chain, every existing 0073 guard clause plus its appearance initial-state/global-union/
-state-successor arms, fixed function search paths and least-privilege grants. Number assignment
-and installing this content remain the CP migration slot; authoring its content is APP-1 work.
-
-CP D1092 ([6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346))
-now allocates the real nine-case native PostgreSQL target, an additive harness helper and the
-appearance-specific recovery union/verifier call. The helper delegates to the unchanged native
-constructor. Before calling it the helper resolves 0093 from the actual embedded SQLx migrator;
-the unchanged database constructor runs that migrator before any recovery/admission. The helper
-also verifies the installed 0093 success and exact checksum. It neither
-executes a schema supplement nor changes existing fixture cases or constructor semantics.
-The nine bodies retain the historical e32 boundary tests: independent current fences, exact
-historical replay, native root/scope replacement, restart reload, cross-family revision chains,
-privileged DB issuance-corruption refusal and receipt-insert-fault transaction rollback.
-Test-only content/sex remain explicit synthetic data rather than admitted product authority.
-
-D1092 reserves migration `0093_character_appearance.sql`. Its **publication** and registration in
-`durability/mod.rs` are still slot-only after #2163. Until that GO, the owned staging constant is
-the sole authored SQL source; private validation derives the migration file byte-for-byte and
-installs it only through the actual embedded SQLx migrator. No private support-SQL include is
-added. At the slot, move the content to the numbered migration and remove the staging constant.
-The actual recovery call and native target require the explicitly declared registration/migration
-compile overlay before the slot; no cfg suppression, helper facade or skipped test conceals it.
-
-The e32 and 8295 evidence remain separate historical generations. The D1092 authoring candidate
-requires fresh exact-source native qualification with its explicit two-file slot overlay and
-extracted migration hash. No earlier nine-plus-four result is claimed for this new candidate.
-Native root/session replacement and storage reload are not full client relog. Legal same-store
-recovery replacement with a retained seal is excluded by native shared/exclusive lock lifetimes;
-the DB issuance case is defensive privileged corruption, not a fabricated successor workflow.
-
-Remaining external owners: the granting owner must expose its accepted transaction-bound
-cosmetic consumer on `FencedGrantingCharacter`; APP-2 must provide admitted content/key/provenance
-mapping; Character creation must provide sex. CP must integrate current shared guards/recovery,
-module registration, migration number and actual runtime admission/caller. Exact replay, load
-and reconciliation describe history only; APP-3 must independently recheck current actor/session/
-connection/scope/interpretation/conditions before publication. Native storage reload is not a full
-client relog. No acceptance checkbox is advanced and the task remains PARTIAL.
+The granting owner must expose the accepted transaction-bound cosmetic consumer on
+`FencedGrantingCharacter`; APP-2 must supply admitted content/key/provenance compatibility;
+Character creation owns sex. The pure `AppearanceContent`/`Sex` fixture inputs prove none of
+those authorities. APP-3 and the runtime owner must integrate actual admission/current actor,
+connection/scope/content/conditions and publication. Native storage reload is not full client
+relog. Legal same-store recovery replacement cannot coexist with the native retained seal;
+the issuance substitution test is privileged DB corruption, not a fabricated successor workflow.
+No APP-1-specific deadline or ambiguous-COMMIT injection mechanism is claimed.

@@ -162,7 +162,7 @@ pub(crate) struct Harness {
 impl Harness {
     /// APP-1 uses the unchanged native fixture and only the installed SQLx migration.
     /// No private SQL include or additional schema execution is permitted here.
-    /// The CP D1092 slot installs 0093 before this target can qualify its nine cases.
+    /// CP D1112 installs 0093 with its registered owner and recovery integration.
     #[allow(
         dead_code,
         reason = "only the APP-1 native target needs migration 0093"

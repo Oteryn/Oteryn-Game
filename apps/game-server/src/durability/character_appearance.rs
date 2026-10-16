@@ -2,10 +2,10 @@
 //! slot and the real content/Character-sex owners. Earned/Store/mount authorization stays closed
 //! until its accepted resolver/consumer exists. Historical receipts never grant actor authority.
 //!
-//! The allocated companion source holds the one reader/recovery implementation and its tests;
-//! this writer is compiled unconditionally whenever the native owner registers this module.
+//! The stored companion owns historical reads/recovery; this registered native writer
+//! compiles unconditionally. Production runtime composition remains a separate owner boundary.
 
-#[path = "character_appearance_tests.rs"]
+#[path = "character_appearance_stored.rs"]
 pub(crate) mod stored;
 
 pub(crate) use stored::{
@@ -300,7 +300,7 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    let state = sqlx::query("SELECT character_revision::text, profile_revision, ruleset_revision, content_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                    let state = sqlx::query("SELECT character_revision::text, profile_revision, ruleset_revision, content_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
                         .bind(fence.character_id.as_bytes().as_slice())
                         .fetch_optional(&mut *tx).await?;
                     let Some(state) = state else {

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// D1092 APP-1 native authority target. Every case requires an explicitly routed
+// D1112 APP-1 native authority target. Every case requires an explicitly routed
 // PostgreSQL 17.6 service and the installed migration 0093; absence is a failure.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
@@ -24,8 +24,8 @@ pub mod native_admission_source;
 #[path = "../src/premium/mod.rs"]
 mod premium;
 
-// Real native owner/harness composition. Module registration and migration 0093
-// are CP slot changes; private qualification mounts them explicitly before that slot.
+// Actual registered native owner and installed migration 0093. Qualification uses
+// the committed head directly, with no source overlay or supplemental SQL.
 #[allow(
     dead_code,
     reason = "shared native harness includes helpers for other receipt families"
