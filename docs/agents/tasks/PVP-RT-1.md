@@ -526,3 +526,7 @@ and exhaustively handles NotWiredInRuntime before computing retry on the same
 semantic sample. No held_step/hold_step_within or other root caller was edited.
 This changed consumer and main integration require fresh scoped native/lint
 evidence; earlier ten-case D1180 evidence remains a separate source generation.
+
+A direct fact regression uses a real ChannelRuntime player/session reservation and
+actual ChannelAttackStates::record_hit_taken; it checks the real deadline, foreign
+session refusal, sample/actor binding and exact expiry. It is prepared NOT_RUN.
