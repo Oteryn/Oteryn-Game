@@ -4,18 +4,18 @@
 task_id: PVP-1b
 title: "PVP-1b: skull evaluation, World cleanup job, pvp/party rulesets (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-1b
 issue: 1622
-pr: null
+pr: 2203
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md App. 7 PARTY/PVP PVP-1b; wave 2"
 class: "hard, persistence and security review"
 migration: maybe
 registry: no
-owner: unassigned (builder)
+owner: family_f_pvp
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-15
@@ -186,3 +186,30 @@ production composition. No surrounding durability implementation is stubbed or c
   PvP E2E are not claimed; they require the later integration allocation.
 
 Evidence is local at `/workspace/oteryn-prep/pvp-1b-evidence/`.
+
+## D1122 draft checkpoint (2026-10-16)
+
+The coherent component at `1fda2fbebeb27d5767baab6ee9ba0b9f551657cc`
+preserves a later unexpired red/black deadline when new points would otherwise
+shorten it. Native 14 cases over the exact owned Rust and strict all-target
+Clippy passed on the canonical PC/V2 lane with private native registration in
+`combat/pvp/mod.rs` (`product_registration=false`). This qualifies that private
+component assembly, not raw product registration or full production compilation.
+The full CLOUD package run passed the library (3164 passed, 0 failed, 29 ignored)
+and failed four `character_authority_postgres` claim/quest-obligation cases:
+`claim_mints_one_item_into_a_new_entry_and_a_once_claim_never_repeats`,
+`every_fence_operator_rejects_at_freeze_and_at_commit`,
+`a_claim_at_rl_07_open_obligations_is_refused_writing_nothing`, and
+`a_quest_obligation_rides_on_its_claim_and_the_quest_writer_consumes_it`.
+The retained errors are Ambiguous, Unavailable(Database(Database(None))), and
+Unavailable(CommitOutcomeUnknown). Their cause remains unresolved; no failure
+independence or full PASS is claimed and no blind rerun is authorized.
+
+The exact raw result is `evidence/pvp-1b-cloud-package-validation-results.json`;
+independent failure classification is
+`evidence/2203-claim-failure-independent-review.json`, outside the checkout.
+This documentation checkpoint preserves those RED results under CP D1122,
+without changing Rust source or activating PvP. The D1128 ledger/points adapter
+in `durability/pvp_ledger.rs` follows #2204; current skull endpoints/parity,
+atomic death/points/revenge/kill-block, World cleanup and runtime wiring remain
+open. No ready, merge, queue change or review trigger is included.
