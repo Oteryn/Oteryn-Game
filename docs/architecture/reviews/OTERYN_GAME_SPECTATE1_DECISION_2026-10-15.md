@@ -1,16 +1,16 @@
 # SPECTATE-1 Observer contract
 
 - Decision: `SPECTATE1-OBSERVER-CONTRACT-V1`
-- Status: **CANDIDATE** (architect-authored). Acceptance needs exact-head validation, independent review (security, privacy, protocol and concurrency) and protected integration. Owner acceptance is the owner's to give; none is recorded here.
+- Status: **ACCEPTED WITH AMENDMENTS** by CP/architect D1035–D1039, clarified by D1095 ([ruling](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6219643346)). Owner Global-parity answer (b) is recorded in §5. Exact-head security, privacy, protocol and concurrency review and protected integration still qualify each implementation; acceptance is not activation.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the mechanics completion plan row 138 (`OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md`, batch SPECTATE-1: "spectating"); the task record `docs/agents/tasks/SPECTATE-1.md` (goal "read-only view of a player session"; criteria "spectator cannot issue any gameplay command" and "consent of the spectated player"; the record notes no SPECTATE child exists in App. 7); the gap register §20 ("spectators, replay/event streams and privacy", `GAME-INSTANCES-01`); VSL-MOVE-01 §15 (spectator policies deferred).
 - Builds on: the social presence baseline (`SOCIAL_PRESENCE_AND_CONTACT_CONSENT_OWNER_BASELINE.md`, owner-accepted: consent, no unilateral tracking, fail toward less disclosure); the instance baseline (`INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md`, owner-accepted: placement privacy, the Gateway is not a gameplay proxy, single-use admission material); ADR-0003 (the client never selects a server); FND-04 and FND-04B (GameSession, lease, generation, §22 locator); VSL-MOVE-01 §13 (interest derived post-commit from committed state); CHAT-0; NET-03; GAME-CHANNEL-01; ARENA-1 A11 (CANDIDATE, the Tibiadrome roof); owner rule 5905825574 (Global parity).
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
-- Runtime, migration, wire and production authority: NONE until accepted and allocated. Each child needs its own #162 allocation.
+- Allocation: D1095 authorizes the accepted brief and only the SPECTATE completion-plan row, followed by GRANT-1 + SESSION-1 commits on existing #2183 in `apps/game-server/src/spectate/`. WIRE-1 and O2 Gateway admission (Platform) are allocated by CP only after green GRANT/SESSION. No production activation or shared-path slot is granted.
 
 ## 1. Scope
 
-This brief decides what an observer is, how it differs from an actor that sees things, how consent, privacy and visibility apply, the observer protocol and its bounds, and the child graph. It does not decide whether a player-facing observer feature ships at all under Global parity (§5, owner question), staff observation (GM-1, §6) or replays (§6).
+This brief decides what an observer is, how it differs from an actor that sees things, how consent, privacy and visibility apply, the observer protocol and its bounds, and the child graph. The owner accepted player observation as an Oteryn deviation under Global parity (§5). Staff observation (GM-1, §6) and replays (§6) remain outside scope.
 
 ## 2. Facts
 
@@ -63,14 +63,14 @@ This brief decides what an observer is, how it differs from an actor that sees t
 | Observer admission material | `FND02-ADMISSION-MATERIAL-BYTES` (cited, unchanged) | FND-02 |
 | Projection volume | the target's own rows (`MOVE-RL-08`, `MOVE-RL-11`, `SPELLPRES0-RL-01`), unchanged | VSL-MOVE-01 and spell presentation |
 
-## 4. Packets (proposed)
+## 4. Allocated delivery boundaries (D1036–D1039, D1095)
 
-Allocated one by one by the control plane after acceptance and the §5 owner answer; each its own PR.
+GRANT-1 and SESSION-1 are separate commits of the same mechanic PR #2183. WIRE-1 is a separate PR with protocol review, allocated after green GRANT/SESSION. Any migration requires a separate PR; audit uses the existing event foundation. O2 Gateway admission is a separate CP-allocated Platform child. The accepted prerequisites FND-04B, MAP-WIRE-2, CHAT-1b-2b (#2093) and SCOPE-HANDOFF-1 are on main per D1095; LOOP-WORLD-1 is not a prerequisite.
 1. **SPECTATE-GRANT-1** (hard, security and privacy review): O3, O7 and O8 in the target's runtime owner: grant commands, audience checks against contact consent, code generation and constant-time compare, grant end on every trigger, audit events. Needs CHAT-1 (contact consent surface), SCOPE-HANDOFF-1.
-2. **SPECTATE-SESSION-1** (hard, security and concurrency review): O2, O5, O6 and O9: Gateway observer admission and the `OBSERVER` session kind, the read-only command table and its all-commands refusal test, per-observer egress and drop, the per-target cap. Needs SPECTATE-GRANT-1 and the FND-04B §22 locator.
+2. **SPECTATE-SESSION-1** (hard, security and concurrency review): O5, O6 and O9, plus the Game-owned part of O2: the `OBSERVER` session kind, the read-only command table and its all-commands refusal test, per-observer egress and drop, the per-target cap. Needs SPECTATE-GRANT-1 and the FND-04B §22 locator.
 3. **SPECTATE-WIRE-1** (protocol, Reg): O4 and O10: capability, family, the projection filter and its privacy tests (no inventory, private chat or command outcome ever reaches an observer). Needs SPECTATE-SESSION-1, MAP-WIRE-2, CHAT-1b-2b; its capability is reserved on #162 at allocation.
 
-Order: SPECTATE-GRANT-1, SPECTATE-SESSION-1, SPECTATE-WIRE-1. The plan row's other listed prerequisites gate only what the projection carries, not the contract.
+Order: accepted brief and SPECTATE plan row on #2183, then SPECTATE-GRANT-1 + SPECTATE-SESSION-1 there, then separately allocated SPECTATE-WIRE-1 and O2 Gateway. End-to-end activation waits for all three mechanic children plus CP enablement; runtime integration still requires the concrete shared-path slot. Node restart ends observer sessions; no durable observer state or recovery is required (O11).
 
 ## 5. Open points (not decided here)
 
@@ -90,13 +90,13 @@ Order: SPECTATE-GRANT-1, SPECTATE-SESSION-1, SPECTATE-WIRE-1. The plan row's oth
 ## 7. Handback
 
 ```yaml
-result: CANDIDATE
+result: ACCEPTED_WITH_AMENDMENTS
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md
 resource_values_changed: false
 production_authority_changed: false
-implementation_may_resume: false
-required_fresh_allocation: true
+implementation_may_resume: true # GRANT-1 + SESSION-1 only, D1095
+required_fresh_allocation: "WIRE-1 and O2 Gateway; shared-path integration slot"
 required_independent_review: "security, privacy, protocol, concurrency"
 owner_answer_s5: "b (accepted Oteryn deviation, 2026-10-15)"
-blocked_on: "contract acceptance (exact-head validation, independent review) and the three children before SPECTATE_V1 is offered"
+blocked_on: "activation: green GRANT/SESSION, subsequent allocated WIRE/Gateway work, three children merged and CP enablement"
 ```

@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: SPECTATE-1
-title: "SPECTATE-1: spectating (skeleton)"
+title: "SPECTATE-1: spectating"
 mode: IMPLEMENT
-status: blocked
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/spectate-1
@@ -21,7 +21,8 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/spectate/ (new) + tests"
-  - "crates/protocol-oteryn/src/spectate.rs (wire child only)"
+  - "docs/architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md (D1095)"
+  - "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md (SPECTATE row only, D1095)"
   - "docs/agents/tasks/SPECTATE-1.md"
 slot_only_paths:
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
@@ -42,25 +43,26 @@ The [CP/architect ruling D1035–D1039](https://github.com/Oteryn/Oteryn-Game/pu
 - SPECTATE-WIRE-1 is a separate PR with protocol review; `spectate.rs` belongs only to that child.
 - Observation has no durable observer state. Any required migration is a separate PR, not a slot commit in this mechanic PR.
 - O2 Gateway admission is a separate child allocated by CP; this task does not allocate or implement that boundary.
-- The candidate brief and the completion-plan pointer edit move to an architecture acceptance PR under D1038. Both are outside these owned paths; their transfer is a CP/architecture action.
+- D1095 clarifies D1038: this existing #2183 authors the accepted brief and only the SPECTATE plan row, then GRANT/SESSION. WIRE-1 and O2 Gateway are not allocated until green GRANT/SESSION. No merge-main or shared-path slot is implied.
 
-## Dependencies (D1037; verify merge evidence before implementation)
+## Dependencies (D1095 current CP confirmation)
 
 | Dependency | State | Gate |
 |---|---|---|
-| Architecture acceptance PR | D1035 accepts with amendments; D1038 requires brief and plan transfer/integration | **BLOCKING** before GRANT-1/SESSION-1 |
-| FND-04B | Current merged delivery evidence required | **BLOCKING** before GRANT-1/SESSION-1 |
-| MAP-WIRE-2 | MERGED (#1810, accepted completion plan) | Prerequisite; revalidate on implementation base |
-| CHAT-1b-2b | Current merged delivery evidence required | **BLOCKING** before GRANT-1/SESSION-1 |
-| SCOPE-HANDOFF-1 | MERGED (D1037; #1782 in accepted completion plan) | Prerequisite; revalidate on implementation base |
-| O2 Gateway admission child | CP allocation pending | Observer admission/integration boundary |
+| Accepted SPECTATE contract | D1035–D1039; D1095 authoring on #2183 | Brief/one-row plan commit precedes runtime commits |
+| FND-04B | On main, confirmed by D1095 | Satisfied for GRANT/SESSION |
+| MAP-WIRE-2 | On main, confirmed by D1095 | Satisfied for GRANT/SESSION |
+| CHAT-1b-2b | #2093 on main, confirmed by D1095 | Satisfied for GRANT/SESSION |
+| SCOPE-HANDOFF-1 | Archived on main, confirmed by D1095 | Satisfied for GRANT/SESSION |
+| O2 Gateway / WIRE-1 | CP allocates after green GRANT/SESSION | Later boundary; no invented Gateway/protocol authority |
 
-LOOP-WORLD-1 is not a prerequisite under D1037. Next: architecture acceptance PR, then GRANT-1/SESSION-1 after FND-04B, MAP-WIRE-2 and CHAT-1b-2b are merged. Do not infer accepted schemas or Gateway authority from the candidate brief.
+LOOP-WORLD-1 is not a prerequisite. Existing static Candidate labels do not override D1095's prerequisite confirmation.
 
 ## Owned paths (builder edits freely)
 
 - apps/game-server/src/spectate/ (new) + tests
-- crates/protocol-oteryn/src/spectate.rs (wire child only)
+- docs/architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md (D1095)
+- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md (SPECTATE row only, D1095)
 - docs/agents/tasks/SPECTATE-1.md
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
@@ -123,4 +125,4 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 
 ## Checkpoint
 
-At PR head `e42184633af97cf32494713ab101ed8e7870d5b6`, the delivered scope is the task record plus candidate brief and plan pointer; no spectate runtime or codec is implemented. This card correction does not claim implementation or validation of the mechanic. Remaining own code is GRANT-1/SESSION-1 after the dependency gate; WIRE-1 follows its separate allocation. CP/architecture owns the acceptance PR and outside-owned transfer; CP owns the Gateway allocation, shared-path slots, ready, queue and merge. Resume on architecture acceptance integration plus merged prerequisite evidence and the applicable allocation, not on an owner re-approval. Required implementation checks are listed above; the card-only correction requires documentation validation.
+AUTHORING resumed from `77c6d68fa5f56ceecc37a2c7e65bc38cbad74886` under [D1095](https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6219643346). The first commit reconciles the accepted brief and only the SPECTATE plan row. GRANT-1/SESSION-1 follow in owned runtime paths. Shared module/transport registration, real event publication, WIRE and O2 Gateway are not silently allocated. Activation, ready, queue and merge remain CP actions. No runtime completion is claimed by this architecture commit.
