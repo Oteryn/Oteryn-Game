@@ -2,12 +2,14 @@
 //!
 //! Discovery is unlocked; each candidate obtains fresh recovery/admission evidence and its
 //! own Guild lock in a separate native transaction. Checkpoints and private publication DATA
-//! survive restart. Real Hall release and Bank payout consumers remain required before any
-//! terminal disband implementation; this pass only retains the accepted pending start.
+//! survive restart. D1098 resumes the actual Hall→Bank→bounded cleanup controller, committing
+//! each Guild independently. Missing genuine House disposition is a typed wait, never closure.
 use crate::domain::guild::GuildId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::durability::guild::{GuildDeadlineOutcome, GuildError};
+use crate::durability::guild::{
+    GuildDeadlineOutcome, GuildDisbandJobRequest, GuildDisbandOutcome, GuildError,
+};
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::WorldId;
 
@@ -39,6 +41,38 @@ pub(crate) async fn run_guild_deadline_pass(
             GuildDeadlineOutcome::AlreadyStarted => pass.already_started += 1,
             GuildDeadlineOutcome::NoLongerDue => pass.no_longer_due += 1,
         }
+    }
+    Ok(pass)
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct GuildDisbandPass {
+    pub outcomes: Vec<(GuildId, GuildDisbandOutcome)>,
+}
+
+/// The scheduler supplies stable operation IDs before the first attempt, from the bounded
+/// pending page. These IDs are DATA: every candidate independently obtains current authority
+/// and all actual owner facts. A failure preserves earlier committed Guild steps for restart.
+pub(crate) async fn run_guild_disband_pass(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    world: WorldId,
+    requests: Vec<GuildDisbandJobRequest>,
+) -> Result<GuildDisbandPass, GuildError> {
+    if requests.len() > 100
+        || requests.iter().any(|request| request.world_id != world)
+        || requests
+            .windows(2)
+            .any(|pair| pair[0].guild_id >= pair[1].guild_id)
+    {
+        return Err(GuildError::InvalidInput);
+    }
+    let mut pass = GuildDisbandPass::default();
+    for request in requests {
+        let guild = request.guild_id;
+        let outcome = root.advance_guild_disband(authority, node, request).await?;
+        pass.outcomes.push((guild, outcome));
     }
     Ok(pass)
 }

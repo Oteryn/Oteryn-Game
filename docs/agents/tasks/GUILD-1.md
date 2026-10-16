@@ -924,3 +924,58 @@ followed by old-leader refusal/new-leader success. Current source-derived total
 is92 Guild bodies (78 inherited +14 new); runtime qualification remains pending.
 Native review/validation must use this repaired source, superseding the earlier
 held deadline-only manifest. All inherited78 bodies remain literal.
+
+### 2026-10-16 — D1098 terminal controller and genuine owner ports (partial)
+
+CP6219643346/D1098 assigns the complete DISBANDING→DISBANDED controller
+to this PR in durability/guild.rs and node/guild_jobs.rs. This successor
+implements Hall release/recheck → Bank payout/retained claims → bounded
+member/invitation cleanup → final leader/leadership/rank removal and state4.
+Immutable per-Guild ordinal steps and exact private event DATA bind each
+revision and original payout UUID; no phase skip or second step in one
+physical transaction is admitted. At most100 members plus invitations are
+deleted per step. Leadership remains held until the final step; the snapshot
+exception requires a genuine retained cleanup record for that removed vice.
+Deferred guards require actual Hall and Bank owner predicates and no orphans.
+
+The private transaction capability is minted from actual Root-bound recovery,
+admission, current node and its current Channel assignment in the World,
+then bound to the exact PostgreSQL xid and locked Guild revision. Consumers
+recheck those facts; the complete prelocked Bank identity is also bound.
+Hall/Bank occurrences precede Guild and sorted dependent-row locks. Retained
+outcomes cannot mint current authority. Native per-Guild transactions preserve
+earlier commits, and bounded keyset discovery avoids starvation by waiting rows.
+
+The actual Hall bid-refund and Bank payout/current retained-claim ports are
+their owners' implementations, not surrogate closure witnesses. HOUSE-1b
+#2141 already has native bounded Inbox movement, but drained disposition
+retains ownership, slot and content fence, with Character-only ownership.
+The exact remaining C prerequisite is Guild GUILD_DISBAND start/resume/final
+property/slot/ACL/fence release and current closure binding under the accepted
+lock order. Until C supplies that genuine port, Hall returns typed unavailable;
+the controller can commit a real bid refund and wait, but cannot pay out,
+clean membership or terminalize. No successful fake predicate/test is added.
+
+Six additional native17.6 bodies in owned guild.rs cover real wait/retry/Root
+reopen, foreign/replaced xid and current Root/node/World rejection, stale
+recovery after retained start, SQL phase/deletion/false-closure rejection,
+bounded keyset/batch admission and concurrent two-Root waiting. The published
+guild_tests.rs and its92 bodies remain byte-identical. These six bodies are
+authored, not claimed executed. Lead's earlier combined native --lib type
+check passed on its separately retained early snapshot; final source-bound
+native compilation/runtime/Clippy and independent review remain qualification.
+Owned-source rustfmt and whitespace checks pass; no Cargo was run by this author.
+
+Stable source SHA256: guild.rs
+6ad77f920264238af348819dd5a4d3facf401bd247939afb51fcdc8b77fa2034;
+node/guild_jobs.rs
+a74804564b68013238d48ac75dab9170aae19c508f1ddab99dd691bd569e1803.
+Literal private SQL SHA256: GUILD_TABLES_PROPOSAL
+6d91fc5e5dbe597c72633f46dc328f30525a17498be1acbeabcc75829247343e;
+GUILD_GUARDS_PROPOSAL
+343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a.
+These are uninstalled owner proposals, not a numbered migration or production
+grant. Production registration/scheduler/security/public events/retention,
+remaining Premium/rank decisions and real terminal composition qualification
+remain CP gates. D1098 resolves controller ownership; it does not complete
+the whole task or authorize ready/merge/production publication.
