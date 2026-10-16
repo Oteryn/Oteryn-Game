@@ -1,9 +1,9 @@
-//! OFFLINE0 §§3–6: noncommitting marker/lease/pool/activation transition plans.
+//! OFFLINE0 §§3–6: transition plans and the native fenced marker transaction source.
 //!
-//! Raw proposed marker/time/context data is not current authority or a native receipt. The
-//! native DB-clock, recovery/session/scope/node, receipt-chain and marker-cause integration is
-//! absent. Every fresh plan exposes required owner stages; no installable settlement or writer
-//! is produced. Stamina belongs to its existing owner; native build arithmetic is reused.
+//! Raw proposed marker/time/context data never grants authority. The writer independently
+//! resolves current recovery/gameplay fences and commits the same build row and marker receipt.
+//! Actual FND clock/predecessor and pinned Content rate/percent participants, schema, registration
+//! and callers remain explicit integration dependencies; this source alone is not installed.
 #![allow(
     dead_code,
     reason = "offline owner stages and native marker integration await CP"
@@ -591,3 +591,756 @@ pub(crate) fn preview_raw_training(
 #[cfg(test)]
 #[path = "offline_tests.rs"]
 mod tests;
+
+/// D1108: actual native marker writer. This source is integrated with the accompanying
+/// character_build hunk and the explicitly named FND clock-source participant. It does
+/// not supply admission/logout callers or statue/exercise behavior.
+mod native_marker_writer {
+    use super::*;
+    use crate::durability::character_authority::{
+        ReconciledCharacterAuthority, assert_recovery_fence,
+    };
+    use crate::durability::character_build::{
+        BuildFormula, BuildOccurrence, NativeOfflineMarkerReceipt, NativeOfflineMarkerValues,
+        load_offline_marker, lock_offline_build, write_offline_marker,
+    };
+    use crate::durability::character_progression::{
+        CharacterProgressionError, ProgressionInitializationRequest,
+        initialize_character_progression_in_transaction,
+    };
+    use crate::durability::character_vitals_stamina::regenerate_stamina_minutes;
+    use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+    use crate::durability::{
+        DurabilityError, DurabilityRoot, begin_semantic_transaction, commit_semantic_transaction,
+        lock_admission_relations,
+    };
+    use sqlx::{Postgres, Transaction};
+    use std::future::Future;
+    use std::pin::Pin;
+    use std::sync::Arc;
+
+    /// Source data is independent of marker receipts. Only the FND owner implements
+    /// this port, by reading its current session/lease rows in the supplied transaction.
+    /// It is not a pool getter, an authority grant, or a reconstruction from the marker.
+    pub(crate) mod clock_source_sealed {
+        pub(crate) trait Sealed {}
+    }
+    pub(crate) trait OfflineLeaseClockSource:
+        clock_source_sealed::Sealed + Send + Sync
+    {
+        fn read_locked<'a>(
+            &'a self,
+            tx: &'a mut Transaction<'_, Postgres>,
+            fence: &'a CurrentCharacterGameplayFence,
+        ) -> Pin<Box<dyn Future<Output = Result<OfflineLeaseClockRead, DurabilityError>> + Send + 'a>>;
+    }
+    /// Ordinary typed SQL results, never a current-authority witness. The current
+    /// gameplay fence is independently checked by the build owner in this same TX.
+    pub(crate) struct OfflineLeaseClockRead {
+        pub(crate) character: CharacterId,
+        pub(crate) session: GameSessionId,
+        pub(crate) world: crate::foundation::WorldId,
+        pub(crate) lease_generation: u64,
+        pub(crate) times: ProposedLeaseTimes,
+    }
+
+    /// Math participant of the existing build transaction, never a storage or
+    /// clock owner. Its input is qualified by the native marker writer below.
+    /// Both values are retained by that writer's one before/after receipt.
+    struct SettlementStaminaParticipant {
+        before_minutes: u16,
+        after_minutes: u16,
+    }
+
+    impl SettlementStaminaParticipant {
+        fn prepare(
+            before_minutes: u16,
+            qualified_offline_s: u64,
+        ) -> Result<Self, OfflineMarkerError> {
+            let after_minutes =
+                regenerate_stamina_minutes(u32::from(before_minutes), qualified_offline_s)
+                    .map_err(|_| OfflineMarkerError::InvalidState)?;
+            Ok(Self {
+                before_minutes,
+                after_minutes: u16::try_from(after_minutes)
+                    .map_err(|_| OfflineMarkerError::InvalidState)?,
+            })
+        }
+
+        fn apply(self, columns: &mut ProposedOfflineColumns) -> Result<(), OfflineMarkerError> {
+            if columns.stamina_minutes != self.before_minutes {
+                return Err(OfflineMarkerError::InvalidState);
+            }
+            columns.stamina_minutes = self.after_minutes;
+            Ok(())
+        }
+    }
+
+    /// Immutable pinned Content facts only; not an authority witness. Implement
+    /// alongside the actual native BuildFormula loader, never from actor input.
+    pub(crate) mod training_source_sealed {
+        pub(crate) trait Sealed {}
+    }
+    pub(crate) trait OfflineTrainingFactsSource:
+        training_source_sealed::Sealed + Send + Sync
+    {
+        fn rate(&self, vocation: &str, skill: OfflineSkill) -> Option<OfflineTrainingRateFacts>;
+        /// OFFLINE-0's changed-percent rule belongs to the qualified native
+        /// projection, not an invented count inequality or guessed UI rounding.
+        /// Called only when the selected family's level stayed equal.
+        fn percent_changed(
+            &self,
+            formula: &dyn BuildFormula,
+            vocation: &str,
+            family: usize,
+            before: (u16, u64),
+            after: (u16, u64),
+        ) -> Option<bool>;
+    }
+    pub(crate) struct OfflineTrainingRateFacts {
+        pub(crate) vocation: String,
+        pub(crate) top_vocation: String,
+        pub(crate) content_revision: String,
+        pub(crate) formula_digest: [u8; 32],
+        pub(crate) rate: OfflineTrainingRate,
+    }
+    pub(crate) enum OfflineTrainingRate {
+        Attack {
+            top_base_attack_speed_ms: u32,
+        },
+        Magic {
+            current_mana_gain: u32,
+            top_mana_ticks_ms: u32,
+        },
+    }
+
+    fn advance_offline_family(
+        formula: &dyn BuildFormula,
+        vocation: &str,
+        family: usize,
+        (level, stored): (u16, u64),
+        gain: u64,
+    ) -> Result<(u16, u64), OfflineMarkerError> {
+        use crate::durability::character_build::{MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS};
+        // Existing native relevel accepts the current level as its floor, so
+        // training adds to within-level progress without copying its advance loop.
+        let after = relevel(
+            stored.saturating_add(gain).min(MAX_BUILD_PROGRESS),
+            level,
+            |next| {
+                formula
+                    .required(vocation, family, next)
+                    .filter(|required| *required > 0)
+            },
+        );
+        if after.0 < MAX_BUILD_LEVEL && formula.required(vocation, family, after.0 + 1) == Some(0) {
+            return Err(OfflineMarkerError::InvalidState);
+        }
+        Ok(after)
+    }
+
+    fn apply_offline_training(
+        work: &TrainingWork,
+        formula: &dyn BuildFormula,
+        source: Option<&dyn OfflineTrainingFactsSource>,
+        locked_build: &DurableBuildState,
+    ) -> Result<DurableBuildState, OfflineMarkerError> {
+        let TrainingWork::NeedsRates {
+            skill,
+            seconds,
+            build,
+            ..
+        } = work
+        else {
+            return Ok(locked_build.clone());
+        };
+        if build != locked_build
+            || *seconds < 60
+            || *seconds > POOL_CAP_S
+            || formula.required(build.vocation(), 0, 1).is_none()
+        {
+            return Err(OfflineMarkerError::InvalidState);
+        }
+        let source = source.ok_or(OfflineMarkerError::TrainingFactsRequired)?;
+        let facts = source
+            .rate(build.vocation(), *skill)
+            .ok_or(OfflineMarkerError::TrainingFactsRequired)?;
+        if facts.vocation != build.vocation()
+            || facts.top_vocation.is_empty()
+            || facts.top_vocation.len() > 128
+            || facts.content_revision != formula.content_revision()
+            || facts.formula_digest != formula.digest()
+        {
+            return Err(OfflineMarkerError::InvalidState);
+        }
+        let t = u128::from(*seconds);
+        let gain = match (*skill, facts.rate) {
+            (
+                OfflineSkill::MagicLevel,
+                OfflineTrainingRate::Magic {
+                    current_mana_gain,
+                    top_mana_ticks_ms,
+                },
+            ) => {
+                let ticks = if top_mana_ticks_ms == 0 {
+                    1000
+                } else {
+                    top_mana_ticks_ms
+                };
+                t * u128::from(current_mana_gain) * 1000 / u128::from(ticks)
+            }
+            (OfflineSkill::MagicLevel, _) | (_, OfflineTrainingRate::Magic { .. }) => {
+                return Err(OfflineMarkerError::InvalidState);
+            }
+            (
+                skill,
+                OfflineTrainingRate::Attack {
+                    top_base_attack_speed_ms,
+                },
+            ) => {
+                if top_base_attack_speed_ms == 0 {
+                    return Err(OfflineMarkerError::InvalidState);
+                }
+                let divisor = if skill == OfflineSkill::Distance {
+                    4_u128
+                } else {
+                    2_u128
+                };
+                t * 1000 / (u128::from(top_base_attack_speed_ms) * divisor)
+            }
+        };
+        let gain = u64::try_from(gain).map_err(|_| OfflineMarkerError::InvalidState)?;
+        let family = match skill {
+            OfflineSkill::MagicLevel => 0,
+            OfflineSkill::Fist => 1,
+            OfflineSkill::Club => 2,
+            OfflineSkill::Sword => 3,
+            OfflineSkill::Axe => 4,
+            OfflineSkill::Distance => 5,
+        };
+        let mut magic = build.magic();
+        let mut skills = build.skills();
+        let before = if family == 0 {
+            magic
+        } else {
+            skills[family - 1]
+        };
+        let after = advance_offline_family(formula, build.vocation(), family, before, gain)?;
+        if family == 0 {
+            magic = after;
+        } else {
+            skills[family - 1] = after;
+        }
+        let changed = if before.0 != after.0 {
+            true
+        } else if before == after {
+            false
+        } else {
+            source
+                .percent_changed(formula, build.vocation(), family, before, after)
+                .ok_or(OfflineMarkerError::TrainingFactsRequired)?
+        };
+        if changed {
+            skills[5] = advance_offline_family(
+                formula,
+                build.vocation(),
+                6,
+                skills[5],
+                u64::from(*seconds / 4),
+            )?;
+        }
+        DurableBuildState::new(build.vocation(), magic, skills)
+            .map_err(OfflineMarkerError::Progression)
+    }
+
+    #[allow(
+        clippy::large_enum_variant,
+        reason = "one transient actor-end checkpoint retains both native build snapshots"
+    )]
+    #[derive(Debug, Clone)]
+    pub(crate) enum OfflineMarkerCommand {
+        Settlement {
+            admission: AdmissionKind,
+        },
+        /// A2 supplies the final native flush after actor removal; the writer never
+        /// derives it from a marker or discards live pending training itself.
+        Logout {
+            end: ActorEnd,
+            before: DurableBuildState,
+            after_flush: DurableBuildState,
+            stamina_after_flush: u16,
+        },
+    }
+    impl OfflineMarkerCommand {
+        fn kind(&self) -> MarkerKind {
+            match self {
+                Self::Settlement { .. } => MarkerKind::Settlement,
+                Self::Logout { .. } => MarkerKind::Logout,
+            }
+        }
+    }
+    #[derive(Debug)]
+    pub(crate) enum OfflineMarkerError {
+        Progression(CharacterProgressionError),
+        Backend(DurabilityError),
+        InvalidTimeOrClockBinding,
+        InvalidState,
+        /// No guessed top-vocation rate or percent rule is substituted. This refusal
+        /// happens before any write; the pending activation remains durable for retry.
+        TrainingFactsRequired,
+    }
+    impl From<DurabilityError> for OfflineMarkerError {
+        fn from(value: DurabilityError) -> Self {
+            Self::Backend(value)
+        }
+    }
+    impl From<sqlx::Error> for OfflineMarkerError {
+        fn from(value: sqlx::Error) -> Self {
+            Self::Backend(value.into())
+        }
+    }
+    #[derive(Debug)]
+    pub(crate) enum OfflineMarkerOutcome {
+        Committed(NativeOfflineMarkerReceipt),
+        AlreadyCommitted(NativeOfflineMarkerReceipt),
+        SameLeaseReconnect,
+        WaitForRespawn,
+        WaitForActorRemoval,
+        Skipped,
+    }
+
+    impl DurabilityRoot {
+        /// Called only by the matching Character RevisionSlot. The source port and
+        /// formula are native owners; no completed result escapes before real COMMIT.
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "one fenced marker command with its independent clock/content participants"
+        )]
+        pub(crate) async fn commit_character_offline_marker<const N: usize>(
+            &self,
+            authority: &ReconciledCharacterAuthority<'_, '_>,
+            node: &NodeIncarnationProof,
+            fence: CurrentCharacterGameplayFence,
+            occurrence: BuildOccurrence,
+            command: OfflineMarkerCommand,
+            clocks: Arc<dyn OfflineLeaseClockSource>,
+            formula: Arc<dyn BuildFormula>,
+            training_facts: Option<Arc<dyn OfflineTrainingFactsSource>>,
+            initialization: Option<ProgressionInitializationRequest<N>>,
+        ) -> Result<OfflineMarkerOutcome, OfflineMarkerError> {
+            let marker_key =
+                key(&fence, command.kind()).map_err(|_| OfflineMarkerError::InvalidState)?;
+            let recovery = authority.record_for(self).map_err(|_| {
+                OfflineMarkerError::Progression(CharacterProgressionError::AuthorityRejected)
+            })?;
+            let node = node.clone();
+            self.try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        let outcome = apply_marker(
+                            &mut tx,
+                            &node,
+                            fence,
+                            marker_key,
+                            occurrence,
+                            command,
+                            clocks.as_ref(),
+                            formula.as_ref(),
+                            training_facts.as_deref(),
+                            initialization.as_ref(),
+                        )
+                        .await;
+                        if outcome.is_ok() {
+                            commit_semantic_transaction(tx, deadline).await?;
+                        }
+                        // Error drops the whole physical transaction, including D88 init.
+                        Ok(outcome)
+                    })
+                })
+                .await?
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn apply_marker<const N: usize>(
+        tx: &mut Transaction<'_, Postgres>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        marker_key: MarkerKey,
+        occurrence: BuildOccurrence,
+        command: OfflineMarkerCommand,
+        clocks: &dyn OfflineLeaseClockSource,
+        formula: &dyn BuildFormula,
+        training_facts: Option<&dyn OfflineTrainingFactsSource>,
+        initialization: Option<&ProgressionInitializationRequest<N>>,
+    ) -> Result<OfflineMarkerOutcome, OfflineMarkerError> {
+        // The complete typed key decides equality. Hashing is a serialization aid only.
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended(\
+            'oteryn:offline-marker:' || encode($1,'hex') || ':' || $2 || ':' || $3, 0))",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(fence.character_lease_generation.to_string())
+        .bind(marker_key.kind.sql_key())
+        .execute(&mut **tx)
+        .await?;
+        // OFFLINE-0 key replay precedes raw intent/clock/formula/state checks. The
+        // historical receipt is returned only; it never becomes current authority.
+        if let Some(receipt) = load_offline_marker(tx, marker_key).await? {
+            return Ok(OfflineMarkerOutcome::AlreadyCommitted(receipt));
+        }
+        // Share the native build occurrence lock with ordinary build writers. A
+        // reused occurrence under another marker key is a typed refusal, not a
+        // late uniqueness error after a partial mutation.
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-build:' || encode($1,'hex'), 0))")
+            .bind(occurrence.as_bytes().as_slice()).execute(&mut **tx).await?;
+        let reused: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_build_receipts WHERE build_occurrence_id=encode($1,'hex')::uuid)")
+            .bind(occurrence.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if reused {
+            return Err(OfflineMarkerError::Progression(
+                CharacterProgressionError::ConflictingOccurrence,
+            ));
+        }
+        if matches!(
+            command,
+            OfflineMarkerCommand::Settlement {
+                admission: AdmissionKind::SameLeaseReconnect
+            }
+        ) {
+            return Ok(OfflineMarkerOutcome::SameLeaseReconnect);
+        }
+        if matches!(
+            command,
+            OfflineMarkerCommand::Logout {
+                end: ActorEnd::AlreadyReleased,
+                ..
+            }
+        ) {
+            return Ok(OfflineMarkerOutcome::Skipped);
+        }
+        if matches!(
+            command,
+            OfflineMarkerCommand::Logout {
+                end: ActorEnd::StillInWorld,
+                ..
+            }
+        ) {
+            return Ok(OfflineMarkerOutcome::WaitForActorRemoval);
+        }
+        // This native owner performs assert_gameplay_fence, locks the Character root,
+        // then loads the real pending-respawn/build/progression rows in this TX.
+        let locked = lock_offline_build(tx, node, &fence)
+            .await
+            .map_err(OfflineMarkerError::Progression)?;
+        if locked.respawn_pending {
+            return Ok(match marker_key.kind {
+                MarkerKind::Settlement => OfflineMarkerOutcome::WaitForRespawn,
+                MarkerKind::Logout => OfflineMarkerOutcome::Skipped,
+            });
+        }
+        if !locked.progression_present {
+            if marker_key.kind == MarkerKind::Logout {
+                return Ok(OfflineMarkerOutcome::Skipped);
+            }
+            let init = initialization.ok_or(OfflineMarkerError::Progression(
+                CharacterProgressionError::MissingProgressionState,
+            ))?;
+            initialize_character_progression_in_transaction(tx, node, fence, init)
+                .await
+                .map_err(OfflineMarkerError::Progression)?;
+        }
+        let clocks_read = clocks.read_locked(tx, &fence).await?;
+        if clocks_read.character != fence.character_id
+            || clocks_read.session != fence.game_session_id
+            || clocks_read.world != fence.runtime_scope.world_id()
+            || clocks_read.lease_generation != fence.character_lease_generation
+        {
+            return Err(OfflineMarkerError::InvalidTimeOrClockBinding);
+        }
+        // Read the database clock ONCE after the native root lock. No runtime/client
+        // clock, receipt-derived lease anchor or unchecked ms -> us conversion exists.
+        let as_of_us: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint",
+        )
+        .fetch_one(&mut **tx)
+        .await?;
+        times(&fence, clocks_read.times, as_of_us)
+            .map_err(|_| OfflineMarkerError::InvalidTimeOrClockBinding)?;
+        let latest =
+            crate::durability::character_build::latest_offline_build_receipt(tx, &fence).await?;
+        let settled = load_offline_marker(
+            tx,
+            MarkerKey {
+                kind: MarkerKind::Settlement,
+                ..marker_key
+            },
+        )
+        .await?
+        .is_some();
+        let (after_build, after_columns) = match command {
+            OfflineMarkerCommand::Settlement { .. } => {
+                let planned = plan_settlement(
+                    &fence,
+                    clocks_read.times,
+                    as_of_us,
+                    ProposedLookup::Missing,
+                    AdmissionKind::NewLease,
+                    Respawn::Resolved,
+                    ProgressionRow::Present,
+                    latest,
+                    locked.columns,
+                    &locked.build,
+                )
+                .map_err(|_| OfflineMarkerError::InvalidState)?;
+                let SettlementDisposition::Plan(plan) = planned else {
+                    return Err(OfflineMarkerError::InvalidState);
+                };
+                let after_build =
+                    apply_offline_training(&plan.training, formula, training_facts, &locked.build)?;
+                let stamina = SettlementStaminaParticipant::prepare(
+                    locked.columns.stamina_minutes,
+                    plan.offline_s,
+                )?;
+                let mut after_columns = ProposedOfflineColumns {
+                    pool_s: plan.pool_after_s,
+                    skill: None,
+                    ..locked.columns
+                };
+                stamina.apply(&mut after_columns)?;
+                (after_build, after_columns)
+            }
+            OfflineMarkerCommand::Logout {
+                before,
+                after_flush,
+                stamina_after_flush,
+                ..
+            } => {
+                if before != locked.build || stamina_after_flush > locked.columns.stamina_minutes {
+                    return Err(OfflineMarkerError::Progression(
+                        CharacterProgressionError::BuildStateMismatch,
+                    ));
+                }
+                let planned = plan_logout(
+                    &fence,
+                    clocks_read.times,
+                    as_of_us,
+                    ProposedLookup::Missing,
+                    if settled {
+                        ProposedLookup::Existing(MarkerKey {
+                            kind: MarkerKind::Settlement,
+                            ..marker_key
+                        })
+                    } else {
+                        ProposedLookup::Missing
+                    },
+                    ActorEnd::RemovedBeforeTerminalRelease,
+                    Respawn::Resolved,
+                    ProgressionRow::Present,
+                    locked.columns,
+                    None,
+                )
+                .map_err(|_| OfflineMarkerError::InvalidState)?;
+                let LogoutDisposition::Plan(plan) = planned else {
+                    return Err(OfflineMarkerError::InvalidState);
+                };
+                (
+                    after_flush,
+                    ProposedOfflineColumns {
+                        stamina_minutes: stamina_after_flush,
+                        pool_s: plan.pool_after_s,
+                        skill: locked.columns.skill,
+                    },
+                )
+            }
+        };
+        let receipt = write_offline_marker(
+            tx,
+            node,
+            &fence,
+            occurrence,
+            formula,
+            NativeOfflineMarkerValues {
+                key: marker_key,
+                as_of_us,
+                before_build: locked.build,
+                after_build,
+                before_columns: locked.columns,
+                after_columns,
+            },
+        )
+        .await
+        .map_err(OfflineMarkerError::Progression)?;
+        Ok(OfflineMarkerOutcome::Committed(receipt))
+    }
+    #[cfg(test)]
+    mod training_participant_tests {
+        use super::*;
+
+        struct Formula;
+        impl BuildFormula for Formula {
+            fn required(&self, _: &str, _: usize, _: u16) -> Option<u64> {
+                Some(100)
+            }
+            fn digest(&self) -> [u8; 32] {
+                [3; 32]
+            }
+            fn content_revision(&self) -> &str {
+                "test-content"
+            }
+        }
+        // Arithmetic-only fixture: not a runtime Content participant or authority.
+        struct Facts {
+            percent_changed: bool,
+        }
+        impl training_source_sealed::Sealed for Facts {}
+        impl OfflineTrainingFactsSource for Facts {
+            fn rate(
+                &self,
+                vocation: &str,
+                skill: OfflineSkill,
+            ) -> Option<OfflineTrainingRateFacts> {
+                Some(OfflineTrainingRateFacts {
+                    vocation: vocation.to_owned(),
+                    top_vocation: "test-top".into(),
+                    content_revision: Formula.content_revision().into(),
+                    formula_digest: Formula.digest(),
+                    rate: if skill == OfflineSkill::MagicLevel {
+                        OfflineTrainingRate::Magic {
+                            current_mana_gain: 3,
+                            top_mana_ticks_ms: 0,
+                        }
+                    } else {
+                        OfflineTrainingRate::Attack {
+                            top_base_attack_speed_ms: 2000,
+                        }
+                    },
+                })
+            }
+            fn percent_changed(
+                &self,
+                _: &dyn BuildFormula,
+                _: &str,
+                _: usize,
+                _: (u16, u64),
+                _: (u16, u64),
+            ) -> Option<bool> {
+                Some(self.percent_changed)
+            }
+        }
+        fn work(skill: OfflineSkill, seconds: u32) -> TrainingWork {
+            TrainingWork::NeedsRates {
+                skill,
+                seconds,
+                build: DurableBuildState::default(),
+                owner: TrainingRateOwner::TopVocationBaseAttackSpeedTimesTwo,
+            }
+        }
+        #[test]
+        fn selected_gain_advances_and_only_changed_level_or_percent_trains_shielding() {
+            let before = DurableBuildState::default();
+            let after = apply_offline_training(
+                &work(OfflineSkill::Sword, 600),
+                &Formula,
+                Some(&Facts {
+                    percent_changed: false,
+                }),
+                &before,
+            )
+            .unwrap_or_default();
+            assert_eq!(after.skills()[2], (11, 50));
+            assert_eq!(after.skills()[5], (11, 50));
+            assert_eq!(after.skills()[0], before.skills()[0]);
+            let unchanged_percent = apply_offline_training(
+                &work(OfflineSkill::Distance, 60),
+                &Formula,
+                Some(&Facts {
+                    percent_changed: false,
+                }),
+                &before,
+            )
+            .unwrap_or_default();
+            assert_eq!(unchanged_percent.skills()[4], (10, 7));
+            assert_eq!(unchanged_percent.skills()[5], (10, 0));
+            let changed_percent = apply_offline_training(
+                &work(OfflineSkill::Distance, 60),
+                &Formula,
+                Some(&Facts {
+                    percent_changed: true,
+                }),
+                &before,
+            )
+            .unwrap_or_default();
+            assert_eq!(changed_percent.skills()[5], (10, 15));
+        }
+        #[test]
+        fn magic_zero_tick_fallback_is_one_second_and_missing_source_refuses() {
+            let before = DurableBuildState::default();
+            let after = apply_offline_training(
+                &work(OfflineSkill::MagicLevel, 60),
+                &Formula,
+                Some(&Facts {
+                    percent_changed: false,
+                }),
+                &before,
+            )
+            .unwrap_or_default();
+            assert_eq!(after.magic(), (1, 80));
+            assert_eq!(after.skills()[5], (10, 15));
+            assert!(matches!(
+                apply_offline_training(&work(OfflineSkill::Sword, 600), &Formula, None, &before),
+                Err(OfflineMarkerError::TrainingFactsRequired)
+            ));
+        }
+    }
+}
+
+impl MarkerKind {
+    pub(crate) const fn sql_key(self) -> &'static str {
+        match self {
+            Self::Logout => "logout",
+            Self::Settlement => "offline_settlement",
+        }
+    }
+}
+impl OfflineSkill {
+    pub(crate) const fn sql_key(self) -> &'static str {
+        match self {
+            Self::Fist => "fist",
+            Self::Club => "club",
+            Self::Sword => "sword",
+            Self::Axe => "axe",
+            Self::Distance => "distance",
+            Self::MagicLevel => "magic_level",
+        }
+    }
+    pub(crate) fn from_sql_key(value: &str) -> Option<Self> {
+        match value {
+            "fist" => Some(Self::Fist),
+            "club" => Some(Self::Club),
+            "sword" => Some(Self::Sword),
+            "axe" => Some(Self::Axe),
+            "distance" => Some(Self::Distance),
+            "magic_level" => Some(Self::MagicLevel),
+            _ => None,
+        }
+    }
+}
+
+pub(crate) use native_marker_writer::clock_source_sealed as offline_clock_source_sealed;
+#[allow(
+    unused_imports,
+    reason = "Pending CP/FND source integration retains the sealed training port."
+)]
+pub(crate) use native_marker_writer::training_source_sealed as offline_training_source_sealed;
+#[allow(
+    unused_imports,
+    reason = "Pending CP source integration retains typed training rate ports."
+)]
+pub(crate) use native_marker_writer::{
+    OfflineLeaseClockRead, OfflineLeaseClockSource, OfflineMarkerCommand, OfflineMarkerError,
+    OfflineMarkerOutcome, OfflineTrainingFactsSource, OfflineTrainingRate,
+    OfflineTrainingRateFacts,
+};

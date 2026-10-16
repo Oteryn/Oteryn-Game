@@ -4,7 +4,7 @@
 task_id: LOOP-TRAIN-1
 title: "LOOP-TRAIN-1: offline training statue and exercise weapons (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-train-1
@@ -20,8 +20,9 @@ needs_registry: no
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
-  - "apps/game-server/src/training/ (new: offline, exercise) + tests"
-  - "docs/agents/tasks/LOOP-TRAIN-1.md"
+  - apps/game-server/src/training/offline.rs
+  - apps/game-server/src/durability/character_build.rs
+  - docs/agents/tasks/LOOP-TRAIN-1.md
 slot_only_paths:
   - "apps/game-server/migrations/00NN_offline_training.sql"
   - "content regeneration outputs and pins (statue/dummy content)"
@@ -227,3 +228,110 @@ execution is claimed. Workspace/direct-owned formatting, governance and its 124 
 The duplicate-source validator lacks complete workspace artifact JSON here; an invalid usage
 attempt is retained, with no guard pass claimed. No root wrapper or tracked registration added.
 All runtime/DB integration and full task acceptance boxes remain pending.
+
+## D1108 native settlement source increment (2026-10-16)
+
+This checkpoint supersedes the earlier planner-only source inventory. CP D1108
+(`6219643346`, relayed by the family lead) authorizes the native Logout/OfflineSettlement
+writer; the lead allocated only `training/offline.rs`, the indispensable narrow
+`durability/character_build.rs` extension and this card on PR2174's exact head
+`7bea1e956dd8ebb21066ab90b7ae223f56a229bb`. No shared authority, DB, progression,
+sequencer, registration, migration or caller file is changed in this increment.
+
+The native semantic-pass source independently validates recovery and gameplay
+fences, serializes Character/lease/cause, resolves first-marker replay before new
+intent/time/formula checks, and reads the DB clock once after locking the native root.
+It updates the same build row and v2 before/after marker receipt, advancing root and
+progression once; failures roll back the entire transaction, including D88 initialization.
+Ordinary v1 build bindings/replays remain unchanged and preserve the OFFLINE fields.
+The latest build-carrying chain includes death; an older logout cannot mint offline time.
+
+Settlement calls the existing VITALS stamina helper through a private typed participant,
+checks its before value and u16 after value, and records both in that same transaction
+and marker receipt. The actual training-due path computes OFFLINE-0 §5's integer
+attack/mana gains and calls native `relevel` for the selected family and conditional
+shielding. Rate facts are vocation/content/formula-bound. Same-level percent changes
+come from a typed native Content port; no guessed percent or copied advancement loop
+is introduced. Missing source facts refuse before mutation and preserve selected
+skill/pool, rather than silently discarding earned training.
+
+This is still **PARTIAL / uncompiled source**, with these concrete integration seams:
+
+- FND must implement the sealed SQL-transaction clock port using independently DB-stamped
+  current session/lease creation/acquisition and the actual immediate predecessor relation.
+  Reconnect predecessor generation, receipt values and `lease - 1` are not substitutes.
+- The native pinned Content loader must implement top-vocation attack/mana facts and
+  the accepted percent comparison under the same content revision/formula digest.
+  The current compiled build-training profile contains curves, not these fields.
+- External handoff patches supply minimal D88-in-TX extraction, sequencer dispatch,
+  integrity-chain fields and visibility/reexports for their existing sole owners.
+  They are source proposals, not installed methods or weakened authority guards.
+- The CP schema participant must evolve the same build row, build/death before/after
+  receipts, marker version/cause/no-op constraints, replay uniqueness and full deferred
+  chain guard. No literal DDL, clock columns or migration number is invented here.
+- Native admission/logout callers, live flush/actor retirement, house/bed and final
+  registration remain separate integration work. Statue activation and atomic exercise
+  charges/tries/last-charge are a later commit after settlement.
+
+The exact source/preimage/patch hashes and required native/PG commands are recorded
+outside the checkout in `/workspace/oteryn-family/evidence/d1108-offline/manifest.json`
+and `FND-SCHEMA-HANDOFF.md`. The preceding packet is preserved under
+`generations/typed-stamina-generation-1/`. Two new arithmetic-only tests cover primary
+advances, distance floors, conditional shielding, mana zero-tick fallback and missing
+facts. Rustfmt/parser passed; these new tests, native typecheck and PostgreSQL cases
+were NOT RUN. Earlier 11-test evidence qualifies only the earlier planner source.
+All full-task acceptance boxes remain pending.
+
+
+## 2026-10-16 — D1122 draft checkpoint: NOT_FULLY_QUALIFIED
+
+This is one coherent checkpoint of the existing draft PR #2174 under
+[CP D1122](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224930201),
+not a fully qualified review head. Earlier planner-only/uncompiled/preparation
+statements above describe their historical generations. The active checkpoint
+owns exactly training/offline.rs, the narrow character_build.rs extension and
+this task record; no exercise source, shared module registration or migration is
+included. The two Rust files are the unchanged frozen canonical generation3
+source, including its two already reviewed reexport attributes.
+
+Actual qualification and open results:
+
+- **PASS — separate private native generation6:** 23/23 exact selected tests,
+  zero ignored, including two real native PG cases with mandatory disposable
+  PostgreSQL 17.6; the retained source/ELF postflight passed. Inventory is
+  11 planner + 2 training arithmetic + 8 stamina arithmetic + 2 PG. The retained
+  ELF SHA256 is 49489ebe8c799420442ad8ee885a63fc5224e8caa5e1659985b1407da20b9f6f;
+  executed-source SHA256 is
+  d4f5c95aa092703d3b976507c836aadd513540f4d73f442c16d70b51a1a32b5c.
+  This proof uses the disclosed private registration/shared-owner composition,
+  SQL-clock/schema and finite policy fixtures. It does not qualify the canonical
+  module graph, actual FND clocks, positive elapsed settlement or runtime delivery.
+- **RED — canonical generation3 strict all-target Clippy:** exit101, E0433 at
+  character_build.rs:1074 (`crate::training` is absent from the canonical root).
+  Source3 postflight remained exact. This is the held shared registration slot,
+  not permission to add or hide a module in this checkpoint.
+- **NOT_RUN — canonical full-package suite and canonical PG qualification.**
+  No private native23 result is promoted to a canonical/full-package PASS.
+- **NOT_RUN — complete positive-elapsed/runtime/full-feature acceptance.**
+  Actual FND DB-stamped acquisition/creation clocks and immediate predecessor
+  source remain held. Independently pinned Content rate/percent ports,
+  positive-elapsed end-to-end settlement, native admission/logout flush/retirement
+  callers and the final schema/chain/registration bundle remain separate work.
+  Statue activation and exercise charges/tries/last-charge are not implemented
+  or newly allocated by this checkpoint.
+- **PASS — checkpoint pre-push gates:** root ran owned-file formatting with
+  exact-base Rust1.94 / edition2024 / rustfmt.toml and git diff --check for the
+  three changed paths; both passed before the one authorized checkpoint commit.
+  These bounded gates do not replace the RED/NOT_RUN canonical checks above.
+
+The registration dependency is routed at
+[CP #2131 comment6224922436](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224922436):
+`crate::training` / `training::offline` requires an assigned native module slot;
+no shared owner path is edited without its handoff. Actual FND clock/predecessor,
+positive-elapsed/runtime and final schema/CP delivery remain held as listed above.
+
+The PR remains DRAFT and NOT_FULLY_QUALIFIED. CP D1122 permits only the existing
+one coherent checkpoint push after root review and passing owned fmt/diff checks;
+it does not authorize ready/merge, a review trigger or CI restarts. Full applicable
+checks still precede a frozen review head. No full task completion, production
+clock provenance, process/server restart or canonical integration PASS is claimed.
