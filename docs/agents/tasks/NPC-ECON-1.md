@@ -4,7 +4,7 @@
 task_id: NPC-ECON-1+NPC-CMD-1b+NPC-TRADE-WIRE-1
 title: "NPC-ECON-1+NPC-CMD-1b+NPC-TRADE-WIRE-1: Bank NPC service and NPC trade wire"
 mode: IMPLEMENT
-status: waiting_cp_shared_slot
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/npc-econ-1
@@ -539,3 +539,15 @@ libraries and drivers were losslessly archived only after all native/workflow/PG
 qualification, with raw/gzip/decompressed hashes, no-active-consumer checks and
 exact restore commands in `completed-custom-artifact-archive.json`. Sources,
 logs, bridges, captured externs and shared dependencies remain retained.
+
+### CP D1160/D1122: canonical NPC Bank case registration (2026-10-16)
+
+Status NOT_FULLY_QUALIFIED. CP comment6224912485 grants minimal own test-module
+registration without a shared slot. Register support/npc_econ_bank_postgres_cases.rs
+in the existing character_authority_postgres root; the standalone wrapper and canonical
+root now name the same actual eight native case bodies. This supersedes the historical
+held aggregate-registration proposal only. No case body, harness, production runtime,
+protocol field, value-line registry, schema, capability or other shared hunk changes.
+New-head canonical PG/CI: NOT_RUN, not a new PASS. Existing native component evidence
+is retained for its tested source/context. D1122 comment6224930201 allows one coherent
+existing-draft checkpoint after fmt/diff; the protocol/resource slot still follows #2163.
