@@ -5,7 +5,7 @@ use oteryn_client::{
         FieldKind, PANELS, PanelDefinition, PanelField, PanelLayout, ShortcutOrder, fields_for_tab,
         panel,
     },
-    play::GameState,
+    play::{GameState, PlayView},
 };
 use oteryn_session::{EntityDetail, EntityKind};
 use std::collections::{BTreeMap, BTreeSet};
@@ -146,7 +146,7 @@ impl ClientPanels {
         });
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, state: &GameState, english: bool) {
+    pub fn show(&mut self, ctx: &egui::Context, state: &GameState, view: &PlayView, english: bool) {
         let tr = |pl, en| if english { en } else { pl };
         let bounds = ctx.content_rect().shrink(12.0);
         // Window sizes describe content; reserve title/frame space inside the viewport.
@@ -325,6 +325,7 @@ impl ClientPanels {
                                     definition,
                                     self.contents.entry(id).or_default(),
                                     state,
+                                    view,
                                     english,
                                 );
                             }
@@ -390,6 +391,7 @@ fn panel_content(
     definition: &PanelDefinition,
     contents: &mut PanelState,
     state: &GameState,
+    view: &PlayView,
     english: bool,
 ) {
     let tr = |pl, en| if english { en } else { pl };
@@ -473,6 +475,7 @@ fn panel_content(
         battle_entries(
             ui,
             state,
+            view,
             &query,
             &mut contents.actor_filter,
             &mut contents.sort,
@@ -728,6 +731,7 @@ fn table_columns(panel_id: &str, field: &str, english: bool) -> &'static [&'stat
 fn battle_entries(
     ui: &mut egui::Ui,
     state: &GameState,
+    view: &PlayView,
     query: &str,
     filter: &mut usize,
     sort: &mut usize,
@@ -764,6 +768,7 @@ fn battle_entries(
         .iter()
         .filter(|entity| {
             matches!(entity.detail, EntityDetail::Actor { .. })
+                && view.is_battle_entity_visible(entity)
                 && match *filter {
                     1 => entity.kind == EntityKind::Player,
                     2 => entity.kind == EntityKind::Creature,
@@ -873,6 +878,7 @@ mod tests {
         ctx: &egui::Context,
         panels: &mut ClientPanels,
         state: &GameState,
+        view: &PlayView,
     ) -> Vec<egui::Rect> {
         let mut output = ctx.run_ui(
             egui::RawInput {
@@ -883,7 +889,7 @@ mod tests {
                 time: Some(ctx.cumulative_pass_nr() as f64),
                 ..Default::default()
             },
-            |root| panels.show(root.ctx(), state, true),
+            |root| panels.show(root.ctx(), state, view, true),
         );
         output.textures_delta.clear();
         let mut rects = Vec::new();
@@ -894,7 +900,8 @@ mod tests {
     }
 
     #[test]
-    fn reachable_battle_panel_draws_received_health_and_live_replacements() {
+    fn reachable_battle_panel_draws_received_health_and_live_replacements()
+    -> Result<(), Box<dyn std::error::Error>> {
         let ctx = egui::Context::default();
         let mut panels = ClientPanels::default();
         assert!(panels.open("battle"));
@@ -906,23 +913,29 @@ mod tests {
             ],
             ..Default::default()
         };
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 50), -7, &[])?
+            .with_entities(state.entities.clone())?;
         for _ in 0..3 {
-            let _ = draw_battle(&ctx, &mut panels, &state);
+            let _ = draw_battle(&ctx, &mut panels, &state, &view);
         }
-        let bars = draw_battle(&ctx, &mut panels, &state);
+        let bars = draw_battle(&ctx, &mut panels, &state, &view);
         assert_eq!(bars.len(), 3);
         // Upstream's rounded bar retains a 4-point cap at zero, not invented health.
         assert!((bars[0].width() - 4.0).abs() < 0.01);
         assert!((bars[1].width() / bars[2].width() - 0.37).abs() < 0.001);
         state.entities[1].detail = actor(EntityKind::Creature, 81, 2).detail;
-        let updated = draw_battle(&ctx, &mut panels, &state);
+        view = view.with_entities(state.entities.clone())?;
+        let updated = draw_battle(&ctx, &mut panels, &state, &view);
         assert!((updated[1].width() / updated[2].width() - 0.81).abs() < 0.001);
         state.entities.clear();
-        assert!(draw_battle(&ctx, &mut panels, &state).is_empty());
+        view = view.with_entities(Vec::new())?;
+        assert!(draw_battle(&ctx, &mut panels, &state, &view).is_empty());
+        Ok(())
     }
 
     #[test]
-    fn battle_health_respects_actor_filters_search_and_object_exclusion() {
+    fn battle_health_respects_actor_filters_search_and_object_exclusion()
+    -> Result<(), Box<dyn std::error::Error>> {
         let ctx = egui::Context::default();
         let mut panels = ClientPanels::default();
         assert!(panels.open("battle"));
@@ -942,23 +955,147 @@ mod tests {
             ],
             ..Default::default()
         };
+        let view = PlayView::new(oteryn_renderer::TileCoord::new(0, 50), -7, &[])?
+            .with_entities(state.entities.clone())?;
         for _ in 0..3 {
-            let _ = draw_battle(&ctx, &mut panels, &state);
+            let _ = draw_battle(&ctx, &mut panels, &state, &view);
         }
-        let all = draw_battle(&ctx, &mut panels, &state);
+        let all = draw_battle(&ctx, &mut panels, &state, &view);
         assert_eq!(all.len(), 3);
         for (filter, fraction) in [(1, 0.24), (2, 0.67), (3, 1.0)] {
             panels.contents.entry("battle").or_default().actor_filter = filter;
-            let filtered = draw_battle(&ctx, &mut panels, &state);
+            let filtered = draw_battle(&ctx, &mut panels, &state, &view);
             assert_eq!(filtered.len(), 1);
             assert!((filtered[0].width() / all[2].width() - fraction).abs() < 0.001);
         }
         let contents = panels.contents.entry("battle").or_default();
         contents.actor_filter = 0;
         contents.query = "creature".into();
-        assert_eq!(draw_battle(&ctx, &mut panels, &state).len(), 1);
+        assert_eq!(draw_battle(&ctx, &mut panels, &state, &view).len(), 1);
         panels.contents.entry("battle").or_default().query = "absent".into();
-        assert!(draw_battle(&ctx, &mut panels, &state).is_empty());
+        assert!(draw_battle(&ctx, &mut panels, &state, &view).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn populated_battle_hides_other_floors_offscreen_and_stale_entities()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let ctx = egui::Context::default();
+        let mut panels = ClientPanels::default();
+        assert!(panels.open("battle"));
+        let mut other_floor = actor(EntityKind::Creature, 100, 4);
+        other_floor.position.floor = -6;
+        let mut offscreen = actor(EntityKind::Creature, 100, 5);
+        offscreen.position.x = 1000;
+        let stale = actor(EntityKind::Creature, 100, 6);
+        let mut replacement = stale;
+        replacement.entity.generation += 1;
+        let departed = actor(EntityKind::Creature, 100, 7);
+        let mut same_tile_player = actor(EntityKind::Player, 100, 8);
+        same_tile_player.position.x = 0;
+        let state = GameState {
+            entities: vec![
+                actor(EntityKind::Player, 0, 1),
+                actor(EntityKind::Creature, 37, 2),
+                actor(EntityKind::Npc, 100, 3),
+                other_floor,
+                offscreen,
+                stale,
+                departed,
+                same_tile_player,
+            ],
+            ..Default::default()
+        };
+        let mut current = state.entities.clone();
+        current.retain(|entity| entity.entity != departed.entity);
+        current[5] = replacement;
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(0, 50), -7, &[])?
+            .with_entities(current)?;
+        for _ in 0..3 {
+            let _ = draw_battle(&ctx, &mut panels, &state, &view);
+        }
+        // Visibility is not attack permission: retain players (including 0 HP),
+        // NPCs and a distinct player at the own actor's coordinates.
+        assert_eq!(draw_battle(&ctx, &mut panels, &state, &view).len(), 4);
+        panels.contents.entry("battle").or_default().actor_filter = 1;
+        assert_eq!(draw_battle(&ctx, &mut panels, &state, &view).len(), 2);
+        panels.contents.entry("battle").or_default().actor_filter = 0;
+        view = view.with_entities(Vec::new())?;
+        assert!(draw_battle(&ctx, &mut panels, &state, &view).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn populated_battle_respects_streamed_upper_floor_occlusion_for_every_actor_kind()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_client::{map_view::MapView, play::Pushed};
+        use oteryn_session::{
+            ActorPosition,
+            map_view::{
+                MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader, WorldMapViewSnapshot,
+                encode_world_map_snapshot,
+            },
+        };
+        let own = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        let snapshot = WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [1; 32],
+                bundle_digest: [2; 32],
+                reset_epoch: 1,
+                origin: own,
+                first_visible_floor: 0,
+            },
+            tiles: vec![MapTile {
+                // Upper floors are perspective shifted: this covers (100,100,-7).
+                position: ActorPosition {
+                    x: 101,
+                    y: 101,
+                    floor: -6,
+                },
+                more: false,
+                ground_speed: 150,
+                items: vec![MapItem {
+                    definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+                    count: 1,
+                    sub_type: 0,
+                    appearance_id: u16::MAX,
+                    origin: MapOrigin::DisplayOnly,
+                }],
+            }],
+        };
+        let bytes = encode_world_map_snapshot(&snapshot).map_err(|error| format!("{error:?}"))?;
+        let mut map = MapView::new([1; 32]).map_err(|error| format!("{error:?}"))?;
+        map.replace_snapshot(&bytes)
+            .map_err(|error| format!("{error:?}"))?;
+        for kind in [EntityKind::Player, EntityKind::Creature, EntityKind::Npc] {
+            let ctx = egui::Context::default();
+            let mut panels = ClientPanels::default();
+            assert!(panels.open("battle"));
+            let mut hidden = actor(kind, 50, 1);
+            hidden.position = own;
+            let mut visible = actor(kind, 100, 2);
+            visible.position = ActorPosition { x: 101, ..own };
+            let state = GameState {
+                entities: vec![hidden, visible],
+                ..Default::default()
+            };
+            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), -7, &[])?
+                .with_entities(state.entities.clone())?;
+            for _ in 0..3 {
+                let _ = draw_battle(&ctx, &mut panels, &state, &view);
+            }
+            assert_eq!(draw_battle(&ctx, &mut panels, &state, &view).len(), 2);
+            view.apply_pushed(&Pushed {
+                map: Some(Box::new(map.clone())),
+                ..Pushed::default()
+            })?;
+            assert_eq!(draw_battle(&ctx, &mut panels, &state, &view).len(), 1);
+        }
+        Ok(())
     }
 
     #[test]

@@ -227,14 +227,7 @@ fn expiry_unused_available(draft: &ClientSettings) -> bool {
 
 fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     boxed(ui, "", |ui| {
-        reference_option(
-            ui,
-            draft,
-            "graphics",
-            "graphics.engine",
-            ["Silnik graficzny:", "Graphics Engine:"],
-            en,
-        );
+        graphics_engine(ui, en);
         reference_option(
             ui,
             draft,
@@ -314,6 +307,70 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         } else {
             format!("Aktualna liczba FPS: {current_fps:.0}")
         });
+    });
+}
+
+fn graphics_engine(ui: &mut egui::Ui, en: bool) {
+    let identity = crate::preferences_browser::active_renderer(ui.ctx());
+    let backend = identity.as_ref().map(|identity| {
+        identity
+            .backend
+            .chars()
+            .filter(|character| !character.is_control())
+            .take(32)
+            .collect::<String>()
+    });
+    let selected = backend.as_deref().filter(|value| !value.trim().is_empty());
+    let selected_text = selected.unwrap_or(if en { "Unknown" } else { "Nieznany" });
+    let response = ui
+        .horizontal(|ui| {
+            ui.label(if en {
+                "Graphics Engine:"
+            } else {
+                "Silnik graficzny:"
+            });
+            ui.add_enabled_ui(false, |ui| {
+                egui::ComboBox::from_id_salt("active-graphics-engine")
+                    .selected_text(selected_text)
+                    .show_ui(ui, |_ui| {})
+                    .response
+            })
+            .inner
+        })
+        .inner;
+    if let Some(identity) = identity {
+        let adapter: String = identity
+            .adapter
+            .chars()
+            .filter(|character| !character.is_control())
+            .take(160)
+            .collect();
+        response.clone().on_disabled_hover_text(if en {
+            format!("Active adapter: {adapter}. Engine selection is not available.")
+        } else {
+            format!("Aktywny adapter: {adapter}. Wybór silnika jest niedostępny.")
+        });
+    } else {
+        response.clone().on_disabled_hover_text(if en {
+            "No active renderer is available. Engine selection is not available."
+        } else {
+            "Brak aktywnego renderera. Wybór silnika jest niedostępny."
+        });
+    }
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(
+            egui::Id::new(("preference-choice", "graphics.graphics.engine")),
+            (
+                response.enabled(),
+                selected_text.to_owned(),
+                Vec::<String>::new(),
+            ),
+        );
+        data.insert_temp(
+            egui::Id::new("active-graphics-engine-row"),
+            (response.rect, response.enabled()),
+        );
     });
 }
 

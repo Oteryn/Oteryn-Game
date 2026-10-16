@@ -193,7 +193,15 @@ fn all_compiled_pages_match_the_english_semantic_contract_without_render_mutatio
                 "wrong enabled state for {}",
                 choice.key
             );
-            assert_eq!(state.1, "—", "unknown choice must stay visibly unset");
+            let unknown = if choice.key == "graphics.graphics.engine" {
+                "Unknown"
+            } else {
+                "—"
+            };
+            assert_eq!(state.1, unknown, "unknown choice must stay visibly unset");
+            if choice.key == "graphics.graphics.engine" {
+                assert!(button_position(&output, SIZE, unknown).is_some());
+            }
             assert_eq!(
                 state.2, choice.members,
                 "wrong choice membership for {}",

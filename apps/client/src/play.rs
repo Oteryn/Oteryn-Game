@@ -276,6 +276,41 @@ impl PlayView {
         self.floor
     }
 
+    /// Whether this exact received actor is visible in the current battle view.
+    /// Visibility does not grant attack permission: players and NPCs remain
+    /// eligible rows, and zero health is displayed without inventing a filter.
+    #[must_use]
+    pub fn is_battle_entity_visible(&self, entity: &WorldSpatialEntity) -> bool {
+        if !self.entities.contains(entity)
+            || !matches!(entity.detail, oteryn_session::EntityDetail::Actor { .. })
+            || entity.position.floor != self.floor
+        {
+            return false;
+        }
+        let tile = if let Some(map) = &self.map {
+            let Some(header) = map.header() else {
+                return false;
+            };
+            if entity.position.floor > header.first_visible_floor
+                || !oteryn_session::map_view::in_window(header.origin, entity.position)
+            {
+                return false;
+            }
+            let Some(tile) = crate::map_draw::projected(entity.position, header.origin) else {
+                return false;
+            };
+            if crate::input::map_pick(map, tile)
+                .is_some_and(|cover| cover.position.floor > entity.position.floor)
+            {
+                return false;
+            }
+            tile
+        } else {
+            TileCoord::new(entity.position.x, entity.position.y)
+        };
+        self.scene.view().contains(tile)
+    }
+
     pub fn set_target_frame(&mut self, enabled: bool) -> Result<(), BatchError> {
         self.target_frame = enabled;
         self.scene.set_target_frame(enabled)
@@ -1384,7 +1419,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
             chat_receipts: Vec::new(),
             entities: self
                 .world_entities()
-                .map(|world| world.iter().copied().collect())
+                .map(|world| world.others().copied().collect())
                 .unwrap_or_default(),
         }
     }
@@ -1690,6 +1725,108 @@ mod tests {
         displayed.vitals.as_mut().ok_or("vitals")?.health = 100;
         assert_eq!(link.game_state().vitals.ok_or("server copy")?.health, 37);
         Ok(())
+    }
+
+    #[test]
+    fn admitted_session_handoff_excludes_only_own_identity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Static FND-02 frames follow protocol-oteryn's encode_server_accepted
+        // and encode_single_chunk_snapshot layouts, and VIS-2's
+        // encode_world_spatial_entities_snapshot layout. No client wire codec.
+        // Generation 91, next command 7, schema 1, capability 6, snapshot 1
+        // at sequence 40. Domain 1/revision 1/type 2 carries content [0x11;32],
+        // own identity [1;16], and four actors at (0,0,0): own Player [1;16],
+        // other Player [2;16], Creature [3;16], NPC [4;16]. Their generations
+        // are 1..4, facing South, appearance 1 and health 100. Domain 2/type 1
+        // is an empty overlay. The co-located other Player must not be removed.
+        const FRAMES: &[&[u8]] = &[
+            &[
+                0x08, 0x02, 0x22, 0x42, 0x0a, 0x10, 0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x01,
+                0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33, 0x44, 0x01, 0x12, 0x10, 0x01, 0x93, 0x4f, 0x10,
+                0x7c, 0x00, 0x70, 0x02, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33, 0x44, 0x02, 0x1a, 0x10,
+                0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x03, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33,
+                0x44, 0x03, 0x20, 0x5b, 0x30, 0x07, 0x38, 0x01, 0x40, 0x01, 0x48, 0x01, 0x50, 0x06,
+            ],
+            &[
+                0x08, 0x0b, 0x10, 0x5b, 0x22, 0x09, 0x08, 0x01, 0x10, 0x01, 0x18, 0xcc, 0x01, 0x20,
+                0x28,
+            ],
+            &[
+                0x08, 0x0c, 0x10, 0x5b, 0x22, 0xd1, 0x01, 0x08, 0x01, 0x1a, 0xcc, 0x01, 0x0a, 0xbf,
+                0x01, 0x08, 0x01, 0x10, 0x01, 0x18, 0x02, 0x22, 0xb6, 0x01, 0x0a, 0x20, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x12, 0x00, 0x1a, 0x10, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x22, 0x1e, 0x08, 0x01, 0x12, 0x10,
+                0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01, 0x18, 0x01, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x22, 0x1e,
+                0x08, 0x01, 0x12, 0x10, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+                0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x18, 0x02, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01,
+                0x38, 0x64, 0x22, 0x1e, 0x08, 0x02, 0x12, 0x10, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+                0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x18, 0x03, 0x22, 0x00,
+                0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x22, 0x1e, 0x08, 0x05, 0x12, 0x10, 0x04, 0x04,
+                0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+                0x18, 0x04, 0x22, 0x00, 0x28, 0x03, 0x30, 0x01, 0x38, 0x64, 0x0a, 0x08, 0x08, 0x02,
+                0x10, 0x01, 0x18, 0x01, 0x22, 0x00,
+            ],
+            &[0x08, 0x0d, 0x10, 0x5b, 0x22, 0x02, 0x08, 0x01],
+        ];
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let (client, mut peer) = tokio::io::duplex(4096);
+            let server = tokio::spawn(async move {
+                let _bootstrap = oteryn_session::read_frame(&mut peer).await?;
+                for frame in FRAMES {
+                    oteryn_session::write_frame(&mut peer, frame).await?;
+                }
+                Ok::<_, oteryn_session::SessionError>(())
+            });
+            let session = Session::admit(
+                client,
+                oteryn_session::Admission {
+                    schema_revision: 1,
+                    character_id: oteryn_session::CharacterId::decode(&[
+                        0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, 0x04, 0x80, 0x5b, 0x3b, 0x11,
+                        0x22, 0x33, 0x44, 0x04,
+                    ])?,
+                    admission_material: b"test-grant",
+                    client_build_id: "client-hud-projection-test",
+                    supported_capabilities: &[6],
+                    deadline: Duration::from_secs(5),
+                },
+            )
+            .await?;
+            server.await??;
+            assert_eq!(
+                session
+                    .world_entities()
+                    .ok_or("entity store missing")?
+                    .len(),
+                4
+            );
+            let state = session.game_state();
+            assert_eq!(
+                state
+                    .entities
+                    .iter()
+                    .map(|entity| entity.entity.identity)
+                    .collect::<Vec<_>>(),
+                vec![[2; 16], [3; 16], [4; 16]],
+            );
+            assert!(state.vitals.is_none());
+            assert!(state.inventory.is_none());
+            assert!(state.container.is_none());
+            assert!(state.chat.is_none());
+            let (link, commands, outbox) = play_channel_for_session(&session);
+            assert_eq!(link.game_state(), state);
+            assert_eq!(link.connection_generation(), Some(91));
+            let task = run_session(session, commands, outbox);
+            assert_eq!(link.game_state(), state);
+            drop(task);
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
     }
 
     #[test]
@@ -2292,6 +2429,61 @@ mod tests {
         let mut other = self::view()?;
         other.click(TileCoord::new(102, 199))?;
         assert_eq!(other.next_step(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn battle_visibility_keeps_received_actors_but_refuses_stale_or_hidden_rows()
+    -> Result<(), BatchError> {
+        let player = actor(EntityKind::Player, 1, 98);
+        let creature = actor(EntityKind::Creature, 2, 99);
+        let npc = actor(EntityKind::Npc, 3, 101);
+        let zero_health = WorldSpatialEntity {
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 0,
+            },
+            ..actor(EntityKind::Creature, 4, 102)
+        };
+        let hidden_floor = WorldSpatialEntity {
+            position: ActorPosition {
+                floor: 1,
+                ..creature.position
+            },
+            ..actor(EntityKind::Creature, 5, 103)
+        };
+        let offscreen = actor(EntityKind::Creature, 6, 150);
+        let visible = view()?.with_entities(vec![
+            player,
+            creature,
+            npc,
+            zero_health,
+            hidden_floor,
+            offscreen,
+        ])?;
+        for entity in [player, creature, npc, zero_health] {
+            assert!(visible.is_battle_entity_visible(&entity));
+        }
+        for entity in [hidden_floor, offscreen] {
+            assert!(!visible.is_battle_entity_visible(&entity));
+        }
+        let stale = WorldSpatialEntity {
+            entity: EntityRef {
+                generation: creature.entity.generation + 1,
+                ..creature.entity
+            },
+            ..creature
+        };
+        assert!(!visible.is_battle_entity_visible(&stale));
+        let stale_position = WorldSpatialEntity {
+            position: ActorPosition {
+                x: creature.position.x + 1,
+                ..creature.position
+            },
+            ..creature
+        };
+        assert!(!visible.is_battle_entity_visible(&stale_position));
         Ok(())
     }
 

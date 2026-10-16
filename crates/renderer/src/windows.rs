@@ -106,6 +106,16 @@ where
         &self.state
     }
 
+    /// Describes the adapter actually selected for this renderer instance.
+    #[must_use]
+    pub fn active_identity(&self) -> crate::ActiveRendererIdentity {
+        let info = self.adapter.get_info();
+        crate::ActiveRendererIdentity {
+            backend: format!("{:?}", info.backend),
+            adapter: info.name,
+        }
+    }
+
     pub fn resize(
         &mut self,
         generation: ProcessGeneration,

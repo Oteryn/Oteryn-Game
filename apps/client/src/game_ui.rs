@@ -1235,63 +1235,19 @@ impl GameUi {
                             ui.separator();
                             if settings.show_inventory {
                                 equipment(ui, state.inventory.as_ref(), state.vitals, en);
-                                if let Some(inventory) = &state.inventory {
-                                    ui.separator();
-                                    panel_heading(ui, tr("Plecak", "Backpack"));
-                                    if inventory.entries.is_empty() {
-                                        ui.small(tr("Pusty", "Empty"));
-                                    }
-                                    item_grid(
-                                        ui,
-                                        "main-backpack",
-                                        &inventory.entries,
-                                        None,
-                                        link,
-                                        en,
-                                        &mut self.notice,
-                                    );
-                                } else {
-                                    ui.small(tr(
-                                        "Brak danych ekwipunku",
-                                        "Inventory data unavailable",
-                                    ));
-                                }
-                                if let Some(container) = &state.container
-                                    && container.container_handle.is_some()
-                                {
-                                    ui.separator();
-                                    panel_heading(ui, tr("Otwarty kontener", "Open container"));
-                                    item_grid(
-                                        ui,
-                                        "open-container",
-                                        &container.entries,
-                                        container.container_handle,
-                                        link,
-                                        en,
-                                        &mut self.notice,
-                                    );
-                                }
+                                inventory_contents(
+                                    ui,
+                                    state.inventory.as_ref(),
+                                    state.container.as_ref(),
+                                    link,
+                                    en,
+                                    &mut self.notice,
+                                );
                             }
                             if settings.show_battle {
                                 ui.separator();
                                 panel_heading(ui, tr("Lista walki", "Battle list"));
-                                for entity in &state.entities {
-                                    if let EntityDetail::Actor { health_percent, .. } =
-                                        entity.detail
-                                    {
-                                        ui.small(actor_kind(entity.kind, en)).on_hover_text(
-                                            format!("{}, {}", entity.position.x, entity.position.y),
-                                        );
-                                        ui.add(
-                                            egui::ProgressBar::new(
-                                                f32::from(health_percent) / 100.0,
-                                            )
-                                            .desired_width(ui.available_width())
-                                            .desired_height(4.0)
-                                            .fill(Color32::from_rgb(55, 172, 47)),
-                                        );
-                                    }
-                                }
+                                battle_sidebar(ui, &state.entities, view, en);
                             }
                         });
                 });
@@ -1535,7 +1491,7 @@ impl GameUi {
                     ui.small(feedback);
                 }
             });
-        self.panels.show(ctx, &state, en);
+        self.panels.show(ctx, &state, view, en);
         self.dialogs.set_session_views(&state);
         self.dialogs.show(ctx, en);
         if let Some(intent) = self.dialogs.take_chat_intent() {
@@ -1856,54 +1812,177 @@ fn equipment(
                         },
                     );
                 } else {
-                    let (id, label) = slot.map_or(
-                        ("backpack", if english { "Backpack" } else { "Plecak" }),
-                        |slot| slot_label(slot, english),
-                    );
-                    let entry = inventory.and_then(|inventory| {
-                        slot.map_or(inventory.main_backpack.as_ref(), |slot| {
-                            inventory
-                                .equipment
-                                .iter()
-                                .find(|entry| entry.slot == slot)
-                                .map(|entry| &entry.item)
-                        })
-                    });
-                    let response = crate::panel_icons::equipment(ui, id, label);
-                    if let Some(item) = entry {
-                        ui.painter()
-                            .with_clip_rect(response.rect.shrink(1.0).intersect(ui.clip_rect()))
-                            .text(
-                                response.rect.right_bottom() - egui::vec2(3.0, 3.0),
-                                egui::Align2::RIGHT_BOTTOM,
-                                item.count.to_string(),
-                                egui::FontId::proportional(9.0),
-                                ui.visuals().text_color(),
-                            );
-                        response
-                            .clone()
-                            .on_hover_text(item_description(item, english));
-                    } else {
-                        response.on_hover_text(if english {
-                            if inventory.is_some() {
-                                "Empty slot."
-                            } else {
-                                "Item data is unavailable."
-                            }
-                        } else {
-                            if inventory.is_some() {
-                                "Puste miejsce."
-                            } else {
-                                "Dane przedmiotu są niedostępne."
-                            }
-                        });
-                    }
+                    paper_doll_slot(ui, inventory, slot, english);
                 }
                 if index % 3 == 2 {
                     ui.end_row();
                 }
             }
         });
+}
+
+fn battle_sidebar(
+    ui: &mut egui::Ui,
+    entities: &[oteryn_session::WorldSpatialEntity],
+    view: &PlayView,
+    english: bool,
+) {
+    for entity in entities
+        .iter()
+        .filter(|entity| view.is_battle_entity_visible(entity))
+    {
+        if let EntityDetail::Actor { health_percent, .. } = entity.detail {
+            ui.small(actor_kind(entity.kind, english))
+                .on_hover_text(format!("{}, {}", entity.position.x, entity.position.y));
+            ui.add(
+                egui::ProgressBar::new(f32::from(health_percent) / 100.0)
+                    .desired_width(ui.available_width())
+                    .desired_height(4.0)
+                    .fill(Color32::from_rgb(55, 172, 47)),
+            );
+        }
+    }
+}
+
+fn equipment_item(
+    inventory: Option<&oteryn_session::CharacterInventory>,
+    slot: Option<EquipmentSlot>,
+) -> Option<&ItemEntry> {
+    let inventory = inventory?;
+    slot.map_or(inventory.main_backpack.as_ref(), |slot| {
+        inventory
+            .equipment
+            .iter()
+            .find(|entry| entry.slot == slot)
+            .map(|entry| &entry.item)
+    })
+}
+
+fn equipment_slot_description(
+    inventory: Option<&oteryn_session::CharacterInventory>,
+    slot: Option<EquipmentSlot>,
+    english: bool,
+) -> String {
+    if let Some(item) = equipment_item(inventory, slot) {
+        return item_description(item, english);
+    }
+    // Capability 4 describes the backpack, not the nine equipment slots. This client
+    // does not negotiate capability 12: an absent equipment entry is unknown, not empty.
+    match (slot, inventory, english) {
+        (Some(_), _, true) => "Equipment data is unavailable in this session.",
+        (Some(_), _, false) => "Dane wyposażenia są niedostępne w tej sesji.",
+        (None, Some(_), true) => "No backpack equipped.",
+        (None, Some(_), false) => "Brak założonego plecaka.",
+        (None, None, true) => "Inventory data unavailable.",
+        (None, None, false) => "Brak danych ekwipunku.",
+    }
+    .into()
+}
+
+fn paper_doll_slot(
+    ui: &mut egui::Ui,
+    inventory: Option<&oteryn_session::CharacterInventory>,
+    slot: Option<EquipmentSlot>,
+    english: bool,
+) -> egui::Response {
+    let (id, label) = slot.map_or(
+        ("backpack", if english { "Backpack" } else { "Plecak" }),
+        |slot| slot_label(slot, english),
+    );
+    // No equip, unequip or backpack-slot command is implemented here. Keep these
+    // display-only controls disabled without disabling the real container move menu.
+    let response = ui
+        .add_enabled_ui(false, |ui| crate::panel_icons::equipment(ui, id, label))
+        .inner;
+    if let Some(item) = equipment_item(inventory, slot) {
+        ui.painter()
+            .with_clip_rect(response.rect.shrink(1.0).intersect(ui.clip_rect()))
+            .text(
+                response.rect.right_bottom() - egui::vec2(3.0, 3.0),
+                egui::Align2::RIGHT_BOTTOM,
+                item.count.to_string(),
+                egui::FontId::proportional(9.0),
+                ui.visuals().text_color(),
+            );
+    }
+    response.on_disabled_hover_text(format!(
+        "{label}\n{}",
+        equipment_slot_description(inventory, slot, english)
+    ))
+}
+
+fn backpack_notice(
+    inventory: &oteryn_session::CharacterInventory,
+    english: bool,
+) -> Option<&'static str> {
+    match (
+        inventory.main_backpack.is_some(),
+        inventory.entries.is_empty(),
+        english,
+    ) {
+        (false, _, true) => Some("No backpack equipped"),
+        (false, _, false) => Some("Brak założonego plecaka"),
+        (true, true, true) => Some("Empty"),
+        (true, true, false) => Some("Pusty"),
+        (true, false, _) => None,
+    }
+}
+
+fn inventory_contents(
+    ui: &mut egui::Ui,
+    inventory: Option<&oteryn_session::CharacterInventory>,
+    container: Option<&oteryn_session::OpenContainer>,
+    link: &PlayLink,
+    english: bool,
+    notice: &mut Option<String>,
+) {
+    if let Some(inventory) = inventory {
+        ui.separator();
+        panel_heading(ui, if english { "Backpack" } else { "Plecak" });
+        if let Some(message) = backpack_notice(inventory, english) {
+            ui.small(message);
+        }
+        item_grid(
+            ui,
+            "main-backpack",
+            &inventory.entries,
+            None,
+            link,
+            english,
+            notice,
+        );
+    } else {
+        ui.small(if english {
+            "Inventory data unavailable"
+        } else {
+            "Brak danych ekwipunku"
+        });
+    }
+    if let Some(container) = container
+        && container.container_handle.is_some()
+    {
+        ui.separator();
+        panel_heading(
+            ui,
+            if english {
+                "Open container"
+            } else {
+                "Otwarty kontener"
+            },
+        );
+        if container.entries.is_empty() {
+            ui.small(if english { "Empty" } else { "Pusty" });
+        }
+        item_grid(
+            ui,
+            "open-container",
+            &container.entries,
+            container.container_handle,
+            link,
+            english,
+            notice,
+        );
+    }
 }
 
 fn slot_label(slot: EquipmentSlot, english: bool) -> (&'static str, &'static str) {
@@ -2188,6 +2267,314 @@ mod tests {
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
     #[test]
+    fn sidebar_battle_uses_the_same_admitted_visibility_as_the_battle_panel()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::{
+            ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+        };
+        let actor = |kind, id, x, floor| WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            position: ActorPosition { x, y: 50, floor },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 0,
+            },
+        };
+        let visible = actor(EntityKind::Player, 1, 0, -7);
+        let hidden = actor(EntityKind::Creature, 2, 1, -6);
+        let offscreen = actor(EntityKind::Npc, 3, 1000, -7);
+        let departed = actor(EntityKind::Creature, 4, 2, -7);
+        let entities = [visible, hidden, offscreen, departed];
+        let mut view =
+            oteryn_client::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 50), -7, &[])?
+                .with_entities(vec![visible, hidden, offscreen])?;
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let size = egui::vec2(640.0, 480.0);
+            let mut draw = |ctx: &egui::Context| {
+                egui::Area::new("sidebar-battle-test".into()).show(ctx, |ui| {
+                    ui.set_width(180.0);
+                    super::battle_sidebar(ui, &entities, &view, english);
+                });
+            };
+            let mut output = egui::FullOutput::default();
+            for _ in 0..3 {
+                output = frame(&ctx, size, vec![], &mut draw).1;
+            }
+            assert!(
+                button_position(
+                    &output,
+                    size,
+                    super::actor_kind(EntityKind::Player, english)
+                )
+                .is_some()
+            );
+            for kind in [EntityKind::Creature, EntityKind::Npc] {
+                assert!(button_position(&output, size, super::actor_kind(kind, english)).is_none());
+            }
+        }
+        view = view.with_entities(Vec::new())?;
+        let ctx = egui::Context::default();
+        let size = egui::vec2(640.0, 480.0);
+        let (_, output) = frame(&ctx, size, vec![], |ctx| {
+            egui::Area::new("empty-sidebar-battle-test".into()).show(ctx, |ui| {
+                super::battle_sidebar(ui, &entities, &view, true);
+            });
+        });
+        assert!(
+            button_position(&output, size, super::actor_kind(EntityKind::Player, true)).is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn equipment_slot_absence_never_claims_unselected_equipment_is_empty()
+    -> Result<(), &'static str> {
+        let missing_backpack = oteryn_session::CharacterInventory::default();
+        let backpack = oteryn_session::CharacterInventory {
+            main_backpack: Some(menu_item(300, 300)?),
+            ..Default::default()
+        };
+        for english in [false, true] {
+            for inventory in [None, Some(&missing_backpack), Some(&backpack)] {
+                for slot in oteryn_session::EquipmentSlot::ALL {
+                    assert_eq!(
+                        super::equipment_slot_description(inventory, Some(slot), english),
+                        if english {
+                            "Equipment data is unavailable in this session."
+                        } else {
+                            "Dane wyposażenia są niedostępne w tej sesji."
+                        }
+                    );
+                }
+            }
+            assert_eq!(
+                super::equipment_slot_description(None, None, english),
+                if english {
+                    "Inventory data unavailable."
+                } else {
+                    "Brak danych ekwipunku."
+                }
+            );
+            assert_eq!(
+                super::equipment_slot_description(Some(&missing_backpack), None, english),
+                if english {
+                    "No backpack equipped."
+                } else {
+                    "Brak założonego plecaka."
+                }
+            );
+            assert_eq!(
+                super::equipment_slot_description(Some(&backpack), None, english),
+                super::item_description(
+                    backpack.main_backpack.as_ref().ok_or("backpack")?,
+                    english,
+                )
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn backpack_notice_distinguishes_missing_empty_and_received_entries() -> Result<(), &'static str>
+    {
+        let mut inventory = oteryn_session::CharacterInventory::default();
+        for english in [false, true] {
+            assert_eq!(
+                super::backpack_notice(&inventory, english),
+                Some(if english {
+                    "No backpack equipped"
+                } else {
+                    "Brak założonego plecaka"
+                })
+            );
+        }
+        inventory.main_backpack = Some(menu_item(300, 300)?);
+        for english in [false, true] {
+            assert_eq!(
+                super::backpack_notice(&inventory, english),
+                Some(if english { "Empty" } else { "Pusty" })
+            );
+        }
+        inventory.entries.push(menu_item(200, 200)?);
+        assert_eq!(super::backpack_notice(&inventory, false), None);
+        assert_eq!(super::backpack_notice(&inventory, true), None);
+        Ok(())
+    }
+
+    #[test]
+    fn inventory_contents_draws_only_received_backpack_and_open_container_states()
+    -> Result<(), &'static str> {
+        let size = egui::vec2(640.0, 480.0);
+        let (link, _commands, _outbox) = oteryn_client::play::play_channel();
+        let backpack = menu_item(300, 300)?;
+        let item = menu_item(200, 200)?;
+        for english in [false, true] {
+            for case in 0..7 {
+                let ctx = egui::Context::default();
+                let inventory =
+                    (1..=3)
+                        .contains(&case)
+                        .then(|| oteryn_session::CharacterInventory {
+                            main_backpack: (case >= 2).then_some(backpack),
+                            entries: if case == 3 { vec![item] } else { Vec::new() },
+                            equipment: Vec::new(),
+                        });
+                let container = (case >= 4).then(|| oteryn_session::OpenContainer {
+                    container_handle: if case >= 5 {
+                        std::num::NonZeroU64::new(1000)
+                    } else {
+                        None
+                    },
+                    entries: if case == 6 { vec![item] } else { Vec::new() },
+                });
+                let mut notice = None;
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| {
+                        egui::Area::new("inventory-contents-test".into()).show(ctx, |ui| {
+                            super::inventory_contents(
+                                ui,
+                                inventory.as_ref(),
+                                container.as_ref(),
+                                &link,
+                                english,
+                                &mut notice,
+                            );
+                        });
+                    })
+                    .1;
+                }
+                for (label, visible) in [
+                    (
+                        if english {
+                            "Inventory data unavailable"
+                        } else {
+                            "Brak danych ekwipunku"
+                        },
+                        !(1..=3).contains(&case),
+                    ),
+                    (
+                        if english {
+                            "No backpack equipped"
+                        } else {
+                            "Brak założonego plecaka"
+                        },
+                        case == 1,
+                    ),
+                    (
+                        if english { "Empty" } else { "Pusty" },
+                        case == 2 || case == 5,
+                    ),
+                    (
+                        if english {
+                            "Open container"
+                        } else {
+                            "Otwarty kontener"
+                        },
+                        case >= 5,
+                    ),
+                    ("#200", case == 3 || case == 6),
+                ] {
+                    assert_eq!(
+                        button_position(&output, size, label).is_some(),
+                        visible,
+                        "case={case}, english={english}, label={label}"
+                    );
+                }
+                assert!(notice.is_none());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn paper_doll_is_display_only_with_disabled_hover_descriptions() -> Result<(), &'static str> {
+        let size = egui::vec2(640.0, 480.0);
+        let empty = oteryn_session::CharacterInventory::default();
+        let occupied = oteryn_session::CharacterInventory {
+            main_backpack: Some(menu_item(300, 300)?),
+            ..Default::default()
+        };
+        for english in [false, true] {
+            for inventory in [None, Some(&empty), Some(&occupied)] {
+                for slot in [Some(oteryn_session::EquipmentSlot::Head), None] {
+                    let ctx = egui::Context::default();
+                    let show = |ctx: &egui::Context| {
+                        egui::Area::new("paper-doll-test".into())
+                            .show(ctx, |ui| {
+                                super::paper_doll_slot(ui, inventory, slot, english)
+                            })
+                            .inner
+                    };
+                    for _ in 0..3 {
+                        frame(&ctx, size, vec![], show);
+                    }
+                    let response = frame(&ctx, size, vec![], show).0;
+                    assert!(!response.enabled());
+                    let pos = response.rect.center();
+                    for pressed in [true, false] {
+                        let response = frame(
+                            &ctx,
+                            size,
+                            vec![
+                                egui::Event::PointerMoved(pos),
+                                egui::Event::PointerButton {
+                                    pos,
+                                    button: egui::PointerButton::Primary,
+                                    pressed,
+                                    modifiers: egui::Modifiers::NONE,
+                                },
+                            ],
+                            show,
+                        )
+                        .0;
+                        assert!(!response.enabled());
+                        assert!(!response.clicked());
+                    }
+                    let mut output = egui::FullOutput::default();
+                    // Match real hover after clicking: egui suppresses a resting
+                    // post-click pointer until it moves again after 0.1 seconds.
+                    frame(
+                        &ctx,
+                        size,
+                        vec![egui::Event::PointerMoved(pos + egui::vec2(80.0, 80.0))],
+                        show,
+                    );
+                    for _ in 0..12 {
+                        frame(&ctx, size, vec![], show);
+                    }
+                    frame(&ctx, size, vec![egui::Event::PointerMoved(pos)], show);
+                    for _ in 0..90 {
+                        output = frame(&ctx, size, vec![], show).1;
+                    }
+                    let label = slot.map_or(if english { "Backpack" } else { "Plecak" }, |slot| {
+                        super::slot_label(slot, english).1
+                    });
+                    let tooltip = format!(
+                        "{label}\n{}",
+                        super::equipment_slot_description(inventory, slot, english)
+                    );
+                    assert!(
+                        button_position(&output, size, &tooltip).is_some(),
+                        "disabled tooltip: {tooltip}"
+                    );
+                    if slot.is_none() && inventory.is_some_and(|view| view.main_backpack.is_some())
+                    {
+                        assert!(button_position(&output, size, "3").is_some());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn unactivated_world_interaction_outcomes_never_report_a_success() {
         use oteryn_session::UseDisposition;
         for outcome in [
@@ -2268,28 +2655,14 @@ mod tests {
                         ui.disable();
                     }
                     super::equipment(ui, state.inventory.as_ref(), None, self.english);
-                    if let Some(inventory) = &state.inventory {
-                        super::item_grid(
-                            ui,
-                            "main-backpack",
-                            &inventory.entries,
-                            None,
-                            &self.link,
-                            self.english,
-                            &mut self.notice,
-                        );
-                    }
-                    if let Some(container) = &state.container {
-                        super::item_grid(
-                            ui,
-                            "open-container",
-                            &container.entries,
-                            container.container_handle,
-                            &self.link,
-                            self.english,
-                            &mut self.notice,
-                        );
-                    }
+                    super::inventory_contents(
+                        ui,
+                        state.inventory.as_ref(),
+                        state.container.as_ref(),
+                        &self.link,
+                        self.english,
+                        &mut self.notice,
+                    );
                     if let Some(notice) = &self.notice {
                         ui.small(notice);
                     }

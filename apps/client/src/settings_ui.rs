@@ -159,6 +159,14 @@ impl SettingsPanel {
     pub fn set_compendium_available(&mut self, available: bool) {
         self.browser.set_compendium_available(available);
     }
+    /// Refresh after renderer creation/replacement; clear when none is active.
+    /// This device observation must not become a saved engine preference.
+    pub fn set_active_renderer(
+        &mut self,
+        identity: Option<oteryn_renderer::ActiveRendererIdentity>,
+    ) {
+        self.browser.set_active_renderer(identity);
+    }
     pub fn take_clear_action_row(&mut self) -> Option<usize> {
         self.browser.take_clear_action_row()
     }
@@ -646,6 +654,110 @@ mod tests {
         PreferencesBrowser,
         test_support::{button_position, click, frame, scroll_geometry},
     };
+
+    #[test]
+    fn graphics_engine_uses_only_active_runtime_identity_without_saving_it()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let size = egui::vec2(900.0, 700.0);
+            let mut current = ClientSettings {
+                english,
+                ..Default::default()
+            };
+            current.future_preferences.insert(
+                "graphics.graphics.engine".into(),
+                oteryn_client::settings_catalog::FutureValue::Choice(
+                    "saved-nonexistent-engine".into(),
+                ),
+            );
+            let mut panel = SettingsPanel::for_settings_audit(current.clone());
+            panel.draft.fullscreen = !current.fullscreen;
+            let draft = panel.draft.clone();
+            assert!(panel.open_complete_section("graphics"));
+            let first = oteryn_renderer::ActiveRendererIdentity {
+                backend: "ActualTestBackend-A".into(),
+                adapter: "Actual test adapter A".into(),
+            };
+            let second = oteryn_renderer::ActiveRendererIdentity {
+                backend: "ActualTestBackend-B".into(),
+                adapter: "Actual test adapter B".into(),
+            };
+            for identity in [None, Some(first), Some(second), None] {
+                panel.set_active_renderer(identity.clone());
+                let mut output = egui::FullOutput::default();
+                for _ in 0..3 {
+                    output = frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+                }
+                let expected = identity
+                    .as_ref()
+                    .map_or(if english { "Unknown" } else { "Nieznany" }, |identity| {
+                        identity.backend.as_str()
+                    });
+                assert!(
+                    button_position(&output, size, expected).is_some(),
+                    "{expected}"
+                );
+                assert!(button_position(&output, size, "saved-nonexistent-engine").is_none());
+                assert_eq!(crate::preferences_browser::active_renderer(&ctx), identity);
+                let (rect, enabled) = ctx
+                    .data(|data| {
+                        data.get_temp::<(egui::Rect, bool)>(egui::Id::new(
+                            "active-graphics-engine-row",
+                        ))
+                    })
+                    .ok_or("active engine row geometry")?;
+                assert!(
+                    !enabled,
+                    "runtime identity must not enable engine selection"
+                );
+                let _ = click(&ctx, size, rect.center(), |ctx| panel.show(ctx, None, None));
+                assert!(!egui::Popup::is_any_open(&ctx));
+                // Upstream intentionally suppresses hover while resting after a click.
+                // Move again only after its 0.1s click/move grace interval.
+                frame(
+                    &ctx,
+                    size,
+                    vec![egui::Event::PointerMoved(egui::pos2(2.0, 2.0))],
+                    |ctx| panel.show(ctx, None, None),
+                );
+                for _ in 0..12 {
+                    frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None));
+                }
+                frame(
+                    &ctx,
+                    size,
+                    vec![egui::Event::PointerMoved(rect.center())],
+                    |ctx| panel.show(ctx, None, None),
+                );
+                for _ in 0..90 {
+                    output = frame(&ctx, size, vec![], |ctx| panel.show(ctx, None, None)).1;
+                }
+                let tooltip = match identity.as_ref() {
+                    Some(identity) if english => format!(
+                        "Active adapter: {}. Engine selection is not available.",
+                        identity.adapter
+                    ),
+                    Some(identity) => format!(
+                        "Aktywny adapter: {}. Wybór silnika jest niedostępny.",
+                        identity.adapter
+                    ),
+                    None if english => {
+                        "No active renderer is available. Engine selection is not available.".into()
+                    }
+                    None => "Brak aktywnego renderera. Wybór silnika jest niedostępny.".into(),
+                };
+                assert!(
+                    button_position(&output, size, &tooltip).is_some(),
+                    "{tooltip}"
+                );
+                assert_eq!(panel.current, current);
+                assert_eq!(panel.draft, draft);
+                assert!(!panel.applied);
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn prelogin_f10_yields_to_the_binding_editor() {

@@ -143,6 +143,15 @@ fn help(ui: &mut egui::Ui, en: bool, compendium_available: bool, state: &mut Pag
                 "Oteryn {} · protocol-oteryn",
                 env!("CARGO_PKG_VERSION")
             ));
+            ui.label(format!(
+                "{} {}",
+                if en {
+                    "Release ID:"
+                } else {
+                    "Identyfikator wydania:"
+                },
+                oteryn_client::RELEASE_ID
+            ));
             ui.weak(if en {
                 "Identity and authoritative game state remain server-owned."
             } else {
@@ -1661,6 +1670,67 @@ mod tests {
         }
         for old in ["Displayed Shortcuts:", "Available Shortcuts:"] {
             assert!(button_position(&output, size, old).is_none(), "{old}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn help_info_shows_compiled_release_identity_without_mutating_settings()
+    -> Result<(), &'static str> {
+        for en in [false, true] {
+            let ctx = egui::Context::default();
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(820.0, 760.0);
+            let mut draft = ClientSettings::default();
+            draft
+                .future_preferences
+                .insert("console.console.levels".into(), FutureValue::Bool(true));
+            let original = draft.clone();
+            let mut state = PageState::default();
+            let identity = format!(
+                "{} {}",
+                if en {
+                    "Release ID:"
+                } else {
+                    "Identyfikator wydania:"
+                },
+                oteryn_client::RELEASE_ID
+            );
+            {
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("help-release-identity-test")
+                        .fixed_size([760.0, 700.0])
+                        .show(ctx, |ui| {
+                            assert!(show(ui, &mut draft, "help", en, true, &mut state));
+                        });
+                };
+                let mut output = egui::FullOutput::default();
+                for _ in 0..2 {
+                    output = frame(&ctx, size, vec![], &mut draw).1;
+                }
+                assert_eq!(painted_text_count(&output, &identity), 0);
+                let info = button_position(&output, size, if en { "Info" } else { "Informacje" })
+                    .ok_or("missing Info action")?;
+                click(&ctx, size, info, &mut draw);
+                output = frame(&ctx, size, vec![], &mut draw).1;
+                assert_eq!(painted_text_count(&output, &identity), 1);
+                assert_eq!(
+                    painted_text_count(
+                        &output,
+                        &format!("Oteryn {} · protocol-oteryn", env!("CARGO_PKG_VERSION"))
+                    ),
+                    1
+                );
+                let info = button_position(&output, size, if en { "Info" } else { "Informacje" })
+                    .ok_or("missing open Info action")?;
+                click(&ctx, size, info, &mut draw);
+                output = frame(&ctx, size, vec![], &mut draw).1;
+                assert_eq!(painted_text_count(&output, &identity), 0);
+            }
+            assert_eq!(draft, original);
+            assert!(!state.help_info);
+            assert!(!state.help_reset_confirmation);
+            assert_eq!(state.take_help_action(), None);
         }
         Ok(())
     }

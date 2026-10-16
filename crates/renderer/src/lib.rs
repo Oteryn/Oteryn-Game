@@ -28,6 +28,14 @@ pub use windows::WindowsRenderer;
 
 pub const MAX_RECONFIGURE_ATTEMPTS: u8 = 3;
 
+/// Read-only identity of the active physical renderer, not a selectable or
+/// persisted preference. Names come from the adapter held by the renderer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveRendererIdentity {
+    pub backend: String,
+    pub adapter: String,
+}
+
 /// A surface-sized, row-major RGBA readback of one presented frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapturedFrame {

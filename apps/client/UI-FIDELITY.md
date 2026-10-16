@@ -4,6 +4,36 @@ Draft #1942 is AUTHORING. Presence of a panel or persisted preference does not
 establish visual parity or working gameplay. Original reference captures and
 assets remain private; the product ships independently authored code/artwork.
 
+## Current consumer continuation — 2026-10-16
+
+6d1a7b1f is the last qualified predecessor: Windows1.95 client236/227/5 plus
+Session88, strict Clippy/fmt/release exit0; DX12 audit20pages/78 rehashed
+captures/0invalid and exit0. Ordinary QA PKCE, both character rows, explicit
+selection, ServerAccepted map, received Local chat, physical profile D/A movement
+and server-committed Ctrl+L logout were proven. Own vitals were absent; inventory
+presence is not proof of populated equipment. These facts supersede older
+pending-login/character statements below, but never qualify a changed binary.
+
+The current AUTHORING batch fixes real Session-to-HUD own-actor exclusion,
+aligns both battle lists with admitted visibility (floor/viewport/roof/stale
+identity), distinguishes unavailable equipment from known backpack states and
+empty open containers, and disables display-only paper-doll buttons. It does not
+add equipment commands or attack permissions. Graphics reads the actual held
+renderer backend/adapter across native login/HUD/audit redraws; saved engine
+intent cannot override it and engine selection remains disabled. Help Info shows
+the compiled release identity. Local client239/230/5, renderer41, strict Clippy,
+full fmt, architecture and governance124 pass. Actual Session handoff regression
+is RED under the old conversion, GREEN after repair. Fresh Windows acceptance
+is still required before qualifying this successor.
+
+HP/MP requires an owning server repair: no-vocation cast readiness can suppress
+real pool initialization, and first-entry facts precede fenced progression
+initialization. The QA actor's live vocation/progression remains unknown. Never
+invent UI maxima or substitute a class. Exact contracts, files and required
+damage/persistence/reconnect regressions are in
+docs/agents/evidence/OTV2-20261016-client-parallel-checkpoint.md.
+No server allocation or full1:1/100% completion is implied.
+
 Latest local-input qualification:71bbdf89d1ab5c913c95adced7cd35827a2b0cbd
 passes Linux230/214/5 and exact MSVC229/221/5+Session82,strict/fmt/release,
 plus native DX12 at125%DPI20pages/78rehashed captures/0invalid. Unfocused

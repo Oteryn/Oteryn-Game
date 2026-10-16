@@ -903,6 +903,15 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
+                // Observe the renderer actually held by this shell, including after
+                // recreation or a launcher/HUD replacement. Never persist this identity.
+                let identity = self.renderer.as_ref().map(WindowsRenderer::active_identity);
+                if let Some(login) = &mut self.login {
+                    login.settings.set_active_renderer(identity.clone());
+                }
+                if let Some(gui) = &mut self.game_ui {
+                    gui.settings.set_active_renderer(identity);
+                }
                 if let (Some(audit), Some(login), Some(state), Some(window), Some(renderer)) = (
                     &mut self.settings_audit,
                     &mut self.login,

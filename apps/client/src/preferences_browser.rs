@@ -24,6 +24,7 @@ pub struct PreferencesBrowser {
     page_state: pages::PageState,
     action_bar_rows_available: [bool; ACTION_BAR_ROWS],
     compendium_available: bool,
+    active_renderer: Option<oteryn_renderer::ActiveRendererIdentity>,
     clear_action_row: Option<usize>,
     expanded: std::collections::BTreeSet<&'static str>,
     navigation_section: Option<usize>,
@@ -143,6 +144,13 @@ impl PreferencesBrowser {
     pub fn set_compendium_available(&mut self, available: bool) {
         self.compendium_available = available;
     }
+    /// Runtime observation only; never enters the draft or saved preferences.
+    pub fn set_active_renderer(
+        &mut self,
+        identity: Option<oteryn_renderer::ActiveRendererIdentity>,
+    ) {
+        self.active_renderer = identity;
+    }
     pub fn take_clear_action_row(&mut self) -> Option<usize> {
         self.clear_action_row.take()
     }
@@ -162,6 +170,12 @@ impl PreferencesBrowser {
         if !self.open {
             return PreferenceAction::None;
         }
+        ctx.data_mut(|data| {
+            data.insert_temp(
+                egui::Id::new("preferences-active-renderer"),
+                self.active_renderer.clone(),
+            );
+        });
         if ctx.memory(|memory| memory.focused().is_none())
             && !egui::Popup::is_any_open(ctx)
             && !self.page_state.has_inner_dialog()
@@ -503,6 +517,17 @@ impl PreferencesBrowser {
             self.forced_advanced = false;
         }
     }
+}
+
+pub(crate) fn active_renderer(
+    ctx: &egui::Context,
+) -> Option<oteryn_renderer::ActiveRendererIdentity> {
+    ctx.data(|data| {
+        data.get_temp::<Option<oteryn_renderer::ActiveRendererIdentity>>(egui::Id::new(
+            "preferences-active-renderer",
+        ))
+        .flatten()
+    })
 }
 
 fn section_index(id: &str) -> usize {
