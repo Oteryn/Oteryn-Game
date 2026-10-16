@@ -443,3 +443,24 @@ contract); the matching workflow regression is RED at its protected blob pin
 `d7cfbf90b2b81c43f92c010660f41d242a3cf840`. Both are retained without changing
 pins or validators. Exact owner request: CP comment6225410275. D1122 permits
 this disclosed checkpoint; it remains NOT_FULLY_QUALIFIED.
+
+### D1182 pin repair — NOT_FULLY_QUALIFIED
+
+CP comment6225580190 explicitly gives `pin OK` after checking the exact one-line
+Storage workflow diff and blob `50d0ff3c1f2edc545a79c7fc59d85b0654c9a18c`.
+It assigns this PR both protected blob constants: `APPROVED` in
+`test_validate_merge_group_pg_sim.py` and `EXPECTED_MERGE_GROUP_GATE_BLOB` in
+`validate_repository_policy_core.py`. Only those constants change; validator
+logic, guards and other pins remain untouched. This supersedes the pin-owner
+block above, while its actual earlier RED receipts remain historical evidence.
+The workflow itself is unchanged from checkpointc40a5469; Rust source/registration
+and successful full-format evidence are also unchanged. Exact repair checks are
+kept in `storage-checkpoint-d1122/pin-repair/`. Full normal package, all-target
+Clippy and PG/runtime qualification remain NOT_RUN for the assembled checkpoint.
+
+Actual pin-repair checks: repository policy now PASS (23 files, 63 workflows),
+governance and diff-check PASS. The matching workflow regression passes its
+policy/Atlas/World-bundle stages, then remains RED because this executor has no
+`pwsh` for WP1 native failure-propagation canaries. That stage and the following
+stages are not qualified; no complete workflow-regression PASS is claimed.
+Successful Rust fmt is retained against byte-identical Rust files from c40a5469.
