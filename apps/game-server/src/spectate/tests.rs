@@ -1,7 +1,8 @@
 #![allow(clippy::expect_used)]
 use super::*;
 use crate::foundation::{
-    ChannelId, CharacterLease, FreshAdmissionCommit, FreshAdmissionFacts, WorldId,
+    ChannelId, CharacterLease, CharacterWorldEligibilityClaimV1, FreshAdmissionCommit,
+    FreshAdmissionFacts, WorldId,
 };
 use oteryn_protocol_oteryn::{
     chat::{ChatLine, ChatRoom},
@@ -59,14 +60,17 @@ fn current(
     } else {
         GameSessionState::Terminal
     };
-    let snapshot = GameSessionAuthoritySnapshot::new(
+    let snapshot = GameSessionAuthoritySnapshot::from_current_facts(
         commit,
         state,
         ConnectionGeneration::new(generation).expect("generation"),
         active.then_some(8_u64),
         CharacterLease::new(character, lease).expect("lease"),
+        Some(CharacterWorldEligibilityClaimV1::new(character, world)),
+        RuntimeScopeRefV1::channel(world, channel),
         ScopeOwnershipGeneration::new(owner).expect("owner"),
-    );
+    )
+    .expect("independently supplied current native facts");
     CurrentTarget::from_current(snapshot, observable, pvp)
 }
 fn live() -> CurrentTarget {
