@@ -79,7 +79,7 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
         owner.movement_cells = &cells;
         owner.required_capabilities =
             crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[],
+                &[CAPABILITY_WORLD_MAP_VIEW_V1],
                 scope,
                 current.scope_ownership_generation,
                 &current.world_policy_revision,

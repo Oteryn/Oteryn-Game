@@ -67,14 +67,17 @@ The new cloud strict-Clippy attempt against the private c8 assembly is historica
 repairs both through the real `for_channel_boot` builder and the same explicit
 scope/generation/policy fixture source used for fresh-session preparation. It
 checks the boot-bound effective set: control `[]`, bundle dependency closure
-`[4, 6, 18]`. The fixture snapshot grants no current authority. This repair is
+`[4, 6, 18]`. Independent review accepted P1: the bundle must explicitly
+declare `[CAPABILITY_WORLD_MAP_VIEW_V1]`; an empty declaration fails the
+builder's `MissingFloor` check. The declaration is repaired; the control remains
+empty and the expected closure is unchanged. The fixture snapshot grants no current authority. This repair is
 **NOT_YET_REQUALIFIED**; no new Clippy, PostgreSQL or runtime PASS is claimed.
 
 Historical 16 pure plus 3 PostgreSQL PASS results remain evidence only for
 `3b80d9a5`; they do not qualify c8 or this successor. Earlier harness/format
 results below retain their original source scopes. The new narrow formatting
 and `git diff --check` PASS concern only this checkpoint's changed files.
-The MAP test source SHA-256 is `21e6b02c431c5476ad5f3864b0fa46243a339ce94eb66672c74f7deb9e268509`.
+The MAP test source SHA-256 is `fb815efd2a08d98b33bf279653bab8ec3bb3166817dcec0ba949e6d728de33cd`.
 The prior private assembly manifest and RED log remain retained; lead owns
 independent validation and publication. No ready/merge claim follows.
 
