@@ -1,10 +1,10 @@
-# APP-3 — appearance change command and actor appearance state (skeleton task record)
+# APP-3 — appearance change command and actor appearance state (implementation candidate)
 
 ```yaml
 task_id: APP-3
 title: "APP-3: appearance change command and actor appearance state"
 mode: IMPLEMENT
-status: skeleton
+status: partial
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -106,197 +106,176 @@ cargo test -p oteryn-protocol-oteryn && cargo test -p oteryn-game-server capabil
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
 
-## APP-3 bounded integration packet — 2026-10-15
+## Current APP-3 implementation proposal — CP D1094
 
-### Allocation and accepted floor
+CP [6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346),
+updated 2026-10-16 16:11:36 UTC, revokes CARD_ONLY and authorizes authoring now. The
+layout below is proposed for CP protocol review on this PR's frozen head; a separate
+prior layout decision is not required. The previous card-only packet is superseded.
+One author edits only the four Rust owned paths above and this record. Shared
+connection/module/capability/client/registry changes remain slot A2; the capability
+is **unoffered** until that integration. No new PR, ready, queue or merge authority.
 
-This is **CARD_ONLY / REPORT_ONLY_COMMIT_WIRE_SEAM**, not executable implementation.
-The exclusive root allocation `app-3-allocation.json` permits only this task record,
-on `skeleton/app-3`, exact HEAD `5ee80913b3a349fc8dcea47075b35363006e7544`,
-existing draft #2175. Its narrower lease supersedes the historical builder permission
-above to edit Rust or register modules. The plan row, CP slot rules, inseparable bundle
-and all unchecked acceptance criteria remain intact. No code, registry, migration,
-content/pin, shared caller, commit or worker publication is authorized in this pass.
+### Wire allocation and concrete schema
 
-CHARACTER_APPEARANCE is ACCEPTED on protected main
-`bda15eba7a84f65fcb963a86e8b2bf18d69c800a` through ACCEPT-BATCH-2026-10-15;
-the earlier CANDIDATE dependency row is historical. Acceptance of that decision
-neither installs APP-1/APP-2 preparations nor accepts this proposed wire composition.
-The exact source/hash inventory is
-`/workspace/oteryn-prep/app-3-evidence/input-source-hashes.json`. It binds both the
-allocated source floor and protected main, accepted decision copies, and the exported
-APP-1/2/4 packets. Main routing/session/client files differ from the old floor, including
-current LOGOUT routing and terminal-control handling; preserve those current bodies,
-not stale line numbers or the old highest capability. No merge/rebase was performed.
+Leaf constants: capability **25 APPEARANCE_V1**, requires **6 WORLD_SPATIAL_ENTITIES**;
+command **25 APPEARANCE_CHANGE**; state domain **21 APPEARANCE**. Snapshot type **1**
+contains the private own catalogue and public appearance dictionary. Delta type **1**
+changes mappings/retirements; delta type **2** replaces the private own catalogue.
+Item-transform Look additionally requires selected capability **4 ITEM_VIEW_MOVE_V1**
+and that generation's actual Item dictionary. No Item ref is sent/resolved without
+it: the caller must use the existing unavailable/resync/end-session policy, never
+show a guessed old outfit. Registry/offer/GATED/lib registration is not authored here.
 
-### Actual residue and owner boundaries
+All messages use the existing strict proto3 varint/bytes parser in `charm_wire`.
+Every field below is required, including explicit zero scalar values, unless marked
+optional/repeated. Unknown, duplicate singular, wrong wire type, missing required,
+invalid UTF-8/control characters, unknown enum, invalid size/count/order and integer
+overflow are refused on decode and encode. No native session, account, sex, authority,
+unlock provenance or grant receipt is accepted from client payloads.
 
-| Actual owner / source | Existing behavior and precise missing composition |
+| Message | Fields (number:type; repeated messages retain wire order) |
 |---|---|
-| `domain/appearance.rs::{AppearanceSelection, validate_selection, displayed_look, AppearanceContent, AccountUnlocks}` | Native pure selection/compatibility and fallback rules already exist. Reuse them; do not copy a validator into transport/codec/client. The traits consume supplied facts, not current admission authority. |
-| APP-1 prepared `durability/character_appearance.rs::{read_selected_appearance, read_account_appearance_unlocks}` | Private historical readers only, not merged native writer APIs. Selected look/provenance/revision and earned facts are retained; an absent selection is not a persisted guessed fallback. Prepared source SHA256 `b8f5dd93925316ce05c9896bb34c0745cc273ee9a224a2b7891bead2f748ce8c`. |
-| APP-1 task packet / native `character_stance.rs` and `character_authority.rs` | APP-1 still needs its actual fenced selection writer, immutable appearance receipts, projection/receipt-chain integrity, typed replay and reconciliation. Its proposed receipts are not installed schema. Native stance is an integration pattern, never an appearance receipt substitute. |
-| APP-2 prepared `content/cosmetics_loader.rs::{compile_candidate, CosmeticsCandidate}` | Candidate offers `look_type(key, sex)`, `palette`, `fallback`, content revision/digest and `AppearanceContent`. It grants no current World/artifact authority or unlock compatibility. Source SHA256 `33bef8af2f4a0156e51c17743888b8dc51c307884e2f24b646131726748d592d`. Current Outfit index is READY_UNPOPULATED and Mount records lack authored facts; synthetic tests are not live cosmetics. |
-| `character_bootstrap_intent.rs::CharacterBootstrapIntentV1`, native Character root | No actual Character sex creation/persisted input in these owners. `domain::appearance::Sex` alone does not resolve a character's sex. Require the creation owner's admitted sex; only the accepted native test character may use its content-declared default. Never infer sex from outfit, account, client bytes or look128. |
-| accepted PREMIUM_ACTIVATION §4.7, `domain/premium.rs` | D61 explicitly remains: every unlocked outfit/addon/mount is usable by everyone in V1. Native current Premium surfaces exist, but adding `PremiumGate::require` to cosmetics would invent a restriction. Premium metadata stays recorded; Store authority remains separate/unavailable under gap §32. |
-| `gameplay_transport/appearance_atomic.rs::native_source_appearance_batch`, `ability/condition_spell.rs::displayed_temporary_appearance_at` | Existing temporary Outfit/Item conditions consume their actual current owner, source and native timer/conflict rules. They do not durably change the selected look. APP-3 must compose, not create another condition store or reset/cure one on selection change. |
-| `condition_snapshots.rs::{prepare_current_player_in_transaction, PreparedConditionSnapshot::validate_current}` | Actual source-qualified player projection checks native transaction/facts/state/position/content; publication requires another independently read current projection. It is explicitly awaiting a production caller. No generic reuse of spell authority as a permanent-change permission. |
-| `protocol-oteryn/actor_condition_snapshot_candidate.rs` | Existing candidate carries EntityRef, content/map/frame, native coordinates, owner time/player revision and temporary Outfit/Item. Numeric admission/routing and a client SessionEvent are absent. Candidate bytes/name do not authorize publication or select a capability. |
-| `gameplay_transport/world_spatial.rs::{ChannelEntity, wire_entity, SessionVisibility}` | `PLACEHOLDER_APPEARANCE_REF=0`; ChannelEntity revision is presently position revision. Stationary appearance-only changes need actual owner revision/update detection. Existing per-observer visibility and delta limits remain; appearances cannot reveal actors omitted by that owner. |
-| `protocol-oteryn/world_spatial_entities.rs::EntityDetail::Actor` | `appearance_ref:u32` exists without admitted permanent-appearance dictionary/binding. It is neither a DAT look type nor an authority/content key. Reinterpreting ref0 or sending unnegotiated fields to old clients is forbidden. |
-| `connection.rs::{FreshAdmissionAuthority, AdmittedSession, SessionContinuity}`, `capabilities.rs` | Current admitted actor/controller/World/Channel plus envelope CommandId, connection generation, server sequence and selected capabilities are real boundaries. `item_fence` is explicitly expected evidence and rechecked for item writes; it is not a new appearance writer fence. No appearance dispatch/caller is composed. |
-| `crates/session/src/lib.rs`, `apps/client/src/{play,scene,world}.rs` | Session has validated gated command/delta routing; no admitted permanent/temporary appearance surface. Play reduces actor state to targeting/position; World uses fixed PLAYER_LOOK_TYPE128. APP-4 must retain appearance by full EntityRef separately from combat targeting and replace fixed presentation through its actual assets/renderer owner. |
+| Context, embedded in Change/Catalogue/Binding/Mappings | 1:client artifact generation bytes32, exactly VIS-2 content_generation; 2:cosmetics document digest bytes32 (includes palette and definitions) |
+| Selection | 1:outfit key UTF-8; 2:exactly8 bytes head/body/legs/feet u16 big-endian; 3:addons u8 varint; 4:optional mount key UTF-8 (storage only, no activation) |
+| Selected | 1:Selection message; 2:nonzero committed selection revision u64; 3:content provenance UTF-8 |
+| Change | Context1–2; 3:nonzero expected Character root revision u64; 4:optional exact prior Selected; 5:new Selection; 6:expected content revision UTF-8 |
+| ChangeResult | 1:enum1 Committed /2 Rejected; 2:nonzero committed Character revision iff Committed. CommandId/generation remain the existing CommandResult envelope; Unresolved has no terminal payload |
+| OutfitOption | 1:key; 2:nonzero look_type u32 resolved for authoritative sex; 3:currently permitted addon bits u8 |
+| Catalogue | Context1–2; 3:nonzero current own root revision; 4:optional own stored Selected (kept even if incompatible); 5:nonempty RGB palette bytes, exact triples; 6:repeated OutfitOption; 7:repeated permitted mount key |
+| EntityRef | 1:identity bytes16; 2:nonzero actor generation u64 |
+| Look | 1:enum1 Outfit /2 Item. Outfit requires2:nonzero look_type u32,3:colours bytes8,4:addons u8; Item requires5:nonzero existing Item definition_ref u32. Kind-inconsistent fields refuse |
+| Binding | Context1–2; 3:nonzero appearance_ref u32; 4:EntityRef; 5:nonzero current Character root revision; 6:condition-owner player revision u64; 7:owner time microseconds u64; 8:Look; 9:optional durable selection revision. None means implicit fallback, not a fabricated persisted revision |
+| Mappings | Context1–2; 3:repeated Binding; 4:repeated EntityRef explicit forget, disjoint from upserts |
+| Snapshot | 1:Catalogue; 2:repeated Binding; 3:u32 allocation high-water including retired refs, zero for a fresh empty dictionary |
 
-The accepted §4.2 amendment assigns mount speed to the World ruleset (+10 Reference)
-and activation Global (D125); selected `mount_key` alone is not current mounted-state
-evidence. Native `DisplayedLook` has no mount field. Do not infer activation or speed
-from a requested/stored mount, or add a mount effect through an appearance codec.
-Its actual runtime owner must supply any admitted active mount observation separately.
+Outfit/mount lists are strictly ascending unique keys. Binding batches are strictly
+ascending references, with unique full EntityRefs and unique references. Their
+Context must equal the message/catalogue Context. A binding's optional selection
+revision cannot exceed its current root revision. Shape validation never authorizes
+a key, palette index, addon, entitlement, sex or current artifact admission.
 
-### Proposed future own files/functions (not implemented or newly allocated)
+### Bounds proposed for this head
 
-Use the four historical APP-3 Rust paths once CP allocates the complete accepted
-integration. Names below are proposed private interfaces, not claims of native symbols.
+| Bound | Value and source/reason |
+|---|---|
+| key bytes | 512, existing native production-key bound |
+| provenance bytes | 128, accepted CHARACTER_APPEARANCE §4.2 |
+| Selection / Change / result bytes | 1100 /4096 /16; Change fits both prior/new maximum outfit+mount keys and provenance (over2048), not just a typical request |
+| palette colours | 256 allocation ceiling; actual palette size/colours come from content (Reference133 is not an engine palette) |
+| catalogue outfits /mounts | 256 each, plus encoded byte bound; over-bound generations cannot offer this capability |
+| catalogue bytes | 196608, below existing state-delta envelope262144 |
+| active bindings /total batch upserts+forgets | 256, the existing VIS-2 visibility ceiling |
+| Binding /Mappings /Snapshot bytes | 256 /131072 /262144; catalogue+256 bounded bindings fit snapshot; all below existing delta/chunk ceilings |
+| refs | 1..u32::MAX monotonically allocated per connection; no wrap, no reuse after leave; exhausted allocation returns reconnect-required |
 
-- `gameplay_transport/appearance_change.rs`: `appearance_catalogue_for_session`
-  resolves the admitted catalogue/base for the admitted Character; `change_appearance`
-  coordinates one existing command with APP-1's eventual writer;
-  `observe_actor_appearance` projects current committed base/effective display inside
-  the Channel observation owner. No separate writer, authorization token constructor,
-  parallel validator, detached task or abstract authority framework is needed.
-- `gameplay_transport/appearance_change_tests.rs`: native command/current-owner and
-  late-completion/observation regressions against the real APP-1 writer and native
-  Channel/condition owners, not fixture booleans or record-derived matching authority.
-- `protocol-oteryn/appearance.rs`: `decode_appearance_change_intent`,
-  `encode_appearance_change_result`, and paired catalogue/actor-state codecs. Request
-  is raw selection plus current-view binding; result correlates the existing command.
-  Codecs validate shape, not ownership/unlocks/sex or current artifact admission.
-- `protocol-oteryn/appearance_tests.rs`: exact roundtrip/bounds/malformed/unknown
-  variant and binding/order cases using the eventual leased contract. No numeric
-  command, capability, domain, reference assignment or new resource bound is selected
-  by this packet. Keep existing envelope ceilings; derive inner limits from the owning
-  native key/palette/selection representations and reviewed registry before code.
+### Mapping lifecycle and publication
 
-### Durable command and current publication sequence
+`SessionAppearance` belongs to one observer GameSession/connection and is absent from
+resume continuity. Every reconnect (including resume), context replacement or new
+connection starts a new dictionary and snapshot; no old ref is interpreted there.
+Live-context catalogue replacement cannot change the palette/document binding.
+Retirement is exact EntityRef and never resets allocation high-water. Snapshot carries
+that high-water even if the most recently allocated actor has left.
 
-1. Existing transport gates the leased command under selected capabilities, current
-   connection generation, CommandId order and input permit. Derive Character, account,
-   exact actor and World/Channel from the actual admitted controller, never payload
-   identities. Missing controller/actor/sex/current catalogue is unavailable, not a
-   fabricated starter, empty unlock set or guessed authorization. A request's catalogue
-   digest/revision is expected binding; independently resolve current admitted content.
-2. At the real APP-1 transaction boundary resolve active definitions, sex, earned
-   unlock provenance compatibility and expected prior selection/revision. Reuse native
-   `validate_selection`; known key/revision equality alone is not provenance compatibility.
-   Starter outfit/addon facts need no grant, earned facts need compatible provenance,
-   Store has no usable route yet. D61 stays regardless of Premium classification.
-3. APP-1 supplies its proposed `DurabilityRoot::commit_character_appearance` and
-   reconciliation owner only after native receipt/chain integration exists. Follow
-   `begin_semantic_transaction`, semantic deadline, `assert_recovery_fence`,
-   `lock_admission_relations` and `character_progression::assert_gameplay_fence`,
-   including independently current node/session/connection/lease/scope generations,
-   locked root/prior selection and interpretation. Like the actual stance writer,
-   lock occurrence before root/progression and compare full versioned command binding
-   on replay; selection commit advances Character/progression revision exactly once.
-   An earned grant remains inside its owning fenced quest/NPC event, not APP-3.
-4. Only an actual durable committed receipt permits a base-state observation. A known
-   precommit rejection changes no durable/base/effective state and emits no appearance
-   delta. Stage/validate encoding and bounded publication work without exposing it
-   before commit. Distinguish rejection from commit failure with unknown outcome;
-   never report `Rejected` after a possibly successful commit or manufacture success.
-5. Before runtime installation/publication independently re-read the current actor,
-   session/connection/controller, scope owner/generation, content activation/pins and
-   source/condition state through the real owner. A retained receipt/projection cannot
-   recreate current authority. Late owner loss suppresses old runtime publication;
-   the committed selection remains durable and the next valid owner loads it. Do not
-   roll it back, reactivate the old actor, or rewrite it with a stale runtime snapshot.
-   Native current-owner/retirement refusal must be included, not just matching pins.
-6. Reconciliation compares the full immutable request/receipt binding. A replay may
-   describe historical committed disposition, never grant actor authority or perform
-   a second write. Unknown transport/commit outcome remains unresolved until the
-   native owner reconciles it. Reconnect does not automatically send a new occurrence.
-   Fresh admission/recovery revalidates current content/sex/unlocks and loads durable
-   base; fallback display preserves incompatible stored keys and provenance.
+For each visible appearance change the leaf stages **both** fully encoded native
+frames before changing allocation/cursors: domain21 mapping delta first, domain1
+VIS-2 UPDATE second, with consecutive existing server sequence numbers. The UPDATE
+keeps the actual current visible position; it does not forge a position revision or
+require movement. The exact actor must exist as Player in the visibility snapshot;
+hidden actors cannot be introduced by a mapping. Initial join/resync must queue the
+complete domain21 snapshot before a VIS-2 snapshot that first references its refs.
+A leave is queued before retiring its mapping. A failed/ambiguous write terminates
+the connection: allocated refs/revisions are never rolled back or reused.
 
-### Proposed committed-observation handoff to APP-4
+`ReferenceStore` is a strict connection-local presentation reducer, not a visibility
+or actor authority. Native Session VIS-2 owns enter/leave, full EntityRef generation
+currentness and domain revisions. Mapping arrival never admits an actor. Session
+renders only its exact current visible EntityRef/reference after resolving the
+matching context/palette. An unknown/missing/stale mapping requires the existing
+authoritative resync/end-session route, never ref0/look128/nearby-look/sex guesses.
+The reducer consumes the actual domain21 envelope revision: duplicates, stale bases and gaps refuse atomically. Account unlock changes may replace the catalogue without advancing this Character root revision. A command result settles its command; it does not repaint the scene. Result-first,
+observation-first and a newer superseding observation preserve the current mapping.
 
-The aligned APP-4 packet is `app-4-evidence/local-owned.patch` (read-only input,
-not acceptance). It needs catalogue, correlated change result, committed/base versus
-effective observation, and current temporary state/clear. The own client consumes
-**the same effective actor observation as other observers**. Its private editor may
-also receive its own durable base/current allowed catalogue. Never expose account
-unlocks, granting receipts, private AccountId/session credentials or raw fence proof
-to other players just to correlate a public look.
+### Real owners and implemented leaf boundaries
 
-Propose a negotiated per-session reference mapping: every appearance_ref resolves
-only with its current admitted content/definition/palette provenance and the exact
-EntityRef identity+generation. References never become DAT look types and are never
-rebound across session/content/generation reset. The codec owner must finalize this
-layout, its bounded allocation/exhaustion/reset and registry dependency on visible
-entities before code. No permanent mapping/table IDs or undocumented wrapping counter
-are introduced here. An unresolved ref cannot choose nearby look/default sex/128.
+The command retains one actual native `AppearanceChangeOccurrence` and its original
+native fence/request/sex after first preparation; CommandRef stays the existing
+session+CommandId identity. No UUID is manufactured from client bytes/CommandId.
+Retry/reconcile consumes that same retained intent; it never re-prepares at a newer
+root revision or submits a second occurrence after delay/lost acknowledgement.
+Preparation uses the real `FreshAdmissionStore::current_session_at`, current Character
+root and runtime player/lease/scope reads. The APP-1 native writer independently
+checks recovery, admission, node, session/connection/lease/scope, root/prior state,
+content and semantic transaction fencing. Wire `before` is an expectation only.
 
-A single StateDelta envelope carries one domain, so cross-domain observation is not
-implicitly atomic. Publish the qualified mapping/state before an entity update that
-references it; carry an explicit reviewed observation/version dependency in that
-surface and make Session defer presentation until the complete matching state exists.
-Initial join/snapshot must supply the complete matching mapping/state as well. On
-missing/mismatched mapping or a gap, request the existing authoritative resync path
-(or end the unusable session under its actual policy), never render a guessed look.
-An appearance-only update must reach a stationary visible entity without forging a
-position revision or relying on movement. Existing enter/update/leave and limits apply.
+`PreparedChange::commit/reconcile` call the real APP-1 APIs. An exact historical
+AlreadyCommitted remains obtainable after current-session loss; current observation
+reads are never inserted before that replay path. Known precommit rejection emits
+no mapping. Storage/COMMIT unavailable remains **Unresolved**, no terminal Rejected
+payload and no appearance publication; the original occurrence is retained. A
+receipt/result is historical disposition, never actor-installation authority.
 
-Result is command settlement, not a render update. Proposal: a committed result
-identifies its committed state revision/binding; observation-before-result and the
-reverse converge idempotently. A later valid observation may supersede the command's
-look, so do not wait forever for exact old pixels or repaint old state after seeing a
-newer revision. Do not invent a timeout/retry budget; final liveness/resync settlement
-belongs to the existing Session/command owner and requires explicit qualification.
-The UI preserves a separate draft, keeps the scene on observations and submits no
-second change merely because an acknowledgement/observation is delayed or lost.
+The actual APP-1 `read_current_character_appearance(authority,node,fence)` is consumed
+for current catalogue/observation: its expected fence is independently derived from
+current native DB session/root reads, never a receipt. Target selection is re-read
+at this native boundary **after** observer preparation awaits; a replacement or root
+advance suppresses late publication. These separate transactions are not claimed
+jointly atomic. The observer and observed player's connections are distinct.
+Runtime owner_fence, exact player control/lease/scope, pinned native artifact and
+current condition state are independently checked before staged publication.
 
-Compose current effective temporary Outfit/Item from the existing condition owner
-against the same qualified base/context read. Temporary state or compatibility
-fallback changes presentation, not selected storage or editor draft. An explicit
-newer authoritative clear/expiry transition restores the **latest** committed base,
-not the base captured when the condition began. Preserve native conflict/expiry and
-item-presentation semantics; do not add local client expiry, use owner_time as client
-authority, infer omission as clear, or use a permanent change to mutate conditions.
-If separate candidate/base/visibility domains are retained, CP must lease their
-coherent revisions/correlation and current consumer, including out-of-order clears;
-the existing candidate is not already an admitted substitute for this contract.
+`NativeGameplayState::cosmetics()` supplies APP-2's concrete outer-digest-bound
+`NativeCosmeticsView`; the leaf checks its source/document identities against the
+actual server runtime pin; public Context.content is the separate client artifact generation already used by VIS-2. Current native target/observer positions are compared with the supplied visibility view to refuse stale spatial coordinates. The owned Arc adapter only satisfies the existing native pure
+AppearanceContent lifetime, not authority. Catalogue iteration uses actual canonical
+keys and the native validator; premium metadata adds no V1 gate (D61). The existing
+AccountUnlocks view is pure input, not an admitted account/compatibility proof.
+Its real resolver, Character creation sex and activated authoring facts remain
+required owners; no client sex, empty guessed catalogue or fabricated unlock is used.
 
-### Exact CP/caller deltas and test gates
+Effective look composes the latest stored base or validated content fallback with
+actual ChannelSpellStates/ConditionStore at the owner time. Temporary Outfit/Item
+state and explicit clear/expiry retain native conflict/clock rules; no condition is
+mutated by a selected-look change, and no mount is projected from selected storage.
+An incompatible stored selection is preserved. Item transforms use the actual
+native Item key/revision dictionary under capability4, not an appearance_ref cast.
 
-- APP-1 owner: actual selection receipt/writer/reconcile plus latest progression
-  guard union (`0073_character_progression_guard_wheel_union.sql`) and
-  `character_authority.rs::verify_character_integrity` appearance projection/receipt
-  chain/replay; production DDL/permissions numbered only at slot. Preserve all native
-  families. No borrowed stance event or uncommittable independent APP-3 writer.
-- APP-2/content/admission and creation owners: complete actual source facts,
-  fallback per sex, palette/look mapping, provenance compatibility and current
-  World/artifact/profile admission; authoritative sex input/persistence. Candidate
-  expected hashes, Premium flags or a client-selected sex cannot fill those seams.
-- CP shared transport/runtime: current `connection.rs` trait/dispatch/result and
-  snapshot/refresh/continuity callers; `gameplay_transport/mod.rs` concrete authority
-  and actual admission/late-owner reload; `world_spatial.rs` current projection,
-  appearance-only update detection and visibility/reference ordering; actual condition
-  projection publication/clear caller. Current spell authority must not be extended
-  by an APP-3 wrapper that fabricates a transaction or grants permanent-change power.
-- CP registries/codecs: reviewed capability/dependency, command/result/domain/delta
-  IDs and payload/counter bounds; protocol `lib.rs`, current server capabilities and
-  current client Session GATED_ROUTES/domain store/event routing. Resume preserves
-  negotiated selection and cannot widen it; unsupported/old clients get neither
-  unnegotiated command effect nor appearance bytes. Preserve current logout/death,
-  movement, item and all other capability routes. No numbers are reserved here.
-- APP-4/#1942: exact client ownership for Session events, PlayLink ordered task,
-  EntityRef appearance store separate from targeting, outfit UI and verified
-  asset/palette/renderer composition. Its cache variant identity and multi-actor
-  rendering concerns remain real renderer work, not solved by a wire acknowledgement.
+### Qualification and remaining integration
 
-The following matrix is **planned qualification**, not tests run by this card.
-Each negative starts from a valid real fixture and changes one invariant at the
-named boundary; independent current evidence cannot be derived from the record tested.
+The four owned source files contain codecs, the strict reducer, native writer/read
+consumers and publication mechanisms. Codec tests exercise strict shape/bounds and
+malformed bytes, maximal native keys, implicit fallback, item downgrade, connection/
+EntityRef reset, ordering, tombstones and result/observation separation. Server tests
+exercise the actual envelope codecs for mapping-before-stationary-UPDATE, hidden/
+context/refusal atomicity, capability gates, exhaustion, leave/reentry/reset,
+temporary clear/latest base and unresolved-versus-known-rejection settlement.
+These are mechanism tests, not fabricated native authority qualification.
+
+Author validation of the exact protocol source with a private `pub mod appearance;`
+registration in the actual protocol crate: **14 passed, 0 failed, 0 ignored**;
+strict all-target protocol Clippy passed. The seven server mechanism tests are
+authored but not yet run. The shared registration remains absent from this branch.
+
+Fresh native qualification must privately mount the exact APP-1 current-reader
+source and APP-2 concrete view/ABI, and only the allowed shared registration lines.
+Those dependencies are frozen at APP-1 `29efda15ae08c37a718fcef1eb1d3b34588b7a14`
+and APP-2 `cde2fa3ef03ca0e57a7dd852893c1be8e0ef4b90`; no native server test/build
+result is claimed before that run. Required additional native evidence
+includes independently persisted target replacement during observer preparation,
+current actor/owner loss after commit, real condition transitions and actual
+admission/caller path. The A2 author must wire the CharacterRevisionSequencer
+appearance cursor arm, occurrence/pending settlement, current sex/account-compatible
+facts, capability/registry/lib/module/connection routing, visibility/initial snapshot/
+resync/leave ordering and actual client consumer. Those shared paths are not edited
+here, and all acceptance checkboxes remain unchecked. No full relog/E2E/Windows/
+GPU proof, offered capability, completed feature or merge readiness is claimed.
+
+### Full negative qualification matrix (retained)
+
+The matrix remains mandatory for the final integrated candidate. Existing own
+mechanism tests cover only their named codec/reducer/publication boundaries;
+independent native authority/currentness and actual callers require separate evidence.
 
 | Boundary / invariant | Required evidence before integrated qualification |
 |---|---|
@@ -310,8 +289,3 @@ named boundary; independent current evidence cannot be derived from the record t
 | Observation / order and visibility | Result-first/observation-first, duplicate, newer superseding observation, lost ack and unresolved outcome converge without duplicate write. Stationary appearance change emits update; leave/reappear and EntityRef generation reset purge old mapping; hidden actor never revealed. |
 | Client domain / downgrade | Wrong mapping/content/palette/session/context, stale sequence/revision, unknown ref, missing mapping and unsupported capability fail/refresh via native policy. Reconnect without previously selected support is refused; no cross-session refs/draft/replay. |
 | Temporary/fallback composition | Base changes under active Outfit and Item transforms, explicit clear and owner expiry restore latest base; stale/non-monotonic projection/clear refuses. Incompatible-world fallback preserves durable selection; client timer and missing packet cannot clear state. |
-
-No value write, protocol/runtime test, renderer/Windows/E2E, live relog, authority
-qualification or independent architect acceptance is claimed. This card's actual
-checks are governance, documentation diff/scope and exact source binding only.
-Evidence/restoration packet: `/workspace/oteryn-prep/app-3-evidence/`.
