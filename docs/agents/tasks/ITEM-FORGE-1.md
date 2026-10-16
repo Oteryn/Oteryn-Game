@@ -342,3 +342,43 @@ OWNER/PARITY_PENDING under D1163, without guessed cap/cost constants. Migration
 work follow Storage's merge to main and the required CP pin approval. This
 increment changes no workflow, pin, module registration, schema or shared source.
 It does not enable a runtime Forge operation or close mechanic acceptance.
+
+### D1230 accepted dust policy — NOT_FULLY_QUALIFIED
+
+CP D1230 (comment6226138153) supersedes the earlier dust-policy
+OWNER/PARITY_PENDING statement for these exact accepted facts. GUI and CIPSOFT
+S1 establish `limit(n)=100+20n` and next cost25 at n0. General next cost`25+n`,
+maximum n225 and resulting4600 are separately **PARITY_WIKI W1**. GUI establishes
+60 dust→3slivers and50slivers→1core. CP D1230f (comment6226341619) states that
+Forge has no gold→dust conversion: no such function is implemented. The GUI
+shows only the current unlocked limit; the wiki maximum is not a display value.
+The evidence source here is the exact accepted CP packet; no screenshot/GUI or
+zip inspection by this worker is claimed.
+
+The current increment adds only owned pure checked limit/next-upgrade quotes
+and single-conversion resource projections in domain/forge.rs, plus four owned
+unit tests covering formula/base/ceiling, exact resource costs, underfunding and
+overflow. It changes no Content recipe or existing Forge dust writer/schema.
+The earlier `limit−75`/325 formula was absent from both owned files. Unknown or
+unaccepted Forge facts remain unknown; no item recipe, roll or cost is inferred.
+
+Under CP D1160, the only registration change is `#[cfg(test)] mod forge;` in the
+native domain root. It enables this owned source for native library tests,
+without runtime registration or an additional target/runner. The actual owned
+file contains five pre-existing pure cases plus four new cases (nine total).
+Actual native command:
+`cargo test --locked --offline -p oteryn-game-server --lib domain::forge::tests:: --quiet -- --test-threads=1`.
+It passed all nine cases (five existing plus four new),0failed/ignored, PG URLunset;
+exit0 and full log hash907e89cc3683e0fcef5a766b6dd1100ebc4e2922ef14492576e826092db53794
+are retained in `/workspace/oteryn-family/forge-d1230/native-pure.json`.
+Independent source review and changed-file fmt/diff/governance PASS. Current
+strict Clippy/full package/PG/runtime and exact-head CI remain NOT_RUN; this
+D1122 draft checkpoint is NOT_FULLY_QUALIFIED.
+
+The earlier native9/9 evidence, including three PostgreSQL17.6 cases, remains
+bound to the original source/context preserved by the D1122 checkpoint and
+recovery commit46120db4f14ddab2e45281d91561e34ecd673922. That result is not reused
+as qualification of the changed D1230 policy or test registration. D1145's shared
+atomic writer remains gated after#2156; FORGE-CONTENT recipes, runtime operation
+and full mechanic acceptance remain pending. No runtime, GUI or complete
+qualification is claimed.

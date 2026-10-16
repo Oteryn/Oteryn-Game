@@ -228,3 +228,123 @@ fn convergence_transfer_requires_both_class_four_and_keeps_the_donor_tier_within
         );
     }
 }
+
+#[test]
+fn accepted_dust_limit_and_next_cost_follow_separately_classified_evidence() {
+    use super::ForgeDustLimit;
+    let initial = ForgeDustLimit::INITIAL;
+    assert_eq!(initial.current_limit(), Ok(100));
+    let (cost, second) = initial.next_upgrade().unwrap();
+    assert_eq!(cost, 25); // GUI/CIPSOFT initial cost.
+    assert_eq!(second.current_limit(), Ok(120));
+    assert_eq!(second.next_upgrade().unwrap().0, 26); // PARITY_WIKI general cost.
+    for upgrades in 0..225 {
+        let current = ForgeDustLimit::new(upgrades).unwrap();
+        let (cost, next) = current.next_upgrade().unwrap();
+        assert_eq!(current.current_limit(), Ok(100 + 20 * u32::from(upgrades)));
+        assert_eq!(cost, 25 + u32::from(upgrades));
+        assert_eq!(
+            next.current_limit(),
+            Ok(current.current_limit().unwrap() + 20)
+        );
+    }
+}
+
+#[test]
+fn wiki_dust_ceiling_refuses_further_upgrades_and_invalid_states() {
+    use super::{ForgeDustError, ForgeDustLimit};
+    let penultimate = ForgeDustLimit::new(224).unwrap();
+    let (last_cost, maximum) = penultimate.next_upgrade().unwrap();
+    assert_eq!(last_cost, 249);
+    assert_eq!(maximum.current_limit(), Ok(4600)); // PARITY_WIKI, not a GUI display.
+    assert_eq!(
+        maximum.next_upgrade(),
+        Err(ForgeDustError::MaximumLimitReached)
+    );
+    for upgrades in [226, u16::MAX] {
+        assert_eq!(
+            ForgeDustLimit::new(upgrades),
+            Err(ForgeDustError::InvalidUpgradeCount)
+        );
+    }
+}
+
+#[test]
+fn accepted_conversions_charge_exact_inputs_and_preserve_other_resources() {
+    use super::ForgeDustResources;
+    let before = ForgeDustResources {
+        dust: 120,
+        slivers: 47,
+        cores: 7,
+    };
+    let slivers = before.dust_to_slivers().unwrap();
+    assert_eq!(
+        slivers,
+        ForgeDustResources {
+            dust: 60,
+            slivers: 50,
+            cores: 7
+        }
+    );
+    assert_eq!(
+        slivers.slivers_to_core(),
+        Ok(ForgeDustResources {
+            dust: 60,
+            slivers: 0,
+            cores: 8
+        })
+    );
+    assert_eq!(
+        ForgeDustResources {
+            dust: 60,
+            slivers: 0,
+            cores: 0
+        }
+        .dust_to_slivers(),
+        Ok(ForgeDustResources {
+            dust: 0,
+            slivers: 3,
+            cores: 0
+        })
+    );
+}
+
+#[test]
+fn conversions_refuse_underfunded_and_overflowing_projections() {
+    use super::{ForgeDustError, ForgeDustResources};
+    let zero = ForgeDustResources {
+        dust: 0,
+        slivers: 0,
+        cores: 0,
+    };
+    for dust in [0, 59] {
+        assert_eq!(
+            ForgeDustResources { dust, ..zero }.dust_to_slivers(),
+            Err(ForgeDustError::InsufficientDust)
+        );
+    }
+    for slivers in [0, 49] {
+        assert_eq!(
+            ForgeDustResources { slivers, ..zero }.slivers_to_core(),
+            Err(ForgeDustError::InsufficientSlivers)
+        );
+    }
+    assert_eq!(
+        ForgeDustResources {
+            dust: 60,
+            slivers: u64::MAX - 2,
+            ..zero
+        }
+        .dust_to_slivers(),
+        Err(ForgeDustError::ArithmeticOverflow)
+    );
+    assert_eq!(
+        ForgeDustResources {
+            slivers: 50,
+            cores: u64::MAX,
+            ..zero
+        }
+        .slivers_to_core(),
+        Err(ForgeDustError::ArithmeticOverflow)
+    );
+}

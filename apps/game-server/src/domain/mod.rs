@@ -7,6 +7,8 @@ pub mod charm;
 pub mod currency;
 pub mod death;
 pub mod equipment;
+#[cfg(test)]
+mod forge;
 pub mod forge_dust;
 pub mod premium;
 pub mod progression;

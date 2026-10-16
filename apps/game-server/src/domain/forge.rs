@@ -2,7 +2,8 @@
 //! These pure checks consume supplied Content facts, not current authority.
 //! The writer must separately bind them to current Content and recheck distinct
 //! live instances, direct main-backpack placement, imbuements and fences under
-//! its locks. No recipe, roll, cost or mutation is implemented here.
+//! its locks. D1230 adds only pure checked dust quotes/conversions below; no
+//! item recipe, roll, current account balance, durable writer or mutation is implemented.
 
 use crate::content::ProjectV2ItemForgeProfile;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
@@ -140,6 +141,107 @@ impl<'a> ForgeItemShape<'a> {
             return Err(ForgeShapeError::TierAboveCap);
         }
         ItemTier::new(value).ok_or(ForgeShapeError::TierAboveCap)
+    }
+}
+
+/// CP D1230 dust policy only; no recipe, account balance, mutation or runtime authority.
+/// GUI/CIPSOFT S1 establish base100, step20 and initial next cost25. The general
+/// cost25+n and maximum225 upgrades (4600) are separately accepted PARITY_WIKI W1.
+/// D1230f: a future GUI shows only current_limit(), never the wiki maximum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForgeDustLimit {
+    upgrades: u16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ForgeDustError {
+    InvalidUpgradeCount,
+    MaximumLimitReached,
+    InsufficientDust,
+    InsufficientSlivers,
+    ArithmeticOverflow,
+}
+
+impl ForgeDustLimit {
+    pub const INITIAL: Self = Self { upgrades: 0 };
+    // Accepted enforcement ceiling, PARITY_WIKI W1; not a UI display value.
+    const MAX_UPGRADES: u16 = 225;
+
+    pub const fn new(upgrades: u16) -> Result<Self, ForgeDustError> {
+        if upgrades <= Self::MAX_UPGRADES {
+            Ok(Self { upgrades })
+        } else {
+            Err(ForgeDustError::InvalidUpgradeCount)
+        }
+    }
+
+    /// Current unlocked dust limit, not the wiki maximum or a carried balance.
+    pub fn current_limit(self) -> Result<u32, ForgeDustError> {
+        u32::from(self.upgrades)
+            .checked_mul(20)
+            .and_then(|increase| 100_u32.checked_add(increase))
+            .ok_or(ForgeDustError::ArithmeticOverflow)
+    }
+
+    /// Quote exactly the next accepted limit upgrade. This does not spend dust.
+    /// Recheck current state and debit atomically in the future writer after #2156.
+    pub fn next_upgrade(self) -> Result<(u32, Self), ForgeDustError> {
+        if self.upgrades == Self::MAX_UPGRADES {
+            return Err(ForgeDustError::MaximumLimitReached);
+        }
+        let cost = 25_u32
+            .checked_add(u32::from(self.upgrades))
+            .ok_or(ForgeDustError::ArithmeticOverflow)?;
+        let upgrades = self
+            .upgrades
+            .checked_add(1)
+            .ok_or(ForgeDustError::ArithmeticOverflow)?;
+        Ok((cost, Self::new(upgrades)?))
+    }
+}
+
+/// Pure checked projection of one GUI-accepted conversion, not persisted balances.
+/// No gold-to-dust operation exists (CP D1230f); no other recipe is inferred.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForgeDustResources {
+    pub dust: u64,
+    pub slivers: u64,
+    pub cores: u64,
+}
+
+impl ForgeDustResources {
+    /// GUI: exactly60 dust ->3 slivers, once.
+    pub fn dust_to_slivers(self) -> Result<Self, ForgeDustError> {
+        let dust = self
+            .dust
+            .checked_sub(60)
+            .ok_or(ForgeDustError::InsufficientDust)?;
+        let slivers = self
+            .slivers
+            .checked_add(3)
+            .ok_or(ForgeDustError::ArithmeticOverflow)?;
+        Ok(Self {
+            dust,
+            slivers,
+            ..self
+        })
+    }
+
+    /// GUI: exactly50 slivers ->1 core, once.
+    pub fn slivers_to_core(self) -> Result<Self, ForgeDustError> {
+        let slivers = self
+            .slivers
+            .checked_sub(50)
+            .ok_or(ForgeDustError::InsufficientSlivers)?;
+        let cores = self
+            .cores
+            .checked_add(1)
+            .ok_or(ForgeDustError::ArithmeticOverflow)?;
+        Ok(Self {
+            slivers,
+            cores,
+            ..self
+        })
     }
 }
 
