@@ -146,7 +146,7 @@ pub(crate) enum SwingPoll<T, L> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(
     dead_code,
-    reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+    reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
 )]
 pub(crate) enum SwingRngPurpose {
     HitChance,
@@ -251,7 +251,7 @@ impl<T: Copy + Eq, L: Copy> AttackState<T, L> {
         not(test),
         allow(
             dead_code,
-            reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+            reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
         )
     )]
     pub(crate) fn swung_within_interval(

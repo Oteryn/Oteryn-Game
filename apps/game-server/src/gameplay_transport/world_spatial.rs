@@ -11,24 +11,54 @@ use crate::movement::interest::{
     InterestChange, InterestDiff, InterestEntity, InterestIndex, VisibilityPosition,
     VisibilityQuery, VisibilitySettings, diff_interest,
 };
-use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
 pub(crate) use oteryn_protocol_oteryn::world_spatial::*;
 pub(crate) use oteryn_protocol_oteryn::world_spatial_entities::*;
 
-/// Server side: the payload type and bytes one session receives for a full snapshot. A session
-/// that selected capability 6 gets the entity revision; every other session keeps the v1 type
-/// with its own actor only. With capability 4 every object also carries the session's item
-/// handle (ITEM-VIEW-1b, attached by `item_view::SessionItemView`).
+/// WORLD-INTERACTION-0 §10.2 (`WORLDINT0-RL-20`): a shown entity's `light` changes on the wire
+/// at most once in this many milliseconds.
+pub(crate) const LIGHT_UPDATE_INTERVAL_MS: u64 = 1_000;
+
+/// The lights of `entities` among `lights`, or none for a session without capability 19.
+fn lights_of<'a>(
+    entities: impl Iterator<Item = &'a WorldSpatialEntity>,
+    fields: EntityFields,
+    lights: &EntityLights,
+) -> EntityLights {
+    if !fields.light {
+        return EntityLights::new();
+    }
+    entities
+        .filter_map(|entity| {
+            let identity = entity.entity.identity;
+            lights.get(&identity).map(|light| (identity, *light))
+        })
+        .collect()
+}
+
+/// [`encode_visibility_snapshot_lit`] without lights.
+#[cfg(test)]
 pub(crate) fn encode_visibility_snapshot(
     selected_capabilities: &[u32],
     snapshot: &WorldSpatialEntitiesSnapshot,
 ) -> Result<(u32, Vec<u8>), WorldSpatialError> {
+    encode_visibility_snapshot_lit(selected_capabilities, snapshot, &EntityLights::new())
+}
+
+/// Server side: the payload type and bytes one session receives for a full snapshot. A session
+/// that selected capability 6 gets the entity revision; every other session keeps the v1 type
+/// with its own actor only. With capability 4 every object also carries the session's item
+/// handle (ITEM-VIEW-1b, attached by `item_view::SessionItemView`). With capability 19 its lit
+/// players and creatures carry the `lights` the session is shown ([`SessionVisibility::lights`]).
+pub(crate) fn encode_visibility_snapshot_lit(
+    selected_capabilities: &[u32],
+    snapshot: &WorldSpatialEntitiesSnapshot,
+    lights: &EntityLights,
+) -> Result<(u32, Vec<u8>), WorldSpatialError> {
     if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let payload = if selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1) {
-            encode_world_spatial_entities_snapshot_with_item_handles(snapshot)?
-        } else {
-            encode_world_spatial_entities_snapshot(snapshot)?
-        };
+        let fields = EntityFields::selected(selected_capabilities);
+        let lights = lights_of(snapshot.entities.iter(), fields, lights);
+        let payload =
+            encode_world_spatial_entities_snapshot_with_fields(snapshot, fields, &lights)?;
         Ok((SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload))
     } else {
         validate_snapshot(snapshot)?;
@@ -42,17 +72,26 @@ pub(crate) fn encode_visibility_snapshot(
     }
 }
 
-/// Server side: the payload type and bytes one session receives for a delta, gated as above.
+/// [`encode_visibility_delta_lit`] without lights.
+#[cfg(test)]
 pub(crate) fn encode_visibility_delta(
     selected_capabilities: &[u32],
     delta: &WorldSpatialEntitiesDelta,
 ) -> Result<(u32, Vec<u8>), WorldSpatialError> {
+    encode_visibility_delta_lit(selected_capabilities, delta, &EntityLights::new())
+}
+
+/// Server side: the payload type and bytes one session receives for a delta, gated as above;
+/// only the entered and updated entries carry their light.
+pub(crate) fn encode_visibility_delta_lit(
+    selected_capabilities: &[u32],
+    delta: &WorldSpatialEntitiesDelta,
+    lights: &EntityLights,
+) -> Result<(u32, Vec<u8>), WorldSpatialError> {
     if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let payload = if selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1) {
-            encode_world_spatial_entities_delta_with_item_handles(delta)?
-        } else {
-            encode_world_spatial_entities_delta(delta)?
-        };
+        let fields = EntityFields::selected(selected_capabilities);
+        let lights = lights_of(delta.enter.iter().chain(&delta.update), fields, lights);
+        let payload = encode_world_spatial_entities_delta_with_fields(delta, fields, &lights)?;
         Ok((DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload))
     } else {
         validate_delta(delta)?;
@@ -111,6 +150,10 @@ pub(crate) struct ChannelEntities {
     pub(crate) content_generation: [u8; 32],
     pub(crate) observer: [u8; ENTITY_IDENTITY_BYTES],
     pub(crate) entities: Vec<ChannelEntity>,
+    /// CLOCK-1 (§11.4): the light of each lit player and creature, by identity, in the same read.
+    pub(crate) lights: EntityLights,
+    /// The owner time of the read in milliseconds; it paces `light` updates.
+    pub(crate) observed_at_ms: u64,
 }
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
@@ -173,11 +216,21 @@ pub(crate) enum VisibilityUpdate {
 /// MAP-ITEM-REF-1 (CP D885): objects are shown only to a session that selected capability 4;
 /// without it an object's `item_definition_ref` names nothing the session can resolve, so the
 /// default view drops every object before the interest query.
+///
+/// CLOCK-1 (WORLD-INTERACTION-0 §10.2): with capability 19 the view also shows each player's and
+/// creature's `light`. A shown entity whose light changes is updated at most once per
+/// [`LIGHT_UPDATE_INTERVAL_MS`]; until then it keeps the light last sent, even in an entry sent
+/// for a move.
 #[derive(Debug, Default)]
 pub(crate) struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
     objects: bool,
+    light: bool,
+    /// The light last sent for each shown lit entity.
+    lights: EntityLights,
+    /// When each shown entity's light last changed on the wire, in owner milliseconds.
+    light_sent_at: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], u64>,
 }
 
 impl SessionVisibility {
@@ -187,6 +240,75 @@ impl SessionVisibility {
             objects,
             ..Self::default()
         }
+    }
+
+    /// The same view that also shows lights when `light`, the session's capability 19.
+    pub(crate) fn lit(self, light: bool) -> Self {
+        Self { light, ..self }
+    }
+
+    /// The light last sent for each shown lit entity, for the encoders.
+    pub(crate) fn lights(&self) -> &EntityLights {
+        &self.lights
+    }
+
+    /// The light `channel` gives the entity now, or `None` without capability 19.
+    fn current_light(
+        &self,
+        channel: &ChannelEntities,
+        identity: &[u8; ENTITY_IDENTITY_BYTES],
+    ) -> Option<EntityLight> {
+        self.light
+            .then(|| channel.lights.get(identity).copied())
+            .flatten()
+            .filter(|light| light.level != 0)
+    }
+
+    /// Records `light` as sent for `identity` at `now`. Showing an entity unlit is a sent light
+    /// too: its first shown time starts the interval, so a light it gains next waits its turn.
+    fn send_light(
+        &mut self,
+        identity: [u8; ENTITY_IDENTITY_BYTES],
+        light: Option<EntityLight>,
+        now: u64,
+    ) {
+        if self.lights.get(&identity).copied() == light {
+            self.light_sent_at.entry(identity).or_insert(now);
+            return;
+        }
+        self.light_sent_at.insert(identity, now);
+        match light {
+            Some(light) => self.lights.insert(identity, light),
+            None => self.lights.remove(&identity),
+        };
+    }
+
+    /// Whether `identity`'s light may change on the wire at `now`.
+    fn light_due(&self, identity: &[u8; ENTITY_IDENTITY_BYTES], now: u64) -> bool {
+        self.light_sent_at
+            .get(identity)
+            .is_none_or(|sent| now.saturating_sub(*sent) >= LIGHT_UPDATE_INTERVAL_MS)
+    }
+
+    /// The full view's lights: every selected entity is shown its current light.
+    fn show_lights(&mut self, channel: &ChannelEntities, selected: &[WorldSpatialEntity]) {
+        for entity in selected {
+            let identity = entity.entity.identity;
+            let light = self.current_light(channel, &identity);
+            self.send_light(identity, light, channel.observed_at_ms);
+        }
+        self.forget_lights(selected);
+    }
+
+    /// Drops the light state of entities no longer shown.
+    fn forget_lights(&mut self, selected: &[WorldSpatialEntity]) {
+        let shown: std::collections::BTreeSet<_> = selected
+            .iter()
+            .map(|entity| entity.entity.identity)
+            .collect();
+        self.lights.retain(|identity, _| shown.contains(identity));
+        self.light_sent_at
+            .retain(|identity, _| shown.contains(identity));
     }
 
     /// The query of `channel` from the observer, and each selected entity in its wire form, in
@@ -203,7 +325,7 @@ impl SessionVisibility {
             if !self.objects && matches!(entity.kind, VisibleKind::Corpse { .. }) {
                 continue;
             }
-            // An entity off the 0..=15 floors cannot be shown; the observer then fails below.
+            // An entity off the -15..=15 floors cannot be shown; the observer then fails below.
             let Ok(position) = VisibilityPosition::new(
                 entity.position.x,
                 entity.position.y,
@@ -270,6 +392,7 @@ impl SessionVisibility {
     ) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
         let (query, selected) = self.select(channel, attach)?;
         let snapshot = Self::snapshot_of(channel, &selected)?;
+        self.show_lights(channel, &selected);
         self.show(query, selected);
         Ok(snapshot)
     }
@@ -284,12 +407,14 @@ impl SessionVisibility {
         let (query, selected) = self.select(channel, attach)?;
         let Some(shown) = &self.shown else {
             let snapshot = Self::snapshot_of(channel, &selected)?;
+            self.show_lights(channel, &selected);
             self.show(query, selected);
             return Ok(VisibilityUpdate::Snapshot(snapshot));
         };
         let changes = match diff_interest(shown, &query) {
             InterestDiff::Resync(_) => {
                 let snapshot = Self::snapshot_of(channel, &selected)?;
+                self.show_lights(channel, &selected);
                 self.show(query, selected);
                 return Ok(VisibilityUpdate::Snapshot(snapshot));
             }
@@ -327,8 +452,46 @@ impl SessionVisibility {
                 ),
             }
         }
+        // CLOCK-1: an entered entity shows its current light; a moved one its current light if
+        // due, else the light last sent; any other shown entity whose light changed is updated
+        // once due, within the delta ceiling (a deferred one follows on a later refresh).
+        let now = channel.observed_at_ms;
+        for entity in &delta.enter {
+            let identity = entity.entity.identity;
+            self.light_sent_at.remove(&identity);
+            self.lights.remove(&identity);
+            let light = self.current_light(channel, &identity);
+            self.send_light(identity, light, now);
+        }
+        for entity in &delta.update {
+            let identity = entity.entity.identity;
+            if self.light_due(&identity, now) {
+                let light = self.current_light(channel, &identity);
+                self.send_light(identity, light, now);
+            }
+        }
+        let mut room = MAX_DELTA_ENTRIES.saturating_sub(changes.len());
+        for entity in &selected {
+            let identity = entity.entity.identity;
+            let light = self.current_light(channel, &identity);
+            if room == 0
+                || !self.entities.contains_key(&identity)
+                || delta
+                    .update
+                    .iter()
+                    .any(|shown| shown.entity.identity == identity)
+                || self.lights.get(&identity).copied() == light
+                || !self.light_due(&identity, now)
+            {
+                continue;
+            }
+            delta.update.push(*entity);
+            self.send_light(identity, light, now);
+            room -= 1;
+        }
+        self.forget_lights(&selected);
         self.show(query, selected);
-        if changes.is_empty() {
+        if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty() {
             Ok(VisibilityUpdate::Unchanged)
         } else {
             Ok(VisibilityUpdate::Delta(delta))
@@ -402,6 +565,8 @@ pub(crate) fn too_early_step_wait_ms(left: Option<std::time::Duration>) -> u32 {
 #[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1;
 
     fn entity(n: u8, kind: EntityKind) -> WorldSpatialEntity {
         let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
@@ -761,7 +926,152 @@ mod tests {
             content_generation: [7; 32],
             observer: id(0),
             entities,
+            lights: EntityLights::new(),
+            observed_at_ms: 0,
         }
+    }
+
+    fn lit(mut channel: ChannelEntities, at_ms: u64, lights: &[(u32, u8)]) -> ChannelEntities {
+        channel.observed_at_ms = at_ms;
+        channel.lights = lights
+            .iter()
+            .map(|(n, level)| {
+                (
+                    id(*n),
+                    EntityLight {
+                        level: *level,
+                        color: 215,
+                    },
+                )
+            })
+            .collect();
+        channel
+    }
+
+    fn update_ids(update: &VisibilityUpdate) -> Vec<[u8; ENTITY_IDENTITY_BYTES]> {
+        match update {
+            VisibilityUpdate::Delta(delta) => identities(&delta.update),
+            _ => panic!("expected a delta"),
+        }
+    }
+
+    #[test]
+    fn light_reaches_only_a_session_with_capability_19_and_changes_at_most_once_a_second() {
+        let others = || [at(1, VisibleKind::Player, 101, 100, 7)];
+        let mut unlit = SessionVisibility::default();
+        unlit
+            .snapshot(&lit(channel(others()), 0, &[(1, 100)]), &mut no_handles)
+            .expect("snapshot");
+        assert!(unlit.lights().is_empty());
+
+        let mut view = SessionVisibility::default().lit(true);
+        let snapshot = view
+            .snapshot(&lit(channel(others()), 0, &[(1, 100)]), &mut no_handles)
+            .expect("snapshot");
+        let expected = EntityLight {
+            level: 100,
+            color: 215,
+        };
+        assert_eq!(view.lights().get(&id(1)), Some(&expected));
+        let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES, CAPABILITY_WORLD_LIGHT_V1];
+        let (_, payload) =
+            encode_visibility_snapshot_lit(&selected, &snapshot, view.lights()).expect("lit");
+        let (_, lights) = decode_world_spatial_entities_snapshot_with_fields(
+            &payload,
+            EntityFields::selected(&selected),
+        )
+        .expect("decode");
+        assert_eq!(lights.get(&id(1)), Some(&expected));
+        let (_, unlit_payload) =
+            encode_visibility_snapshot_lit(&selected[..1], &snapshot, view.lights())
+                .expect("unlit");
+        assert_eq!(
+            unlit_payload,
+            encode_visibility_snapshot(&selected[..1], &snapshot)
+                .expect("plain")
+                .1
+        );
+
+        // A change within 1,000 ms of the last one waits; once due it is one update entry.
+        let changed = view
+            .refresh(&lit(channel(others()), 999, &[(1, 50)]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(changed, VisibilityUpdate::Unchanged));
+        assert_eq!(view.lights().get(&id(1)), Some(&expected));
+        let changed = view
+            .refresh(&lit(channel(others()), 1_000, &[(1, 50)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        assert_eq!(view.lights().get(&id(1)).map(|light| light.level), Some(50));
+
+        // A light that goes out is omitted; an unchanged one sends nothing.
+        let changed = view
+            .refresh(&lit(channel(others()), 2_000, &[]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        assert!(view.lights().is_empty());
+        let same = view
+            .refresh(&lit(channel(others()), 5_000, &[]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(same, VisibilityUpdate::Unchanged));
+    }
+
+    #[test]
+    fn a_move_within_the_interval_keeps_the_light_last_sent_and_a_leaver_forgets_it() {
+        let mut view = SessionVisibility::default().lit(true);
+        view.snapshot(
+            &lit(
+                channel([at(1, VisibleKind::Creature, 101, 100, 7)]),
+                0,
+                &[(1, 30)],
+            ),
+            &mut no_handles,
+        )
+        .expect("snapshot");
+        let mut moved = at(1, VisibleKind::Creature, 102, 100, 7);
+        moved.revision += 1;
+        let changed = view
+            .refresh(&lit(channel([moved]), 500, &[(1, 90)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        assert_eq!(view.lights().get(&id(1)).map(|light| light.level), Some(30));
+        view.refresh(&lit(channel([]), 600, &[]), &mut no_handles)
+            .expect("leave");
+        assert!(view.lights().is_empty());
+    }
+
+    #[test]
+    fn an_entity_shown_unlit_gains_a_light_only_once_due() {
+        let others = || [at(1, VisibleKind::Player, 101, 100, 7)];
+        let mut view = SessionVisibility::default().lit(true);
+        view.snapshot(&lit(channel(others()), 0, &[]), &mut no_handles)
+            .expect("snapshot");
+        assert!(view.lights().is_empty());
+        let early = view
+            .refresh(&lit(channel(others()), 250, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(early, VisibilityUpdate::Unchanged));
+        assert!(view.lights().is_empty());
+        let due = view
+            .refresh(&lit(channel(others()), 1_000, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&due), [id(1)]);
+        assert_eq!(view.lights().get(&id(1)).map(|light| light.level), Some(40));
+
+        // An entity entering unlit starts its interval at the enter as well.
+        let mut view = SessionVisibility::default().lit(true);
+        view.snapshot(&lit(channel([]), 0, &[]), &mut no_handles)
+            .expect("snapshot");
+        view.refresh(&lit(channel(others()), 2_000, &[]), &mut no_handles)
+            .expect("enter");
+        let early = view
+            .refresh(&lit(channel(others()), 2_250, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert!(matches!(early, VisibilityUpdate::Unchanged));
+        let due = view
+            .refresh(&lit(channel(others()), 3_000, &[(1, 40)]), &mut no_handles)
+            .expect("refresh");
+        assert_eq!(update_ids(&due), [id(1)]);
     }
 
     fn no_handles(_: &mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError> {

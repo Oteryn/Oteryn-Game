@@ -29,6 +29,11 @@ The server-side spell core (P3a, `apps/game-server/src/spell/`) is isolated and 
   evaluates the `player_expression` formulas and draws each magnitude. It returns a
   `CastResolution`: mana spent, soul spent, resolved effects and the new cooldowns. **Nothing is
   applied yet.**
+  **Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** Before the first `resolve_cast` check
+  (group cooldown), and after the CHAT-0 §6 chat-mute pre-gate, the §3.5 condition gates run: a
+  `muted` actor's cast, and a `pacified` or `powerless` actor's cast of a spell whose authored
+  profile has `targeting.aggressive: true`, is refused with that condition's refusal in the §3.5
+  gate order, before any cooldown, requirement, protection-zone or target check. COND-1 builds it.
 - `plan.rs` hands damage and heal to the one GAME-ABILITY pipeline as an `EffectPlan`, with an
   atomic commit group keyed by the occurrence. Condition removal and conjure are returned beside
   it, unchanged.

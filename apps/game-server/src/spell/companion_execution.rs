@@ -503,6 +503,7 @@ mod tests {
             condition_immunities: vec![ConditionType::Haste],
             preferred_distance: Some(1),
             reward_boss: Some(false),
+            defense: Some(1),
             armor: Some(10),
             mitigation: None,
             resistances: vec![],
@@ -616,7 +617,19 @@ mod tests {
                         ..
                     })
                 ));
-                assert_eq!(next.conditions.attributes_at(facts.now + 10_000_000), None);
+                let end = facts.now + caster_ms * 1000;
+                assert!(next.conditions.attributes_at(end - 1).is_some());
+                assert_eq!(next.conditions.attributes_at(end), None);
+                assert!(next.conditions.pacified_applied_since(facts.now));
+                assert!(
+                    next.conditions
+                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end - 1)
+                );
+                assert!(
+                    !next
+                        .conditions
+                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end)
+                );
             }
             assert_eq!(runtime.owned_companions(actor, session).unwrap(), census);
             assert!(
@@ -792,7 +805,7 @@ pub(crate) fn stage_haste(
             "spell.swift.attributes",
             1,
             ConditionValues::Attributes {
-                duration_ms: 10000,
+                duration_ms: duration,
                 critical_chance_percent: 0,
                 critical_extra_percentage_points: 0,
                 damage_dealt_percent: 70,
@@ -800,18 +813,31 @@ pub(crate) fn stage_haste(
             },
         )
         .ok_or(HasteExecutionError::UnsupportedProfile)?;
-        match staged.conditions.apply(
-            &attributes,
-            None,
-            crate::ability::condition::ConditionSourceKind::SelfUse,
-            &[],
-            facts,
-        ) {
-            Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => {}
-            Err(error) => {
-                return Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
-                    error,
-                )));
+        // swift_foot.lua:37-39 applies attributes and pacification for the same
+        // content spellDuration as the haste.
+        let pacified = ConditionDefinition::new(
+            "spell.swift_foot.pacified",
+            1,
+            ConditionValues::Gate {
+                gate: crate::ability::condition::ConditionGate::Pacified,
+                duration_ms: duration,
+            },
+        )
+        .ok_or(HasteExecutionError::UnsupportedProfile)?;
+        for definition in [&attributes, &pacified] {
+            match staged.conditions.apply(
+                definition,
+                None,
+                crate::ability::condition::ConditionSourceKind::SelfUse,
+                &[],
+                facts,
+            ) {
+                Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => {}
+                Err(error) => {
+                    return Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
+                        error,
+                    )));
+                }
             }
         }
     }

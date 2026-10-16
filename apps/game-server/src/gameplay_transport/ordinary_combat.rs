@@ -470,16 +470,18 @@ async fn prepare_inner(
     }
     let actor = b.actor;
     let session = b.session;
+    let before = states
+        .get(runtime, actor, session)
+        .ok_or(SpellCastDisposition::Rejected)?
+        .clone();
+    // CONDITIONS-0 §3.5: the gate families answer before the reentry and target checks.
+    crate::spell::cast::admit_condition_gates(&before, spell, now)?;
     let source_protected = runtime
         .current_player_reentry_protection(actor, session, now.get())
         .map_err(|_| SpellCastDisposition::Rejected)?;
     if spell.aggressive && source_protected {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    let before = states
-        .get(runtime, actor, session)
-        .ok_or(SpellCastDisposition::Rejected)?
-        .clone();
     let caster = owned
         .caster(
             &before,
@@ -1801,7 +1803,7 @@ mod tests {
                     vocation: Vocation::Monk,
                     level: 600,
                     magic_level: 100,
-                    premium: true,
+                    premium: crate::spell::CasterPremium::Current,
                     mana: 10000,
                     max_mana: 10000,
                     soul: 100,
@@ -1979,7 +1981,7 @@ mod tests {
             vocation: facts.vocation,
             level: facts.level,
             magic_level: 0,
-            premium: true,
+            premium: crate::spell::CasterPremium::Current,
             mana: before.vitals().mana,
             max_mana: facts.max_mana,
             soul: before.vitals().soul,
@@ -2315,7 +2317,7 @@ mod tests {
             vocation: Vocation::Monk,
             level: 200,
             magic_level: 0,
-            premium: false,
+            premium: crate::spell::CasterPremium::NotCurrent,
             mana: 2000,
             max_mana: 2000,
             soul: 100,
@@ -2613,7 +2615,7 @@ mod tests {
             vocation: Vocation::Sorcerer,
             level: 100,
             magic_level: 50,
-            premium: true,
+            premium: crate::spell::CasterPremium::Current,
             mana: 5000,
             max_mana: 5000,
             soul: 100,

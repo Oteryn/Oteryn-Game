@@ -64,7 +64,7 @@ fn sorcerer() -> CasterState {
         vocation: Vocation::Sorcerer,
         level: 100,
         magic_level: 50,
-        premium: true,
+        premium: crate::spell::CasterPremium::Current,
         mana: 1000,
         max_mana: 1000,
         soul: 100,

@@ -25,6 +25,8 @@ pub enum PlayCommand {
     Step(StepDir),
     Combat(CombatCommand),
     UseMap(crate::map_view::MapTarget),
+    /// Leave the game (capability 21 `LOGOUT_INTENT`).
+    Logout,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

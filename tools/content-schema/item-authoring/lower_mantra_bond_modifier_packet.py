@@ -10,9 +10,9 @@ import lower_elemental_magic_modifier_packet as shared
 base, stats, ROOT = shared.base, shared.stats, shared.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py"
 PROOF = (
-    "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v2.json"
+    "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v3.json"
 )
-PROOF_SHA = "39229515f83d75ff4c82606c791a62724c26f141eb155330c56d2ff16cf20ae4"
+PROOF_SHA = "320f8493f6b69f3c17fb77633f46327907e4166001d7aea241cf024262656c33"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
 SOURCE_IDS = frozenset(
     {

@@ -388,7 +388,10 @@ impl RenderModel {
             | UseDisposition::PzBlocked
             | UseDisposition::NotMovable
             | UseDisposition::NoRoom
-            | UseDisposition::NotPossible => Notice::DoorRejected,
+            | UseDisposition::NotPossible
+            // RUNE-WIRE-1: capability 22 dispositions; the harness selects no capability 22.
+            | UseDisposition::TargetIllegal
+            | UseDisposition::ProtectionZone => Notice::DoorRejected,
         };
         next
     }

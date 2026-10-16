@@ -8,8 +8,8 @@
 
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
-    ContextKind, InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, MouseButton,
-    NormalizedInputEvent, RepeatPolicy,
+    ContextKind, InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifier, Modifiers,
+    MouseButton, NormalizedInputEvent, RepeatPolicy,
 };
 use oteryn_renderer::{TileCoord, TileView};
 use oteryn_session::EntityRef;
@@ -398,6 +398,27 @@ pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
             _ => None,
         },
         _ => None,
+    })
+}
+
+/// Physical `L` and `Q` positions (USB HID usage codes, like [`KeyCode::KEY_A`]).
+const KEY_L: u16 = 15;
+const KEY_Q: u16 = 20;
+
+/// Whether `events` hold a first press of the logout chord, Ctrl+L or Ctrl+Q. A held key's
+/// repeats ask nothing more.
+#[must_use]
+pub fn logout_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|event| {
+        matches!(
+            event,
+            NormalizedInputEvent::Key {
+                code,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            } if matches!(code.get(), KEY_L | KEY_Q) && modifiers.contains(Modifier::Control)
+        )
     })
 }
 
@@ -951,5 +972,26 @@ mod tests {
             arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
             None
         );
+    }
+
+    #[test]
+    fn ctrl_l_and_ctrl_q_ask_for_logout_once() -> Result<(), InputError> {
+        let key = |code, modifiers, repeat| NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat,
+        };
+        let ctrl = Modifiers::one(Modifier::Control);
+        assert!(logout_key(&[key(KeyCode::new(KEY_L)?, ctrl, false)]));
+        assert!(logout_key(&[key(KeyCode::new(KEY_Q)?, ctrl, false)]));
+        assert!(!logout_key(&[key(
+            KeyCode::new(KEY_L)?,
+            Modifiers::NONE,
+            false
+        )]));
+        assert!(!logout_key(&[key(KeyCode::new(KEY_Q)?, ctrl, true)]));
+        assert!(!logout_key(&[key(KeyCode::KEY_W, ctrl, false)]));
+        Ok(())
     }
 }

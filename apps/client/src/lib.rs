@@ -327,9 +327,13 @@ impl ClientBootstrap {
     ) -> Result<(play::PlayView, play::PlayLink), GameplayEntryError> {
         let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
         let view = admitted.play_view().map_err(|_error| unavailable())?;
-        let (link, commands, events) = play::play_channel();
+        let session = admitted.into_session();
+        // The first rendered HUD must already contain the committed join projections,
+        // even when the runtime has not yet polled its background session task.
+        let (link, commands, events) = play::play_channel_for_session(&session);
+        eprintln!("{}", link.game_state().availability_diagnostic());
         self.runtime
-            .spawn(play::run_session(admitted.into_session(), commands, events))
+            .spawn(play::run_session(session, commands, events))
             .map_err(|_error| unavailable())?;
         Ok((view, link))
     }
@@ -752,6 +756,10 @@ mod native_entry {
         loop {
             let code = match admit(&grant, root, character_id, config).await {
                 Ok(session) => {
+                    eprintln!(
+                        "Oteryn diagnostic: admission selected capabilities={:?}",
+                        session.selected_capabilities()
+                    );
                     return Ok(AdmittedSession {
                         session,
                         world_id: grant.world_id.clone(),

@@ -1,0 +1,165 @@
+// PRESENT-WIRE-1 (SPELL-PRESENT-0 §4, §7, §9, §10 and §13, docs/architecture/reviews/
+// OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by
+// ACCEPT-SPELL-PRESENT0-V1): typed payloads of capability 23 PRESENTATION_V1, state domain 19
+// WORLD_PRESENTATION (snapshot type 1, delta type 1) and state domain 20 ACTOR_COOLDOWNS (snapshot
+// type 1, delta type 1). Numbers leased by the #1622 control plane; the capability has no command
+// type and requires capability 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name.
+// FND-02 envelopes own server sequence, domain ID and revisions; these payloads never duplicate
+// them. Unknown fields, repeated singular fields, zero or unknown enum values, an empty oneof and
+// values outside the declared bounds all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.presentation;
+
+import "world_spatial_v1.proto";
+
+// §4: who caused the event, chosen per observer, as the 15.30 client filters effects.
+enum PresentationSource {
+  PRESENTATION_SOURCE_UNSPECIFIED = 0;
+  // The observer caused it.
+  PRESENTATION_SOURCE_OWN = 1;
+  // Another player.
+  PRESENTATION_SOURCE_OTHERS = 2;
+  PRESENTATION_SOURCE_CREATURES = 3;
+  // No source, or an NPC.
+  PRESENTATION_SOURCE_GLOBAL = 4;
+}
+
+// §4: the value_text kind, chosen per observer.
+enum PresentationValueKind {
+  PRESENTATION_VALUE_KIND_UNSPECIFIED = 0;
+  PRESENTATION_VALUE_KIND_DAMAGE_DEALT = 1;
+  PRESENTATION_VALUE_KIND_DAMAGE_RECEIVED = 2;
+  PRESENTATION_VALUE_KIND_DAMAGE_OTHERS = 3;
+  PRESENTATION_VALUE_KIND_HEALED = 4;
+  PRESENTATION_VALUE_KIND_HEALED_OTHERS = 5;
+  PRESENTATION_VALUE_KIND_MANA = 6;
+  PRESENTATION_VALUE_KIND_EXPERIENCE = 7;
+  PRESENTATION_VALUE_KIND_EXPERIENCE_OTHERS = 8;
+}
+
+// §4 and §5: the closed set of Tibia text colours; the client maps each to its palette.
+enum PresentationColor {
+  PRESENTATION_COLOR_UNSPECIFIED = 0;
+  PRESENTATION_COLOR_RED = 1;
+  PRESENTATION_COLOR_LIGHT_GREEN = 2;
+  PRESENTATION_COLOR_LIGHT_GREY = 3;
+  PRESENTATION_COLOR_ORANGE = 4;
+  PRESENTATION_COLOR_PURPLE = 5;
+  PRESENTATION_COLOR_SKY_BLUE = 6;
+  PRESENTATION_COLOR_YELLOW = 7;
+  PRESENTATION_COLOR_DARK_RED = 8;
+  PRESENTATION_COLOR_LIGHT_BLUE = 9;
+  PRESENTATION_COLOR_BLUE = 10;
+  PRESENTATION_COLOR_PASTEL_RED = 11;
+  PRESENTATION_COLOR_MAYA_BLUE = 12;
+  PRESENTATION_COLOR_WHITE = 13;
+}
+
+// Positions are ActorPositionV1 with floor 0..=15. effect_id, missile_id and cue ids are the
+// 15.30 client ids, 1..=65,535 (PRESENT-CONTENT-1 binds content keys to them).
+message PresentationMagicEffectV1 {
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 1;
+  uint32 effect_id = 2;
+  PresentationSource source = 3;
+}
+
+message PresentationMissileV1 {
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 from = 1;
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 to = 2;
+  uint32 missile_id = 3;
+  PresentationSource source = 4;
+}
+
+// §6: sent only for a successful cast; the client shows that spell's words from its content
+// generation, never text the player typed.
+message PresentationSpellWordsV1 {
+  // The caster's D85 identity; an actor, so its generation is non-zero.
+  oteryn.protocol.v1.world_spatial.EntityRefV1 caster = 1;
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 2;
+  // SPELL-D1 1-based spell book index, any nonzero uint32.
+  uint32 spell = 3;
+}
+
+message PresentationValueV1 {
+  // At least 1: a hit with no damage shows the block effect, never a 0 (§5).
+  uint64 value = 1;
+  PresentationColor color = 2;
+}
+
+message PresentationValueTextV1 {
+  PresentationValueKind kind = 1;
+  // The target's tile.
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 2;
+  oteryn.protocol.v1.world_spatial.EntityRefV1 target = 3;
+  // Absent when there is no attacker.
+  oteryn.protocol.v1.world_spatial.EntityRefV1 attacker = 4;
+  PresentationValueV1 primary = 5;
+  // Absent unless the value is split (an elemental part).
+  PresentationValueV1 secondary = 6;
+}
+
+message PresentationSoundV1 {
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 1;
+  uint32 cue_id = 2;
+  PresentationSource source = 3;
+  // 0 (omitted) when the cue has no secondary cue.
+  uint32 secondary_cue_id = 4;
+}
+
+// One event. At most 128 encoded bytes including its batch tag and length (SPELLPRES0-RL-02).
+message PresentationEventV1 {
+  // §4: the per-sync-unit ordinal of the owner decision that emitted it, 1-based.
+  uint32 decision_ordinal = 1;
+  // The event's ordinal within that decision, 1-based.
+  uint32 emission_ordinal = 2;
+  oneof kind {
+    PresentationMagicEffectV1 magic_effect = 3;
+    PresentationMissileV1 missile = 4;
+    PresentationSpellWordsV1 spell_words = 5;
+    PresentationValueTextV1 value_text = 6;
+    PresentationSoundV1 sound = 7;
+  }
+}
+
+// StateDelta.payload of domain 19, delta type 1: one session's events of one sync unit. 1 to
+// 1,024 events (SPELLPRES0-RL-01), at most 131,136 bytes (SPELLPRES0-RL-03), strictly ascending by
+// (decision_ordinal, emission_ordinal), so no pair repeats. The events are presentation, never
+// state: dropping any of them changes no outcome.
+message WorldPresentationBatchV1 {
+  repeated PresentationEventV1 events = 1;
+}
+
+// StateDomainSnapshot.payload of domain 19, snapshot type 1: always empty. A replacement snapshot
+// drops every event not yet sent.
+message WorldPresentationSnapshotV1 {}
+
+enum ActorCooldownKind {
+  ACTOR_COOLDOWN_KIND_UNSPECIFIED = 0;
+  ACTOR_COOLDOWN_KIND_SPELL = 1;
+  ACTOR_COOLDOWN_KIND_GROUP = 2;
+}
+
+// At most 16 encoded bytes including its tag and length (SPELLPRES0-RL-05).
+message ActorCooldownV1 {
+  ActorCooldownKind kind = 1;
+  // SPELL: the SPELL-D1 index, 1..=2^28 - 1 (a 4-byte id keeps the entry at 16 bytes). GROUP: the S9 catalogue ordinal, 1..=16.
+  uint32 id = 2;
+  // Absolute expiry on the channel runtime's monotonic millisecond clock, below 2^42.
+  uint64 expires_at_ms = 3;
+}
+
+// StateDomainSnapshot.payload of domain 20, snapshot type 1 (every running cooldown, at admission,
+// reconnect and channel transfer) and StateDelta.payload of delta type 1 (the entries changed at a
+// PRIMARY COMMIT, or the one corrective delta at the first liveness ack). Own actor only. At most
+// one entry per {kind, id}; a repeated key fails closed.
+message ActorCooldownsV1 {
+  // The channel runtime's monotonic clock when the server encoded the message, below 2^42.
+  uint64 server_now_ms = 1;
+  // The server's smoothed round-trip estimate from FND-02 §17 liveness pairs; 0 before the first
+  // ack of the connection generation.
+  uint32 rtt_ms = 2;
+  // False before the first ack; then rtt_ms is 0.
+  bool rtt_estimated = 3;
+  repeated ActorCooldownV1 entries = 4;
+}

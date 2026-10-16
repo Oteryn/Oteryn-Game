@@ -39,6 +39,7 @@ fn state(item: u8, definition: OneItemTypedDefinitionRevisionV1, quantity: u32) 
         } else {
             ITEM_LIFECYCLE_LIVE
         },
+        key_number: 0,
     }
 }
 

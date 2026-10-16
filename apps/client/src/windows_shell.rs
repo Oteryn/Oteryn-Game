@@ -1,7 +1,7 @@
 use oteryn_client::hotkeys::{ClaimedKeyLifecycle, ResolvedHotkey};
-use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile};
+use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile, logout_key};
 use oteryn_client::map_draw::{MapAssetPaths, MapAssets};
-use oteryn_client::play::{BattleTargetSelection, PlayLink, PlayView};
+use oteryn_client::play::{BattleTargetSelection, PlayEnd, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
 use oteryn_client::world::{START, World};
@@ -288,6 +288,18 @@ impl Application {
             self.fail(event_loop, ShellError::InputInitialization);
             return suppress_egui;
         };
+        // Logout is an explicit session command, including while the chat composer owns
+        // ordinary text keys. Dialogs and inactive windows must never issue it.
+        if self.focused
+            && !gameplay_modal
+            && self.login.is_none()
+            && logout_key(events)
+            && let Some(play) = &mut self.play
+        {
+            self.movement_repeat.clear();
+            play.view.logout();
+            return true;
+        }
         if consumed && hotkey_direction.is_none() {
             return suppress_egui;
         }
@@ -607,6 +619,15 @@ impl Application {
     /// A session end returns to the pre-admission state: the offline scene, with the public
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
+        self.leave_play(&GameplayEntryError::Rejected(class).to_string());
+    }
+
+    /// A committed logout returns to the authenticated-entry UI, not an offline game scene.
+    fn return_to_character_selection(&mut self) {
+        self.leave_play("logged out");
+    }
+
+    fn leave_play(&mut self, message: &str) {
         if let (Some(renderer), Some(world)) = (&mut self.renderer, &self.world) {
             renderer.set_atlas(world.atlas().clone());
         }
@@ -624,7 +645,6 @@ impl Application {
                 None,
             ));
         }
-        let message = GameplayEntryError::Rejected(class).to_string();
         println!("Oteryn: {message}");
         if let Some(window) = &self.window {
             window.set_title(&format!("Oteryn — {message}"));
@@ -1345,9 +1365,12 @@ impl ApplicationHandler for Application {
         }
         let repeat_deadline = repeat_delay.and_then(|delay| self.movement_repeat.deadline(delay));
         if let Some(play) = &mut self.play
-            && let Err(class) = play.view.tick(&play.link)
+            && let Err(end) = play.view.tick(&play.link)
         {
-            self.return_to_login(class);
+            match end {
+                PlayEnd::Ended(class) => self.return_to_login(class),
+                PlayEnd::LoggedOut => self.return_to_character_selection(),
+            }
         }
         let step_deadline = self
             .play

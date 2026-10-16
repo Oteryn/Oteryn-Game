@@ -2111,6 +2111,11 @@ fn use_feedback(value: UseDisposition, english: bool) -> &'static str {
         ),
         UseDisposition::Full => ("Brak miejsca", "No space available"),
         UseDisposition::NoTarget => ("Wybierz cel", "Select a target"),
+        UseDisposition::TargetIllegal => ("Niedozwolony cel", "Invalid target"),
+        UseDisposition::ProtectionZone => (
+            "Czynność niedozwolona w strefie ochronnej",
+            "This action is not allowed in a protection zone",
+        ),
         // Main's capability-11 outcomes are not activated by this client
         // packet. Keep their fallback explicit and never describe them as Used.
         UseDisposition::Locked
@@ -2212,6 +2217,24 @@ mod tests {
     }
 
     type MenuState = std::sync::Arc<std::sync::Mutex<oteryn_client::play::GameState>>;
+
+    #[test]
+    fn rune_target_refusals_have_distinct_non_success_feedback() {
+        use oteryn_session::UseDisposition;
+        for english in [false, true] {
+            let target = super::use_feedback(UseDisposition::TargetIllegal, english);
+            let zone = super::use_feedback(UseDisposition::ProtectionZone, english);
+            assert_ne!(target, zone);
+            assert_ne!(
+                target,
+                super::use_feedback(UseDisposition::Committed, english)
+            );
+            assert_ne!(
+                zone,
+                super::use_feedback(UseDisposition::Committed, english)
+            );
+        }
+    }
     type MenuActions =
         std::sync::Arc<std::sync::Mutex<Vec<oteryn_client::action_bar::ActionBarCommand>>>;
 

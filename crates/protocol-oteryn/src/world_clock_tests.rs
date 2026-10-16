@@ -91,7 +91,7 @@ fn registry_binds_the_clock_wire_ids_and_limits() {
     assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_WORLD_LIGHT_V1));
     let capability = only("capabilities", CAPABILITY_WORLD_LIGHT_V1);
     assert_eq!(capability["name"], "WORLD_LIGHT_V1");
-    assert_eq!(capability["offered"], false);
+    assert_eq!(capability["offered"], true);
     assert_eq!(capability["requires"], serde_json::json!([6]));
     assert_eq!(capability["command_types"], serde_json::json!([]));
     assert_eq!(

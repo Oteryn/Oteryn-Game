@@ -1,7 +1,7 @@
 # PARTY-PVP-0 Parties and PvP
 
 - Decision: `PARTYPVP0-PARTIES-AND-PVP-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) through the control plane (D551, owner answer 1a), recorded by the acceptance PR (`ACCEPT-SOCIAL-MAP-0`, `OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md`); status line reconciled 2026-10-15 (ACCEPT-BATCH-2026-10-15); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   combat, security, privacy and protocol) and protected integration. Owner question P1 (§16) is
   answered: the PvP type is per-World configuration; Optional and Open PvP are both delivered; the
   first World launches as Optional PvP (confirmed by the owner, §16). Owner question P2 (§16) is

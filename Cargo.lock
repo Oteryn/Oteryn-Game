@@ -2837,6 +2837,7 @@ dependencies = [
 name = "oteryn-game-server"
 version = "0.1.0"
 dependencies = [
+ "aws-lc-rs",
  "base64",
  "cap-fs-ext",
  "cap-std",
@@ -2844,6 +2845,7 @@ dependencies = [
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",
+ "oteryn-ntp-clock",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2857,6 +2859,7 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sqlx",
+ "syn 2.0.119",
  "tokio",
  "tokio-rustls",
  "toml",
@@ -2884,6 +2887,13 @@ version = "0.1.0"
 dependencies = [
  "oteryn-input-actions",
  "winit",
+]
+
+[[package]]
+name = "oteryn-ntp-clock"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

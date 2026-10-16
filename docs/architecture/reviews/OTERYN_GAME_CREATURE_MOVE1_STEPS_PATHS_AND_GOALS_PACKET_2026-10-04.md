@@ -127,7 +127,9 @@ The CREATURE-AI-0 §5.3 profile applies unchanged, over four cardinal neighbours
 - **Budget on the writer** (R3). Searches run on the channel owner inside `RL-09`: 65,536 work
   units per 50 ms window, one unit per expansion. Order:
   1. pending creature searches, by deadline, then `ExactActorRef`;
-  2. player chase searches (`RANGED0-RL-03`), when CHASE-1 lands.
+  2. player chase searches (`RANGED0-RL-03`), when CHASE-1 lands, oldest-waiting request first, then actor id.
+
+  **Amendment (pending on acceptance of RANGED-0, decision §8):** 16 of the 64 searches per window (16,384 of the 65,536 units) are reserved for player chase. While a chase search is waiting, creature searches, including carried-over overdue ones, use at most 48 searches (49,152 units); an unused reserve returns to creatures in that window. Within the reserve the order above applies, so chase is not queued behind the creature list.
 
   A request over the budget waits for the next window. Meanwhile the creature keeps its previous
   path if it is still valid, or holds position. A search never fails because of the budget.

@@ -34,6 +34,20 @@ pub enum Operation {
     ReportScopeAssignmentV1,
     /// Ownership-authority revocation report (same contract, §16.1).
     ReportScopeRevocationV1,
+    /// Character command pending list (`oteryn-game-character-authority-commands-v1` §4.1).
+    ListPendingCharacterCommandsV1,
+    /// Character command intent read (same contract, §4.2).
+    ReadCharacterCommandIntentV1,
+    /// Character command receipt publication (same contract, §4.3).
+    PublishCharacterCommandReceiptV1,
+    /// World highscores snapshot (`oteryn-game-public-projections-v1` §4.1).
+    PublishWorldHighscoresV1,
+    /// Character profile snapshot (same contract, §4.2).
+    PublishCharacterProfileV1,
+    /// World online snapshot (same contract, §4.6).
+    PublishWorldOnlineV1,
+    /// Public projection liveness watermark (same contract, §5.1).
+    PublishPublicProjectionWatermarkV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -55,11 +69,21 @@ impl Operation {
             }
             Self::ReportScopeAssignmentV1 => super::scope_assignment::PATH,
             Self::ReportScopeRevocationV1 => super::scope_assignment::REVOCATION_PATH,
+            Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
+            Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
+            Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
+            Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
+            Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
+            Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
+            Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
     /// for the runtime-status report, `LCA-REQUEST-BYTES` and
-    /// `LCA-WATERMARK-BYTES` for the account-characters projection.
+    /// `LCA-WATERMARK-BYTES` for the account-characters projection, and the
+    /// `CHARCMD-*-REQUEST-BYTES` bounds for the Character commands, and the
+    /// `PUBPROJ-*-REQUEST-BYTES` and `PUBPROJ-WATERMARK-BYTES` bounds for the
+    /// public projections.
     pub const fn request_bytes_max(self) -> usize {
         match self {
             Self::ReadPremiumSnapshotV1 => 256,
@@ -69,6 +93,15 @@ impl Operation {
             Self::ReportScopeAssignmentV1 | Self::ReportScopeRevocationV1 => {
                 super::scope_assignment::REPORT_BYTES
             }
+            Self::ListPendingCharacterCommandsV1 => super::character_commands::LIST_REQUEST_BYTES,
+            Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_REQUEST_BYTES,
+            Self::PublishCharacterCommandReceiptV1 => {
+                super::character_commands::RECEIPT_REQUEST_BYTES
+            }
+            Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
+            Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
+            Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
+            Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2

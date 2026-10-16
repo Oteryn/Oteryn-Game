@@ -111,7 +111,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         stage("entered");
         let Some(room) = self
-            .qualified_room
+            .rooms
+            .gate_source_map_initialization()
             .filter(|room| room.source_world().is_some())
         else {
             return true;

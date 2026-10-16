@@ -96,7 +96,7 @@ fn druid(mana: u32) -> CasterState {
         vocation: Vocation::ElderDruid,
         level: 100,
         magic_level: 50,
-        premium: true,
+        premium: crate::spell::CasterPremium::Current,
         mana,
         max_mana: 5000,
         soul: 100,

@@ -13,6 +13,54 @@ owner: root
 
 ## Authority and publication state
 
+### Playable continuation — 2026-10-16 / AUTHORING
+
+Owner resumed real gameplay work after the admitted Windows session showed blank
+vitals/equipment and a chat refusal. Preserve these as distinct observations:
+map/Play transition and live TCP were observed after Oracle deployed24fc332f
+(includes domain2 fix4689d21f), but the actor of Enter World and the native
+character identity were not conclusively bound. An isolated ordinary QA portal
+sign-in confirms both Testini and Client Probe Redcde exist on that QA account;
+the native selection capture showed only Testini. Do not repeat the earlier
+claim that the missing HUD values prove every client consumer is broken.
+Private receipt admission-20261016/acceptance-result.json has SHA256
+e866c6298c5e5b97a5a86b83546edd692de7863837a5c13f64258a69eedee9f8.
+No further injected input after the unexpectedly observed Play transition.
+
+This batch normally merges accepted main24fc332f without rewriting this branch.
+Resolve map/receipt/hotkey changes together with LOGOUT-WIRE-1, retaining
+capabilities18 and21, paced movement, map USE and terminal/input fences. A committed
+logout must rebuild the actual launcher UI, not leave an offline scene posing as
+a live session. The logout chord wakes idle play, works with ordinary chat focus,
+and stays blocked by dialogs/inactive windows. Unsupported logout does not kill
+an older session; a refused exchange still publishes the projections it received.
+
+Seed HUD projections synchronously from the admitted Session before scheduling
+play; distinguish an empty admitted inventory/chat from a missing projection.
+Add deterministic unpolled-task and terminal/logout-wake regressions. Log only
+selected capability IDs and projection-presence booleans at the handoff; do not
+log identities, items, resource values, chat, tokens, tickets or grants. This is
+startup correctness and diagnostic evidence, not proof that Oracle supplies
+vitals, initial items, equipment capability12 or a working CHAT runtime. New
+Rune-use refusal variants get explicit non-success feedback without activating22.
+
+Upstream accepted World digest7429f13b and its content remain unchanged; reconcile
+only inputs_digest to the merged indexed inputs and repeat the double-build pin
+check. Native qualification and real projection/movement/chat acceptance for this
+successor remain PENDING. Preserve the currently open client until the owner
+answers the batched session-close question; never terminate it blindly.
+
+CI diagnosis at24fc332f: game-gate PASS; Agent governance job116886359002 fails
+because six other active packets name merged PRs2003/2116/2016/2006/2045/2224.
+Route their archive/lifecycle cleanup to the owning control plane; do not weaken
+the validator or edit unallocated task records to hide the failure.
+
+Execution driver correction: the first local routing packet was rejected for
+empty optional tool fields and a non-Z timestamp; a merge command was mistakenly
+started before checking that result. No further source edit followed until the
+corrected packet validated ALLOW. Preserve that failed preflight as a tooling
+error, not successful gate evidence. Subsequent execution requires ALLOW.
+
 Draft PR #1942 remains in AUTHORING. Root is the sole branch publisher. Do not
 freeze or qualify a candidate until all owned changes are committed, merged
 normally with current `origin/main`, validated and reviewed as one exact SHA.
@@ -30,136 +78,13 @@ Reference facts are retained in `apps/client/UI-REFERENCE-COVERAGE.md`,
 evidence. Missing engine/server mechanisms must remain visibly unavailable and
 must not be claimed as complete.
 
-## Completion continuation — 2026-10-13
+## Retained implementation history
 
-Copy/composer focus and exact-version BSL clipboard CI repairs have historical
-Linux210/188/5, Clippy/fmt/cargo-deny evidence in UI-FIDELITY.md. Later native
-qualifications do not inherit it; full remote CI is not yet proven.
-REA 6.4.0/Ghidra are available with scoped
-configuration; ELF/pwntools is unavailable, not an analysis success. Staging
-world/channel exist; gameplay TLS 1.3/ALPN, hostname and supplied CA verify;
-no account operation or admission is performed. Main
-`0db5c53b` adds no missing active presentation/speed projections. Do not allocate
-them or enable unoffered caps. Details/remaining acceptance are in UI-FIDELITY.md.
-Oteryn-only ZIP import now stages bounded/validated draft, never auto-Apply.
-Duplicate/interrupted central records and local CRC/size mismatches are refused;
-real Cancel/Apply/persistence tests pass. Linux 210/194/5, strict Clippy/fmt pass.
-Original/minimap formats, native picker/DX12 and missing server inputs remain open.
-
-Supported-profile batch: `OTV2-20261013-client-hotkey-authoring.md` retains
-the grouped behavior fixes and exact qualification boundary.
-Plan: `apps/client/UI-EXECUTION-PLAN.md`.
-
-## Native login launcher — 2026-10-12
-
-GUI uses PKCE, owned characters, native ticket/Gateway grant and server admission.
-`tools/qualification/login_local/launch-client-local.ps1` validates the private
-env file without evaluation/credential comments, passes four public values only
-to the child and selects the copied certificate without installing trust.
-World/Character selection remains the authenticated GUI's responsibility.
-No automatic login, deployment, account mutation or production claim.
-Linux/Windows PowerShell 22 checks and client/Platform login tests 10/13 pass. Data
-is in PR comment 6125867648 and NAS `/volume1/oteryn/preprod-ca-public/`;
-Root/leaf are valid. Historical zero-world/TLS-reset probes are superseded above;
-no missing-data request. Game admission still needs actual acceptance.
-Historical Windows hashes, captures and public launch paths are in UI-FIDELITY.md.
-Existing installations remain intact; no automatic login or replacement.
-No login/restart. Windows fixes: exact expanded IPv6 loopback and closed-file
-validation on refusal; no weaker TLS or additional insecure origins.
-
-## Main reconciliation — 2026-10-13
-
-Normal merges preserve accepted maina7a0b374 producers and STEP-PACE-WIRE-0
-59f9fb12. Bundle c49538eb/start/identity/topology and inputs86d18a80 stay intact.
-Windows9c build exposed the ZIP picker's nonexistent open_file; use upstream
-rfd0.17.2 pick_file. Real duplex tests cover receipt/legacy decoding and poison
-invalid or unselected receipts. Decoder acceptance is not a pacing deadline:
-emission must await STEP-PACE-CLIENT-1. Defaults stay [4,6,7,13,17]. Windows5d:
-216/201/5+Session76, release/Clippy and DX12 20pages/78captures pass; PID37764.
-CP6145246782 confirms emission OFF/order; wrong CC link corrected6145306643.
-
-## Current authoring batch — 2026-10-11
-
-The 20 observed production pages/order, semantic markers, scroll/geometry and
-non-mutation checks are implemented; DX12 audit captures and hashes each page.
-General Hotkeys retains 120 observed actions and exact untouched Chat On/Off
-defaults, two chords and real supported consumers. Unsupported actions, mouse
-presets/loot and assignment controls stay disabled. Chat On/Off/temporary focus,
-shared text sending, 10–200 editable foreground FPS with preserved legacy values,
-nine 50-slot action rows, screenshot PNG capture, options export/reset and atomic
-settings migrations are implemented in the qualified batches documented in
-UI-FIDELITY.md. Saved values alone do not establish a runtime feature. Original
-automatic screenshots, spell/object assignment sources, import/minimap formats,
-many panels and remaining engine contracts are still absent.
-
-## Acceptance evidence and next actions
-
-Qualified Help ZIP `7898fdf7`, immutable output selection `34f59214` and
-footer/page Reset `a95a92dc` evidence, exact SHAs, Linux/MSVC counts, DX12
-20-page/78-hash manifests and recovery remain in UI-FIDELITY.md. Their code
-is preserved; earlier evidence does not qualify later heads. Help reuses
-window-owned upstream `rfd`/`zip`/`tempfile`; output selection is per-channel
-and immutable. Ordinary Reset affects implemented controls of the current page
-only, preserving unavailable intent, bindings, locks and other pages. Original
-factory/profile defaults, physical picker/clipboard, original ZIP/minimap
-interoperability, live bundle E2E and final CI/review remain open.
-
-Owner renewed implementation scope for all nine settings lanes: Graphics,
-Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,
-Interface/HUD, Console/Game Window, Misc/Gameplay and Screenshots/Help.
-Earlier AA/Smooth Retro `28565f4f`, Unicode/expiry/OS clipboard `9e2d0cbc`,
-source contracts `993ec2c4`, sliders `e6941338` and half-native scaling `985fe6b4`
-qualifications, manifests and recovery remain in UI-FIDELITY.md; private QML
-hashes remain in UI-REFERENCE-EXTRACTED.md. No lane is 100%. Physical clipboard,
-slider/trackpad, lighting and playback remain unqualified. Qt qsb 6.4.2 rejects
-serialization v9 despite exit zero; no shader decode acceptance follows.
-Preserve the owner's running binary; use separate release build directories,
-never publish original assets/account data and qualify each new source head.
-
-## Map consumer continuation — AUTHORING
-
-Owner continuation retains this single client writer; CP6146799516 withdraws
-the competing CP allocation, not this owner task. Architect6146789689 supplies
-the complete MAP/receipt/native criteria. No server/protocol/deployment writes.
-Current map fixes: same-floor received terrain clicks actually start walking;
-shared projected-floor picking invalidates covered queued USE (raw duplex proves
-no frame/ID); malformed origins request existing resync and fail closed; D627
-east/north walkers stay under both endpoint tops, including resident-atlas quad
-order. Explicit default/--assets selection injects one pinned cached provider;
-missing/mismatched catalogues log once. Actual received Item-ground uploads match
-decoded pixels, survive reset and disappear on provider replacement. Production
-bootstrap now advertises [4,6,7,13,17,18]; raw selected/declined tests cover map17
-versus legacy2. Linux client222/196/5+Session79, strict all-target Clippy/fmt pass.
-Map7335c8b9 passes MSVC221/201/5+Session79 and DX12 20pages/78hashes/0invalid;
-hashes/failed-release-ID attempt in UI-FIDELITY.md. PID37764 remains untouched.
-Receipt consumer continues in OTV2-20261013-step-pace-client-1; no E2E claim.
-Unknown actor visuals remain placeholders; no fabricated binding/mouse presets.
-
-CP decision 6143183755 accepts authoritative step_wait_ms (existing cap13).
-#2034 is merged; #2041 emission stays OFF. Receipt consumers, native wake and
-animation are implemented in the dedicated Slot2 record, Linux227/196/5+Session82.
-4ff71216 passes MSVC226/201/5+82 and DX12 20/78; CI runs, no E2E/rollout claim.
-Bootstrap
-1007(SessionFatal)/1116(TransportFatal) still reaches update-required without retry.
-Battle window consumes admitted HP, with real egui replacement/filter/empty
-regressions; names and original sorting/visual parity remain unqualified.
-
-Historical scissor `08495a50`, integral scaling `1b3a3be5`, repeat
-`5bf89893`/`597fda90` and pointer `5b784e60` MSVC/Clippy/DX12 evidence remains
-in UI-FIDELITY.md, not inherited by successors. Animated cursor stays unavailable.
-
-Receipt-clock/Clear `1b2928fb` and the lockfile/World-pin CI repair remain fully
-qualified and documented in UI-FIDELITY.md. Never invent timestamps or mutate
-server history. Lockfile changes require refreshing only the World input digest
-and repeating the unchanged double-build gate, preserving content and identity.
-
-Repeat selected local checks and exact-SHA MSVC/DX12 qualification on each new
-source head; earlier evidence never qualifies it. Verify all 20 pages/captures.
-Never modify or clean the owner's dirty checkout
-`C:\Users\barte\Downloads\oteryn-client-main-20261007`.
-
-After guarded publication, fresh-read PR/check state and repair every red check in
-one AUTHORING batch. CI on an older head never qualifies a successor.
+The preceding settings, map, hotkey, receipt and qualification checkpoints are
+preserved verbatim in [the retained task snapshot](../../evidence/OTV2-20261016-client-task-history.md).
+Use UI-FIDELITY.md and the per-lane active records for exact historical sources,
+Windows hashes and unresolved acceptance. Earlier native evidence never qualifies
+this successor. Do not recreate completed settings pages or discard their behavior.
 
 ## Known completion gaps
 

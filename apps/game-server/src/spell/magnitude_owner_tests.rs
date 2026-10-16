@@ -73,6 +73,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         preferred_distance: Some(4),
         reward_boss: Some(false),
         condition_immunities: vec![],
+        defense: Some(1),
         armor: Some(10),
         mitigation: Some(CreatureExactRatio {
             numerator: 5,

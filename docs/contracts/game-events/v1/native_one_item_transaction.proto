@@ -125,6 +125,7 @@ message OneItemStateV1 {
   OneItemTypedDefinitionRevisionV1 definition = 3;
   uint32 quantity = 4;
   uint32 lifecycle = 5; // 1 = LIVE; 2 = RETIRED (TRANSFER full-merge source after, quantity 0)
+  uint32 key_number = 6; // KEY-1: a key's immutable number, 1..65535; 0 = not a key (unset)
 }
 
 message OneItemGroundV1 {

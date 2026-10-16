@@ -1,7 +1,7 @@
 # VIP-0 The VIP list
 
 - Decision: `VIP0-ACCOUNT-WORLD-VIP-LIST-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol,
   persistence, security and privacy) and protected integration. Owner question V1 (§14) is
   answered: c) consent first, plus a "hide my status" setting (§5.1); VIP-1 and VIP-2 are
   unblocked (architect ruling R3, §13). Owner question V2 (§14) is answered: only the inviting

@@ -88,7 +88,9 @@ fn damage_amount(tick: &ConditionTick<u32>) -> (u32, bool) {
             amount, refused, ..
         } => (amount, refused),
         // Never a pair a damage tick yields: a damage tick's amount is positive.
-        TickKind::Regeneration { .. } | TickKind::SpellRegeneration { .. } => (0, false),
+        TickKind::Regeneration { .. }
+        | TickKind::SpellRegeneration { .. }
+        | TickKind::Agony { .. } => (0, false),
     }
 }
 

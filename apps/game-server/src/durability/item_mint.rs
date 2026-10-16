@@ -1217,6 +1217,7 @@ fn mint_message(
             definition: Some(definition_message(&request.item)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
+            key_number: 0,
         }),
         destination: corpse_entry.is_none().then(|| OneItemGroundV1 {
             world_id: world.clone(),
