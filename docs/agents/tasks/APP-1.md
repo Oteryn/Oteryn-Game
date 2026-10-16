@@ -19,6 +19,7 @@ needs_migration: true
 needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
+allocation: "D1092 / CP issuecomment-6219643346 (2026-10-16)"
 ```
 
 ## Goal
@@ -45,6 +46,9 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `apps/game-server/src/durability/character_appearance_tests.rs`
 - `apps/game-server/tests/character_appearance_postgres.rs`
 - `docs/agents/tasks/APP-1.md` (this record: status and notes only)
+- D1092: `apps/game-server/tests/character_appearance_native_postgres.rs` (nine native cases)
+- D1092: `apps/game-server/tests/support/bestiary_postgres_harness.rs` (additive APP-1 helper only)
+- D1092: `apps/game-server/src/durability/character_authority.rs` (appearance recovery hunk only)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
@@ -58,7 +62,7 @@ To compile on the branch the builder may add only the module registration lines 
 - content/world/pins/*
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
-- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
+- apps/game-server/migrations/0093_character_appearance.sql (D1092: publish after #2163 and merge current main)
 - apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
 - apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
@@ -232,13 +236,32 @@ selection chain, every existing 0073 guard clause plus its appearance initial-st
 state-successor arms, fixed function search paths and least-privilege grants. Number assignment
 and installing this content remain the CP migration slot; authoring its content is APP-1 work.
 
-The separate private native overlay contains shared `mod.rs` registration, the semantic
-`character_authority.rs` global receipt-union/verifier call, native nine-case target and its
-unchanged authority harness except installation of SQL extracted from the owned constant. None
-of those shared/new paths is in this owned publication candidate. Native mount qualification must
-bind the new owned SHA, exact overlay and extracted SQL hash; prior private `e32ba60a` evidence
-is historical and is not exact-head evidence for this new split. Lead orchestrates fresh native
-validation and independent review before publication. No new 9+4 proof is claimed here.
+CP D1092 ([6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346))
+now allocates the real nine-case native PostgreSQL target, an additive harness helper and the
+appearance-specific recovery union/verifier call. The helper delegates to the unchanged native
+constructor. Before calling it the helper resolves 0093 from the actual embedded SQLx migrator;
+the unchanged database constructor runs that migrator before any recovery/admission. The helper
+also verifies the installed 0093 success and exact checksum. It neither
+executes a schema supplement nor changes existing fixture cases or constructor semantics.
+The nine bodies retain the historical e32 boundary tests: independent current fences, exact
+historical replay, native root/scope replacement, restart reload, cross-family revision chains,
+privileged DB issuance-corruption refusal and receipt-insert-fault transaction rollback.
+Test-only content/sex remain explicit synthetic data rather than admitted product authority.
+
+D1092 reserves migration `0093_character_appearance.sql`. Its **publication** and registration in
+`durability/mod.rs` are still slot-only after #2163. Until that GO, the owned staging constant is
+the sole authored SQL source; private validation derives the migration file byte-for-byte and
+installs it only through the actual embedded SQLx migrator. No private support-SQL include is
+added. At the slot, move the content to the numbered migration and remove the staging constant.
+The actual recovery call and native target require the explicitly declared registration/migration
+compile overlay before the slot; no cfg suppression, helper facade or skipped test conceals it.
+
+The e32 and 8295 evidence remain separate historical generations. The D1092 authoring candidate
+requires fresh exact-source native qualification with its explicit two-file slot overlay and
+extracted migration hash. No earlier nine-plus-four result is claimed for this new candidate.
+Native root/session replacement and storage reload are not full client relog. Legal same-store
+recovery replacement with a retained seal is excluded by native shared/exclusive lock lifetimes;
+the DB issuance case is defensive privileged corruption, not a fabricated successor workflow.
 
 Remaining external owners: the granting owner must expose its accepted transaction-bound
 cosmetic consumer on `FencedGrantingCharacter`; APP-2 must provide admitted content/key/provenance

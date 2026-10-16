@@ -180,11 +180,11 @@ CREATE TRIGGER app_receipt_no_truncate BEFORE TRUNCATE
  ON game_account_appearance_unlock_receipts EXECUTE FUNCTION app_fixture_immutable();
 "#;
 
-// Complete unnumbered migration CONTENT, authored by APP-1. The CP slot assigns its number
-// and installs it after merging current main; it is not installed by this private read fixture.
-// The native qualification overlay extracts these exact literal bytes (verified SHA) into its
-// temporary support SQL include, then executes them after the real SQLx migrator and before
-// native recovery/admission. This is the only authored migration source, not a numbered file.
+// Complete migration CONTENT, authored by APP-1; CP D1092 reserves 0093.
+// Before the slot after #2163, private qualification extracts these exact bytes into
+// migrations/0093_character_appearance.sql and loads them ONLY through the real SQLx
+// migrator. The slot moves this content to that file and removes this staging constant;
+// no support SQL include or independently maintained migration copy is used.
 pub const APP1_MIGRATION_CONTENT: &str = r#"-- APP-1 unnumbered proposal. Native roots, shared progression union, least privilege.
 
 CREATE FUNCTION game_appearance_colours_valid(value INTEGER[]) RETURNS BOOLEAN
